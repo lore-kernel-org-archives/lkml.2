@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab2C1WzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:55:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57570 "EHLO
+	id S933238Ab2C1Wzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:55:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38246 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758986Ab2C1Wvx (ORCPT
+	with ESMTP id S1758975Ab2C1Wvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:51:53 -0400
+	Wed, 28 Mar 2012 18:51:51 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/21] blkcg: export conf/stat helpers to prepare for reorganization
-Date: Wed, 28 Mar 2012 15:51:19 -0700
-Message-Id: <1332975091-10950-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/21] blkcg: blkg_conf_prep()
+Date: Wed, 28 Mar 2012 15:51:18 -0700
+Message-Id: <1332975091-10950-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332975091-10950-1-git-send-email-tj@kernel.org>
 References: <1332975091-10950-1-git-send-email-tj@kernel.org>
@@ -22,238 +22,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-conf/stat handling is about to be moved to policy implementation from
-blkcg core.  Export conf/stat helpers from blkcg core so that
-blk-throttle and cfq-iosched can use them.
+blkg_conf_prep() implements "MAJ:MIN VAL" parsing manually, which is
+unnecessary.  Just use sscanf("%u:%u %llu").  This might not reject
+some malformed input (extra input at the end) but we don't care.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-cgroup.c |   52 +++++++++++++++++++++++++---------------------------
- block/blk-cgroup.h |   27 +++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+), 27 deletions(-)
+ block/blk-cgroup.c |   64 ++++++++-------------------------------------------
+ 1 files changed, 10 insertions(+), 54 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 3d933b0..df1e197 100644
+index 0d4f21e..3d933b0 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -11,7 +11,6 @@
-  * 	              Nauman Rafique <nauman@google.com>
-  */
- #include <linux/ioprio.h>
--#include <linux/seq_file.h>
- #include <linux/kdev_t.h>
- #include <linux/module.h>
- #include <linux/err.h>
-@@ -767,10 +766,9 @@ static const char *blkg_dev_name(struct blkio_group *blkg)
-  * This is to be used to construct print functions for
-  * cftype->read_seq_string method.
-  */
--static void blkcg_print_blkgs(struct seq_file *sf, struct blkio_cgroup *blkcg,
--			      u64 (*prfill)(struct seq_file *,
--					    struct blkg_policy_data *, int),
--			      int pol, int data, bool show_total)
-+void blkcg_print_blkgs(struct seq_file *sf, struct blkio_cgroup *blkcg,
-+		       u64 (*prfill)(struct seq_file *, struct blkg_policy_data *, int),
-+		       int pol, int data, bool show_total)
- {
- 	struct blkio_group *blkg;
- 	struct hlist_node *n;
-@@ -785,6 +783,7 @@ static void blkcg_print_blkgs(struct seq_file *sf, struct blkio_cgroup *blkcg,
- 	if (show_total)
- 		seq_printf(sf, "Total %llu\n", (unsigned long long)total);
- }
-+EXPORT_SYMBOL_GPL(blkcg_print_blkgs);
- 
- /**
-  * __blkg_prfill_u64 - prfill helper for a single u64 value
-@@ -794,8 +793,7 @@ static void blkcg_print_blkgs(struct seq_file *sf, struct blkio_cgroup *blkcg,
-  *
-  * Print @v to @sf for the device assocaited with @pd.
-  */
--static u64 __blkg_prfill_u64(struct seq_file *sf, struct blkg_policy_data *pd,
--			     u64 v)
-+u64 __blkg_prfill_u64(struct seq_file *sf, struct blkg_policy_data *pd, u64 v)
- {
- 	const char *dname = blkg_dev_name(pd->blkg);
- 
-@@ -805,6 +803,7 @@ static u64 __blkg_prfill_u64(struct seq_file *sf, struct blkg_policy_data *pd,
- 	seq_printf(sf, "%s %llu\n", dname, (unsigned long long)v);
- 	return v;
- }
-+EXPORT_SYMBOL_GPL(__blkg_prfill_u64);
- 
- /**
-  * __blkg_prfill_rwstat - prfill helper for a blkg_rwstat
-@@ -814,9 +813,8 @@ static u64 __blkg_prfill_u64(struct seq_file *sf, struct blkg_policy_data *pd,
-  *
-  * Print @rwstat to @sf for the device assocaited with @pd.
-  */
--static u64 __blkg_prfill_rwstat(struct seq_file *sf,
--				struct blkg_policy_data *pd,
--				const struct blkg_rwstat *rwstat)
-+u64 __blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
-+			 const struct blkg_rwstat *rwstat)
- {
- 	static const char *rwstr[] = {
- 		[BLKG_RWSTAT_READ]	= "Read",
-@@ -856,8 +854,8 @@ static u64 blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
- }
- 
- /* print blkg_stat specified by BLKCG_STAT_PRIV() */
--static int blkcg_print_stat(struct cgroup *cgrp, struct cftype *cft,
--			    struct seq_file *sf)
-+int blkcg_print_stat(struct cgroup *cgrp, struct cftype *cft,
-+		     struct seq_file *sf)
- {
- 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
- 
-@@ -866,10 +864,11 @@ static int blkcg_print_stat(struct cgroup *cgrp, struct cftype *cft,
- 			  BLKCG_STAT_OFF(cft->private), false);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(blkcg_print_stat);
- 
- /* print blkg_rwstat specified by BLKCG_STAT_PRIV() */
--static int blkcg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
--			      struct seq_file *sf)
-+int blkcg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
-+		       struct seq_file *sf)
- {
- 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
- 
-@@ -878,6 +877,7 @@ static int blkcg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
- 			  BLKCG_STAT_OFF(cft->private), true);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(blkcg_print_rwstat);
- 
- static u64 blkg_prfill_cpu_stat(struct seq_file *sf,
- 				struct blkg_policy_data *pd, int off)
-@@ -914,8 +914,8 @@ static u64 blkg_prfill_cpu_rwstat(struct seq_file *sf,
- }
- 
- /* print per-cpu blkg_stat specified by BLKCG_STAT_PRIV() */
--static int blkcg_print_cpu_stat(struct cgroup *cgrp, struct cftype *cft,
--				struct seq_file *sf)
-+int blkcg_print_cpu_stat(struct cgroup *cgrp, struct cftype *cft,
-+			 struct seq_file *sf)
- {
- 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
- 
-@@ -924,10 +924,11 @@ static int blkcg_print_cpu_stat(struct cgroup *cgrp, struct cftype *cft,
- 			  BLKCG_STAT_OFF(cft->private), false);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(blkcg_print_cpu_stat);
- 
- /* print per-cpu blkg_rwstat specified by BLKCG_STAT_PRIV() */
--static int blkcg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
--				  struct seq_file *sf)
-+int blkcg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
-+			   struct seq_file *sf)
- {
- 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
- 
-@@ -936,6 +937,7 @@ static int blkcg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
- 			  BLKCG_STAT_OFF(cft->private), true);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(blkcg_print_cpu_rwstat);
- 
- #ifdef CONFIG_DEBUG_BLK_CGROUP
- static u64 blkg_prfill_avg_queue_size(struct seq_file *sf,
-@@ -964,12 +966,6 @@ static int blkcg_print_avg_queue_size(struct cgroup *cgrp, struct cftype *cft,
- }
- #endif	/* CONFIG_DEBUG_BLK_CGROUP */
- 
--struct blkg_conf_ctx {
--	struct gendisk		*disk;
--	struct blkio_group	*blkg;
--	u64			v;
--};
--
- /**
-  * blkg_conf_prep - parse and prepare for per-blkg config update
-  * @blkcg: target block cgroup
-@@ -981,8 +977,8 @@ struct blkg_conf_ctx {
-  * value.  This function returns with RCU read locked and must be paired
-  * with blkg_conf_finish().
-  */
--static int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
--			  struct blkg_conf_ctx *ctx)
-+int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
-+		   struct blkg_conf_ctx *ctx)
- 	__acquires(rcu)
+@@ -987,57 +987,16 @@ static int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
  {
  	struct gendisk *disk;
-@@ -1026,6 +1022,7 @@ static int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
- 	ctx->v = v;
- 	return 0;
+ 	struct blkio_group *blkg;
+-	char *buf, *s[4], *p, *major_s, *minor_s;
+-	unsigned long major, minor;
+-	int i = 0, ret = -EINVAL;
+-	int part;
+-	dev_t dev;
+-	u64 temp;
++	unsigned int major, minor;
++	unsigned long long v;
++	int part, ret;
+ 
+-	buf = kstrdup(input, GFP_KERNEL);
+-	if (!buf)
+-		return -ENOMEM;
+-
+-	memset(s, 0, sizeof(s));
+-
+-	while ((p = strsep(&buf, " ")) != NULL) {
+-		if (!*p)
+-			continue;
+-
+-		s[i++] = p;
+-
+-		/* Prevent from inputing too many things */
+-		if (i == 3)
+-			break;
+-	}
+-
+-	if (i != 2)
+-		goto out;
+-
+-	p = strsep(&s[0], ":");
+-	if (p != NULL)
+-		major_s = p;
+-	else
+-		goto out;
+-
+-	minor_s = s[0];
+-	if (!minor_s)
+-		goto out;
+-
+-	if (strict_strtoul(major_s, 10, &major))
+-		goto out;
+-
+-	if (strict_strtoul(minor_s, 10, &minor))
+-		goto out;
+-
+-	dev = MKDEV(major, minor);
+-
+-	if (strict_strtoull(s[1], 10, &temp))
+-		goto out;
++	if (sscanf(input, "%u:%u %llu", &major, &minor, &v) != 3)
++		return -EINVAL;
+ 
+-	disk = get_gendisk(dev, &part);
++	disk = get_gendisk(MKDEV(major, minor), &part);
+ 	if (!disk || part)
+-		goto out;
++		return -EINVAL;
+ 
+ 	rcu_read_lock();
+ 
+@@ -1059,16 +1018,13 @@ static int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
+ 			msleep(10);
+ 			ret = restart_syscall();
+ 		}
+-		goto out;
++		return ret;
+ 	}
+ 
+ 	ctx->disk = disk;
+ 	ctx->blkg = blkg;
+-	ctx->v = temp;
+-	ret = 0;
+-out:
+-	kfree(buf);
+-	return ret;
++	ctx->v = v;
++	return 0;
  }
-+EXPORT_SYMBOL_GPL(blkg_conf_prep);
  
  /**
-  * blkg_conf_finish - finish up per-blkg config update
-@@ -1034,12 +1031,13 @@ static int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
-  * Finish up after per-blkg config update.  This function must be paired
-  * with blkg_conf_prep().
-  */
--static void blkg_conf_finish(struct blkg_conf_ctx *ctx)
-+void blkg_conf_finish(struct blkg_conf_ctx *ctx)
- 	__releases(rcu)
- {
- 	rcu_read_unlock();
- 	put_disk(ctx->disk);
- }
-+EXPORT_SYMBOL_GPL(blkg_conf_finish);
- 
- /* for propio conf */
- static u64 blkg_prfill_weight_device(struct seq_file *sf,
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 108ffbf..361ecfa 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -15,6 +15,7 @@
- 
- #include <linux/cgroup.h>
- #include <linux/u64_stats_sync.h>
-+#include <linux/seq_file.h>
- 
- enum blkio_policy_id {
- 	BLKIO_POLICY_PROP = 0,		/* Proportional Bandwidth division */
-@@ -193,6 +194,32 @@ extern void blkg_destroy_all(struct request_queue *q, bool destroy_root);
- extern void update_root_blkg_pd(struct request_queue *q,
- 				enum blkio_policy_id plid);
- 
-+void blkcg_print_blkgs(struct seq_file *sf, struct blkio_cgroup *blkcg,
-+		       u64 (*prfill)(struct seq_file *, struct blkg_policy_data *, int),
-+		       int pol, int data, bool show_total);
-+u64 __blkg_prfill_u64(struct seq_file *sf, struct blkg_policy_data *pd, u64 v);
-+u64 __blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
-+			 const struct blkg_rwstat *rwstat);
-+int blkcg_print_stat(struct cgroup *cgrp, struct cftype *cft,
-+		     struct seq_file *sf);
-+int blkcg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
-+		       struct seq_file *sf);
-+int blkcg_print_cpu_stat(struct cgroup *cgrp, struct cftype *cft,
-+			 struct seq_file *sf);
-+int blkcg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
-+			   struct seq_file *sf);
-+
-+struct blkg_conf_ctx {
-+	struct gendisk		*disk;
-+	struct blkio_group	*blkg;
-+	u64			v;
-+};
-+
-+int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
-+		   struct blkg_conf_ctx *ctx);
-+void blkg_conf_finish(struct blkg_conf_ctx *ctx);
-+
-+
- /**
-  * blkg_to_pdata - get policy private data
-  * @blkg: blkg of interest
 -- 
 1.7.7.3
 
