@@ -1,112 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab2C1RmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 13:42:10 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40045 "EHLO
+	id S932496Ab2C1Rmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 13:42:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40072 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab2C1RmI (ORCPT
+	with ESMTP id S932365Ab2C1RmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 13:42:08 -0400
+	Wed, 28 Mar 2012 13:42:09 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: mingo@elte.hu, suresh.b.siddha@intel.com, jwboyer@redhat.com
-Cc: hpa@zytor.com, yinghai@kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] xen/x86: Implement x86_apic_ops
-Date: Wed, 28 Mar 2012 13:37:22 -0400
-Message-Id: <1332956242-5352-3-git-send-email-konrad.wilk@oracle.com>
+Cc: hpa@zytor.com, yinghai@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] x86: add io_apic_ops to allow interception
+Date: Wed, 28 Mar 2012 13:37:20 -0400
+Message-Id: <1332956242-5352-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1332956242-5352-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <20120328092358.GD22885@gmail.com>
 References: <20120328092358.GD22885@gmail.com>
- <1332956242-5352-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F734D63.00BE,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4F734D64.0003,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Or rather just implement one different function as opposed
-to the native one : the read function.
+Done. I've put them on: git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-ingo-3.4.v2
 
-We synthesize the values.
+and I am also attaching them here for your convenience.
 
-Acked-by:  Suresh Siddha <suresh.b.siddha@intel.com>
-[v1: Rebased on top of tip/x86/urgent]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/Makefile    |    2 +-
- arch/x86/xen/apic.c      |   17 +++++++++++++++++
- arch/x86/xen/enlighten.c |    2 ++
- arch/x86/xen/xen-ops.h   |    4 ++++
- 4 files changed, 24 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/xen/apic.c
-
-diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
-index add2c2d..96ab2c0 100644
---- a/arch/x86/xen/Makefile
-+++ b/arch/x86/xen/Makefile
-@@ -20,5 +20,5 @@ obj-$(CONFIG_EVENT_TRACING) += trace.o
- obj-$(CONFIG_SMP)		+= smp.o
- obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
- obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
--obj-$(CONFIG_XEN_DOM0)		+= vga.o
-+obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
- obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
-diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
-new file mode 100644
-index 0000000..aee16ab
---- /dev/null
-+++ b/arch/x86/xen/apic.c
-@@ -0,0 +1,17 @@
-+#include <linux/init.h>
-+#include <asm/x86_init.h>
-+
-+unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
-+{
-+	if (reg == 0x1)
-+		return 0x00170020;
-+	else if (reg == 0x0)
-+		return apic << 24;
-+
-+	return 0xff;
-+}
-+
-+void __init xen_init_apic(void)
-+{
-+	x86_io_apic_ops.read = xen_io_apic_read;
-+}
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 4172af8..a7df080 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1271,6 +1271,8 @@ asmlinkage void __init xen_start_kernel(void)
- 		xen_start_info->console.domU.mfn = 0;
- 		xen_start_info->console.domU.evtchn = 0;
- 
-+		xen_init_apic();
-+
- 		/* Make sure ACS will be enabled */
- 		pci_request_acs();
- 	}
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index b095739..45c0c06 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -92,11 +92,15 @@ struct dom0_vga_console_info;
- 
- #ifdef CONFIG_XEN_DOM0
- void __init xen_init_vga(const struct dom0_vga_console_info *, size_t size);
-+void __init xen_init_apic(void);
- #else
- static inline void __init xen_init_vga(const struct dom0_vga_console_info *info,
- 				       size_t size)
- {
- }
-+static inline void __init xen_init_apic(void)
-+{
-+}
- #endif
- 
- /* Declare an asm function, along with symbols needed to make it
--- 
-1.7.7.5
-
+They differ a bit from the previous one - the 'x86_io_apic' is now
+called 'x86_io_apic_ops'  - otherwise the warning of functions referencing
+the __init function would show up - but otherwise they are exactly the same.
