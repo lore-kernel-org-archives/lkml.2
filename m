@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab2C1JYs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 05:24:48 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55822 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757736Ab2C1JYr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 05:24:47 -0400
-Date: Wed, 28 Mar 2012 11:24:46 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Subject: Re: [PATCH 2/5] perf: generic intel uncore support
-Message-ID: <20120328092446.GY22197@one.firstfloor.org>
-References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com> <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>
-Mime-Version: 1.0
+	id S932252Ab2C1JZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 05:25:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47397 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932187Ab2C1JZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 05:25:50 -0400
+Date: Wed, 28 Mar 2012 11:25:48 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 02/10] hugetlbfs: don't use ERR_PTR with VM_FAULT*
+ values
+Message-ID: <20120328092547.GC20949@tiehlicka.suse.cz>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1331919570-2264-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1331919570-2264-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Overall the driver looks rather good. Thanks.
+On Fri 16-03-12 23:09:22, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> Using VM_FAULT_* codes with ERR_PTR will require us to make sure
+> VM_FAULT_* values will not exceed MAX_ERRNO value.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  mm/hugetlb.c |   18 +++++++++++++-----
+>  1 files changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index d623e71..3782da8 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+[...]
+> @@ -1047,7 +1047,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+>  		if (!page) {
+>  			hugetlb_put_quota(inode->i_mapping, chg);
+> -			return ERR_PTR(-VM_FAULT_SIGBUS);
+> +			return ERR_PTR(-ENOSPC);
 
-On Wed, Mar 28, 2012 at 02:43:15PM +0800, Yan, Zheng wrote:
-> +static void uncore_perf_event_update(struct intel_uncore_box *box,
-> +				      struct perf_event *event)
-> +{
-> +	raw_spin_lock(&box->lock);
+Hmm, so one error code abuse replaced by another?
+I know that ENOMEM would revert 4a6018f7 which would be unfortunate but
+ENOSPC doesn't feel right as well.
 
-I think a raw lock would be only needed if the uncore was called
-from the scheduler context switch, which it should not be.
+>  		}
+>  	}
+>  
+> @@ -2395,6 +2395,7 @@ retry_avoidcopy:
+>  	new_page = alloc_huge_page(vma, address, outside_reserve);
+>  
+>  	if (IS_ERR(new_page)) {
+> +		int err = PTR_ERR(new_page);
+>  		page_cache_release(old_page);
+>  
+>  		/*
+> @@ -2424,7 +2425,10 @@ retry_avoidcopy:
+>  
+>  		/* Caller expects lock to be held */
+>  		spin_lock(&mm->page_table_lock);
+> -		return -PTR_ERR(new_page);
+> +		if (err == -ENOMEM)
+> +			return VM_FAULT_OOM;
+> +		else
+> +			return VM_FAULT_SIGBUS;
+>  	}
+>  
+>  	/*
+> @@ -2542,7 +2546,11 @@ retry:
+>  			goto out;
+>  		page = alloc_huge_page(vma, address, 0);
+>  		if (IS_ERR(page)) {
+> -			ret = -PTR_ERR(page);
+> +			ret = PTR_ERR(page);
+> +			if (ret == -ENOMEM)
+> +				ret = VM_FAULT_OOM;
+> +			else
+> +				ret = VM_FAULT_SIGBUS;
+>  			goto out;
+>  		}
+>  		clear_huge_page(page, address, pages_per_huge_page(h));
+> -- 
+> 1.7.9
+> 
 
-So you can use a normal lock instead of a raw lock.
-
-
-> +static void uncore_pmu_start_hrtimer(struct intel_uncore_box *box)
-> +{
-> +	__hrtimer_start_range_ns(&box->hrtimer,
-> +				ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL), 0,
-> +				HRTIMER_MODE_REL_PINNED, 0);
-> +}
-
-Can probably do some slack to be more friendly for power.
-
-> +static struct intel_uncore_box *
-> +uncore_pmu_find_box(struct intel_uncore_pmu *pmu, int phyid)
-> +{
-> +	struct intel_uncore_box *box;
-> +
-> +	rcu_read_lock();
-
-I'm not sure RCU is really needed here, are any of those paths
-time critical? But ok shouldn't hurt either.
-
-> +static int __init uncore_cpu_init(void)
-> +{
-> +	int ret, cpu;
-> +
-> +	switch (boot_cpu_data.x86_model) {
-> +	default:
-> +		return 0;
-> +	}
-
-Needs a case? Always returns?
-
-> +
-> +	ret = uncore_types_init(msr_uncores);
-> +	if (ret)
-> +		return ret;
-> +
-> +	get_online_cpus();
-> +	for_each_online_cpu(cpu)
-> +		uncore_cpu_prepare(cpu);
-> +
-> +	preempt_disable();
-> +	smp_call_function(uncore_cpu_setup, NULL, 1);
-> +	uncore_cpu_setup(NULL);
-> +	preempt_enable();
-
-That's on_each_cpu()
-
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
