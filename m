@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab2C1HOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 03:14:42 -0400
+	id S1753223Ab2C1HOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 03:14:47 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52214 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584Ab2C1HOj (ORCPT
+	with ESMTP id S1752679Ab2C1HOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 03:14:39 -0400
+	Wed, 28 Mar 2012 03:14:42 -0400
 From: Olof Johansson <olof@lixom.net>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL 1/5] ARM: cleanups of io includes
-Date: Wed, 28 Mar 2012 00:13:58 -0700
-Message-Id: <1332918842-13521-2-git-send-email-olof@lixom.net>
+Subject: [GIT PULL 3/5] ARM: More SoC support updates
+Date: Wed, 28 Mar 2012 00:14:00 -0700
+Message-Id: <1332918842-13521-4-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.9.2.359.gebfc2
 In-Reply-To: <1332918842-13521-1-git-send-email-olof@lixom.net>
 References: <1332918842-13521-1-git-send-email-olof@lixom.net>
@@ -21,297 +21,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Herring has done a sweeping change cleaning up all of the mach/io.h includes,
-moving some of the oft-repeated macros to a common location and removing a bunch of
-boiler plate. This is another step closer to a common zImage for multiple platforms.
+This branch contains a handful of updates of SoC base code that had
+dependencies on other external trees that have now been merged:
+
+* Support for the new EXYNOS5250 SoC from Samsung
+* SMP and power domain support for Tegra3 from NVIDIA
+* ux500 updates for exporting SoC information through sysfs
 
 
-This branch has some context conflicts with current upstream contents:
+A few context merge conflicts:
 
-arch/arm/Kconfig: New selects added for ARCH_S3C24X. Include both sides
-of the merge.
+arch/arm/mach-tegra/Makefile: localtimer.o was split off to a separate
+config option, and later removed.
 
-arch/arm/mach-shmobile/smp-sh73a0.c: A readl vs readw fix collided with
-the io accessor cleanup. Ditch the __io() use but keep readl.
-
-arch/arm/mach-tegra/include/mach/debug-macro.S: include of mach/io.h is
-going away, iomap.h is kept.
+arch/arm/mach-ux500/Kconfig: Rename of the first machine model conflicts 
+with addition of select SOC_BUS. Keep MACH_MOP500 and move up the select
+SOC_BUS to be included in it.
 
 
 -Olof
 
+
 ----------------------------------------------------------------
 
-The following changes since commit 6658a6991cef75719a21441aa0b7f8d6821534ee:
+The following changes since commit b806d29eefb520f087e03b58131e686ea320985f:
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux
+  Merge tag 'drivers2' into for-next
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/cleanup2
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/soc2
 
-for you to fetch changes up to 88b48684fe2d4f6207223423227c80d5408bccaf:
+for you to fetch changes up to 83fe628e16d84efc8df2731bc403eae4e4f53801:
 
-  Merge branch 'for-3.4/fixes-for-io-cleanup' of git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra into next/cleanup2
+  Merge branch 'renesas/soc' into next/soc2
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (3):
-      Merge branch 'cleanup' of git://git.kernel.org/.../tmlind/linux-omap into omap/cleanup
-      Merge tag 'tegra-soc' of git://git.kernel.org/.../olof/tegra into tegra/soc
-      Merge branch 'tegra/cleanups' into next/cleanup2
+Arnd Bergmann (9):
+      Merge branch 'depends/driver-core' into next/soc2
+      Merge branch 'ux500/soc' into next/soc2
+      Merge tag 'tegra-soc2' of git://git.kernel.org/.../olof/tegra into tegra/soc2
+      Merge branch 'next/soc-exynos5250-arch' of git://git.kernel.org/.../kgene/linux-samsung into samsung/exynos5
+      Merge branch 'for-armsoc' of http://ftp.arm.linux.org.uk/pub/linux/arm/kernel/git-cur/linux-2.6-arm into next/soc2
+      Merge branch 'samsung/exynos5' into next/soc2
+      Merge branch 'samsung/soc' into next/soc2
+      Merge branch 'rmobile-fixes-for-linus' of git://github.com/pmundt/linux-sh into renesas/soc
+      Merge branch 'renesas/soc' into next/soc2
 
-Olof Johansson (7):
-      Merge branch 'io-cleanup-for-3.4' of git://sources.calxeda.com/kernel/linux into devel/io-cleanup
-      Merge branch 'io-cleanup-for-3.4' of git://sources.calxeda.com/kernel/linux into next/cleanup2
-      Merge branch 'io-cleanup-for-3.4' of git://sources.calxeda.com/kernel/linux into devel/io-cleanup
-      Merge branch 'io-cleanup-for-3.4' of git://sources.calxeda.com/kernel/linux into next/cleanup2
-      Merge branch 'io-cleanup-for-3.4' of git://sources.calxeda.com/kernel/linux into next/cleanup2
-      Merge branch 'tegra/soc' into next/cleanup2
-      Merge branch 'for-3.4/fixes-for-io-cleanup' of git://git.kernel.org/.../swarren/linux-tegra into next/cleanup2
+Eunki Kim (1):
+      ARM: EXYNOS: support EINT for EXYNOS4 and EXYNOS5
 
-Rob Herring (28):
-      Merge remote-tracking branch 'arm-soc/at91/base2+cleanup' into cleanup-base
-      usb: ohci-pxa27x: add explicit include of hardware.h
-      ARM: provide runtime hook for ioremap/iounmap
-      ARM: imx: convert to common runtime ioremap hook
-      ARM: msm: use runtime ioremap hook
-      ARM: iop13xx: use runtime ioremap hook
-      ARM: ixp4xx: use runtime ioremap hook
-      ARM: ebsa110: use runtime ioremap hook
-      ARM: remove compile time __arch_ioremap/__arch_iounmap
-      ARM: iop13xx: move io.h externs to pci.h
-      ARM: msm: clean-up mach/io.h
-      [media] davinci: remove includes of mach/io.h
-      ARM: davinci: remove unneeded mach/io.h include
-      ARM: orion5x: clean-up mach/io.h
-      ARM: tegra: clean-up mach/io.h
-      ARM: ep93xx: clean-up mach/io.h
-      ARM: at91: add explicit include of hardware.h to uncompressor
-      ARM: dove: add explicit include of dove.h to addr-map.c
-      ARM: clps711x: remove unneeded include of mach/io.h
-      ARM: make mach/io.h include optional
-      ARM: remove bunch of now unused mach/io.h files
-      ARM: kill off __mem_pci
-      ARM: fix ioremap/iounmap for !CONFIG_MMU
-      ARM: iop13xx: fix missing declaration of iop13xx_init_early
-      ARM: create a common IOMEM definition
-      ARM: __io abuse cleanup
-      ARM: dma-mapping: convert ARCH_HAS_DMA_SET_COHERENT_MASK to kconfig symbol
-      ARM: pxa: use common IOMEM definition
+Kukjin Kim (11):
+      ARM: EXYNOS: to declare static for mach-exynos/common.c
+      ARM: EXYNOS: use exynos_init_uarts() instead of exynos4_init_uarts()
+      ARM: EXYNOS: add clock part for EXYNOS5250 SoC
+      ARM: EXYNOS: add initial setup-i2c0 for EXYNOS5
+      ARM: EXYNOS: add support uart for EXYNOS4 and EXYNOS5
+      ARM: EXYNOS: add support for EXYNOS5250 SoC
+      ARM: EXYNOS: add interrupt definitions for EXYNOS5250
+      ARM: EXYNOS: add support get_core_count() for EXYNOS5250
+      ARM: EXYNOS: add support ARCH_EXYNOS5 for EXYNOS5 SoCs
+      ARM: EXYNOS: add support device tree enabled board file for EXYNOS5
+      ARM: dts: add initial dts file for EXYNOS5250, SMDK5250
 
-Stephen Warren (2):
-      Merge remote branch 'remotes/korg_olof_tegra/for-3.4/soc' into for-3.4/fixes-for-io-cleanup
-      ARM: tegra: Include assembler.h in sleep.S to fix build break
+Kuninori Morimoto (1):
+      ARM: mach-shmobile: ap4evb: Reserve DMA memory for the frame buffer
 
-Tony Lindgren (1):
-      ARM: OMAP: Remove remaining includes for mach/io.h
+Lee Jones (4):
+      ARM: ux500: pass parent pointer to each platform device
+      ARM: ux500: export System-on-Chip information ux500 via sysfs
+      ARM: ux500: move top level platform devices in sysfs to /sys/devices/socX
+      ARM: ux500: remove intermediary add_platform_device* functions
+
+Olof Johansson (2):
+      Merge branch 'for-3.4/soc' into for-3.4/t30-smp
+      Merge branch 'for-3.4/soc-drivers' into for-3.4/t30-smp
+
+Peter De Schrijver (10):
+      ARM: tegra: cleanup use of chipid register
+      ARM: tegra: export Tegra chipid
+      ARM: tegra: initialize Tegra chipid early
+      ARM: tegra: functions to access the flowcontroller
+      ARM: tegra: rework Tegra secondary CPU core bringup
+      ARM: tegra: prepare powergate.c for multiple variants
+      ARM: tegra: export tegra_powergate_is_powered()
+      ARM: tegra: add support for Tegra30 powerdomains
+      ARM: tegra: support for Tegra30 CPU powerdomains
+      ARM: tegra: support for secondary cores on Tegra30
+
+Stephen Warren (1):
+      ARM: dt: Explicitly configure all serial ports on Tegra Cardhu
+
+Tushar Behera (2):
+      ARM: EXYNOS: Add clkdev lookup entry for lcd clock
+      ARM: EXYNOS: Fix compilation error with mach-exynos4-dt board
 
 
- arch/arm/Kconfig                                 |   27 +++++++
- arch/arm/include/asm/assembler.h                 |    2 +
- arch/arm/include/asm/io.h                        |   71 ++++++++---------
- arch/arm/kernel/debug.S                          |    1 +
- arch/arm/kernel/entry-armv.S                     |    1 +
- arch/arm/mach-at91/include/mach/io.h             |   31 -------
- arch/arm/mach-at91/include/mach/uncompress.h     |    1 +
- arch/arm/mach-bcmring/include/mach/io.h          |   33 --------
- arch/arm/mach-clps711x/include/mach/io.h         |   36 ---------
- arch/arm/mach-clps711x/include/mach/uncompress.h |    1 -
- arch/arm/mach-cns3xxx/core.c                     |    8 +-
- arch/arm/mach-cns3xxx/devices.c                  |    2 +-
- arch/arm/mach-cns3xxx/include/mach/io.h          |   17 ----
- arch/arm/mach-davinci/include/mach/entry-macro.S |    1 -
- arch/arm/mach-davinci/include/mach/hardware.h    |    6 --
- arch/arm/mach-davinci/include/mach/io.h          |   24 ------
- arch/arm/mach-davinci/include/mach/uncompress.h  |    2 +
- arch/arm/mach-dove/addr-map.c                    |    1 +
- arch/arm/mach-dove/include/mach/io.h             |    1 -
- arch/arm/mach-ebsa110/core.c                     |   15 ++++
- arch/arm/mach-ebsa110/include/mach/io.h          |    9 ---
- arch/arm/mach-ep93xx/include/mach/io.h           |   22 -----
- arch/arm/mach-exynos/include/mach/io.h           |   26 ------
- arch/arm/mach-footbridge/include/mach/io.h       |   13 ---
- arch/arm/mach-gemini/include/mach/io.h           |   18 -----
- arch/arm/mach-h720x/include/mach/io.h            |   22 -----
- arch/arm/mach-highbank/include/mach/io.h         |    7 --
- arch/arm/mach-imx/mm-imx3.c                      |   10 +--
- arch/arm/mach-integrator/include/mach/io.h       |    1 -
- arch/arm/mach-iop13xx/include/mach/io.h          |   13 ---
- arch/arm/mach-iop13xx/include/mach/iop13xx.h     |    1 +
- arch/arm/mach-iop13xx/io.c                       |   20 +++--
- arch/arm/mach-iop13xx/iq81340mc.c                |    1 +
- arch/arm/mach-iop13xx/iq81340sc.c                |    1 +
- arch/arm/mach-iop13xx/pci.h                      |    6 ++
- arch/arm/mach-iop32x/include/mach/io.h           |    1 -
- arch/arm/mach-iop33x/include/mach/io.h           |    1 -
- arch/arm/mach-ixp2000/include/mach/io.h          |    1 -
- arch/arm/mach-ixp23xx/include/mach/io.h          |    1 -
- arch/arm/mach-ixp4xx/avila-setup.c               |    2 +
- arch/arm/mach-ixp4xx/common.c                    |   33 ++++++++
- arch/arm/mach-ixp4xx/coyote-setup.c              |    2 +
- arch/arm/mach-ixp4xx/dsmg600-setup.c             |    1 +
- arch/arm/mach-ixp4xx/fsg-setup.c                 |    1 +
- arch/arm/mach-ixp4xx/gateway7001-setup.c         |    1 +
- arch/arm/mach-ixp4xx/goramo_mlr.c                |    1 +
- arch/arm/mach-ixp4xx/gtwx5715-setup.c            |    1 +
- arch/arm/mach-ixp4xx/include/mach/hardware.h     |    2 -
- arch/arm/mach-ixp4xx/include/mach/io.h           |   24 +-----
- arch/arm/mach-ixp4xx/include/mach/platform.h     |    1 +
- arch/arm/mach-ixp4xx/ixdp425-setup.c             |    4 +
- arch/arm/mach-ixp4xx/nas100d-setup.c             |    1 +
- arch/arm/mach-ixp4xx/nslu2-setup.c               |    1 +
- arch/arm/mach-ixp4xx/omixp-setup.c               |    3 +
- arch/arm/mach-ixp4xx/vulcan-setup.c              |    1 +
- arch/arm/mach-ixp4xx/wg302v2-setup.c             |    1 +
- arch/arm/mach-kirkwood/include/mach/io.h         |    2 -
- arch/arm/mach-ks8695/include/mach/io.h           |   19 -----
- arch/arm/mach-lpc32xx/include/mach/io.h          |   27 -------
- arch/arm/mach-mmp/include/mach/addr-map.h        |    6 --
- arch/arm/mach-mmp/include/mach/io.h              |   21 -----
- arch/arm/mach-msm/board-halibut.c                |    6 ++
- arch/arm/mach-msm/board-trout.c                  |    6 ++
- arch/arm/mach-msm/include/mach/io.h              |   36 ---------
- arch/arm/mach-msm/include/mach/msm_iomap-7x00.h  |   12 +--
- arch/arm/mach-msm/include/mach/msm_iomap-7x30.h  |    4 +
- arch/arm/mach-msm/include/mach/msm_iomap-8960.h  |    4 +
- arch/arm/mach-msm/include/mach/msm_iomap-8x50.h  |    4 +
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h  |    4 +
- arch/arm/mach-msm/include/mach/msm_iomap.h       |    6 --
- arch/arm/mach-msm/io.c                           |    8 +-
- arch/arm/mach-mv78xx0/include/mach/io.h          |    2 -
- arch/arm/mach-mxs/include/mach/hardware.h        |    6 --
- arch/arm/mach-mxs/include/mach/io.h              |   22 -----
- arch/arm/mach-netx/generic.c                     |    2 +-
- arch/arm/mach-netx/include/mach/hardware.h       |    2 +-
- arch/arm/mach-netx/include/mach/io.h             |   28 -------
- arch/arm/mach-netx/include/mach/netx-regs.h      |   16 ++--
- arch/arm/mach-nomadik/include/mach/io.h          |   22 -----
- arch/arm/mach-omap1/ams-delta-fiq-handler.S      |    1 +
- arch/arm/mach-omap1/include/mach/entry-macro.S   |    1 -
- arch/arm/mach-omap1/include/mach/io.h            |   46 -----------
- arch/arm/mach-omap1/iomap.h                      |    6 --
- arch/arm/mach-omap1/sleep.S                      |    2 -
- arch/arm/mach-omap1/sram.S                       |    1 -
- arch/arm/mach-omap2/clock3xxx_data.c             |    1 +
- arch/arm/mach-omap2/clock44xx_data.c             |    1 +
- arch/arm/mach-omap2/include/mach/io.h            |   49 ------------
- arch/arm/mach-omap2/iomap.h                      |    6 --
- arch/arm/mach-orion5x/common.h                   |    9 +++
- arch/arm/mach-orion5x/include/mach/io.h          |   33 --------
- arch/arm/mach-orion5x/pci.c                      |    1 +
- arch/arm/mach-orion5x/tsx09-common.c             |    1 +
- arch/arm/mach-picoxcell/include/mach/io.h        |   22 -----
- arch/arm/mach-pnx4008/include/mach/io.h          |   21 -----
- arch/arm/mach-prima2/include/mach/io.h           |   16 ----
- arch/arm/mach-pxa/Kconfig                        |    1 +
- arch/arm/mach-pxa/clock-pxa2xx.c                 |    1 +
- arch/arm/mach-pxa/corgi_pm.c                     |    1 +
- arch/arm/mach-pxa/cpufreq-pxa3xx.c               |    1 +
- arch/arm/mach-pxa/include/mach/hardware.h        |    6 --
- arch/arm/mach-pxa/include/mach/io.h              |   20 -----
- arch/arm/mach-pxa/mfp-pxa2xx.c                   |    1 +
- arch/arm/mach-pxa/pxa2xx.c                       |    1 +
- arch/arm/mach-pxa/pxa300.c                       |    1 +
- arch/arm/mach-pxa/pxa320.c                       |    1 +
- arch/arm/mach-pxa/sharpsl_pm.c                   |    1 +
- arch/arm/mach-realview/include/mach/hardware.h   |    2 +-
- arch/arm/mach-realview/include/mach/io.h         |   28 -------
- arch/arm/mach-rpc/include/mach/hardware.h        |    6 --
- arch/arm/mach-rpc/include/mach/io.h              |    5 --
- arch/arm/mach-s3c24xx/include/mach/io.h          |    5 --
- arch/arm/mach-s3c64xx/include/mach/io.h          |   18 -----
- arch/arm/mach-s5p64x0/include/mach/io.h          |   25 ------
- arch/arm/mach-s5pc100/include/mach/io.h          |   18 -----
- arch/arm/mach-s5pv210/include/mach/io.h          |   26 ------
- arch/arm/mach-sa1100/include/mach/io.h           |   20 -----
- arch/arm/mach-shark/include/mach/io.h            |    2 -
- arch/arm/mach-shmobile/board-ag5evm.c            |    2 +-
- arch/arm/mach-shmobile/board-bonito.c            |    2 +-
- arch/arm/mach-shmobile/board-kota2.c             |    2 +-
- arch/arm/mach-shmobile/include/mach/io.h         |    9 ---
- arch/arm/mach-shmobile/intc-r8a7779.c            |    4 +-
- arch/arm/mach-shmobile/intc-sh73a0.c             |    4 +-
- arch/arm/mach-shmobile/smp-r8a7779.c             |    4 +-
- arch/arm/mach-shmobile/smp-sh73a0.c              |   20 ++---
- arch/arm/mach-spear3xx/clock.c                   |    1 +
- arch/arm/mach-spear3xx/include/mach/io.h         |   19 -----
- arch/arm/mach-spear6xx/clock.c                   |    1 +
- arch/arm/mach-spear6xx/include/mach/io.h         |   20 -----
- arch/arm/mach-tegra/Makefile                     |    1 +
- arch/arm/mach-tegra/include/mach/debug-macro.S   |    2 -
- arch/arm/mach-tegra/include/mach/io.h            |   49 ------------
- arch/arm/mach-tegra/include/mach/iomap.h         |   42 ++++++++++
- arch/arm/mach-tegra/io.c                         |    1 +
- arch/arm/mach-tegra/sleep.S                      |    4 +-
- arch/arm/mach-u300/include/mach/io.h             |   20 -----
- arch/arm/mach-u300/include/mach/u300-regs.h      |    6 --
- arch/arm/mach-ux500/include/mach/hardware.h      |    2 +-
- arch/arm/mach-ux500/include/mach/io.h            |   22 -----
- arch/arm/mach-versatile/include/mach/io.h        |   28 -------
- arch/arm/mach-vexpress/include/mach/io.h         |   26 ------
- arch/arm/mach-vt8500/include/mach/io.h           |   26 ------
- arch/arm/mach-w90x900/include/mach/io.h          |   30 -------
- arch/arm/mach-zynq/include/mach/io.h             |   33 --------
- arch/arm/mm/ioremap.c                            |   17 +++-
- arch/arm/mm/nommu.c                              |    8 +-
- arch/arm/plat-mxc/include/mach/hardware.h        |    7 +-
- arch/arm/plat-mxc/include/mach/io.h              |   39 ---------
- arch/arm/plat-omap/include/plat/hardware.h       |    6 --
- arch/arm/plat-omap/include/plat/sdrc.h           |    1 -
- arch/arm/plat-omap/include/plat/usb.h            |    1 -
- arch/arm/plat-spear/include/plat/hardware.h      |    6 --
- arch/arm/plat-spear/include/plat/io.h            |   22 -----
- drivers/media/video/davinci/vpbe_osd.c           |    1 -
- drivers/media/video/davinci/vpbe_venc.c          |    1 -
- drivers/rtc/rtc-sa1100.c                         |    1 +
- drivers/video/omap2/vrfb.c                       |    1 -
- drivers/watchdog/sa1100_wdt.c                    |    1 +
- include/linux/dma-mapping.h                      |    2 +-
- sound/arm/pxa2xx-ac97-lib.c                      |    1 +
- sound/arm/pxa2xx-ac97.c                          |    1 +
- sound/soc/pxa/pxa2xx-ac97.c                      |    1 +
- 163 files changed, 337 insertions(+), 1367 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/io.h
- delete mode 100644 arch/arm/mach-bcmring/include/mach/io.h
- delete mode 100644 arch/arm/mach-clps711x/include/mach/io.h
- delete mode 100644 arch/arm/mach-cns3xxx/include/mach/io.h
- delete mode 100644 arch/arm/mach-davinci/include/mach/io.h
- delete mode 100644 arch/arm/mach-ep93xx/include/mach/io.h
- delete mode 100644 arch/arm/mach-exynos/include/mach/io.h
- delete mode 100644 arch/arm/mach-gemini/include/mach/io.h
- delete mode 100644 arch/arm/mach-h720x/include/mach/io.h
- delete mode 100644 arch/arm/mach-highbank/include/mach/io.h
- create mode 100644 arch/arm/mach-iop13xx/pci.h
- delete mode 100644 arch/arm/mach-ks8695/include/mach/io.h
- delete mode 100644 arch/arm/mach-lpc32xx/include/mach/io.h
- delete mode 100644 arch/arm/mach-mmp/include/mach/io.h
- delete mode 100644 arch/arm/mach-msm/include/mach/io.h
- delete mode 100644 arch/arm/mach-mxs/include/mach/io.h
- delete mode 100644 arch/arm/mach-netx/include/mach/io.h
- delete mode 100644 arch/arm/mach-nomadik/include/mach/io.h
- delete mode 100644 arch/arm/mach-omap1/include/mach/io.h
- delete mode 100644 arch/arm/mach-omap2/include/mach/io.h
- delete mode 100644 arch/arm/mach-orion5x/include/mach/io.h
- delete mode 100644 arch/arm/mach-picoxcell/include/mach/io.h
- delete mode 100644 arch/arm/mach-pnx4008/include/mach/io.h
- delete mode 100644 arch/arm/mach-prima2/include/mach/io.h
- delete mode 100644 arch/arm/mach-pxa/include/mach/io.h
- delete mode 100644 arch/arm/mach-realview/include/mach/io.h
- delete mode 100644 arch/arm/mach-s3c64xx/include/mach/io.h
- delete mode 100644 arch/arm/mach-s5p64x0/include/mach/io.h
- delete mode 100644 arch/arm/mach-s5pc100/include/mach/io.h
- delete mode 100644 arch/arm/mach-s5pv210/include/mach/io.h
- delete mode 100644 arch/arm/mach-sa1100/include/mach/io.h
- delete mode 100644 arch/arm/mach-shmobile/include/mach/io.h
- delete mode 100644 arch/arm/mach-spear3xx/include/mach/io.h
- delete mode 100644 arch/arm/mach-spear6xx/include/mach/io.h
- delete mode 100644 arch/arm/mach-u300/include/mach/io.h
- delete mode 100644 arch/arm/mach-ux500/include/mach/io.h
- delete mode 100644 arch/arm/mach-versatile/include/mach/io.h
- delete mode 100644 arch/arm/mach-vexpress/include/mach/io.h
- delete mode 100644 arch/arm/mach-vt8500/include/mach/io.h
- delete mode 100644 arch/arm/mach-w90x900/include/mach/io.h
- delete mode 100644 arch/arm/mach-zynq/include/mach/io.h
- delete mode 100644 arch/arm/plat-mxc/include/mach/io.h
- delete mode 100644 arch/arm/plat-spear/include/plat/io.h
+ arch/arm/Makefile                               |    1 +
+ arch/arm/boot/dts/exynos5250-smdk5250.dts       |   26 +
+ arch/arm/boot/dts/exynos5250.dtsi               |  413 ++++++
+ arch/arm/boot/dts/tegra-cardhu.dts              |   16 +
+ arch/arm/mach-exynos/Kconfig                    |   29 +-
+ arch/arm/mach-exynos/Makefile                   |    5 +-
+ arch/arm/mach-exynos/clock-exynos4.c            |   14 +-
+ arch/arm/mach-exynos/clock-exynos5.c            | 1247 ++++++++++++++++++
+ arch/arm/mach-exynos/common.c                   |  449 +++++--
+ arch/arm/mach-exynos/common.h                   |   37 +-
+ arch/arm/mach-exynos/dev-ahci.c                 |    4 +-
+ arch/arm/mach-exynos/dev-audio.c                |    4 +-
+ arch/arm/mach-exynos/dev-uart.c                 |   78 ++
+ arch/arm/mach-exynos/dma.c                      |    6 +-
+ arch/arm/mach-exynos/include/mach/debug-macro.S |    9 +-
+ arch/arm/mach-exynos/include/mach/irqs.h        |  597 ++++++---
+ arch/arm/mach-exynos/include/mach/map.h         |   41 +-
+ arch/arm/mach-exynos/include/mach/regs-clock.h  |   62 +
+ arch/arm/mach-exynos/include/mach/regs-gpio.h   |   20 +-
+ arch/arm/mach-exynos/include/mach/regs-pmu.h    |    1 +
+ arch/arm/mach-exynos/include/mach/uncompress.h  |   17 +-
+ arch/arm/mach-exynos/mach-exynos4-dt.c          |    8 +-
+ arch/arm/mach-exynos/mach-exynos5-dt.c          |   78 ++
+ arch/arm/mach-exynos/mct.c                      |   23 +-
+ arch/arm/mach-exynos/platsmp.c                  |    9 +-
+ arch/arm/mach-exynos/setup-i2c0.c               |    9 +-
+ arch/arm/mach-shmobile/board-ap4evb.c           |    1 +
+ arch/arm/mach-shmobile/board-mackerel.c         |   11 +-
+ arch/arm/mach-shmobile/setup-sh7372.c           |    7 +
+ arch/arm/mach-tegra/Makefile                    |    2 +
+ arch/arm/mach-tegra/board-dt-tegra30.c          |    2 +-
+ arch/arm/mach-tegra/common.c                    |    4 +
+ arch/arm/mach-tegra/flowctrl.c                  |   62 +
+ arch/arm/mach-tegra/flowctrl.h                  |    5 +
+ arch/arm/mach-tegra/fuse.c                      |   18 +-
+ arch/arm/mach-tegra/fuse.h                      |    4 +
+ arch/arm/mach-tegra/headsmp.S                   |  167 ++-
+ arch/arm/mach-tegra/include/mach/iomap.h        |    3 +
+ arch/arm/mach-tegra/include/mach/powergate.h    |   15 +-
+ arch/arm/mach-tegra/platsmp.c                   |  137 +-
+ arch/arm/mach-tegra/powergate.c                 |   53 +-
+ arch/arm/mach-tegra/reset.c                     |   84 ++
+ arch/arm/mach-tegra/reset.h                     |   50 +
+ arch/arm/mach-ux500/Kconfig                     |    1 +
+ arch/arm/mach-ux500/board-mop500-sdi.c          |   31 +-
+ arch/arm/mach-ux500/board-mop500.c              |   74 +-
+ arch/arm/mach-ux500/board-mop500.h              |    8 +-
+ arch/arm/mach-ux500/board-u5500-sdi.c           |    4 +-
+ arch/arm/mach-ux500/board-u5500.c               |   27 +-
+ arch/arm/mach-ux500/cpu-db5500.c                |   36 +-
+ arch/arm/mach-ux500/cpu-db8500.c                |   44 +-
+ arch/arm/mach-ux500/cpu.c                       |   75 ++
+ arch/arm/mach-ux500/devices-common.c            |   79 +-
+ arch/arm/mach-ux500/devices-common.h            |   83 +-
+ arch/arm/mach-ux500/devices-db5500.h            |  116 +-
+ arch/arm/mach-ux500/devices-db8500.h            |  176 +--
+ arch/arm/mach-ux500/dma-db5500.c                |    3 +-
+ arch/arm/mach-ux500/include/mach/db8500-regs.h  |    3 +
+ arch/arm/mach-ux500/include/mach/setup.h        |   10 +-
+ arch/arm/mach-ux500/include/mach/usb.h          |    4 +-
+ arch/arm/mach-ux500/usb.c                       |    7 +-
+ arch/arm/plat-s5p/Kconfig                       |    8 +-
+ arch/arm/plat-s5p/Makefile                      |    3 +-
+ arch/arm/plat-s5p/clock.c                       |   36 +
+ arch/arm/plat-s5p/irq-pm.c                      |   25 +-
+ arch/arm/plat-samsung/include/plat/cpu.h        |   10 +
+ arch/arm/plat-samsung/include/plat/devs.h       |    2 +
+ arch/arm/plat-samsung/include/plat/s5p-clock.h  |    6 +
+ arch/arm/plat-samsung/include/plat/uncompress.h |    2 +
+ arch/arm/plat-samsung/irq-vic-timer.c           |   16 +
+ 70 files changed, 3998 insertions(+), 719 deletions(-)
+ create mode 100644 arch/arm/boot/dts/exynos5250-smdk5250.dts
+ create mode 100644 arch/arm/boot/dts/exynos5250.dtsi
+ create mode 100644 arch/arm/mach-exynos/clock-exynos5.c
+ create mode 100644 arch/arm/mach-exynos/dev-uart.c
+ create mode 100644 arch/arm/mach-exynos/mach-exynos5-dt.c
+ create mode 100644 arch/arm/mach-tegra/flowctrl.c
+ create mode 100644 arch/arm/mach-tegra/reset.c
+ create mode 100644 arch/arm/mach-tegra/reset.h
