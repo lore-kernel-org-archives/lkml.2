@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab2C1Qon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 12:44:43 -0400
-Received: from narfation.org ([79.140.41.39]:37166 "EHLO v3-1039.vlinux.de"
+	id S932365Ab2C1Qoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 12:44:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab2C1Qol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 12:44:41 -0400
-X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Mar 2012 12:44:41 EDT
-From: Sven Eckelmann <sven@narfation.org>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Cc: simon.wunderlich@s2003.tu-chemnitz.de,
-        Marek Lindner <lindner_marek@yahoo.de>
-Subject: Using nested locking for spin_lock_bh
-Date: Wed, 28 Mar 2012 18:36:39 +0200
-Message-ID: <2108147.Aqyix6xDmB@bentobox>
-User-Agent: KMail/4.7.4 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
+	id S1758013Ab2C1Qor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 12:44:47 -0400
+Date: Wed, 28 Mar 2012 18:35:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-security-module@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
+Subject: Re: [PATCH 6/6] kmod: optional: Convert the use of xchg to a kref
+Message-ID: <20120328163545.GA18944@redhat.com>
+References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com> <4F7122C0.2070800@panasas.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1377973.Og34iP4ssK"; micalg="pgp-sha512"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F7122C0.2070800@panasas.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/26, Boaz Harrosh wrote:
+>
+> if we use a kref instead of xchg to govern the lifetime
+> of struct subprocess_info, the code becomes simpler and
+> more generic. We can avoid some of the special cases.
 
---nextPart1377973.Og34iP4ssK
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Looks correct, and perhaps this makes the code more understandable.
+If we use kref, we have to move the completion into subprocess_info,
+but this allows to remove the "fallback to wait_for_completion()"
+subtleness. Up to maintainer.
 
-Hi,
+However, I agree with Peter, wait_for_completion_timeout_state()
+helper from 4/6 needs more discussion.
 
-I started to run some experimental batman-adv code inside some virtual 
-machines with different debugging functions enabled. One of them was lockdep. 
-There we noticed a false positive for a lock class that is actually used in 
-two different data structures. Therefore, lockdep noticed that there could be 
-a deadlock for this class in a function that locks the two different data 
-structures.
+And the previous looks patch is wrong, see my reply. The bug goes
+away after this patch, but this is not good anyway. IOW, I think
+you should redo 5 and 6 even if the resulting code looks correct.
 
-To resolve this problem, I wanted to define two different subclasses and 
-replace the spin_lock_bh with its nested version. The only problem now is the 
-absence of spin_lock_bh_nested. I could only find spin_lock_bh and 
-spin_lock_irqsave_nested.
+Just one nit below.
 
-Is there another way how this should be done or is there a general problem why 
-there is no nested support for this incarnation of spin_lock?
+> Actually I like the xchg use here. But if it will break
+> some ARCHs that do not like xchg, then here is the work
+> needed.
 
-Kind regards,
-	Sven
---nextPart1377973.Og34iP4ssK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+Well, xchg() has other arch-neutral users. But again, I am not
+arguing with this change.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> @@ -302,7 +297,7 @@ static void __call_usermodehelper(struct work_struct *work)
+>
+>  	switch (wait) {
+>  	case UMH_NO_WAIT:
+> -		call_usermodehelper_freeinfo(sub_info);
+> +		kref_put(&sub_info->kref,  call_usermodehelper_freeinfo);
+>  		break;
 
-iQIcBAABCgAGBQJPcz4XAAoJEF2HCgfBJntGXmkQALWelTOEcM2XPUfC5RGSm6EM
-pe+CefcvdvLks/qXlNaVM7L6+ttlh/oGTD9ffVKIQRYY9iBy+xHQ1tcb7hU2TxQo
-ZsYiCycMPq0Zeio50VbMpYBoOQbnZBOyIMosL3zymlyjV4QiRS12Lu3qMAY4gguK
-Qkj33Y93pPri/7bOfYGKkakokINxllJt5XlhZf9OnvqPV9p+ylQWOdGuaQ5u/hMa
-T8vnoFRxD5vpD7vHXyrhWJJk/MAwvzenS9tXpC9P58l+vwLgNBEDFTYWbZIl4441
-+Dc+NBBuIiQhV1xTz3jm9Jp5n0/ed8g0DjL4HEmAAgiItDKzWz6bFQo2fZU1KauM
-ekPXAxhHpSwtJDRmVYNXv6AtSC/bS7hFGRnipUGOw7aezeDbcM4G2wrnIsvuG/7f
-9T9xazgEQDoc8+j3SOLcF4zpz0njniKJZ6awZqrBcyAQaknLgbt5mbENnSm81azs
-MmzkUvEUi7HudeP/vAJ2kNZBUdztMhQcxxSIK/GryzsDZqEC5I8257DfC7GUoH/T
-FDRcirkvFNANwPSK9/+ZCg+0Y3bU/BjDsE9AxrWys4hZavgliHyVmh+PUvST+P+A
-nYEJpNf4PUNpQn4Ru6KbAcw7V0BsdqTAwDHmYkD3QFsQObSQfuZW8Fi2ghnyyXa6
-92Lz5vSa2R1Pg8sfOiSC
-=MrXm
------END PGP SIGNATURE-----
+This is minor and subjective, but UMH_NO_WAIT could use umh_complete()
+too, the unnecessary complete() doesn't hurt. In this case we could do
 
---nextPart1377973.Og34iP4ssK--
+
+	switch (wait) {
+	case UMH_WAIT_PROC:
+		if (pid > 0)
+			break;
+		/* FALLTHROUGH */
+	case UMH_WAIT_EXEC:
+		if (pid < 0)
+			sub_info->retval = pid;
+		/* FALLTHROUGH */
+	case UMH_NO_WAIT:
+		umh_complete(sub_info);
+	}
+
+Oleg.
 
