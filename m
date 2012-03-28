@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab2C1KoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:44:13 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49873 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757831Ab2C1KoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:44:12 -0400
-Date: Wed, 28 Mar 2012 11:46:27 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] floppy: revert floppy disable halt warning
-Message-ID: <20120328114627.51b64541@pyramind.ukuu.org.uk>
-In-Reply-To: <4F72BBCE.1060307@zytor.com>
-References: <20120311093853.04f049c2@s6510.linuxnetplumber.net>
-	<20120327162633.654c8d7e.akpm@linux-foundation.org>
-	<CA+5PVA4KsG0CEs8MhEL2qQoLBU9M6xAoPX2qnTZJ2R5RQ7-osg@mail.gmail.com>
-	<20120328064008.GA12735@gmail.com>
-	<4F72BBCE.1060307@zytor.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758050Ab2C1KqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:46:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8041 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757994Ab2C1KqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 06:46:19 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/9] KEYS: Use the compat keyctl() syscall wrapper on Sparc64
+ for Sparc32 compat
+To: jmorris@namei.org
+Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Wed, 28 Mar 2012 11:46:07 +0100
+Message-ID: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012 00:20:46 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+Use the 32-bit compat keyctl() syscall wrapper on Sparc64 for Sparc32 binary
+compatibility.
 
-> On 03/27/2012 11:40 PM, Ingo Molnar wrote:
-> > 
-> > No objections from me.
-> > 
-> > Please resubmit against latest -tip, we unified the idle 
-> > routines which likely interacts with that patch.
-> > 
-> 
-> To the best of my knowledge, no-hlt only existed because of flaky power
-> distributions on 386/486 systems which were sold to run DOS.  Since DOS
-> did no power management of any kind, including HLT, the power draw was
-> fairly uniform; when exposed to the much higher noise levels you got
-> when Linux used HLT caused some of these systems to fail.
+Without this, keyctl(KEYCTL_INSTANTIATE_IOV) is liable to malfunction as it
+uses an iovec array read from userspace - though the kernel should survive this
+as it checks pointers and sizes anyway.
 
-Also for the Cyrix 5510 which tended to go castors up if a HLT occurred
-during a DMA cycle and on a few other boxes HLT during DMA tended to go
-astray.
+I think all the other keyctl() function should just work, provided (a) the top
+32-bits of each 64-bit argument register are cleared prior to invoking the
+syscall routine, and the 32-bit address space is right at the 0-end of the
+64-bit address space.  Most of the arguments are 32-bit anyway, and so for
+those clearing is not required.
 
-Do we care ? I doubt it. The 5510 was pretty obscure, the 5520 fixed it,
-the 5530 is probably the oldest still in any kind of use.
+Signed-off-by: David Howells <dhowells@redhat.com
+cc: "David S. Miller" <davem@davemloft.net>
+cc: sparclinux@vger.kernel.org
+cc: stable@vger.kernel.org
+---
 
-Alan
+ arch/sparc/Kconfig             |    3 +++
+ arch/sparc/kernel/systbls_64.S |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 1666de8..3df49cd 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -583,6 +583,9 @@ config SYSVIPC_COMPAT
+ 	depends on COMPAT && SYSVIPC
+ 	default y
+ 
++config KEYS_COMPAT
++	def_bool y if COMPAT && KEYS
++
+ endmenu
+ 
+ source "net/Kconfig"
+diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
+index db86b1a..3a58e0d 100644
+--- a/arch/sparc/kernel/systbls_64.S
++++ b/arch/sparc/kernel/systbls_64.S
+@@ -74,7 +74,7 @@ sys_call_table32:
+ 	.word sys_timer_delete, compat_sys_timer_create, sys_ni_syscall, compat_sys_io_setup, sys_io_destroy
+ /*270*/	.word sys32_io_submit, sys_io_cancel, compat_sys_io_getevents, sys32_mq_open, sys_mq_unlink
+ 	.word compat_sys_mq_timedsend, compat_sys_mq_timedreceive, compat_sys_mq_notify, compat_sys_mq_getsetattr, compat_sys_waitid
+-/*280*/	.word sys32_tee, sys_add_key, sys_request_key, sys_keyctl, compat_sys_openat
++/*280*/	.word sys32_tee, sys_add_key, sys_request_key, compat_sys_keyctl, compat_sys_openat
+ 	.word sys_mkdirat, sys_mknodat, sys_fchownat, compat_sys_futimesat, compat_sys_fstatat64
+ /*290*/	.word sys_unlinkat, sys_renameat, sys_linkat, sys_symlinkat, sys_readlinkat
+ 	.word sys_fchmodat, sys_faccessat, compat_sys_pselect6, compat_sys_ppoll, sys_unshare
 
