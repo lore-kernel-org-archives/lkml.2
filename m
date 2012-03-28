@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab2C1O0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:26:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64206 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755707Ab2C1O0y (ORCPT
+	id S1752519Ab2C1O2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:28:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43727 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab2C1O2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:26:54 -0400
-Message-ID: <4F731FAA.5040708@gmail.com>
-Date: Wed, 28 Mar 2012 09:26:50 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	Wed, 28 Mar 2012 10:28:13 -0400
+Date: Wed, 28 Mar 2012 11:28:08 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RFC PATCHSET] perf ui: Small preparation on further UI work
+Message-ID: <20120328142808.GA8482@infradead.org>
+References: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
+ <20120326173817.GN25820@infradead.org>
+ <87pqbx320u.fsf@youngshil.aot.lge.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL 0/5] Second batch of arm-soc changes
-References: <1332918842-13521-1-git-send-email-olof@lixom.net>
-In-Reply-To: <1332918842-13521-1-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pqbx320u.fsf@youngshil.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 02:13 AM, Olof Johansson wrote:
-> Hi Linus,
-> 
-> Here is the second batch of arm-soc changes for this merge window. As Arnd
-> mentioned with the first cover letter, most of these either had external
-> dependencies that have now been pulled in, or just needed a bit more
-> linux-next bake time due to getting picked up close to the 3.3 release.
-> 
-> 
-> There are 128 non-merge patches, with a total diffstat of:
-> 
->  346 files changed, 10790 insertions(+), 2792 deletions(-)
-> 
-> So, while there's been some good cleanups especially in the first branch,
-> there's been a net addition of code:
-> 
-> * New SoC family support for Samsung EXYNOS5250: clock tables, driver
->   updates, etc means net gain in code.
-> * Added device tree conversions. Once we start to sunset non-device tree
->   boards on the enabled platforms, we should see payback in code removal.
-> * Common clock framework. As SoCs get converted over to the framework,
->   we should see more code removal from this as well.
-> 
-> 
-> There are a handful of merge conflicts on the branches, nothing that
-> should be too messy to sort out. I've described each conflict in the
-> corresponding pull request, including how we've resolved them in our
-> for-next branch.
-> 
+Em Wed, Mar 28, 2012 at 11:14:25AM +0900, Namhyung Kim escreveu:
+> Em Tue, Mar 27, 2012 at 01:44:42PM +0300, Pekka Enberg escreveu: 
+> > Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-Why isn't lakml getting copied on emails 1-5? The same thing happened
-with Arnd's pull request. Are they getting hung up for moderator approval?
+> > So I would just leave things in tools/perf/util/ui/ and do what you did
+> > in moving the TUI specific bits to a separate function, even ui__init()
+> > would be ok for now, and then at setup_browser() check what kind of
+> > interface is being used and call ui__init() if it is the TUI and the
+> > gtk init one if GTK+ was chosen.
+> 
+> I think it'd be better moving the TUI specific codes to a separate file
+> (under a separate directory, like tools/perf/util/ui/tui - but it looks
+> like so deep nesting) rather than a function since the generic
 
-Rob
+What do you have against directory trees? :P We need to chop off the
+/util/ part, but apart from that...
+
+> code (setup_browser) should be compiled without the TUI support.
+> Otherwise we'll see some #ifdef's in the source file(s).
+> 
+> Or, we can put those codes under the same directory (tools/perf/util/ui)
+> and have different suffixes - say, if generic code were XXX.c, TUI one
+> would be XXX-tui.c and GTK+ one would be XXX-gtk.c.
+
+... what is the difference of using:
+
+tools/perf/util/ui/tui/init.c
+
+instead of:
+
+tools/perf/util/ui/tui-init.c
+
+?
+
+Since we'll be introducing new files, it seems the first step would be
+to just do a simple, no changes in the files, move of
+tools/perf/util/ui/ to tools/perf/ui/ and then introduce
+tools/perf/ui/tui/{init,etc}.c
+
+Gtk would as well be moved to tools/perf/ui/gtk/.
+
+At some point we would then introduce some sort of plugin mechanism
+where files found in /usr/lib/perf/ui/ or some other suitable directory
+would be loaded in a modprobe like way, i.e. if the user asks for --gtk,
+it would try to find /usr/lib/perf/ui/gtk.so and try to load it, etc.
+
+That way we start to reduce the miriad libraries that we have linked in
+the main perf binary, making it easier for packaging, etc.
+
+- Arnaldo
