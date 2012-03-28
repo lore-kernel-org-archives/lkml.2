@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932810Ab2C1UYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:24:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42688 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932567Ab2C1UYm (ORCPT
+	id S932944Ab2C1UY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:24:58 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39085 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932827Ab2C1UYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:24:42 -0400
+	Wed, 28 Mar 2012 16:24:50 -0400
+MIME-Version: 1.0
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
         sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 09/16] nfs: don't use intents for checking atomic open
-Date: Wed, 28 Mar 2012 22:24:38 +0200
-Message-Id: <1332966285-30358-10-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 13/16] ceph: implement i_op->atomic_open() and i_op->atomic_create()
+Date: Wed, 28 Mar 2012 22:24:42 +0200
+Message-Id: <1332966285-30358-14-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
 References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
@@ -24,65 +25,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-is_atomic_open() is now only used by nfs4_lookup_revalidate() to check whether
-it's okay to skip normal revalidation.
+Instead of calling ceph_lookup_open() from ->lookup and ->create, call it from
+->atomic_open and ->atomic_create.
 
-It does a racy check for mount read-onlyness and falls back to normal
-revalidation if the open would fail.  This makes little sense now that this
-function isn't used for determining whether to actually open the file or not.
-
-The d_mountpoint() check still makes sense since it is an indication that we
-might be following a mount and so open may not revalidate the dentry.
+CEPH does non-create open in ->atomic_open and create-open in ->atomic_create.
+To prevent unnecessary call to ->atomic_open the FS_NO_LOOKUP_CREATE flag is set
+in the filesystem flags to only call ->atomic_open on non-create opens.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/nfs/dir.c |   24 ++++--------------------
- 1 files changed, 4 insertions(+), 20 deletions(-)
+ fs/ceph/dir.c   |   68 ++++++++++++++++++++++++++++++++++--------------------
+ fs/ceph/file.c  |   21 ++++++++---------
+ fs/ceph/super.h |    5 ++-
+ 3 files changed, 56 insertions(+), 38 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 35fa125..48260a5 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1340,24 +1340,6 @@ const struct dentry_operations nfs4_dentry_operations = {
- 	.d_release	= nfs_d_release,
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index c4b7832..75df600 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -594,14 +594,6 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
+ 	if (err < 0)
+ 		return ERR_PTR(err);
+ 
+-	/* open (but not create!) intent? */
+-	if (nd &&
+-	    (nd->flags & LOOKUP_OPEN) &&
+-	    !(nd->intent.open.flags & O_CREAT)) {
+-		int mode = nd->intent.open.create_mode & ~current->fs->umask;
+-		return ceph_lookup_open(dir, dentry, nd, mode);
+-	}
+-
+ 	/* can we conclude ENOENT locally? */
+ 	if (dentry->d_inode == NULL) {
+ 		struct ceph_inode_info *ci = ceph_inode(dir);
+@@ -642,6 +634,47 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
+ 	return dentry;
+ }
+ 
++struct file *ceph_atomic_open(struct inode *dir, struct dentry *dentry,
++			      struct opendata *od, unsigned flags, umode_t mode,
++			      bool *created)
++{
++	int err;
++	struct dentry *res = NULL;
++	struct file *filp;
++
++	if (!(flags & O_CREAT)) {
++		if (dentry->d_name.len > NAME_MAX)
++			return ERR_PTR(-ENAMETOOLONG);
++
++		err = ceph_init_dentry(dentry);
++		if (err < 0)
++			return ERR_PTR(err);
++
++		return ceph_lookup_open(dir, dentry, od, flags, mode);
++	}
++
++	if (d_unhashed(dentry)) {
++		res = ceph_lookup(dir, dentry, NULL);
++		if (IS_ERR(res))
++			return ERR_CAST(res);
++
++		if (res)
++			dentry = res;
++	}
++
++	/* We don't deal with positive dentries here */
++	if (dentry->d_inode) {
++		finish_no_open(od, res);
++		return NULL;
++	}
++
++	*created = true;
++	filp = ceph_lookup_open(dir, dentry, od, flags, mode);
++	dput(res);
++
++	return filp;
++}
++
+ /*
+  * If we do a create but get no trace back from the MDS, follow up with
+  * a lookup (the VFS expects us to link up the provided dentry).
+@@ -702,23 +735,7 @@ static int ceph_mknod(struct inode *dir, struct dentry *dentry,
+ static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 		       struct nameidata *nd)
+ {
+-	dout("create in dir %p dentry %p name '%.*s'\n",
+-	     dir, dentry, dentry->d_name.len, dentry->d_name.name);
+-
+-	if (ceph_snap(dir) != CEPH_NOSNAP)
+-		return -EROFS;
+-
+-	if (nd) {
+-		BUG_ON((nd->flags & LOOKUP_OPEN) == 0);
+-		dentry = ceph_lookup_open(dir, dentry, nd, mode);
+-		/* hrm, what should i do here if we get aliased? */
+-		if (IS_ERR(dentry))
+-			return PTR_ERR(dentry);
+-		return 0;
+-	}
+-
+-	/* fall back to mknod */
+-	return ceph_mknod(dir, dentry, (mode & ~S_IFMT) | S_IFREG, 0);
++	return ceph_mknod(dir, dentry, mode, 0);
+ }
+ 
+ static int ceph_symlink(struct inode *dir, struct dentry *dentry,
+@@ -1357,6 +1374,7 @@ const struct inode_operations ceph_dir_iops = {
+ 	.rmdir = ceph_unlink,
+ 	.rename = ceph_rename,
+ 	.create = ceph_create,
++	.atomic_open = ceph_atomic_open,
  };
  
+ const struct dentry_operations ceph_dentry_ops = {
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 2fe9a3e..bf35158 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -214,21 +214,15 @@ out:
+  * may_open() fails, the struct *file gets cleaned up (i.e.
+  * ceph_release gets called).  So fear not!
+  */
 -/*
-- * Use intent information to determine whether we need to substitute
-- * the NFSv4-style stateful OPEN for the LOOKUP call
+- * flags
+- *  path_lookup_open   -> LOOKUP_OPEN
+- *  path_lookup_create -> LOOKUP_OPEN|LOOKUP_CREATE
 - */
--static int is_atomic_open(struct nameidata *nd)
--{
--	if (nd == NULL || nfs_lookup_check_intent(nd, LOOKUP_OPEN) == 0)
--		return 0;
--	/* NFS does not (yet) have a stateful open for directories */
--	if (nd->flags & LOOKUP_DIRECTORY)
--		return 0;
--	/* Are we trying to write to a read only partition? */
--	if (__mnt_is_readonly(nd->path.mnt) &&
--	    (nd->intent.open.flags & (O_CREAT|O_TRUNC|O_ACCMODE)))
--		return 0;
--	return 1;
--}
--
- static fmode_t flags_to_mode(int flags)
+-struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+-				struct nameidata *nd, int mode)
++struct file *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
++			      struct opendata *od, unsigned flags, umode_t mode)
  {
- 	fmode_t res = (__force fmode_t)flags & FMODE_EXEC;
-@@ -1513,10 +1495,12 @@ static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
- 	if (nd->flags & LOOKUP_RCU)
- 		return -ECHILD;
+ 	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+ 	struct ceph_mds_client *mdsc = fsc->mdsc;
+-	struct file *file;
++	struct file *file = NULL;
+ 	struct ceph_mds_request *req;
+ 	struct dentry *ret;
+ 	int err;
+-	int flags = nd->intent.open.flags;
  
--	inode = dentry->d_inode;
--	if (!is_atomic_open(nd) || d_mountpoint(dentry))
-+	if (!(nd->flags & LOOKUP_OPEN) || (nd->flags & LOOKUP_DIRECTORY))
-+		goto no_open;
-+	if (d_mountpoint(dentry))
- 		goto no_open;
+ 	dout("ceph_lookup_open dentry %p '%.*s' flags %d mode 0%o\n",
+ 	     dentry, dentry->d_name.len, dentry->d_name.name, flags, mode);
+@@ -254,14 +248,19 @@ struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+ 		err = ceph_handle_notrace_create(dir, dentry);
+ 	if (err)
+ 		goto out;
+-	file = lookup_instantiate_filp(nd, req->r_dentry, ceph_open);
++	file = finish_open(od, req->r_dentry, ceph_open);
+ 	if (IS_ERR(file))
+ 		err = PTR_ERR(file);
+ out:
+ 	ret = ceph_finish_lookup(req, dentry, err);
+ 	ceph_mdsc_put_request(req);
+ 	dout("ceph_lookup_open result=%p\n", ret);
+-	return ret;
++
++	if (IS_ERR(ret))
++		return ERR_CAST(ret);
++
++	dput(ret);
++	return err ? ERR_PTR(err) : file;
+ }
  
-+	inode = dentry->d_inode;
- 	parent = dget_parent(dentry);
- 	dir = parent->d_inode;
+ int ceph_release(struct inode *inode, struct file *file)
+diff --git a/fs/ceph/super.h b/fs/ceph/super.h
+index c6b2cba..4e83114 100644
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -804,8 +804,9 @@ extern int ceph_copy_from_page_vector(struct page **pages,
+ 				    loff_t off, size_t len);
+ extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
+ extern int ceph_open(struct inode *inode, struct file *file);
+-extern struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+-				       struct nameidata *nd, int mode);
++extern struct file *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
++				     struct opendata *od, unsigned flags,
++				     umode_t mode);
+ extern int ceph_release(struct inode *inode, struct file *filp);
  
+ /* dir.c */
 -- 
 1.7.7
 
