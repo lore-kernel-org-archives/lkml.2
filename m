@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab2C1LBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:01:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41185 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757771Ab2C1LBw (ORCPT
+	id S1758208Ab2C1LC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:02:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49982 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757831Ab2C1LC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:01:52 -0400
-Date: Wed, 28 Mar 2012 12:01:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sonic Zhang <sonic.zhang@analog.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/2] regulator: ad5398: show changing current in uA
-Message-ID: <20120328110125.GJ3232@opensource.wolfsonmicro.com>
-References: <1332814105.21855.1.camel@phoenix>
+	Wed, 28 Mar 2012 07:02:26 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F72EF56.4030606@jp.fujitsu.com>
+Date: Wed, 28 Mar 2012 20:00:38 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6iqOn7HZPWKXx18"
-Content-Disposition: inline
-In-Reply-To: <1332814105.21855.1.camel@phoenix>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [RFC][PATCH 5/6] memcg: remove unnecessary memory barrier.
+References: <4F72EB84.7080000@jp.fujitsu.com>
+In-Reply-To: <4F72EB84.7080000@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now, Used bit and a pointer to memory cgroup are set at once.
+memory barrier for Used bit -> pc->mem_cgroup is not necessary.
 
---d6iqOn7HZPWKXx18
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-On Tue, Mar 27, 2012 at 10:08:25AM +0800, Axel Lin wrote:
-> Integer division may truncate the result.
-> Current code shows changing current is 0mA when selector is 1 ... 8.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 622fd2e..767bef3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1258,8 +1258,6 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
+ 	pc = lookup_page_cgroup(page);
+ 	if (!PageCgroupUsed(pc))
+ 		return NULL;
+-	/* Ensure pc's mem_cgroup is visible after reading PCG_USED. */
+-	smp_rmb();
+ 	mz = page_cgroup_zoneinfo(pc_to_mem_cgroup(pc), page);
+ 	return &mz->reclaim_stat;
+ }
+-- 
+1.7.4.1
 
-Applied both, thanks.
 
---d6iqOn7HZPWKXx18
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcu9cAAoJEBus8iNuMP3dwAcP+wW2RclanD1ng6XGVf6q5wgU
-t8P17y+auH9yMhK5wkvloUzSpCtWlUwJ87zx/R4K694paH+8yjrrUnMyFkigE4C2
-OYm2ZpSNf554u76d89FUpoaA9SKmWL2yMD/KTPMJNPjJ5tGHHTJcTZC6H3HKcEfc
-IZmku7Pkv3y+stKRfsOoGhjMIIgddFq55u3C8HxMMMGnhkw4dS6X6meFGsRPMcx7
-dnQFAQ9j2kax7JDIBiDzLz8aNerHgta3Brx1cA6aycOYC3MAgwUUgNF4x5kGqeDK
-Sh4wtwvuPpURYGYm8jAmR+mGw6qSwe8EcEW1uZ2WDfgsBPNCSe/viIHX+UhI6kbP
-MO2aXHA6ObKW/iu0irXqajuAYOgkPjFF/xAvAAdPF3jYQUIO2yxZmlYutuVgJS/9
-vKEoJpSf9h1foSyXdnNNY6N4O2dsoPCXYbQPlZvw7ZMuxQwpMSrcg5F10O+sn9uX
-CLwzZXyXhMmnVqkMcg46B0kvYSiIlvyY3DMccPFjUIm0ohZI68RfVGRZqG2ylKPz
-Yn/FVMWXbkm5rA3y3mEQyIYwVTqFtzN8OzwFHGuVc5UkzGTdOaua2D1GZ3X9vJ4X
-eodm60IVZPYfEaAmaVO0YMkynyUYfiGwpyGQg0Ke5/3clDIK+ERCxDE2f9sgyf+j
-KtNS57IByhgds2+hK5MB
-=39n/
------END PGP SIGNATURE-----
-
---d6iqOn7HZPWKXx18--
