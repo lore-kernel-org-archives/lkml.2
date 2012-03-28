@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab2C1HM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 03:12:27 -0400
-Received: from [221.122.61.228] ([221.122.61.228]:53072 "EHLO mx.nrchpc.ac.cn"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751467Ab2C1HM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 03:12:26 -0400
-From: "Liu Yu" <liuyums@bwstor.com.cn>
-To: <linux-kernel@vger.kernel.org>
-Subject: Wrong use of MAX_JIFFY_OFFSET?
-Date: Wed, 28 Mar 2012 15:12:24 +0800
-Message-ID: <006001cd0cb2$20f547b0$62dfd710$@com.cn>
+	id S1752497Ab2C1HNz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 03:13:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60269 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab2C1HNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 03:13:54 -0400
+Date: Wed, 28 Mar 2012 00:13:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Dave Jones <davej@redhat.com>, viro@zeniv.linux.org.uk,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: suppress page allocation failure warnings from sys_listxattr
+In-Reply-To: <20120327172622.827fd6ab.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1203280007400.16201@chino.kir.corp.google.com>
+References: <20120313182220.GA11500@redhat.com> <20120327155149.d41a235b.akpm@linux-foundation.org> <20120328001550.GA3077@redhat.com> <20120327172622.827fd6ab.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-thread-index: Ac0LuHcq4+htNpIgTZi70dBijjy9Mw==
-Content-Language: zh-cn
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Tue, 27 Mar 2012, Andrew Morton wrote:
 
-I saw a couple of places in current kernel have this kind of code:
+> /*
+>  * PAGE_ALLOC_COSTLY_ORDER is the order at which allocations are deemed
+>  * costly to service.  That is between allocation orders which should
+>  * coelesce naturally under reasonable reclaim pressure and those which
+>  * will not.
+>  */
+> #define PAGE_ALLOC_COSTLY_ORDER 3
+> 
+> 
+> Death to magic numbers :(
 
-> static inline unsigned int elapsed_jiffies_msecs(unsigned long start)
-> {
->         unsigned long end = jiffies;
->
->         if (end >= start)
->                return jiffies_to_msecs(end - start);
->
->         return jiffies_to_msecs(end + (MAX_JIFFY_OFFSET - start) + 1);
-> }
+This isn't as dire as it sounds, memory compaction is specifically 
+targeted to run when the order is greater than this, see 
+compaction_ready().  If direct reclaim and compaction both fail then 
+there's nothing the VM can do other than oom kill to free memory and we 
+avoid doing that because there's no guarantee of freeing enough memory 
+that the high-order allocation will be successful.
 
-As you know, jiffies has a type of unsigned long, so if we know which is the
-end and
-which is the start, then (end - start) can simply figure out how much
-jiffies flies,
-without worry about the overflow.
+Not even __GFP_REPEAT is going to be helpful since we can't oom kill 
+anything, the only alternative would be to use __GFP_NOFAIL and that would 
+just be deadly for such an allocation request.  This error is recoverable, 
+so
 
-Look at the code above, assume that there is just an overflow happening on
-jiffies: end=0 and start=~0UL.
-Since end < start, then the return value of the function is
-jiffies_to_msecs(MAX_JIFFY_OFFSET+2).
-But shouldn't the correct value be jiffies_to_msecs(1)?
+Acked-by: David Rientjes <rientjes@google.com>
 
-could someone tell me that am I missing anything?
-
-Thanks,
-Yu
-
+to the patch.
