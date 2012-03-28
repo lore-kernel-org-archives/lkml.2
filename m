@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab2C1HNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 03:13:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60269 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab2C1HNy (ORCPT
+	id S1752565Ab2C1HOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 03:14:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52214 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab2C1HOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 03:13:54 -0400
-Date: Wed, 28 Mar 2012 00:13:51 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, viro@zeniv.linux.org.uk,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-In-Reply-To: <20120327172622.827fd6ab.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1203280007400.16201@chino.kir.corp.google.com>
-References: <20120313182220.GA11500@redhat.com> <20120327155149.d41a235b.akpm@linux-foundation.org> <20120328001550.GA3077@redhat.com> <20120327172622.827fd6ab.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 28 Mar 2012 03:14:38 -0400
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
+Subject: [GIT PULL 0/5] Second batch of arm-soc changes
+Date: Wed, 28 Mar 2012 00:13:57 -0700
+Message-Id: <1332918842-13521-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.9.2.359.gebfc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Mar 2012, Andrew Morton wrote:
+Hi Linus,
 
-> /*
->  * PAGE_ALLOC_COSTLY_ORDER is the order at which allocations are deemed
->  * costly to service.  That is between allocation orders which should
->  * coelesce naturally under reasonable reclaim pressure and those which
->  * will not.
->  */
-> #define PAGE_ALLOC_COSTLY_ORDER 3
-> 
-> 
-> Death to magic numbers :(
+Here is the second batch of arm-soc changes for this merge window. As Arnd
+mentioned with the first cover letter, most of these either had external
+dependencies that have now been pulled in, or just needed a bit more
+linux-next bake time due to getting picked up close to the 3.3 release.
 
-This isn't as dire as it sounds, memory compaction is specifically 
-targeted to run when the order is greater than this, see 
-compaction_ready().  If direct reclaim and compaction both fail then 
-there's nothing the VM can do other than oom kill to free memory and we 
-avoid doing that because there's no guarantee of freeing enough memory 
-that the high-order allocation will be successful.
 
-Not even __GFP_REPEAT is going to be helpful since we can't oom kill 
-anything, the only alternative would be to use __GFP_NOFAIL and that would 
-just be deadly for such an allocation request.  This error is recoverable, 
-so
+There are 128 non-merge patches, with a total diffstat of:
 
-Acked-by: David Rientjes <rientjes@google.com>
+ 346 files changed, 10790 insertions(+), 2792 deletions(-)
 
-to the patch.
+So, while there's been some good cleanups especially in the first branch,
+there's been a net addition of code:
+
+* New SoC family support for Samsung EXYNOS5250: clock tables, driver
+  updates, etc means net gain in code.
+* Added device tree conversions. Once we start to sunset non-device tree
+  boards on the enabled platforms, we should see payback in code removal.
+* Common clock framework. As SoCs get converted over to the framework,
+  we should see more code removal from this as well.
+
+
+There are a handful of merge conflicts on the branches, nothing that
+should be too messy to sort out. I've described each conflict in the
+corresponding pull request, including how we've resolved them in our
+for-next branch.
+
+
+Thanks,
+
+-Olof
+
