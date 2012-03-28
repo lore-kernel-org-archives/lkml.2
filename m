@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab2C1It5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 04:49:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35950 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab2C1It4 convert rfc822-to-8bit (ORCPT
+	id S1757571Ab2C1IuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 04:50:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46211 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab2C1IuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 04:49:56 -0400
-Message-ID: <1332924580.2528.18.camel@twins>
-Subject: Re: [RFC PATCH 0/5] perf: Intel uncore pmu counting support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, ming.m.lin@intel.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Wed, 28 Mar 2012 10:49:40 +0200
-In-Reply-To: <20120328064928.GA21725@gmail.com>
-References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
-	 <20120328064928.GA21725@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 28 Mar 2012 04:50:01 -0400
+Date: Wed, 28 Mar 2012 10:49:57 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 12/13] Add a kerneldoc comment to spin_is_locked() that
+ discourages its usage
+Message-ID: <20120328084957.GB2522@pengutronix.de>
+References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
+ <1332895637-32572-13-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
+Content-Disposition: inline
+In-Reply-To: <1332895637-32572-13-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-28 at 08:49 +0200, Ingo Molnar wrote:
-> * Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> 
-> > Hi, all
-> > 
-> > Here is the RFC patches to add uncore counting support for Nehalem,
-> > Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
-> > The code is based on Lin Ming's old patches.
-> > 
-> > You can use 'perf stat' to access to the uncore pmu. For example:
-> > perf stat -a -C 0 -e 'uncore_nhm/config=0xffff/' sleep 1
-> 
-> My main complaint is that that's not user friendly *AT ALL*.
-> 
-> You need to make this useful to mere mortals: go through the 
-> SDM, categorize interesting looking events, look at how it can 
-> be expressed via tooling, add a generic event where appropriate, 
-> provide examples, actually *USE* it to improve the kernel or an 
-> app and see the workflow as it happens and improve the tooling, 
-> etc.
 
-Easiest way out here is add a /sys/bus/event_source/devices/*/events/
-directory which contains files who's name we can use as events and who's
-contents are of the form we would use given the format/ stuff.
+--bCsyhTFzCvuiizWE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Example, suppose a westmere,
 
-$ cat /sys/bus/event_source/devices/cpu/events/frontend_stalled_cycles
-event=0x0e,umask=0x01,inv,cmask=1
+> +/**
+> + * spin_is_locked() - Check if a spinlock is being held.
+> + * @lock: Lock to check.
+> + *
+> + * This function should normally not be used. Especially using it in
+> + * WARN and BUG_ONs is usually incorrect or redundant.
+> + * If you want to check if a lock is held in a function
+> + * use lockdep_assert_held(). A lot of other usages are racy.
+> + */
 
-I'll review the uncore patches later this week, but I suspect the whole
-cpu->node mapping stuff is still not done properly.
+Maybe add a reference to the section you previously added to spinlock.txt?
 
-Also, quick question, did Intel fix the SNB uncore PMI?
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--bCsyhTFzCvuiizWE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk9y0LUACgkQD27XaX1/VRs9wQCggrIMFNjOnEaB0CTKBcZFuUI+
+ZTgAn0LTHmdNk8dPiepgjmBO20PY1vTG
+=IO01
+-----END PGP SIGNATURE-----
+
+--bCsyhTFzCvuiizWE--
