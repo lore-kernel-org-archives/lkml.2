@@ -1,201 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758343Ab2C1Poi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 11:44:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57265 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758302Ab2C1Pog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 11:44:36 -0400
-Date: Wed, 28 Mar 2012 17:44:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 04/10] memcg: Add HugeTLB extension
-Message-ID: <20120328154434.GN20949@tiehlicka.suse.cz>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120328113304.GE20949@tiehlicka.suse.cz>
- <87d37wetd7.fsf@skywalker.in.ibm.com>
+	id S932208Ab2C1PvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 11:51:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38263 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756518Ab2C1PvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 11:51:09 -0400
+Date: Wed, 28 Mar 2012 16:51:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        paul.gortmaker@windriver.com, dan.j.williams@intel.com,
+        samuel@sortiz.org, lrg@ti.com, perex@perex.cz,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        netdev@vger.kernel.org, fabio.estevam@freescale.com,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH linux-next] dmaengine: add context parameter fixups
+Message-ID: <20120328155106.GY3232@opensource.wolfsonmicro.com>
+References: <1332511242-30241-1-git-send-email-alexandre.bounine@idt.com>
+ <CAOMZO5B-Zutv-xwqLCAgNMO8A3Kyg4uWqS41koo-yoS4mGB1TQ@mail.gmail.com>
+ <1332740082.19804.15.camel@vkoul-udesk3>
+ <20120326094200.GA3098@opensource.wolfsonmicro.com>
+ <s5hwr64wx0p.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="t4k3FX2BKM3OLyzG"
 Content-Disposition: inline
-In-Reply-To: <87d37wetd7.fsf@skywalker.in.ibm.com>
+In-Reply-To: <s5hwr64wx0p.wl%tiwai@suse.de>
+X-Cookie: You will be run over by a beer truck.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-03-12 19:10:36, Aneesh Kumar K.V wrote:
-> Michal Hocko <mhocko@suse.cz> writes:
-> 
-> > On Fri 16-03-12 23:09:24, Aneesh Kumar K.V wrote:
-> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> >> 
-> >> This patch implements a memcg extension that allows us to control
-> >> HugeTLB allocations via memory controller.
-> >
-> > And the infrastructure is not used at this stage (you forgot to
-> > mention).
-> > The changelog should be much more descriptive.
-> 
-> 
-> Will update the changelog.
 
-Thx
+--t4k3FX2BKM3OLyzG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> >
-> >> 
-> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> >> ---
-> >>  include/linux/hugetlb.h    |    1 +
-> >>  include/linux/memcontrol.h |   42 +++++++++++++
-> >>  init/Kconfig               |    8 +++
-> >>  mm/hugetlb.c               |    2 +-
-> >>  mm/memcontrol.c            |  138 ++++++++++++++++++++++++++++++++++++++++++++
-> >>  5 files changed, 190 insertions(+), 1 deletions(-)
-> >> 
-> > [...]
-> >> diff --git a/init/Kconfig b/init/Kconfig
-> >> index 3f42cd6..f0eb8aa 100644
-> >> --- a/init/Kconfig
-> >> +++ b/init/Kconfig
-> >> @@ -725,6 +725,14 @@ config CGROUP_PERF
-> >>  
-> >>  	  Say N if unsure.
-> >>  
-> >> +config MEM_RES_CTLR_HUGETLB
-> >> +	bool "Memory Resource Controller HugeTLB Extension (EXPERIMENTAL)"
-> >> +	depends on CGROUP_MEM_RES_CTLR && HUGETLB_PAGE && EXPERIMENTAL
-> >> +	default n
-> >> +	help
-> >> +	  Add HugeTLB management to memory resource controller. When you
-> >> +	  enable this, you can put a per cgroup limit on HugeTLB usage.
-> >
-> > How does it interact with the hard/soft limists etc...
-> 
-> 
-> There is no softlimit support for HugeTLB extension.
+On Wed, Mar 28, 2012 at 05:44:22PM +0200, Takashi Iwai wrote:
+> Mark Brown wrote:
 
-Sure, sorry for not being precise. The point was how this interacts with
-memcg hard/soft limit (they are independent) etc...
+> > No, not yet - it was only sent after the merge window.  Quite why nobody
+> > managed to notice it before then I don't know.  It'll go to him soon, or
+> > at least to Takashi, but don't know if it'll make -rc1 or not.
 
-> > [...]
-> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >> index 6728a7a..4b36c5e 100644
-> >> --- a/mm/memcontrol.c
-> >> +++ b/mm/memcontrol.c
-> >> @@ -235,6 +235,10 @@ struct mem_cgroup {
-> >>  	 */
-> >>  	struct res_counter memsw;
-> >>  	/*
-> >> +	 * the counter to account for hugepages from hugetlb.
-> >> +	 */
-> >> +	struct res_counter hugepage[HUGE_MAX_HSTATE];
-> >> +	/*
-> >>  	 * Per cgroup active and inactive list, similar to the
-> >>  	 * per zone LRU lists.
-> >>  	 */
-> >> @@ -3156,6 +3160,128 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
-> >>  }
-> >>  #endif
-> >>  
-> >> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> >> +static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
-> >> +{
-> >> +	int idx;
-> >> +	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
-> >
-> > Maybe we should expose for_each_hstate as well...
-> 
-> 
-> That will not really help here. If we use for_each_hstate then we will
-> need to use hstate_index to get the index.
+> How is the situation now?
 
-Fair enough
+> FYI, I'm going to send a pull request to Linus tomorrow or on Friday.
+> If anything needed to be merged in rc1, it must be there in time.
 
-> >> +		if (memcg->hugepage[idx].usage > 0)
-> >> +			return 1;
-> >> +	}
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +int mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
-> >> +				   struct mem_cgroup **ptr)
-> >> +{
-> >> +	int ret = 0;
-> >> +	struct mem_cgroup *memcg;
-> >> +	struct res_counter *fail_res;
-> >> +	unsigned long csize = nr_pages * PAGE_SIZE;
-> >> +
-> >> +	if (mem_cgroup_disabled())
-> >> +		return 0;
-> >> +again:
-> >> +	rcu_read_lock();
-> >> +	memcg = mem_cgroup_from_task(current);
-> >> +	if (!memcg)
-> >> +		memcg = root_mem_cgroup;
-> >> +	if (mem_cgroup_is_root(memcg)) {
-> >> +		rcu_read_unlock();
-> >> +		goto done;
-> >> +	}
-> >> +	if (!css_tryget(&memcg->css)) {
-> >> +		rcu_read_unlock();
-> >> +		goto again;
-> >> +	}
-> >> +	rcu_read_unlock();
-> >> +
-> >> +	ret = res_counter_charge(&memcg->hugepage[idx], csize, &fail_res);
-> >> +	css_put(&memcg->css);
-> >> +done:
-> >> +	*ptr = memcg;
-> >
-> > Why do we set ptr even for the failure case after we dropped a
-> > reference?
-> 
-> That ensures that *ptr is NULL. 
+It's in my tree, I didn't see an enormous rush to get it in TBH.
 
-Does it? AFAICS res_counter_charge might fail and you would use non NULL
-memcg (with a dropped reference).
+--t4k3FX2BKM3OLyzG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[...]
-> >> +	SetPageCgroupUsed(pc);
-> >> +
-> >> +	unlock_page_cgroup(pc);
-> >> +	return;
-> >> +}
-> >> +
-> > [...]
-> >> @@ -4887,6 +5013,7 @@ err_cleanup:
-> >>  static struct cgroup_subsys_state * __ref
-> >>  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> >>  {
-> >> +	int idx;
-> >>  	struct mem_cgroup *memcg, *parent;
-> >>  	long error = -ENOMEM;
-> >>  	int node;
-> >> @@ -4929,9 +5056,14 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> >>  		 * mem_cgroup(see mem_cgroup_put).
-> >>  		 */
-> >>  		mem_cgroup_get(parent);
-> >> +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
-> >
-> > Do we have to init all hstates or is hugetlb_max_hstate enough?
-> 
-> 
-> Yes. we do call mem_cgroup_create for root cgroup before initialzing
-> hugetlb hstate.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-drop a comment?
+iQIcBAEBAgAGBQJPczNCAAoJEBus8iNuMP3dq1kP/2fx+sTM6QZ1T8IcQRd+8HtY
+c5GajFfOH+nOH2IPD2pd4Bn0Z4povKjxq6Lss6AaHS9ePs2JCYLCwR7+5InBHelr
+eu3hrkSFnXnGmlQrhi84FN0zgpn0+Sbu70W0gLCAIzbmubMLpQR8J2ZRrh2pYZgl
+Ou2K+Gmt0On5bijnwiOlpWGN5Vie0VmA9eTjuSay5Ohb58Rg/suxrRztmTeuX8aU
+9D5AOxAbwag/5CKB2xbmln2lupHn/EyNqTM9FKrSnsHvR2NYIw61ZxAF/izCDakD
+CMIMQNsV7tGShjmI9tG2XCJw/39xw0wcUf7D22Bq09lObiEf+NOHJ4ex+91tKwP5
+xx69Ub9zMDjt8Q/2h433mUVbId4nQupd7uZX1/VH4iWAnlxtsHdPsdwSFZjVSp+l
+psTfKMurryiNe3VhGx1nWlNv4gofiGWRJcAvQfFgJ1pqJcTUQPIePlBv1ol17Hws
+GIHF80Mj7BvLLjFerGqS7gvozAC+Z07pDUChR0ttr95cXETfO22rcpCWX20rnA8O
+5RMXghGRGPC5OvW4QHWalZoybbipSyxRzVF6K9EAJN8dKi4xBw3TtCewHo9q7Yau
+KyccnxcvME5DgZoeNdE4DTdyHxojY3cJbaMUxKTxvRCs4KfCErOXaoIl45hWcp4Y
+sKi4RpCEhAkCpKyRtT3j
+=DSFu
+-----END PGP SIGNATURE-----
 
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+--t4k3FX2BKM3OLyzG--
