@@ -1,122 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab2C1Dbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 23:31:41 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46000 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab2C1Dbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 23:31:40 -0400
-Message-ID: <1332905481.2882.70.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git next branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Wed, 28 Mar 2012 14:31:21 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1756788Ab2C1Dc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 23:32:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51315 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930Ab2C1DcY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 23:32:24 -0400
+Date: Wed, 28 Mar 2012 14:32:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        NeilBrown <neilb@suse.de>
+Subject: linux-next: build failure after merge of the md tree
+Message-Id: <20120328143204.134662a493ade33ddd523821@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+--Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here's a few more things for powerpc this time around:
+Hi Neil,
 
- - Anton's did some recent improvements to EPOW event reporting
-on pSeries (power supply failures and such). The patches are self
-contained enough and replace really nasty code so I felt it should
-still go in
+After merging the md tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
- - I did the vio driver registration change Greg requested, I
-don't see the point of leaving that til the next merge window
+drivers/md/raid5.c: In function 'analyse_stripe':
+drivers/md/raid5.c:3209:33: error: 'struct stripe_head' has no member named=
+ 'devs'
 
- - The remaining EEH changes I said were still pending to get
-rid of the EEH references from the generic struct device_node
+Caused by commit 85e25cfc6bed ("md/raid5: fix handling of bad blocks
+during recovery").
 
- - A few more iSeries removal bits
-
- - A perf bug fix on 970
-
+I have used the version of the md tree from next-20120327 for today.
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The following changes since commit e22057c8599373e5caef0bc42bdb95d2a361ab0d:
+--Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV
+Content-Type: application/pgp-signature
 
-  Merge tag 'stable/for-linus-3.4-tag-two' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen (2012-03-24 12:20:25 -0700)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-are available in the git repository at:
+iQIcBAEBCAAGBQJPcoY0AAoJEECxmPOUX5FEoroP/2b6gXdA/P6ZSns06mfCa9Ey
+x/cUftDvJS2uJOFE2pNANV6uzN/kEjIlhIfceliU5yOKQyHgyoI1lU1ZrCYk+iFH
+C/f1R8DwH89aDk49NMGOV9Z0VOiGvpfPIBN1eSFVZAMxs2/pA1ezONGPE/DpBypL
+lOIJwwLLqYyTCwTTD+LsrQSBSrtv6HcLXabg5gP2aUhHRO2snic9FBORBXwN88d8
+oYXjpFOqBXHkKSdQFRt/A8z5DWJLb6m6FHHbXRAGu9MEyDhToloDfVbl0b/YqPJh
+zCjZru5ZWhJGkP7caCQzbxujiSduc+y3RnT993wkFkx8BiTUtaakxTmWnrX4MVqd
+1ZDu78C6RR4ULExvTLVlMiIHmP4SyxfTJ6bOSLJADWo1GtuIFzyMthtKYW579cuB
+hFSFZMMqokqredCV4gmb8zmnOiQWROHSTa78F0OkxxMl4F+AJbSkk0ekZF0B952G
+aOcNVvA1BVB/5EUR0QgtSPIHjdWJhB0uJR2f2ZmdTxUk5tuI6kbo6ZD35AO0IH/y
+kxt/RNS4XQ1o93zH7taOAdy6++zNCeBJTZzEiLW3MvltCSJ8PnpV8MioBN4cIJ//
+NJteFT7nd6ttZsNbQxIaBzznHOLo/c+/Mu3v0zGX/slBYgR23YCDoZDuqWe4Lzuf
+MZvMDVX7MyKzqfAvt7p3
+=hTxf
+-----END PGP SIGNATURE-----
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
-
-for you to fetch changes up to 1ce447b90f3e71c81ae59e0062bc305ef267668b:
-
-  powerpc/perf: Fix instruction address sampling on 970 and Power4 (2012-03-28 11:33:24 +1100)
-
-----------------------------------------------------------------
-Anton Blanchard (6):
-      powerpc: Make function that parses RTAS error logs global
-      powerpc/pseries: Parse and handle EPOW interrupts
-      powerpc/pseries: Use rtas_get_sensor in RAS code
-      powerpc/pseries: Remove RTAS_POWERMGM_EVENTS
-      powerpc/pseries: Clean up ras_error_interrupt code
-      powerpc/pseries: Cut down on enthusiastic use of defines in RAS code
-
-Benjamin Herrenschmidt (2):
-      powerpc+sparc/vio: Modernize driver registration
-      powerpc/perf: Fix instruction address sampling on 970 and Power4
-
-Gavin Shan (3):
-      powerpc/eeh: Remove eeh device from OF node
-      powerpc/eeh: Remove eeh information from pci_dn
-      powerpc/eeh: Retrieve PHB from global list
-
-Stephen Rothwell (2):
-      powerpc: Remove NO_IRQ_IGNORE
-      powerpc: Random little legacy iSeries removal tidy ups
-
- arch/powerpc/boot/.gitignore                  |    1 -
- arch/powerpc/include/asm/iommu.h              |    1 -
- arch/powerpc/include/asm/irq.h                |    6 -
- arch/powerpc/include/asm/machdep.h            |    4 +-
- arch/powerpc/include/asm/mmu-hash64.h         |   12 --
- arch/powerpc/include/asm/pci-bridge.h         |   16 +-
- arch/powerpc/include/asm/perf_event_server.h  |    2 +
- arch/powerpc/include/asm/rtas.h               |   34 ++++-
- arch/powerpc/include/asm/smp.h                |    1 -
- arch/powerpc/include/asm/udbg.h               |    1 -
- arch/powerpc/include/asm/vio.h                |   10 +-
- arch/powerpc/kernel/irq.c                     |    8 +-
- arch/powerpc/kernel/prom_init.c               |    2 +-
- arch/powerpc/kernel/rtas.c                    |   34 +++++
- arch/powerpc/kernel/udbg.c                    |    3 -
- arch/powerpc/kernel/vdso.c                    |    4 +-
- arch/powerpc/kernel/vio.c                     |   12 +-
- arch/powerpc/perf/core-book3s.c               |   46 +++++-
- arch/powerpc/perf/power4-pmu.c                |    1 +
- arch/powerpc/perf/ppc970-pmu.c                |    1 +
- arch/powerpc/platforms/cell/beat_htab.c       |    2 -
- arch/powerpc/platforms/pseries/eeh.c          |   19 +--
- arch/powerpc/platforms/pseries/eeh_dev.c      |    2 +-
- arch/powerpc/platforms/pseries/io_event_irq.c |   68 +---------
- arch/powerpc/platforms/pseries/iommu.c        |   29 ++--
- arch/powerpc/platforms/pseries/ras.c          |  195 ++++++++++++++++---------
- arch/sparc/include/asm/vio.h                  |    9 +-
- arch/sparc/kernel/ds.c                        |    5 +-
- arch/sparc/kernel/vio.c                       |    8 +-
- drivers/block/sunvdc.c                        |    5 +-
- drivers/net/ethernet/ibm/ibmveth.c            |    7 +-
- drivers/net/ethernet/sun/sunvnet.c            |    5 +-
- drivers/scsi/ibmvscsi/ibmvfc.c                |    7 +-
- drivers/scsi/ibmvscsi/ibmvscsi.c              |    7 +-
- drivers/scsi/ibmvscsi/ibmvstgt.c              |    5 +-
- drivers/tty/hvc/hvc_vio.c                     |    7 +-
- drivers/tty/hvc/hvcs.c                        |    5 +-
- include/linux/of.h                            |   10 --
- 38 files changed, 321 insertions(+), 273 deletions(-)
-
-
+--Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV--
