@@ -1,158 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab2C1IQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 04:16:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44192 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab2C1IQo (ORCPT
+	id S1756947Ab2C1IWz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 04:22:55 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:56975 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab2C1IWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 04:16:44 -0400
-Date: Wed, 28 Mar 2012 12:16:39 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
-Message-ID: <20120328081639.GB2286@moon>
-References: <20120326183330.GM19395@moon>
- <20120327152534.GA18478@redhat.com>
- <20120327165853.GH11875@moon>
- <20120327222923.GA31692@mail.hallyn.com>
- <20120327223420.GB9669@moon>
- <20120327224640.GA5328@mail.hallyn.com>
- <m162dpo45j.fsf@fess.ebiederm.org>
- <20120328064838.GA2286@moon>
- <m1k425mae1.fsf@fess.ebiederm.org>
- <20120328075549.GA2204@moon>
+	Wed, 28 Mar 2012 04:22:36 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2S8MUbb007698
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v2 4/5] r8169: adjust some functions of 8111f
+Date: Wed, 28 Mar 2012 16:26:53 +0800
+Message-ID: <1332923214-5071-4-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1332923214-5071-1-git-send-email-hayeswang@realtek.com>
+References: <1332923214-5071-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328075549.GA2204@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Something like below i think (yet untested).
+Put some settings of 8111f into one function which may be reused.
 
-	Cyrill
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: fcntl: Add F_GETOWNER_UIDS option v2
+ drivers/net/ethernet/realtek/r8169.c |   99 ++++++++++++++++------------------
+ 1 files changed, 47 insertions(+), 52 deletions(-)
 
-When we restore file descriptors we would like
-them to look exactly as they were at dumping time.
-
-With help of fcntl it's almost possible, the missing
-snippet is file owners UIDs.
-
-To be able to read their values the F_GETOWNER_UIDS
-is introduced.
-
-This option is valid iif CONFIG_CHECKPOINT_RESTORE
-is turned on, otherwise returning -EINVAL.
-
-Also the call must be done from initial user-namespace
-for a while. This limitation migh be relaxed after, once
-proper [e]uids mapping between namespaces and file owners
-will be implemented.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
----
- fs/fcntl.c                  |   32 ++++++++++++++++++++++++++++++++
- include/asm-generic/fcntl.h |    4 ++++
- security/selinux/hooks.c    |    1 +
- 3 files changed, 37 insertions(+)
-
-Index: linux-2.6.git/fs/fcntl.c
-===================================================================
---- linux-2.6.git.orig/fs/fcntl.c
-+++ linux-2.6.git/fs/fcntl.c
-@@ -20,6 +20,7 @@
- #include <linux/signal.h>
- #include <linux/rcupdate.h>
- #include <linux/pid_namespace.h>
-+#include <linux/user_namespace.h>
- 
- #include <asm/poll.h>
- #include <asm/siginfo.h>
-@@ -340,6 +341,34 @@ static int f_getown_ex(struct file *filp
- 	return ret;
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index aa23a25..cde5cea 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3005,6 +3005,28 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x1f, 0x0000);
  }
  
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+static int f_getowner_uids(struct file *filp, unsigned long arg)
++static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
 +{
-+	struct user_namespace *user_ns = current_user_ns();
-+	uid_t * __user dst = (void * __user)arg;
-+	uid_t src[2];
-+	int err;
++	/* For 4-corner performance improve */
++	rtl_writephy(tp, 0x1f, 0x0005);
++	rtl_writephy(tp, 0x05, 0x8b80);
++	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
 +
-+        if (user_ns != &init_user_ns)
-+                return -EINVAL;
++	/* PHY auto speed down */
++	rtl_writephy(tp, 0x1f, 0x0007);
++	rtl_writephy(tp, 0x1e, 0x002d);
++	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
 +
-+	read_lock(&filp->f_owner.lock);
-+	src[0] = filp->f_owner.uid;
-+	src[1] = filp->f_owner.euid;
-+	read_unlock(&filp->f_owner.lock);
-+
-+	err  = put_user(src[0], &dst[0]);
-+	err |= put_user(src[1], &dst[1]);
-+
-+	return err;
++	/* Improve 10M EEE waveform */
++	rtl_writephy(tp, 0x1f, 0x0005);
++	rtl_writephy(tp, 0x05, 0x8b86);
++	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
 +}
-+#else
-+static int f_getowner_uids(struct file *filp, unsigned long arg)
-+{
-+	return -EINVAL;
-+}
-+#endif
 +
- static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
- 		struct file *filp)
+ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
  {
-@@ -396,6 +425,9 @@ static long do_fcntl(int fd, unsigned in
- 	case F_SETOWN_EX:
- 		err = f_setown_ex(filp, arg);
- 		break;
-+	case F_GETOWNER_UIDS:
-+		err = f_getowner_uids(filp, arg);
-+		break;
- 	case F_GETSIG:
- 		err = filp->f_owner.signum;
- 		break;
-Index: linux-2.6.git/include/asm-generic/fcntl.h
-===================================================================
---- linux-2.6.git.orig/include/asm-generic/fcntl.h
-+++ linux-2.6.git/include/asm-generic/fcntl.h
-@@ -120,6 +120,10 @@
- #define F_GETOWN_EX	16
- #endif
+ 	static const struct phy_reg phy_reg_init[] = {
+@@ -3046,24 +3068,7 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
  
-+#ifndef F_GETOWNER_UIDS
-+#define F_GETOWNER_UIDS	17
-+#endif
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+ 
+-	/* For 4-corner performance improve */
+-	rtl_writephy(tp, 0x1f, 0x0005);
+-	rtl_writephy(tp, 0x05, 0x8b80);
+-	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-
+-	/* PHY auto speed down */
+-	rtl_writephy(tp, 0x1f, 0x0007);
+-	rtl_writephy(tp, 0x1e, 0x002d);
+-	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
+-
+-	/* Improve 10M EEE waveform */
+-	rtl_writephy(tp, 0x1f, 0x0005);
+-	rtl_writephy(tp, 0x05, 0x8b86);
+-	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
+-	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl8168f_hw_phy_config(tp);
+ 
+ 	/* Improve 2-pair detection performance */
+ 	rtl_writephy(tp, 0x1f, 0x0005);
+@@ -3076,24 +3081,7 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	rtl_apply_firmware(tp);
+ 
+-	/* For 4-corner performance improve */
+-	rtl_writephy(tp, 0x1f, 0x0005);
+-	rtl_writephy(tp, 0x05, 0x8b80);
+-	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-
+-	/* PHY auto speed down */
+-	rtl_writephy(tp, 0x1f, 0x0007);
+-	rtl_writephy(tp, 0x1e, 0x002d);
+-	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
+-
+-	/* Improve 10M EEE waveform */
+-	rtl_writephy(tp, 0x1f, 0x0005);
+-	rtl_writephy(tp, 0x05, 0x8b86);
+-	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
+-	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl8168f_hw_phy_config(tp);
+ }
+ 
+ static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+@@ -4687,20 +4675,12 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
+ 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
+ }
+ 
+-static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
++static void rtl_hw_start_8168f(struct rtl8169_private *tp)
+ {
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 	struct pci_dev *pdev = tp->pci_dev;
+-	static const struct ephy_info e_info_8168f_1[] = {
+-		{ 0x06, 0x00c0,	0x0020 },
+-		{ 0x08, 0x0001,	0x0002 },
+-		{ 0x09, 0x0000,	0x0080 },
+-		{ 0x19, 0x0000,	0x0224 }
+-	};
+-
+-	rtl_csi_access_enable_1(tp);
+ 
+-	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
++	rtl_csi_access_enable_2(tp);
+ 
+ 	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+@@ -4714,8 +4694,6 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
+ 	rtl_w1w0_eri(ioaddr, 0x1d0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
+ 	rtl_eri_write(ioaddr, 0xcc, ERIAR_MASK_1111, 0x00000050, ERIAR_EXGMAC);
+ 	rtl_eri_write(ioaddr, 0xd0, ERIAR_MASK_1111, 0x00000060, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
+-		     ERIAR_EXGMAC);
+ 
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
+ 
+@@ -4723,15 +4701,32 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
+ 
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
+ 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
+-
+-	/* Adjust EEE LED frequency */
+-	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
+-
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+ 	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
+ 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
+ }
+ 
++static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	static const struct ephy_info e_info_8168f_1[] = {
++		{ 0x06, 0x00c0,	0x0020 },
++		{ 0x08, 0x0001,	0x0002 },
++		{ 0x09, 0x0000,	0x0080 },
++		{ 0x19, 0x0000,	0x0224 }
++	};
 +
- #define F_OWNER_TID	0
- #define F_OWNER_PID	1
- #define F_OWNER_PGRP	2
-Index: linux-2.6.git/security/selinux/hooks.c
-===================================================================
---- linux-2.6.git.orig/security/selinux/hooks.c
-+++ linux-2.6.git/security/selinux/hooks.c
-@@ -3138,6 +3138,7 @@ static int selinux_file_fcntl(struct fil
- 	case F_GETFL:
- 	case F_GETOWN:
- 	case F_GETSIG:
-+	case F_GETOWNER_UIDS:
- 		/* Just check FD__USE permission */
- 		err = file_has_perm(cred, file, 0);
- 		break;
++	rtl_hw_start_8168f(tp);
++
++	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
++
++	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
++		     ERIAR_EXGMAC);
++
++	/* Adjust EEE LED frequency */
++	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
++}
++
+ static void rtl_hw_start_8168(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+-- 
+1.7.7.6
+
