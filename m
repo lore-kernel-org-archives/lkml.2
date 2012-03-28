@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758036Ab2C1Kdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:33:43 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50307 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757747Ab2C1Kdm (ORCPT
+	id S1758055Ab2C1Kdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:33:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35317 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757747Ab2C1Kdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:33:42 -0400
-Date: Wed, 28 Mar 2012 11:36:13 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: radiatejava <radiatejava@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel: low stack detected by irq handler
-Message-ID: <20120328113613.37b066ff@pyramind.ukuu.org.uk>
-In-Reply-To: <CABJk5knEkDvNkpN+Gq1+yPM5pQ0AnBFJR=QNWONZr=uVaSwd0g@mail.gmail.com>
-References: <3A8C969225424C4D8E6BEE65ED8552DA07889037@XMB-BGL-41C.cisco.com>
-	<CABJk5knEkDvNkpN+Gq1+yPM5pQ0AnBFJR=QNWONZr=uVaSwd0g@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 28 Mar 2012 06:33:47 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: roma1390 <roma1390@gmail.com>
+Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
+Date: Wed, 28 Mar 2012 12:33:42 +0200
+User-Agent: KMail/1.8.2
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Douglas W Jones <jones@cs.uiowa.edu>,
+        Michal Nazarewicz <mnazarewicz@google.com>
+References: <201203262047.17865.vda.linux@googlemail.com> <201203281213.07856.vda.linux@googlemail.com> <4F72E6DB.1090207@gmail.com>
+In-Reply-To: <4F72E6DB.1090207@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201203281233.42914.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> I have recently moved from kernel 2.6.18-128 to 2.6.18-194. I have my
-> >> own kernel module also (click). With the new 2.6.18-194 version of
-> >> kernel, I am getting this error:
+On Wednesday 28 March 2012 12:24, roma1390 wrote:
+> On 2012.03.28 13:13, Denys Vlasenko wrote:
+> > Second: run
+> > arm-linux-gnueabi-gcc -O2 -Wall test_{org,new}.c -S
+> > and email me resulting test_{org,new}.s files.
+> 
+> test_{org,new}.s attached.
 
-This is a Red Hat kernel and from long ago. You need to talk to Red Hat.
-The development list stopped dealing with 2.6.18 years ago.
 
-Alan
+Bingo. 
+
+        bl      __aeabi_uidivmod
+
+Not good. Your gcc did not optimize division by constant.
+
+Can you add  "noinline_for_stack":
+
+static noinline_for_stack <=== HERE
+char *put_dec(char *buf, unsigned long long n) 
+
+amd regenerate and resend the test_new.s?
+
+-- 
+vda
