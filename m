@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab2C1QhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 12:37:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43163 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758261Ab2C1QhT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 12:37:19 -0400
+	id S1756564Ab2C1Qon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 12:44:43 -0400
+Received: from narfation.org ([79.140.41.39]:37166 "EHLO v3-1039.vlinux.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752960Ab2C1Qol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 12:44:41 -0400
+X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Mar 2012 12:44:41 EDT
+From: Sven Eckelmann <sven@narfation.org>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Cc: simon.wunderlich@s2003.tu-chemnitz.de,
+        Marek Lindner <lindner_marek@yahoo.de>
+Subject: Using nested locking for spin_lock_bh
+Date: Wed, 28 Mar 2012 18:36:39 +0200
+Message-ID: <2108147.Aqyix6xDmB@bentobox>
+User-Agent: KMail/4.7.4 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <4F716E31.3000803@linux.vnet.ibm.com>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
-	<4F707C5F.1000905@redhat.com>
-	<4F716E31.3000803@linux.vnet.ibm.com>
-Date: Wed, 28 Mar 2012 09:37:19 -0700
-Message-ID: <CAMy5W3cv3SC4Cr1_CyyMW3fa+Wwto_sQ0aPj=eqQTmSt98bBJg@mail.gmail.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-From: Alan Meadows <alan.meadows@gmail.com>
-To: KVM <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="nextPart1377973.Og34iP4ssK"; micalg="pgp-sha512"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am happy to see this issue receiving some attention and second the
-wish to see these patches be considered for further review and
-inclusion in an upcoming release.
 
-Overcommit is not as common in enterprise and single-tenant
-virtualized environments as it is in multi-tenant environments, and
-frankly we have been suffering.
+--nextPart1377973.Og34iP4ssK
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-We have been running an early copy of these patches in our lab and in
-a small production node sample set both on 3.2.0-rc4 and 3.3.0-rc6 for
-over two weeks now with great success. With the heavy level of
-vCPU:pCPU overcommit required for our situation, the patches are
-increasing performance by an _order of magnitude_ on our E5645 and
-E5620 systems.
+Hi,
 
-Alan Meadows
+I started to run some experimental batman-adv code inside some virtual 
+machines with different debugging functions enabled. One of them was lockdep. 
+There we noticed a false positive for a lock class that is actually used in 
+two different data structures. Therefore, lockdep noticed that there could be 
+a deadlock for this class in a function that locks the two different data 
+structures.
 
-On Tue, Mar 27, 2012 at 12:37 AM, Raghavendra K T
-<raghavendra.kt@linux.vnet.ibm.com> wrote:
->
-> On 03/26/2012 07:55 PM, Avi Kivity wrote:
->>
->> On 03/21/2012 12:20 PM, Raghavendra K T wrote:
->>>
->>> From: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
->
-> [...]
->
->>>
->>> This series provides a Xen implementation, but it should be
->>> straightforward to add a KVM implementation as well.
->>>
->>
->> Looks like a good baseline on which to build the KVM implementation.  We
->> might need some handshake to prevent interference on the host side with
->> the PLE code.
->>
->
-> Avi, Thanks for reviewing. True, it is sort of equivalent to PLE on non
-> PLE machine.
->
-> Ingo, Peter,
-> Can you please let us know if this series can be considered for next merge
-> window?
-> OR do you still have some concerns that needs addressing.
->
-> I shall rebase patches to 3.3 and resend. (main difference would be
-> UNINLINE_SPIN_UNLOCK and jump label changes to use static_key_true/false()
-> usage instead of static_branch.)
->
-> Thanks,
-> Raghu
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+To resolve this problem, I wanted to define two different subclasses and 
+replace the spin_lock_bh with its nested version. The only problem now is the 
+absence of spin_lock_bh_nested. I could only find spin_lock_bh and 
+spin_lock_irqsave_nested.
+
+Is there another way how this should be done or is there a general problem why 
+there is no nested support for this incarnation of spin_lock?
+
+Kind regards,
+	Sven
+--nextPart1377973.Og34iP4ssK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCgAGBQJPcz4XAAoJEF2HCgfBJntGXmkQALWelTOEcM2XPUfC5RGSm6EM
+pe+CefcvdvLks/qXlNaVM7L6+ttlh/oGTD9ffVKIQRYY9iBy+xHQ1tcb7hU2TxQo
+ZsYiCycMPq0Zeio50VbMpYBoOQbnZBOyIMosL3zymlyjV4QiRS12Lu3qMAY4gguK
+Qkj33Y93pPri/7bOfYGKkakokINxllJt5XlhZf9OnvqPV9p+ylQWOdGuaQ5u/hMa
+T8vnoFRxD5vpD7vHXyrhWJJk/MAwvzenS9tXpC9P58l+vwLgNBEDFTYWbZIl4441
++Dc+NBBuIiQhV1xTz3jm9Jp5n0/ed8g0DjL4HEmAAgiItDKzWz6bFQo2fZU1KauM
+ekPXAxhHpSwtJDRmVYNXv6AtSC/bS7hFGRnipUGOw7aezeDbcM4G2wrnIsvuG/7f
+9T9xazgEQDoc8+j3SOLcF4zpz0njniKJZ6awZqrBcyAQaknLgbt5mbENnSm81azs
+MmzkUvEUi7HudeP/vAJ2kNZBUdztMhQcxxSIK/GryzsDZqEC5I8257DfC7GUoH/T
+FDRcirkvFNANwPSK9/+ZCg+0Y3bU/BjDsE9AxrWys4hZavgliHyVmh+PUvST+P+A
+nYEJpNf4PUNpQn4Ru6KbAcw7V0BsdqTAwDHmYkD3QFsQObSQfuZW8Fi2ghnyyXa6
+92Lz5vSa2R1Pg8sfOiSC
+=MrXm
+-----END PGP SIGNATURE-----
+
+--nextPart1377973.Og34iP4ssK--
+
