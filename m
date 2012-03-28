@@ -1,219 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab2C1BxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 21:53:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60345 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2C1BxU convert rfc822-to-8bit (ORCPT
+	id S1756768Ab2C1B4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 21:56:51 -0400
+Received: from out07.mta.xmission.com ([166.70.13.237]:51994 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755483Ab2C1B4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 21:53:20 -0400
+	Tue, 27 Mar 2012 21:56:49 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+References: <20120313005855.GA24639@redhat.com>
+	<CA+55aFwb2WRRamWPVY-ETDG_LO0QR9C8epk8tSAJVZhPFSNzhA@mail.gmail.com>
+	<20120318192755.GB6589@ZenIV.linux.org.uk>
+	<CAMOw1v4qa_AxJgc+qAsY6M=K--2JDvO-+CNj8OwKuE7piRViGw@mail.gmail.com>
+	<m1vclw1fx8.fsf@fess.ebiederm.org>
+	<CAMOw1v4gszzV7F3z1m+RWEe9UDgR2Jrp9wX_w9z_1UkXT=FL5Q@mail.gmail.com>
+	<m1iphuu9pd.fsf_-_@fess.ebiederm.org>
+	<CAMOw1v65TePmMOxzGsnW4xv1ge1RDD=Stxgo9-eqtyi8hdjZOQ@mail.gmail.com>
+	<m1ty1esa52.fsf@fess.ebiederm.org>
+	<CAMOw1v4hZFk20QzvwWUL73Nax2m77HOkfp0KkuOPFjCgYprZgw@mail.gmail.com>
+	<20120327010253.26e5087f@vader>
+Date: Tue, 27 Mar 2012 19:00:23 -0700
+In-Reply-To: <20120327010253.26e5087f@vader> (Lucas De Marchi's message of
+	"Tue, 27 Mar 2012 01:02:53 -0300")
+Message-ID: <m1mx71o56w.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <201203280003.59332.rjw@sisk.pl>
-References: <CAJ0PZbThSc=WkmeOYtykTKZ7bhBHJa7KYYPeWPLNy_suCD0f+A@mail.gmail.com>
-	<1332829914-22790-1-git-send-email-myungjoo.ham@samsung.com>
-	<201203280003.59332.rjw@sisk.pl>
-Date: Wed, 28 Mar 2012 10:53:19 +0900
-X-Google-Sender-Auth: kAtjnv-G1qQXNH35QVYJD-53-vQ
-Message-ID: <CAJ0PZbR6WW66Nr=rMELQOURaeKDA3hqUsbEsn1kAgCfDpDa2zw@mail.gmail.com>
-Subject: Re: [PATCH v4] PM / QoS: add pm_qos_update_request_timeout API
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, Mark Gross <markgross@thegnar.org>,
-        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX180QsbnOm1yLtFnFg8PMR9VmU9HJiPwBoM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Lucas De Marchi <lucas.demarchi@profusion.mobi>
+X-Spam-Relay-Country: **
+Subject: Re: [REVIEW][PATCH] Making poll generally useful for sysctls
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/28 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Tuesday, March 27, 2012, MyungJoo Ham wrote:
->> The new API, pm_qos_update_request_timeout() is to provide a timeout
->> with pm_qos_update_request.
->>
->> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
->> QoS request on req with value 100 will be active for 1000 jiffies.
->> After 1000 jiffies, the QoS request thru req is rolled back to the
->> request status when pm_qos_update_request_timeout() was called. If there
->> were another pm_qos_update_request(req, x) during the 1000 jiffies, this
->> new request with value x will override as this is another request on the
->> same req handle.
+Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
+
+> On Mon, 26 Mar 2012 14:44:50 -0300
+> Lucas De Marchi <lucas.demarchi@profusion.mobi> wrote:
 >
-> Can you please update the above part of the changelog to reflect the
-> fact that microseconds are the new timeout units?
-
-Sure, I've just sent another.
-
+>> Hi Eric,
+>> 
+>> On Sat, Mar 24, 2012 at 4:58 AM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>
+>> > Here is rebased version of the patch just in case that helps.
+>> 
+>> Now I can apply, but I can't boot: we hit a NULL dereference in
+>> __wake_up_common(), called by proc_sys_poll_notify(). It seems that
+>> you forgot to initialize the waitqueue with
+>> __WAIT_QUEUE_HEAD_INITIALIZER().
 >
->> A new request on the same req handle will always
->> override the previous request whether it is the conventional request or
->> it is the new timeout request.
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Acked-by: Mark Gross <markgross@thegnar.org>
->
-> It is kind of too late for the 3.4 merge window, so I'd prefer to keep that
-> for the v3.5 cycle, unless you urgently need it in v3.4, in which case please
-> let me know.
->
-> Thanks,
-> Rafael
->
+> Trying again I came up with the following simple oneliner on top
+> of your patch. With it I can boot successfully and poll any file
+> under /proc/sys (I didn't try many, but there's no reason it would not
+> work).
 
-Could you please put it with 3.4 if possible? We want to use this
-feature with 3.4.
+Thanks. I feel silly for that pretty obvious oversight.
 
-Thanks a lot.
+There is another bug I am seeing in the sysctl poll code.  It needs to
+be .read that updates filp->private_data to event, and not .poll.
+Otherwise we have what should be a level triggered interface acting like
+an edge triggered interface.
 
+Any chance I could get you to cook up a patch for that bug?
 
-Cheers!
-MyungJoo.
+> The nice part of this patch is that suddenly all sysctl entries can be
+> monitored through poll() instead of having to add adhoc code. However
+> that spurious wake ups are not very nice. Eric, what if we keep the
+> waitqueue inside the entry and initialize it there, just like we did
+> for ->event? This would mean iterating through them on unregister
+> though.
 
->
->> --
->> Changes from v3
->> - The timeout value is expresses in us (1/1000000 sec), not ms (1/1000 sec).
->> Changes from v2
->> - Rebased to avoid merge conflict
->> Chages from v1(RFC)
->> - The semmantics of timeout changed. A timeout now means that the
->>  corresponding qos-req object is being cancelled, not rolling back to
->> the qos request state at the time of API call. With this changes,
->> combined with the conventional update_request API, there exists up to
->> only one qos request per qos-req object.
->> - The timeout value is expressed in ms (1/1000 sec), not jiffies.
->> - Style changes, removing unnecessary changes.
->> - Bugfixes regarding pending timeout work.
->> ---
->>  include/linux/pm_qos.h |    4 +++
->>  kernel/power/qos.c     |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 54 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
->> index c8a541e..18689737 100644
->> --- a/include/linux/pm_qos.h
->> +++ b/include/linux/pm_qos.h
->> @@ -8,6 +8,7 @@
->>  #include <linux/notifier.h>
->>  #include <linux/miscdevice.h>
->>  #include <linux/device.h>
->> +#include <linux/workqueue.h>
->>
->>  enum {
->>       PM_QOS_RESERVED = 0,
->> @@ -29,6 +30,7 @@ enum {
->>  struct pm_qos_request {
->>       struct plist_node node;
->>       int pm_qos_class;
->> +     struct delayed_work work; /* for pm_qos_update_request_timeout */
->>  };
->>
->>  struct dev_pm_qos_request {
->> @@ -73,6 +75,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
->>                       s32 value);
->>  void pm_qos_update_request(struct pm_qos_request *req,
->>                          s32 new_value);
->> +void pm_qos_update_request_timeout(struct pm_qos_request *req,
->> +                                s32 new_value, unsigned long timeout_us);
->>  void pm_qos_remove_request(struct pm_qos_request *req);
->>
->>  int pm_qos_request(int pm_qos_class);
->> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
->> index d6d6dbd..6a031e6 100644
->> --- a/kernel/power/qos.c
->> +++ b/kernel/power/qos.c
->> @@ -230,6 +230,21 @@ int pm_qos_request_active(struct pm_qos_request *req)
->>  EXPORT_SYMBOL_GPL(pm_qos_request_active);
->>
->>  /**
->> + * pm_qos_work_fn - the timeout handler of pm_qos_update_request_timeout
->> + * @work: work struct for the delayed work (timeout)
->> + *
->> + * This cancels the timeout request by falling back to the default at timeout.
->> + */
->> +static void pm_qos_work_fn(struct work_struct *work)
->> +{
->> +     struct pm_qos_request *req = container_of(to_delayed_work(work),
->> +                                               struct pm_qos_request,
->> +                                               work);
->> +
->> +     pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
->> +}
->> +
->> +/**
->>   * pm_qos_add_request - inserts new qos request into the list
->>   * @req: pointer to a preallocated handle
->>   * @pm_qos_class: identifies which list of qos request to use
->> @@ -253,6 +268,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
->>               return;
->>       }
->>       req->pm_qos_class = pm_qos_class;
->> +     INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);
->>       pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
->>                            &req->node, PM_QOS_ADD_REQ, value);
->>  }
->> @@ -279,6 +295,9 @@ void pm_qos_update_request(struct pm_qos_request *req,
->>               return;
->>       }
->>
->> +     if (delayed_work_pending(&req->work))
->> +             cancel_delayed_work_sync(&req->work);
->> +
->>       if (new_value != req->node.prio)
->>               pm_qos_update_target(
->>                       pm_qos_array[req->pm_qos_class]->constraints,
->> @@ -287,6 +306,34 @@ void pm_qos_update_request(struct pm_qos_request *req,
->>  EXPORT_SYMBOL_GPL(pm_qos_update_request);
->>
->>  /**
->> + * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
->> + * @req : handle to list element holding a pm_qos request to use
->> + * @new_value: defines the temporal qos request
->> + * @timeout_us: the effective duration of this qos request in usecs.
->> + *
->> + * After timeout_us, this qos request is cancelled automatically.
->> + */
->> +void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
->> +                                unsigned long timeout_us)
->> +{
->> +     if (!req)
->> +             return;
->> +     if (WARN(!pm_qos_request_active(req),
->> +              "%s called for unknown object.", __func__))
->> +             return;
->> +
->> +     if (delayed_work_pending(&req->work))
->> +             cancel_delayed_work_sync(&req->work);
->> +
->> +     if (new_value != req->node.prio)
->> +             pm_qos_update_target(
->> +                     pm_qos_array[req->pm_qos_class]->constraints,
->> +                     &req->node, PM_QOS_UPDATE_REQ, new_value);
->> +
->> +     schedule_delayed_work(&req->work, usecs_to_jiffies(timeout_us));
->> +}
->> +
->> +/**
->>   * pm_qos_remove_request - modifies an existing qos request
->>   * @req: handle to request list element
->>   *
->> @@ -305,6 +352,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
->>               return;
->>       }
->>
->> +     if (delayed_work_pending(&req->work))
->> +             cancel_delayed_work_sync(&req->work);
->> +
->>       pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
->>                            &req->node, PM_QOS_REMOVE_REQ,
->>                            PM_QOS_DEFAULT_VALUE);
->>
->
+Iterating through the all of the table entries on unregister is
+not a problem, some code paths for namespace support are doing that
+already.  Putting the wait queue in struct ctl_table is something
+we can't do.  struct ctl_table can be freed before the final fput
+on a file descriptor and fs/select.c will try to remove freed
+wait queue heads, which would get us back to where we came in.
 
+What we can do is use struct ctl_node instead. Either bloating struct
+ctl_node or adding putting a pointer to struct ctl_table_poll.  The
+only tricky part is that I don't believe I have any size information
+on how many ctl_node entries I have.  So that information would have
+to be gathered and kept as well.
 
+After having looked at how large wait_queue_head_t I am reluctant
+to pay the price for keeping a wait queue for nodes that we are not
+polling.  So I am thinking allocate in .poll and free in unregister,
+but I don't think I am ambitious enough to code that up.
 
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+Eric
