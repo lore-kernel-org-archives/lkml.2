@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847Ab2C1GW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 02:22:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29776 "EHLO mga02.intel.com"
+	id S1751974Ab2C1GXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:23:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6469 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588Ab2C1GWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 02:22:52 -0400
+	id S1751588Ab2C1GW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 02:22:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="122519264"
+   d="scan'208";a="122519312"
 From: Lin Ming <ming.m.lin@intel.com>
 To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
         Alan Stern <stern@rowland.harvard.edu>,
@@ -17,9 +17,9 @@ To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
 Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-acpi <linux-acpi@vger.kernel.org>
-Subject: [PATCH v3 3/7] libata-acpi: register/unregister device to/from power resource
-Date: Wed, 28 Mar 2012 14:21:58 +0800
-Message-Id: <1332915722-15963-4-git-send-email-ming.m.lin@intel.com>
+Subject: [PATCH v3 6/7] PM / Runtime: Add can_power_off flag to subsys data
+Date: Wed, 28 Mar 2012 14:22:01 +0800
+Message-Id: <1332915722-15963-7-git-send-email-ming.m.lin@intel.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1332915722-15963-1-git-send-email-ming.m.lin@intel.com>
 References: <1332915722-15963-1-git-send-email-ming.m.lin@intel.com>
@@ -27,66 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uses the interface introduced in earlier patch.
+Parent device will check child's can_power_off flag to see if child device can
+be powered off.
 
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- drivers/ata/libata-acpi.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+ include/linux/pm.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index ba9382a..81ef0f5 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -1033,16 +1033,48 @@ static void ata_acpi_remove_pm_notifier(struct ata_device *dev)
- 	}
- }
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index e4982ac..2e74531 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -465,6 +465,7 @@ struct pm_subsys_data {
+ #ifdef CONFIG_PM_GENERIC_DOMAINS
+ 	struct pm_domain_data *domain_data;
+ #endif
++	bool can_power_off;
+ };
  
-+static void ata_acpi_register_power_resource(struct ata_device *dev)
-+{
-+	struct scsi_device *sdev = dev->sdev;
-+	acpi_handle handle;
-+	struct device *device;
-+
-+	handle = ata_dev_acpi_handle(dev);
-+	if (!handle)
-+		return;
-+
-+	device = &sdev->sdev_gendev;
-+
-+	acpi_power_resource_register_device(device, handle);
-+}
-+
-+static void ata_acpi_unregister_power_resource(struct ata_device *dev)
-+{
-+	struct scsi_device *sdev = dev->sdev;
-+	acpi_handle handle;
-+	struct device *device;
-+
-+	handle = ata_dev_acpi_handle(dev);
-+	if (!handle)
-+		return;
-+
-+	device = &sdev->sdev_gendev;
-+
-+	acpi_power_resource_unregister_device(device, handle);
-+}
-+
- void ata_acpi_bind(struct ata_device *dev)
- {
- 	ata_acpi_bind_dock(dev);
- 	ata_acpi_add_pm_notifier(dev);
-+	ata_acpi_register_power_resource(dev);
- }
- 
- void ata_acpi_unbind(struct ata_device *dev)
- {
- 	ata_acpi_unbind_dock(dev);
- 	ata_acpi_remove_pm_notifier(dev);
-+	ata_acpi_unregister_power_resource(dev);
- }
- 
- static int is_pci_ata(struct device *dev)
+ struct dev_pm_info {
 -- 
 1.7.2.5
 
