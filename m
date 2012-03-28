@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab2C1Rqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 13:46:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3181 "EHLO mga09.intel.com"
+	id S1758458Ab2C1Rre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 13:47:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28291 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932259Ab2C1Rqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 13:46:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="122749262"
-Message-ID: <4F734D0A.30904@linux.intel.com>
-Date: Wed, 28 Mar 2012 10:40:26 -0700
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1758228Ab2C1Rrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 13:47:32 -0400
+Date: Wed, 28 Mar 2012 19:38:58 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-security-module@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "Bhamare, Sachin" <sbhamare@panasas.com>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
+Subject: Re: [PATCH 4/6 OPTION-A version 3] completion: Add new
+	wait_for_completion_timeout_state
+Message-ID: <20120328173858.GC18944@redhat.com>
+References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com> <4F7120B6.2090509@panasas.com> <4F7126E0.5080700@panasas.com>
 MIME-Version: 1.0
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Null pointer dereference in pti_exit()
-References: <20120326143059.GA4051@redhat.com>
-In-Reply-To: <20120326143059.GA4051@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F7126E0.5080700@panasas.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 07:31 AM, Stanislaw Gruszka wrote:
-> Hi
+On 03/26, Boaz Harrosh wrote:
 >
-> We have this bug report:
-> https://bugzilla.redhat.com/show_bug.cgi?id=783561
->
-> Crash when someone load module and do not have actual pti device.
-> Then misc_deregister(&pti_char_driver) called from pti_exit() will be
-> done without misc_register(&pti_char_driver), which is called from
-> pti_pci_probe().
->
-> It is not super critical issue since if somebody who do not have
-> pti device have no reason to load modules, but I guess would be
-> good to fix this.
->
+> +int __sched
+> +wait_for_completion_timeout_state(struct completion *x,
+> +				  unsigned long timeout, int state)
+> +{
+> +	long t;
+> +	int ret;
+> +
+> +	if (!timeout)
+> +		timeout = MAX_SCHEDULE_TIMEOUT;
+> +
+> +	switch (state) {
+> +	default:
+> +		WARN_ON_ONCE(1);
+> +		/* fall through */
+> +	case 0:
+> +		state = TASK_UNINTERRUPTIBLE;
+> +		break;
 
-Thanks for the email.  I just got back from a 3 month sabbatical so I am 
-slowly getting back into the real world and how to be a computer engineer.
+Well, this looks strange, imho. If the caller wants TASK_UNINTERRUPTIBLE,
+it should simply pass TASK_UNINTERRUPTIBLE.
+wait_for_completion_timeout_state(state => 0) looks confusing, and this
+is not symmetrical wrt other states.
 
-Yes, I am not sure why someone would want to configure their kernel to 
-load a PTI module when there is not one on the platform to begin with. 
-So that is a configuration problem of a user.  But I'll look at it and 
-see if I think of anything; be a good exercise to re-jog my memory.
+> +	t = wait_for_common(x, timeout, state);
+> +	if (likely(t > 0)) {
+> +		ret = 0;
+> +	} else  {
+> +		if (t < 0)
+> +			ret = t;
+> +		else
+> +			ret = -ETIMEDOUT;
+> +	}
+> +	return ret;
 
-Thanks,
-Jay
+I tend to agree with Peter. This is the common helper, probably it
+will have more users. We shouldn't throw out the positive return
+value, it can be useful.
 
-> Thanks
-> Stanislaw
+call_usermodehelper_exec() can simply do
 
+	retval = wait_for_common(...);
 
--- 
-J (James/Jay) Freyensee
-Storage Technology Group
-Intel Corporation
+	if (retval > 0)
+		retval = sub_info->retval;
+	else if (!retval)
+		retval = -ETIMEDOUT;
+
+Oleg.
+
