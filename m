@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757752Ab2C1Odf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:33:35 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28617 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210Ab2C1Odc (ORCPT
+	id S1758201Ab2C1Odu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:33:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34381 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753431Ab2C1Od0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:33:32 -0400
-Date: Wed, 28 Mar 2012 10:27:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Jinsong Liu <jinsong.liu@intel.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
- platform
-Message-ID: <20120328142742.GD18161@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
- <20120324003111.GA11777@andromeda.dapyr.net>
- <DE8DF0795D48FD4CA783C40EC8292335105AAF@SHSMSX101.ccr.corp.intel.com>
- <20120326163558.GC10236@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC829233510CE6F@SHSMSX101.ccr.corp.intel.com>
- <4F732365020000780007B6A1@nat28.tlf.novell.com>
+	Wed, 28 Mar 2012 10:33:26 -0400
+Date: Wed, 28 Mar 2012 10:33:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        Aaron Lu <aaron.lu@amd.com>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+In-Reply-To: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F732365020000780007B6A1@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090207.4F7320ED.0084,ss=1,re=0.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 01:42:45PM +0100, Jan Beulich wrote:
-> >>> On 28.03.12 at 12:48, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
-> > But just curious, what's the purpose and benefit of exposing mwait to dom0? 
+On Wed, 28 Mar 2012, Lin Ming wrote:
 
-So that cstate.c can evaluate properly the deeper C-states and xen-acpi-processor
-can upload them to the hypervisor.
-
-> > I remember xen against doing so before.
+> ZPODD(Zero Power Optical Disk Drive) is a new feature in
+> SATA 3.1 specification. It provides a way to power off unused ODD.
 > 
-> And I don't recall anything having changed in that regard.
-
-Jan, you Acked the patch in question: https://lkml.org/lkml/2012/2/24/129
-
+> ZPODD support is checked in in sr_probe().
+> can_power_off flag is set during suspend if ZPODD is supported.
 > 
-> Jan
+> ATA port's runtime suspend callback will actually power off the ODD
+> and its runtime resume callback will actually power on the ODD.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> When ODD is powered off(D3Cold state), inserting disk will trigger a
+> wakeup event(GPE). GPE AML handler notifies the associated device. Then
+> ODD is resumed in the notify handler.
+
+> --- a/drivers/scsi/sr.c
+> +++ b/drivers/scsi/sr.c
+
+> @@ -80,12 +82,38 @@ static int sr_probe(struct device *);
+>  static int sr_remove(struct device *);
+>  static int sr_done(struct scsi_cmnd *);
+>  
+> +static int sr_suspend(struct device *dev, pm_message_t mesg)
+> +{
+> +	struct scsi_cd *cd;
+> +
+> +	cd = dev_get_drvdata(dev);
+> +	if (cd->device->power_off)
+> +		dev->power.subsys_data->can_power_off = true;
+> +
+> +	return 0;
+> +}
+> +
+> +static int sr_resume(struct device *dev)
+> +{
+> +	struct scsi_cd *cd;
+> +
+> +	cd = dev_get_drvdata(dev);
+> +	if (cd->device->power_off) {
+> +		dev->power.subsys_data->can_power_off = false;
+> +		cd->poweroff_event = 0;
+> +	}
+> +
+> +	return 0;
+> +}
+
+Calling this flag "can_power_off" makes these routines look very 
+strange.  Either the device can power off or it can't, i.e., either it 
+supports ZPODD or it doesn't.  This doesn't change over time.
+
+If you rename the flag "may_power_off" then its meaning will be more 
+clear.
+
+> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>  	unsigned int events;
+>  	int ret;
+>  
+> +	/* Not necessary to check events if enter ZPODD state */
+> +	if (cd->device->power_off &&
+> +			pm_runtime_suspended(&cd->device->sdev_gendev))
+> +		return 0;
+
+The comment is wrong and the new code does the wrong thing.  You _do_
+have to check for events even in the ZPODD state, which means
+sr_check_events must power-up the device if necessary.  
+sd_check_events in James Bottomley's scsi-misc tree now does the right
+thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
+
+> +
+>  	/* no changer support */
+>  	if (CDSL_CURRENT != slot)
+>  		return 0;
+> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>  	cd->media_present = scsi_status_is_good(ret) ||
+>  		(scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
+>  
+> +	if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
+> +		scsi_autopm_put_device(cd->device);
+
+You can see your mistake here.  You call scsi_autopm_put_device here
+without calling scsi_autopm_get_device earlier.
+
+Alan Stern
+
