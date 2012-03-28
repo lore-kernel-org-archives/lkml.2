@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab2C1ARv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 20:17:51 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:43593
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755841Ab2C1ARu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 20:17:50 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1KJHK-01-EUU-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
-CC: dri-devel <dri-devel@lists.freedesktop.org>,
-        David Airlie <airlied@linux.ie>,
-        "Daenzer, Michel" <Michel.Daenzer@amd.com>
-Subject: RE: [BUG] Warning at radeon_object.c:236 with latest Linus kernel
-Thread-Topic: [BUG] Warning at radeon_object.c:236 with latest Linus kernel
-Thread-Index: AQHNDHe5zMnotxtFJkGQj3UfsikYSJZ/KuQA//+sbwA=
-Date: Wed, 28 Mar 2012 00:17:43 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D013853C30@sausexdag01.amd.com>
-References: <1332893642.23924.139.camel@gandalf.stny.rr.com>
- <1332893782.23924.140.camel@gandalf.stny.rr.com>
-In-Reply-To: <1332893782.23924.140.camel@gandalf.stny.rr.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.181.250.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756857Ab2C1AUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 20:20:46 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36914 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755741Ab2C1AUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 20:20:45 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Date: Tue, 27 Mar 2012 17:20:43 -0700
+Message-ID: <CAN4-gUF33wb=4Ry7em_-4Hp-OTWDmnSJjzJmE_0c-J4S_mhU2A@mail.gmail.com>
+Subject: Support for Perle SXPCI Universal Serial Cards
+From: "Paul G. Allen" <pgallen@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Steven Rostedt [mailto:rostedt@goodmis.org]
-> Sent: Tuesday, March 27, 2012 8:16 PM
-> To: LKML
-> Cc: dri-devel; David Airlie; Daenzer, Michel; Deucher, Alexander
-> Subject: Re: [BUG] Warning at radeon_object.c:236 with latest Linus kernel
-> 
-> On Tue, 2012-03-27 at 20:14 -0400, Steven Rostedt wrote:
-> > You can get the full dmesg here:
-> >
-> > http://rostedt.homelinux.com/private/dmesg-bxf-20120327
-> 
-> 
-> And the config is here:
-> 
-> http://rostedt.homelinux.com/private/config-bxf-20120327
+I have a production system that currently runs on Windows XP. The
+system is Java code and was originally designed to run on Linux with a
+different multi-IO interface from Digi. The system connects to up to
+16 serial devices and is used to load firmware and configure the
+devices on a production line. Currently a Perle SXPCI Universal Serial
+card is used to support up to 32 serial ports per machine. Because at
+the time of purchase CentOS 5.1 did not have a Perle driver included,
+nor did Perle support the 2.6.x kernel used in that release, I was
+forced to switch to Windows XP, which caused numerous other Windows
+related issues such as much slower Java performance, Windows update
+issues, Windows serial port errors, etc. (problems that have never
+been seen in Linux using the same Java code.)
 
-Can you try this patch:
-http://lists.freedesktop.org/archives/dri-devel/2012-March/020606.html
+Can anyone tell me if this card is currently supported in a recent
+Linux kernel (the last kernel I have seen support in is 2.6.9), or if
+there is a patch or driver available for it? I have had poor serial
+support performance on Windows with any serial device, and this
+includes Windows 7 with USB->Serial devices, native serial devices,
+multi-IO cards, etc. Because XP has reached EOL, I am forced either
+deal with Windows 7, or upgrade to Linux, even if it means porting the
+older Perle code to a newer kernel.
 
-Alex
+Thanks in advance,
 
-> 
-> -- Steve
-> 
-> 
-
-
+PGA
+-- 
+Paul G. Allen, BSIT/SE
+Owner, Sr. Engineer
+Random Logic Consulting
+www.randomlogic.com
