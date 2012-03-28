@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab2C1LXX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:23:23 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54528 "EHLO
+	id S932370Ab2C1LXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:23:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42650 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758070Ab2C1LXV (ORCPT
+	with ESMTP id S1758258Ab2C1LXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:23:21 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: roma1390 <roma1390@gmail.com>
-Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
-Date: Wed, 28 Mar 2012 13:23:18 +0200
-User-Agent: KMail/1.8.2
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Douglas W Jones <jones@cs.uiowa.edu>,
-        Michal Nazarewicz <mnazarewicz@google.com>
-References: <201203262047.17865.vda.linux@googlemail.com> <201203281213.07856.vda.linux@googlemail.com> <4F72E893.9070502@gmail.com>
-In-Reply-To: <4F72E893.9070502@gmail.com>
+	Wed, 28 Mar 2012 07:23:35 -0400
+Message-ID: <4F72F45D.7090800@mvista.com>
+Date: Wed, 28 Mar 2012 15:22:05 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="windows-1252"
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        Aaron Lu <aaron.lu@amd.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 4/7] libata: detech Device Attention support
+References: <1332915722-15963-1-git-send-email-ming.m.lin@intel.com> <1332915722-15963-5-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <1332915722-15963-5-git-send-email-ming.m.lin@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201203281323.18194.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 March 2012 12:31, roma1390 wrote:
-> On 2012.03.28 13:13, Denys Vlasenko wrote:
-> > Third: switch to algorithm #1 and test whether it fares better.
-> > To do that, go to test_new.c
-> > and replace
-> >    #if LONG_MAX>  ((1UL<<31)-1) || LLONG_MAX>  ((1ULL<<63)-1)
-> > with
-> >    #if 1   ////LONG_MAX>  ((1UL<<31)-1) || LLONG_MAX>  ((1ULL<<63)-1)
-> > (there are two instances of this line there),
-> > then recompile and rerun the test, and post the result.
+Hello.
 
-> but affter this diff:
-> --- test_new-with-ifdefs.c      2012-03-28 13:29:04.000000000 +0300
-> +++ test_new.c  2012-03-28 13:29:12.000000000 +0300
-> @@ -1,4 +1,4 @@
-> -#include "test_header.c"
-> +#include "test_header_arm.c"
-> 
->   /* Decimal conversion is by far the most typical, and is used
->    * for /proc and /sys data. This directly impacts e.g. top performance
-> 
-> compiles fine.
-> 
-> result are:
-> ./test_new2
-> Conversions per second: 8:5420000 123:4452000 123456:3556000 12345678:3368000 
-> 123456789:2904000 2^32:2412000 2^64:1556000
-> Conversions per second: 8:5428000 123:4500000 123456:3644000 12345678:3328000 
-> 123456789:2832000 2^32:2408000 2^64:1572000
-> Conversions per second: 8:5372000 123:4396000 123456:3644000 12345678:3368000 
-> 123456789:2900000 2^32:2392000 2^64:1532000
-> Conversions per second: 8:5424000 123:4500000 123456:3608000 12345678:3284000 
-> 123456789:2896000 2^32:2416000 2^64:1572000
+On 28-03-2012 10:21, Lin Ming wrote:
 
-It looks ok - it is a bit faster that original code;
-but I expect algorithm #2 will do better.
+> Add a new flag ATA_DFLAG_DA to indicate that device supports "Device
+> Attention".
 
-BTW, please always run test of original code too when you measure speed,
-and post both results.
+> Acked-by: Aaron Lu<aaron.lu@amd.com>
+> Signed-off-by: Lin Ming<ming.m.lin@intel.com>
+[...]
 
--- 
-vda
+> diff --git a/include/linux/ata.h b/include/linux/ata.h
+> index 32df2b6..6ee41cc 100644
+> --- a/include/linux/ata.h
+> +++ b/include/linux/ata.h
+> @@ -578,6 +578,7 @@ static inline int ata_is_data(u8 prot)
+>   	  ((u64) (id)[(n) + 0]) )
+>
+>   #define ata_id_cdb_intr(id)	(((id)[ATA_ID_CONFIG]&  0x60) == 0x20)
+> +#define atapi_id_has_da(id)	((id)[77]&  (1<<  4))
+
+    We prefix these macros with 'ata_' despite them being applied to IDENTIFY 
+DEVICE data or IDENTIFY PAKCET DEVICE data. ata_id_cdb_intr(), for example, 
+applies only to IDENTIFY PAKCET DEVICE data.
+
+MBR, Sergei
