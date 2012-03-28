@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757001Ab2C1DsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 23:48:14 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53279 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756729Ab2C1DsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 23:48:13 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19lL7QyoU1lT1Va9H+b19BF5xA/iL10WWrxdIQunx
-	/mSfmd0awOPhsr
-Message-ID: <1332906489.7309.95.camel@marge.simpson.net>
-Subject: RE: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for
- linux kernel 3.3.0
-From: Mike Galbraith <efault@gmx.de>
-To: Mike Blue <micahmaggie@hotmail.com>
-Cc: kernel@kolivas.org, valdis.kletnieks@vt.edu, gene.heskett@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 Mar 2012 05:48:09 +0200
-In-Reply-To: <SNT112-W24CBD78928F4DD6AFDA564A14A0@phx.gbl>
-References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
-	 <201203240553.32526.gene.heskett@gmail.com>
-	 <57375.1332641134@turing-police.cc.vt.edu>
-	 <1332682650.9154.111.camel@marge.simpson.net>
-	 <CABqErrGaBLisO4YK5dP2O9Pv0QonZ+q9G43jm=Nf12yWVG,<1332825236.7411.54.camel@marge.simpson.net>
-	 <SNT112-W24CBD78928F4DD6AFDA564A14A0@phx.gbl>
+	id S1750782Ab2C1EDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 00:03:21 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57071 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1749667Ab2C1EDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 00:03:20 -0400
+Message-ID: <1332907359.2882.77.camel@pasglop>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Date: Wed, 28 Mar 2012 15:02:39 +1100
+In-Reply-To: <4F7191E8.7020804@redhat.com>
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>
+	 <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
+	 <4F6EEEC1.4030608@redhat.com>
+	 <20120326213809.GA29788@bloggs.ozlabs.ibm.com>
+	 <4F7191E8.7020804@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-27 at 16:23 -0400, Mike Blue wrote: 
+On Tue, 2012-03-27 at 12:09 +0200, Avi Kivity wrote:
 
-
-> Amazing and shame on you.     
+> That's fine if there are no interdependencies.  It looks like 74df956
+> will be a problem though.
 > 
-Shrug, let the chips fall where they may.
+> The other two options are:
+> 
+> - I'll add my signoff to the commits that lack it.  This unbreaks the
+> committer lacks signoff.
+> - I remove Alex's commits, Alex sends me a pull request based on that
+> tree, I pull it in.  Alex being away for three weeks is a minor flaw in
+> this plan.
+> - As above, but with you sending me that tree as temporary kvm-ppc
+> maintainer.
+> 
+> Options 2/3 are harder as there are a few interdependencies.
+> 
+> Linus, if the first option is acceptable, a tree is available at the
+> same place:
+> 
+>   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.4
+> 
+> otherwise, please provide guidance.
 
--Mike 
+Linus, what's your feeling here ? I'd really like to have the bulk of
+the powerpc updates this time around, they already missed the previous
+merge window due to maintainers taking too long to deal with their
+inbox :-) 
+
+KVM ppc is a big WIP with little if any users at this point so the risk
+of breaking things is near to non-existent, it all boils down to making
+our own life easier by having stuff not drifting out of tree (and making
+it possible for distros to pick it up when they decide to do so).
+
+Cheers,
+Ben.
+
 
