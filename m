@@ -1,65 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758234Ab2C1K7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:59:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37810 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758068Ab2C1K7P (ORCPT
+	id S1758174Ab2C1LBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:01:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49803 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757771Ab2C1LBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:59:15 -0400
-Date: Wed, 28 Mar 2012 11:58:50 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Cyril Chemparathy <cyril@ti.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/2] regulator: Convert tps6524x to set_voltage_sel
-Message-ID: <20120328105849.GI3232@opensource.wolfsonmicro.com>
-References: <1332457828.9382.0.camel@phoenix>
- <20120326175029.GJ3789@opensource.wolfsonmicro.com>
- <CAF+7xWnrY5jjznuJyNFA-CNpnrdpnX9kVS1myq1PzAXEmCGdWA@mail.gmail.com>
+	Wed, 28 Mar 2012 07:01:17 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F72EF10.3060209@jp.fujitsu.com>
+Date: Wed, 28 Mar 2012 19:59:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ijf6z65S790CMqo8"
-Content-Disposition: inline
-In-Reply-To: <CAF+7xWnrY5jjznuJyNFA-CNpnrdpnX9kVS1myq1PzAXEmCGdWA@mail.gmail.com>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [RFC][[PATCH 4/6] memcg: remove mem_cgroup pointer from page_cgroup
+References: <4F72EB84.7080000@jp.fujitsu.com>
+In-Reply-To: <4F72EB84.7080000@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ijf6z65S790CMqo8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch removes pc->mem_cgroup and merge the pointer into flags as
 
-On Tue, Mar 27, 2012 at 08:52:25AM +0800, Axel Lin wrote:
+63                           4     0
+  | pointer to memcg..........|flags|
 
-> I'm not sure if you still keep both patches, if a resend is required,
-> just let me know.
+After this, memory cgroup's overhead is 8(4)bytes per a page.
 
-Please resend.
+Changelog:
+ - added BUILD_BUG_ON()
+ - update comments in Kconfig
 
---ijf6z65S790CMqo8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/page_cgroup.h |   21 +++++++++------------
+ init/Kconfig                |    2 +-
+ 2 files changed, 10 insertions(+), 13 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 3f3b4ff..7e3a3c7 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -3,6 +3,10 @@
+ 
+ #include <linux/smp.h>
+ 
++/*
++ * These flags are encoded into low bits of unsigned long,
++ * ORed with a pointer to mem_cgroup.
++ */
+ enum {
+ 	/* flags for mem_cgroup */
+ 	PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
+@@ -12,6 +16,8 @@ enum {
+ 	__NR_PCG_FLAGS,
+ };
+ 
++#define PCG_FLAGS_MASK	((1 << __NR_PCG_FLAGS) - 1)
++
+ #ifndef __GENERATING_BOUNDS_H
+ #include <generated/bounds.h>
+ 
+@@ -27,7 +33,6 @@ enum {
+  */
+ struct page_cgroup {
+ 	unsigned long flags;
+-	struct mem_cgroup *mem_cgroup;
+ };
+ 
+ void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
+@@ -93,7 +98,7 @@ extern struct mem_cgroup*  root_mem_cgroup;
+ static inline struct mem_cgroup* pc_to_mem_cgroup(struct page_cgroup *pc)
+ {
+ 	if (likely(!PageCgroupReset(pc)))
+-		return pc->mem_cgroup;
++		return (struct mem_cgroup*)(pc->flags & ~PCG_FLAGS_MASK);
+ 	return root_mem_cgroup;
+ }
+ 
+@@ -101,16 +106,8 @@ static inline void
+ pc_set_mem_cgroup_and_flags(struct page_cgroup *pc, struct mem_cgroup *memcg,
+ 			unsigned long flags)
+ {
+-	pc->mem_cgroup = memcg;
+-	/*
+-	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+-	 * Especially when a page_cgroup is taken from a page, pc's mem_cgroup
+-	 * is accessed after testing USED bit. To make pc's mem_cgroup visible
+-	 * before USED bit, we need memory barrier here.
+-	 * See mem_cgroup_add_lru_list(), etc.
+-	 */
+-	smp_wmb();
+-	pc->flags = flags;
++	BUILD_BUG_ON(__NR_PCG_FLAGS > 5); /* assume 32byte alignment. */
++	pc->flags = (unsigned long)memcg | flags;
+ }
+ 
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+diff --git a/init/Kconfig b/init/Kconfig
+index 6cfd71d..e0bfe92 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -651,7 +651,7 @@ config CGROUP_MEM_RES_CTLR
+ 
+ 	  Note that setting this option increases fixed memory overhead
+ 	  associated with each page of memory in the system. By this,
+-	  20(40)bytes/PAGE_SIZE on 32(64)bit system will be occupied by memory
++	  4(8)bytes/PAGE_SIZE on 32(64)bit system will be occupied by memory
+ 	  usage tracking struct at boot. Total amount of this is printed out
+ 	  at boot.
+ 
+-- 
+1.7.4.1
 
-iQIcBAEBAgAGBQJPcu7jAAoJEBus8iNuMP3dThkP+wRIUzuWnl9Y6PaP+EeHzQCw
-gxjHL+ck6+A05qAN90bnG5uYKTuhhzu2f+KoNCPv81ASFRVyTCGkAoEHhRvVIpV2
-lChVDpWo9Uwn34RIMBXUMC4CD/5ivDHVivCjtM0VpKzFkrXOmo0UNjuilk1rXc6S
-GuA2r9H1I38NT1oKacO9qYI+98WXRz6gajYzC/ok6qIjoV+1sR75+JD3cvR755KG
-FwnZx9FsR7efhzC47ltxk/cg43Sea7zWpfoyKP20+jzClOVr/HzS5owE/hnv+xf0
-ZVbvlqgZRDVfiE5kzhqViEf3AEkp1KmLUQCZm2vK7q6VZjqK9XH3DdXVcheFONqF
-XYDr5K/C0rOMCCpklSTsOJdBdzTaJg7XsJzMEws0xOeZC3KyMOyXJ6iFlX/nrQ+T
-QMPncHWe7nC4gGoDmLpiGvV5+/HxnqnVjfwGR860y4d3uZvWohf2SeBVXjf2a4lC
-lGbvvmCSanP6TPymJv3SxJl/T6Ok+9q0m5ii+vY2xUpIDYb393R6JFlxaICHpHOQ
-a/hW3nDwMCPZ5Ogp+bHKkK3siubKcvAtnZK/8U0g2hfLtdWIUPCdGtrFy4KE7JQH
-DxchycZH1MUzD+S/7Qr4Nyj3aqY74xvbDLs80YkhYkKPCtSe3kvNMnxxDHsJ7Mvp
-T/27pa9pA5AwYuAHxVSB
-=eyJi
------END PGP SIGNATURE-----
 
---ijf6z65S790CMqo8--
