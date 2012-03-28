@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab2C1Jqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 05:46:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43467 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751842Ab2C1Jqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 05:46:38 -0400
-Date: Wed, 28 Mar 2012 10:46:10 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [RFC] Remove most all #define pr_fmt(fmt) lines
-Message-ID: <20120328094609.GA3232@opensource.wolfsonmicro.com>
-References: <1332869030.2213.46.camel@joe2Laptop>
- <4F72BD4F.9020305@ladisch.de>
- <1332919803.16535.22.camel@joe2Laptop>
+	id S1757935Ab2C1JtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 05:49:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50819 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754636Ab2C1JtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 05:49:09 -0400
+Date: Wed, 28 Mar 2012 11:48:56 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
+        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>
+Subject: Re: [PATCH 01/19] mm: Make default vm_ops provide ->page_mkwrite
+ handler
+Message-ID: <20120328094856.GA18751@quack.suse.cz>
+References: <1330963277-26336-1-git-send-email-jack@suse.cz>
+ <1330963277-26336-2-git-send-email-jack@suse.cz>
+ <20120323154502.8072a755.akpm@linux-foundation.org>
+ <20120327075527.GA5020@quack.suse.cz>
+ <20120327143815.40456d38.akpm@linux-foundation.org>
+ <20120327220819.GK5020@quack.suse.cz>
+ <20120327224553.GG5091@dastard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1332919803.16535.22.camel@joe2Laptop>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120327224553.GG5091@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 28-03-12 09:45:53, Dave Chinner wrote:
+> On Wed, Mar 28, 2012 at 12:08:19AM +0200, Jan Kara wrote:
+> > On Tue 27-03-12 14:38:15, Andrew Morton wrote:
+> > > On Tue, 27 Mar 2012 09:55:27 +0200
+> > > Jan Kara <jack@suse.cz> wrote:
+> > > > On Fri 23-03-12 15:45:02, Andrew Morton wrote:
+> > > > > On Mon,  5 Mar 2012 17:00:59 +0100
+> > > > > Jan Kara <jack@suse.cz> wrote:
+> > > > > 
+> > > > > > --- a/mm/filemap.c
+> > > > > > +++ b/mm/filemap.c
+> > > > > > @@ -1759,8 +1759,28 @@ page_not_uptodate:
+> > > > > >  }
+> > > > > >  EXPORT_SYMBOL(filemap_fault);
+> > > > > >  
+> > > > > > +int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> > > > > > +{
+> > > > > > +	struct page *page = vmf->page;
+> > > > > > +	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
+> > > > > > +	int ret = VM_FAULT_LOCKED;
+> > > > > > +
+> > > > > > +	file_update_time(vma->vm_file);
+> > > > > > +	lock_page(page);
+> > > > > > +	if ((page->mapping != inode->i_mapping) ||
+> > > > > > +	    (page_offset(page) > i_size_read(inode))) {
+> > > > > 
+> > > > > Would benefit from a comment explaining how the page can come to be
+> > > > > outside i_size, and why we fail in that case.
+> > > 
+> > > This?
+> > > 
+> > > > > I don't think i_mutex is held here, so this test is rather meaningless
+> > > > > and racy anyway?
+> > > >   i_size test is racy if that's what you mean by "this test". Just I did
+> > > > the test this way because it's like this in other places and I figured
+> > > > truncate_pagecache() can take relatively long time so the test has some
+> > > > effect. But if you think it's not worth it, I can remove it.
+> > > 
+> > > It bugs me when we copy-n-paste code without remembering why we had it
+> > > there in the first place :( iirc, mmapped pages outside i_size can and
+> > > do happen in some race situations, and are benign.
+> >   Yeah. Certainly there can be pages beyond i_size because we first set
+> > file size and then go and remove pages beyond new i_size one by one when we
+> > do truncate. We must be careful not to create any new pages beyond i_size
+> > but that's what filemap_fault() takes care of. So I think i_size check in
+> > ->page_mkwrite() isn't strictly needed.
+> 
+> Actually, I think it is. In __do_fault(), we drop the page lock
+> between the .fault call and the .page_mkwrite() call, so the size
+> checks in .fault for the given page being faulted are no longer
+> valid as truncate serialises only on the page lock. Hence we have to
+> repeat the truncate race checks again in .page_mkwrite() after we
+> relock the page.
+  I was thinking about this scenario as well but I think doesn't cause any
+problems. But maybe there's some noise in what the condition actually is.
+So I currently have:
+	if (page->mapping != inode->i_mapping)
+		bail..
+	do stuff.
+And I think that is enough. Because only filemap_fault() creates new page,
+->page_mkwrite() only uses the page reference from vmf->page. So the only
+thing that can happen after __do_fault() drops page lock is that
+truncate_pagecache() will go and truncate the page (thus page->mapping will
+be NULL) and the condition I currently have should be enough to catch that.
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Mar 28, 2012 at 12:30:03AM -0700, Joe Perches wrote:
-> On Wed, 2012-03-28 at 09:27 +0200, Clemens Ladisch wrote:
-> > Joe Perches wrote:
-
-> > > +regulator-y := core.o dummy.o fixed-helper.o
-> > > +regulator-objs := $(regulator-y)
-
-> > > -obj-$(CONFIG_REGULATOR) += core.o dummy.o fixed-helper.o
-> > > +obj-$(CONFIG_REGULATOR) += regulator.o
-
-> > > Any objections or other suggestions/improvements?
-
-This seems an incredibly obscure approach.
-
-> > Instead of doing a Makefile change that has no _obvious_ connection with
-> > printk, wouldn't it be better to just define pr_fmt with "regulator: "?
-
-This seems like a much better idea if we're going to do anything; it
-means that we don't end up embedding module names in things (which are
-after all a bit of an implementation detail) and get to pick the name so
-we can do something like get the prefix which is used for the symbols in
-the code even if things are split over multiple modules.
-
-> Maybe, maybe not.
-
-> Bundling objects in a Makefile like this is pretty common
-> and can also produce better module names.
-
-In the case above we don't support modular build in the first place.
-
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPct3ZAAoJEBus8iNuMP3dH8QQAITURuf81brjvEXvwHY7bAe/
-VWem88lHXGKSW8MpFVZD99UbiYjV7OSIiiT4FaEa6Da0b1YFgH8f861PriyJzjNX
-yfn5nnU5TF/pnsaeNekKzcF1S6QqT+hp2qLuVJyEn/Sq2ixcI5IzOouLISvVqNEV
-kR4imKfrXOyXHmq15Pst2hbN5IHFdCxKf7fJpLG2fFrcqxnAje+Clwoj0Cf66L4q
-kaY//vLyFWbDtX7Tpe+3Pcg3t86wdI8mUANrv8tW7MCaT1K4okmK6wABcHlf+HFm
-ychi7qC6nGYzy4ObPWOZveMWC+5Ls9Q6gGM08jivvj6HKgP0lh7nWKJwAj/HaAtk
-FUBmLGGSi7RhlftsVftPl4QtayAl774Bplp8soT4+NsFnDtFWHqYach/SxB3gkjJ
-kvYhM3IUaQ9LY334ddGBnJ059ZeVt1LQaxLvwJYolBFnF/sbWZGMKyRCAjtAxffm
-gBt+C4CCdtthQfGFMR+OmJWBwGND4tKRerUf2Ts5Q3nbjeQipJ9t4dDJdZ+3omLS
-dJ0iD/uD6p447nLzvibBFW53vdpxQzCRl4yaaxzqSOVTZ5C0EiLWB3Q72ixwDEh9
-b4EdAeDvQ2vsbNb9dZdWx/gYK6O4xi6kxyhuvPOXho3eeskN4c9AdelHCQ9w/4+x
-d69i/G1G6j3GpHkfnBq0
-=4ahX
------END PGP SIGNATURE-----
-
---W/nzBZO5zC0uMSeA--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
