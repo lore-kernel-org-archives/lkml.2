@@ -1,90 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668Ab2C1UY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:24:29 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56528 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758517Ab2C1UY2 (ORCPT
+	id S932580Ab2C1UYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:24:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42688 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758678Ab2C1UYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:24:28 -0400
-MIME-Version: 1.0
+	Wed, 28 Mar 2012 16:24:32 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
         sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 00/16] vfs: atomic open v2
-Date: Wed, 28 Mar 2012 22:24:29 +0200
-Message-Id: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 03/16] vfs: split __dentry_open()
+Date: Wed, 28 Mar 2012 22:24:32 +0200
+Message-Id: <1332966285-30358-4-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
+References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series allows clean implementation of atomic lookup+(create)+open
-operations that previously were done via ->lookup and ->create using open
-intents.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-The biggest change from the first version is that ->atomic_create has been
-merged into ->atomic_open, and that now ->atomic_open is allowed to return with
-the result of a lookup without actually opening the file.
+Split __dentry_open() into two functions:
 
-The interface is thus simpler and more flexible at the cost of a bit of extra
-complexity in the filesystem implementations.
+  do_dentry_open() - does most of the actual work, doesn't put file on failure
+  open_check_o_direct() - after a successful open, checks direct_IO method
 
-I dropped the rest of the nameidata cleanup patches from this series, and will
-post them as a separate series.
+This will allow i_op->atomic_open to do just the file initialization and leave
+the direct_IO checking to the VFS.
 
-Note, I only tested NFS and FUSE, the CIFS, CEPH and 9P changes are completely
-untested, so please report any testing results.
-
-git tree is here:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git atomic-open.v2
-
-Thanks,
-Miklos
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
+ fs/internal.h |    1 +
+ fs/open.c     |   47 +++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 34 insertions(+), 14 deletions(-)
 
-Miklos Szeredi (16):
-      vfs: split do_lookup()
-      vfs: reorganize do_last()
-      vfs: split __dentry_open()
-      vfs: add i_op->atomic_open()
-      nfs: don't open in ->d_revalidate
-      nfs: implement i_op->atomic_open()
-      nfs: clean up ->create in nfs_rpc_ops
-      nfs: don't use nd->intent.open.flags
-      nfs: don't use intents for checking atomic open
-      fuse: implement i_op->atomic_create()
-      cifs: implement i_op->atomic_open() and i_op->atomic_create()
-      ceph: remove unused arg from ceph_lookup_open()
-      ceph: implement i_op->atomic_open() and i_op->atomic_create()
-      9p: implement i_op->atomic_create()
-      vfs: remove open intents from nameidata
-      vfs: only retry last component if opening stale dentry
-
----
- fs/9p/vfs_inode.c       |  169 ++++++++++------
- fs/9p/vfs_inode_dotl.c  |   52 ++++--
- fs/ceph/dir.c           |   68 ++++---
- fs/ceph/file.c          |   22 +-
- fs/ceph/super.h         |    6 +-
- fs/cifs/cifsfs.c        |    1 +
- fs/cifs/cifsfs.h        |    3 +
- fs/cifs/dir.c           |  435 ++++++++++++++++++++++------------------
- fs/fuse/dir.c           |   97 +++++++---
- fs/internal.h           |   10 +-
- fs/namei.c              |  510 ++++++++++++++++++++++++++++++++++++-----------
- fs/nfs/dir.c            |  285 ++++++++++-----------------
- fs/nfs/file.c           |   69 ++++++-
- fs/nfs/nfs3proc.c       |    2 +-
- fs/nfs/nfs4proc.c       |   37 +---
- fs/nfs/proc.c           |    2 +-
- fs/open.c               |  119 +++++------
- include/linux/errno.h   |    1 +
- include/linux/fs.h      |    7 +
- include/linux/namei.h   |   11 -
- include/linux/nfs_xdr.h |    2 +-
- 21 files changed, 1153 insertions(+), 755 deletions(-)
+diff --git a/fs/internal.h b/fs/internal.h
+index 9962c59..4d69fdd 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -100,6 +100,7 @@ extern struct file *do_file_open_root(struct dentry *, struct vfsmount *,
+ 
+ extern long do_handle_open(int mountdirfd,
+ 			   struct file_handle __user *ufh, int open_flag);
++extern int open_check_o_direct(struct file *f);
+ 
+ /*
+  * inode.c
+diff --git a/fs/open.c b/fs/open.c
+index 77becc0..6acfd2d 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -644,10 +644,23 @@ static inline int __get_file_write_access(struct inode *inode,
+ 	return error;
+ }
+ 
+-static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+-					struct file *f,
+-					int (*open)(struct inode *, struct file *),
+-					const struct cred *cred)
++int open_check_o_direct(struct file *f)
++{
++	/* NB: we're sure to have correct a_ops only after f_op->open */
++	if (f->f_flags & O_DIRECT) {
++		if (!f->f_mapping->a_ops ||
++		    ((!f->f_mapping->a_ops->direct_IO) &&
++		    (!f->f_mapping->a_ops->get_xip_mem))) {
++			return -EINVAL;
++		}
++	}
++	return 0;
++}
++
++static struct file *do_dentry_open(struct dentry *dentry, struct vfsmount *mnt,
++				   struct file *f,
++				   int (*open)(struct inode *, struct file *),
++				   const struct cred *cred)
+ {
+ 	static const struct file_operations empty_fops = {};
+ 	struct inode *inode;
+@@ -703,16 +716,6 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+ 
+ 	file_ra_state_init(&f->f_ra, f->f_mapping->host->i_mapping);
+ 
+-	/* NB: we're sure to have correct a_ops only after f_op->open */
+-	if (f->f_flags & O_DIRECT) {
+-		if (!f->f_mapping->a_ops ||
+-		    ((!f->f_mapping->a_ops->direct_IO) &&
+-		    (!f->f_mapping->a_ops->get_xip_mem))) {
+-			fput(f);
+-			f = ERR_PTR(-EINVAL);
+-		}
+-	}
+-
+ 	return f;
+ 
+ cleanup_all:
+@@ -740,6 +743,22 @@ cleanup_file:
+ 	return ERR_PTR(error);
+ }
+ 
++static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
++				struct file *f,
++				int (*open)(struct inode *, struct file *),
++				const struct cred *cred)
++{
++	struct file *res = do_dentry_open(dentry, mnt, f, open, cred);
++	if (!IS_ERR(res)) {
++		int error = open_check_o_direct(f);
++		if (error) {
++			fput(res);
++			res = ERR_PTR(error);
++		}
++	}
++	return res;
++}
++
+ /**
+  * lookup_instantiate_filp - instantiates the open intent filp
+  * @nd: pointer to nameidata
+-- 
+1.7.7
 
