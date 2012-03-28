@@ -1,93 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab2C1WBb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:01:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53677 "EHLO mx2.suse.de"
+	id S1758769Ab2C1WDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:03:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21201 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758110Ab2C1WBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:01:30 -0400
-Date: Thu, 29 Mar 2012 00:01:26 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Mandeep Singh Baines <msb@chromium.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: cgroups commit 61d1d219c4 breaks systemd
-Message-ID: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758531Ab2C1WDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 18:03:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124507479"
+Message-Id: <20120328131153.305137134@intel.com>
+User-Agent: quilt/0.51-1
+Date: Wed, 28 Mar 2012 20:13:11 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Linux Memory Management List <linux-mm@kvack.org>
+cc: Vivek Goyal <vgoyal@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>
+cc: Suresh Jayaraman <sjayaraman@suse.com>,
+        Andrea Righi <andrea@betterlinux.com>
+cc: Jeff Moyer <jmoyer@redhat.com>
+cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/6] blk-cgroup: buffered write IO controller - bandwidth weight
+References: <20120328121308.568545879@intel.com>
+Content-Disposition: inline; filename=writeback-io-controller-weight.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+blkcg->weight can be trivially supported for buffered writes by directly
+scaling task_ratelimit in balance_dirty_pages().
 
-I am not able to boot current Linus' tree on system which is using 
-systemd. In the early boot phase I get
+However the sementics are not quite the same with direct IO.
 
-	Failed to create root cgroup hierarchy: No such process
-	Failed to allocate manager object: No such process
+- for direct IO, weight is normally applied to disk time
+- for buffered writes, weight is applied to dirty rate
 
-and that's it, the system is completely unusable afterwards (not having 
-any console spawned, no networking, etc).
+Notes about the (balanced_dirty_ratelimit > write_bw) check removal:
 
-Bisection pointed to
+When there is only one dd running and its weight is set to
+BLKIO_WEIGHT_MIN=10, bdi->dirty_ratelimit will end up balancing around
 
-	commit 61d1d219c4c0761059236a46867bc49943c4d29d
-	Author: Mandeep Singh Baines <msb@chromium.org>
-	Date:   Mon Jan 30 12:51:56 2012 -0800
+	write_bw * BLKIO_WEIGHT_DEFAULT / BLKIO_WEIGHT_MIN 
+	= write_bw * 50
 
-	    cgroup: remove extra calls to find_existing_css_set
+So the limit should now be raised to (write_bw * 50) to deal with the
+above extreme case, which seems too large to be useful for normal cases.
+So just remove it.
 
-and I have verified that reverting this single commit on top of current 
-Linus' tree makes the problem go away and the system boots properly.
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ include/linux/blk-cgroup.h |   18 ++++++++++++++----
+ mm/page-writeback.c        |   10 +++++-----
+ 2 files changed, 19 insertions(+), 9 deletions(-)
 
-strace output shows that with 61d1d219c applied, systemd is failing while 
-trying to add itself to the systemd cgroup:
+--- linux-next.orig/include/linux/blk-cgroup.h	2012-03-28 13:42:26.686233288 +0800
++++ linux-next/include/linux/blk-cgroup.h	2012-03-28 14:25:16.150180560 +0800
+@@ -21,6 +21,10 @@ enum blkio_policy_id {
+ 	BLKIO_POLICY_THROTL,		/* Throttling */
+ };
+ 
++#define BLKIO_WEIGHT_MIN	10
++#define BLKIO_WEIGHT_MAX	1000
++#define BLKIO_WEIGHT_DEFAULT	500
++
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
+ 
+@@ -209,6 +213,11 @@ extern unsigned int blkcg_get_read_iops(
+ extern unsigned int blkcg_get_write_iops(struct blkio_cgroup *blkcg,
+ 				     dev_t dev);
+ 
++static inline unsigned int blkcg_weight(struct blkio_cgroup *blkcg)
++{
++	return blkcg->weight;
++}
++
+ typedef void (blkio_unlink_group_fn) (void *key, struct blkio_group *blkg);
+ 
+ typedef void (blkio_update_group_weight_fn) (void *key,
+@@ -259,11 +268,12 @@ static inline void blkio_policy_unregist
+ 
+ static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
+ 
+-#endif
++static inline unsigned int blkcg_weight(struct blkio_cgroup *blkcg)
++{
++	return BLKIO_WEIGHT_DEFAULT;
++}
+ 
+-#define BLKIO_WEIGHT_MIN	10
+-#define BLKIO_WEIGHT_MAX	1000
+-#define BLKIO_WEIGHT_DEFAULT	500
++#endif
+ 
+ #ifdef CONFIG_DEBUG_BLK_CGROUP
+ void blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg);
+--- linux-next.orig/mm/page-writeback.c	2012-03-28 13:42:26.678233289 +0800
++++ linux-next/mm/page-writeback.c	2012-03-28 14:26:02.694179605 +0800
+@@ -905,11 +905,6 @@ static void bdi_update_dirty_ratelimit(s
+ 	 */
+ 	balanced_dirty_ratelimit = div_u64((u64)task_ratelimit * write_bw,
+ 					   dirty_rate | 1);
+-	/*
+-	 * balanced_dirty_ratelimit ~= (write_bw / N) <= write_bw
+-	 */
+-	if (unlikely(balanced_dirty_ratelimit > write_bw))
+-		balanced_dirty_ratelimit = write_bw;
+ 
+ 	/*
+ 	 * We could safely do this and return immediately:
+@@ -1263,6 +1258,11 @@ static void balance_dirty_pages(struct a
+ 					       bdi_thresh, bdi_dirty);
+ 		task_ratelimit = ((u64)dirty_ratelimit * pos_ratio) >>
+ 							RATELIMIT_CALC_SHIFT;
++
++		if (blkcg_weight(blkcg) != BLKIO_WEIGHT_DEFAULT)
++			task_ratelimit = (u64)task_ratelimit *
++				blkcg_weight(blkcg) / BLKIO_WEIGHT_DEFAULT;
++
+ 		max_pause = bdi_max_pause(bdi, bdi_dirty);
+ 		min_pause = bdi_min_pause(bdi, max_pause,
+ 					  task_ratelimit, dirty_ratelimit,
 
-mkdir("/sys", 0755)                     = -1 EEXIST (File exists)
-mkdir("/sys/fs", 0755)                  = -1 EEXIST (File exists)
-mkdir("/sys/fs/cgroup", 0755)           = -1 EEXIST (File exists)
-mkdir("/sys/fs/cgroup/systemd", 0755)   = -1 EEXIST (File exists)
-mkdir("/sys/fs/cgroup/systemd/system", 0755) = 0
-open("/sys/fs/cgroup/systemd/system/tasks", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666) = 6
-fstat(6, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4ecb000
-write(6, "357\n", 4)                    = -1 ESRCH (No such process)
-close(6)                                = 0
-munmap(0x7f60c4ecb000, 4096)            = 0
-writev(3, [{"<27>", 4}, {"systemd", 7}, {"[357]: ", 7}, {"Failed to create root cgroup hierarchy: No such process", 55}, {"\n", 1}], 5) = 74
-open("/sys/fs/cgroup/systemd/system/tasks", O_RDONLY|O_CLOEXEC) = 6
-fstat(6, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4ecb000
-read(6, "357\n", 4096)                  = 4
-open("/sys/fs/cgroup/systemd/tasks", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666) = 7
-fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4eca000
-write(7, "357\n", 4)                    = -1 ESRCH (No such process)
-close(7)                                = 0
-munmap(0x7f60c4eca000, 4096)            = 0
-read(6, "", 4096)                       = 0
-close(6)                                = 0
-munmap(0x7f60c4ecb000, 4096)            = 0
-open("/sys/fs/cgroup/systemd/system/tasks", O_RDONLY|O_CLOEXEC) = 6
-fstat(6, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4ecb000
-read(6, "", 4096)                       = 0
-close(6)                                = 0
-munmap(0x7f60c4ecb000, 4096)            = 0
-open("/sys/fs/cgroup/systemd/system", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 6
-getdents(6, /* 7 entries */, 32768)     = 240
-getdents(6, /* 0 entries */, 32768)     = 0
-lstat("/sys/fs/cgroup/systemd/system/tasks", {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-rmdir("/sys/fs/cgroup/systemd/system")  = 0
-close(6)                                = 0
-close(4)                                = 0
-close(5)                                = 0
-close(0)                                = 0
-writev(3, [{"<27>", 4}, {"systemd", 7}, {"[357]: ", 7}, {"Failed to allocate manager object: No such process", 50}, {"\n", 1}], 5) = 69
 
--- 
-Jiri Kosina
-SUSE Labs
