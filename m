@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757001Ab2C1AWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 20:22:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46902 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841Ab2C1AWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 20:22:40 -0400
-Date: Tue, 27 Mar 2012 17:26:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>
-Cc: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-Id: <20120327172622.827fd6ab.akpm@linux-foundation.org>
-In-Reply-To: <20120328001550.GA3077@redhat.com>
-References: <20120313182220.GA11500@redhat.com>
-	<20120327155149.d41a235b.akpm@linux-foundation.org>
-	<20120328001550.GA3077@redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757096Ab2C1AXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 20:23:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43362 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab2C1AXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 20:23:48 -0400
+Date: Tue, 27 Mar 2012 20:23:46 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: netdev@vger.kernel.org
+Subject: kernel BUG at include/net/netns/generic.h:41
+Message-ID: <20120328002346.GB3077@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Mar 2012 20:15:50 -0400 Dave Jones <davej@redhat.com> wrote:
+I started seeing this every boot.. (v3.3-6972-ge22057c)
 
-> On Tue, Mar 27, 2012 at 03:51:49PM -0700, Andrew Morton wrote:
->  > On Tue, 13 Mar 2012 14:22:20 -0400
->  > Dave Jones <davej@redhat.com> wrote:
->  > 
->  > > This size is user controllable, and so it's trivial for someone to trigger a
->  > > stream of order:4 page allocation errors.
->  > > 
->  > > Signed-off-by: Dave Jones <davej@redhat.com>
->  > > 
->  > > --- 
->  > > There's also a similar problem in setxattr, but I'm not sure how we want
->  > > to pass NOWARN down to memdup_user. Thoughts ?
->  > > 
->  > > diff --git a/fs/xattr.c b/fs/xattr.c
->  > > index 82f4337..544df90 100644
->  > > --- a/fs/xattr.c
->  > > +++ b/fs/xattr.c
->  > > @@ -496,7 +496,7 @@ listxattr(struct dentry *d, char __user *list, size_t size)
->  > >  	if (size) {
->  > >  		if (size > XATTR_LIST_MAX)
->  > >  			size = XATTR_LIST_MAX;
->  > > -		klist = kmalloc(size, GFP_KERNEL);
->  > > +		klist = kmalloc(size, __GFP_NOWARN | GFP_KERNEL);
->  > >  		if (!klist)
->  > >  			return -ENOMEM;
->  > >  	}
->  > 
->  > hm.  The patch is good, but one would hope that it isn't "trivial" to
->  > trigger a page allocation failure for a kmalloc(65536, GFP_KERNEL) -
->  > the VM is supposed to be able to handle that.
->  > 
->  > Is it really *that* easy, or is Something Unusual happening with that
->  > machine?
-> 
-> Well, the unusual thing was that I was fuzzing system calls for a few hours.
-> 
-> My fuzzing tool was able to trigger these very easily after an hour or two
-> of uptime and memory had fragmented a little, so yeah, quite trivial.
-> 
+	Dave
 
-/*
- * PAGE_ALLOC_COSTLY_ORDER is the order at which allocations are deemed
- * costly to service.  That is between allocation orders which should
- * coelesce naturally under reasonable reclaim pressure and those which
- * will not.
- */
-#define PAGE_ALLOC_COSTLY_ORDER 3
+[   17.103931] ------------[ cut here ]------------
+[   17.105987] RPC: Registered named UNIX socket transport module.
+[   17.105989] RPC: Registered udp transport module.
+[   17.105990] RPC: Registered tcp transport module.
+[   17.105992] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[   17.104856] kernel BUG at include/net/netns/generic.h:41!
+[   17.104856] invalid opcode: 0000 [#1] PREEMPT SMP 
+[   17.104856] CPU 0 
+[   17.104856] Modules linked in: sunrpc btrfs zlib_deflate libcrc32c firewire_ohci firewire_core sata_sil crc_itu_t floppy radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core
+[   17.104856] 
+[   17.104856] Pid: 416, comm: mount Not tainted 3.3.0+ #19                  /D975XBX
+[   17.104856] RIP: 0010:[<ffffffffa029068b>]  [<ffffffffa029068b>] rpc_fill_super+0x29b/0x2a0 [sunrpc]
+[   17.104856] RSP: 0018:ffff8800b52c5cf8  EFLAGS: 00010246
+[   17.104856] RAX: 0000000000000001 RBX: ffff8800a394dcd0 RCX: 0000000000000000
+[   17.104856] RDX: ffff8800a4c10000 RSI: ffffffff81c2cd00 RDI: ffff8800a4c10918
+[   17.104856] RBP: ffff8800b52c5d38 R08: 0000000000000001 R09: 0000000000000000
+[   17.104856] R10: 0000000000000001 R11: 0000000000000002 R12: 0000000000000000
+[   17.104856] R13: ffffffff82d0f140 R14: ffff8800ba54c000 R15: 0000000000000000
+[   17.104856] FS:  00007f1a97593800(0000) GS:ffff8800bf600000(0000) knlGS:0000000000000000
+[   17.104856] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   17.104856] CR2: 0000003e92478a90 CR3: 00000000a4d22000 CR4: 00000000000007f0
+[   17.104856] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   17.104856] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   17.104856] Process mount (pid: 416, threadinfo ffff8800b52c4000, task ffff8800a4c10000)
+[   17.104856] Stack:
+[   17.104856]  ffffffffa02903f0 00000000000000d0 000060ff40002438 ffffffff82d0f140
+[   17.104856]  0000000000000000 ffffffffa02903f0 ffff8800a394dcd0 0000000000000000
+[   17.104856]  ffff8800b52c5d88 ffffffff811a9d8c 0000000000000003 ffffffff00000001
+[   17.104856] Call Trace:
+[   17.104856]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
+[   17.104856]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
+[   17.104856]  [<ffffffff811a9d8c>] mount_ns+0xac/0xe0
+[   17.104856]  [<ffffffffa028ea39>] rpc_mount+0x29/0x30 [sunrpc]
+[   17.104856]  [<ffffffff811aaab3>] mount_fs+0x43/0x1b0
+[   17.104856]  [<ffffffff8115dd80>] ? __alloc_percpu+0x10/0x20
+[   17.104856]  [<ffffffff811c8af2>] vfs_kern_mount+0x72/0x100
+[   17.104856]  [<ffffffff811c92d4>] do_kern_mount+0x54/0x110
+[   17.104856]  [<ffffffff811caa44>] do_mount+0x1a4/0x830
+[   17.104856]  [<ffffffff8115765b>] ? memdup_user+0x4b/0x90
+[   17.104856]  [<ffffffff811576fb>] ? strndup_user+0x5b/0x80
+[   17.104856]  [<ffffffff811cb210>] sys_mount+0x90/0xe0
+[   17.104856]  [<ffffffff816624d2>] system_call_fastpath+0x16/0x1b
+[   17.104856] Code: e8 db 7a e6 e0 84 c0 74 c9 48 c7 c7 00 cd c2 81 e8 bb e5 e1 e0 85 c0 0f 85 f4 fd ff ff eb b3 90 41 bf f4 ff ff ff e9 ce fe ff ff <0f> 0b 0f 0b 90 55 48 89 e5 41 54 53 48 83 ec 10 66 66 66 66 90 
+[   17.104856] RIP  [<ffffffffa029068b>] rpc_fill_super+0x29b/0x2a0 [sunrpc]
+[   17.104856]  RSP <ffff8800b52c5cf8>
+[   17.469688] ---[ end trace 74871f164631364c ]---
+[   17.488286] BUG: sleeping function called from invalid context at kernel/rwsem.c:21
+[   17.498626] in_atomic(): 0, irqs_disabled(): 0, pid: 416, name: mount
+[   17.498629] INFO: lockdep is turned off.
+[   17.498631] Pid: 416, comm: mount Tainted: G      D      3.3.0+ #19
+[   17.498632] Call Trace:
+[   17.498639]  [<ffffffff8107d96c>] __might_sleep+0x13c/0x1f0
+[   17.498644]  [<ffffffff81657c06>] down_read+0x26/0x93
+[   17.498646]  [<ffffffff81061164>] exit_signals+0x24/0x130
+[   17.498650]  [<ffffffff8104d3cf>] do_exit+0xbf/0xb60
+[   17.498652]  [<ffffffff8104a443>] ? kmsg_dump+0x1c3/0x2c0
+[   17.498654]  [<ffffffff8104a2ff>] ? kmsg_dump+0x7f/0x2c0
+[   17.498657]  [<ffffffff8165b9d4>] oops_end+0xa4/0xf0
+[   17.498660]  [<ffffffff81005be8>] die+0x58/0x90
+[   17.498662]  [<ffffffff8165b2f4>] do_trap+0xc4/0x170
+[   17.498665]  [<ffffffff81002f35>] ? do_invalid_op+0xa5/0xb0
+[   17.498667]  [<ffffffff81002f25>] do_invalid_op+0x95/0xb0
+[   17.498684]  [<ffffffffa029068b>] ? rpc_fill_super+0x29b/0x2a0 [sunrpc]
+[   17.498686]  [<ffffffff8165e3cd>] ? sub_preempt_count+0x9d/0xd0
+[   17.498689]  [<ffffffff8131baad>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[   17.498692]  [<ffffffff8165ac4d>] ? restore_args+0x30/0x30
+[   17.498696]  [<ffffffff81663755>] invalid_op+0x15/0x20
+[   17.498704]  [<ffffffffa029068b>] ? rpc_fill_super+0x29b/0x2a0 [sunrpc]
+[   17.498713]  [<ffffffffa0290675>] ? rpc_fill_super+0x285/0x2a0 [sunrpc]
+[   17.498721]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
+[   17.498731]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
+[   17.498734]  [<ffffffff811a9d8c>] mount_ns+0xac/0xe0
+[   17.498743]  [<ffffffffa028ea39>] rpc_mount+0x29/0x30 [sunrpc]
+[   17.498746]  [<ffffffff811aaab3>] mount_fs+0x43/0x1b0
+[   17.498750]  [<ffffffff8115dd80>] ? __alloc_percpu+0x10/0x20
+[   17.498754]  [<ffffffff811c8af2>] vfs_kern_mount+0x72/0x100
+[   17.498756]  [<ffffffff811c92d4>] do_kern_mount+0x54/0x110
+[   17.498760]  [<ffffffff811caa44>] do_mount+0x1a4/0x830
+[   17.498763]  [<ffffffff8115765b>] ? memdup_user+0x4b/0x90
+[   17.498765]  [<ffffffff811576fb>] ? strndup_user+0x5b/0x80
+[   17.498769]  [<ffffffff811cb210>] sys_mount+0x90/0xe0
+[   17.498773]  [<ffffffff816624d2>] system_call_fastpath+0x16/0x1b
+[   17.775067] systemd[1]: var-lib-nfs-rpc_pipefs.mount mount process exited, code=killed status=11
+[   17.829617] systemd[1]: Job nfs-idmap.service/start failed with result 'dependency'.
+[   17.856061] systemd[1]: Unit var-lib-nfs-rpc_pipefs.mount entered failed state.
 
-
-Death to magic numbers :(
