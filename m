@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab2C1PJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 11:09:04 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:21298 "EHLO relay.sw.ru"
+	id S1758176Ab2C1PJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 11:09:11 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33391 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753507Ab2C1PJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 11:09:03 -0400
-Subject: [PATCH 0/8] NFSd: precursor and cleanup patch set
+	id S1753507Ab2C1PJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 11:09:08 -0400
+Subject: [PATCH 1/8] nfsd: use passed cache_detail pointer expkey_parse()
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 28 Mar 2012 19:08:53 +0400
-Message-ID: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
+Date: Wed, 28 Mar 2012 19:09:01 +0400
+Message-ID: <20120328150901.2646.43715.stgit@localhost6.localdomain6>
+In-Reply-To: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
+References: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,29 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set prepares ground for making NFSd export and expkey caches
-allocated and registered per network namespace context.
-Mainly, it just replaces hard-coded pointers with dereferenced everywhere
-required.
+Using of hard-coded svc_expkey_cache pointer in expkey_parse() looks redundant.
+Moreover, global cache will be replaced with per-net instance soon.
 
-The following series consists of:
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
+ fs/nfsd/export.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Stanislav Kinsbursky (8):
-      nfsd: use passed cache_detail pointer expkey_parse()
-      nfsd: add link to owner cache detail to svc_export structure
-      nfsd: use cache detail pointer from svc_export structure on cache put
-      nfsd: use exp_put() for svc_export_cache put
-      nfsd: pass svc_export_cache pointer as private data to "exports" seq file ops
-      nfsd: use hash table from cache detail in nfsd export seq ops
-      nfsd: pass pointer to export cache down to stack wherever possible.
-      nfsd: pass pointer to expkey cache down to stack wherever possible.
-
-
- fs/nfsd/export.c            |  102 ++++++++++++++++++++++++-------------------
- fs/nfsd/nfsctl.c            |   11 ++++-
- fs/nfsd/nfsfh.c             |    2 -
- include/linux/nfsd/export.h |    3 +
- 4 files changed, 71 insertions(+), 47 deletions(-)
+diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+index 8e9689a..71c5ce3 100644
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -163,7 +163,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
+ 	cache_flush();
+  out:
+ 	if (ek)
+-		cache_put(&ek->h, &svc_expkey_cache);
++		cache_put(&ek->h, cd);
+ 	if (dom)
+ 		auth_domain_put(dom);
+ 	kfree(buf);
 
