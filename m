@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab2C1KkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:40:09 -0400
-Received: from wmz-host-1.ru ([188.138.95.96]:53148 "EHLO wmz-host-1.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227Ab2C1KkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:40:07 -0400
-X-Greylist: delayed 83665 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Mar 2012 06:40:06 EDT
-Message-ID: <52583.175.143.195.59.1332847415.squirrel@188.138.95.96>
-Date: Tue, 27 Mar 2012 15:23:35 +0400 (MSK)
-Subject: Fra Dr. Christopher Harrison
-From: "Dr. Christopher Harrison" <dr.harr_christopher_ofice11@yahoo.co.uk>
-Reply-To: drxtoharrison@yahoo.co.uk
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.13
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+	id S1758064Ab2C1KoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:44:13 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49873 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757831Ab2C1KoM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 06:44:12 -0400
+Date: Wed, 28 Mar 2012 11:46:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Josh Boyer <jwboyer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] floppy: revert floppy disable halt warning
+Message-ID: <20120328114627.51b64541@pyramind.ukuu.org.uk>
+In-Reply-To: <4F72BBCE.1060307@zytor.com>
+References: <20120311093853.04f049c2@s6510.linuxnetplumber.net>
+	<20120327162633.654c8d7e.akpm@linux-foundation.org>
+	<CA+5PVA4KsG0CEs8MhEL2qQoLBU9M6xAoPX2qnTZJ2R5RQ7-osg@mail.gmail.com>
+	<20120328064008.GA12735@gmail.com>
+	<4F72BBCE.1060307@zytor.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kære ven,
+On Wed, 28 Mar 2012 00:20:46 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Hvordan har du det i dag? Jeg håber, fint, jeg er Dr. Christopher Harrison
-fra Harlesden, North West London, her i England. Jeg arbejder for Credit
-Suisse Bank London. Jeg skriver dig fra mit kontor, som vil være en stor
-enorm fordel for os begge. I min afdeling, er den assistent manager
-(Greater London-regionen), opdagede jeg en forladt sum af $ 16,5 mio
-pounces (Seksten millioner fem hundrede tusinde pounces og pund) på en
-konto, der tilhører en af ??vores udenlandske kunder Late Mr. Moses Saba,
-en Jøde fra Mexico, der var offer for en helikopterstyrt i begyndelsen af
-??sidste år, dræbte ham og familiemedlemmer. Saba var 46-år gammel. Også i
-helikopteren på tidspunktet for flystyrtet var hans kone, deres søn
-Avraham (Albert) og hans svigerdatter. Piloten var også død.
+> On 03/27/2012 11:40 PM, Ingo Molnar wrote:
+> > 
+> > No objections from me.
+> > 
+> > Please resubmit against latest -tip, we unified the idle 
+> > routines which likely interacts with that patch.
+> > 
+> 
+> To the best of my knowledge, no-hlt only existed because of flaky power
+> distributions on 386/486 systems which were sold to run DOS.  Since DOS
+> did no power management of any kind, including HLT, the power draw was
+> fairly uniform; when exposed to the much higher noise levels you got
+> when Linux used HLT caused some of these systems to fail.
 
-Valget af at kontakte dig er vakt fra den geografiske karakter af hvor du
-bor, især på grund af følsomheden af ??transaktionen og fortroligheden
-heri, Nu er vores bank har ventet på nogen af ??de pårørende til at komme
-op til kravet, men ingen har gjort det, jeg personligt har fået medhold i
-at lokalisere de pårørende i 1 år nu, jeg søger dit samtykke til at
-præsentere dig som pårørende / Vil Modtager til den afdøde, så udbyttet af
-denne konto til en værdi af 16,5 mio pounces kan betales til dig.
+Also for the Cyrix 5510 which tended to go castors up if a HLT occurred
+during a DMA cycle and on a few other boxes HLT during DMA tended to go
+astray.
 
-Dette vil blive udbetalt eller delt i disse procenter, 60% til mig og 40%
-til dig, har jeg sikret alle nødvendige juridiske dokumenter, at vi kan
-bruges til at sikkerhedskopiere denne påstand, vi gør. Alt hvad jeg
-behøver, er at udfylde din navne til de dokumenter og legaliserede det i
-retten her for at vise dig som den retmæssige modtager, er Alt hvad jeg
-behøver nu din ærlige samarbejde, fortrolighed og tillid til, at vi ser
-denne transaktion igennem. Jeg garanterer dig, at dette vil blive
-gennemført under en legitim ordning, der vil beskytte dig mod enhver
-overtrædelse af loven.
+Do we care ? I doubt it. The 5510 was pretty obscure, the 5520 fixed it,
+the 5530 is probably the oldest still in any kind of use.
 
-Please, give mig følgende: som vi har 5 dage til at køre det igennem, det
-er meget, meget presserende PLEASE.
+Alan
 
-1. Fulde navn:
-2. Dit telefonnummer:
-3. Din Kontakt Adresse:
-4. Age / Sex:
-5. Core job / Beskæftigelse:
-6. Privat e-mail adresse:
 
-Efter at have været igennem en metodisk søgning, besluttede jeg at
-kontakte dig håb om at du vil finde dette forslag interessant, er du på
-din bekræftelse af denne meddelelse, som angiver din interesse vil give
-dig flere oplysninger.
-
-Bestræbe sig på at lade mig vide din beslutning i stedet for at holde mig
-vente.
-
-Med venlig hilsen,
-Dr. Christopher Harrison
-(drxtoharrison@yahoo.co.uk)
