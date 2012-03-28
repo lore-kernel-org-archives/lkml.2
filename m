@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab2C1StM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 14:49:12 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:53694 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932358Ab2C1StL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 14:49:11 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 4/7 v6] drm/i915/intel_i2c: use WAIT cycle, not STOP
-To: Daniel Kurtz <djkurtz@chromium.org>, Daniel Vetter <daniel@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-In-Reply-To: <1332959199-32161-5-git-send-email-djkurtz@chromium.org>
-References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org> <1332959199-32161-5-git-send-email-djkurtz@chromium.org>
-Date: Wed, 28 Mar 2012 19:48:51 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1332960542_131144@CP5-2952>
+	id S1758681Ab2C1Svq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 14:51:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20450 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758506Ab2C1Svo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 14:51:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="134222695"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] x86: Use -mno-avx when available
+Date: Wed, 28 Mar 2012 11:51:17 -0700
+Message-Id: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012 02:26:36 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
-> transaction) during a DATA or WAIT phase.  In other words, the
-> controller rejects a STOP requested as part of the first transaction in a
-> sequence.
+From: Andi Kleen <ak@linux.intel.com>
 
-The original docs have "this can only cause a STOP to be generated if a
-GMBUS cycle is generated, the GMBUS is currently in a data phase, or it
-is in a WAIT phase."
+On gccs that support AVX it's a good idea to disable that too, similar to
+how SSE2, SSE1 etc. are already disabled. This prevents the compiler
+from generating AVX ever implicitely.
 
-So from that it seems STOP | INDEX? | WAIT is always a valid
-combination and is explicitly listed in the register set.
+No failure observed, just from review.
 
-I defer to actual testing though ;)
--Chris
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/Makefile |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 209ba12..2c8aefd 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -113,6 +113,7 @@ KBUILD_CFLAGS += -Wno-sign-compare
+ KBUILD_CFLAGS += -fno-asynchronous-unwind-tables
+ # prevent gcc from generating any FP code by mistake
+ KBUILD_CFLAGS += $(call cc-option,-mno-sse -mno-mmx -mno-sse2 -mno-3dnow,)
++KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
+ 
+ KBUILD_CFLAGS += $(mflags-y)
+ KBUILD_AFLAGS += $(mflags-y)
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.7.6
+
