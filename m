@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab2C1KrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:47:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59050 "EHLO mx1.redhat.com"
+	id S1758142Ab2C1Kr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:47:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46408 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932270Ab2C1KrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:47:10 -0400
+	id S1758094Ab2C1KrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 06:47:22 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 6/9] KEYS: Perform RCU synchronisation on keys prior to key
- destruction
+Subject: [PATCH 7/9] KEYS: Permit in-place link replacement in keyring list
 To: jmorris@namei.org
 Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>
-Date: Wed, 28 Mar 2012 11:47:04 +0100
-Message-ID: <20120328104703.10417.62221.stgit@warthog.procyon.org.uk>
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Date: Wed, 28 Mar 2012 11:47:15 +0100
+Message-ID: <20120328104715.10417.58876.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
 References: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,163 +23,291 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the keys garbage collector invoke synchronize_rcu() prior to destroying
-keys with a zero usage count.  This means that a key can be examined under the
-RCU read lock in the safe knowledge that it won't get deallocated until after
-the lock is released - even if its usage count becomes zero whilst we're
-looking at it.
+Make use of the previous patch that makes the garbage collector perform RCU
+synchronisation before destroying defunct keys.  Key pointers can now be
+replaced in-place without creating a new keyring payload and replacing the
+whole thing as the discarded keys will not be destroyed until all currently
+held RCU read locks are released.
 
-This is useful in keyring search vs key link.  Consider a keyring containing a
-link to a key.  That link can be replaced in-place in the keyring without
-requiring an RCU copy-and-replace on the keyring contents without breaking a
-search underway on that keyring when the displaced key is released, provided
-the key is actually destroyed only after the RCU read lock held by the search
-algorithm is released.
-
-This permits __key_link() to replace a key without having to reallocate the key
-payload.  A key gets replaced if a new key being linked into a keyring has the
-same type and description.
+If the keyring payload space needs to be expanded or contracted, then a
+replacement will still need allocating, and the original will still have to be
+freed by RCU.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
 ---
 
- include/linux/key.h |    5 +++
- security/keys/gc.c  |   73 +++++++++++++++++++++++++++++++--------------------
- 2 files changed, 48 insertions(+), 30 deletions(-)
+ include/keys/keyring-type.h |    2 -
+ security/keys/gc.c          |    2 -
+ security/keys/keyring.c     |   95 +++++++++++++++++++++++++------------------
+ 3 files changed, 58 insertions(+), 41 deletions(-)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 96933b1..c505f83 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -124,7 +124,10 @@ static inline unsigned long is_key_possessed(const key_ref_t key_ref)
- struct key {
- 	atomic_t		usage;		/* number of references */
- 	key_serial_t		serial;		/* key serial number */
--	struct rb_node		serial_node;
-+	union {
-+		struct list_head graveyard_link;
-+		struct rb_node	serial_node;
-+	};
- 	struct key_type		*type;		/* type of key */
- 	struct rw_semaphore	sem;		/* change vs change sem */
- 	struct key_user		*user;		/* owner of this key */
+diff --git a/include/keys/keyring-type.h b/include/keys/keyring-type.h
+index 843f872..cf49159 100644
+--- a/include/keys/keyring-type.h
++++ b/include/keys/keyring-type.h
+@@ -24,7 +24,7 @@ struct keyring_list {
+ 	unsigned short	maxkeys;	/* max keys this list can hold */
+ 	unsigned short	nkeys;		/* number of keys currently held */
+ 	unsigned short	delkey;		/* key to be unlinked by RCU */
+-	struct key	*keys[0];
++	struct key __rcu *keys[0];
+ };
+ 
+ 
 diff --git a/security/keys/gc.c b/security/keys/gc.c
-index a42b455..27610bf 100644
+index 27610bf..adddaa2 100644
 --- a/security/keys/gc.c
 +++ b/security/keys/gc.c
-@@ -168,38 +168,45 @@ do_gc:
- }
+@@ -148,7 +148,7 @@ static void key_gc_keyring(struct key *keyring, time_t limit)
+ 	loop = klist->nkeys;
+ 	smp_rmb();
+ 	for (loop--; loop >= 0; loop--) {
+-		key = klist->keys[loop];
++		key = rcu_dereference(klist->keys[loop]);
+ 		if (test_bit(KEY_FLAG_DEAD, &key->flags) ||
+ 		    (key->expiry > 0 && key->expiry <= limit))
+ 			goto do_gc;
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index d605f75..459b3cc 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -25,6 +25,11 @@
+ 		(keyring)->payload.subscriptions,			\
+ 		rwsem_is_locked((struct rw_semaphore *)&(keyring)->sem)))
+ 
++#define rcu_deref_link_locked(klist, index, keyring)			\
++	(rcu_dereference_protected(					\
++		(klist)->keys[index],					\
++		rwsem_is_locked((struct rw_semaphore *)&(keyring)->sem)))
++
+ #define KEY_LINK_FIXQUOTA 1UL
  
  /*
-- * Garbage collect an unreferenced, detached key
-+ * Garbage collect a list of unreferenced, detached keys
+@@ -138,6 +143,11 @@ static int keyring_match(const struct key *keyring, const void *description)
+ /*
+  * Clean up a keyring when it is destroyed.  Unpublish its name if it had one
+  * and dispose of its data.
++ *
++ * The garbage collector detects the final key_put(), removes the keyring from
++ * the serial number tree and then does RCU synchronisation before coming here,
++ * so we shouldn't need to worry about code poking around here with the RCU
++ * readlock held by this time.
   */
--static noinline void key_gc_unused_key(struct key *key)
-+static noinline void key_gc_unused_keys(struct list_head *keys)
+ static void keyring_destroy(struct key *keyring)
  {
--	key_check(key);
+@@ -154,11 +164,10 @@ static void keyring_destroy(struct key *keyring)
+ 		write_unlock(&keyring_name_lock);
+ 	}
+ 
+-	klist = rcu_dereference_check(keyring->payload.subscriptions,
+-				      atomic_read(&keyring->usage) == 0);
++	klist = rcu_access_pointer(keyring->payload.subscriptions);
+ 	if (klist) {
+ 		for (loop = klist->nkeys - 1; loop >= 0; loop--)
+-			key_put(klist->keys[loop]);
++			key_put(rcu_access_pointer(klist->keys[loop]));
+ 		kfree(klist);
+ 	}
+ }
+@@ -214,7 +223,8 @@ static long keyring_read(const struct key *keyring,
+ 			ret = -EFAULT;
+ 
+ 			for (loop = 0; loop < klist->nkeys; loop++) {
+-				key = klist->keys[loop];
++				key = rcu_deref_link_locked(klist, loop,
++							    keyring);
+ 
+ 				tmp = sizeof(key_serial_t);
+ 				if (tmp > buflen)
+@@ -383,7 +393,7 @@ descend:
+ 	nkeys = keylist->nkeys;
+ 	smp_rmb();
+ 	for (kix = 0; kix < nkeys; kix++) {
+-		key = keylist->keys[kix];
++		key = rcu_dereference(keylist->keys[kix]);
+ 		kflags = key->flags;
+ 
+ 		/* ignore keys not of this type */
+@@ -426,7 +436,7 @@ ascend:
+ 	nkeys = keylist->nkeys;
+ 	smp_rmb();
+ 	for (; kix < nkeys; kix++) {
+-		key = keylist->keys[kix];
++		key = rcu_dereference(keylist->keys[kix]);
+ 		if (key->type != &key_type_keyring)
+ 			continue;
+ 
+@@ -531,8 +541,7 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
+ 		nkeys = klist->nkeys;
+ 		smp_rmb();
+ 		for (loop = 0; loop < nkeys ; loop++) {
+-			key = klist->keys[loop];
 -
--	security_key_free(key);
--
--	/* deal with the user's key tracking and quota */
--	if (test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
--		spin_lock(&key->user->lock);
--		key->user->qnkeys--;
--		key->user->qnbytes -= key->quotalen;
--		spin_unlock(&key->user->lock);
--	}
-+	while (!list_empty(keys)) {
-+		struct key *key =
-+			list_entry(keys->next, struct key, graveyard_link);
-+		list_del(&key->graveyard_link);
-+
-+		kdebug("- %u", key->serial);
-+		key_check(key);
-+
-+		security_key_free(key);
-+
-+		/* deal with the user's key tracking and quota */
-+		if (test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
-+			spin_lock(&key->user->lock);
-+			key->user->qnkeys--;
-+			key->user->qnbytes -= key->quotalen;
-+			spin_unlock(&key->user->lock);
-+		}
++			key = rcu_dereference(klist->keys[loop]);
+ 			if (key->type == ktype &&
+ 			    (!key->type->match ||
+ 			     key->type->match(key, description)) &&
+@@ -654,7 +663,7 @@ ascend:
+ 	nkeys = keylist->nkeys;
+ 	smp_rmb();
+ 	for (; kix < nkeys; kix++) {
+-		key = keylist->keys[kix];
++		key = rcu_dereference(keylist->keys[kix]);
  
--	atomic_dec(&key->user->nkeys);
--	if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
--		atomic_dec(&key->user->nikeys);
-+		atomic_dec(&key->user->nkeys);
-+		if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
-+			atomic_dec(&key->user->nikeys);
+ 		if (key == A)
+ 			goto cycle_detected;
+@@ -711,7 +720,7 @@ static void keyring_unlink_rcu_disposal(struct rcu_head *rcu)
+ 		container_of(rcu, struct keyring_list, rcu);
  
--	key_user_put(key->user);
-+		key_user_put(key->user);
- 
--	/* now throw away the key memory */
--	if (key->type->destroy)
--		key->type->destroy(key);
-+		/* now throw away the key memory */
-+		if (key->type->destroy)
-+			key->type->destroy(key);
- 
--	kfree(key->description);
-+		kfree(key->description);
- 
- #ifdef KEY_DEBUGGING
--	key->magic = KEY_DEBUG_MAGIC_X;
-+		key->magic = KEY_DEBUG_MAGIC_X;
- #endif
--	kmem_cache_free(key_jar, key);
-+		kmem_cache_free(key_jar, key);
-+	}
+ 	if (klist->delkey != USHRT_MAX)
+-		key_put(klist->keys[klist->delkey]);
++		key_put(rcu_access_pointer(klist->keys[klist->delkey]));
+ 	kfree(klist);
  }
  
- /*
-@@ -211,6 +218,7 @@ static noinline void key_gc_unused_key(struct key *key)
-  */
- static void key_garbage_collector(struct work_struct *work)
+@@ -749,24 +758,16 @@ int __key_link_begin(struct key *keyring, const struct key_type *type,
+ 	/* see if there's a matching key we can displace */
+ 	if (klist && klist->nkeys > 0) {
+ 		for (loop = klist->nkeys - 1; loop >= 0; loop--) {
+-			if (klist->keys[loop]->type == type &&
+-			    strcmp(klist->keys[loop]->description,
+-				   description) == 0
+-			    ) {
+-				/* found a match - we'll replace this one with
+-				 * the new key */
+-				size = sizeof(struct key *) * klist->maxkeys;
+-				size += sizeof(*klist);
+-				BUG_ON(size > PAGE_SIZE);
+-
+-				ret = -ENOMEM;
+-				nklist = kmemdup(klist, size, GFP_KERNEL);
+-				if (!nklist)
+-					goto error_sem;
+-
+-				/* note replacement slot */
+-				klist->delkey = nklist->delkey = loop;
+-				prealloc = (unsigned long)nklist;
++			struct key *key = rcu_deref_link_locked(klist, loop,
++								keyring);
++			if (key->type == type &&
++			    strcmp(key->description, description) == 0) {
++				/* Found a match - we'll replace the link with
++				 * one to the new key.  We record the slot
++				 * position.
++				 */
++				klist->delkey = loop;
++				prealloc = 0;
+ 				goto done;
+ 			}
+ 		}
+@@ -780,7 +781,7 @@ int __key_link_begin(struct key *keyring, const struct key_type *type,
+ 
+ 	if (klist && klist->nkeys < klist->maxkeys) {
+ 		/* there's sufficient slack space to append directly */
+-		nklist = NULL;
++		klist->delkey = klist->nkeys;
+ 		prealloc = KEY_LINK_FIXQUOTA;
+ 	} else {
+ 		/* grow the key list */
+@@ -813,10 +814,10 @@ int __key_link_begin(struct key *keyring, const struct key_type *type,
+ 		}
+ 
+ 		/* add the key into the new space */
+-		nklist->keys[nklist->delkey] = NULL;
++		RCU_INIT_POINTER(nklist->keys[nklist->delkey], NULL);
++		prealloc = (unsigned long)nklist | KEY_LINK_FIXQUOTA;
+ 	}
+ 
+-	prealloc = (unsigned long)nklist | KEY_LINK_FIXQUOTA;
+ done:
+ 	*_prealloc = prealloc;
+ 	kleave(" = 0");
+@@ -862,6 +863,7 @@ void __key_link(struct key *keyring, struct key *key,
+ 		unsigned long *_prealloc)
  {
-+	static LIST_HEAD(graveyard);
- 	static u8 gc_state;		/* Internal persistent state */
- #define KEY_GC_REAP_AGAIN	0x01	/* - Need another cycle */
- #define KEY_GC_REAPING_LINKS	0x02	/* - We need to reap links */
-@@ -316,15 +324,22 @@ maybe_resched:
- 		key_schedule_gc(new_timer);
- 	}
+ 	struct keyring_list *klist, *nklist;
++	struct key *discard;
  
--	if (unlikely(gc_state & KEY_GC_REAPING_DEAD_2)) {
--		/* Make sure everyone revalidates their keys if we marked a
--		 * bunch as being dead and make sure all keyring ex-payloads
--		 * are destroyed.
-+	if (unlikely(gc_state & KEY_GC_REAPING_DEAD_2) ||
-+	    !list_empty(&graveyard)) {
-+		/* Make sure that all pending keyring payload destructions are
-+		 * fulfilled and that people aren't now looking at dead or
-+		 * dying keys that they don't have a reference upon or a link
-+		 * to.
- 		 */
--		kdebug("dead sync");
-+		kdebug("gc sync");
- 		synchronize_rcu();
- 	}
+ 	nklist = (struct keyring_list *)(*_prealloc & ~KEY_LINK_FIXQUOTA);
+ 	*_prealloc = 0;
+@@ -875,10 +877,10 @@ void __key_link(struct key *keyring, struct key *key,
+ 	/* there's a matching key we can displace or an empty slot in a newly
+ 	 * allocated list we can fill */
+ 	if (nklist) {
+-		kdebug("replace %hu/%hu/%hu",
++		kdebug("reissue %hu/%hu/%hu",
+ 		       nklist->delkey, nklist->nkeys, nklist->maxkeys);
  
-+	if (!list_empty(&graveyard)) {
-+		kdebug("gc keys");
-+		key_gc_unused_keys(&graveyard);
-+	}
+-		nklist->keys[nklist->delkey] = key;
++		RCU_INIT_POINTER(nklist->keys[nklist->delkey], key);
+ 
+ 		rcu_assign_pointer(keyring->payload.subscriptions, nklist);
+ 
+@@ -889,9 +891,23 @@ void __key_link(struct key *keyring, struct key *key,
+ 			       klist->delkey, klist->nkeys, klist->maxkeys);
+ 			call_rcu(&klist->rcu, keyring_unlink_rcu_disposal);
+ 		}
++	} else if (klist->delkey < klist->nkeys) {
++		kdebug("replace %hu/%hu/%hu",
++		       klist->delkey, klist->nkeys, klist->maxkeys);
 +
- 	if (unlikely(gc_state & (KEY_GC_REAPING_DEAD_1 |
- 				 KEY_GC_REAPING_DEAD_2))) {
- 		if (!(gc_state & KEY_GC_FOUND_DEAD_KEY)) {
-@@ -359,7 +374,7 @@ found_unreferenced_key:
- 	rb_erase(&key->serial_node, &key_serial_tree);
- 	spin_unlock(&key_serial_lock);
++		discard = rcu_dereference_protected(
++			klist->keys[klist->delkey],
++			rwsem_is_locked(&keyring->sem));
++		rcu_assign_pointer(klist->keys[klist->delkey], key);
++		/* The garbage collector will take care of RCU
++		 * synchronisation */
++		key_put(discard);
+ 	} else {
+ 		/* there's sufficient slack space to append directly */
+-		klist->keys[klist->nkeys] = key;
++		kdebug("append %hu/%hu/%hu",
++		       klist->delkey, klist->nkeys, klist->maxkeys);
++
++		RCU_INIT_POINTER(klist->keys[klist->delkey], key);
+ 		smp_wmb();
+ 		klist->nkeys++;
+ 	}
+@@ -998,7 +1014,7 @@ int key_unlink(struct key *keyring, struct key *key)
+ 	if (klist) {
+ 		/* search the keyring for the key */
+ 		for (loop = 0; loop < klist->nkeys; loop++)
+-			if (klist->keys[loop] == key)
++			if (rcu_access_pointer(klist->keys[loop]) == key)
+ 				goto key_is_present;
+ 	}
  
--	key_gc_unused_key(key);
-+	list_add_tail(&key->graveyard_link, &graveyard);
- 	gc_state |= KEY_GC_REAP_AGAIN;
- 	goto maybe_resched;
+@@ -1061,7 +1077,7 @@ static void keyring_clear_rcu_disposal(struct rcu_head *rcu)
+ 	klist = container_of(rcu, struct keyring_list, rcu);
  
+ 	for (loop = klist->nkeys - 1; loop >= 0; loop--)
+-		key_put(klist->keys[loop]);
++		key_put(rcu_access_pointer(klist->keys[loop]));
+ 
+ 	kfree(klist);
+ }
+@@ -1161,7 +1177,8 @@ void keyring_gc(struct key *keyring, time_t limit)
+ 	/* work out how many subscriptions we're keeping */
+ 	keep = 0;
+ 	for (loop = klist->nkeys - 1; loop >= 0; loop--)
+-		if (!key_is_dead(klist->keys[loop], limit))
++		if (!key_is_dead(rcu_deref_link_locked(klist, loop, keyring),
++				 limit))
+ 			keep++;
+ 
+ 	if (keep == klist->nkeys)
+@@ -1182,11 +1199,11 @@ void keyring_gc(struct key *keyring, time_t limit)
+ 	 */
+ 	keep = 0;
+ 	for (loop = klist->nkeys - 1; loop >= 0; loop--) {
+-		key = klist->keys[loop];
++		key = rcu_deref_link_locked(klist, loop, keyring);
+ 		if (!key_is_dead(key, limit)) {
+ 			if (keep >= max)
+ 				goto discard_new;
+-			new->keys[keep++] = key_get(key);
++			RCU_INIT_POINTER(new->keys[keep++], key_get(key));
+ 		}
+ 	}
+ 	new->nkeys = keep;
 
