@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758985Ab2C1Wyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:54:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45002 "EHLO
+	id S1759046Ab2C1Wym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:54:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44424 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759049Ab2C1WwI (ORCPT
+	with ESMTP id S1759041Ab2C1WwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:52:08 -0400
+	Wed, 28 Mar 2012 18:52:04 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 19/21] blkcg: move blkio_group_conf->iops and ->bps to blk-throttle
-Date: Wed, 28 Mar 2012 15:51:29 -0700
-Message-Id: <1332975091-10950-20-git-send-email-tj@kernel.org>
+Subject: [PATCH 18/21] blkcg: move blkio_group_conf->weight to cfq
+Date: Wed, 28 Mar 2012 15:51:28 -0700
+Message-Id: <1332975091-10950-19-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332975091-10950-1-git-send-email-tj@kernel.org>
 References: <1332975091-10950-1-git-send-email-tj@kernel.org>
@@ -22,267 +22,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blkio_cgroup_conf->iops and ->bps are owned by blk-throttle and has no
-reason to be defined in blkcg core.  Drop them and let conf setting
-functions directly manipulate throtl_grp->bps[] and ->iops[].
+blkio_group_conf->weight is owned by cfq and has no reason to be
+defined in blkcg core.  Replace it with cfq_group->dev_weight and let
+conf setting functions directly set it.  If dev_weight is zero, the
+cfqg doesn't have device specific weight configured.
 
-This makes blkio_group_conf empty.  Drop it.
+Also, rename BLKIO_WEIGHT_* constants to CFQ_WEIGHT_* and rename
+blkio_cgroup->weight to blkio_cgroup->cfq_weight.  We eventually want
+per-policy storage in blkio_cgroup but just mark the ownership of the
+field for now.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-cgroup.h   |    8 ---
- block/blk-throttle.c |  153 +++++++++++++++++++-------------------------------
- 2 files changed, 58 insertions(+), 103 deletions(-)
+ block/blk-cgroup.c  |    4 +-
+ block/blk-cgroup.h  |   14 +++++----
+ block/cfq-iosched.c |   77 +++++++++++++++++++++++---------------------------
+ 3 files changed, 45 insertions(+), 50 deletions(-)
 
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 0b4b765..7688aef 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -30,7 +30,7 @@ static LIST_HEAD(blkio_list);
+ static DEFINE_MUTEX(all_q_mutex);
+ static LIST_HEAD(all_q_list);
+ 
+-struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
++struct blkio_cgroup blkio_root_cgroup = { .cfq_weight = 2 * CFQ_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+ 
+ static struct blkio_policy_type *blkio_policy[BLKIO_NR_POLICIES];
+@@ -611,7 +611,7 @@ static struct cgroup_subsys_state *blkiocg_create(struct cgroup *cgroup)
+ 	if (!blkcg)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	blkcg->weight = BLKIO_WEIGHT_DEFAULT;
++	blkcg->cfq_weight = CFQ_WEIGHT_DEFAULT;
+ 	blkcg->id = atomic64_inc_return(&id_seq); /* root is 0, start from 1 */
+ done:
+ 	spin_lock_init(&blkcg->lock);
 diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 386db29..a77ab1a 100644
+index e368dd00..386db29 100644
 --- a/block/blk-cgroup.h
 +++ b/block/blk-cgroup.h
-@@ -71,19 +71,11 @@ struct blkg_rwstat {
- 	uint64_t			cnt[BLKG_RWSTAT_NR];
+@@ -29,6 +29,11 @@ enum blkio_policy_id {
+ 
+ #ifdef CONFIG_BLK_CGROUP
+ 
++/* CFQ specific, out here for blkcg->cfq_weight */
++#define CFQ_WEIGHT_MIN		10
++#define CFQ_WEIGHT_MAX		1000
++#define CFQ_WEIGHT_DEFAULT	500
++
+ /* cft->private [un]packing for stat printing */
+ #define BLKCG_STAT_PRIV(pol, off)	(((unsigned)(pol) << 16) | (off))
+ #define BLKCG_STAT_POL(prv)		((unsigned)(prv) >> 16)
+@@ -46,12 +51,14 @@ enum blkg_rwstat_type {
+ 
+ struct blkio_cgroup {
+ 	struct cgroup_subsys_state css;
+-	unsigned int weight;
+ 	spinlock_t lock;
+ 	struct hlist_head blkg_list;
+ 
+ 	/* for policies to test whether associated blkcg has changed */
+ 	uint64_t id;
++
++	/* TODO: per-policy storage in blkio_cgroup */
++	unsigned int cfq_weight;	/* belongs to cfq */
  };
  
--struct blkio_group_conf {
--	u64 iops[2];
--	u64 bps[2];
--};
--
- /* per-blkg per-policy data */
- struct blkg_policy_data {
- 	/* the blkg this per-policy data belongs to */
- 	struct blkio_group *blkg;
- 
--	/* Configuration */
--	struct blkio_group_conf conf;
--
- 	/* pol->pdata_size bytes of private data used by policy impl */
- 	char pdata[] __aligned(__alignof__(unsigned long long));
+ struct blkg_stat {
+@@ -65,7 +72,6 @@ struct blkg_rwstat {
  };
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 27f7960..004964b 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -924,20 +924,6 @@ throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
+ 
+ struct blkio_group_conf {
+-	unsigned int weight;
+ 	u64 iops[2];
+ 	u64 bps[2];
+ };
+@@ -355,10 +361,6 @@ static inline void blkg_put(struct blkio_group *blkg) { }
+ 
+ #endif
+ 
+-#define BLKIO_WEIGHT_MIN	10
+-#define BLKIO_WEIGHT_MAX	1000
+-#define BLKIO_WEIGHT_DEFAULT	500
+-
+ #ifdef CONFIG_BLK_CGROUP
+ extern struct blkio_cgroup blkio_root_cgroup;
+ extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index a1f37df..adab10d 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -224,7 +224,7 @@ struct cfq_group {
+ 	u64 vdisktime;
+ 	unsigned int weight;
+ 	unsigned int new_weight;
+-	bool needs_update;
++	unsigned int dev_weight;
+ 
+ 	/* number of cfqq currently on this group */
+ 	int nr_cfqq;
+@@ -838,7 +838,7 @@ static inline u64 cfq_scale_slice(unsigned long delta, struct cfq_group *cfqg)
+ {
+ 	u64 d = delta << CFQ_SERVICE_SHIFT;
+ 
+-	d = d * BLKIO_WEIGHT_DEFAULT;
++	d = d * CFQ_WEIGHT_DEFAULT;
+ 	do_div(d, cfqg->weight);
+ 	return d;
+ }
+@@ -1165,9 +1165,9 @@ static void
+ cfq_update_group_weight(struct cfq_group *cfqg)
+ {
+ 	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
+-	if (cfqg->needs_update) {
++	if (cfqg->new_weight) {
+ 		cfqg->weight = cfqg->new_weight;
+-		cfqg->needs_update = false;
++		cfqg->new_weight = 0;
  	}
  }
  
--/*
-- * Can not take queue lock in update functions as queue lock under
-- * blkcg_lock is not allowed. Under other paths we take blkcg_lock under
-- * queue_lock.
-- */
--static void throtl_update_blkio_group_common(struct throtl_data *td,
--				struct throtl_grp *tg)
+@@ -1325,21 +1325,12 @@ static void cfq_init_cfqg_base(struct cfq_group *cfqg)
+ }
+ 
+ #ifdef CONFIG_CFQ_GROUP_IOSCHED
+-static void cfq_update_blkio_group_weight(struct blkio_group *blkg,
+-					  unsigned int weight)
 -{
--	xchg(&tg->limits_changed, true);
--	xchg(&td->limits_changed, true);
--	/* Schedule a work now to process the limit change */
--	throtl_schedule_delayed_work(td, 0);
+-	struct cfq_group *cfqg = blkg_to_cfqg(blkg);
+-
+-	cfqg->new_weight = weight;
+-	cfqg->needs_update = true;
 -}
 -
- static u64 tg_prfill_cpu_rwstat(struct seq_file *sf,
- 				struct blkg_policy_data *pd, int off)
+ static void cfq_init_blkio_group(struct blkio_group *blkg)
  {
-@@ -968,68 +954,48 @@ static int tg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
+ 	struct cfq_group *cfqg = blkg_to_cfqg(blkg);
+ 
+ 	cfq_init_cfqg_base(cfqg);
+-	cfqg->weight = blkg->blkcg->weight;
++	cfqg->weight = blkg->blkcg->cfq_weight;
+ }
+ 
+ /*
+@@ -1377,36 +1368,38 @@ static void cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg)
+ 	cfqg_get(cfqg);
+ }
+ 
+-static u64 blkg_prfill_weight_device(struct seq_file *sf,
++static u64 cfqg_prfill_weight_device(struct seq_file *sf,
+ 				     struct blkg_policy_data *pd, int off)
+ {
+-	if (!pd->conf.weight)
++	struct cfq_group *cfqg = (void *)pd->pdata;
++
++	if (!cfqg->dev_weight)
+ 		return 0;
+-	return __blkg_prfill_u64(sf, pd, pd->conf.weight);
++	return __blkg_prfill_u64(sf, pd, cfqg->dev_weight);
+ }
+ 
+-static int blkcg_print_weight_device(struct cgroup *cgrp, struct cftype *cft,
+-				     struct seq_file *sf)
++static int cfqg_print_weight_device(struct cgroup *cgrp, struct cftype *cft,
++				    struct seq_file *sf)
+ {
+ 	blkcg_print_blkgs(sf, cgroup_to_blkio_cgroup(cgrp),
+-			  blkg_prfill_weight_device, BLKIO_POLICY_PROP, 0,
++			  cfqg_prfill_weight_device, BLKIO_POLICY_PROP, 0,
+ 			  false);
  	return 0;
  }
  
--static u64 blkg_prfill_conf_u64(struct seq_file *sf,
--				struct blkg_policy_data *pd, int off)
-+static u64 tg_prfill_conf_u64(struct seq_file *sf, struct blkg_policy_data *pd,
-+			      int off)
+-static int blkcg_print_weight(struct cgroup *cgrp, struct cftype *cft,
+-			      struct seq_file *sf)
++static int cfq_print_weight(struct cgroup *cgrp, struct cftype *cft,
++			    struct seq_file *sf)
  {
--	u64 v = *(u64 *)((void *)&pd->conf + off);
-+	u64 v = *(u64 *)((void *)pd->pdata + off);
- 
--	if (!v)
-+	if (v == -1)
- 		return 0;
- 	return __blkg_prfill_u64(sf, pd, v);
+-	seq_printf(sf, "%u\n", cgroup_to_blkio_cgroup(cgrp)->weight);
++	seq_printf(sf, "%u\n", cgroup_to_blkio_cgroup(cgrp)->cfq_weight);
+ 	return 0;
  }
  
--static int blkcg_print_conf_u64(struct cgroup *cgrp, struct cftype *cft,
--				struct seq_file *sf)
-+static u64 tg_prfill_conf_uint(struct seq_file *sf, struct blkg_policy_data *pd,
-+			       int off)
- {
--	blkcg_print_blkgs(sf, cgroup_to_blkio_cgroup(cgrp),
--			  blkg_prfill_conf_u64, BLKIO_POLICY_THROTL,
--			  cft->private, false);
--	return 0;
--}
-+	unsigned int v = *(unsigned int *)((void *)pd->pdata + off);
- 
--static void throtl_update_blkio_group_read_bps(struct blkio_group *blkg,
--					       u64 read_bps)
--{
--	struct throtl_grp *tg = blkg_to_tg(blkg);
--
--	tg->bps[READ] = read_bps;
--	throtl_update_blkio_group_common(blkg->q->td, tg);
--}
--
--static void throtl_update_blkio_group_write_bps(struct blkio_group *blkg,
--						u64 write_bps)
--{
--	struct throtl_grp *tg = blkg_to_tg(blkg);
--
--	tg->bps[WRITE] = write_bps;
--	throtl_update_blkio_group_common(blkg->q->td, tg);
-+	if (v == -1)
-+		return 0;
-+	return __blkg_prfill_u64(sf, pd, v);
- }
- 
--static void throtl_update_blkio_group_read_iops(struct blkio_group *blkg,
--						u64 read_iops)
-+static int tg_print_conf_u64(struct cgroup *cgrp, struct cftype *cft,
-+			     struct seq_file *sf)
- {
--	struct throtl_grp *tg = blkg_to_tg(blkg);
--
--	tg->iops[READ] = read_iops;
--	throtl_update_blkio_group_common(blkg->q->td, tg);
-+	blkcg_print_blkgs(sf, cgroup_to_blkio_cgroup(cgrp), tg_prfill_conf_u64,
-+			  BLKIO_POLICY_THROTL, cft->private, false);
-+	return 0;
- }
- 
--static void throtl_update_blkio_group_write_iops(struct blkio_group *blkg,
--						 u64 write_iops)
-+static int tg_print_conf_uint(struct cgroup *cgrp, struct cftype *cft,
-+			      struct seq_file *sf)
- {
--	struct throtl_grp *tg = blkg_to_tg(blkg);
--
--	tg->iops[WRITE] = write_iops;
--	throtl_update_blkio_group_common(blkg->q->td, tg);
-+	blkcg_print_blkgs(sf, cgroup_to_blkio_cgroup(cgrp), tg_prfill_conf_uint,
-+			  BLKIO_POLICY_THROTL, cft->private, false);
-+	return 0;
- }
- 
--static int blkcg_set_conf_u64(struct cgroup *cgrp, struct cftype *cft,
--			      const char *buf,
--			      void (*update)(struct blkio_group *, u64))
-+static int tg_set_conf(struct cgroup *cgrp, struct cftype *cft, const char *buf,
-+		       bool is_u64)
+-static int blkcg_set_weight_device(struct cgroup *cgrp, struct cftype *cft,
+-				   const char *buf)
++static int cfqg_set_weight_device(struct cgroup *cgrp, struct cftype *cft,
++				  const char *buf)
  {
  	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
 -	struct blkg_policy_data *pd;
  	struct blkg_conf_ctx ctx;
-+	struct throtl_grp *tg;
++	struct cfq_group *cfqg;
  	int ret;
  
  	ret = blkg_conf_prep(blkcg, buf, &ctx);
-@@ -1037,10 +1003,23 @@ static int blkcg_set_conf_u64(struct cgroup *cgrp, struct cftype *cft,
+@@ -1414,11 +1407,11 @@ static int blkcg_set_weight_device(struct cgroup *cgrp, struct cftype *cft,
  		return ret;
  
  	ret = -EINVAL;
--	pd = ctx.blkg->pd[BLKIO_POLICY_THROTL];
--	if (pd) {
--		*(u64 *)((void *)&pd->conf + cft->private) = ctx.v;
--		update(ctx.blkg, ctx.v ?: -1);
-+	tg = blkg_to_tg(ctx.blkg);
-+	if (tg) {
-+		struct throtl_data *td = ctx.blkg->q->td;
-+
-+		if (!ctx.v)
-+			ctx.v = -1;
-+
-+		if (is_u64)
-+			*(u64 *)((void *)tg + cft->private) = ctx.v;
-+		else
-+			*(unsigned int *)((void *)tg + cft->private) = ctx.v;
-+
-+		/* XXX: we don't need the following deferred processing */
-+		xchg(&tg->limits_changed, true);
-+		xchg(&td->limits_changed, true);
-+		throtl_schedule_delayed_work(td, 0);
-+
+-	pd = ctx.blkg->pd[BLKIO_POLICY_PROP];
+-	if (pd && (!ctx.v || (ctx.v >= BLKIO_WEIGHT_MIN &&
+-			      ctx.v <= BLKIO_WEIGHT_MAX))) {
+-		pd->conf.weight = ctx.v;
+-		cfq_update_blkio_group_weight(ctx.blkg, ctx.v ?: blkcg->weight);
++	cfqg = blkg_to_cfqg(ctx.blkg);
++	if (cfqg && (!ctx.v || (ctx.v >= CFQ_WEIGHT_MIN &&
++				ctx.v <= CFQ_WEIGHT_MAX))) {
++		cfqg->dev_weight = ctx.v;
++		cfqg->new_weight = cfqg->dev_weight ?: blkcg->cfq_weight;
  		ret = 0;
  	}
  
-@@ -1048,61 +1027,45 @@ static int blkcg_set_conf_u64(struct cgroup *cgrp, struct cftype *cft,
+@@ -1426,23 +1419,23 @@ static int blkcg_set_weight_device(struct cgroup *cgrp, struct cftype *cft,
  	return ret;
  }
  
--static int blkcg_set_conf_bps_r(struct cgroup *cgrp, struct cftype *cft,
--				const char *buf)
--{
--	return blkcg_set_conf_u64(cgrp, cft, buf,
--				  throtl_update_blkio_group_read_bps);
--}
--
--static int blkcg_set_conf_bps_w(struct cgroup *cgrp, struct cftype *cft,
--				const char *buf)
--{
--	return blkcg_set_conf_u64(cgrp, cft, buf,
--				  throtl_update_blkio_group_write_bps);
--}
--
--static int blkcg_set_conf_iops_r(struct cgroup *cgrp, struct cftype *cft,
--				 const char *buf)
-+static int tg_set_conf_u64(struct cgroup *cgrp, struct cftype *cft,
-+			   const char *buf)
+-static int blkcg_set_weight(struct cgroup *cgrp, struct cftype *cft, u64 val)
++static int cfq_set_weight(struct cgroup *cgrp, struct cftype *cft, u64 val)
  {
--	return blkcg_set_conf_u64(cgrp, cft, buf,
--				  throtl_update_blkio_group_read_iops);
-+	return tg_set_conf(cgrp, cft, buf, true);
- }
+ 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
+ 	struct blkio_group *blkg;
+ 	struct hlist_node *n;
  
--static int blkcg_set_conf_iops_w(struct cgroup *cgrp, struct cftype *cft,
--				 const char *buf)
-+static int tg_set_conf_uint(struct cgroup *cgrp, struct cftype *cft,
-+			    const char *buf)
- {
--	return blkcg_set_conf_u64(cgrp, cft, buf,
--				  throtl_update_blkio_group_write_iops);
-+	return tg_set_conf(cgrp, cft, buf, false);
- }
+-	if (val < BLKIO_WEIGHT_MIN || val > BLKIO_WEIGHT_MAX)
++	if (val < CFQ_WEIGHT_MIN || val > CFQ_WEIGHT_MAX)
+ 		return -EINVAL;
  
- static struct cftype throtl_files[] = {
+ 	spin_lock_irq(&blkcg->lock);
+-	blkcg->weight = (unsigned int)val;
++	blkcg->cfq_weight = (unsigned int)val;
+ 
+ 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+-		struct blkg_policy_data *pd = blkg->pd[BLKIO_POLICY_PROP];
++		struct cfq_group *cfqg = blkg_to_cfqg(blkg);
+ 
+-		if (pd && !pd->conf.weight)
+-			cfq_update_blkio_group_weight(blkg, blkcg->weight);
++		if (cfqg && !cfqg->dev_weight)
++			cfqg->new_weight = blkcg->cfq_weight;
+ 	}
+ 
+ 	spin_unlock_irq(&blkcg->lock);
+@@ -1480,14 +1473,14 @@ static int cfqg_print_avg_queue_size(struct cgroup *cgrp, struct cftype *cft,
+ static struct cftype cfq_blkcg_files[] = {
  	{
- 		.name = "throttle.read_bps_device",
--		.private = offsetof(struct blkio_group_conf, bps[READ]),
--		.read_seq_string = blkcg_print_conf_u64,
--		.write_string = blkcg_set_conf_bps_r,
-+		.private = offsetof(struct throtl_grp, bps[READ]),
-+		.read_seq_string = tg_print_conf_u64,
-+		.write_string = tg_set_conf_u64,
+ 		.name = "weight_device",
+-		.read_seq_string = blkcg_print_weight_device,
+-		.write_string = blkcg_set_weight_device,
++		.read_seq_string = cfqg_print_weight_device,
++		.write_string = cfqg_set_weight_device,
  		.max_write_len = 256,
  	},
  	{
- 		.name = "throttle.write_bps_device",
--		.private = offsetof(struct blkio_group_conf, bps[WRITE]),
--		.read_seq_string = blkcg_print_conf_u64,
--		.write_string = blkcg_set_conf_bps_w,
-+		.private = offsetof(struct throtl_grp, bps[WRITE]),
-+		.read_seq_string = tg_print_conf_u64,
-+		.write_string = tg_set_conf_u64,
- 		.max_write_len = 256,
+ 		.name = "weight",
+-		.read_seq_string = blkcg_print_weight,
+-		.write_u64 = blkcg_set_weight,
++		.read_seq_string = cfq_print_weight,
++		.write_u64 = cfq_set_weight,
  	},
  	{
- 		.name = "throttle.read_iops_device",
--		.private = offsetof(struct blkio_group_conf, iops[READ]),
--		.read_seq_string = blkcg_print_conf_u64,
--		.write_string = blkcg_set_conf_iops_r,
-+		.private = offsetof(struct throtl_grp, iops[READ]),
-+		.read_seq_string = tg_print_conf_uint,
-+		.write_string = tg_set_conf_uint,
- 		.max_write_len = 256,
- 	},
- 	{
- 		.name = "throttle.write_iops_device",
--		.private = offsetof(struct blkio_group_conf, iops[WRITE]),
--		.read_seq_string = blkcg_print_conf_u64,
--		.write_string = blkcg_set_conf_iops_w,
-+		.private = offsetof(struct throtl_grp, iops[WRITE]),
-+		.read_seq_string = tg_print_conf_uint,
-+		.write_string = tg_set_conf_uint,
- 		.max_write_len = 256,
- 	},
- 	{
+ 		.name = "time",
+@@ -3983,7 +3976,7 @@ static int cfq_init_queue(struct request_queue *q)
+ 		return -ENOMEM;
+ 	}
+ 
+-	cfqd->root_group->weight = 2*BLKIO_WEIGHT_DEFAULT;
++	cfqd->root_group->weight = 2 * CFQ_WEIGHT_DEFAULT;
+ 
+ 	/*
+ 	 * Not strictly needed (since RB_ROOT just clears the node and we
 -- 
 1.7.7.3
 
