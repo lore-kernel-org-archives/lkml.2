@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365Ab2C1Qoz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 12:44:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28253 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758013Ab2C1Qor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932302Ab2C1Qox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 12:44:53 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:41943 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757985Ab2C1Qor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Mar 2012 12:44:47 -0400
-Date: Wed, 28 Mar 2012 18:35:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-security-module@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Subject: Re: [PATCH 6/6] kmod: optional: Convert the use of xchg to a kref
-Message-ID: <20120328163545.GA18944@redhat.com>
-References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com> <4F7122C0.2070800@panasas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7122C0.2070800@panasas.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+JWJAnC3WJtCdVz1E2I9ba4c84kjRXoyQPlA2tWX
+	XW8OsbeZDm8tjV
+Message-ID: <1332953083.7309.147.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for
+ linux kernel 3.3.0
+From: Mike Galbraith <efault@gmx.de>
+To: Nikos Chantziaras <realnc@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 28 Mar 2012 18:44:43 +0200
+In-Reply-To: <jkv0q5$kgu$1@dough.gmane.org>
+References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
+	 <201203240553.32526.gene.heskett@gmail.com>
+	 <57375.1332641134@turing-police.cc.vt.edu>
+	 <20120328051243.GA2138@fancy-poultry.org> <jkv0q5$kgu$1@dough.gmane.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26, Boaz Harrosh wrote:
->
-> if we use a kref instead of xchg to govern the lifetime
-> of struct subprocess_info, the code becomes simpler and
-> more generic. We can avoid some of the special cases.
+On Wed, 2012-03-28 at 15:39 +0300, Nikos Chantziaras wrote: 
+> On 28/03/12 08:12, Heinz Diehl wrote:
+> > On 25.03.2012, Valdis.Kletnieks@vt.edu wrote:
+> >
+> >> I'va always wondered what people are using to measure interactivity. Do we have
+> >> some hard numbers from scheduler traces, or is it a "feels faster"?
+> >
+> > I guess it's a "feels faster", because it's the only thing that
+> > counts. Given that there is strong evidence that scheduler A is
+> > "faster, more interactive", whatever... than scheduler B, but a
+> > controlled trial shows a significantly better "feels faster"
+> > experience using scheduler B, I'm quite shure that people would choose
+> > scheduler B over A, and that's quite ok. It does what they expect it
+> > to do, despite evidence which documents the opposite.
+> 
+> CFS: ALSA XRUNs in JACK.
+> BFS: much less ALSA XRUNs in JACK
 
-Looks correct, and perhaps this makes the code more understandable.
-If we use kref, we have to move the completion into subprocess_info,
-but this allows to remove the "fallback to wait_for_completion()"
-subtleness. Up to maintainer.
+Something like that could be interesting to look into.  Do you have a
+setup and recipe for inducing these xruns I can try?  I don't have any
+audio problems of my own to fiddle with, but then the few apps I use
+buffer a lot, so I wouldn't.
 
-However, I agree with Peter, wait_for_completion_timeout_state()
-helper from 4/6 needs more discussion.
-
-And the previous looks patch is wrong, see my reply. The bug goes
-away after this patch, but this is not good anyway. IOW, I think
-you should redo 5 and 6 even if the resulting code looks correct.
-
-Just one nit below.
-
-> Actually I like the xchg use here. But if it will break
-> some ARCHs that do not like xchg, then here is the work
-> needed.
-
-Well, xchg() has other arch-neutral users. But again, I am not
-arguing with this change.
-
-> @@ -302,7 +297,7 @@ static void __call_usermodehelper(struct work_struct *work)
->
->  	switch (wait) {
->  	case UMH_NO_WAIT:
-> -		call_usermodehelper_freeinfo(sub_info);
-> +		kref_put(&sub_info->kref,  call_usermodehelper_freeinfo);
->  		break;
-
-This is minor and subjective, but UMH_NO_WAIT could use umh_complete()
-too, the unnecessary complete() doesn't hurt. In this case we could do
-
-
-	switch (wait) {
-	case UMH_WAIT_PROC:
-		if (pid > 0)
-			break;
-		/* FALLTHROUGH */
-	case UMH_WAIT_EXEC:
-		if (pid < 0)
-			sub_info->retval = pid;
-		/* FALLTHROUGH */
-	case UMH_NO_WAIT:
-		umh_complete(sub_info);
-	}
-
-Oleg.
+-Mike
 
