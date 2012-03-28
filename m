@@ -1,112 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab2C1UH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:07:29 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:47876 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758145Ab2C1UH2 (ORCPT
+	id S932458Ab2C1UID (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:08:03 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61013 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249Ab2C1UIB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:07:28 -0400
-X-Greylist: delayed 516 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Mar 2012 16:07:28 EDT
-Date: Wed, 28 Mar 2012 21:58:48 +0200
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Jason Baron <jbaron@redhat.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
-Message-ID: <20120328195848.GA5331@hell>
-References: <1332943060-18374-1-git-send-email-hagen@jauu.net>
- <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
- <20120328162108.GB2381@redhat.com>
+	Wed, 28 Mar 2012 16:08:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328162108.GB2381@redhat.com>
-X-Key-Id: 98350C22
-X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
-X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1332946113.2325.9.camel@edumazet-glaptop>
+References: <1332882712-10756-1-git-send-email-alex.mihai.c@gmail.com>
+	<20120328105212.1cb8dfe5@asterix.rh>
+	<1332946113.2325.9.camel@edumazet-glaptop>
+Date: Wed, 28 Mar 2012 23:08:00 +0300
+X-Google-Sender-Auth: av4ChPVgyJPxCV69wcIumuskiOA
+Message-ID: <CAEnQRZD+0AQFfFCzWZCR5JR0BUxxNEsincD+_O9F0ne2Zryp_w@mail.gmail.com>
+Subject: Re: [PATCH] tcp: bind() use stronger condition for bind_conflict
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>, Flavio Leitner <fbl@redhat.com>
+Cc: Alexandru Copot <alex.mihai.c@gmail.com>, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jason Baron | 2012-03-28 12:21:08 [-0400]:
-
->Hmmm...Looking at ep_poll() it does an '__add_wait_queue_exclusive()'.
->So, I *think* epoll_wait() should do what you want, if you are waiting
->on the same epfd in all the threads.
+On Wed, Mar 28, 2012 at 5:48 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2012-03-28 at 10:52 -0300, Flavio Leitner wrote:
+>> On Wed, 28 Mar 2012 00:11:52 +0300
+>> Alexandru Copot <alex.mihai.c@gmail.com> wrote:
+>>
 >
->I think the case you are describing is where each thread does its own
->ep_create(), and then a subsequent epoll_wait() on the fd from the
->create?
+>> > diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection_sock.c
+>> > index 02dd203..dfc8bc3 100644
+>> > --- a/net/ipv6/inet6_connection_sock.c
+>> > +++ b/net/ipv6/inet6_connection_sock.c
+>> > @@ -28,7 +28,8 @@
+>> >  #include <net/inet6_connection_sock.h>
+>> >
+>> >  int inet6_csk_bind_conflict(const struct sock *sk,
+>> > -                       const struct inet_bind_bucket *tb)
+>> > +                       const struct inet_bind_bucket *tb,
+>> > +                           int relax)
+>>
+>> Same here
+>> Maybe you can wait for more feedbacks before spin another patch
+>> version just to fix that.
+>>
 >
->So, I *think* you can get what you want without adding this flag.
+>
+>
+> Also 'int relax' should be 'bool relax'... 1/0 -> true/false
+>
+> Anyway net-next is not open yet...
 
-;) sorry:
+Eric, Flavio, thanks a lot for your comments. We will resubmit this
+when net-next opens.
 
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
-epoll_wait returned
+Please let us know if you have any other observations.
 
-
-minimal example:
-
->>>>>>>>>>>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <sys/epoll.h>
-
-#define	AMAX 16
-
-static void *runner(void *args)
-{
-	int fd = (int) *((int *) args);
-	struct epoll_event events[AMAX];
-
-	epoll_wait(fd, events, AMAX, -1);
-	write(1, "epoll_wait returned\n", 20);
-
-	return NULL;
-}
-
-int main(int ac, char **av)
-{
-	int i, evfd, pipefd[2];
-	pthread_t thread_id[2];
-	struct epoll_event epoll_ev;
-
-	pipe(pipefd);
-	evfd = epoll_create(64);
-
-	memset(&epoll_ev, 0, sizeof(struct epoll_event));
-	epoll_ev.events   = EPOLLIN | EPOLLPRI | EPOLLERR | EPOLLHUP;
-	epoll_ctl(evfd, EPOLL_CTL_ADD, pipefd[0], &epoll_ev);
-
-	for (i = 0; i < 10; i++)
-		pthread_create(&thread_id[0], NULL, runner, &evfd);
-
-	sleep(1);
-	close(pipefd[1]);
-	write(pipefd[0], "x", 1);
-	sleep(1);
-
-	return EXIT_SUCCESS;
-}
-<<<<<<<<<<<
-
-
-Cheers, Hagen
+thanks,
+Daniel.
