@@ -1,69 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab2C1VYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 17:24:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46773 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932894Ab2C1VYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 17:24:15 -0400
-Date: Wed, 28 Mar 2012 23:24:07 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kees Cook <keescook@chromium.org>
-cc: Ingo Molnar <mingo@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        kernel-hardening@lists.openwall.com, spender@grsecurity.net
-Subject: Re: [PATCH] futex: do not leak robust list to unprivileged process
-In-Reply-To: <CAGXu5jKRGmfhS48gpuur7P1cbnoBPdnNe3qPbok52TKQD8Sy9w@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1203282323420.2542@ionos>
-References: <20120319231253.GA20893@www.outflux.net> <20120320133141.GC2918@peqn> <alpine.LFD.2.02.1203201758220.2542@ionos> <CAGXu5jKVx41+NSEWsw0YF74z5_heSQ6GOmkuDi1DXNPcO4sjTQ@mail.gmail.com> <20120320172300.GA8888@gmail.com> <alpine.LFD.2.02.1203230043470.2542@ionos>
- <CAGXu5jKRGmfhS48gpuur7P1cbnoBPdnNe3qPbok52TKQD8Sy9w@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1758798Ab2C1VXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 17:23:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40772 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758641Ab2C1VWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 17:22:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 4/8] PM / Hibernate: Disable usermode helpers right before freezing tasks
+Date: Wed, 28 Mar 2012 23:23:03 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203260000.34377.rjw@sisk.pl> <201203282319.54708.rjw@sisk.pl>
+In-Reply-To: <201203282319.54708.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203282323.03490.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012, Kees Cook wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> On Thu, Mar 22, 2012 at 4:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Tue, 20 Mar 2012, Ingo Molnar wrote:
-> >> * Kees Cook <keescook@chromium.org> wrote:
-> >> > On Tue, Mar 20, 2012 at 10:02 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> > > I really wonder why we have this syscall at all.
-> >> >
-> >> > The documentation I found yesterday while looking at this was:
-> >> > http://linux.die.net/man/2/get_robust_list
-> >> >
-> >> > Which says "The system call is only available for debugging
-> >> > purposes and is not needed for normal operations. Both system
-> >> > calls are not available to application programs as functions;
-> >> > they can be called using the syscall(3) function."
-> >> >
-> >> > Dropping the syscall entirely would certainly make it secure.
-> >> > ;)
-> >>
-> >> The thinking was API completeness. In general it's possible for
-> >> a sufficiently privileged task to figure out all the state of a
-> >> task. We can query timers, fds - the robust list is such a
-> >> resource as well. The information leakage was obviously not
-> >> intended.
-> >
-> > So I think it's safe to take Kees' patch as is. On top of that we
-> > should add a WARN_ONCE when the syscall is invoked and schedule the
-> > sucker for removal.
-> 
-> Can someone claim the first patch? It looks like not everyone agrees
-> about removal, but I'd like to see at least the first one get in. :)
+There is no reason to call usermodehelper_disable() before creating
+memory bitmaps in hibernate() and software_resume(), so call it right
+before freeze_processes(), in accordance with the other suspend and
+hibernation code.  Consequently, call usermodehelper_enable() right
+after the thawing of tasks rather than after freeing the memory
+bitmaps.
 
-It's on my list for tomorrow.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ kernel/power/hibernate.c |   23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
+
+Index: linux/kernel/power/hibernate.c
+===================================================================
+--- linux.orig/kernel/power/hibernate.c
++++ linux/kernel/power/hibernate.c
+@@ -611,19 +611,19 @@ int hibernate(void)
+ 	if (error)
+ 		goto Exit;
+ 
+-	error = usermodehelper_disable();
+-	if (error)
+-		goto Exit;
+-
+ 	/* Allocate memory management structures */
+ 	error = create_basic_memory_bitmaps();
+ 	if (error)
+-		goto Enable_umh;
++		goto Exit;
+ 
+ 	printk(KERN_INFO "PM: Syncing filesystems ... ");
+ 	sys_sync();
+ 	printk("done.\n");
+ 
++	error = usermodehelper_disable();
++	if (error)
++		goto Exit;
++
+ 	error = freeze_processes();
+ 	if (error)
+ 		goto Free_bitmaps;
+@@ -660,9 +660,8 @@ int hibernate(void)
+ 	freezer_test_done = false;
+ 
+  Free_bitmaps:
+-	free_basic_memory_bitmaps();
+- Enable_umh:
+ 	usermodehelper_enable();
++	free_basic_memory_bitmaps();
+  Exit:
+ 	pm_notifier_call_chain(PM_POST_HIBERNATION);
+ 	pm_restore_console();
+@@ -777,15 +776,13 @@ static int software_resume(void)
+ 	if (error)
+ 		goto close_finish;
+ 
+-	error = usermodehelper_disable();
++	error = create_basic_memory_bitmaps();
+ 	if (error)
+ 		goto close_finish;
+ 
+-	error = create_basic_memory_bitmaps();
+-	if (error) {
+-		usermodehelper_enable();
++	error = usermodehelper_disable();
++	if (error)
+ 		goto close_finish;
+-	}
+ 
+ 	pr_debug("PM: Preparing processes for restore.\n");
+ 	error = freeze_processes();
+@@ -805,8 +802,8 @@ static int software_resume(void)
+ 	swsusp_free();
+ 	thaw_processes();
+  Done:
+-	free_basic_memory_bitmaps();
+ 	usermodehelper_enable();
++	free_basic_memory_bitmaps();
+  Finish:
+ 	pm_notifier_call_chain(PM_POST_RESTORE);
+ 	pm_restore_console();
+
