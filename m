@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab2C1N5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:57:55 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:33537 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752788Ab2C1N5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:57:53 -0400
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Hagen Paul Pfeifer <hagen@jauu.net>
-Subject: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
-Date: Wed, 28 Mar 2012 15:57:40 +0200
-Message-Id: <1332943060-18374-1-git-send-email-hagen@jauu.net>
-X-Mailer: git-send-email 1.7.9.1
+	id S1758114Ab2C1N6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:58:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45922 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752788Ab2C1N6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 09:58:50 -0400
+Date: Wed, 28 Mar 2012 15:58:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 08/10] hugetlbfs: Add a list for tracking in-use
+ HugeTLB pages
+Message-ID: <20120328135845.GH20949@tiehlicka.suse.cz>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1331919570-2264-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331919570-2264-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-High performance server sometimes create one listening socket (e.g. port
-80), create a epoll file descriptor and add the socket. Afterwards
-create SC_NPROCESSORS_ONLN threads and wait for events. This often
-result in a thundering herd problem because all CPUs are scheduled.
+On Fri 16-03-12 23:09:28, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> hugepage_activelist will be used to track currently used HugeTLB pages.
+> We need to find the in-use HugeTLB pages to support memcg removal.
+> On memcg removal we update the page's memory cgroup to point to
+> parent cgroup.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  include/linux/hugetlb.h |    1 +
+>  mm/hugetlb.c            |   23 ++++++++++++++++++-----
+>  2 files changed, 19 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index cbd8dc5..6919100 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+[...]
+> @@ -2319,14 +2322,24 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+>  		page = pte_page(pte);
+>  		if (pte_dirty(pte))
+>  			set_page_dirty(page);
+> -		list_add(&page->lru, &page_list);
+> +
+> +		spin_lock(&hugetlb_lock);
+> +		list_move(&page->lru, &page_list);
+> +		spin_unlock(&hugetlb_lock);
 
-This patch add an additional flag to epoll_ctl(2) called EPOLLEXCLUSIVE.
-If a descriptor is added with this flag only one CPU is scheduled in.
+Why do we really need the spinlock here?
 
-Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
----
-Dave rejected the patch and said not network specific. Because there
-is no epoll maintainer this time directly.
+>  	}
+>  	spin_unlock(&mm->page_table_lock);
+>  	flush_tlb_range(vma, start, end);
+>  	mmu_notifier_invalidate_range_end(mm, start, end);
+>  	list_for_each_entry_safe(page, tmp, &page_list, lru) {
+>  		page_remove_rmap(page);
+> -		list_del(&page->lru);
+> +		/*
+> +		 * We need to move it back huge page active list. If we are
+> +		 * holding the last reference, below put_page will move it
+> +		 * back to free list.
+> +		 */
+> +		spin_lock(&hugetlb_lock);
+> +		list_move(&page->lru, &h->hugepage_activelist);
+> +		spin_unlock(&hugetlb_lock);
 
- fs/eventpoll.c            |    7 +++++--
- include/linux/eventpoll.h |    3 +++
- 2 files changed, 8 insertions(+), 2 deletions(-)
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 629e9ed..16d787f 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -88,7 +88,7 @@
-  */
- 
- /* Epoll private bits inside the event mask */
--#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
-+#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET | EPOLLEXCLUSIVE)
- 
- /* Maximum number of nesting allowed inside epoll sets */
- #define EP_MAX_NESTS 4
-@@ -969,7 +969,10 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
- 		init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
- 		pwq->whead = whead;
- 		pwq->base = epi;
--		add_wait_queue(whead, &pwq->wait);
-+		if (unlikely(epi->event.events & EPOLLEXCLUSIVE))
-+			add_wait_queue_exclusive(whead, &pwq->wait);
-+		else
-+			add_wait_queue(whead, &pwq->wait);
- 		list_add_tail(&pwq->llink, &epi->pwqlist);
- 		epi->nwait++;
- 	} else {
-diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
-index 657ab55..d334389 100644
---- a/include/linux/eventpoll.h
-+++ b/include/linux/eventpoll.h
-@@ -26,6 +26,9 @@
- #define EPOLL_CTL_DEL 2
- #define EPOLL_CTL_MOD 3
- 
-+/* Set Exclusive wake up behaviour for the target file descriptor */
-+#define EPOLLEXCLUSIVE (1 << 29)
-+
- /* Set the One Shot behaviour for the target file descriptor */
- #define EPOLLONESHOT (1 << 30)
- 
+This spinlock usage doesn't look nice but I guess we do not have many
+other options.
+
 -- 
-1.7.9.1
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
