@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab2C1U42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:56:28 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56440 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab2C1U41 (ORCPT
+	id S1758702Ab2C1U6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:58:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51910 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab2C1U6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:56:27 -0400
-Date: Wed, 28 Mar 2012 16:54:17 -0400 (EDT)
-Message-Id: <20120328.165417.1083579824641543055.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: gregkh@linuxfoundation.org, haiyangz@microsoft.com, netdev@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net/hyperv: Add flow control based on hi/low
- watermark
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1332957900.2624.38.camel@bwh-desktop.uk.solarflarecom.com>
-References: <20120326231017.GA30684@kroah.com>
-	<20120326.191237.2192763107267474232.davem@davemloft.net>
-	<1332957900.2624.38.camel@bwh-desktop.uk.solarflarecom.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 28 Mar 2012 16:58:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 4/5] ARM: More device tree support updates
+Date: Wed, 28 Mar 2012 20:58:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1332918842-13521-1-git-send-email-olof@lixom.net> <1332918842-13521-5-git-send-email-olof@lixom.net> <CA+55aFy4QNiDTL2b37Y870kZ-09sFp9qsFn+SaKCbzWqm8xtoQ@mail.gmail.com>
+In-Reply-To: <CA+55aFy4QNiDTL2b37Y870kZ-09sFp9qsFn+SaKCbzWqm8xtoQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 28 Mar 2012 13:54:19 -0700 (PDT)
+Message-Id: <201203282058.20226.arnd@arndb.de>
+X-Provags-ID: V02:K0:YdMOposT/TkmHo8CLWUFFC9TBu/GJyYJgRIUC5uoKOc
+ bMuoRL1NM4iiIySMxgIHhW1ziymT1LfoV5B0BGoxdXEDu37eWP
+ eAIiPKVDHOu0XQBXUzClknMw+SkEzGVFSGRojg4CIUJBRzPEX3
+ 3oO2tXmHiQCVG40vRAPpRpdx7rqkhtfP7MzpHeZLs2iS65ylTw
+ jQWmofXGP37lE4V/OOp5I33KVcnmV4QWrLkVR0kShSbbMP2EZ7
+ Q3pZVMpVZ75tl8K+4si82gcr/0zJB0zObjtsEBfh9L47CduzmV
+ fYfnWAVYDMzsq1Wtq0npRGDVrAyVi2rIQgg3/01/k+C2blNck1
+ cO5YbamFt5xSlva85BhE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Wed, 28 Mar 2012 19:05:00 +0100
-
-> On Mon, 2012-03-26 at 19:12 -0400, David Miller wrote:
->> From: Greg KH <gregkh@linuxfoundation.org>
->> Date: Mon, 26 Mar 2012 16:10:17 -0700
->> 
->> > David, please do NOT apply this as-is.
->> 
->> BTW, ethtool had controls exactly for stuff like this.
+On Wednesday 28 March 2012, Linus Torvalds wrote:
+> On Wed, Mar 28, 2012 at 12:14 AM, Olof Johansson <olof@lixom.net> wrote:
+> >
+> > Merge conflicts and proposed solutions:
+> >
+> > arch/arm/mach-ux500/Kconfig: Two new config options. Keep both.
 > 
-> Not sure what you're thinking of...?  We have pause frame control but I
-> don't think that's applicable.
+> Guys, I'm seeing merge problems that go way beyond this.
+> 
+> Look at that MACH_U8500 config option. It got renamed to MACH_MOP500,
+> but it continues to live in the tree.
+> 
+> This rename conflict happened earlier and I didn't notice (grep for
+> it: it's used by a staging driver), so it's already in my pushed out
+> tree. But it seems to be getting worse, and your proposed merge
+> solution doesn't cover it.
 
-As I understand this, this situation is really about interrupt flow
-control, and for that we have the interrupt moderation ethtool
-settings.
+Your solution looks good. I had the MACH_UX500_DT option above U5500
+instead of below it in our for-next branch, but either way makes sense.
+
+> I'll try to fix things up, but you need to verify my merge. And you
+> guys should have noticed and noted it, rather than leave it to my
+> random bumbling about.
+
+Yes, noted for next time. We had a lot of merge conflicts because of
+being relatively late in the merge window (this one was purely
+self made though), and it's not always easy to decide which ones
+to eliminate in advance, leave in or describe the resolution we found.
+
+Since we usually see the same conflicts and resolve them in the
+for-next branch, I guess it's easy enough to just always provide
+the branch with the resolutions as a help for cases like this one.
+
+	Arnd
