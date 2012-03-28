@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab2C1Kq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:46:27 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47091 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757994Ab2C1KqY (ORCPT
+	id S1758098Ab2C1Kqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:46:34 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57710 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757994Ab2C1Kqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:46:24 -0400
-Date: Wed, 28 Mar 2012 13:46:09 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Paul Menage <paul@paulmenage.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [patch] cpuset: remove an unused variable
-Message-ID: <20120328104608.GD29022@elgon.mountain>
+	Wed, 28 Mar 2012 06:46:30 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F72EB84.7080000@jp.fujitsu.com>
+Date: Wed, 28 Mar 2012 19:44:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4F72EBFB.0062,ss=1,re=0.000,fgs=0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [RFC][PATCH 0/6 v2] reducing page_cgroup size
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't use "cpu" any more after 2baab4e904 "sched: Fix
-select_fallback_rq() vs cpu_active/cpu_online".
+Hi, here is v2 (still RFC again because I changed many parts.)
+I'd like to post v3 without 'RFC' tag after Lsf-MM Summit.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+This series is for reducing size of 'struct page_cgroup' to 8 bytes.
+v2 contains 6 patches and did clean-ups and fixes race in v1 and
+adds a trial to integrate struct page_cgroup into struct page.
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index dfceaca..14f7070 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2165,7 +2165,6 @@ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
- void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
- {
- 	const struct cpuset *cs;
--	int cpu;
- 
- 	rcu_read_lock();
- 	cs = task_cs(tsk);
+each patches are...
+
+1/6 ....add methods to access pc->mem_cgroup
+2/6 ....add pc_set_mem_cgroup_and_flags() to set ->mem_cgroup and flags by one call.
+3/6 ....add PageCgroupReset() for handling a race.
+4/6 ....reduce size of struct page_cgroup by removing ->mem_cgroup
+5/6 ....remove unnecessary memory barrier
+6/6 ....add CONFIG_INTEGRATED_PAGE_CGROUP to place page_cgroup in struct page.
+
+Regards,
+-Kame
+
