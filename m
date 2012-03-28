@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab2C1Krh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 06:47:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43115 "EHLO mx1.redhat.com"
+	id S932438Ab2C1Krr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 06:47:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48465 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758079Ab2C1Kre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 06:47:34 -0400
+	id S932213Ab2C1Kro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 06:47:44 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 8/9] KEYS: Do LRU discard in full keyrings
+Subject: [PATCH 9/9] KEYS: Add invalidation support
 To: jmorris@namei.org
 Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Wed, 28 Mar 2012 11:47:26 +0100
-Message-ID: <20120328104726.10417.47305.stgit@warthog.procyon.org.uk>
+Date: Wed, 28 Mar 2012 11:47:38 +0100
+Message-ID: <20120328104737.10417.2887.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
 References: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,227 +23,417 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do an LRU discard in keyrings that are full rather than returning ENFILE.  To
-perform this, a time_t is added to the key struct and updated by the creation
-of a link to a key and by a key being found as the result of a search.  At the
-completion of a successful search, the keyrings in the path between the root of
-the search and the first found link to it also have their last-used times
-updated.
+Add support for invalidating a key - which renders it immediately invisible to
+further searches and causes the garbage collector to immediately wake up,
+remove it from keyrings and then destroy it when it's no longer referenced.
 
-Note that discarding a link to a key from a keyring does not necessarily
-destroy the key as there may be references held by other places.
+It's better not to do this with keyctl_revoke() as that marks the key to start
+returning -EKEYREVOKED to searches when what is actually desired is to have the
+key refetched.
 
-An alternate discard method that might suffice is to perform FIFO discard from
-the keyring, using the spare 2-byte hole in the keylist header as the index of
-the next link to be discarded.
+To invalidate a key the caller must be granted SEARCH permission by the key.
+This may be too strict.  It may be better to also permit invalidation if the
+caller has any of READ, WRITE or SETATTR permission.
 
-This is useful when using a keyring as a cache for DNS results or foreign
-filesystem IDs.
-
-
-This can be tested by the following.  As root do:
-
-	echo 1000 >/proc/sys/kernel/keys/root_maxkeys
-
-	kr=`keyctl newring foo @s`
-	for ((i=0; i<2000; i++)); do keyctl add user a$i a $kr; done
-
-Without this patch ENFILE should be reported when the keyring fills up.  With
-this patch, the keyring discards keys in an LRU fashion.  Note that the stored
-LRU time has a granularity of 1s.
-
-After doing this, /proc/key-users can be observed and should show that most of
-the 2000 keys have been discarded:
-
-	[root@andromeda ~]# cat /proc/key-users
-	    0:   517 516/516 513/1000 5249/20000
-
-The "513/1000" here is the number of quota-accounted keys present for this user
-out of the maximum permitted.
-
-In /proc/keys, the keyring shows the number of keys it has and the number of
-slots it has allocated:
-
-	[root@andromeda ~]# grep foo /proc/keys
-	200c64c4 I--Q--     1 perm 3b3f0000     0     0 keyring   foo: 509/509
-
-The maximum is (PAGE_SIZE - header) / key pointer size.  That's typically 509
-on a 64-bit system and 1020 on a 32-bit system.
+The primary use for this is to evict keys that are cached in special keyrings,
+such as the DNS resolver or an ID mapper.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/key.h          |    1 +
- security/keys/keyring.c      |   47 ++++++++++++++++++++++++++++++++++++------
- security/keys/process_keys.c |    2 ++
- 3 files changed, 43 insertions(+), 7 deletions(-)
+ Documentation/security/keys.txt |   17 +++++++++++++++++
+ include/linux/key.h             |    3 +++
+ include/linux/keyctl.h          |    1 +
+ security/keys/compat.c          |    3 +++
+ security/keys/gc.c              |   21 ++++++++++++++-------
+ security/keys/internal.h        |   15 ++++++++++++++-
+ security/keys/key.c             |   22 ++++++++++++++++++++++
+ security/keys/keyctl.c          |   34 ++++++++++++++++++++++++++++++++++
+ security/keys/keyring.c         |   25 +++++++++++--------------
+ security/keys/permission.c      |   15 ++++++++++-----
+ security/keys/proc.c            |    3 ++-
+ 11 files changed, 131 insertions(+), 28 deletions(-)
 
+diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+index 4c8cf36..4f4841a 100644
+--- a/Documentation/security/keys.txt
++++ b/Documentation/security/keys.txt
+@@ -806,6 +806,23 @@ The keyctl syscall functions are:
+      kernel and resumes executing userspace.
+ 
+ 
++ (*) Invalidate a key.
++
++	long keyctl(KEYCTL_INVALIDATE, key_serial_t key);
++
++     This function marks a key as being invalidated and then wakes up the
++     garbage collector.  The garbage collector immediately removes invalidated
++     keys from all keyrings and deletes the key when its reference count
++     reaches zero.
++
++     Keys that are marked invalidated become invisible to normal key operations
++     immediately, though they are still visible in /proc/keys until deleted
++     (they're marked with an 'i' flag).
++
++     A process must have search permission on the key for this function to be
++     successful.
++
++
+ ===============
+ KERNEL SERVICES
+ ===============
 diff --git a/include/linux/key.h b/include/linux/key.h
-index c505f83..13c0dcd 100644
+index 13c0dcd..b145b05 100644
 --- a/include/linux/key.h
 +++ b/include/linux/key.h
-@@ -136,6 +136,7 @@ struct key {
- 		time_t		expiry;		/* time at which key expires (or 0) */
- 		time_t		revoked_at;	/* time at which key was revoked */
- 	};
-+	time_t			last_used_at;	/* last time used for LRU keyring discard */
- 	uid_t			uid;
- 	gid_t			gid;
- 	key_perm_t		perm;		/* access permissions */
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 459b3cc..89d02cf 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -30,6 +30,10 @@
- 		(klist)->keys[index],					\
- 		rwsem_is_locked((struct rw_semaphore *)&(keyring)->sem)))
+@@ -160,6 +160,7 @@ struct key {
+ #define KEY_FLAG_USER_CONSTRUCT	4	/* set if key is being constructed in userspace */
+ #define KEY_FLAG_NEGATIVE	5	/* set if key is negative */
+ #define KEY_FLAG_ROOT_CAN_CLEAR	6	/* set if key can be cleared by root without permission */
++#define KEY_FLAG_INVALIDATED	7	/* set if key has been invalidated */
  
-+#define MAX_KEYRING_LINKS						\
-+	min_t(size_t, USHRT_MAX - 1,					\
-+	      ((PAGE_SIZE - sizeof(struct keyring_list)) / sizeof(struct key *)))
+ 	/* the description string
+ 	 * - this is used to match a key against search criteria
+@@ -203,6 +204,7 @@ extern struct key *key_alloc(struct key_type *type,
+ #define KEY_ALLOC_NOT_IN_QUOTA	0x0002	/* not in quota */
+ 
+ extern void key_revoke(struct key *key);
++extern void key_invalidate(struct key *key);
+ extern void key_put(struct key *key);
+ 
+ static inline struct key *key_get(struct key *key)
+@@ -323,6 +325,7 @@ extern void key_init(void);
+ #define key_serial(k)			0
+ #define key_get(k) 			({ NULL; })
+ #define key_revoke(k)			do { } while(0)
++#define key_invalidate(k)		do { } while(0)
+ #define key_put(k)			do { } while(0)
+ #define key_ref_put(k)			do { } while(0)
+ #define make_key_ref(k, p)		NULL
+diff --git a/include/linux/keyctl.h b/include/linux/keyctl.h
+index 9b0b865..c9b7f4fa 100644
+--- a/include/linux/keyctl.h
++++ b/include/linux/keyctl.h
+@@ -55,5 +55,6 @@
+ #define KEYCTL_SESSION_TO_PARENT	18	/* apply session keyring to parent process */
+ #define KEYCTL_REJECT			19	/* reject a partially constructed key */
+ #define KEYCTL_INSTANTIATE_IOV		20	/* instantiate a partially constructed key */
++#define KEYCTL_INVALIDATE		21	/* invalidate a key */
+ 
+ #endif /*  _LINUX_KEYCTL_H */
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index 4c48e13..fab4f8d 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -135,6 +135,9 @@ asmlinkage long compat_sys_keyctl(u32 option,
+ 		return compat_keyctl_instantiate_key_iov(
+ 			arg2, compat_ptr(arg3), arg4, arg5);
+ 
++	case KEYCTL_INVALIDATE:
++		return keyctl_invalidate_key(arg2);
 +
- #define KEY_LINK_FIXQUOTA 1UL
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index adddaa2..61ab7c8 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -72,6 +72,15 @@ void key_schedule_gc(time_t gc_at)
+ }
  
  /*
-@@ -319,6 +323,8 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
- 			     bool no_state_check)
++ * Schedule a dead links collection run.
++ */
++void key_schedule_gc_links(void)
++{
++	set_bit(KEY_GC_KEY_EXPIRED, &key_gc_flags);
++	queue_work(system_nrt_wq, &key_gc_work);
++}
++
++/*
+  * Some key's cleanup time was met after it expired, so we need to get the
+  * reaper to go through a cycle finding expired keys.
+  */
+@@ -79,8 +88,7 @@ static void key_gc_timer_func(unsigned long data)
  {
- 	struct {
-+		/* Need a separate keylist pointer for RCU purposes */
-+		struct key *keyring;
- 		struct keyring_list *keylist;
- 		int kix;
- 	} stack[KEYRING_SEARCH_MAX_DEPTH];
-@@ -451,6 +457,7 @@ ascend:
- 			continue;
- 
- 		/* stack the current position */
-+		stack[sp].keyring = keyring;
- 		stack[sp].keylist = keylist;
- 		stack[sp].kix = kix;
- 		sp++;
-@@ -466,6 +473,7 @@ not_this_keyring:
- 	if (sp > 0) {
- 		/* resume the processing of a keyring higher up in the tree */
- 		sp--;
-+		keyring = stack[sp].keyring;
- 		keylist = stack[sp].keylist;
- 		kix = stack[sp].kix + 1;
- 		goto ascend;
-@@ -477,6 +485,10 @@ not_this_keyring:
- 	/* we found a viable match */
- found:
- 	atomic_inc(&key->usage);
-+	key->last_used_at = now.tv_sec;
-+	keyring->last_used_at = now.tv_sec;
-+	while (sp > 0)
-+		stack[--sp].keyring->last_used_at = now.tv_sec;
- 	key_check(key);
- 	key_ref = make_key_ref(key, possessed);
- error_2:
-@@ -558,6 +570,8 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
- 
- found:
- 	atomic_inc(&key->usage);
-+	keyring->last_used_at = key->last_used_at =
-+		current_kernel_time().tv_sec;
- 	rcu_read_unlock();
- 	return make_key_ref(key, possessed);
+ 	kenter("");
+ 	key_gc_next_run = LONG_MAX;
+-	set_bit(KEY_GC_KEY_EXPIRED, &key_gc_flags);
+-	queue_work(system_nrt_wq, &key_gc_work);
++	key_schedule_gc_links();
  }
-@@ -611,6 +625,7 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 			 * (ie. it has a zero usage count) */
- 			if (!atomic_inc_not_zero(&keyring->usage))
- 				continue;
-+			keyring->last_used_at = current_kernel_time().tv_sec;
- 			goto out;
- 		}
- 	}
-@@ -734,8 +749,9 @@ int __key_link_begin(struct key *keyring, const struct key_type *type,
- 	struct keyring_list *klist, *nklist;
- 	unsigned long prealloc;
- 	unsigned max;
-+	time_t lowest_lru;
- 	size_t size;
--	int loop, ret;
-+	int loop, lru, ret;
  
- 	kenter("%d,%s,%s,", key_serial(keyring), type->name, description);
+ /*
+@@ -131,12 +139,12 @@ void key_gc_keytype(struct key_type *ktype)
+ static void key_gc_keyring(struct key *keyring, time_t limit)
+ {
+ 	struct keyring_list *klist;
+-	struct key *key;
+ 	int loop;
  
-@@ -756,7 +772,9 @@ int __key_link_begin(struct key *keyring, const struct key_type *type,
- 	klist = rcu_dereference_locked_keyring(keyring);
+ 	kenter("%x", key_serial(keyring));
  
- 	/* see if there's a matching key we can displace */
-+	lru = -1;
- 	if (klist && klist->nkeys > 0) {
-+		lowest_lru = TIME_T_MAX;
- 		for (loop = klist->nkeys - 1; loop >= 0; loop--) {
- 			struct key *key = rcu_deref_link_locked(klist, loop,
- 								keyring);
-@@ -770,9 +788,23 @@ int __key_link_begin(struct key *keyring, const struct key_type *type,
- 				prealloc = 0;
- 				goto done;
- 			}
-+			if (key->last_used_at < lowest_lru) {
-+				lowest_lru = key->last_used_at;
-+				lru = loop;
-+			}
- 		}
+-	if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
++	if (keyring->flags & ((1 << KEY_FLAG_INVALIDATED) |
++			      (1 << KEY_FLAG_REVOKED)))
+ 		goto dont_gc;
+ 
+ 	/* scan the keyring looking for dead keys */
+@@ -148,9 +156,8 @@ static void key_gc_keyring(struct key *keyring, time_t limit)
+ 	loop = klist->nkeys;
+ 	smp_rmb();
+ 	for (loop--; loop >= 0; loop--) {
+-		key = rcu_dereference(klist->keys[loop]);
+-		if (test_bit(KEY_FLAG_DEAD, &key->flags) ||
+-		    (key->expiry > 0 && key->expiry <= limit))
++		struct key *key = rcu_dereference(klist->keys[loop]);
++		if (key_is_dead(key, limit))
+ 			goto do_gc;
  	}
  
-+	/* If the keyring is full then do an LRU discard */
-+	if (klist &&
-+	    klist->nkeys == klist->maxkeys &&
-+	    klist->maxkeys >= MAX_KEYRING_LINKS) {
-+		kdebug("LRU discard %d\n", lru);
-+		klist->delkey = lru;
-+		prealloc = 0;
-+		goto done;
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 65647f8..f711b09 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -152,7 +152,8 @@ extern long join_session_keyring(const char *name);
+ extern struct work_struct key_gc_work;
+ extern unsigned key_gc_delay;
+ extern void keyring_gc(struct key *keyring, time_t limit);
+-extern void key_schedule_gc(time_t expiry_at);
++extern void key_schedule_gc(time_t gc_at);
++extern void key_schedule_gc_links(void);
+ extern void key_gc_keytype(struct key_type *ktype);
+ 
+ extern int key_task_permission(const key_ref_t key_ref,
+@@ -197,6 +198,17 @@ extern struct key *request_key_auth_new(struct key *target,
+ extern struct key *key_get_instantiation_authkey(key_serial_t target_id);
+ 
+ /*
++ * Determine whether a key is dead.
++ */
++static inline bool key_is_dead(struct key *key, time_t limit)
++{
++	return
++		key->flags & ((1 << KEY_FLAG_DEAD) |
++			      (1 << KEY_FLAG_INVALIDATED)) ||
++		(key->expiry > 0 && key->expiry <= limit);
++}
++
++/*
+  * keyctl() functions
+  */
+ extern long keyctl_get_keyring_ID(key_serial_t, int);
+@@ -225,6 +237,7 @@ extern long keyctl_reject_key(key_serial_t, unsigned, unsigned, key_serial_t);
+ extern long keyctl_instantiate_key_iov(key_serial_t,
+ 				       const struct iovec __user *,
+ 				       unsigned, key_serial_t);
++extern long keyctl_invalidate_key(key_serial_t);
+ 
+ extern long keyctl_instantiate_key_common(key_serial_t,
+ 					  const struct iovec __user *,
+diff --git a/security/keys/key.c b/security/keys/key.c
+index dc62894..c9bf66a 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -955,6 +955,28 @@ void key_revoke(struct key *key)
+ EXPORT_SYMBOL(key_revoke);
+ 
+ /**
++ * key_invalidate - Invalidate a key.
++ * @key: The key to be invalidated.
++ *
++ * Mark a key as being invalidated and have it cleaned up immediately.  The key
++ * is ignored by all searches and other operations from this point.
++ */
++void key_invalidate(struct key *key)
++{
++	kenter("%d", key_serial(key));
++
++	key_check(key);
++
++	if (!test_bit(KEY_FLAG_INVALIDATED, &key->flags)) {
++		down_write_nested(&key->sem, 1);
++		if (!test_and_set_bit(KEY_FLAG_INVALIDATED, &key->flags))
++			key_schedule_gc_links();
++		up_write(&key->sem);
++	}
++}
++EXPORT_SYMBOL(key_invalidate);
++
++/**
+  * register_key_type - Register a type of key.
+  * @ktype: The new key type.
+  *
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index fb767c6..ddb3e05 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -375,6 +375,37 @@ error:
+ }
+ 
+ /*
++ * Invalidate a key.
++ *
++ * The key must be grant the caller Invalidate permission for this to work.
++ * The key and any links to the key will be automatically garbage collected
++ * immediately.
++ *
++ * If successful, 0 is returned.
++ */
++long keyctl_invalidate_key(key_serial_t id)
++{
++	key_ref_t key_ref;
++	long ret;
++
++	kenter("%d", id);
++
++	key_ref = lookup_user_key(id, 0, KEY_SEARCH);
++	if (IS_ERR(key_ref)) {
++		ret = PTR_ERR(key_ref);
++		goto error;
 +	}
 +
- 	/* check that we aren't going to overrun the user's quota */
- 	ret = key_payload_reserve(keyring,
- 				  keyring->datalen + KEYQUOTA_LINK_BYTES);
-@@ -786,15 +818,14 @@ int __key_link_begin(struct key *keyring, const struct key_type *type,
- 	} else {
- 		/* grow the key list */
- 		max = 4;
--		if (klist)
-+		if (klist) {
- 			max += klist->maxkeys;
-+			if (max > MAX_KEYRING_LINKS)
-+				max = MAX_KEYRING_LINKS;
-+			BUG_ON(max <= klist->maxkeys);
-+		}
- 
--		ret = -ENFILE;
--		if (max > USHRT_MAX - 1)
--			goto error_quota;
- 		size = sizeof(*klist) + sizeof(struct key *) * max;
--		if (size > PAGE_SIZE)
--			goto error_quota;
- 
- 		ret = -ENOMEM;
- 		nklist = kmalloc(size, GFP_KERNEL);
-@@ -873,6 +904,8 @@ void __key_link(struct key *keyring, struct key *key,
- 	klist = rcu_dereference_locked_keyring(keyring);
- 
- 	atomic_inc(&key->usage);
-+	keyring->last_used_at = key->last_used_at =
-+		current_kernel_time().tv_sec;
- 
- 	/* there's a matching key we can displace or an empty slot in a newly
- 	 * allocated list we can fill */
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index be7ecb2..e137fcd 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -732,6 +732,8 @@ try_again:
- 	if (ret < 0)
- 		goto invalid_key;
- 
-+	key->last_used_at = current_kernel_time().tv_sec;
++	key_invalidate(key_ref_to_ptr(key_ref));
++	ret = 0;
 +
- error:
- 	put_cred(cred);
- 	return key_ref;
++	key_ref_put(key_ref);
++error:
++	kleave(" = %ld", ret);
++	return ret;
++}
++
++/*
+  * Clear the specified keyring, creating an empty process keyring if one of the
+  * special keyring IDs is used.
+  *
+@@ -1622,6 +1653,9 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			(unsigned) arg4,
+ 			(key_serial_t) arg5);
+ 
++	case KEYCTL_INVALIDATE:
++		return keyctl_invalidate_key((key_serial_t) arg2);
++
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 89d02cf..7445875 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -382,13 +382,17 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+ 	/* otherwise, the top keyring must not be revoked, expired, or
+ 	 * negatively instantiated if we are to search it */
+ 	key_ref = ERR_PTR(-EAGAIN);
+-	if (kflags & ((1 << KEY_FLAG_REVOKED) | (1 << KEY_FLAG_NEGATIVE)) ||
++	if (kflags & ((1 << KEY_FLAG_INVALIDATED) |
++		      (1 << KEY_FLAG_REVOKED) |
++		      (1 << KEY_FLAG_NEGATIVE)) ||
+ 	    (keyring->expiry && now.tv_sec >= keyring->expiry))
+ 		goto error_2;
+ 
+ 	/* start processing a new keyring */
+ descend:
+-	if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
++	kflags = keyring->flags;
++	if (kflags & ((1 << KEY_FLAG_INVALIDATED) |
++		      (1 << KEY_FLAG_REVOKED)))
+ 		goto not_this_keyring;
+ 
+ 	keylist = rcu_dereference(keyring->payload.subscriptions);
+@@ -406,9 +410,10 @@ descend:
+ 		if (key->type != type)
+ 			continue;
+ 
+-		/* skip revoked keys and expired keys */
++		/* skip invalidated, revoked and expired keys */
+ 		if (!no_state_check) {
+-			if (kflags & (1 << KEY_FLAG_REVOKED))
++			if (kflags & ((1 << KEY_FLAG_INVALIDATED) |
++				      (1 << KEY_FLAG_REVOKED)))
+ 				continue;
+ 
+ 			if (key->expiry && now.tv_sec >= key->expiry)
+@@ -559,7 +564,8 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
+ 			     key->type->match(key, description)) &&
+ 			    key_permission(make_key_ref(key, possessed),
+ 					   perm) == 0 &&
+-			    !test_bit(KEY_FLAG_REVOKED, &key->flags)
++			    !(key->flags & ((1 << KEY_FLAG_INVALIDATED) |
++					    (1 << KEY_FLAG_REVOKED)))
+ 			    )
+ 				goto found;
+ 		}
+@@ -1177,15 +1183,6 @@ static void keyring_revoke(struct key *keyring)
+ }
+ 
+ /*
+- * Determine whether a key is dead.
+- */
+-static bool key_is_dead(struct key *key, time_t limit)
+-{
+-	return test_bit(KEY_FLAG_DEAD, &key->flags) ||
+-		(key->expiry > 0 && key->expiry <= limit);
+-}
+-
+-/*
+  * Collect garbage from the contents of a keyring, replacing the old list with
+  * a new one with the pointers all shuffled down.
+  *
+diff --git a/security/keys/permission.c b/security/keys/permission.c
+index c35b522..5f4c00c 100644
+--- a/security/keys/permission.c
++++ b/security/keys/permission.c
+@@ -87,20 +87,25 @@ EXPORT_SYMBOL(key_task_permission);
+  * key_validate - Validate a key.
+  * @key: The key to be validated.
+  *
+- * Check that a key is valid, returning 0 if the key is okay, -EKEYREVOKED if
+- * the key's type has been removed or if the key has been revoked or
+- * -EKEYEXPIRED if the key has expired.
++ * Check that a key is valid, returning 0 if the key is okay, -ENOKEY if the
++ * key is invalidated, -EKEYREVOKED if the key's type has been removed or if
++ * the key has been revoked or -EKEYEXPIRED if the key has expired.
+  */
+ int key_validate(struct key *key)
+ {
+ 	struct timespec now;
++	unsigned long flags = key->flags;
+ 	int ret = 0;
+ 
+ 	if (key) {
++		ret = -ENOKEY;
++		if (flags & (1 << KEY_FLAG_INVALIDATED))
++			goto error;
++
+ 		/* check it's still accessible */
+ 		ret = -EKEYREVOKED;
+-		if (test_bit(KEY_FLAG_REVOKED, &key->flags) ||
+-		    test_bit(KEY_FLAG_DEAD, &key->flags))
++		if (flags & ((1 << KEY_FLAG_REVOKED) |
++			     (1 << KEY_FLAG_DEAD)))
+ 			goto error;
+ 
+ 		/* check it hasn't expired */
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index 49bbc97..30d1ddf 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -242,7 +242,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ #define showflag(KEY, LETTER, FLAG) \
+ 	(test_bit(FLAG,	&(KEY)->flags) ? LETTER : '-')
+ 
+-	seq_printf(m, "%08x %c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
++	seq_printf(m, "%08x %c%c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
+ 		   key->serial,
+ 		   showflag(key, 'I', KEY_FLAG_INSTANTIATED),
+ 		   showflag(key, 'R', KEY_FLAG_REVOKED),
+@@ -250,6 +250,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 		   showflag(key, 'Q', KEY_FLAG_IN_QUOTA),
+ 		   showflag(key, 'U', KEY_FLAG_USER_CONSTRUCT),
+ 		   showflag(key, 'N', KEY_FLAG_NEGATIVE),
++		   showflag(key, 'i', KEY_FLAG_INVALIDATED),
+ 		   atomic_read(&key->usage),
+ 		   xbuf,
+ 		   key->perm,
 
