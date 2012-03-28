@@ -1,156 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144Ab2C1VY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 17:24:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40852 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932938Ab2C1VYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 17:24:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bojan Smojver <bojan@rexursive.com>
-Subject: Re: [PATCH v7]: Hibernation: lower/better control the amount of pages used for buffering
-Date: Wed, 28 Mar 2012 23:29:10 +0200
-User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <1332891672.2040.24.camel@shrek.rexursive.com>
-In-Reply-To: <1332891672.2040.24.camel@shrek.rexursive.com>
+	id S933140Ab2C1VbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 17:31:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52885 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933068Ab2C1VbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 17:31:21 -0400
+Date: Wed, 28 Mar 2012 16:30:44 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
+Message-ID: <20120328213044.GA26190@peqn>
+References: <20120327222923.GA31692@mail.hallyn.com>
+ <20120327223420.GB9669@moon>
+ <20120327224640.GA5328@mail.hallyn.com>
+ <m162dpo45j.fsf@fess.ebiederm.org>
+ <20120328064838.GA2286@moon>
+ <m1k425mae1.fsf@fess.ebiederm.org>
+ <20120328075549.GA2204@moon>
+ <20120328081639.GB2286@moon>
+ <20120328194312.GA22211@mail.hallyn.com>
+ <20120328194613.GA3678@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203282329.11086.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328194613.GA3678@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 28, 2012, Bojan Smojver wrote:
-> Hi Rafael,
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 03/28, Serge E. Hallyn wrote:
+> >
+> > If you want to
+> > just add the struct cred to the f_owner and do proper uid conversion,
+> > I'll support that too.  (Just grab a ref to the cred in
+> > fs/fcntl.c:f_modown(), and drop the ref in fs/file_table.c:__fput() ).
 > 
-> And finally with an inline function.
+> In this case f_owner.*uid should go away, I guess.
 
-OK, I'll take this one for v3.5.  Thanks a lot for being persistent!
+Yup.
 
-Rafael
+Which I guess is all the more reason *not* to do this unless we end up
+not going with Eric's userns mapping patchset (which is unlikely).
 
+> And sigio_perm()
+> should be unified with kill_ok_by_cred() somehow (modulo
+> security_file_send_sigiotask).
+> 
+> Right?
 
-> ---------------------------------------
-> Hibernation/thaw improvements:
-> 
-> 1. Set maximum number of pages for read buffering consistently, instead
-> of inadvertently depending on the size of the sector type.
-> 
-> 2. Use at most one quarter of free pages for read buffering.
-> 
-> 3. Require that number of free pages when writing the image never falls
-> below three quarters of total free pages available.
-> 
-> Signed-off-by: Bojan Smojver <bojan@rexursive.com>
-> ---
->  kernel/power/swap.c |   35 ++++++++++++++++++++++++-----------
->  1 files changed, 24 insertions(+), 11 deletions(-)
-> 
-> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-> index 8742fd0..0e94fc6 100644
-> --- a/kernel/power/swap.c
-> +++ b/kernel/power/swap.c
-> @@ -6,7 +6,7 @@
->   *
->   * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
->   * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-> - * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
-> + * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
->   *
->   * This file is released under the GPLv2.
->   *
-> @@ -51,6 +51,15 @@
->  
->  #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
->  
-> +/*
-> + * Number of pages required to be kept free while writing the image. Always
-> + * three quarters of all available pages before the writing starts.
-> + */
-> +static inline unsigned long reqd_free_pages(void)
-> +{
-> +	return (nr_free_pages() / 4) * 3;
-> +}
-> +
->  struct swap_map_page {
->  	sector_t entries[MAP_PAGE_ENTRIES];
->  	sector_t next_swap;
-> @@ -72,7 +81,7 @@ struct swap_map_handle {
->  	sector_t cur_swap;
->  	sector_t first_sector;
->  	unsigned int k;
-> -	unsigned long nr_free_pages, written;
-> +	unsigned long reqd_free_pages;
->  	u32 crc32;
->  };
->  
-> @@ -316,8 +325,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
->  		goto err_rel;
->  	}
->  	handle->k = 0;
-> -	handle->nr_free_pages = nr_free_pages() >> 1;
-> -	handle->written = 0;
-> +	handle->reqd_free_pages = reqd_free_pages();
->  	handle->first_sector = handle->cur_swap;
->  	return 0;
->  err_rel:
-> @@ -352,11 +360,15 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
->  		handle->cur_swap = offset;
->  		handle->k = 0;
->  	}
-> -	if (bio_chain && ++handle->written > handle->nr_free_pages) {
-> +	if (bio_chain && nr_free_pages() < handle->reqd_free_pages) {
->  		error = hib_wait_on_bio_chain(bio_chain);
->  		if (error)
->  			goto out;
-> -		handle->written = 0;
-> +		/*
-> +		 * Recalculate the number of required free pages, to make sure
-> +		 * we never take more than a quarter.
-> +		 */
-> +		handle->reqd_free_pages = reqd_free_pages();
->  	}
->   out:
->  	return error;
-> @@ -404,7 +416,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
->  #define LZO_THREADS	3
->  
->  /* Maximum number of pages for read buffering. */
-> -#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
-> +#define LZO_READ_PAGES	8192
->  
->  
->  /**
-> @@ -615,10 +627,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
->  	}
->  
->  	/*
-> -	 * Adjust number of free pages after all allocations have been done.
-> -	 * We don't want to run out of pages when writing.
-> +	 * Adjust the number of required free pages after all allocations have
-> +	 * been done. We don't want to run out of pages when writing.
->  	 */
-> -	handle->nr_free_pages = nr_free_pages() >> 1;
-> +	handle->reqd_free_pages = reqd_free_pages();
->  
->  	/*
->  	 * Start the CRC32 thread.
-> @@ -1129,8 +1141,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
->  
->  	/*
->  	 * Adjust number of pages for read buffering, in case we are short.
-> +	 * Never take more than a quarter of all available pages.
->  	 */
-> -	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
-> +	read_pages = (nr_free_pages() - snapshot_get_image_size()) / 4;
->  	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
->  
->  	for (i = 0; i < read_pages; i++) {
-> ---------------------------------------
-> 
-> 
+Maybe, but other differences include current being the signal sender in
+one and recipient in the other, and CAP_KILL being relevent in only
+one.
 
+-serge
