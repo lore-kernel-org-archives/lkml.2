@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758696Ab2C1U1c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:27:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932760Ab2C1U11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 16:27:27 -0400
-Date: Wed, 28 Mar 2012 22:19:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Boaz Harrosh <bharrosh@panasas.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-security-module@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Subject: Re: [PATCHSET 0/6 version 2] kmod: Optional timeout on the wait in
-	call_usermodehelper_exec
-Message-ID: <20120328201904.GA4517@redhat.com>
-References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com> <20120327140709.60ab7bda.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327140709.60ab7bda.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758706Ab2C1U2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 16:28:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62112 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932677Ab2C1UYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 16:24:39 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
+        sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
+Subject: [PATCH 08/16] nfs: don't use nd->intent.open.flags
+Date: Wed, 28 Mar 2012 22:24:37 +0200
+Message-Id: <1332966285-30358-9-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
+References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27, Andrew Morton wrote:
->
-> IOW, please explain at some length why you need this.  Do you think
-> that there are existing call sites which can usefully use this feature?
-> Do you expect that new callers are likely to need this?  etcetera.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Cough. Can't resist... Could you also explain why
-http://marc.info/?l=linux-nfs&m=133252084301205 can't work?
+Instead check LOOKUP_EXCL in nd->flags, which is basically what the open intent
+flags were used for.
 
-To clarify, I am just curious, I am not arguing. I am asking because
-if UMH_WAIT_PROC(timeout) fails with -ETIMEDOUT, then perhaps it makes
-sense to not "leak" the user-space process servicing the kernel request
-we were waiting for.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/nfs/dir.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-Oleg.
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 8828b0d..35fa125 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1508,7 +1508,7 @@ static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 	struct dentry *parent = NULL;
+ 	struct inode *inode;
+ 	struct inode *dir;
+-	int openflags, ret = 0;
++	int ret = 0;
+ 
+ 	if (nd->flags & LOOKUP_RCU)
+ 		return -ECHILD;
+@@ -1532,9 +1532,8 @@ static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 	/* NFS only supports OPEN on regular files */
+ 	if (!S_ISREG(inode->i_mode))
+ 		goto no_open_dput;
+-	openflags = nd->intent.open.flags;
+ 	/* We cannot do exclusive creation on a positive dentry */
+-	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
++	if (nd && nd->flags & LOOKUP_EXCL)
+ 		goto no_open_dput;
+ 
+ 	/* Let f_op->open() actually open (and revalidate) the file */
+@@ -1613,8 +1612,8 @@ static int nfs_create(struct inode *dir, struct dentry *dentry,
+ 	attr.ia_mode = mode;
+ 	attr.ia_valid = ATTR_MODE;
+ 
+-	if (nd)
+-		open_flags = nd->intent.open.flags;
++	if (nd && !(nd->flags & LOOKUP_EXCL))
++		open_flags = O_CREAT;
+ 
+ 	error = NFS_PROTO(dir)->create(dir, dentry, &attr, open_flags);
+ 	if (error != 0)
+-- 
+1.7.7
 
