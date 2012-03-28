@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab2C1Odu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:33:50 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34381 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753431Ab2C1Od0 (ORCPT
+	id S1758223Ab2C1OeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:34:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40646 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758216Ab2C1OeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:33:26 -0400
-Date: Wed, 28 Mar 2012 10:33:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        Aaron Lu <aaron.lu@amd.com>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-In-Reply-To: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
+	Wed, 28 Mar 2012 10:34:09 -0400
+Date: Wed, 28 Mar 2012 11:33:35 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, ananth@in.ibm.com,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, rostedt@goodmis.org
+Subject: Re: [RESEND]Re: [PATCH] perf - probe finder fails to resolve
+ function name to address
+Message-ID: <20120328143335.GC8482@infradead.org>
+References: <4F6AF410.1010400@linux.vnet.ibm.com>
+ <4F6AFD92.4030603@linux.vnet.ibm.com>
+ <4F6C721B.9060807@hitachi.com>
+ <4F703FB9.9020407@linux.vnet.ibm.com>
+ <4F704A1E.2040401@hitachi.com>
+ <20120328114745.GA17936@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328114745.GA17936@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012, Lin Ming wrote:
-
-> ZPODD(Zero Power Optical Disk Drive) is a new feature in
-> SATA 3.1 specification. It provides a way to power off unused ODD.
+Em Wed, Mar 28, 2012 at 01:47:45PM +0200, Ingo Molnar escreveu:
 > 
-> ZPODD support is checked in in sr_probe().
-> can_power_off flag is set during suspend if ZPODD is supported.
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 > 
-> ATA port's runtime suspend callback will actually power off the ODD
-> and its runtime resume callback will actually power on the ODD.
+> > > Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+> > 
+> > Well, OK. This looks good for me too :)
+> > 
+> > Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > 
-> When ODD is powered off(D3Cold state), inserting disk will trigger a
-> wakeup event(GPE). GPE AML handler notifies the associated device. Then
-> ODD is resumed in the notify handler.
+> Ok, someone mind sending me the final, agreed upon version, with 
+> full explanation and Acked-by's included?
 
-> --- a/drivers/scsi/sr.c
-> +++ b/drivers/scsi/sr.c
+I'll do it.
 
-> @@ -80,12 +82,38 @@ static int sr_probe(struct device *);
->  static int sr_remove(struct device *);
->  static int sr_done(struct scsi_cmnd *);
->  
-> +static int sr_suspend(struct device *dev, pm_message_t mesg)
-> +{
-> +	struct scsi_cd *cd;
-> +
-> +	cd = dev_get_drvdata(dev);
-> +	if (cd->device->power_off)
-> +		dev->power.subsys_data->can_power_off = true;
-> +
-> +	return 0;
-> +}
-> +
-> +static int sr_resume(struct device *dev)
-> +{
-> +	struct scsi_cd *cd;
-> +
-> +	cd = dev_get_drvdata(dev);
-> +	if (cd->device->power_off) {
-> +		dev->power.subsys_data->can_power_off = false;
-> +		cd->poweroff_event = 0;
-> +	}
-> +
-> +	return 0;
-> +}
+Waiting a bit before that for the bison/flex resolution.
 
-Calling this flag "can_power_off" makes these routines look very 
-strange.  Either the device can power off or it can't, i.e., either it 
-supports ZPODD or it doesn't.  This doesn't change over time.
-
-If you rename the flag "may_power_off" then its meaning will be more 
-clear.
-
-> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
->  	unsigned int events;
->  	int ret;
->  
-> +	/* Not necessary to check events if enter ZPODD state */
-> +	if (cd->device->power_off &&
-> +			pm_runtime_suspended(&cd->device->sdev_gendev))
-> +		return 0;
-
-The comment is wrong and the new code does the wrong thing.  You _do_
-have to check for events even in the ZPODD state, which means
-sr_check_events must power-up the device if necessary.  
-sd_check_events in James Bottomley's scsi-misc tree now does the right
-thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
-
-> +
->  	/* no changer support */
->  	if (CDSL_CURRENT != slot)
->  		return 0;
-> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
->  	cd->media_present = scsi_status_is_good(ret) ||
->  		(scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
->  
-> +	if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
-> +		scsi_autopm_put_device(cd->device);
-
-You can see your mistake here.  You call scsi_autopm_put_device here
-without calling scsi_autopm_get_device earlier.
-
-Alan Stern
-
+- Arnaldo
