@@ -1,121 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933211Ab2C1VnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 17:43:10 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:35764 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932293Ab2C1VnF (ORCPT
+	id S933225Ab2C1Vnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 17:43:55 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57216 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933130Ab2C1Vny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 17:43:05 -0400
-Message-ID: <4F7385AC.1070605@panasas.com>
-Date: Wed, 28 Mar 2012 14:42:04 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Wed, 28 Mar 2012 17:43:54 -0400
+From: Marc Reilly <marc@cpdesign.com.au>
+Reply-To: marc@cpdesign.com.au
+Organization: Creative Product Design
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mfd: mc13xxx: add I2C support fix building for v3.4
+Date: Thu, 29 Mar 2012 07:47:50 +1100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Alex Gershgorin <alexg@meprolight.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        fabio.estevam@freescale.com, sameo@linux.intel.com,
+        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org
+References: <1332943273-22447-1-git-send-email-alexg@meprolight.com>
+In-Reply-To: <1332943273-22447-1-git-send-email-alexg@meprolight.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        <linux-security-module@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Subject: Re: [PATCHSET 0/6 version 2] kmod: Optional timeout on the wait in
- call_usermodehelper_exec
-References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com> <20120327140709.60ab7bda.akpm@linux-foundation.org> <20120328201904.GA4517@redhat.com>
-In-Reply-To: <20120328201904.GA4517@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203290747.50881.marc@cpdesign.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 03/27, Andrew Morton wrote:
+Hi,
 
->>
->> IOW, please explain at some length why you need this.  Do you think
->> that there are existing call sites which can usefully use this feature?
->> Do you expect that new callers are likely to need this?  etcetera.
+As Mark Brown already said, these changes should be squashed into a new 
+version of the patches.
+
+On Thursday, March 29, 2012 01:01:13 AM Alex Gershgorin wrote:
+> This patch fixes the compilation errors after the patches
+> from series mc13xxx-add-I2C-support-V4 were applied.
 > 
-
-
-Andrew Hi.
-
-Yes all these explanations were on the other thread which started
-this one. sorry.
-
-On my next attempt I will also add a user for this API as a last
-Patch. So you can see exactly how it makes sense, and why I do
-need it. When I started this the user was not in the Kernel
-yet, but now it's in for the 3.4-rc1, and it can make things clearer.
-
-But in (very) short. The call is made in some special cases at
-the read/write path of NFS. I have a very clean way out if
-the call fails for any reason, not only timeout, it can fail
-and properly handled in many other cases as well.
-
-So early failure does not scare me, what does scare me a lot is
-if it will get stuck (deadlocked) forever. This will eventually do
-very bad things to the NFS client.
-
-So the very easy thing to do is just add the proper timeout parameter
-to existing wait_for_completion calls. If it means some cleanups and code
-reorganization met on the way I don't mind.
-
-And yes, I expect that a lot of users that now use UMH_WAIT_PROC
-which need to sync with the app, will enjoy the timeout, just as I do.
-And all users should be revisited and perhaps enhanced with the extra
-robustness this gives.
-
-BTW: Currently the script ran - "osd_login", as submitted
-to the nfs-utils package maintainer, has a user-mode "watchdog"
-sub-process that will kill the parent after a timeout. But I would not
-like to rely on user-mode for this. There are plenty of other things
-that can go wrong. I'd like the Kernel to be independent. Also in light
-that the script may slightly change from distro to distro and is not
-totally in my control.
-
-On 03/28/2012 01:19 PM, Oleg Nesterov wrote:
-> Cough. Can't resist... Could you also explain why
-> http://marc.info/?l=linux-nfs&m=133252084301205 can't work?
+> Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
+> ---
+>  drivers/mfd/Kconfig        |    2 ++
+>  drivers/mfd/mc13xxx-core.c |    2 +-
+>  2 files changed, 3 insertions(+), 1 deletions(-)
 > 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index c3fbc5e..2119732 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -577,6 +577,8 @@ config MFD_MC13XXX
+>  	depends on SPI_MASTER || I2C
+>  	select MFD_CORE
+>  	select MFD_MC13783
+> +	select REGMAP_I2C if I2C
+This can go under the "config MFD_MC13XXX_I2C" entry in patch 4/4 (the "if 
+I2C" won't be needed)
+
+> +	select REGMAP_SPI if SPI_MASTER
+This can go under the "config MFD_MC13XXX_SPI" entry in patch 3/4
 
 
-Because it's another thread and another wait object and all bunch of
-other allocations, where I already have 3 forks now. I don't do that
-because the Politics to get new code in the Kernel is hard.
+>  	help
+>  	  Enable support for the Freescale MC13783 and MC13892 PMICs.
+>  	  This driver provides common support for accessing the device,
+> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> index 31dbf91..5a60273 100644
+> --- a/drivers/mfd/mc13xxx-core.c
+> +++ b/drivers/mfd/mc13xxx-core.c
+> @@ -616,7 +616,7 @@ static int mc13xxx_add_subdevice(struct mc13xxx
+> *mc13xxx, const char *format) #ifdef CONFIG_OF
+>  static int mc13xxx_probe_flags_dt(struct mc13xxx *mc13xxx)
+>  {
+> -	struct device_node *np = mc13xxx->dev.of_node;
+> +	struct device_node *np = mc13xxx->dev->of_node;
 
-I'm utilizing all the current resources and am just exposing currently
-hard coded constants to upper API's but in effect I'm not degrading
-the hot path *at all*. I'll never do what you suggest it's a total waist
-when the right way is just doing what is done today, only cleaned and
-exposed.
+Good catch! This can be fixed up in 4/4
 
-> To clarify, I am just curious, I am not arguing. I am asking because
+@Alex, you seen keen to do this, so I'll leave it to you :)
+Otherwise, I'm happy to do it, just let me know.
 
-> if UMH_WAIT_PROC(timeout) fails with -ETIMEDOUT, then perhaps it makes
-> sense to not "leak" the user-space process servicing the kernel request
-> we were waiting for.
-> 
+Cheers,
+Marc
 
-
-Hopefully it is not leaked, right? It will eventually return and de-allocate.
-Do you mean that I should kill it? that's an additional mess in kmod.c.
-
-But it's a good point I'll make it killable, and an admin can kill it if it's
-really deadlocked forever.
-
-> Oleg.
-> 
-
-
-Thanks
-Boaz
