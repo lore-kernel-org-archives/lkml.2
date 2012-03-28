@@ -1,111 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab2C1H6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 03:58:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32867 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683Ab2C1H6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 03:58:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="82486830"
-Subject: Re: [PATCH v3 1/7] libata-acpi: set acpi state for SATA port
-From: Lin Ming <ming.m.lin@intel.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi <linux-acpi@vger.kernel.org>
-In-Reply-To: <20120328195509.GA1965@localhost.amd.com>
-References: <1332915722-15963-1-git-send-email-ming.m.lin@intel.com>
-	 <1332915722-15963-2-git-send-email-ming.m.lin@intel.com>
-	 <20120328195509.GA1965@localhost.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Mar 2012 15:57:59 +0800
-Message-ID: <1332921479.3793.115.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755388Ab2C1H7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 03:59:39 -0400
+Received: from mga12.intel.com ([143.182.124.36]:42010 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752200Ab2C1H7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 03:59:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120326151147.30727745f5a3410d87f391dc@canb.auug.org.au>
+References: <20120326151147.30727745f5a3410d87f391dc@canb.auug.org.au>
+Date: Wed, 28 Mar 2012 00:59:36 -0700
+Message-ID: <CABE8wwtqSC01O+DsjQp5U0shQh99e0vctHqRRY8e4OfxD+TaxA@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the final tree
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-29 at 03:55 +0800, Aaron Lu wrote:
-> Hi,
-> 
-> The patch does not apply, are you using libata-devel/ALL branch?
+On Sun, Mar 25, 2012 at 9:11 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (sparc32 defconfig)
+> produced these warnings (and many similar):
+>
+> In file included from drivers/scsi/hosts.c:41:0:
+> drivers/scsi/scsi_priv.h:166:1: warning: "__enabled_CONFIG_PM" is not defined [-Wundef]
+> drivers/scsi/scsi_priv.h:166:1: warning: "__enabled_CONFIG_PM_MODULE" is not defined [-Wundef]
+>
+> Introduced by commit a6a95fad44f1 ("scsi, sd: limit the scope of the
+> async probe domain").
 
-This patch set depends on below patches,
+So, sparc does not source kernel/power/Kconfig or define config PM
+locally.  Compiling out this list_head (scsi_sd_probe_domain) in the
+!PM && !BLK_DEV_SD case may be more trouble then it is worth.  I'll
+re-spin the patch without the IS_ENABLED conditionals.
 
-[PATCHv2 0/7] acpi/libata: Express dependencies for devices on dock
-stations and bays
-
-which were in github.com libata-dev tree.
-
-But I didn't find these patches in git.kernel.org libata-dev tree.
-http://marc.info/?l=linux-scsi&m=133283600431697&w=2
-
-Lin Ming
-
-> 
-> -Aaron
-> 
-> On Wed, Mar 28, 2012 at 02:21:56PM +0800, Lin Ming wrote:
-> > Currently, ata_acpi_set_state() only sets acpi sate for IDE port.
-> > Remove this limitation.
-> > 
-> > Acked-by: Aaron Lu <aaron.lu@amd.com>
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  drivers/ata/libata-acpi.c |   21 ++++++++++++---------
-> >  1 files changed, 12 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-> > index b03e468..104c1d0 100644
-> > --- a/drivers/ata/libata-acpi.c
-> > +++ b/drivers/ata/libata-acpi.c
-> > @@ -841,23 +841,26 @@ void ata_acpi_on_resume(struct ata_port *ap)
-> >  void ata_acpi_set_state(struct ata_port *ap, pm_message_t state)
-> >  {
-> >  	struct ata_device *dev;
-> > -
-> > -	if (!ata_ap_acpi_handle(ap) || (ap->flags & ATA_FLAG_ACPI_SATA))
-> > -		return;
-> > +	acpi_handle handle;
-> > +	int acpi_state;
-> >  
-> >  	/* channel first and then drives for power on and vica versa
-> >  	   for power off */
-> > -	if (state.event == PM_EVENT_ON)
-> > -		acpi_bus_set_power(ata_ap_acpi_handle(ap), ACPI_STATE_D0);
-> > +	handle = ata_ap_acpi_handle(ap);
-> > +	if (handle && state.event == PM_EVENT_ON)
-> > +		acpi_bus_set_power(handle, ACPI_STATE_D0);
-> >  
-> >  	ata_for_each_dev(dev, &ap->link, ENABLED) {
-> > -		if (ata_dev_acpi_handle(dev))
-> > -			acpi_bus_set_power(ata_dev_acpi_handle(dev),
-> > +		handle = ata_dev_acpi_handle(dev);
-> > +		if (handle)
-> > +			acpi_bus_set_power(handle,
-> >  				state.event == PM_EVENT_ON ?
-> >  					ACPI_STATE_D0 : ACPI_STATE_D3);
-> >  	}
-> > -	if (state.event != PM_EVENT_ON)
-> > -		acpi_bus_set_power(ata_ap_acpi_handle(ap), ACPI_STATE_D3);
-> > +
-> > +	handle = ata_ap_acpi_handle(ap);
-> > +	if (handle && state.event != PM_EVENT_ON)
-> > +		acpi_bus_set_power(handle, ACPI_STATE_D3);
-> >  }
-> >  
-> >  /**
-> > -- 
-> > 1.7.2.5
-> > 
-> > 
-> 
-
-
+--
+Dan
