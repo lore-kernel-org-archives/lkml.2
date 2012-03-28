@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab2C1Qox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 12:44:53 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:41943 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757985Ab2C1Qor (ORCPT
+	id S1758228Ab2C1QrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 12:47:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55085 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab2C1QrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 12:44:47 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+JWJAnC3WJtCdVz1E2I9ba4c84kjRXoyQPlA2tWX
-	XW8OsbeZDm8tjV
-Message-ID: <1332953083.7309.147.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for
- linux kernel 3.3.0
-From: Mike Galbraith <efault@gmx.de>
-To: Nikos Chantziaras <realnc@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 28 Mar 2012 18:44:43 +0200
-In-Reply-To: <jkv0q5$kgu$1@dough.gmane.org>
-References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com>
-	 <201203240553.32526.gene.heskett@gmail.com>
-	 <57375.1332641134@turing-police.cc.vt.edu>
-	 <20120328051243.GA2138@fancy-poultry.org> <jkv0q5$kgu$1@dough.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Wed, 28 Mar 2012 12:47:09 -0400
+Date: Wed, 28 Mar 2012 09:46:48 -0700
+From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
+Message-ID: <tip-8f0750f19789cf352d7e24a6cc50f2ab1b4f1372@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        stable@vger.kernel.org, tglx@linutronix.de, dan.carpenter@oracle.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, stable@vger.kernel.org, dan.carpenter@oracle.com
+In-Reply-To: <20120324075250.GA28258@elgon.mountain>
+References: <20120324075250.GA28258@elgon.mountain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, tls: Off by one limit check
+Git-Commit-ID: 8f0750f19789cf352d7e24a6cc50f2ab1b4f1372
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 28 Mar 2012 09:46:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-28 at 15:39 +0300, Nikos Chantziaras wrote: 
-> On 28/03/12 08:12, Heinz Diehl wrote:
-> > On 25.03.2012, Valdis.Kletnieks@vt.edu wrote:
-> >
-> >> I'va always wondered what people are using to measure interactivity. Do we have
-> >> some hard numbers from scheduler traces, or is it a "feels faster"?
-> >
-> > I guess it's a "feels faster", because it's the only thing that
-> > counts. Given that there is strong evidence that scheduler A is
-> > "faster, more interactive", whatever... than scheduler B, but a
-> > controlled trial shows a significantly better "feels faster"
-> > experience using scheduler B, I'm quite shure that people would choose
-> > scheduler B over A, and that's quite ok. It does what they expect it
-> > to do, despite evidence which documents the opposite.
-> 
-> CFS: ALSA XRUNs in JACK.
-> BFS: much less ALSA XRUNs in JACK
+Commit-ID:  8f0750f19789cf352d7e24a6cc50f2ab1b4f1372
+Gitweb:     http://git.kernel.org/tip/8f0750f19789cf352d7e24a6cc50f2ab1b4f1372
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Sat, 24 Mar 2012 10:52:50 +0300
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 28 Mar 2012 09:39:35 -0700
 
-Something like that could be interesting to look into.  Do you have a
-setup and recipe for inducing these xruns I can try?  I don't have any
-audio problems of my own to fiddle with, but then the few apps I use
-buffer a lot, so I wouldn't.
+x86, tls: Off by one limit check
 
--Mike
+These are used as offsets into an array of GDT_ENTRY_TLS_ENTRIES members
+so GDT_ENTRY_TLS_ENTRIES is one past the end of the array.
 
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Link: http://lkml.kernel.org/r/20120324075250.GA28258@elgon.mountain
+Cc: <stable@vger.kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/tls.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index 6bb7b85..bcfec2d 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -163,7 +163,7 @@ int regset_tls_get(struct task_struct *target, const struct user_regset *regset,
+ {
+ 	const struct desc_struct *tls;
+ 
+-	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
++	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+ 	    (count % sizeof(struct user_desc)) != 0)
+ 		return -EINVAL;
+@@ -198,7 +198,7 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
+ 
+-	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
++	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+ 	    (count % sizeof(struct user_desc)) != 0)
+ 		return -EINVAL;
