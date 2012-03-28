@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab2C1LpS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:45:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43880 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752199Ab2C1LpQ (ORCPT
+	id S932504Ab2C1Lpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:45:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52549 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab2C1Lpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:45:16 -0400
-Date: Wed, 28 Mar 2012 12:44:50 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/4] regulator: wm831x-dcdc: Fix the logic to choose best
- current limit setting
-Message-ID: <20120328114449.GQ3232@opensource.wolfsonmicro.com>
-References: <1332832646.9942.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BouVgDkIlpb7X6Bk"
-Content-Disposition: inline
-In-Reply-To: <1332832646.9942.1.camel@phoenix>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Mar 2012 07:45:52 -0400
+Message-ID: <1332935143.2438.0.camel@phoenix>
+Subject: [PATCH 1/2] regulator: Convert tps6524x to set_voltage_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Cyril Chemparathy <cyril@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 28 Mar 2012 19:45:43 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/tps6524x-regulator.c |   18 +++---------------
+ 1 files changed, 3 insertions(+), 15 deletions(-)
 
---BouVgDkIlpb7X6Bk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+diff --git a/drivers/regulator/tps6524x-regulator.c b/drivers/regulator/tps6524x-regulator.c
+index 4a421be..3a4a1d5 100644
+--- a/drivers/regulator/tps6524x-regulator.c
++++ b/drivers/regulator/tps6524x-regulator.c
+@@ -458,12 +458,10 @@ static int list_voltage(struct regulator_dev *rdev, unsigned selector)
+ 		info->voltages[selector] : -EINVAL);
+ }
+ 
+-static int set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+-		       unsigned *selector)
++static int set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
+ {
+ 	const struct supply_info *info;
+ 	struct tps6524x *hw;
+-	unsigned i;
+ 
+ 	hw	= rdev_get_drvdata(rdev);
+ 	info	= &supply_info[rdev_get_id(rdev)];
+@@ -471,17 +469,7 @@ static int set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 	if (info->flags & FIXED_VOLTAGE)
+ 		return -EINVAL;
+ 
+-	for (i = 0; i < info->n_voltages; i++)
+-		if (min_uV <= info->voltages[i] &&
+-		    max_uV >= info->voltages[i])
+-			break;
+-
+-	if (i >= info->n_voltages)
+-		i = info->n_voltages - 1;
+-
+-	*selector = i;
+-
+-	return write_field(hw, &info->voltage, i);
++	return write_field(hw, &info->voltage, selector);
+ }
+ 
+ static int get_voltage(struct regulator_dev *rdev)
+@@ -588,7 +576,7 @@ static struct regulator_ops regulator_ops = {
+ 	.enable			= enable_supply,
+ 	.disable		= disable_supply,
+ 	.get_voltage		= get_voltage,
+-	.set_voltage		= set_voltage,
++	.set_voltage_sel	= set_voltage_sel,
+ 	.list_voltage		= list_voltage,
+ 	.set_current_limit	= set_current_limit,
+ 	.get_current_limit	= get_current_limit,
+-- 
+1.7.5.4
 
-On Tue, Mar 27, 2012 at 03:17:26PM +0800, Axel Lin wrote:
-> Current code in wm831x_buckv_set_current_limit actually set the current limit
-> setting greater than specified range.
 
-Applied all, thanks.
 
---BouVgDkIlpb7X6Bk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPcvmeAAoJEBus8iNuMP3d7lkP/1DI32BxeORUAP4TNP2meXhD
-ojPl4m3ftDsHcoifCOLsfdvQWLW0hawNqr1Tw3wwewZ954DmlwM15WzFSNfOwczz
-8rA02B0HmPW5pHA72GVmuj8EJFT/qzq5kKbLw3kChtHVO8IO8twQmNccymZUWJkb
-0uK+oDoov+B9EVHS+36StwBEvu8M7mtMLKWNaKLbNU48Ce1iD4sEXGYDKjWN9Xb8
-uOgo73pgcBnpiJVVnKtIk0ai41hSSXVJyt81XcEOBe8tOGnby9s9mBTdAenwvZwz
-FIGKW17wv5xB8oSj/i49B14za1cUqaG2ZZ9IVxrwPxImwUyAapeEs8zg78rGSV8B
-SgzEYnTyZrfYqK1UqsHl+8oAo6f6dy2YcnxzGGq7ZFAOduYnmFBMK/ZeBfJWIMQ/
-wJYqdEE05SZJHQm1P8JbtKeuWvS7Xp5MqWjsfVTWDejdoLUuro24jWLGFKWsrgw+
-Kv/mCMgN8ALS66QfZBSEifDQtrn7gkKgXIYSeVQTvihkt7ImKre2HXIBOHSUBuui
-wW32IEWi8c/cTEN/KwNdA3ex6bFmIwYh9b9U9zEFCIU8d0q7tgQa3eWnPepoFK3Y
-6GW2nxgZxaP69ewT4qraKRn07R7SgYnfp5zfJosqLSLMkOWmv8vbQG3yTfZFap5w
-jjgMDnuYkW2IBEgJoqs1
-=5zB4
------END PGP SIGNATURE-----
-
---BouVgDkIlpb7X6Bk--
