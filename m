@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab2C1Dc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 23:32:26 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51315 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930Ab2C1DcY (ORCPT
+	id S1756698Ab2C1DfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 23:35:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36138 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab2C1DfB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 23:32:24 -0400
-Date: Wed, 28 Mar 2012 14:32:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Neil Brown <neilb@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: linux-next: build failure after merge of the md tree
-Message-Id: <20120328143204.134662a493ade33ddd523821@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV"
+	Tue, 27 Mar 2012 23:35:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120328110350.e2d44e1f66b6ac7f9fd82843@canb.auug.org.au>
+References: <20120327213626.GA10022@windriver.com> <20120328110350.e2d44e1f66b6ac7f9fd82843@canb.auug.org.au>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 27 Mar 2012 23:34:39 -0400
+X-Google-Sender-Auth: JKbwPc6OPvCR0d5PHyhemw6LKig
+Message-ID: <CAMjpGUdJWxrHtaiAE-LQGZU7nNB1DSpiA9P78Rn5bB9+GyThjg@mail.gmail.com>
+Subject: Re: Blackfin link issue (Was: linux-next: triage for March 27, 2012)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 27, 2012 at 20:03, Stephen Rothwell wrote:
+> On Tue, 27 Mar 2012 17:36:27 -0400 Paul Gortmaker wrote:
+>> The blackfin builds are no longer failing on vm_is_stack but instead
+>> are all failing with "L1 data A overflow!" at final link, which smells
+>> like some kind of binutils/toolchain issue.
+>>
+>>
+>> bfin:***all-builds***
+>>       when:   Mar 26
+>>       why:    bfin-uclinux-ld: L1 data A overflow!
+>>       status: unknown, binutils issue?
+>>       fix:
+>>       ref:    http://kisskb.ellerman.id.au/kisskb/buildresult/5981475/
+>
+> It actually looks like this comes from an ASSERT in the blackfin
+> vmlinux.lds.S ... looks like some sections overflowed.
 
-Hi Neil,
+yes, the assert is doing the right thing.  it's attempting to put
+24KiB into a region that can only hold 16KiB.
 
-After merging the md tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+this is due to the recent lib/gen_crc32table.c change:
+  46c5801eaf86e83cb3a4142ad35188db5011fff0
+  crc32: bolt on crc32c
 
-drivers/md/raid5.c: In function 'analyse_stripe':
-drivers/md/raid5.c:3209:33: error: 'struct stripe_head' has no member named=
- 'devs'
+it added 8KiB more data.  looks to me like it's a complete waste of
+space ... it's forced into __cacheline_aligned which doesn't let the
+linker do garbage collection on symbols/sections, so all systems are
+forced to carry this.  seems like this should be a Kconfig knob that
+other people would select if they actually need it ?
 
-Caused by commit 85e25cfc6bed ("md/raid5: fix handling of bad blocks
-during recovery").
+at any rate, would be easy to fix by disabling Kconfig
+CACHELINE_ALIGNED_L1 when CRC32 is enabled considering that makes the
+optimization completely useless by totally blowing the size out of the
+water.
 
-I have used the version of the md tree from next-20120327 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPcoY0AAoJEECxmPOUX5FEoroP/2b6gXdA/P6ZSns06mfCa9Ey
-x/cUftDvJS2uJOFE2pNANV6uzN/kEjIlhIfceliU5yOKQyHgyoI1lU1ZrCYk+iFH
-C/f1R8DwH89aDk49NMGOV9Z0VOiGvpfPIBN1eSFVZAMxs2/pA1ezONGPE/DpBypL
-lOIJwwLLqYyTCwTTD+LsrQSBSrtv6HcLXabg5gP2aUhHRO2snic9FBORBXwN88d8
-oYXjpFOqBXHkKSdQFRt/A8z5DWJLb6m6FHHbXRAGu9MEyDhToloDfVbl0b/YqPJh
-zCjZru5ZWhJGkP7caCQzbxujiSduc+y3RnT993wkFkx8BiTUtaakxTmWnrX4MVqd
-1ZDu78C6RR4ULExvTLVlMiIHmP4SyxfTJ6bOSLJADWo1GtuIFzyMthtKYW579cuB
-hFSFZMMqokqredCV4gmb8zmnOiQWROHSTa78F0OkxxMl4F+AJbSkk0ekZF0B952G
-aOcNVvA1BVB/5EUR0QgtSPIHjdWJhB0uJR2f2ZmdTxUk5tuI6kbo6ZD35AO0IH/y
-kxt/RNS4XQ1o93zH7taOAdy6++zNCeBJTZzEiLW3MvltCSJ8PnpV8MioBN4cIJ//
-NJteFT7nd6ttZsNbQxIaBzznHOLo/c+/Mu3v0zGX/slBYgR23YCDoZDuqWe4Lzuf
-MZvMDVX7MyKzqfAvt7p3
-=hTxf
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Mar_2012_14_32_04_+1100_Jwr7rlols9pmR5DV--
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -823,7 +823,7 @@
+    bool "Locate cacheline_aligned data to L1 Data Memory"
+    default y if !BF54x
+    default n if BF54x
+-   depends on !SMP && !BF531
++   depends on !SMP && !BF531 && !CRC32
+    help
+      If enabled, cacheline_aligned data is linked
+      into L1 data memory. (less latency)
+-mike
