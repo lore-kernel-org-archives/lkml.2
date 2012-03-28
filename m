@@ -1,50 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab2C1S0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 14:26:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44724 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932376Ab2C1S0F convert rfc822-to-8bit (ORCPT
+	id S932746Ab2C1S0s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 14:26:48 -0400
+Received: from mail-gx0-f202.google.com ([209.85.161.202]:51774 "EHLO
+	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932614Ab2C1S0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 14:26:05 -0400
-Message-ID: <1332959140.2528.39.camel@twins>
-Subject: Re: [PATCH 4/6 OPTION-A version 3] completion: Add new
- wait_for_completion_timeout_state
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-security-module@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Bhamare, Sachin" <sbhamare@panasas.com>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, James Morris <jmorris@namei.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "keyrings@linux-nfs.org" <keyrings@linux-nfs.org>
-Date: Wed, 28 Mar 2012 20:25:40 +0200
-In-Reply-To: <4F735642.9030905@panasas.com>
-References: <4F691059.30405@panasas.com> <4F711EA2.4030608@panasas.com>
-	  <4F7120B6.2090509@panasas.com> <4F7126E0.5080700@panasas.com>
-	 <1332835919.16159.195.camel@twins> <4F735642.9030905@panasas.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 28 Mar 2012 14:26:44 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 5/7 v6] drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
+Date: Thu, 29 Mar 2012 02:26:37 +0800
+Message-Id: <1332959199-32161-6-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
+References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-28 at 11:19 -0700, Boaz Harrosh wrote:
-> Should I add a BUG_ON if state is not one of:
->         TASK_UNINTERRUPTIBLE
->         TASK_KILLABLE
->         TASK_INTERRUPTIBLE 
+It is very common for an i2c device to require a small 1 or 2 byte write
+followed by a read.  For example, when reading from an i2c EEPROM it is
+common to write and address, offset or index followed by a reading some
+values.
 
-Nah, it'd be the only such site doing so, seems pointless.
+The i915 gmbus controller provides a special "INDEX" cycle for performing
+such a small write followed by a read.  The INDEX can be either one or two
+bytes long.  The advantage of using such a cycle is that the CPU has
+slightly less work to do once the read with INDEX cycle is started.
+
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/gpu/drm/i915/intel_i2c.c |   54 +++++++++++++++++++++++++++++++++++---
+ 1 files changed, 50 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index 25f2c9e..9c07ff2 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -204,13 +204,15 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
+ }
+ 
+ static int
+-gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
++gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
++		u32 gmbus1_index)
+ {
+ 	int reg_offset = dev_priv->gpio_mmio_base;
+ 	u16 len = msg->len;
+ 	u8 *buf = msg->buf;
+ 
+ 	I915_WRITE(GMBUS1 + reg_offset,
++		   gmbus1_index |
+ 		   GMBUS_CYCLE_WAIT |
+ 		   (len << GMBUS_BYTE_COUNT_SHIFT) |
+ 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
+@@ -276,6 +278,46 @@ gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
+ 	return 0;
+ }
+ 
++/*
++ * The gmbus controller can combine a 1 or 2 byte write with a read that
++ * immediately follows it by using an "INDEX" cycle.
++ */
++static bool
++gmbus_is_index_read(struct i2c_msg *msgs, int i, int num)
++{
++	return (i + 1 < num &&
++		!(msgs[i].flags & I2C_M_RD) && msgs[i].len <= 2 &&
++		(msgs[i + 1].flags & I2C_M_RD));
++}
++
++static int
++gmbus_xfer_index_read(struct drm_i915_private *dev_priv, struct i2c_msg *msgs)
++{
++	int reg_offset = dev_priv->gpio_mmio_base;
++	u32 gmbus1_index = 0;
++	u32 gmbus5 = 0;
++	int ret;
++
++	if (msgs[0].len == 2)
++		gmbus5 = GMBUS_2BYTE_INDEX_EN |
++			 msgs[0].buf[1] | (msgs[0].buf[0] << 8);
++	if (msgs[0].len == 1)
++		gmbus1_index = GMBUS_CYCLE_INDEX |
++			       (msgs[0].buf[0] << GMBUS_SLAVE_INDEX_SHIFT);
++
++	/* GMBUS5 holds 16-bit index */
++	if (gmbus5)
++		I915_WRITE(GMBUS5 + reg_offset, gmbus5);
++
++	ret = gmbus_xfer_read(dev_priv, &msgs[1], gmbus1_index);
++
++	/* Clear GMBUS5 after each index transfer */
++	if (gmbus5)
++		I915_WRITE(GMBUS5 + reg_offset, 0);
++
++	return ret;
++}
++
+ static int
+ gmbus_xfer(struct i2c_adapter *adapter,
+ 	   struct i2c_msg *msgs,
+@@ -300,10 +342,14 @@ gmbus_xfer(struct i2c_adapter *adapter,
+ 	I915_WRITE(GMBUS0 + reg_offset, bus->reg0);
+ 
+ 	for (i = 0; i < num; i++) {
+-		if (msgs[i].flags & I2C_M_RD)
+-			ret = gmbus_xfer_read(dev_priv, &msgs[i]);
+-		else
++		if (gmbus_is_index_read(msgs, i, num)) {
++			ret = gmbus_xfer_index_read(dev_priv, &msgs[i]);
++			i += 1;  /* set i to the index of the read xfer */
++		} else if (msgs[i].flags & I2C_M_RD) {
++			ret = gmbus_xfer_read(dev_priv, &msgs[i], 0);
++		} else {
+ 			ret = gmbus_xfer_write(dev_priv, &msgs[i]);
++		}
+ 
+ 		if (ret == -ETIMEDOUT)
+ 			goto timeout;
+-- 
+1.7.7.3
+
