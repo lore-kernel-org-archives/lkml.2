@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab2C1GWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 02:22:55 -0400
+	id S1752150Ab2C1GYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:24:14 -0400
 Received: from mga02.intel.com ([134.134.136.20]:29776 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab2C1GWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 02:22:50 -0400
+	id S1751698Ab2C1GWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 02:22:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="122519252"
+   d="scan'208";a="122519275"
 From: Lin Ming <ming.m.lin@intel.com>
 To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
         Alan Stern <stern@rowland.harvard.edu>,
@@ -17,9 +17,9 @@ To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
 Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-acpi <linux-acpi@vger.kernel.org>
-Subject: [PATCH v3 2/7] libata-acpi: add ata port runtime D3Cold support
-Date: Wed, 28 Mar 2012 14:21:57 +0800
-Message-Id: <1332915722-15963-3-git-send-email-ming.m.lin@intel.com>
+Subject: [PATCH v3 4/7] libata: detech Device Attention support
+Date: Wed, 28 Mar 2012 14:21:59 +0800
+Message-Id: <1332915722-15963-5-git-send-email-ming.m.lin@intel.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1332915722-15963-1-git-send-email-ming.m.lin@intel.com>
 References: <1332915722-15963-1-git-send-email-ming.m.lin@intel.com>
@@ -27,192 +27,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATA port may support runtime D3Cold state, for example, Zero-power ODD case.
-This patch adds wakeup notifier and enable/disable run_wake during
-supend/resume.
+Add a new flag ATA_DFLAG_DA to indicate that device supports "Device
+Attention".
 
+Acked-by: Aaron Lu <aaron.lu@amd.com>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- drivers/ata/libata-acpi.c |   82 +++++++++++++++++++++++++++++++++++++++++---
- drivers/ata/libata-scsi.c |    6 ++--
- drivers/ata/libata.h      |    8 ++--
- 3 files changed, 83 insertions(+), 13 deletions(-)
+ drivers/ata/libata-core.c |    3 +++
+ include/linux/ata.h       |    1 +
+ include/linux/libata.h    |    2 ++
+ 3 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index 104c1d0..ba9382a 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -16,6 +16,7 @@
- #include <linux/libata.h>
- #include <linux/pci.h>
- #include <linux/slab.h>
-+#include <linux/pm_runtime.h>
- #include <scsi/scsi_device.h>
- #include "libata.h"
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 6742cc4..2a10701 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2368,6 +2368,9 @@ int ata_dev_configure(struct ata_device *dev)
+ 			dma_dir_string = ", DMADIR";
+ 		}
  
-@@ -852,10 +853,23 @@ void ata_acpi_set_state(struct ata_port *ap, pm_message_t state)
- 
- 	ata_for_each_dev(dev, &ap->link, ENABLED) {
- 		handle = ata_dev_acpi_handle(dev);
--		if (handle)
--			acpi_bus_set_power(handle,
--				state.event == PM_EVENT_ON ?
--					ACPI_STATE_D0 : ACPI_STATE_D3);
-+		if (!handle)
-+			continue;
++		if (atapi_id_has_da(dev->id))
++			dev->flags |= ATA_DFLAG_DA;
 +
-+		if (state.event != PM_EVENT_ON) {
-+			acpi_state = acpi_pm_device_sleep_state(
-+				&dev->sdev->sdev_gendev, NULL);
-+			if (acpi_state > 0)
-+				acpi_bus_set_power(handle, acpi_state);
-+			if (ap->tdev.power.request == RPM_REQ_SUSPEND)
-+				acpi_pm_device_run_wake(
-+					&dev->sdev->sdev_gendev, true);
-+		} else {
-+			if (ap->tdev.power.request == RPM_REQ_RESUME)
-+				acpi_pm_device_run_wake(
-+					&dev->sdev->sdev_gendev, false);
-+			acpi_bus_set_power(handle, ACPI_STATE_D0);
-+		}
- 	}
+ 		/* print device info to dmesg */
+ 		if (ata_msg_drv(ap) && print_info)
+ 			ata_dev_info(dev,
+diff --git a/include/linux/ata.h b/include/linux/ata.h
+index 32df2b6..6ee41cc 100644
+--- a/include/linux/ata.h
++++ b/include/linux/ata.h
+@@ -578,6 +578,7 @@ static inline int ata_is_data(u8 prot)
+ 	  ((u64) (id)[(n) + 0]) )
  
- 	handle = ata_ap_acpi_handle(ap);
-@@ -955,7 +969,7 @@ void ata_acpi_on_disable(struct ata_device *dev)
- 	ata_acpi_clear_gtf(dev);
- }
+ #define ata_id_cdb_intr(id)	(((id)[ATA_ID_CONFIG] & 0x60) == 0x20)
++#define atapi_id_has_da(id)	((id)[77] & (1 << 4))
  
--void ata_acpi_bind_dock(struct ata_device *dev)
-+static void ata_acpi_bind_dock(struct ata_device *dev)
+ static inline bool ata_id_has_hipm(const u16 *id)
  {
- 	struct device **docks;
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index 36970c6..3085bdc 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -161,6 +161,8 @@ enum {
+ 	ATA_DFLAG_DETACH	= (1 << 24),
+ 	ATA_DFLAG_DETACHED	= (1 << 25),
  
-@@ -965,7 +979,7 @@ void ata_acpi_bind_dock(struct ata_device *dev)
- 	kfree(docks);
- }
- 
--void ata_acpi_unbind_dock(struct ata_device *dev)
-+static void ata_acpi_unbind_dock(struct ata_device *dev)
- {
- 	struct device **docks;
- 
-@@ -975,6 +989,62 @@ void ata_acpi_unbind_dock(struct ata_device *dev)
- 	kfree(docks);
- }
- 
-+static void ata_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
-+{
-+	struct ata_device *ata_dev = context;
++	ATA_DFLAG_DA		= (1 << 26), /* device supports Device Attention */
 +
-+	if (event == ACPI_NOTIFY_DEVICE_WAKE && ata_dev)
-+		scsi_autopm_get_device(ata_dev->sdev);
-+}
-+
-+static void ata_acpi_add_pm_notifier(struct ata_device *dev)
-+{
-+	struct acpi_device *acpi_dev;
-+	acpi_handle handle;
-+	acpi_status status;
-+
-+	handle = ata_dev_acpi_handle(dev);
-+	if (!handle)
-+		return;
-+
-+	status = acpi_bus_get_device(handle, &acpi_dev);
-+	if (ACPI_SUCCESS(status)) {
-+		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+			ata_acpi_wake_dev, dev);
-+		device_set_run_wake(&dev->sdev->sdev_gendev, true);
-+	}
-+}
-+
-+static void ata_acpi_remove_pm_notifier(struct ata_device *dev)
-+{
-+	struct acpi_device *acpi_dev;
-+	acpi_handle handle;
-+	acpi_status status;
-+
-+	handle = ata_dev_acpi_handle(dev);
-+	if (!handle)
-+		return;
-+
-+	status = acpi_bus_get_device(handle, &acpi_dev);
-+	if (ACPI_SUCCESS(status)) {
-+		device_set_run_wake(&dev->sdev->sdev_gendev, false);
-+		acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+			ata_acpi_wake_dev);
-+	}
-+}
-+
-+void ata_acpi_bind(struct ata_device *dev)
-+{
-+	ata_acpi_bind_dock(dev);
-+	ata_acpi_add_pm_notifier(dev);
-+}
-+
-+void ata_acpi_unbind(struct ata_device *dev)
-+{
-+	ata_acpi_unbind_dock(dev);
-+	ata_acpi_remove_pm_notifier(dev);
-+}
-+
- static int is_pci_ata(struct device *dev)
- {
- 	struct pci_dev *pdev;
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index f08c447..231c3ec 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3444,7 +3444,7 @@ void ata_scsi_scan_host(struct ata_port *ap, int sync)
- 			if (!IS_ERR(sdev)) {
- 				dev->sdev = sdev;
- 				scsi_device_put(sdev);
--				ata_acpi_bind_dock(dev);
-+				ata_acpi_bind(dev);
- 			} else {
- 				dev->sdev = NULL;
- 			}
-@@ -3541,12 +3541,12 @@ static void ata_scsi_remove_dev(struct ata_device *dev)
- 	mutex_lock(&ap->scsi_host->scan_mutex);
- 	spin_lock_irqsave(ap->lock, flags);
- 
-+	ata_acpi_unbind(dev);
-+
- 	/* clearing dev->sdev is protected by host lock */
- 	sdev = dev->sdev;
- 	dev->sdev = NULL;
- 
--	ata_acpi_unbind_dock(dev);
--
- 	if (sdev) {
- 		/* If user initiated unplug races with us, sdev can go
- 		 * away underneath us after the host lock and
-diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
-index e61ba10..2ec7c38 100644
---- a/drivers/ata/libata.h
-+++ b/drivers/ata/libata.h
-@@ -117,8 +117,8 @@ extern void ata_acpi_on_disable(struct ata_device *dev);
- extern void ata_acpi_set_state(struct ata_port *ap, pm_message_t state);
- extern int ata_acpi_register(void);
- extern void ata_acpi_unregister(void);
--extern void ata_acpi_bind_dock(struct ata_device *dev);
--extern void ata_acpi_unbind_dock(struct ata_device *dev);
-+extern void ata_acpi_bind(struct ata_device *dev);
-+extern void ata_acpi_unbind(struct ata_device *dev);
- #else
- static inline void ata_acpi_dissociate(struct ata_host *host) { }
- static inline int ata_acpi_on_suspend(struct ata_port *ap) { return 0; }
-@@ -129,8 +129,8 @@ static inline void ata_acpi_set_state(struct ata_port *ap,
- 				      pm_message_t state) { }
- static inline int ata_acpi_register(void) { return 0; }
- static void ata_acpi_unregister(void) { }
--static void ata_acpi_bind_dock(struct ata_device *dev) { }
--static void ata_acpi_unbind_dock(struct ata_device *dev) { }
-+static void ata_acpi_bind(struct ata_device *dev) { }
-+static void ata_acpi_unbind(struct ata_device *dev) { }
- #endif
- 
- /* libata-scsi.c */
+ 	ATA_DEV_UNKNOWN		= 0,	/* unknown device */
+ 	ATA_DEV_ATA		= 1,	/* ATA device */
+ 	ATA_DEV_ATA_UNSUP	= 2,	/* ATA device (unsupported) */
 -- 
 1.7.2.5
 
