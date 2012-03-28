@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab2C1COn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 22:14:43 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50578 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768Ab2C1COm (ORCPT
+	id S1757099Ab2C1CTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 22:19:17 -0400
+Received: from out08.mta.xmission.com ([166.70.13.238]:44069 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756788Ab2C1CTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 22:14:42 -0400
-X-AuditID: 9c930179-b7c1dae000006519-97-4f727401a9e5
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RFC PATCHSET] perf ui: Small preparation on further UI work
-References: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
-	<20120326173817.GN25820@infradead.org>
-Date: Wed, 28 Mar 2012 11:14:25 +0900
-In-Reply-To: <20120326173817.GN25820@infradead.org> (Arnaldo Carvalho de
-	Melo's message of "Mon, 26 Mar 2012 14:38:17 -0300")
-Message-ID: <87pqbx320u.fsf@youngshil.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 27 Mar 2012 22:19:15 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+References: <20120326150924.GG19395@moon> <20120326164347.GA24394@redhat.com>
+	<20120326183330.GM19395@moon> <20120327152534.GA18478@redhat.com>
+	<20120327165853.GH11875@moon> <20120327222923.GA31692@mail.hallyn.com>
+	<20120327223420.GB9669@moon> <20120327224640.GA5328@mail.hallyn.com>
+Date: Tue, 27 Mar 2012 19:22:48 -0700
+In-Reply-To: <20120327224640.GA5328@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Tue, 27 Mar 2012 22:46:40 +0000")
+Message-ID: <m162dpo45j.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: AAAAAA==
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/dyR62bVkbBCF39WST50bAY6l8RaGNMnE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: openvz.org]
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2968]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *******;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: **
+Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-
-> Em Mon, Mar 26, 2012 at 05:51:31PM +0900, Namhyung Kim escreveu:
->> This is my initial work of UI generalization. As we now get GTK2 support on
->> perf report, improve setup_browser() to handle it properly so that we can
->> add various UI specific initialization codes to the function. At least, we
->> need basic error/warning handlers ASAP to see what's going on when an error
->> occurred, IMHO.
+> Quoting Cyrill Gorcunov (gorcunov@openvz.org):
+>> On Tue, Mar 27, 2012 at 10:29:23PM +0000, Serge E. Hallyn wrote:
+>> > Quoting Cyrill Gorcunov (gorcunov@openvz.org):
+>> > > On Tue, Mar 27, 2012 at 05:25:34PM +0200, Oleg Nesterov wrote:
+>> > > > user_ns_map_uid() should translate uid_t from one namespace to another,
+>> > > > in this case the namespace is the same.
+>> > > > 
+>> > > > user_ns_map_uid(cred->user_ns, cred) must be the identical mapping,
+>> > > > no matter how we change the implementation.
+>> > > > 
+>> > > > What I think you need is
+>> > > > user_ns_map_uid(current_user_ns(), filp->f_owner.cred), the only
+>> > > > problem is that f_owner.cred doesn't exist.
+>> > > > 
+>> > > 
+>> > > Hmm, I was confused by likely() in user_ns_map_uid. But indeed, I think
+>> > > you're so right. Is there some reason why we can't carry f_owner.cred
+>> > > pointer?
+>> > 
+>> > We would need that for this, yes.  However, Eric is working on a new
+>> > patchset which changes the cross-userns uid mappings.  I think it's
+>> > worth simply leaving a comment that this will need to be addressed,
+>> > and leave in the unconverted uid.
 >> 
->> I put new file setup.c under ui directory (not under util/ui) and it may or
->> may not be compiled depending on the system configuration. I think it'd be
->> better moving generic UI codes to the directory and TUI specific codes to
->> ui/tui, and so on, so that the util directory doesn't contain any UI codes.
->> But before proceeding, I'd like to listen to your opinions :).
+>> Hi Serge, thanks for info. But if it will be unconverted uid, can't
+>> be there some security problem with that which I missed?
+
+I would suggest the easy route and create a KCONFIG dependency
+on !CONFIG_USER_NS until the code for that is a little farther along.
+
+Hopefully later this week or begginning of next week I should be posting
+my patches and seeing how well the rest of the world takes them.
+
+> Noone is really using the user namespaces right now, but rather than
+> adding the cred (and refcounting concerns), my suggestion for now
+> would be to hardcode a check in modown() that current_user_ns() ==
+> &init_user_ns.
 >
-> My plans were for util/ui/ to be this generalization you want to, hence
-> I didn't use the 't', i.e. I didn't call it util/tui/, because tui would
-> be just one of the possible backends.
->
-> But that still needs more work that I haven't be able to pursue. Pekka
-> thinks that doing it that way is not OK as it would limit what one could
-> do with a more featureful UI like GTK+.
->
-> I would like to still pursue a simple GUI using a function table for
-> the simple operations we use in the hists browser in
-> tools/perf/util/ui/ but if others want to pursue it the way the GTK+
-> browser is being worked on, more power to them.
->
+> I *did* have a patch in the past which added the cred to fown, but
+> no idea where it is right now...
 
-Yeah, I was thinking about it too. I think the warning/error reporting
-utilties seem to fit for that direction.
+So I guess there are two questions.
+- Does it make sense besides translation to add a cred here in general?
 
+- How will it work with the user_namespace?
 
-> So I would just leave things in tools/perf/util/ui/ and do what you did
-> in moving the TUI specific bits to a separate function, even ui__init()
-> would be ok for now, and then at setup_browser() check what kind of
-> interface is being used and call ui__init() if it is the TUI and the
-> gtk init one if GTK+ was chosen.
->
+  I am just about ready to post a patchset that at the edges of
+  userspace maps all uid and gids into uid and gids in the initial user
+  namespace.
 
-I think it'd be better moving the TUI specific codes to a separate file
-(under a separate directory, like tools/perf/util/ui/tui - but it looks
-like so deep nesting) rather than a function since the generic
-code (setup_browser) should be compiled without the TUI support.
-Otherwise we'll see some #ifdef's in the source file(s).
+  There is a lot of noise but in net the code is terribly simple, easy
+  to maintain and measurably faster (when compiled out) than what we are
+  doing now, and most importantly it has a reasonable chance of catching
+  all of the permission checks.
 
-Or, we can put those codes under the same directory (tools/perf/util/ui)
-and have different suffixes - say, if generic code were XXX.c, TUI one
-would be XXX-tui.c and GTK+ one would be XXX-gtk.c.
+  And I have already converted fcntl.  So once my patchset goes in it
+  should take all of 5 seconds to get the compile error and fix the code
+  to be user_namespace friendly.
 
+Eric
 
-> But wouldn't introduce tools/perf/ui/setup.c for that, no need for new
-> directory trees, I think :-)
->
-
-OK.
-
-Thanks,
-Namhyung
