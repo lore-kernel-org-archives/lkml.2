@@ -1,124 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab2C1OhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:37:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48819 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab2C1OhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:37:01 -0400
-Date: Wed, 28 Mar 2012 16:36:58 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 10/10] memcg: Add memory controller documentation for
- hugetlb management
-Message-ID: <20120328143658.GJ20949@tiehlicka.suse.cz>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1331919570-2264-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1757287Ab2C1OkV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:40:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60535 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751390Ab2C1OkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 10:40:20 -0400
+Date: Wed, 28 Mar 2012 15:40:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alex Gershgorin <alexg@meprolight.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        s.hauer@pengutronix.de, fabio.estevam@freescale.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mfd: mc13xxx: add I2C support fix building for v3.4
+Message-ID: <20120328144017.GV3232@opensource.wolfsonmicro.com>
+References: <1332943273-22447-1-git-send-email-alexg@meprolight.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AonAANj1daC6QcQu"
 Content-Disposition: inline
-In-Reply-To: <1331919570-2264-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1332943273-22447-1-git-send-email-alexg@meprolight.com>
+X-Cookie: You will be run over by a beer truck.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-03-12 23:09:30, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  Documentation/cgroups/memory.txt |   29 +++++++++++++++++++++++++++++
->  1 files changed, 29 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index 4c95c00..d99c41b 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -43,6 +43,7 @@ Features:
->   - usage threshold notifier
->   - oom-killer disable knob and oom-notifier
->   - Root cgroup has no limit controls.
-> + - resource accounting for HugeTLB pages
->  
->   Kernel memory support is work in progress, and the current version provides
->   basically functionality. (See Section 2.7)
-> @@ -75,6 +76,12 @@ Brief summary of control files.
->   memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
->   memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
->  
-> +
-> + memory.hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
-> + memory.hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
-> + memory.hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
-> +						  # see 5.7 for details
-> +
->  1. History
->  
->  The memory controller has a long history. A request for comments for the memory
-> @@ -279,6 +286,15 @@ per cgroup, instead of globally.
->  
->  * tcp memory pressure: sockets memory pressure for the tcp protocol.
->  
-> +2.8 HugeTLB extension
-> +
-> +This extension allows to limit the HugeTLB usage per control group and
-> +enforces the controller limit during page fault. Since HugeTLB doesn't
-> +support page reclaim, enforcing the limit at page fault time implies that,
-> +the application will get SIGBUS signal if it tries to access HugeTLB pages
-> +beyond its limit. 
 
-This is consistent with the quota so we should mention that. We should
-also add a note how we interact with quotas.
+--AonAANj1daC6QcQu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Another important thing to note is that the limit/usage are
-unrelated to memcg hard/soft limit/usage.
+On Wed, Mar 28, 2012 at 04:01:13PM +0200, Alex Gershgorin wrote:
 
-> This requires the application to know beforehand how much
-> +HugeTLB pages it would require for its use.
-> +
->  3. User Interface
->  
->  0. Configuration
-> @@ -287,6 +303,7 @@ a. Enable CONFIG_CGROUPS
->  b. Enable CONFIG_RESOURCE_COUNTERS
->  c. Enable CONFIG_CGROUP_MEM_RES_CTLR
->  d. Enable CONFIG_CGROUP_MEM_RES_CTLR_SWAP (to use swap extension)
-> +f. Enable CONFIG_MEM_RES_CTLR_HUGETLB (to use HugeTLB extension)
->  
->  1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
->  # mount -t tmpfs none /sys/fs/cgroup
-> @@ -510,6 +527,18 @@ unevictable=<total anon pages> N0=<node 0 pages> N1=<node 1 pages> ...
->  
->  And we have total = file + anon + unevictable.
->  
-> +5.7 HugeTLB resource control files
-> +For a system supporting two hugepage size (16M and 16G) the control
-> +files include:
-> +
-> + memory.hugetlb.16GB.limit_in_bytes
-> + memory.hugetlb.16GB.max_usage_in_bytes
-> + memory.hugetlb.16GB.usage_in_bytes
-> + memory.hugetlb.16MB.limit_in_bytes
-> + memory.hugetlb.16MB.max_usage_in_bytes
-> + memory.hugetlb.16MB.usage_in_bytes
-> +
-> +
->  6. Hierarchy support
->  
->  The memory controller supports a deep hierarchy and hierarchical accounting.
-> -- 
-> 1.7.9
-> 
+> index c3fbc5e..2119732 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -577,6 +577,8 @@ config MFD_MC13XXX
+>  	depends on SPI_MASTER || I2C
+>  	select MFD_CORE
+>  	select MFD_MC13783
+> +	select REGMAP_I2C if I2C
+> +	select REGMAP_SPI if SPI_MASTER
+>  	help
+>  	  Enable support for the Freescale MC13783 and MC13892 PMICs.
+>  	  This driver provides common support for accessing the device,
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+I'd really expect this to be squashed into the patches adding the regmap
+usage for I2C and SPI, how can those patches work without this?
+
+> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> index 31dbf91..5a60273 100644
+> --- a/drivers/mfd/mc13xxx-core.c
+> +++ b/drivers/mfd/mc13xxx-core.c
+> @@ -616,7 +616,7 @@ static int mc13xxx_add_subdevice(struct mc13xxx *mc13xxx, const char *format)
+>  #ifdef CONFIG_OF
+>  static int mc13xxx_probe_flags_dt(struct mc13xxx *mc13xxx)
+>  {
+> -	struct device_node *np = mc13xxx->dev.of_node;
+> +	struct device_node *np = mc13xxx->dev->of_node;
+
+This looks like it should be submitted properly as a bug fix for
+inclusion on 3.4 or squashed into whatever change introduces the issue
+if it's not present in 3.4.
+
+--AonAANj1daC6QcQu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPcyLEAAoJEBus8iNuMP3d+igP/2nX8ghAFfo6LKzNRKOTug6d
+IpVso55eIKkaRynrNwe37/Rncy6YMbvhjXWjn/ejnEL5nYFZFPg4BrryGRRcxkRM
+Ts1vyr3Hc/ytG/dRePNHCCyslOkUI5HSb2dlTsWOxc0ZyfWvWbXuWWAlm9A0PcLO
+MlMEOIe6tUCCilcLsdoe1s24cNQ57giXLrCcUM5JirGspL4jGdAVyhcPRmyHb6H0
+4gVRNntdIvvYNLxeozVBzhubetya+RYKIheixdnJbnbxEp5v8M/guik5i9AIAJkE
+6oMQqHfSuHNg8OZxh2TRk/d0R0hAY4zAJp2vWI48XvSgxrANt3JT9im4ZsIVvUB/
+h4s2l+SKHk5V1uMh2uV+OECU9dmeLk/SHcwiw48+oRbWhR5JbZ4Sz+dmiCNvBce9
+L84sbu2kYNCtgWjME+SF/Hnog//ooteHD3NfeESczdz/Xy7khfLYMRB5Yxuygl76
+M9n+6qPupLmb6qmdFK1HxbPE/SzrCdtfeChhF7TMq8LkLFr+tIxRV9MlUxH+FUI9
+H+sb9xQMld+fABWGmTbkUJCiVu/ScA/7mihKkkWUmN5hgdrSGxgHKI1fnC0oLwUB
+EFfGrpnbj4AjTWiga6w4+Nq/69QolOe46lg74o3hlWtxRHBJQA13V+yKTVd5jdgE
+WFoN1v8V285IYnD+SyCo
+=oSIi
+-----END PGP SIGNATURE-----
+
+--AonAANj1daC6QcQu--
