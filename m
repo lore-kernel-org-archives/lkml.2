@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab2C1XmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 19:42:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758424Ab2C1Xl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 19:41:58 -0400
-Date: Wed, 28 Mar 2012 19:41:45 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Len Brown <len.brown@intel.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH v3] x86: Remove deprecated disable_hlt and enable_hlt
-Message-ID: <20120328234144.GJ1997@zod.bos.redhat.com>
-References: <20120328150300.GH1997@zod.bos.redhat.com>
- <20120328163110.a8f0e9ba.akpm@linux-foundation.org>
+	id S1758922Ab2C1XqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 19:46:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45435 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758581Ab2C1XqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 19:46:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328163110.a8f0e9ba.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFwxWZ9-xLsZoi+iFMjkt-+V64q4jfMz=dampgJrMX5Ncw@mail.gmail.com>
+References: <E1SCEK7-0008CY-LJ@tytso-glaptop.cam.corp.google.com> <CA+55aFwxWZ9-xLsZoi+iFMjkt-+V64q4jfMz=dampgJrMX5Ncw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Mar 2012 16:45:55 -0700
+X-Google-Sender-Auth: ZuLfr3oMfFkODp4BU1fRCtLMQBM
+Message-ID: <CA+55aFy+go3EwPeQcdv+kvy3vQ2Qxcoizoap8MFGKqSC42ajFg@mail.gmail.com>
+Subject: Re: GIT PULL] ext4 updates for 3.4
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 04:31:10PM -0700, Andrew Morton wrote:
-> On Wed, 28 Mar 2012 11:03:00 -0400
-> Josh Boyer <jwboyer@redhat.com> wrote:
-> 
-> > From: Len Brown <lenb@intel.com>
-> 
-> Nope, it's lenb@kernel.org and/or len.brown@intel.com.
-> 
-> I've been using both addresses for Len lately - I think some people's
-> @kernel.org addresses are now dead.  I don't know about Len, but mine
-> has died and I haven't set about working out how to resurrect it.
+On Wed, Mar 28, 2012 at 4:36 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I have no real data for this, though - just a "mouse pointer
+> occasionally freezing up". So I'm looking for a potential "hmm, that
+> makes me wonder if..." kind of reaction.
 
-Well, crap.  I got the S-o-b and CC right.  Not sure how I flubbed that.
-Sorry Len.
+Heh. It may have been that my wireless mouse was having some issue
+syncing properly with the receiver. I unplugged and replugged the
+receiver, and I seem unable to reproduce the problem. So this may have
+been just an actual hardware latency issue, rather than the kernel
+having bad latency.
 
-josh
+But if it made you go "hmm, I should check xyz", please do go ahead
+and check it anyway, just in case ;)
+
+                         Linus
