@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab2C1U0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 16:26:08 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60123 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932870Ab2C1UYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932885Ab2C1UYx (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 Mar 2012 16:24:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64073 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932818Ab2C1UYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 16:24:49 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
         sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 15/16] vfs: remove open intents from nameidata
-Date: Wed, 28 Mar 2012 22:24:44 +0200
-Message-Id: <1332966285-30358-16-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 12/16] ceph: remove unused arg from ceph_lookup_open()
+Date: Wed, 28 Mar 2012 22:24:41 +0200
+Message-Id: <1332966285-30358-13-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
 References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
@@ -24,458 +24,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-All users of open intents have been converted to use ->atomic_{open,create}.
-
-This patch gets rid of nd->intent.open and related infrastructure.
+What was the purpose of this?
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/internal.h         |    5 +--
- fs/namei.c            |  114 ++++++++++++++++++++++---------------------------
- fs/open.c             |   97 +++++------------------------------------
- include/linux/namei.h |   11 -----
- 4 files changed, 64 insertions(+), 163 deletions(-)
+ fs/ceph/dir.c   |    4 ++--
+ fs/ceph/file.c  |    3 +--
+ fs/ceph/super.h |    3 +--
+ 3 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/fs/internal.h b/fs/internal.h
-index 438fbd3..f99e89a 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -84,13 +84,10 @@ extern struct super_block *user_get_super(dev_t);
- /*
-  * open.c
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index 3e8094b..c4b7832 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -599,7 +599,7 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
+ 	    (nd->flags & LOOKUP_OPEN) &&
+ 	    !(nd->intent.open.flags & O_CREAT)) {
+ 		int mode = nd->intent.open.create_mode & ~current->fs->umask;
+-		return ceph_lookup_open(dir, dentry, nd, mode, 1);
++		return ceph_lookup_open(dir, dentry, nd, mode);
+ 	}
+ 
+ 	/* can we conclude ENOENT locally? */
+@@ -710,7 +710,7 @@ static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 
+ 	if (nd) {
+ 		BUG_ON((nd->flags & LOOKUP_OPEN) == 0);
+-		dentry = ceph_lookup_open(dir, dentry, nd, mode, 0);
++		dentry = ceph_lookup_open(dir, dentry, nd, mode);
+ 		/* hrm, what should i do here if we get aliased? */
+ 		if (IS_ERR(dentry))
+ 			return PTR_ERR(dentry);
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index ed72428..2fe9a3e 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -220,8 +220,7 @@ out:
+  *  path_lookup_create -> LOOKUP_OPEN|LOOKUP_CREATE
   */
--struct nameidata;
--extern struct file *nameidata_to_filp(struct nameidata *);
--extern void release_open_intent(struct nameidata *);
- struct opendata {
- 	struct dentry *dentry;
- 	struct vfsmount *mnt;
--	struct file **filp;
-+	struct file *filp;
- };
- struct open_flags {
- 	int open_flag;
-diff --git a/fs/namei.c b/fs/namei.c
-index f6dfd7c..66b26da 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -476,22 +476,6 @@ err_root:
- 	return -ECHILD;
- }
- 
--/**
-- * release_open_intent - free up open intent resources
-- * @nd: pointer to nameidata
-- */
--void release_open_intent(struct nameidata *nd)
--{
--	struct file *file = nd->intent.open.file;
--
--	if (file && !IS_ERR(file)) {
--		if (file->f_path.dentry == NULL)
--			put_filp(file);
--		else
--			fput(file);
--	}
--}
--
- static inline int d_revalidate(struct dentry *dentry, struct nameidata *nd)
+ struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+-				struct nameidata *nd, int mode,
+-				int locked_dir)
++				struct nameidata *nd, int mode)
  {
- 	return dentry->d_op->d_revalidate(dentry, nd);
-@@ -2109,7 +2093,8 @@ static int may_o_create(struct path *dir, struct dentry *dentry, umode_t mode)
- }
+ 	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+ 	struct ceph_mds_client *mdsc = fsc->mdsc;
+diff --git a/fs/ceph/super.h b/fs/ceph/super.h
+index 1421f3d..c6b2cba 100644
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -805,8 +805,7 @@ extern int ceph_copy_from_page_vector(struct page **pages,
+ extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
+ extern int ceph_open(struct inode *inode, struct file *file);
+ extern struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+-				       struct nameidata *nd, int mode,
+-				       int locked_dir);
++				       struct nameidata *nd, int mode);
+ extern int ceph_release(struct inode *inode, struct file *filp);
  
- static struct file *atomic_open(struct nameidata *nd, struct dentry *dentry,
--				struct path *path, const struct open_flags *op,
-+				struct path *path, struct opendata *od,
-+				const struct open_flags *op,
- 				int *want_write, bool need_lookup)
- {
- 	struct inode *dir =  nd->path.dentry->d_inode;
-@@ -2118,7 +2103,6 @@ static struct file *atomic_open(struct nameidata *nd, struct dentry *dentry,
- 	int error;
- 	bool created = false;
- 	int acc_mode;
--	struct opendata od;
- 	struct file *filp;
- 	int create_error = 0;
- 	struct dentry *const DENTRY_NOT_SET = (void *) -1UL;
-@@ -2184,14 +2168,13 @@ static struct file *atomic_open(struct nameidata *nd, struct dentry *dentry,
- 	if (nd->flags & LOOKUP_DIRECTORY)
- 		open_flag |= O_DIRECTORY;
- 
--	od.dentry = DENTRY_NOT_SET;
--	od.mnt = nd->path.mnt;
--	od.filp = &nd->intent.open.file;
--	filp = dir->i_op->atomic_open(dir, dentry, &od, open_flag, mode,
-+	od->dentry = DENTRY_NOT_SET;
-+	od->mnt = nd->path.mnt;
-+	filp = dir->i_op->atomic_open(dir, dentry, od, open_flag, mode,
- 				      &created);
- 	if (IS_ERR(filp)) {
--		if (WARN_ON(od.dentry != DENTRY_NOT_SET))
--			dput(od.dentry);
-+		if (WARN_ON(od->dentry != DENTRY_NOT_SET))
-+			dput(od->dentry);
- 
- 		if (create_error && PTR_ERR(filp) == -ENOENT)
- 			filp = ERR_PTR(create_error);
-@@ -2205,13 +2188,13 @@ static struct file *atomic_open(struct nameidata *nd, struct dentry *dentry,
- 	}
- 
- 	if (!filp) {
--		if (WARN_ON(od.dentry == DENTRY_NOT_SET)) {
-+		if (WARN_ON(od->dentry == DENTRY_NOT_SET)) {
- 			filp = ERR_PTR(-EIO);
- 			goto out;
- 		}
--		if (od.dentry) {
-+		if (od->dentry) {
- 			dput(dentry);
--			dentry = od.dentry;
-+			dentry = od->dentry;
- 		}
- 		goto looked_up;
- 	}
-@@ -2271,6 +2254,7 @@ looked_up:
-  * was performed, only lookup.
-  */
- static struct file *lookup_open(struct nameidata *nd, struct path *path,
-+				struct opendata *od,
- 				const struct open_flags *op, int *want_write)
- {
- 	struct dentry *dir = nd->path.dentry;
-@@ -2287,7 +2271,7 @@ static struct file *lookup_open(struct nameidata *nd, struct path *path,
- 		goto out_no_open;
- 
- 	if ((nd->flags & LOOKUP_OPEN) && dir_inode->i_op->atomic_open) {
--		return atomic_open(nd, dentry, path, op, want_write,
-+		return atomic_open(nd, dentry, path, od, op, want_write,
- 				   need_lookup);
- 	}
- 
-@@ -2309,7 +2293,8 @@ out_no_open:
-  * Handle the last step of open()
-  */
- static struct file *do_last(struct nameidata *nd, struct path *path,
--			    const struct open_flags *op, const char *pathname)
-+			    struct opendata *od, const struct open_flags *op,
-+			    const char *pathname)
- {
- 	struct dentry *dir = nd->path.dentry;
- 	struct dentry *dentry;
-@@ -2385,7 +2370,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 
- 	mutex_lock(&dir->d_inode->i_mutex);
- 
--	filp = lookup_open(nd, path, op, &want_write);
-+	filp = lookup_open(nd, path, od, op, &want_write);
- 	if (filp) {
- 		mutex_unlock(&dir->d_inode->i_mutex);
- 		if (IS_ERR(filp))
-@@ -2411,7 +2396,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 		 * rw->ro transition does not occur between
- 		 * the time when the file is created and when
- 		 * a permanent write count is taken through
--		 * the 'struct file' in nameidata_to_filp().
-+		 * the 'struct file' in finish_open().
- 		 */
- 		if (!want_write) {
- 			error = mnt_want_write(nd->path.mnt);
-@@ -2505,23 +2490,22 @@ common:
- 	error = may_open(&nd->path, acc_mode, open_flag);
- 	if (error)
- 		goto exit;
--	filp = nameidata_to_filp(nd);
-+	od->mnt = nd->path.mnt;
-+	filp = finish_open(od, nd->path.dentry, NULL);
-+	if (IS_ERR(filp))
-+		goto out;
-+	error = open_check_o_direct(filp);
-+	if (error)
-+		goto exit_fput;
- opened:
--	if (!IS_ERR(filp)) {
--		error = ima_file_check(filp, op->acc_mode);
--		if (error) {
--			fput(filp);
--			filp = ERR_PTR(error);
--		}
--	}
--	if (!IS_ERR(filp)) {
--		if (will_truncate) {
--			error = handle_truncate(filp);
--			if (error) {
--				fput(filp);
--				filp = ERR_PTR(error);
--			}
--		}
-+	error = ima_file_check(filp, op->acc_mode);
-+	if (error)
-+		goto exit_fput;
-+
-+	if (will_truncate) {
-+		error = handle_truncate(filp);
-+		if (error)
-+			goto exit_fput;
- 	}
- out:
- 	if (want_write)
-@@ -2537,6 +2521,10 @@ exit:
- 	filp = ERR_PTR(error);
- 	goto out;
- 
-+exit_fput:
-+	fput(filp);
-+	goto exit;
-+
- terminate:
- 	terminate_walk(nd);
- 	return ERR_PTR(error);
-@@ -2546,18 +2534,16 @@ static struct file *path_openat(int dfd, const char *pathname,
- 		struct nameidata *nd, const struct open_flags *op, int flags)
- {
- 	struct file *base = NULL;
--	struct file *filp;
-+	struct opendata od;
-+	struct file *res;
- 	struct path path;
- 	int error;
- 
--	filp = get_empty_filp();
--	if (!filp)
-+	od.filp = get_empty_filp();
-+	if (!od.filp)
- 		return ERR_PTR(-ENFILE);
- 
--	filp->f_flags = op->open_flag;
--	nd->intent.open.file = filp;
--	nd->intent.open.flags = open_to_namei_flags(op->open_flag);
--	nd->intent.open.create_mode = op->mode;
-+	od.filp->f_flags = op->open_flag;
- 
- 	error = path_init(dfd, pathname, flags | LOOKUP_PARENT, nd, &base);
- 	if (unlikely(error))
-@@ -2568,23 +2554,23 @@ static struct file *path_openat(int dfd, const char *pathname,
- 	if (unlikely(error))
- 		goto out_filp;
- 
--	filp = do_last(nd, &path, op, pathname);
--	while (unlikely(!filp)) { /* trailing symlink */
-+	res = do_last(nd, &path, &od, op, pathname);
-+	while (unlikely(!res)) { /* trailing symlink */
- 		struct path link = path;
- 		void *cookie;
- 		if (!(nd->flags & LOOKUP_FOLLOW)) {
- 			path_put_conditional(&path, nd);
- 			path_put(&nd->path);
--			filp = ERR_PTR(-ELOOP);
-+			res = ERR_PTR(-ELOOP);
- 			break;
- 		}
- 		nd->flags |= LOOKUP_PARENT;
- 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
- 		error = follow_link(&link, nd, &cookie);
- 		if (unlikely(error))
--			filp = ERR_PTR(error);
-+			res = ERR_PTR(error);
- 		else
--			filp = do_last(nd, &path, op, pathname);
-+			res = do_last(nd, &path, &od, op, pathname);
- 		put_link(nd, &link, cookie);
- 	}
- out:
-@@ -2592,11 +2578,14 @@ out:
- 		path_put(&nd->root);
- 	if (base)
- 		fput(base);
--	release_open_intent(nd);
--	return filp;
-+	if (od.filp) {
-+		BUG_ON(od.filp->f_path.dentry);
-+		put_filp(od.filp);
-+	}
-+	return res;
- 
- out_filp:
--	filp = ERR_PTR(error);
-+	res = ERR_PTR(error);
- 	goto out;
- }
- 
-@@ -2652,7 +2641,6 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
- 		goto out;
- 	nd.flags &= ~LOOKUP_PARENT;
- 	nd.flags |= LOOKUP_CREATE | LOOKUP_EXCL;
--	nd.intent.open.flags = O_EXCL;
- 
- 	/*
- 	 * Do the final lookup.
-diff --git a/fs/open.c b/fs/open.c
-index cd73de1..a18e6bc 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -743,62 +743,6 @@ cleanup_file:
- 	return ERR_PTR(error);
- }
- 
--static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
--				struct file *f,
--				int (*open)(struct inode *, struct file *),
--				const struct cred *cred)
--{
--	struct file *res = do_dentry_open(dentry, mnt, f, open, cred);
--	if (!IS_ERR(res)) {
--		int error = open_check_o_direct(f);
--		if (error) {
--			fput(res);
--			res = ERR_PTR(error);
--		}
--	}
--	return res;
--}
--
--/**
-- * lookup_instantiate_filp - instantiates the open intent filp
-- * @nd: pointer to nameidata
-- * @dentry: pointer to dentry
-- * @open: open callback
-- *
-- * Helper for filesystems that want to use lookup open intents and pass back
-- * a fully instantiated struct file to the caller.
-- * This function is meant to be called from within a filesystem's
-- * lookup method.
-- * Beware of calling it for non-regular files! Those ->open methods might block
-- * (e.g. in fifo_open), leaving you with parent locked (and in case of fifo,
-- * leading to a deadlock, as nobody can open that fifo anymore, because
-- * another process to open fifo will block on locked parent when doing lookup).
-- * Note that in case of error, nd->intent.open.file is destroyed, but the
-- * path information remains valid.
-- * If the open callback is set to NULL, then the standard f_op->open()
-- * filesystem callback is substituted.
-- */
--struct file *lookup_instantiate_filp(struct nameidata *nd, struct dentry *dentry,
--		int (*open)(struct inode *, struct file *))
--{
--	const struct cred *cred = current_cred();
--
--	if (IS_ERR(nd->intent.open.file))
--		goto out;
--	if (IS_ERR(dentry))
--		goto out_err;
--	nd->intent.open.file = __dentry_open(dget(dentry), mntget(nd->path.mnt),
--					     nd->intent.open.file,
--					     open, cred);
--out:
--	return nd->intent.open.file;
--out_err:
--	release_open_intent(nd);
--	nd->intent.open.file = ERR_CAST(dentry);
--	goto out;
--}
--EXPORT_SYMBOL_GPL(lookup_instantiate_filp);
--
- /**
-  * finish_open - finish opening a file
-  * @od: opaque open data
-@@ -815,8 +759,8 @@ struct file *finish_open(struct opendata *od, struct dentry *dentry,
- {
- 	struct file *filp;
- 
--	filp = *(od->filp);
--	*(od->filp) = NULL;
-+	filp = od->filp;
-+	od->filp = NULL;
- 
- 	mntget(od->mnt);
- 	dget(dentry);
-@@ -840,31 +784,6 @@ void finish_no_open(struct opendata *od, struct dentry *dentry)
- }
- EXPORT_SYMBOL(finish_no_open);
- 
--/**
-- * nameidata_to_filp - convert a nameidata to an open filp.
-- * @nd: pointer to nameidata
-- * @flags: open flags
-- *
-- * Note that this function destroys the original nameidata
-- */
--struct file *nameidata_to_filp(struct nameidata *nd)
--{
--	const struct cred *cred = current_cred();
--	struct file *filp;
--
--	/* Pick up the filp from the open intent */
--	filp = nd->intent.open.file;
--	nd->intent.open.file = NULL;
--
--	/* Has the filesystem initialised the file for us? */
--	if (filp->f_path.dentry == NULL) {
--		path_get(&nd->path);
--		filp = __dentry_open(nd->path.dentry, nd->path.mnt, filp,
--				     NULL, cred);
--	}
--	return filp;
--}
--
- /*
-  * dentry_open() will have done dput(dentry) and mntput(mnt) if it returns an
-  * error.
-@@ -873,7 +792,7 @@ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
- 			 const struct cred *cred)
- {
- 	int error;
--	struct file *f;
-+	struct file *f, *res;
- 
- 	validate_creds(cred);
- 
-@@ -889,7 +808,15 @@ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
- 	}
- 
- 	f->f_flags = flags;
--	return __dentry_open(dentry, mnt, f, NULL, cred);
-+	res = do_dentry_open(dentry, mnt, f, NULL, cred);
-+	if (!IS_ERR(res)) {
-+		int error = open_check_o_direct(f);
-+		if (error) {
-+			fput(res);
-+			res = ERR_PTR(error);
-+		}
-+	}
-+	return res;
- }
- EXPORT_SYMBOL(dentry_open);
- 
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index ffc0213..54dadda 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -7,12 +7,6 @@
- 
- struct vfsmount;
- 
--struct open_intent {
--	int	flags;
--	int	create_mode;
--	struct file *file;
--};
--
- enum { MAX_NESTED_LINKS = 8 };
- 
- struct nameidata {
-@@ -25,11 +19,6 @@ struct nameidata {
- 	int		last_type;
- 	unsigned	depth;
- 	char *saved_names[MAX_NESTED_LINKS + 1];
--
--	/* Intent data */
--	union {
--		struct open_intent open;
--	} intent;
- };
- 
- /*
+ /* dir.c */
 -- 
 1.7.7
 
