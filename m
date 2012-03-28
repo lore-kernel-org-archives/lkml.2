@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab2C1MuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 08:50:10 -0400
-Received: from plane.gmane.org ([80.91.229.3]:33588 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876Ab2C1MuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 08:50:08 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Nikos Chantziaras <realnc@gmail.com>
-Subject: Re: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for
- linux kernel 3.3.0
-Date: Wed, 28 Mar 2012 15:39:22 +0300
-Organization: Lucas Barks
-Message-ID: <jkv0q5$kgu$1@dough.gmane.org>
-References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com> <201203240553.32526.gene.heskett@gmail.com> <57375.1332641134@turing-police.cc.vt.edu> <20120328051243.GA2138@fancy-poultry.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: athedsl-354751.home.otenet.gr
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120325 Thunderbird/11.0
-In-Reply-To: <20120328051243.GA2138@fancy-poultry.org>
+	id S1756928Ab2C1MwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 08:52:14 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:64178 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2C1MwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 08:52:05 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 02/14 v5] drm/i915/intel_i2c: cleanup error messages and comments
+Date: Wed, 28 Mar 2012 20:51:45 +0800
+Message-Id: <1332939117-6513-3-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1332939117-6513-1-git-send-email-djkurtz@chromium.org>
+References: <1332939117-6513-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/03/12 08:12, Heinz Diehl wrote:
-> On 25.03.2012, Valdis.Kletnieks@vt.edu wrote:
->
->> I'va always wondered what people are using to measure interactivity. Do we have
->> some hard numbers from scheduler traces, or is it a "feels faster"?
->
-> I guess it's a "feels faster", because it's the only thing that
-> counts. Given that there is strong evidence that scheduler A is
-> "faster, more interactive", whatever... than scheduler B, but a
-> controlled trial shows a significantly better "feels faster"
-> experience using scheduler B, I'm quite shure that people would choose
-> scheduler B over A, and that's quite ok. It does what they expect it
-> to do, despite evidence which documents the opposite.
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/i915/intel_i2c.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-CFS: ALSA XRUNs in JACK.
-BFS: much less ALSA XRUNs in JACK
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index 30675ce..e6c090b 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -333,17 +333,20 @@ done:
+ 	 * till then let it sleep.
+ 	 */
+ 	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
+-		DRM_INFO("GMBUS timed out waiting for idle\n");
++		DRM_INFO("GMBUS [%s] timed out waiting for idle\n",
++			 bus->adapter.name);
+ 	I915_WRITE(GMBUS0 + reg_offset, 0);
+ 	ret = i;
+ 	goto out;
+ 
+ timeout:
+-	DRM_INFO("GMBUS timed out, falling back to bit banging on pin %d [%s]\n",
+-		 bus->reg0 & 0xff, bus->adapter.name);
++	DRM_INFO("GMBUS [%s] timed out, falling back to bit banging on pin %d\n",
++		 bus->adapter.name, bus->reg0 & 0xff);
+ 	I915_WRITE(GMBUS0 + reg_offset, 0);
+ 
+-	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
++	/* Hardware may not support GMBUS over these pins?
++	 * Try GPIO bitbanging instead.
++	 */
+ 	if (!bus->has_gpio) {
+ 		ret = -EIO;
+ 	} else {
+-- 
+1.7.7.3
 
