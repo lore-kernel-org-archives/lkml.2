@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2C1HaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 03:30:06 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34598 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752686Ab2C1HaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 03:30:05 -0400
-Message-ID: <1332919803.16535.22.camel@joe2Laptop>
-Subject: Re: [RFC] Remove most all #define pr_fmt(fmt) lines
-From: Joe Perches <joe@perches.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 28 Mar 2012 00:30:03 -0700
-In-Reply-To: <4F72BD4F.9020305@ladisch.de>
-References: <1332869030.2213.46.camel@joe2Laptop>
-	 <4F72BD4F.9020305@ladisch.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755494Ab2C1HfB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 03:35:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45127 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755223Ab2C1He7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 03:34:59 -0400
+Date: Wed, 28 Mar 2012 09:34:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] floppy: revert floppy disable halt warning
+Message-ID: <20120328073454.GC22885@gmail.com>
+References: <20120311093853.04f049c2@s6510.linuxnetplumber.net>
+ <20120327162633.654c8d7e.akpm@linux-foundation.org>
+ <CA+5PVA4KsG0CEs8MhEL2qQoLBU9M6xAoPX2qnTZJ2R5RQ7-osg@mail.gmail.com>
+ <20120328064008.GA12735@gmail.com>
+ <4F72BBCE.1060307@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F72BBCE.1060307@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-28 at 09:27 +0200, Clemens Ladisch wrote:
-> Joe Perches wrote:
-> > With this change, objects like drivers/regulator/core.o
-> > are prefixed with "core: ".  This is somewhat senseless
-> > and may prompt Makefile changes to make the prefixes for
-> > some objects more sensible.
-> >
-> > For example, modifying the Makefile to bundle objects
-> > together with a specific name can change the prefixes.
-> > Here the prefix becomes "regulator: "
-> >
-> > +++ b/drivers/regulator/Makefile
-> >
-> > +regulator-y := core.o dummy.o fixed-helper.o
-> > +regulator-objs := $(regulator-y)
-> >
-> > -obj-$(CONFIG_REGULATOR) += core.o dummy.o fixed-helper.o
-> > +obj-$(CONFIG_REGULATOR) += regulator.o
-> >
-> > ------------------
-> >
-> > Any objections or other suggestions/improvements?
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 03/27/2012 11:40 PM, Ingo Molnar wrote:
+> > 
+> > No objections from me.
+> > 
+> > Please resubmit against latest -tip, we unified the idle 
+> > routines which likely interacts with that patch.
 > 
-> Instead of doing a Makefile change that has no _obvious_ connection with
-> printk, wouldn't it be better to just define pr_fmt with "regulator: "?
+> To the best of my knowledge, no-hlt only existed because of 
+> flaky power distributions on 386/486 systems which were sold 
+> to run DOS.  Since DOS did no power management of any kind, 
+> including HLT, the power draw was fairly uniform; when exposed 
+> to the much higher noise levels you got when Linux used HLT 
+> caused some of these systems to fail.
+> 
+> They were by far in the minority even back then.
 
-Maybe, maybe not.
+This information should be added to the changelog.
 
-Bundling objects in a Makefile like this is pretty common
-and can also produce better module names.
+Thanks,
 
-
+	Ingo
