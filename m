@@ -1,99 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab2C1F4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 01:56:36 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56189 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab2C1F4e convert rfc822-to-8bit (ORCPT
+	id S1751414Ab2C1GCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:02:23 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51079 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab2C1GCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 01:56:34 -0400
-Message-ID: <4F72A80F.7000801@gmail.com>
-Date: Wed, 28 Mar 2012 08:56:31 +0300
-From: roma1390 <roma1390@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	Wed, 28 Mar 2012 02:02:22 -0400
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Douglas W Jones <jones@cs.uiowa.edu>,
-        Michal Nazarewicz <mnazarewicz@google.com>
-Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
-References: <201203262047.17865.vda.linux@googlemail.com> <4F71ADD6.2060407@gmail.com> <CAK1hOcOCG19U3sZAPDSH=BYsjgDMJ0VXjcoXV4EaoL30-dTO+A@mail.gmail.com>
-In-Reply-To: <CAK1hOcOCG19U3sZAPDSH=BYsjgDMJ0VXjcoXV4EaoL30-dTO+A@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAJuYYwRxCTWxnof1HUqYVX4mbzWCxcab69CJyKxOh13bQbQ_5Q@mail.gmail.com>
+References: <CAJuYYwS5Srw2-D6hdk=-=YN3iB37+KTWVqQPPPVbb-e7it+uVQ@mail.gmail.com>
+	<1332679129-23864-1-git-send-email-thomas.abraham@linaro.org>
+	<4F6F37B6.3050506@gmail.com>
+	<CAJuYYwTzx8+J9oMRd7kJ=Qp5V4v0LVUYxdkAe8dMqVji0Dk4yg@mail.gmail.com>
+	<4F706947.2080405@gmail.com>
+	<CAJuYYwRxCTWxnof1HUqYVX4mbzWCxcab69CJyKxOh13bQbQ_5Q@mail.gmail.com>
+Date: Wed, 28 Mar 2012 11:32:20 +0530
+Message-ID: <CAJuYYwSTA_oibeF0maCeaMnw4z2hU33wBjW_ussfLY9S-=UEmA@mail.gmail.com>
+Subject: Re: [PATCH] of/irq: of_irq_init: Call initialization function for all controllers
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, rob.herring@calxeda.com,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.03.27 18:42, Denys Vlasenko wrote:
-> On Tue, Mar 27, 2012 at 2:08 PM, roma1390<roma1390@gmail.com>  wrote:
->> On 2012.03.26 21:47, Denys Vlasenko wrote:
->>>
->>> Please find test programs attached.
->>>
->>> 32-bit test programs were built using gcc 4.6.2
->>> 64-bit test programs were built using gcc 4.2.1
->>> Command line: gcc --static [-m32] -O2 -Wall test_{org,new}.c
->>
->> Can't compile reference for arm:
->> $ arm-linux-gnueabi-gcc -O2 -Wall test_org.c -o test_org
->> test_org.c: In function ‘put_dec’:
->> test_org.c:101: error: impossible constraint in ‘asm’
->> test_org.c:101: error: impossible constraint in ‘asm’
->> test_org.c:101: error: impossible constraint in ‘asm’
+On 26 March 2012 21:06, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> On 26 March 2012 18:34, Rob Herring <robherring2@gmail.com> wrote:
+
+>> Your fix doesn't really guarantee the proper order either. It's still a
+>> side effect of the implementation. Perhaps a retry mechanism would work.
+>> Then the init for wakeup_eint can retry if the gic is not yet setup.
 >
-> Please find a modified test_header.c attached.
-> I tested and it builds in my arm emulator.
+> Ok. A retry mechanism would be most robust solution for this case.
+>
 
+Hi Rob,
 
-Run on same:
-  2.6.32-5-kirkwood #1 Tue Jan 17 05:11:52 UTC 2012 armv5tel GNU/Linux
-GCC version:
-  gcc version 4.4.5 (Debian 4.4.5-8), Target: arm-linux-gnueabi
-Compiled with:
-  arm-linux-gnueabi-gcc -O2 -Wall test_{org,new}.c -o test_{org,new}
+I have attempted an implementation of the the retry mechanism in the
+of_irq_init() function. It allows initialization functions of
+interrupt controller nodes to report -EAGAIN indicating that the
+initialization was not complete and should be retried.
 
+I have tested this and it is working fine. But the complexity of the
+interrupt controller's intialization function increases because it has
+to undo some of the intialization steps it completed before finding
+that the its parent controller was not initialized.
 
-run default priority on almost idle machine:
+The following is the diff of the changes for of_irq_init() function.
+Please let know if this is acceptable.
 
-  ./test_org
-Conversions per second: 8:4716000 123:3896000 123456:2756000 12345678:2412000 
-123456789:2380000 2^32:2348000 2^64:1400000
-Conversions per second: 8:4556000 123:3892000 123456:2760000 12345678:2496000 
-123456789:2384000 2^32:2264000 2^64:1400000
-Conversions per second: 8:4716000 123:3896000 123456:2664000 12345678:2496000 
-123456789:2388000 2^32:2348000 2^64:1400000
-Conversions per second: 8:4716000 123:3892000 123456:2760000 12345678:2496000 
-123456789:2292000 2^32:2348000 2^64:1400000
-  ./test_org
-Conversions per second: 8:4716000 123:3748000 123456:2760000 12345678:2496000 
-123456789:2388000 2^32:2348000 2^64:1348000
-Conversions per second: 8:4716000 123:3896000 123456:2756000 12345678:2408000 
-123456789:2384000 2^32:2348000 2^64:1400000
-Conversions per second: 8:4540000 123:3896000 123456:2648000 12345678:2496000 
-123456789:2388000 2^32:2268000 2^64:1400000
-Conversions per second: 8:4716000 123:3888000 123456:2664000 12345678:2496000 
-123456789:2388000 2^32:2344000 2^64:1400000
+Thanks,
+Thomas.
 
-./test_new
-Conversions per second: 8:5496000 123:4564000 123456:3536000 12345678:3408000 
-123456789:1168000 2^32:976000 2^64:532000
-Conversions per second: 8:5524000 123:4568000 123456:3692000 12345678:3404000 
-123456789:1132000 2^32:972000 2^64:532000
-Conversions per second: 8:5528000 123:4404000 123456:3684000 12345678:3408000 
-123456789:1168000 2^32:976000 2^64:516000
-Conversions per second: 8:5528000 123:4568000 123456:3692000 12345678:3288000 
-123456789:1168000 2^32:976000 2^64:532000
-./test_new
-Conversions per second: 8:5524000 123:4416000 123456:3688000 12345678:3400000 
-123456789:1172000 2^32:972000 2^64:516000
-Conversions per second: 8:5520000 123:4568000 123456:3692000 12345678:3276000 
-123456789:1168000 2^32:976000 2^64:532000
-Conversions per second: 8:5344000 123:4552000 123456:3692000 12345678:3404000 
-123456789:1168000 2^32:944000 2^64:532000
-Conversions per second: 8:5528000 123:4568000 123456:3556000 12345678:3404000 
-123456789:1168000 2^32:976000 2^64:532000
+@@ -452,7 +454,6 @@ void __init of_irq_init(const struct of_device_id *matches)
+ 			if (desc->interrupt_parent != parent)
+ 				continue;
 
-I will run the long running correctness test, and post results later. But this 
-can take a while...
-
+-			list_del(&desc->list);
+ 			match = of_match_node(matches, desc->dev);
+ 			if (WARN(!match->data,
+ 			    "of_irq_init: no init function for %s\n",
+@@ -466,6 +467,14 @@ void __init of_irq_init(const struct of_device_id *matches)
+ 				 desc->dev, desc->interrupt_parent);
+ 			irq_init_cb = match->data;
+ 			ret = irq_init_cb(desc->dev, desc->interrupt_parent);
++			if (ret == -EAGAIN)
++				/*
++				 * Interrupt controller's initialization did not
++				 * complete and should be retried. So let its
++				 * intc_desc be on intc_desc_list.
++				 */
++				continue;
++			list_del(&desc->list);
+ 			if (ret) {
+ 				kfree(desc);
+ 				continue;
+@@ -482,7 +491,18 @@ void __init of_irq_init(const struct of_device_id *matches)
+ 		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
+ 		if (list_empty(&intc_parent_list) || !desc) {
+ 			pr_err("of_irq_init: children remain, but no parents\n");
+-			break;
++			/*
++			 * If a search with NULL as parent did not result in any
++			 * new parent being found, then the scan for matching
++			 * interrupt controller nodes is considered as complete.
++			 * Otherwise, if there are pending elements on the
++			 * intc_desc_list, then retry this process again with
++			 * NULL as parent.
++			 */
++			if (!parent)
++				break;
++			parent = NULL;
++			continue;
+ 		}
+ 		list_del(&desc->list);
+ 		parent = desc->dev;
