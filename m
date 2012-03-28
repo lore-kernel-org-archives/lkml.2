@@ -1,214 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758385Ab2C1QG2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 12:06:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58361 "EHLO mx2.suse.de"
+	id S1758458Ab2C1QGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 12:06:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58371 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758273Ab2C1QG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 12:06:27 -0400
+	id S1758280Ab2C1QG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 12:06:28 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
         Konstantin Khlebnikov <khlebnikov@openvz.org>,
         Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: [RFC PATCH 0/2] Removal of lumpy reclaim
-Date: Wed, 28 Mar 2012 17:06:21 +0100
-Message-Id: <1332950783-31662-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/2] mm: vmscan: Remove reclaim_mode_t
+Date: Wed, 28 Mar 2012 17:06:23 +0100
+Message-Id: <1332950783-31662-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1332950783-31662-1-git-send-email-mgorman@suse.de>
+References: <1332950783-31662-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing active people in the thread "[patch 68/92] mm: forbid lumpy-reclaim
-in shrink_active_list()")
+There is little motiviation for reclaim_mode_t once RECLAIM_MODE_[A]SYNC
+and lumpy reclaim have been removed. This patch gets rid of reclaim_mode_t
+as well and improves the documentation about what reclaim/compaction is
+and when it is triggered.
 
-In the interest of keeping my fingers from the flames at LSF/MM, I'm
-releasing an RFC for lumpy reclaim removal. The first patch removes removes
-lumpy reclaim itself and the second removes reclaim_mode_t. They can be
-merged together but the resulting patch is harder to review.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/trace/events/vmscan.h |    4 +--
+ mm/vmscan.c                   |   72 +++++++++++++----------------------------
+ 2 files changed, 24 insertions(+), 52 deletions(-)
 
-The patches are based on commit e22057c8599373e5caef0bc42bdb95d2a361ab0d
-which is after Andrew's tree was merged but before 3.4-rc1 is released.
-
-Roughly 1K of text is removed, over 200 lines of code and struct scan_control
-is smaller.
-
-   text	   data	    bss	    dec	    hex	filename
-6723455	1931304	2260992	10915751	 a68fa7	vmlinux-3.3.0-git
-6722303	1931304	2260992	10914599	 a68b27	vmlinux-3.3.0-lumpyremove-v1
-
-There are behaviour changes caused by the series with details in the
-patches themselves. I ran some preliminary tests but coverage is shaky
-due to time constraints. The kernels tested were
-
-3.2.0		  Vanilla 3.2.0 kernel
-3.3.0-git	  Commit e22057c which will be part of 3.4-rc1
-3.3.0-lumpyremove These two patches
-
-fs-mark running in a threaded configuration showed nothing useful
-
-postmark had interesting results. I know postmark is not very useful
-as a mail server benchmark but it pushes page reclaim in a manner that
-is useful from a testing perspective. Regressions in page reclaim can
-result in regressions in postmark when the WSS for postmark is larger than
-physical memory.
-
-POSTMARK
-                                        3.2.0-vanilla     3.3.0-git      lumpyremove-v1r3
-Transactions per second:               16.00 ( 0.00%)    19.00 (18.75%)    19.00 (18.75%)
-Data megabytes read per second:        18.62 ( 0.00%)    23.18 (24.49%)    22.56 (21.16%)
-Data megabytes written per second:     35.49 ( 0.00%)    44.18 (24.49%)    42.99 (21.13%)
-Files created alone per second:        26.00 ( 0.00%)    35.00 (34.62%)    34.00 (30.77%)
-Files create/transact per second:       8.00 ( 0.00%)     9.00 (12.50%)     9.00 (12.50%)
-Files deleted alone per second:       680.00 ( 0.00%)  6124.00 (800.59%)  2041.00 (200.15%)
-Files delete/transact per second:       8.00 ( 0.00%)     9.00 (12.50%)     9.00 (12.50%)
-
-MMTests Statistics: duration
-Sys Time Running Test (seconds)             119.61    111.16    111.40
-User+Sys Time Running Test (seconds)        153.19    144.13    143.29
-Total Elapsed Time (seconds)               1171.34    940.97    966.97
-
-MMTests Statistics: vmstat
-Page Ins                                    13797412    13734736    13731792
-Page Outs                                   43284036    42959856    42744668
-Swap Ins                                        7751           0           0
-Swap Outs                                       9617           0           0
-Direct pages scanned                          334395           0           0
-Kswapd pages scanned                         9664358     9933599     9929577
-Kswapd pages reclaimed                       9621893     9932913     9928893
-Direct pages reclaimed                        334395           0           0
-Kswapd efficiency                                99%         99%         99%
-Kswapd velocity                             8250.686   10556.765   10268.754
-Direct efficiency                               100%        100%        100%
-Direct velocity                              285.481       0.000       0.000
-Percentage direct scans                           3%          0%          0%
-Page writes by reclaim                          9619           0           0
-Page writes file                                   2           0           0
-Page writes anon                                9617           0           0
-Page reclaim immediate                             7           0           0
-Page rescued immediate                             0           0           0
-Slabs scanned                                  38912       38912       38912
-Direct inode steals                                0           0           0
-Kswapd inode steals                           154304      160972      158444
-Kswapd skipped wait                                0           0           0
-THP fault alloc                                    4           4           4
-THP collapse alloc                                 0           0           0
-THP splits                                         3           0           0
-THP fault fallback                                 0           0           0
-THP collapse fail                                  0           0           0
-Compaction stalls                                  1           0           0
-Compaction success                                 1           0           0
-Compaction failures                                0           0           0
-Compaction pages moved                             0           0           0
-Compaction move failure                            0           0           0
-
-It looks like 3.3.0-git is better in general although that "Files deleted
-alone per second" looks like an anomaly. Removing lumpy reclaim fully
-affects things a bit but not enough to be of concern as monitoring was
-running at the same time which disrupts results. Dirty pages were not
-being encountered at the end of the LRU so the behaviour change related
-to THP allocations stalling on dirty pages would not be triggered.
-
-Note that swap in/out, direct reclaim and page writes from reclaim dropped
-to 0 between 3.2.0 and 3.3.0-git. According to a range of results I have
-for mainline kernels between 2.6.32 and 3.3.0 on a different machine, this
-swap in/out and direct reclaim problem was introduced after 3.0 and fixed
-by 3.3.0 with 3.1.x and 3.2.x both showing swap in/out, direct reclaim
-and page writes from reclaim. If I had to guess, it was fixed by commits
-e0887c19, fe4b1b24 and 0cee34fd but I did not double check[1].
-
-Removing direct reclaim does not make an obvious difference but note that
-THP was barely used at all in this benchmark. Benchmarks that stress both
-page reclaim and THP at the same time in a meaningful manner are thin on
-the ground.
-
-A benchmark that DD writes a large file also showed nothing interesting
-but I was not really expecting it to. The test looks for problems related to
-a large linear writer and removing lumpy reclaim was unlikely to affect it.
-
-I ran a benchmark that stressed high-order allocation. This is very
-artifical load but was used in the past to evaluate lumpy reclaim and
-compaction. Generally I look at allocation success rates and latency figures.
-
-STRESS-HIGHALLOC
-                 3.2.0-vanilla     3.3.0-git        lumpyremove-v1r3
-Pass 1          82.00 ( 0.00%)    27.00 (-55.00%)    32.00 (-50.00%)
-Pass 2          70.00 ( 0.00%)    37.00 (-33.00%)    40.00 (-30.00%)
-while Rested    90.00 ( 0.00%)    88.00 (-2.00%)    88.00 (-2.00%)
-
-MMTests Statistics: duration
-Sys Time Running Test (seconds)             735.12    688.13    683.91
-User+Sys Time Running Test (seconds)       2764.46   3278.45   3271.41
-Total Elapsed Time (seconds)               1204.41   1140.29   1137.58
-
-MMTests Statistics: vmstat
-Page Ins                                     5426648     2840348     2695120
-Page Outs                                    7206376     7854516     7860408
-Swap Ins                                       36799           0           0
-Swap Outs                                      76903           4           0
-Direct pages scanned                           31981       43749      160647
-Kswapd pages scanned                        26658682     1285341     1195956
-Kswapd pages reclaimed                       2248583     1271621     1178420
-Direct pages reclaimed                          6397       14416       94093
-Kswapd efficiency                                 8%         98%         98%
-Kswapd velocity                            22134.225    1127.205    1051.316
-Direct efficiency                                20%         32%         58%
-Direct velocity                               26.553      38.367     141.218
-Percentage direct scans                           0%          3%         11%
-Page writes by reclaim                       6530481           4           0
-Page writes file                             6453578           0           0
-Page writes anon                               76903           4           0
-Page reclaim immediate                        256742       17832       61576
-Page rescued immediate                             0           0           0
-Slabs scanned                                1073152      971776      975872
-Direct inode steals                                0      196279      205178
-Kswapd inode steals                           139260       70390       64323
-Kswapd skipped wait                            21711           1           0
-THP fault alloc                                    1         126         143
-THP collapse alloc                               324         294         224
-THP splits                                        32           8          10
-THP fault fallback                                 0           0           0
-THP collapse fail                                  5           6           7
-Compaction stalls                                364        1312        1324
-Compaction success                               255         343         366
-Compaction failures                              109         969         958
-Compaction pages moved                        265107     3952630     4489215
-Compaction move failure                         7493       26038       24739
-
-Success rates are completely hosed for 3.4-rc1 which is almost certainly
-due to [fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. I
-expected this would happen for kswapd and impair allocation success rates
-(https://lkml.org/lkml/2012/1/25/166) but I did not anticipate this much
-a difference: 95% less scanning, 43% less reclaim by kswapd
-
-In comparison, reclaim/compaction is not aggressive and gives up easily
-which is the intended behaviour. hugetlbfs uses __GFP_REPEAT and would be
-much more aggressive about reclaim/compaction than THP allocations are. The
-stress test above is allocating like neither THP or hugetlbfs but is much
-closer to THP.
-
-Mainline is now impared in terms of high order allocation under heavy load
-although I do not know to what degree as I did not test with __GFP_REPEAT.
-Still, keep it in mind for bugs related to hugepage pool resizing, THP
-allocation and high order atomic allocation failures from network devices.
-
-Despite this, I think we should merge the patches in this series. The
-stress tests were very useful when the main user was hugetlb pool resizing
-and when rattling out bugs in memory compaction but are now too unrealistic
-to draw solid conclusions from. They need to be replaced but that should
-not delay the lumpy reclaim removal.
-
-I'd appreciate it people took a look at the patches and see if there was
-anything I missed.
-
-[1] Where are these results you say? They are generated using MM Tests to
-    see what negative trends could be identified. They are still in the
-    process of running. I've had limited time to dig through the data.
-
- include/trace/events/vmscan.h |   40 ++-----
- mm/vmscan.c                   |  263 ++++-------------------------------------
- 2 files changed, 37 insertions(+), 266 deletions(-)
-
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index 6f60b33..f66cc93 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -25,12 +25,12 @@
+ 		{RECLAIM_WB_ASYNC,	"RECLAIM_WB_ASYNC"}	\
+ 		) : "RECLAIM_WB_NONE"
+ 
+-#define trace_reclaim_flags(page, sync) ( \
++#define trace_reclaim_flags(page) ( \
+ 	(page_is_file_cache(page) ? RECLAIM_WB_FILE : RECLAIM_WB_ANON) | \
+ 	(RECLAIM_WB_ASYNC)   \
+ 	)
+ 
+-#define trace_shrink_flags(file, sync) ( \
++#define trace_shrink_flags(file) \
+ 	( \
+ 		(file ? RECLAIM_WB_FILE : RECLAIM_WB_ANON) |  \
+ 		(RECLAIM_WB_ASYNC) \
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 68319e4..36c6ad2 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -53,16 +53,6 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/vmscan.h>
+ 
+-/*
+- * reclaim_mode determines how the inactive list is shrunk
+- * RECLAIM_MODE_SINGLE: Reclaim only order-0 pages
+- * RECLAIM_MODE_COMPACTION: For high-order allocations, reclaim a number of
+- *			order-0 pages and then compact the zone
+- */
+-typedef unsigned __bitwise__ reclaim_mode_t;
+-#define RECLAIM_MODE_SINGLE		((__force reclaim_mode_t)0x01u)
+-#define RECLAIM_MODE_COMPACTION		((__force reclaim_mode_t)0x10u)
+-
+ struct scan_control {
+ 	/* Incremented by the number of inactive pages that were scanned */
+ 	unsigned long nr_scanned;
+@@ -89,12 +79,6 @@ struct scan_control {
+ 	int order;
+ 
+ 	/*
+-	 * Intend to reclaim enough continuous memory rather than reclaim
+-	 * enough amount of memory. i.e, mode for high order allocation.
+-	 */
+-	reclaim_mode_t reclaim_mode;
+-
+-	/*
+ 	 * The memory cgroup that hit its limit and as a result is the
+ 	 * primary target of this reclaim invocation.
+ 	 */
+@@ -356,25 +340,6 @@ out:
+ 	return ret;
+ }
+ 
+-static void set_reclaim_mode(int priority, struct scan_control *sc)
+-{
+-	/*
+-	 * Restrict reclaim/compaction to costly allocations or when
+-	 * under memory pressure
+-	 */
+-	if (COMPACTION_BUILD && sc->order &&
+-			(sc->order > PAGE_ALLOC_COSTLY_ORDER ||
+-			 priority < DEF_PRIORITY - 2))
+-		sc->reclaim_mode = RECLAIM_MODE_COMPACTION;
+-	else
+-		sc->reclaim_mode = RECLAIM_MODE_SINGLE;
+-}
+-
+-static void reset_reclaim_mode(struct scan_control *sc)
+-{
+-	sc->reclaim_mode = RECLAIM_MODE_SINGLE;
+-}
+-
+ static inline int is_page_cache_freeable(struct page *page)
+ {
+ 	/*
+@@ -497,8 +462,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+ 			/* synchronous write or broken a_ops? */
+ 			ClearPageReclaim(page);
+ 		}
+-		trace_mm_vmscan_writepage(page,
+-			trace_reclaim_flags(page, sc->reclaim_mode));
++		trace_mm_vmscan_writepage(page, trace_reclaim_flags(page));
+ 		inc_zone_page_state(page, NR_VMSCAN_WRITE);
+ 		return PAGE_SUCCESS;
+ 	}
+@@ -953,7 +917,6 @@ cull_mlocked:
+ 			try_to_free_swap(page);
+ 		unlock_page(page);
+ 		putback_lru_page(page);
+-		reset_reclaim_mode(sc);
+ 		continue;
+ 
+ activate_locked:
+@@ -1348,8 +1311,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 			return SWAP_CLUSTER_MAX;
+ 	}
+ 
+-	set_reclaim_mode(priority, sc);
+-
+ 	lru_add_drain();
+ 
+ 	if (!sc->may_unmap)
+@@ -1428,7 +1389,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 		zone_idx(zone),
+ 		nr_scanned, nr_reclaimed,
+ 		priority,
+-		trace_shrink_flags(file, sc->reclaim_mode));
++		trace_shrink_flags(file));
+ 	return nr_reclaimed;
+ }
+ 
+@@ -1507,8 +1468,6 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 
+ 	lru_add_drain();
+ 
+-	reset_reclaim_mode(sc);
+-
+ 	if (!sc->may_unmap)
+ 		isolate_mode |= ISOLATE_UNMAPPED;
+ 	if (!sc->may_writepage)
+@@ -1821,23 +1780,35 @@ out:
+ 	}
+ }
+ 
++/* Use reclaim/compaction for costly allocs or under memory pressure */
++static bool in_reclaim_compaction(int priority, struct scan_control *sc)
++{
++	if (COMPACTION_BUILD && sc->order &&
++			(sc->order > PAGE_ALLOC_COSTLY_ORDER ||
++			 priority < DEF_PRIORITY - 2))
++		return true;
++
++	return false;
++}
++
+ /*
+- * Reclaim/compaction depends on a number of pages being freed. To avoid
+- * disruption to the system, a small number of order-0 pages continue to be
+- * rotated and reclaimed in the normal fashion. However, by the time we get
+- * back to the allocator and call try_to_compact_zone(), we ensure that
+- * there are enough free pages for it to be likely successful
++ * Reclaim/compaction is used for high-order allocation requests. It reclaims
++ * order-0 pages before compacting the zone. should_continue_reclaim() returns
++ * true if more pages should be reclaimed such that when the page allocator
++ * calls try_to_compact_zone() that it will have enough free pages to succeed.
++ * It will give up earlier than that if there is difficulty reclaiming pages.
+  */
+ static inline bool should_continue_reclaim(struct mem_cgroup_zone *mz,
+ 					unsigned long nr_reclaimed,
+ 					unsigned long nr_scanned,
++					int priority,
+ 					struct scan_control *sc)
+ {
+ 	unsigned long pages_for_compaction;
+ 	unsigned long inactive_lru_pages;
+ 
+ 	/* If not in reclaim/compaction mode, stop */
+-	if (!(sc->reclaim_mode & RECLAIM_MODE_COMPACTION))
++	if (!in_reclaim_compaction(priority, sc))
+ 		return false;
+ 
+ 	/* Consider stopping depending on scan and reclaim activity */
+@@ -1944,7 +1915,8 @@ restart:
+ 
+ 	/* reclaim/compaction might need reclaim to continue */
+ 	if (should_continue_reclaim(mz, nr_reclaimed,
+-					sc->nr_scanned - nr_scanned, sc))
++					sc->nr_scanned - nr_scanned,
++					priority, sc))
+ 		goto restart;
+ 
+ 	throttle_vm_writeout(sc->gfp_mask);
 -- 
 1.7.9.2
 
