@@ -1,126 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757727Ab2C1NMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:12:53 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:36548
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754878Ab2C1NMv (ORCPT
+	id S1757571Ab2C1NQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:16:29 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41304 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930Ab2C1NQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:12:51 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz1432N98dKzz1202hzz8275bhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1LJD7-01-60L-02
-X-M-MSG: 
-Date: Wed, 28 Mar 2012 15:12:40 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86, amd: Be more verbose about LVT offset assignments
-Message-ID: <20120328131240.GB16533@erda.amd.com>
-References: <1332876615-29219-1-git-send-email-robert.richter@amd.com>
- <20120328114944.GB17936@gmail.com>
+	Wed, 28 Mar 2012 09:16:28 -0400
+Message-ID: <4F730F1D.2010003@linux.vnet.ibm.com>
+Date: Wed, 28 Mar 2012 18:46:13 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120328114944.GB17936@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: yanmin_zhang@linux.intel.com
+CC: "Liu, Chuansheng" <chuansheng.liu@intel.com>, tglx@linutronix.de,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, hpa@zytor.com, rjw@sisk.pl,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] x86_fixup_irqs: Fix possible missing interrupt handle
+ when disabling CPU
+References: <27240C0AC20F114CBF8149A2696CBE4A05DFB3@SHSMSX101.ccr.corp.intel.com> <1332913133.1916.271.camel@ymzhang>
+In-Reply-To: <1332913133.1916.271.camel@ymzhang>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12032804-3568-0000-0000-0000016EBD43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.03.12 13:49:45, Ingo Molnar wrote:
+
+[ Adding a few more CCs ]
+
+On 03/28/2012 11:08 AM, Yanmin Zhang wrote:
+
+> On Mon, 2012-03-26 at 07:11 +0000, Liu, Chuansheng wrote:
+>> From: liu chuansheng <chuansheng.liu@intel.com>
+>> Subject: [PATCH] x86_fixup_irqs: Fix possible missing interrupt handle when disabling CPU
+>>
+>> When preparing to unmask the irq in fixup_irqs(), using irqd_irq_masked()
+>> as the condition to determine if do real unmasking action or not.
+>>
+>> Because in some chips, the .irq_disable is NULL, so calling disable_irq()
+>> does not mean the irq is masked immediately, and before enable_irq() if
+>> the irq is coming, it can be pending state. Using irqd_irq_disabled() will
+>> lose this chance.
+>>
+>> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+>> ---
+>>  arch/x86/kernel/irq.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+>> index 6c0802e..b9dd37f 100644
+>> --- a/arch/x86/kernel/irq.c
+>> +++ b/arch/x86/kernel/irq.c
+>> @@ -277,7 +277,7 @@ void fixup_irqs(void)
+>>                         set_affinity = 0;
+>>  
+>>                 if (!irqd_can_move_in_process_context(data) &&
+>> -                   !irqd_irq_disabled(data) && chip->irq_unmask)
+>> +                   !irqd_irq_masked(data) && chip->irq_unmask)
+>>                         chip->irq_unmask(data);
+>>  
+>>                 raw_spin_unlock(&desc->lock);
+> Thomas,
 > 
-> * Robert Richter <robert.richter@amd.com> wrote:
+> Originally, we found an issue when enabling Android (Gingerbread) with kernel
+> 2.6.35 on Medfield.
 > 
-> > Add information about LVT offset assignments to better debug 
-> > firmware bug messages related to this.
+> When system goes to suspend-2-ram, some device drivers call disable_irq to
+> disable some device irq at device driver suspend callbacks. In addition,
+> some specific irq_chips just provide mask/unmask callbacks and have no
+> enable/disable callbacks. When drivers call
+> disable_irq=>...=>irq_disable=>desc->irq_data.chip->irq_disable, they don't
+> really mask the irq at the irq_chip. With such specific irq_chip, we could
+> keep the irq as wake up sources. When the irq arrives after driver disables them,
+> IRQ handling framework would mark it PENDING and calls the irq handler when
+> drivers call enable_irq.
 > 
-> Which particular bug message(s) is this related to, can you 
-> quote an example perhaps?
-
-Yeah, should have put it into the commit message. Updated patch below.
-
--Robert
-
-
->From efb205d18ba569a058555283c4a66d736118ca6d Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Tue, 27 Mar 2012 20:04:02 +0200
-Subject: [PATCH] x86, amd: Be more verbose about LVT offset assignments
-
-Add information about LVT offset assignments to better debug firmware
-bugs related to this. See following examples.
-
- # dmesg | grep -i 'offset\|ibs'
- LVT offset 0 assigned for vector 0xf9
- [Firmware Bug]: cpu 0, try to use APIC500 (LVT offset 0) for vector 0x10400, but the register is already in use for vector 0xf9 on another cpu
- [Firmware Bug]: cpu 0, IBS interrupt offset 0 not available (MSRC001103A=0x0000000000000100)
- Failed to setup IBS, -22
-
-In this case the BIOS assigns both offsets for MCE (0xf9) and IBS
-(0x400) vectors to offset 0, which is why the second APIC setup (IBS)
-failed.
-
-With correct setup you get:
-
- # dmesg | grep -i 'offset\|ibs'
- LVT offset 0 assigned for vector 0xf9
- LVT offset 1 assigned for vector 0x400
- IBS: LVT offset 1 assigned
- perf: AMD IBS detected (0x00000007)
- oprofile: AMD IBS detected (0x00000007)
-
-Note: The vector includes also the message type to handle also NMIs
-(0x400). In the firmware bug message the format is the same as of the
-APIC500 register and includes the mask bit (bit 16) in addition.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/kernel/apic/apic.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 2eec05b..11544d8 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -383,20 +383,25 @@ static inline int eilvt_entry_is_changeable(unsigned int old, unsigned int new)
- 
- static unsigned int reserve_eilvt_offset(int offset, unsigned int new)
- {
--	unsigned int rsvd;			/* 0: uninitialized */
-+	unsigned int rsvd, vector;
- 
- 	if (offset >= APIC_EILVT_NR_MAX)
- 		return ~0;
- 
--	rsvd = atomic_read(&eilvt_offsets[offset]) & ~APIC_EILVT_MASKED;
-+	rsvd = atomic_read(&eilvt_offsets[offset]);
- 	do {
--		if (rsvd &&
--		    !eilvt_entry_is_changeable(rsvd, new))
-+		vector = rsvd & ~APIC_EILVT_MASKED;	/* 0: unassigned */
-+		if (vector && !eilvt_entry_is_changeable(vector, new))
- 			/* may not change if vectors are different */
- 			return rsvd;
- 		rsvd = atomic_cmpxchg(&eilvt_offsets[offset], rsvd, new);
- 	} while (rsvd != new);
- 
-+	rsvd &= ~APIC_EILVT_MASKED;
-+	if (rsvd && rsvd != vector)
-+		pr_info("LVT offset %d assigned for vector 0x%02x\n",
-+			offset, rsvd);
-+
- 	return new;
- }
- 
--- 
-1.7.8.4
+> After device driver's suspend/suspend_noirq callbacks are called, suspend-2-ram
+> would disable nonboot cpus, which calls fixup_irqs. fixup_irqs really masks the irq
+> at irq_chip as the drivers calls disable_irq before. So one of the side effects of
+> calling fixup_irq is to really mask the irq and we lose the wakeup capability of
+> the corresponding irq.
+> 
+> You might ask why drivers call disable_irq at suspend callback. That's because
+> another specific reason. suspend callback calls disable_irq and resume callback calls
+> enable_irq. Between suspend and resume callbacks, we don't want kernel to deliver
+> the irq to the driver irq handler as the device is not FULLY resumed yet.
+> 
+> Chuangsheng's patch tries to fix above issue, to keep the difference between
+> enable/disable and mask/unmask callbacks of irq_chip.
+> 
+> Hope my explanation could be a little clearer.
+> 
+> Sorry for taking you too much time.
+> 
+> Yanmin
+> 
+> 
 
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
