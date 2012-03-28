@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759000Ab2C1Wvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:51:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38246 "EHLO
+	id S1759082Ab2C1WwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:52:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63907 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758906Ab2C1Wvk (ORCPT
+	with ESMTP id S1759025Ab2C1Wv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:51:40 -0400
+	Wed, 28 Mar 2012 18:51:58 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/21] blkcg: remove unused @pol and @plid parameters
-Date: Wed, 28 Mar 2012 15:51:11 -0700
-Message-Id: <1332975091-10950-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 13/21] blkcg: move statistics update code to policies
+Date: Wed, 28 Mar 2012 15:51:23 -0700
+Message-Id: <1332975091-10950-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1332975091-10950-1-git-send-email-tj@kernel.org>
 References: <1332975091-10950-1-git-send-email-tj@kernel.org>
@@ -22,130 +22,825 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@pol to blkg_to_pdata() and @plid to blkg_lookup_create() are no
-longer necessary.  Drop them.
+As with conf/stats file handling code, there's no reason for stat
+update code to live in blkcg core with policies calling into update
+them.  The current organization is both inflexible and complex.
+
+This patch moves stat update code to specific policies.  All
+blkiocg_update_*_stats() functions which deal with BLKIO_POLICY_PROP
+stats are collapsed into their cfq_blkiocg_update_*_stats()
+counterparts.  blkiocg_update_dispatch_stats() is used by both
+policies and duplicated as throtl_update_dispatch_stats() and
+cfq_blkiocg_update_dispatch_stats().  This will be cleaned up later.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-cgroup.c   |    3 +--
- block/blk-cgroup.h   |    8 ++------
- block/blk-throttle.c |    7 +++----
- block/cfq-iosched.c  |    7 +++----
- 4 files changed, 9 insertions(+), 16 deletions(-)
+ block/blk-cgroup.c   |  245 -------------------------------------------
+ block/blk-cgroup.h   |   94 -----------------
+ block/blk-throttle.c |   37 ++++++--
+ block/cfq-iosched.c  |  280 +++++++++++++++++++++++++++++++++++++++++---------
+ 4 files changed, 259 insertions(+), 397 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 7947e17..d4cf77d 100644
+index 96b6b5a..dfa5f2c 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -568,7 +568,6 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+@@ -63,251 +63,6 @@ struct blkio_cgroup *bio_blkio_cgroup(struct bio *bio)
+ }
+ EXPORT_SYMBOL_GPL(bio_blkio_cgroup);
  
- struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
- 				       struct request_queue *q,
--				       enum blkio_policy_id plid,
- 				       bool for_root)
- 	__releases(q->queue_lock) __acquires(q->queue_lock)
- {
-@@ -1027,7 +1026,7 @@ static int blkio_policy_parse_and_set(char *buf, enum blkio_policy_id plid,
- 	rcu_read_lock();
- 
- 	spin_lock_irq(disk->queue->queue_lock);
--	blkg = blkg_lookup_create(blkcg, disk->queue, plid, false);
-+	blkg = blkg_lookup_create(blkcg, disk->queue, false);
- 	spin_unlock_irq(disk->queue->queue_lock);
- 
- 	if (IS_ERR(blkg)) {
+-#ifdef CONFIG_DEBUG_BLK_CGROUP
+-/* This should be called with the queue_lock held. */
+-static void blkio_set_start_group_wait_time(struct blkio_group *blkg,
+-					    struct blkio_policy_type *pol,
+-					    struct blkio_group *curr_blkg)
+-{
+-	struct blkg_policy_data *pd = blkg->pd[pol->plid];
+-
+-	if (blkio_blkg_waiting(&pd->stats))
+-		return;
+-	if (blkg == curr_blkg)
+-		return;
+-	pd->stats.start_group_wait_time = sched_clock();
+-	blkio_mark_blkg_waiting(&pd->stats);
+-}
+-
+-/* This should be called with the queue_lock held. */
+-static void blkio_update_group_wait_time(struct blkio_group_stats *stats)
+-{
+-	unsigned long long now;
+-
+-	if (!blkio_blkg_waiting(stats))
+-		return;
+-
+-	now = sched_clock();
+-	if (time_after64(now, stats->start_group_wait_time))
+-		blkg_stat_add(&stats->group_wait_time,
+-			      now - stats->start_group_wait_time);
+-	blkio_clear_blkg_waiting(stats);
+-}
+-
+-/* This should be called with the queue_lock held. */
+-static void blkio_end_empty_time(struct blkio_group_stats *stats)
+-{
+-	unsigned long long now;
+-
+-	if (!blkio_blkg_empty(stats))
+-		return;
+-
+-	now = sched_clock();
+-	if (time_after64(now, stats->start_empty_time))
+-		blkg_stat_add(&stats->empty_time,
+-			      now - stats->start_empty_time);
+-	blkio_clear_blkg_empty(stats);
+-}
+-
+-void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg,
+-					struct blkio_policy_type *pol)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-	BUG_ON(blkio_blkg_idling(stats));
+-
+-	stats->start_idle_time = sched_clock();
+-	blkio_mark_blkg_idling(stats);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_set_idle_time_stats);
+-
+-void blkiocg_update_idle_time_stats(struct blkio_group *blkg,
+-				    struct blkio_policy_type *pol)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	if (blkio_blkg_idling(stats)) {
+-		unsigned long long now = sched_clock();
+-
+-		if (time_after64(now, stats->start_idle_time))
+-			blkg_stat_add(&stats->idle_time,
+-				      now - stats->start_idle_time);
+-		blkio_clear_blkg_idling(stats);
+-	}
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_idle_time_stats);
+-
+-void blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg,
+-					 struct blkio_policy_type *pol)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	blkg_stat_add(&stats->avg_queue_size_sum,
+-		      blkg_rwstat_sum(&stats->queued));
+-	blkg_stat_add(&stats->avg_queue_size_samples, 1);
+-	blkio_update_group_wait_time(stats);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_avg_queue_size_stats);
+-
+-void blkiocg_set_start_empty_time(struct blkio_group *blkg,
+-				  struct blkio_policy_type *pol)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	if (blkg_rwstat_sum(&stats->queued))
+-		return;
+-
+-	/*
+-	 * group is already marked empty. This can happen if cfqq got new
+-	 * request in parent group and moved to this group while being added
+-	 * to service tree. Just ignore the event and move on.
+-	 */
+-	if (blkio_blkg_empty(stats))
+-		return;
+-
+-	stats->start_empty_time = sched_clock();
+-	blkio_mark_blkg_empty(stats);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_set_start_empty_time);
+-
+-void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+-				  struct blkio_policy_type *pol,
+-				  unsigned long dequeue)
+-{
+-	struct blkg_policy_data *pd = blkg->pd[pol->plid];
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	blkg_stat_add(&pd->stats.dequeue, dequeue);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_dequeue_stats);
+-#else
+-static inline void blkio_set_start_group_wait_time(struct blkio_group *blkg,
+-					struct blkio_policy_type *pol,
+-					struct blkio_group *curr_blkg) { }
+-static inline void blkio_end_empty_time(struct blkio_group_stats *stats) { }
+-#endif
+-
+-void blkiocg_update_io_add_stats(struct blkio_group *blkg,
+-				 struct blkio_policy_type *pol,
+-				 struct blkio_group *curr_blkg, bool direction,
+-				 bool sync)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	blkg_rwstat_add(&stats->queued, rw, 1);
+-	blkio_end_empty_time(stats);
+-	blkio_set_start_group_wait_time(blkg, pol, curr_blkg);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_io_add_stats);
+-
+-void blkiocg_update_io_remove_stats(struct blkio_group *blkg,
+-				    struct blkio_policy_type *pol,
+-				    bool direction, bool sync)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	blkg_rwstat_add(&stats->queued, rw, -1);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_io_remove_stats);
+-
+-void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+-				   struct blkio_policy_type *pol,
+-				   unsigned long time,
+-				   unsigned long unaccounted_time)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	blkg_stat_add(&stats->time, time);
+-#ifdef CONFIG_DEBUG_BLK_CGROUP
+-	blkg_stat_add(&stats->unaccounted_time, unaccounted_time);
+-#endif
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_timeslice_used);
+-
+-/*
+- * should be called under rcu read lock or queue lock to make sure blkg pointer
+- * is valid.
+- */
+-void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+-				   struct blkio_policy_type *pol,
+-				   uint64_t bytes, bool direction, bool sync)
+-{
+-	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
+-	struct blkg_policy_data *pd = blkg->pd[pol->plid];
+-	struct blkio_group_stats_cpu *stats_cpu;
+-	unsigned long flags;
+-
+-	/* If per cpu stats are not allocated yet, don't do any accounting. */
+-	if (pd->stats_cpu == NULL)
+-		return;
+-
+-	/*
+-	 * Disabling interrupts to provide mutual exclusion between two
+-	 * writes on same cpu. It probably is not needed for 64bit. Not
+-	 * optimizing that case yet.
+-	 */
+-	local_irq_save(flags);
+-
+-	stats_cpu = this_cpu_ptr(pd->stats_cpu);
+-
+-	blkg_stat_add(&stats_cpu->sectors, bytes >> 9);
+-	blkg_rwstat_add(&stats_cpu->serviced, rw, 1);
+-	blkg_rwstat_add(&stats_cpu->service_bytes, rw, bytes);
+-
+-	local_irq_restore(flags);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_dispatch_stats);
+-
+-void blkiocg_update_completion_stats(struct blkio_group *blkg,
+-				     struct blkio_policy_type *pol,
+-				     uint64_t start_time,
+-				     uint64_t io_start_time, bool direction,
+-				     bool sync)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-	unsigned long long now = sched_clock();
+-	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	if (time_after64(now, io_start_time))
+-		blkg_rwstat_add(&stats->service_time, rw, now - io_start_time);
+-	if (time_after64(io_start_time, start_time))
+-		blkg_rwstat_add(&stats->wait_time, rw,
+-				io_start_time - start_time);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_completion_stats);
+-
+-/*  Merged stats are per cpu.  */
+-void blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+-				    struct blkio_policy_type *pol,
+-				    bool direction, bool sync)
+-{
+-	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
+-	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
+-
+-	lockdep_assert_held(blkg->q->queue_lock);
+-
+-	blkg_rwstat_add(&stats->merged, rw, 1);
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_update_io_merged_stats);
+-
+ /*
+  * Worker for allocating per cpu stat for blk groups. This is scheduled on
+  * the system_nrt_wq once there are some groups on the alloc_list waiting
 diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 1cb8f76..1add3dc 100644
+index ba64b28..0b0a176 100644
 --- a/block/blk-cgroup.h
 +++ b/block/blk-cgroup.h
-@@ -266,13 +266,10 @@ static inline void *blkg_to_pdata(struct blkio_group *blkg,
- /**
-  * pdata_to_blkg - get blkg associated with policy private data
-  * @pdata: policy private data of interest
-- * @pol: policy @pdata is for
-  *
-- * @pdata is policy private data for @pol.  Determine the blkg it's
-- * associated with.
-+ * @pdata is policy private data.  Determine the blkg it's associated with.
-  */
--static inline struct blkio_group *pdata_to_blkg(void *pdata,
--						struct blkio_policy_type *pol)
-+static inline struct blkio_group *pdata_to_blkg(void *pdata)
- {
- 	if (pdata) {
- 		struct blkg_policy_data *pd =
-@@ -402,7 +399,6 @@ extern struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
- 				       struct request_queue *q);
+@@ -44,13 +44,6 @@ enum blkg_rwstat_type {
+ 	BLKG_RWSTAT_TOTAL = BLKG_RWSTAT_NR,
+ };
+ 
+-/* blkg state flags */
+-enum blkg_state_flags {
+-	BLKG_waiting = 0,
+-	BLKG_idling,
+-	BLKG_empty,
+-};
+-
+ struct blkio_cgroup {
+ 	struct cgroup_subsys_state css;
+ 	unsigned int weight;
+@@ -416,52 +409,6 @@ static inline void blkg_put(struct blkio_group *blkg) { }
+ #define BLKIO_WEIGHT_MAX	1000
+ #define BLKIO_WEIGHT_DEFAULT	500
+ 
+-#ifdef CONFIG_DEBUG_BLK_CGROUP
+-void blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg,
+-					 struct blkio_policy_type *pol);
+-void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+-				  struct blkio_policy_type *pol,
+-				  unsigned long dequeue);
+-void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg,
+-					struct blkio_policy_type *pol);
+-void blkiocg_update_idle_time_stats(struct blkio_group *blkg,
+-				    struct blkio_policy_type *pol);
+-void blkiocg_set_start_empty_time(struct blkio_group *blkg,
+-				  struct blkio_policy_type *pol);
+-
+-#define BLKG_FLAG_FNS(name)						\
+-static inline void blkio_mark_blkg_##name(				\
+-		struct blkio_group_stats *stats)			\
+-{									\
+-	stats->flags |= (1 << BLKG_##name);				\
+-}									\
+-static inline void blkio_clear_blkg_##name(				\
+-		struct blkio_group_stats *stats)			\
+-{									\
+-	stats->flags &= ~(1 << BLKG_##name);				\
+-}									\
+-static inline int blkio_blkg_##name(struct blkio_group_stats *stats)	\
+-{									\
+-	return (stats->flags & (1 << BLKG_##name)) != 0;		\
+-}									\
+-
+-BLKG_FLAG_FNS(waiting)
+-BLKG_FLAG_FNS(idling)
+-BLKG_FLAG_FNS(empty)
+-#undef BLKG_FLAG_FNS
+-#else
+-static inline void blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol) { }
+-static inline void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, unsigned long dequeue) { }
+-static inline void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol) { }
+-static inline void blkiocg_update_idle_time_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol) { }
+-static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol) { }
+-#endif
+-
+ #ifdef CONFIG_BLK_CGROUP
+ extern struct blkio_cgroup blkio_root_cgroup;
+ extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
+@@ -471,28 +418,6 @@ extern struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
  struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
  				       struct request_queue *q,
--				       enum blkio_policy_id plid,
  				       bool for_root);
- void blkiocg_update_timeslice_used(struct blkio_group *blkg,
- 				   struct blkio_policy_type *pol,
+-void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+-				   struct blkio_policy_type *pol,
+-				   unsigned long time,
+-				   unsigned long unaccounted_time);
+-void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+-				   struct blkio_policy_type *pol,
+-				   uint64_t bytes, bool direction, bool sync);
+-void blkiocg_update_completion_stats(struct blkio_group *blkg,
+-				     struct blkio_policy_type *pol,
+-				     uint64_t start_time,
+-				     uint64_t io_start_time, bool direction,
+-				     bool sync);
+-void blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+-				    struct blkio_policy_type *pol,
+-				    bool direction, bool sync);
+-void blkiocg_update_io_add_stats(struct blkio_group *blkg,
+-				 struct blkio_policy_type *pol,
+-				 struct blkio_group *curr_blkg, bool direction,
+-				 bool sync);
+-void blkiocg_update_io_remove_stats(struct blkio_group *blkg,
+-				    struct blkio_policy_type *pol,
+-				    bool direction, bool sync);
+ #else
+ struct cgroup;
+ static inline struct blkio_cgroup *
+@@ -502,24 +427,5 @@ bio_blkio_cgroup(struct bio *bio) { return NULL; }
+ 
+ static inline struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
+ 					      void *key) { return NULL; }
+-static inline void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, unsigned long time,
+-			unsigned long unaccounted_time) { }
+-static inline void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, uint64_t bytes,
+-			bool direction, bool sync) { }
+-static inline void blkiocg_update_completion_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, uint64_t start_time,
+-			uint64_t io_start_time, bool direction, bool sync) { }
+-static inline void blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, bool direction,
+-			bool sync) { }
+-static inline void blkiocg_update_io_add_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol,
+-			struct blkio_group *curr_blkg, bool direction,
+-			bool sync) { }
+-static inline void blkiocg_update_io_remove_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, bool direction,
+-			bool sync) { }
+ #endif
+ #endif /* _BLK_CGROUP_H */
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 4ba1418..1cc6c23d 100644
+index fb6f257..5d647ed 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -107,7 +107,7 @@ static inline struct throtl_grp *blkg_to_tg(struct blkio_group *blkg)
- 
- static inline struct blkio_group *tg_to_blkg(struct throtl_grp *tg)
- {
--	return pdata_to_blkg(tg, &blkio_policy_throtl);
-+	return pdata_to_blkg(tg);
+@@ -562,17 +562,42 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ 	return 0;
  }
  
- enum tg_state_flags {
-@@ -185,7 +185,7 @@ static struct throtl_grp *throtl_lookup_create_tg(struct throtl_data *td,
- 	} else {
- 		struct blkio_group *blkg;
++static void throtl_update_dispatch_stats(struct blkio_group *blkg, u64 bytes,
++					 int rw)
++{
++	struct blkg_policy_data *pd = blkg->pd[BLKIO_POLICY_THROTL];
++	struct blkio_group_stats_cpu *stats_cpu;
++	unsigned long flags;
++
++	/* If per cpu stats are not allocated yet, don't do any accounting. */
++	if (pd->stats_cpu == NULL)
++		return;
++
++	/*
++	 * Disabling interrupts to provide mutual exclusion between two
++	 * writes on same cpu. It probably is not needed for 64bit. Not
++	 * optimizing that case yet.
++	 */
++	local_irq_save(flags);
++
++	stats_cpu = this_cpu_ptr(pd->stats_cpu);
++
++	blkg_stat_add(&stats_cpu->sectors, bytes >> 9);
++	blkg_rwstat_add(&stats_cpu->serviced, rw, 1);
++	blkg_rwstat_add(&stats_cpu->service_bytes, rw, bytes);
++
++	local_irq_restore(flags);
++}
++
+ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+ {
+ 	bool rw = bio_data_dir(bio);
+-	bool sync = rw_is_sync(bio->bi_rw);
  
--		blkg = blkg_lookup_create(blkcg, q, BLKIO_POLICY_THROTL, false);
-+		blkg = blkg_lookup_create(blkcg, q, false);
+ 	/* Charge the bio to the group */
+ 	tg->bytes_disp[rw] += bio->bi_size;
+ 	tg->io_disp[rw]++;
  
- 		/* if %NULL and @q is alive, fall back to root_tg */
- 		if (!IS_ERR(blkg))
-@@ -1033,8 +1033,7 @@ int blk_throtl_init(struct request_queue *q)
- 	rcu_read_lock();
- 	spin_lock_irq(q->queue_lock);
+-	blkiocg_update_dispatch_stats(tg_to_blkg(tg), &blkio_policy_throtl,
+-				      bio->bi_size, rw, sync);
++	throtl_update_dispatch_stats(tg_to_blkg(tg), bio->bi_size, bio->bi_rw);
+ }
  
--	blkg = blkg_lookup_create(&blkio_root_cgroup, q, BLKIO_POLICY_THROTL,
--				  true);
-+	blkg = blkg_lookup_create(&blkio_root_cgroup, q, true);
- 	if (!IS_ERR(blkg))
- 		td->root_tg = blkg_to_tg(blkg);
- 
+ static void throtl_add_bio_tg(struct throtl_data *td, struct throtl_grp *tg,
+@@ -1012,10 +1037,8 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 	tg = throtl_lookup_tg(td, blkcg);
+ 	if (tg) {
+ 		if (tg_no_rule_group(tg, rw)) {
+-			blkiocg_update_dispatch_stats(tg_to_blkg(tg),
+-						      &blkio_policy_throtl,
+-						      bio->bi_size, rw,
+-						      rw_is_sync(bio->bi_rw));
++			throtl_update_dispatch_stats(tg_to_blkg(tg),
++						     bio->bi_size, bio->bi_rw);
+ 			goto out_unlock_rcu;
+ 		}
+ 	}
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 39c4330..8cca6161 100644
+index 2e13e9e..4991380 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -374,7 +374,7 @@ static inline struct cfq_group *blkg_to_cfqg(struct blkio_group *blkg)
+@@ -15,6 +15,7 @@
+ #include <linux/ioprio.h>
+ #include <linux/blktrace_api.h>
+ #include "blk.h"
++#include "blk-cgroup.h"
  
- static inline struct blkio_group *cfqg_to_blkg(struct cfq_group *cfqg)
+ static struct blkio_policy_type blkio_policy_cfq;
+ 
+@@ -365,9 +366,177 @@ CFQ_CFQQ_FNS(deep);
+ CFQ_CFQQ_FNS(wait_busy);
+ #undef CFQ_CFQQ_FNS
+ 
+-#ifdef CONFIG_CFQ_GROUP_IOSCHED
++#if defined(CONFIG_CFQ_GROUP_IOSCHED) && defined(CONFIG_DEBUG_BLK_CGROUP)
+ 
+-#include "blk-cgroup.h"
++/* blkg state flags */
++enum blkg_state_flags {
++	BLKG_waiting = 0,
++	BLKG_idling,
++	BLKG_empty,
++};
++
++#define BLKG_FLAG_FNS(name)						\
++static inline void blkio_mark_blkg_##name(				\
++		struct blkio_group_stats *stats)			\
++{									\
++	stats->flags |= (1 << BLKG_##name);				\
++}									\
++static inline void blkio_clear_blkg_##name(				\
++		struct blkio_group_stats *stats)			\
++{									\
++	stats->flags &= ~(1 << BLKG_##name);				\
++}									\
++static inline int blkio_blkg_##name(struct blkio_group_stats *stats)	\
++{									\
++	return (stats->flags & (1 << BLKG_##name)) != 0;		\
++}									\
++
++BLKG_FLAG_FNS(waiting)
++BLKG_FLAG_FNS(idling)
++BLKG_FLAG_FNS(empty)
++#undef BLKG_FLAG_FNS
++
++/* This should be called with the queue_lock held. */
++static void blkio_update_group_wait_time(struct blkio_group_stats *stats)
++{
++	unsigned long long now;
++
++	if (!blkio_blkg_waiting(stats))
++		return;
++
++	now = sched_clock();
++	if (time_after64(now, stats->start_group_wait_time))
++		blkg_stat_add(&stats->group_wait_time,
++			      now - stats->start_group_wait_time);
++	blkio_clear_blkg_waiting(stats);
++}
++
++/* This should be called with the queue_lock held. */
++static void blkio_set_start_group_wait_time(struct blkio_group *blkg,
++					    struct blkio_policy_type *pol,
++					    struct blkio_group *curr_blkg)
++{
++	struct blkg_policy_data *pd = blkg->pd[pol->plid];
++
++	if (blkio_blkg_waiting(&pd->stats))
++		return;
++	if (blkg == curr_blkg)
++		return;
++	pd->stats.start_group_wait_time = sched_clock();
++	blkio_mark_blkg_waiting(&pd->stats);
++}
++
++/* This should be called with the queue_lock held. */
++static void blkio_end_empty_time(struct blkio_group_stats *stats)
++{
++	unsigned long long now;
++
++	if (!blkio_blkg_empty(stats))
++		return;
++
++	now = sched_clock();
++	if (time_after64(now, stats->start_empty_time))
++		blkg_stat_add(&stats->empty_time,
++			      now - stats->start_empty_time);
++	blkio_clear_blkg_empty(stats);
++}
++
++static void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
++					     struct blkio_policy_type *pol,
++					     unsigned long dequeue)
++{
++	struct blkg_policy_data *pd = blkg->pd[pol->plid];
++
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	blkg_stat_add(&pd->stats.dequeue, dequeue);
++}
++
++static void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg,
++					     struct blkio_policy_type *pol)
++{
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	if (blkg_rwstat_sum(&stats->queued))
++		return;
++
++	/*
++	 * group is already marked empty. This can happen if cfqq got new
++	 * request in parent group and moved to this group while being added
++	 * to service tree. Just ignore the event and move on.
++	 */
++	if (blkio_blkg_empty(stats))
++		return;
++
++	stats->start_empty_time = sched_clock();
++	blkio_mark_blkg_empty(stats);
++}
++
++static void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg,
++					       struct blkio_policy_type *pol)
++{
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	if (blkio_blkg_idling(stats)) {
++		unsigned long long now = sched_clock();
++
++		if (time_after64(now, stats->start_idle_time))
++			blkg_stat_add(&stats->idle_time,
++				      now - stats->start_idle_time);
++		blkio_clear_blkg_idling(stats);
++	}
++}
++
++static void cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg,
++						   struct blkio_policy_type *pol)
++{
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++
++	lockdep_assert_held(blkg->q->queue_lock);
++	BUG_ON(blkio_blkg_idling(stats));
++
++	stats->start_idle_time = sched_clock();
++	blkio_mark_blkg_idling(stats);
++}
++
++static void cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg,
++						    struct blkio_policy_type *pol)
++{
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	blkg_stat_add(&stats->avg_queue_size_sum,
++		      blkg_rwstat_sum(&stats->queued));
++	blkg_stat_add(&stats->avg_queue_size_samples, 1);
++	blkio_update_group_wait_time(stats);
++}
++
++#else	/* CONFIG_CFQ_GROUP_IOSCHED && CONFIG_DEBUG_BLK_CGROUP */
++
++static void blkio_set_start_group_wait_time(struct blkio_group *blkg,
++					    struct blkio_policy_type *pol,
++					    struct blkio_group *curr_blkg) { }
++static void blkio_end_empty_time(struct blkio_group_stats *stats) { }
++static void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
++					     struct blkio_policy_type *pol,
++					     unsigned long dequeue) { }
++static void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg,
++					     struct blkio_policy_type *pol) { }
++static void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg,
++					       struct blkio_policy_type *pol) { }
++static void cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg,
++						   struct blkio_policy_type *pol) { }
++static void cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg,
++						    struct blkio_policy_type *pol) { }
++
++#endif	/* CONFIG_CFQ_GROUP_IOSCHED && CONFIG_DEBUG_BLK_CGROUP */
++
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
+ 
+ static inline struct cfq_group *blkg_to_cfqg(struct blkio_group *blkg)
  {
--	return pdata_to_blkg(cfqg, &blkio_policy_cfq);
-+	return pdata_to_blkg(cfqg);
+@@ -403,75 +572,98 @@ static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
+ 			struct blkio_group *curr_blkg,
+ 			bool direction, bool sync)
+ {
+-	blkiocg_update_io_add_stats(blkg, pol, curr_blkg, direction, sync);
+-}
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
+ 
+-static inline void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, unsigned long dequeue)
+-{
+-	blkiocg_update_dequeue_stats(blkg, pol, dequeue);
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	blkg_rwstat_add(&stats->queued, rw, 1);
++	blkio_end_empty_time(stats);
++	blkio_set_start_group_wait_time(blkg, pol, curr_blkg);
  }
  
- static inline void cfqg_get(struct cfq_group *cfqg)
-@@ -1092,7 +1092,7 @@ static struct cfq_group *cfq_lookup_create_cfqg(struct cfq_data *cfqd,
- 	} else {
- 		struct blkio_group *blkg;
+ static inline void cfq_blkiocg_update_timeslice_used(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, unsigned long time,
+ 			unsigned long unaccounted_time)
+ {
+-	blkiocg_update_timeslice_used(blkg, pol, time, unaccounted_time);
+-}
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
  
--		blkg = blkg_lookup_create(blkcg, q, BLKIO_POLICY_PROP, false);
-+		blkg = blkg_lookup_create(blkcg, q, false);
- 		if (!IS_ERR(blkg))
- 			cfqg = blkg_to_cfqg(blkg);
- 	}
-@@ -3523,8 +3523,7 @@ static int cfq_init_queue(struct request_queue *q)
- 	rcu_read_lock();
- 	spin_lock_irq(q->queue_lock);
+-static inline void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol)
+-{
+-	blkiocg_set_start_empty_time(blkg, pol);
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	blkg_stat_add(&stats->time, time);
++#ifdef CONFIG_DEBUG_BLK_CGROUP
++	blkg_stat_add(&stats->unaccounted_time, unaccounted_time);
++#endif
+ }
  
--	blkg = blkg_lookup_create(&blkio_root_cgroup, q, BLKIO_POLICY_PROP,
--				  true);
-+	blkg = blkg_lookup_create(&blkio_root_cgroup, q, true);
- 	if (!IS_ERR(blkg))
- 		cfqd->root_group = blkg_to_cfqg(blkg);
+ static inline void cfq_blkiocg_update_io_remove_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, bool direction,
+ 			bool sync)
+ {
+-	blkiocg_update_io_remove_stats(blkg, pol, direction, sync);
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
++
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	blkg_rwstat_add(&stats->queued, rw, -1);
+ }
  
+ static inline void cfq_blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, bool direction,
+ 			bool sync)
+ {
+-	blkiocg_update_io_merged_stats(blkg, pol, direction, sync);
+-}
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
+ 
+-static inline void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol)
+-{
+-	blkiocg_update_idle_time_stats(blkg, pol);
+-}
++	lockdep_assert_held(blkg->q->queue_lock);
+ 
+-static inline void
+-cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol)
+-{
+-	blkiocg_update_avg_queue_size_stats(blkg, pol);
+-}
+-
+-static inline void
+-cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol)
+-{
+-	blkiocg_update_set_idle_time_stats(blkg, pol);
++	blkg_rwstat_add(&stats->merged, rw, 1);
+ }
+ 
+ static inline void cfq_blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, uint64_t bytes,
+ 			bool direction, bool sync)
+ {
+-	blkiocg_update_dispatch_stats(blkg, pol, bytes, direction, sync);
++	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
++	struct blkg_policy_data *pd = blkg->pd[pol->plid];
++	struct blkio_group_stats_cpu *stats_cpu;
++	unsigned long flags;
++
++	/* If per cpu stats are not allocated yet, don't do any accounting. */
++	if (pd->stats_cpu == NULL)
++		return;
++
++	/*
++	 * Disabling interrupts to provide mutual exclusion between two
++	 * writes on same cpu. It probably is not needed for 64bit. Not
++	 * optimizing that case yet.
++	 */
++	local_irq_save(flags);
++
++	stats_cpu = this_cpu_ptr(pd->stats_cpu);
++
++	blkg_stat_add(&stats_cpu->sectors, bytes >> 9);
++	blkg_rwstat_add(&stats_cpu->serviced, rw, 1);
++	blkg_rwstat_add(&stats_cpu->service_bytes, rw, bytes);
++
++	local_irq_restore(flags);
+ }
+ 
+ static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, uint64_t start_time,
+ 			uint64_t io_start_time, bool direction, bool sync)
+ {
+-	blkiocg_update_completion_stats(blkg, pol, start_time, io_start_time,
+-					direction, sync);
++	struct blkio_group_stats *stats = &blkg->pd[pol->plid]->stats;
++	unsigned long long now = sched_clock();
++	int rw = (direction ? REQ_WRITE : 0) | (sync ? REQ_SYNC : 0);
++
++	lockdep_assert_held(blkg->q->queue_lock);
++
++	if (time_after64(now, io_start_time))
++		blkg_rwstat_add(&stats->service_time, rw, now - io_start_time);
++	if (time_after64(io_start_time, start_time))
++		blkg_rwstat_add(&stats->wait_time, rw,
++				io_start_time - start_time);
+ }
+ 
+ #else	/* CONFIG_CFQ_GROUP_IOSCHED */
+@@ -489,29 +681,15 @@ static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol,
+ 			struct blkio_group *curr_blkg, bool direction,
+ 			bool sync) { }
+-static inline void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol, unsigned long dequeue) { }
+ static inline void cfq_blkiocg_update_timeslice_used(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, unsigned long time,
+ 			unsigned long unaccounted_time) { }
+-static inline void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol) { }
+ static inline void cfq_blkiocg_update_io_remove_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, bool direction,
+ 			bool sync) { }
+ static inline void cfq_blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, bool direction,
+ 			bool sync) { }
+-static inline void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg,
+-			struct blkio_policy_type *pol) { }
+-static inline void
+-cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg,
+-					struct blkio_policy_type *pol) { }
+-
+-static inline void
+-cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg,
+-				       struct blkio_policy_type *pol) { }
+-
+ static inline void cfq_blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, uint64_t bytes,
+ 			bool direction, bool sync) { }
 -- 
 1.7.7.3
 
