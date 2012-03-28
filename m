@@ -1,33 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762Ab2C1Ate (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 20:49:34 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55407 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757577Ab2C1Atd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 20:49:33 -0400
-Date: Wed, 28 Mar 2012 02:49:28 +0200
+	id S1757918Ab2C1Aum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 20:50:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31868 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757189Ab2C1Ark (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 20:47:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="146597552"
 From: Andi Kleen <andi@firstfloor.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] mm/memory_failure: Let the compiler add the function name
-Message-ID: <20120328004928.GU22197@one.firstfloor.org>
-References: <1332843450-7100-1-git-send-email-bp@amd64.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332843450-7100-1-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.4.2.2i
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        xfs-masters@oss.sgi.com
+Subject: [PATCH 05/13] XFS: Fix lock ASSERT on UP
+Date: Tue, 27 Mar 2012 17:47:09 -0700
+Message-Id: <1332895637-32572-6-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
+References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andi Kleen <ak@linux.intel.com>
 
-Fine for me. Andrew normally handles memory-failure.c patches these days.
+ASSERT(!spin_is_locked()) doesn't work on UP builds. Replace with a standard
+lockdep_assert_held()
 
+Cc: xfs-masters@oss.sgi.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ fs/xfs/xfs_iget.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
+index 8c3e463..8654d78 100644
+--- a/fs/xfs/xfs_iget.c
++++ b/fs/xfs/xfs_iget.c
+@@ -76,7 +76,7 @@ xfs_inode_alloc(
+ 	}
+ 
+ 	ASSERT(atomic_read(&ip->i_pincount) == 0);
+-	ASSERT(!spin_is_locked(&ip->i_flags_lock));
++	lockdep_assert_held(&ip->i_flags_lock);
+ 	ASSERT(!xfs_isiflocked(ip));
+ 	ASSERT(ip->i_ino == 0);
+ 
+@@ -147,7 +147,7 @@ xfs_inode_free(
+ 
+ 	/* asserts to verify all state is correct here */
+ 	ASSERT(atomic_read(&ip->i_pincount) == 0);
+-	ASSERT(!spin_is_locked(&ip->i_flags_lock));
++	lockdep_assert_held(&ip->i_flags_lock);
+ 	ASSERT(!xfs_isiflocked(ip));
+ 
+ 	/*
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.7.6
+
