@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab2C1SVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 14:21:45 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43662 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab2C1SVn (ORCPT
+	id S932620Ab2C1SYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 14:24:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36537 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932376Ab2C1SYR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 14:21:43 -0400
-Message-ID: <4F73568D.7000703@linux.vnet.ibm.com>
-Date: Wed, 28 Mar 2012 23:51:01 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Wed, 28 Mar 2012 14:24:17 -0400
 MIME-Version: 1.0
-To: Alan Meadows <alan.meadows@gmail.com>, Avi Kivity <avi@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com>
-In-Reply-To: <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12032818-9574-0000-0000-0000020295C5
+In-Reply-To: <4F714982.6020208@zytor.com>
+References: <1332787168-20457-1-git-send-email-vnagarnaik@google.com>
+ <1332787168-20457-5-git-send-email-vnagarnaik@google.com> <4F714982.6020208@zytor.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Wed, 28 Mar 2012 11:23:46 -0700
+Message-ID: <CAL26m8Jfb8bgfDLKZtn2LkYHD6uCccD3UcsSMbHtpnUKR5_mxw@mail.gmail.com>
+Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace handler
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        David Sharp <dhsharp@google.com>,
+        Justin Teravest <teravest@google.com>,
+        Laurent Chavey <chavey@google.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 09:39 PM, Alan Meadows wrote:
-> I am happy to see this issue receiving some attention and second the
-> wish to see these patches be considered for further review and inclusion
-> in an upcoming release.
+On Mon, Mar 26, 2012 at 10:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 03/26/2012 11:39 AM, Vaibhav Nagarnaik wrote:
+>> The syscalls are a tricky bunch to trace, because of their multitude and
+>> dynamic nature of the list. In order to solve this, a macro handled the
+>> sycalls handler definition and it was expanded into setting up the
+>> metadata for the syscall event. A handler hooked into the ptrace syscall
+>> tracer to check whether an invoked syscall was supposed to be traced.
+>>
+>> This added latency to all the invoked syscalls, since they had to be
+>> checked for tracing and also affected the latency of syscall that was
+>> actually getting traced. For e.g., using a simple program which invokes
+>> getuid() in a repeated loop and calculates the average time per syscall
+>> invocation found a latency of 570 - 117 = 453 ns added to every traced
+>> syscall.
+>>
+>> This patch changes the syscall macro expansion, to create a function
+>> that adds the entry and exit tracepoints for the given syscall so that
+>> the latency can be avoided. This was suggested by Mathieu Desnoyers in
+>> https://lkml.org/lkml/2010/10/13/337
+>>
+>> After this patch, the latency added is 370 - 117 = 253 ns per invocation
+>> of a traced syscall. This is on par with a simple tracepoint added to
+>> any kernel code path.
+>>
+>> This patch also makes syscall tracing architecture independent as there
+>> is no need to have a hook into the architecture specific syscall tracer
+>> functions.
+>>
 >
-> Overcommit is not as common in enterprise and single-tenant virtualized
-> environments as it is in multi-tenant environments, and frankly we have
-> been suffering.
->
-> We have been running an early copy of these patches in our lab and in a
-> small production node sample set both on3.2.0-rc4 and 3.3.0-rc6 for over
-> two weeks now with great success. With the heavy level of vCPU:pCPU
-> overcommit required for our situation, the patches are increasing
-> performance by an _order of magnitude_ on our E5645 and E5620 systems.
->
+> I am officially confused here.  You have a single, common, dispatch
+> point for all system calls -- why don't you use it?  That is of course
+> the system call table.  If you want to trace a system call, override the
+> entry point in the syscall table to point to a hook function which can
+> provide entry and exit hooks.  It's not even code, it's data, so you
+> don't even have to play the code patching song and dance routine
+> (although you may have to map it read/write which is normally not the
+> case for security reasons.)
 
-Thanks Alan for the support. I feel timing of this patch was little bad
-though. (merge window)
+I am sorry I don't see how that would be possible without having some
+sort of architecture dependent changes. Also as you mentioned, it will
+have some security considerations.
 
->
->
->         Looks like a good baseline on which to build the KVM
->         implementation.  We
->         might need some handshake to prevent interference on the host
->         side with
->         the PLE code.
->
+If you can suggest a better way without going through this macro
+magic, I will be glad to implement it. The 2 main reasons I made this
+patch was to remove the added latency in syscall tracing and to remove
+penalty for syscalls that are not traced.
 
-I think I still missed some point in Avi's comment. I agree that PLE
-may be interfering with above patches (resulting in less performance
-advantages). but we have not seen performance degradation with the
-patches in earlier benchmarks. [ theoretically since patch has very
-slight advantage over PLE that atleast it knows who should run next ].
 
-So TODO in my list on this is:
-1. More analysis of performance on PLE mc.
-2. Seeing how to implement handshake to increase performance (if PLE +
-patch combination have slight negative effect).
 
-Sorry that, I could not do more analysis on PLE (as promised last time)
-because of machine availability.
+Thanks
 
-I 'll do some work on this and comeback. But in the meantime, I do not
-see it as blocking for next merge window.
-
->
->     Avi, Thanks for reviewing. True, it is sort of equivalent to PLE on
->     non PLE machine.
->
->     Ingo, Peter,
->     Can you please let us know if this series can be considered for next
->     merge window?
->     OR do you still have some concerns that needs addressing.
->
->     I shall rebase patches to 3.3 and resend. (main difference would be
->     UNINLINE_SPIN_UNLOCK and jump label changes to use
->     static_key_true/false() usage instead of static_branch.)
-
+Vaibhav Nagarnaik
