@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758372Ab2C1QVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 12:21:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22965 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758118Ab2C1QVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 12:21:17 -0400
-Date: Wed, 28 Mar 2012 12:21:08 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Hagen Paul Pfeifer <hagen@jauu.net>, torvalds@linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+	id S1758421Ab2C1QWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 12:22:47 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55982 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754840Ab2C1QWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 12:22:46 -0400
+Message-ID: <1332951765.16535.38.camel@joe2Laptop>
+Subject: Re: [RFC] Remove most all #define pr_fmt(fmt) lines
+From: Joe Perches <joe@perches.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
-Message-ID: <20120328162108.GB2381@redhat.com>
-References: <1332943060-18374-1-git-send-email-hagen@jauu.net>
- <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Wed, 28 Mar 2012 09:22:45 -0700
+In-Reply-To: <20120328094609.GA3232@opensource.wolfsonmicro.com>
+References: <1332869030.2213.46.camel@joe2Laptop>
+	 <4F72BD4F.9020305@ladisch.de> <1332919803.16535.22.camel@joe2Laptop>
+	 <20120328094609.GA3232@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 04:09:24PM +0200, richard -rw- weinberger wrote:
-> On Wed, Mar 28, 2012 at 3:57 PM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> > High performance server sometimes create one listening socket (e.g. port
-> > 80), create a epoll file descriptor and add the socket. Afterwards
-> > create SC_NPROCESSORS_ONLN threads and wait for events. This often
-> > result in a thundering herd problem because all CPUs are scheduled.
-> >
-> > This patch add an additional flag to epoll_ctl(2) called EPOLLEXCLUSIVE.
-> > If a descriptor is added with this flag only one CPU is scheduled in.
-> >
-> > Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
-> > ---
-> > Dave rejected the patch and said not network specific. Because there
-> > is no epoll maintainer this time directly.
-> 
-> CC'ing maintainers for you...
-> Please use scripts/get_maintainer.pl.
-> 
+On Wed, 2012-03-28 at 10:46 +0100, Mark Brown wrote:
+> On Wed, Mar 28, 2012 at 12:30:03AM -0700, Joe Perches wrote:
+> > On Wed, 2012-03-28 at 09:27 +0200, Clemens Ladisch wrote:
+> > > Joe Perches wrote:
+> > > > +regulator-y := core.o dummy.o fixed-helper.o
+> > > > +regulator-objs := $(regulator-y)
+> > > > -obj-$(CONFIG_REGULATOR) += core.o dummy.o fixed-helper.o
+> > > > +obj-$(CONFIG_REGULATOR) += regulator.o
+> > > > Any objections or other suggestions/improvements?
+> This seems an incredibly obscure approach.
+> > > Instead of doing a Makefile change that has no _obvious_ connection with
+> > > printk, wouldn't it be better to just define pr_fmt with "regulator: "?
+> This seems like a much better idea if we're going to do anything; it
+> means that we don't end up embedding module names in things (which are
+> after all a bit of an implementation detail) and get to pick the name so
+> we can do something like get the prefix which is used for the symbols in
+> the code even if things are split over multiple modules.
 
-Hmmm...Looking at ep_poll() it does an '__add_wait_queue_exclusive()'.
-So, I *think* epoll_wait() should do what you want, if you are waiting
-on the same epfd in all the threads.
+A negative is that requires #defines in multiple
+source files or rearranging #includes to centralize
+that #define.
 
-I think the case you are describing is where each thread does its own
-ep_create(), and then a subsequent epoll_wait() on the fd from the
-create?
+A negative of the Makefile approach is the name is
+obscurely chosen.  A positive is it's only chosen
+once.
 
-So, I *think* you can get what you want without adding this flag.
+> In the case above we don't support modular build in the first place.
 
-Thanks,
+Unrelated but is there any particular reason why
+the regulator core code couldn't be build as a
+module?
 
--Jason
