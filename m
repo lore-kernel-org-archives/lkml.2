@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab2C1Gom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 02:44:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:25773 "EHLO mga14.intel.com"
+	id S1752584Ab2C1Gol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:44:41 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:49150 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935Ab2C1GnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751943Ab2C1GnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Mar 2012 02:43:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="82461620"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com
-Cc: linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Subject: [PATCH 1/5] perf: Export perf_assign_events
-Date: Wed, 28 Mar 2012 14:43:14 +0800
-Message-Id: <1332916998-10628-2-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
-References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
+Date: Wed, 28 Mar 2012 08:43:21 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: [PATCH 2/3] padata: Use the online cpumask as the default
+Message-ID: <20120328064321.GF16191@secunet.com>
+References: <20120328064157.GD16191@secunet.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328064157.GD16191@secunet.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 28 Mar 2012 06:43:21.0484 (UTC) FILETIME=[112124C0:01CD0CAE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+We use the active cpumask to determine the superset of cpus
+to use for parallelization. However, the active cpumask is
+for internal usage of the scheduler and therefore not the
+appropriate cpumask for these purposes. So use the online
+cpumask instead.
 
-Export perf_assign_events so the uncore code can use it to
-schedule events.
-
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |    6 +++---
- arch/x86/kernel/cpu/perf_event.h |    2 ++
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ kernel/padata.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index bb8e034..70e5784 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -640,7 +640,7 @@ static bool __perf_sched_find_counter(struct perf_sched *sched)
- 	c = sched->constraints[sched->state.event];
+diff --git a/kernel/padata.c b/kernel/padata.c
+index 7875088..de3d0d9 100644
+--- a/kernel/padata.c
++++ b/kernel/padata.c
+@@ -356,13 +356,13 @@ static int padata_setup_cpumasks(struct parallel_data *pd,
+ 	if (!alloc_cpumask_var(&pd->cpumask.pcpu, GFP_KERNEL))
+ 		return -ENOMEM;
  
- 	/* Prefer fixed purpose counters */
--	if (x86_pmu.num_counters_fixed) {
-+	if (c->idxmsk64 & ((u64)-1 << X86_PMC_IDX_FIXED)) {
- 		idx = X86_PMC_IDX_FIXED;
- 		for_each_set_bit_from(idx, c->idxmsk, X86_PMC_IDX_MAX) {
- 			if (!__test_and_set_bit(idx, sched->state.used))
-@@ -707,8 +707,8 @@ static bool perf_sched_next_event(struct perf_sched *sched)
- /*
-  * Assign a counter for each event.
-  */
--static int perf_assign_events(struct event_constraint **constraints, int n,
--			      int wmin, int wmax, int *assign)
-+int perf_assign_events(struct event_constraint **constraints, int n,
-+			int wmin, int wmax, int *assign)
+-	cpumask_and(pd->cpumask.pcpu, pcpumask, cpu_active_mask);
++	cpumask_and(pd->cpumask.pcpu, pcpumask, cpu_online_mask);
+ 	if (!alloc_cpumask_var(&pd->cpumask.cbcpu, GFP_KERNEL)) {
+ 		free_cpumask_var(pd->cpumask.cbcpu);
+ 		return -ENOMEM;
+ 	}
+ 
+-	cpumask_and(pd->cpumask.cbcpu, cbcpumask, cpu_active_mask);
++	cpumask_and(pd->cpumask.cbcpu, cbcpumask, cpu_online_mask);
+ 	return 0;
+ }
+ 
+@@ -566,7 +566,7 @@ EXPORT_SYMBOL(padata_unregister_cpumask_notifier);
+ static bool padata_validate_cpumask(struct padata_instance *pinst,
+ 				    const struct cpumask *cpumask)
  {
- 	struct perf_sched sched;
+-	if (!cpumask_intersects(cpumask, cpu_active_mask)) {
++	if (!cpumask_intersects(cpumask, cpu_online_mask)) {
+ 		pinst->flags |= PADATA_INVALID;
+ 		return false;
+ 	}
+@@ -680,7 +680,7 @@ static int __padata_add_cpu(struct padata_instance *pinst, int cpu)
+ {
+ 	struct parallel_data *pd;
  
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 6638aaf..e6dfc00 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -466,6 +466,8 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
- 
- void x86_pmu_enable_all(int added);
- 
-+int perf_assign_events(struct event_constraint **constraints, int n,
-+			int wmin, int wmax, int *assign);
- int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign);
- 
- void x86_pmu_stop(struct perf_event *event, int flags);
+-	if (cpumask_test_cpu(cpu, cpu_active_mask)) {
++	if (cpumask_test_cpu(cpu, cpu_online_mask)) {
+ 		pd = padata_alloc_pd(pinst, pinst->cpumask.pcpu,
+ 				     pinst->cpumask.cbcpu);
+ 		if (!pd)
 -- 
-1.7.7.6
+1.7.0.4
 
