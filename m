@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab2C1NkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:40:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44325 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab2C1NkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:40:22 -0400
-Date: Wed, 28 Mar 2012 15:40:20 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 04/10] memcg: Add HugeTLB extension
-Message-ID: <20120328134020.GG20949@tiehlicka.suse.cz>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1757992Ab2C1Nsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:48:32 -0400
+Received: from mail.meprolight.com ([194.90.149.17]:49714 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757857Ab2C1Nsa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 09:48:30 -0400
+From: Alex Gershgorin <alexg@meprolight.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "marc.reilly@gmail.com" <marc.reilly@gmail.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+Date: Wed, 28 Mar 2012 15:48:02 +0200
+Subject: RE: [PATCH v1] mfd: mc13xxx: add I2C support fix building for v3.3
+Thread-Topic: [PATCH v1] mfd: mc13xxx: add I2C support fix building for v3.3
+Thread-Index: Ac0M5yfo7f76SVrtTuevUGQXl/rIsQAAOt6+
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD23@MEP-EXCH.meprolight.com>
+References: <1332846260-18145-1-git-send-email-alexg@meprolight.com>,<20120328133220.GR3232@opensource.wolfsonmicro.com>
+In-Reply-To: <20120328133220.GR3232@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331919570-2264-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-03-12 23:09:24, Aneesh Kumar K.V wrote:
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6728a7a..4b36c5e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -4887,6 +5013,7 @@ err_cleanup:
->  static struct cgroup_subsys_state * __ref
->  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->  {
-> +	int idx;
->  	struct mem_cgroup *memcg, *parent;
->  	long error = -ENOMEM;
->  	int node;
-> @@ -4929,9 +5056,14 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->  		 * mem_cgroup(see mem_cgroup_put).
->  		 */
->  		mem_cgroup_get(parent);
-> +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
-> +			res_counter_init(&memcg->hugepage[idx],
-> +					 &parent->hugepage[idx]);
+Hi Mark,
 
-Hmm, I do not think we want to make groups deeper in the hierarchy
-unlimited as we cannot reclaim. Shouldn't we copy the limit from the parent?
-Still not ideal but slightly more expected behavior IMO.
+> This patch fixes the following compilation errors,
+> when using a series mc13xxx-add-I2C-support-V4
 
-The hierarchy setups are still interesting and the limitations should be
-described in the documentation...
+> 1)
+> drivers/mfd/mc13xxx-spi.c:50: error: unknown field 'pad_bits'
+> specified in initializer
 
->  	} else {
->  		res_counter_init(&memcg->res, NULL);
->  		res_counter_init(&memcg->memsw, NULL);
-> +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
-> +			res_counter_init(&memcg->hugepage[idx], NULL);
->  	}
->  	memcg->last_scanned_node = MAX_NUMNODES;
->  	INIT_LIST_HEAD(&memcg->oom_notify);
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> >This (and probably some of the other stuff) is already merged.  Is this
+> > just a backport of stuff for 3.4/5 to enable testing on 3.3 or are there
+> >any errors that need to be fixed in the relevant places?
+
+Yes, you're right for v3.4 is not need.
+I'll send a patch for v3.4 
+
+Regards
+Alex Gershgorin
