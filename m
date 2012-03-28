@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363Ab2C1Xgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 19:36:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48125 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758517Ab2C1Xgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 19:36:46 -0400
+	id S1758787Ab2C1XmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 19:42:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43084 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758424Ab2C1Xl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 19:41:58 -0400
+Date: Wed, 28 Mar 2012 19:41:45 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Len Brown <len.brown@intel.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH v3] x86: Remove deprecated disable_hlt and enable_hlt
+Message-ID: <20120328234144.GJ1997@zod.bos.redhat.com>
+References: <20120328150300.GH1997@zod.bos.redhat.com>
+ <20120328163110.a8f0e9ba.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <E1SCEK7-0008CY-LJ@tytso-glaptop.cam.corp.google.com>
-References: <E1SCEK7-0008CY-LJ@tytso-glaptop.cam.corp.google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Mar 2012 16:36:23 -0700
-X-Google-Sender-Auth: STT2maxoPShcnuY5r6RaOrbX5KM
-Message-ID: <CA+55aFwxWZ9-xLsZoi+iFMjkt-+V64q4jfMz=dampgJrMX5Ncw@mail.gmail.com>
-Subject: Re: GIT PULL] ext4 updates for 3.4
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328163110.a8f0e9ba.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 11:07 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->
-> Ext4 commits for 3.3 merge window; mostly cleanups and bug fixes
+On Wed, Mar 28, 2012 at 04:31:10PM -0700, Andrew Morton wrote:
+> On Wed, 28 Mar 2012 11:03:00 -0400
+> Josh Boyer <jwboyer@redhat.com> wrote:
+> 
+> > From: Len Brown <lenb@intel.com>
+> 
+> Nope, it's lenb@kernel.org and/or len.brown@intel.com.
+> 
+> I've been using both addresses for Len lately - I think some people's
+> @kernel.org addresses are now dead.  I don't know about Len, but mine
+> has died and I haven't set about working out how to resurrect it.
 
-Ted, is there any chance that the dirty handling (or something else)
-has some serious latency bug?
+Well, crap.  I got the S-o-b and CC right.  Not sure how I flubbed that.
+Sorry Len.
 
-I'm compiling an allmodconfig kernel, and my mouse is (sometimes) very
-erratic with bad latency. And the biggest changes in the kernel I'm
-running on that machine now (HEAD=529b73fc0a97) and the previous boot
-of that machine (HEAD=e22057c85993) are the ext4 changes.
-
-(Sure, there are tons of other changes in between, but they tend to be
-ARM changes or drivers that are irrelevant).
-
-It may be that the bad interactive behavior started earlier, but I'd
-have expected to notice it - it really is pretty bad, and I've been
-doing allmodconfig builds pretty regularly.
-
-(Adding Jan and Fengguang to the cc too, in case it's that
-inode_sync_wait() change that *should* be a no-op, but maybe somebody
-overlooked something)
-
-NOTE! Latency normally is perfectly fine. Then *occasionally*
-something bad happens, and it's horrible for a while. I have no idea
-what triggers it. It's a regular "make -j16" of an x86-64 allmodconfig
-build, and that should *not* be nearly enough to make this machine
-stutter noticeably enough for the mouse pointer to not move smoothly.
-
-I have no real data for this, though - just a "mouse pointer
-occasionally freezing up". So I'm looking for a potential "hmm, that
-makes me wonder if..." kind of reaction.
-
-                                Linus
+josh
