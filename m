@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab2C1IkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 04:40:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33537 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab2C1IkF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 04:40:05 -0400
-Message-ID: <1332923983.2528.12.camel@twins>
-Subject: Re: [PATCH 08/32] nohz: Try not to give the timekeeping duty to an
- adaptive tickless cpu
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zen Lin <zen@openhuawei.org>,
-        Dimitri Sivanich <sivanich@sgi.com>
-Date: Wed, 28 Mar 2012 10:39:43 +0200
-In-Reply-To: <alpine.DEB.2.00.1203271943320.11825@router.home>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	 <1332338318-5958-10-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1203210950500.20482@router.home>
-	 <20120327105034.GA13196@somewhere>
-	 <alpine.DEB.2.00.1203271106130.1170@router.home>
-	 <1332866823.16159.246.camel@twins>
-	 <alpine.DEB.2.00.1203271943320.11825@router.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S1757454Ab2C1ImU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 04:42:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57224 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757005Ab2C1ImS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 04:42:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="146818013"
+Message-ID: <1332924282.31549.51.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Wed, 28 Mar 2012 11:44:42 +0300
+In-Reply-To: <20120327201401.GF5020@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	 <20120322095342.GC14485@quack.suse.cz>
+	 <1332410747.18717.12.camel@sauron.fi.intel.com>
+	 <20120322103309.GA14484@quack.suse.cz>
+	 <1332854998.31549.40.camel@sauron.fi.intel.com>
+	 <20120327201401.GF5020@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-3KYVoE89Y+OMF7K4ujD+"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-27 at 20:12 -0500, Christoph Lameter wrote:
-> On Tue, 27 Mar 2012, Peter Zijlstra wrote:
-> 
-> > On Tue, 2012-03-27 at 11:08 -0500, Christoph Lameter wrote:
-> > >
-> > > I wish you would disentangle the nohz work from the cpusets. Cpusets is
-> > > aged and being replaced by cgroups. And the cgroup work is something that
-> > > is not suitable for many loads given the VM overhead added.
-> >
-> > What VM overhead? Are you talking about the memcg nonsense? That's
-> > entirely optional, you don't need to either build that or enable it.
-> 
-> cgroups in general cause a much more complex VM processing with multiple
-> LRUs and additional checks in various places.
 
-Uhm, not if you don't have the memcg thing enabled, the controllers are
-separate.
+--=-3KYVoE89Y+OMF7K4ujD+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Even just adding cpusets enables the group scheduler functionality f.e.
-> which creates significantly larger scheduling latencies. Also complicates
-> key allocation VM paths etc etc.
+Thanks for the patches.
 
-No, you're mistaken.
+On Tue, 2012-03-27 at 22:14 +0200, Jan Kara wrote:
+> @@ -181,9 +181,22 @@ static int ext4_file_open(struct inode * inode, stru=
+ct file * filp)
+>                 path.dentry =3D mnt->mnt_root;
+>                 cp =3D d_path(&path, buf, sizeof(buf));
+>                 if (!IS_ERR(cp)) {
+> +                       handle_t *handle;
+> +                       int err;
+> +
+> +                       handle =3D ext4_journal_start_sb(sb, 1);
+> +                       if (IS_ERR(handle))
+> +                               return PTR_ERR(handle);
+> +                       err =3D ext4_journal_get_write_access(handle,
+> +                                                           EXT4_SB(sb)->=
+s_sbh);
 
-Its perfectly possible to compile a kernel with
+Why do we need to bother with journal in this case - AFAIU, we update a
+single field, not critical, and we do not really need the journal for
+this - we can just call 'mark_buffer_dirty(sbi->s_sbh)' and let the SB
+be written out directly and asynchronously.
 
-CONFIG_CGROUPS=y
-CONFIG_CPUSETS=y
-CONFIG_CGROUP_MEM_RES_CTLR=n
-CONFIG_CGROUP_SCHED=n
+--=20
+Best Regards,
+Artem Bityutskiy
 
-That will give you cpusets, but not the cpu (sched) controller crap and
-not the memcg (vm) controller muck.
+--=-3KYVoE89Y+OMF7K4ujD+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-> > And if we ever get rid of that multiple hierarchy nonsense I don't see a
-> > reason to get rid of cpuset at all. The only reason to want to replace
-> > it is to avoid the dis-joint-ness it has with the cpu controller (and
-> > possible the memcg one).
-> 
-> I like cpusets much more than cgroups. I agree with you.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-cpusets is a cgroup controller..
+iQIcBAABAgAGBQJPcs96AAoJECmIfjd9wqK0q1sP/38MOoiqRN4TEnKk7Bdij6qC
+oz44mvkaoeta0KTE+NxZ9oIrl57VzAGkZBj5Fmb+ch5T/be47EjSDSHxu/0cbrdj
+HSQeYwZfQQiD0datJsGtCYJNfV0h9FvOPXsZLeAZHBpfUskEX5VIf4XGgFlLGBii
+juMc56JHvHTdyHC6NJ0eJSu1DTXanhRUdL3YA8++YIOZ6Rmml1u7SBAdNNgkz6Jb
+4dh8NwR5sR9kmBmx3PNBj6IqUaxIJTZs5PLpQ4L1LQYHMFJ7gg3o/7ZF5pebAxpw
+6m5S108xDrL+hELqVduryE8cWA6EWaJEYrzvOFCWfpr0+BU1niGFbTSP7UIqs1qC
+4co5nTswK1UtJ9zQCQrGMgKFPNU8e2tGl1QBiwtqQCiX1+frZPF8Z9mw14i3N+7v
+BtG1CwAMw1h9PO/3y2PdXR4LB7l8QPa2N38l6+nILdb6pZrpDLljYGRJEa/+IiJj
+wv+d/wUbLVxu0dmzr729Jfvc9W0iSchr+qE0roseP+0pUaka5/sHedjsJA6bKBt0
+6xA+fvGuM7AIvFLO9rzdV1XPi/IZXZqUSuqEP1nxBHpWPjIUAF0BKbpVjanRV7Uk
+gQ4aq2mKl3XnSvdB82jUgZsOeV4mpbpHKlQEhkArCaRvHRQzW2E2lw5B7ec/y+DR
+Fzo2DU2G1n6hul9BwCD5
+=c5BY
+-----END PGP SIGNATURE-----
 
-> But I am not sure that cpusets are needed for nohz. We already have an
-> isolcpu set and it sounds to me that nohz is generally useful.
-
-I really really want to kill isolcpu in favour of cpusets, the amount of
-disparity and overlap in features is driving me insane.
-
-isolcpu will only create separate cpus, you can do the same with cpusets
-by creating 1 cpu sets and disabling load_balance on the root set.
-
-The only difference is that isolcpu will never have had a task running
-on the cpu and hence its timer lists etc will be guaranteed empty. So
-once we add an interface to push away and/or wait for a cpu to quiesce
-we should end up with the same state.
-
-At that point I'll rip isolcpu out. 
-
-> It would seem that the nohz patches would be much simpler if it would not
-> require cpusets to administer. The only thing that would be needed is to
-> have one cpu that is not subject to nohz. The logical choice is a
-> timekeeper cpu (which is usually cpu 0). Having that configurable would be
-> an extra bonus.
-
-Like Frederic has been telling, the nohz stuff adds syscall overhead, it
-needs to timestamp on kernel entry/exit etc.. Making it unconditional
-will add this overhead to everybody and this might not be acceptable.
-
-
+--=-3KYVoE89Y+OMF7K4ujD+--
 
