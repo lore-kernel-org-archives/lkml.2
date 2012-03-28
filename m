@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab2C1OXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:23:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62903 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757571Ab2C1OXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:23:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124321358"
-Message-Id: <20120328121308.568545879@intel.com>
-User-Agent: quilt/0.51-1
-Date: Wed, 28 Mar 2012 20:13:08 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Linux Memory Management List <linux-mm@kvack.org>
-cc: Vivek Goyal <vgoyal@redhat.com>
-cc: Suresh Jayaraman <sjayaraman@suse.com>,
-        Andrea Righi <andrea@betterlinux.com>
-cc: Jeff Moyer <jmoyer@redhat.com>
-cc: <linux-fsdevel@vger.kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
+	id S1758170Ab2C1O0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:26:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64206 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755707Ab2C1O0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 10:26:54 -0400
+Message-ID: <4F731FAA.5040708@gmail.com>
+Date: Wed, 28 Mar 2012 09:26:50 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL 0/5] Second batch of arm-soc changes
+References: <1332918842-13521-1-git-send-email-olof@lixom.net>
+In-Reply-To: <1332918842-13521-1-git-send-email-olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/28/2012 02:13 AM, Olof Johansson wrote:
+> Hi Linus,
+> 
+> Here is the second batch of arm-soc changes for this merge window. As Arnd
+> mentioned with the first cover letter, most of these either had external
+> dependencies that have now been pulled in, or just needed a bit more
+> linux-next bake time due to getting picked up close to the 3.3 release.
+> 
+> 
+> There are 128 non-merge patches, with a total diffstat of:
+> 
+>  346 files changed, 10790 insertions(+), 2792 deletions(-)
+> 
+> So, while there's been some good cleanups especially in the first branch,
+> there's been a net addition of code:
+> 
+> * New SoC family support for Samsung EXYNOS5250: clock tables, driver
+>   updates, etc means net gain in code.
+> * Added device tree conversions. Once we start to sunset non-device tree
+>   boards on the enabled platforms, we should see payback in code removal.
+> * Common clock framework. As SoCs get converted over to the framework,
+>   we should see more code removal from this as well.
+> 
+> 
+> There are a handful of merge conflicts on the branches, nothing that
+> should be too messy to sort out. I've described each conflict in the
+> corresponding pull request, including how we've resolved them in our
+> for-next branch.
+> 
 
-Here is one possible solution to "buffered write IO controller", based on Linux
-v3.3
+Why isn't lakml getting copied on emails 1-5? The same thing happened
+with Arnd's pull request. Are they getting hung up for moderator approval?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git  buffered-write-io-controller
-
-Features:
-- support blkio.weight
-- support blkio.throttle.buffered_write_bps
-
-Possibilities:
-- it's trivial to support per-bdi .weight or .buffered_write_bps
-
-Pros:
-1) simple
-2) virtually no space/time overheads
-3) independent of the block layer and IO schedulers, hence
-3.1) supports all filesystems/storages, eg. NFS/pNFS, CIFS, sshfs, ...
-3.2) supports all IO schedulers. One may use noop for SSDs, inside virtual machines, over iSCSI, etc.
-
-Cons:
-1) don't try to smooth bursty IO submission in the flusher thread (*)
-2) don't support IOPS based throttling
-3) introduces semantic differences to blkio.weight, which will be
-   - working by "bandwidth" for buffered writes
-   - working by "device time" for direct IO
-
-(*) Maybe not a big concern, since the bursties are limited to 500ms: if one dd
-is throttled to 50% disk bandwidth, the flusher thread will be waking up on
-every 1 second, keep the disk busy for 500ms and then go idle for 500ms; if
-throttled to 10% disk bandwidth, the flusher thread will wake up on every 5s,
-keep busy for 500ms and stay idle for 4.5s.
-
-The test results included in the last patch look pretty good in despite of the
-simple implementation.
-
- [PATCH 1/6] blk-cgroup: move blk-cgroup.h in include/linux/blk-cgroup.h
- [PATCH 2/6] blk-cgroup: account dirtied pages
- [PATCH 3/6] blk-cgroup: buffered write IO controller - bandwidth weight
- [PATCH 4/6] blk-cgroup: buffered write IO controller - bandwidth limit
- [PATCH 5/6] blk-cgroup: buffered write IO controller - bandwidth limit interface
- [PATCH 6/6] blk-cgroup: buffered write IO controller - debug trace
-
-The changeset is dominated by the blk-cgroup.h move.
-The core changes (to page-writeback.c) are merely 77 lines.
-
- block/blk-cgroup.c               |   27 +
- block/blk-cgroup.h               |  364 --------------------------
- block/blk-throttle.c             |    2 
- block/cfq.h                      |    2 
- include/linux/blk-cgroup.h       |  396 +++++++++++++++++++++++++++++
- include/trace/events/writeback.h |   34 ++
- mm/page-writeback.c              |   77 +++++
- 7 files changed, 530 insertions(+), 372 deletions(-)
-
-Thanks,
-Fengguang
-
+Rob
