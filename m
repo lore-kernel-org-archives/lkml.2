@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467Ab2C1AQA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 20:16:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754997Ab2C1AP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 20:15:59 -0400
-Date: Tue, 27 Mar 2012 20:15:50 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-ID: <20120328001550.GA3077@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120313182220.GA11500@redhat.com>
- <20120327155149.d41a235b.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327155149.d41a235b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756934Ab2C1AQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 20:16:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21403 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755736Ab2C1AQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Mar 2012 20:16:24 -0400
+X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5BTByhnut4wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=b8VgSBC0AAAA:8 a=zkbMhFB6tdBLrs_B_HwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332893782.23924.140.camel@gandalf.stny.rr.com>
+Subject: Re: [BUG] Warning at radeon_object.c:236 with latest Linus kernel
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        David Airlie <airlied@linux.ie>,
+        Michel =?UTF-8?Q?D=C3=83=E2=82=ACnzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Date: Tue, 27 Mar 2012 20:16:22 -0400
+In-Reply-To: <1332893642.23924.139.camel@gandalf.stny.rr.com>
+References: <1332893642.23924.139.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 03:51:49PM -0700, Andrew Morton wrote:
- > On Tue, 13 Mar 2012 14:22:20 -0400
- > Dave Jones <davej@redhat.com> wrote:
- > 
- > > This size is user controllable, and so it's trivial for someone to trigger a
- > > stream of order:4 page allocation errors.
- > > 
- > > Signed-off-by: Dave Jones <davej@redhat.com>
- > > 
- > > --- 
- > > There's also a similar problem in setxattr, but I'm not sure how we want
- > > to pass NOWARN down to memdup_user. Thoughts ?
- > > 
- > > diff --git a/fs/xattr.c b/fs/xattr.c
- > > index 82f4337..544df90 100644
- > > --- a/fs/xattr.c
- > > +++ b/fs/xattr.c
- > > @@ -496,7 +496,7 @@ listxattr(struct dentry *d, char __user *list, size_t size)
- > >  	if (size) {
- > >  		if (size > XATTR_LIST_MAX)
- > >  			size = XATTR_LIST_MAX;
- > > -		klist = kmalloc(size, GFP_KERNEL);
- > > +		klist = kmalloc(size, __GFP_NOWARN | GFP_KERNEL);
- > >  		if (!klist)
- > >  			return -ENOMEM;
- > >  	}
- > 
- > hm.  The patch is good, but one would hope that it isn't "trivial" to
- > trigger a page allocation failure for a kmalloc(65536, GFP_KERNEL) -
- > the VM is supposed to be able to handle that.
- > 
- > Is it really *that* easy, or is Something Unusual happening with that
- > machine?
+On Tue, 2012-03-27 at 20:14 -0400, Steven Rostedt wrote:
+> You can get the full dmesg here:
+> 
+> http://rostedt.homelinux.com/private/dmesg-bxf-20120327
 
-Well, the unusual thing was that I was fuzzing system calls for a few hours.
 
-My fuzzing tool was able to trigger these very easily after an hour or two
-of uptime and memory had fragmented a little, so yeah, quite trivial.
+And the config is here:
 
-	Dave
+http://rostedt.homelinux.com/private/config-bxf-20120327
+
+-- Steve
+
+
