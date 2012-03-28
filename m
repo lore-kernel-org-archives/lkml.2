@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758372Ab2C1PJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 11:09:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:24387 "EHLO relay.sw.ru"
+	id S1758404Ab2C1PKB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 11:10:01 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:20576 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758342Ab2C1PJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 11:09:49 -0400
-Subject: [PATCH 7/8] nfsd: pass pointer to export cache down to stack wherever
+	id S1758378Ab2C1PKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 11:10:00 -0400
+Subject: [PATCH 8/8] nfsd: pass pointer to expkey cache down to stack wherever
  possible.
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 28 Mar 2012 19:09:42 +0400
-Message-ID: <20120328150942.2646.9920.stgit@localhost6.localdomain6>
+Date: Wed, 28 Mar 2012 19:09:50 +0400
+Message-ID: <20120328150950.2646.70232.stgit@localhost6.localdomain6>
 In-Reply-To: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
 References: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -32,152 +32,116 @@ Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfsd/export.c |   37 ++++++++++++++++++++++---------------
- 1 files changed, 22 insertions(+), 15 deletions(-)
+ fs/nfsd/export.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
 
 diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index 9fe7156..c237b0a 100644
+index c237b0a..429b2f5 100644
 --- a/fs/nfsd/export.c
 +++ b/fs/nfsd/export.c
-@@ -785,8 +785,8 @@ exp_find_key(svc_client *clp, int fsid_type, u32 *fsidv, struct cache_req *reqp)
+@@ -71,9 +71,9 @@ static int expkey_upcall(struct cache_detail *cd, struct cache_head *h)
+ 	return sunrpc_cache_pipe_upcall(cd, h, expkey_request);
  }
  
+-static struct svc_expkey *svc_expkey_update(struct svc_expkey *new, struct svc_expkey *old);
+-static struct svc_expkey *svc_expkey_lookup(struct svc_expkey *);
+-static struct cache_detail svc_expkey_cache;
++static struct svc_expkey *svc_expkey_update(struct cache_detail *cd, struct svc_expkey *new,
++					    struct svc_expkey *old);
++static struct svc_expkey *svc_expkey_lookup(struct cache_detail *cd, struct svc_expkey *);
  
--static svc_export *exp_get_by_name(svc_client *clp, const struct path *path,
--				     struct cache_req *reqp)
-+static svc_export *exp_get_by_name(struct cache_detail *cd, svc_client *clp,
-+				   const struct path *path, struct cache_req *reqp)
+ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
  {
- 	struct svc_export *exp, key;
+@@ -131,7 +131,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
+ 	key.ek_fsidtype = fsidtype;
+ 	memcpy(key.ek_fsid, buf, len);
+ 
+-	ek = svc_expkey_lookup(&key);
++	ek = svc_expkey_lookup(cd, &key);
+ 	err = -ENOMEM;
+ 	if (!ek)
+ 		goto out;
+@@ -145,7 +145,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
+ 	err = 0;
+ 	if (len == 0) {
+ 		set_bit(CACHE_NEGATIVE, &key.h.flags);
+-		ek = svc_expkey_update(&key, ek);
++		ek = svc_expkey_update(cd, &key, ek);
+ 		if (!ek)
+ 			err = -ENOMEM;
+ 	} else {
+@@ -155,7 +155,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
+ 
+ 		dprintk("Found the path %s\n", buf);
+ 
+-		ek = svc_expkey_update(&key, ek);
++		ek = svc_expkey_update(cd, &key, ek);
+ 		if (!ek)
+ 			err = -ENOMEM;
+ 		path_put(&key.ek_path);
+@@ -268,13 +268,12 @@ svc_expkey_hash(struct svc_expkey *item)
+ }
+ 
+ static struct svc_expkey *
+-svc_expkey_lookup(struct svc_expkey *item)
++svc_expkey_lookup(struct cache_detail *cd, struct svc_expkey *item)
+ {
+ 	struct cache_head *ch;
+ 	int hash = svc_expkey_hash(item);
+ 
+-	ch = sunrpc_cache_lookup(&svc_expkey_cache, &item->h,
+-				 hash);
++	ch = sunrpc_cache_lookup(cd, &item->h, hash);
+ 	if (ch)
+ 		return container_of(ch, struct svc_expkey, h);
+ 	else
+@@ -282,13 +281,13 @@ svc_expkey_lookup(struct svc_expkey *item)
+ }
+ 
+ static struct svc_expkey *
+-svc_expkey_update(struct svc_expkey *new, struct svc_expkey *old)
++svc_expkey_update(struct cache_detail *cd, struct svc_expkey *new,
++		  struct svc_expkey *old)
+ {
+ 	struct cache_head *ch;
+ 	int hash = svc_expkey_hash(new);
+ 
+-	ch = sunrpc_cache_update(&svc_expkey_cache, &new->h,
+-				 &old->h, hash);
++	ch = sunrpc_cache_update(cd, &new->h, &old->h, hash);
+ 	if (ch)
+ 		return container_of(ch, struct svc_expkey, h);
+ 	else
+@@ -763,7 +762,8 @@ svc_export_update(struct svc_export *new, struct svc_export *old)
+ 
+ 
+ static struct svc_expkey *
+-exp_find_key(svc_client *clp, int fsid_type, u32 *fsidv, struct cache_req *reqp)
++exp_find_key(struct cache_detail *cd, svc_client *clp, int fsid_type,
++	     u32 *fsidv, struct cache_req *reqp)
+ {
+ 	struct svc_expkey key, *ek;
  	int err;
-@@ -796,12 +796,12 @@ static svc_export *exp_get_by_name(svc_client *clp, const struct path *path,
+@@ -775,10 +775,10 @@ exp_find_key(svc_client *clp, int fsid_type, u32 *fsidv, struct cache_req *reqp)
+ 	key.ek_fsidtype = fsid_type;
+ 	memcpy(key.ek_fsid, fsidv, key_len(fsid_type));
  
- 	key.ex_client = clp;
- 	key.ex_path = *path;
--	key.cd = &svc_export_cache;
-+	key.cd = cd;
- 
- 	exp = svc_export_lookup(&key);
- 	if (exp == NULL)
+-	ek = svc_expkey_lookup(&key);
++	ek = svc_expkey_lookup(cd, &key);
+ 	if (ek == NULL)
  		return ERR_PTR(-ENOMEM);
--	err = cache_check(&svc_export_cache, &exp->h, reqp);
-+	err = cache_check(cd, &exp->h, reqp);
+-	err = cache_check(&svc_expkey_cache, &ek->h, reqp);
++	err = cache_check(cd, &ek->h, reqp);
  	if (err)
  		return ERR_PTR(err);
- 	return exp;
-@@ -810,16 +810,17 @@ static svc_export *exp_get_by_name(svc_client *clp, const struct path *path,
- /*
-  * Find the export entry for a given dentry.
-  */
--static struct svc_export *exp_parent(svc_client *clp, struct path *path)
-+static struct svc_export *exp_parent(struct cache_detail *cd, svc_client *clp,
-+				     struct path *path)
- {
- 	struct dentry *saved = dget(path->dentry);
--	svc_export *exp = exp_get_by_name(clp, path, NULL);
-+	svc_export *exp = exp_get_by_name(cd, clp, path, NULL);
- 
- 	while (PTR_ERR(exp) == -ENOENT && !IS_ROOT(path->dentry)) {
- 		struct dentry *parent = dget_parent(path->dentry);
- 		dput(path->dentry);
- 		path->dentry = parent;
--		exp = exp_get_by_name(clp, path, NULL);
-+		exp = exp_get_by_name(cd, clp, path, NULL);
- 	}
- 	dput(path->dentry);
- 	path->dentry = saved;
-@@ -834,13 +835,15 @@ static struct svc_export *exp_parent(svc_client *clp, struct path *path)
-  * since its harder to fool a kernel module than a user space program.
-  */
- int
--exp_rootfh(svc_client *clp, char *name, struct knfsd_fh *f, int maxsize)
-+exp_rootfh(svc_client *clp, char *name,
-+	   struct knfsd_fh *f, int maxsize)
- {
- 	struct svc_export	*exp;
- 	struct path		path;
- 	struct inode		*inode;
- 	struct svc_fh		fh;
- 	int			err;
-+	struct cache_detail	*cd = &svc_export_cache;
- 
- 	err = -EPERM;
- 	/* NB: we probably ought to check that it's NUL-terminated */
-@@ -853,7 +856,7 @@ exp_rootfh(svc_client *clp, char *name, struct knfsd_fh *f, int maxsize)
- 	dprintk("nfsd: exp_rootfh(%s [%p] %s:%s/%ld)\n",
- 		 name, path.dentry, clp->name,
- 		 inode->i_sb->s_id, inode->i_ino);
--	exp = exp_parent(clp, &path);
-+	exp = exp_parent(cd, clp, &path);
- 	if (IS_ERR(exp)) {
- 		err = PTR_ERR(exp);
- 		goto out;
-@@ -875,7 +878,8 @@ out:
- 	return err;
- }
- 
--static struct svc_export *exp_find(struct auth_domain *clp, int fsid_type,
-+static struct svc_export *exp_find(struct cache_detail *cd,
-+				   struct auth_domain *clp, int fsid_type,
+ 	return ek;
+@@ -883,7 +883,7 @@ static struct svc_export *exp_find(struct cache_detail *cd,
  				   u32 *fsidv, struct cache_req *reqp)
  {
  	struct svc_export *exp;
-@@ -883,7 +887,7 @@ static struct svc_export *exp_find(struct auth_domain *clp, int fsid_type,
+-	struct svc_expkey *ek = exp_find_key(clp, fsid_type, fsidv, reqp);
++	struct svc_expkey *ek = exp_find_key(&svc_expkey_cache, clp, fsid_type, fsidv, reqp);
  	if (IS_ERR(ek))
  		return ERR_CAST(ek);
  
--	exp = exp_get_by_name(clp, &ek->ek_path, reqp);
-+	exp = exp_get_by_name(cd, clp, &ek->ek_path, reqp);
- 	cache_put(&ek->h, &svc_expkey_cache);
- 
- 	if (IS_ERR(exp))
-@@ -926,12 +930,13 @@ struct svc_export *
- rqst_exp_get_by_name(struct svc_rqst *rqstp, struct path *path)
- {
- 	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
-+	struct cache_detail *cd = &svc_export_cache;
- 
- 	if (rqstp->rq_client == NULL)
- 		goto gss;
- 
- 	/* First try the auth_unix client: */
--	exp = exp_get_by_name(rqstp->rq_client, path, &rqstp->rq_chandle);
-+	exp = exp_get_by_name(cd, rqstp->rq_client, path, &rqstp->rq_chandle);
- 	if (PTR_ERR(exp) == -ENOENT)
- 		goto gss;
- 	if (IS_ERR(exp))
-@@ -943,7 +948,7 @@ gss:
- 	/* Otherwise, try falling back on gss client */
- 	if (rqstp->rq_gssclient == NULL)
- 		return exp;
--	gssexp = exp_get_by_name(rqstp->rq_gssclient, path, &rqstp->rq_chandle);
-+	gssexp = exp_get_by_name(cd, rqstp->rq_gssclient, path, &rqstp->rq_chandle);
- 	if (PTR_ERR(gssexp) == -ENOENT)
- 		return exp;
- 	if (!IS_ERR(exp))
-@@ -955,12 +960,14 @@ struct svc_export *
- rqst_exp_find(struct svc_rqst *rqstp, int fsid_type, u32 *fsidv)
- {
- 	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
-+	struct cache_detail *cd = &svc_export_cache;
- 
- 	if (rqstp->rq_client == NULL)
- 		goto gss;
- 
- 	/* First try the auth_unix client: */
--	exp = exp_find(rqstp->rq_client, fsid_type, fsidv, &rqstp->rq_chandle);
-+	exp = exp_find(cd, rqstp->rq_client, fsid_type,
-+		       fsidv, &rqstp->rq_chandle);
- 	if (PTR_ERR(exp) == -ENOENT)
- 		goto gss;
- 	if (IS_ERR(exp))
-@@ -972,7 +979,7 @@ gss:
- 	/* Otherwise, try falling back on gss client */
- 	if (rqstp->rq_gssclient == NULL)
- 		return exp;
--	gssexp = exp_find(rqstp->rq_gssclient, fsid_type, fsidv,
-+	gssexp = exp_find(cd, rqstp->rq_gssclient, fsid_type, fsidv,
- 						&rqstp->rq_chandle);
- 	if (PTR_ERR(gssexp) == -ENOENT)
- 		return exp;
 
