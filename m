@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab2C1Awo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 20:52:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53076 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079Ab2C1Awm (ORCPT
+	id S1757699Ab2C1A4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 20:56:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36851 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab2C1A4B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 20:52:42 -0400
-Date: Wed, 28 Mar 2012 08:52:38 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spock@gentoo.org
-Subject: Re: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute
- NX-protected page
-Message-ID: <20120328005238.GA3844@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, FlorianSchandinat@gmx.de,
-	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	spock@gentoo.org
-References: <20120327100136.GA3829@udknight>
- <20120327143243.015ecff6@pyramind.ukuu.org.uk>
+	Tue, 27 Mar 2012 20:56:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327143243.015ecff6@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzq8NZ9rr9W7JU6MrkQkFaFdHWKGPMs0ABYSjawS-m4ig@mail.gmail.com>
+References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
+	<CABS55+D97mKFdQhGdAXjMGfyRiWd4Os8wfRq9YNa-FQAEQSR7Q@mail.gmail.com>
+	<CA+55aFyVELrXO50pfbL-eH48K3_3noRkKMDCqTSVsuSQ0hHRWw@mail.gmail.com>
+	<CAMzpN2hqay2h111C6pWw6VEBMLDfO_UF-Xf41M1x5ewp5K90yw@mail.gmail.com>
+	<20120327050238.GA19496@redhat.com>
+	<CAMzpN2juEfBPcq-wKsMOG1v3ii9PNCPW6y+sT-XXAPf1jdAvkw@mail.gmail.com>
+	<CA+55aFzq8NZ9rr9W7JU6MrkQkFaFdHWKGPMs0ABYSjawS-m4ig@mail.gmail.com>
+Date: Tue, 27 Mar 2012 20:56:00 -0400
+Message-ID: <CAMzpN2hxj5xTDgGP3Gjs4Uxoo69ae1QLeBET7McMgOetkGDKgg@mail.gmail.com>
+Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
+ any filesystems that depend on the exact VFS 'namehash' implementation?)
+From: Brian Gerst <brgerst@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Jason Garrett-Glaser <jason@x264.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 02:32:43PM +0100, Alan Cox wrote:
-> On Tue, 27 Mar 2012 18:01:36 +0800
-> Wang YanQing <udknight@gmail.com> wrote:
-> 
-> > 
-> > Ok! I try to check pcibios_enabled first, but get some opposition by Alan Cox,
-> > but I want to make thing work and fix the oops, so I choice the simple way to
-> > check the (__supported_pte_mask & _PAGE_NX) instead of to check this variable plus
-> > pci kernel boot parameter, pci mmconfig works or not, and more, and more. It is not
-> > the best method, but it works and maybe all will feel happy.
-> 
-> Okay let me ask the obvious question - why is it not the best method ?
-> 
-> Apart from adding a helper in the includes for the arch code of
-> 
-> 	static inline is_nx_enabled(void)
-> 	{
-> 		return !!(__supported_pte_mask & _PAGE_NX);
-> 	}
-> 
-> is there anything else it lacks ?
-> 
-> Yes ideally we'd set the relevant ROM areas executable, but for a simple
-> fix is there anything else that's a problem with it ?
-Ok! Maybe you had missed my previous reply
-http://permalink.gmane.org/gmane.linux.kernel/1272433
-It is not the best method, because the check is not enough.
-I means when NX is actively, the pci bios is NX or not also depend on
-the code path in pci_arch_init which will be influenced by the acpi on or off, pci kernel boot
-parameter, even kernel config like pci access method PCI_GOANY, PCI_GOMMCONFIG, or PCI_GODIRECT,
-but if I check the pcibios_enabled, all the above can be ignored.
+On Tue, Mar 27, 2012 at 8:39 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Mar 26, 2012 at 10:31 PM, Brian Gerst <brgerst@gmail.com> wrote:
+>>
+>> Yes, I see that commit.  It looks like I have a different bug that is
+>> preventing the current head from booting then.  Bisecting brought me
+>> to this commit instead.
+>
+> So try first just forcing DCACHE_WORD_ACCESS off (easily done by just
+> removing the "select" line in arch/x86/Kconfig).
+>
+> If that fixes things, it really is the word access code.
+>
+> But if the problem persists and it's a different bug, try to bisect it
+> with that DCACHE_WORD_ACCESS config option always forced off, just to
+> avoid any mixing of issues, exactly because we did have that one bug
+> that already got fixed that looked somewhat similar..
+>
+> I'll test the current -git kernel on a F16 machine I have, just to
+> check. But I'm also assuming that there is something specific about
+> your setup, because otherwise I'd have expected many  more reports
+> about this...
+>
+>                     Linus
 
-if uvesafb use the PMI when PCI BIOS is X, it can get the better work efficience then use the redraw 
-method as a fallback when do the panning.
+Commit f132c5be05e40 did fix this particular problem for me.  There is
+another bug causing boot failure (seems to be in the DRM code), but
+bisecting initially fingered this patch.  It was just looking at
+kernels in between this patch and the later fix.  Sorry for the
+confusion.
+
+--
+Brian Gerst
