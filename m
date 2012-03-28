@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab2C1Ath (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 20:49:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51417 "EHLO mga09.intel.com"
+	id S1757841Ab2C1Atf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 20:49:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31868 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757432Ab2C1Ark (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757437Ab2C1Ark (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Mar 2012 20:47:40 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="125867364"
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="146597553"
 From: Andi Kleen <andi@firstfloor.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        balbi@ti.com, gregkh@linuxfoundation.org
-Subject: [PATCH 09/13] usb: gadget: f_fs: Remove lock is held before freeing checks
-Date: Tue, 27 Mar 2012 17:47:13 -0700
-Message-Id: <1332895637-32572-10-git-send-email-andi@firstfloor.org>
+        aarcange@redhat.com
+Subject: [PATCH 06/13] huge-memory: Use lockdep_assert_held
+Date: Tue, 27 Mar 2012 17:47:10 -0700
+Message-Id: <1332895637-32572-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
 References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
@@ -25,30 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-lock debugging already supports this, no need to do it explicitely.
+Use lockdep_assert_held to check for locks instead of an opencoded
+variant.
 
-Cc: balbi@ti.com
-Cc: gregkh@linuxfoundation.org
+Cc: aarcange@redhat.com
+Acked-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/usb/gadget/f_fs.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ mm/huge_memory.c |    4 ++--
+ mm/swap.c        |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index f63dc6c..c5e8994 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1258,9 +1258,7 @@ static void ffs_data_put(struct ffs_data *ffs)
- 	if (unlikely(atomic_dec_and_test(&ffs->ref))) {
- 		pr_info("%s(): freeing\n", __func__);
- 		ffs_data_clear(ffs);
--		BUG_ON(mutex_is_locked(&ffs->mutex) ||
--		       spin_is_locked(&ffs->ev.waitq.lock) ||
--		       waitqueue_active(&ffs->ev.waitq) ||
-+		BUG_ON(waitqueue_active(&ffs->ev.waitq) ||
- 		       waitqueue_active(&ffs->ep0req_completion.wait));
- 		kfree(ffs);
- 	}
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 91d3efb..28669c6 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2083,7 +2083,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
+ {
+ 	struct mm_struct *mm = mm_slot->mm;
+ 
+-	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
++	lockdep_assert_held(&khugepaged_mm_lock);
+ 
+ 	if (khugepaged_test_exit(mm)) {
+ 		/* free mm_slot */
+@@ -2113,7 +2113,7 @@ static unsigned int khugepaged_scan_mm_slot(unsigned int pages,
+ 	int progress = 0;
+ 
+ 	VM_BUG_ON(!pages);
+-	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
++	lockdep_assert_held(&khugepaged_mm_lock);
+ 
+ 	if (khugepaged_scan.mm_slot)
+ 		mm_slot = khugepaged_scan.mm_slot;
+diff --git a/mm/swap.c b/mm/swap.c
+index fff1ff7..811e615 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -659,7 +659,7 @@ void lru_add_page_tail(struct zone* zone,
+ 	VM_BUG_ON(!PageHead(page));
+ 	VM_BUG_ON(PageCompound(page_tail));
+ 	VM_BUG_ON(PageLRU(page_tail));
+-	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&zone->lru_lock));
++	lockdep_assert_held(&zone->lru_lock);
+ 
+ 	SetPageLRU(page_tail);
+ 
 -- 
 1.7.7.6
 
