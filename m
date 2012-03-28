@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab2C1OvM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:51:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60620 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab2C1OvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:51:11 -0400
-Date: Wed, 28 Mar 2012 15:53:36 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        patrik.r.jakobsson@gmail.com, linux-kernel@vger.kernel.org,
-        greg@kroah.com
-Subject: Re: GMA500 support
-Message-ID: <20120328155336.41063e3a@pyramind.ukuu.org.uk>
-In-Reply-To: <20120328132840.GA26353@avionic-0098.mockup.avionic-design.de>
-References: <20111121182910.GA2856@Boggieman>
-	<20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
-	<20120328132840.GA26353@avionic-0098.mockup.avionic-design.de>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S932208Ab2C1OvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:51:22 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:12256 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab2C1OvV convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Wed, 28 Mar 2012 10:51:21 -0400
+Message-Id: <4F7341BA020000780007B825@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 28 Mar 2012 15:52:10 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Konrad Rzeszutek Wilk" <konrad@darnok.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        "Jinsong Liu" <jinsong.liu@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <20120324003111.GA11777@andromeda.dapyr.net>
+ <DE8DF0795D48FD4CA783C40EC8292335105AAF@SHSMSX101.ccr.corp.intel.com>
+ <20120326163558.GC10236@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233510CE6F@SHSMSX101.ccr.corp.intel.com>
+ <4F732365020000780007B6A1@nat28.tlf.novell.com>
+ <20120328142742.GD18161@phenom.dumpdata.com>
+In-Reply-To: <20120328142742.GD18161@phenom.dumpdata.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From a quick look this seems to be developed for Poulsbo, but since you
-> mention GMA600 explicitly, is it supposed to work on newer hardware as
-> well? I'm specifically interested in the Atom N2600 which has a GMA3600
-> (0x8086:0x0be1 to be exact).
+>>> On 28.03.12 at 16:27, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Wed, Mar 28, 2012 at 01:42:45PM +0100, Jan Beulich wrote:
+>> >>> On 28.03.12 at 12:48, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
+>> > But just curious, what's the purpose and benefit of exposing mwait to dom0? 
+> 
+> 
+> So that cstate.c can evaluate properly the deeper C-states and 
+> xen-acpi-processor
+> can upload them to the hypervisor.
+> 
+>> > I remember xen against doing so before.
+>> 
+>> And I don't recall anything having changed in that regard.
+> 
+> Jan, you Acked the patch in question: https://lkml.org/lkml/2012/2/24/129 
 
-I believe there are GMA600 and 3600 bits buried in the packages for
-Maemo/Meego/Tizen vaapi code but I've not looked.
+But that isn't a Xen patch. Xen isn't (and shouldn't be) exposing mwait.
 
-> I'm also not sure which kernel driver this was developed against. It
-> looks like it might have been against the initial staging variant. At
-> least it still has some references to TTM, so I guess anyone wanting to
-> port it to the new kernel driver would have to convert those to GEM.
+Jan
 
-The one for the 3D/2D non-free user space driver. I've been working on
-Cedartrail primarily at the moment so not had time to dig further into
-the video playback logic. I did get the decoder detected and mapped
-happily but haven't yet had time to persuade the firmware to upload.
-
-It'll also need the driver extending to support the overlay planes
-feature in the DRI/DRM layer.
-
-> Do you think that would be doable? Can you say if the GMA3600 is
-> sufficiently similar to make that driver work
-
-I don't know for sure.
-
-Alan
