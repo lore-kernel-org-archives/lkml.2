@@ -1,144 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab2C1NRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:17:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41922 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755458Ab2C1NRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:17:08 -0400
-Date: Wed, 28 Mar 2012 15:17:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V4 05/10] hugetlb: add charge/uncharge calls for HugeTLB
- alloc/free
-Message-ID: <20120328131706.GF20949@tiehlicka.suse.cz>
-References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1331919570-2264-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1757508Ab2C1NUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:20:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54535 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab2C1NUs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 09:20:48 -0400
+Date: Wed, 28 Mar 2012 15:21:30 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 12/13 v4] drm/i915/intel_i2c: use INDEX cycles for i2c
+ read transactions
+Message-ID: <20120328132130.GD27581@phenom.ffwll.local>
+Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
+	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Benson Leung <bleung@chromium.org>,
+	Yufeng Shen <miletus@chromium.org>
+References: <1332873382-29373-1-git-send-email-djkurtz@chromium.org>
+ <1332873382-29373-13-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331919570-2264-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1332873382-29373-13-git-send-email-djkurtz@chromium.org>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-03-12 23:09:25, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+On Wed, Mar 28, 2012 at 02:36:21AM +0800, Daniel Kurtz wrote:
+> It is very common for an i2c device to require a small 1 or 2 byte write
+> followed by a read.  For example, when reading from an i2c EEPROM it is
+> common to write and address, offset or index followed by a reading some
+> values.
 > 
-> This adds necessary charge/uncharge calls in the HugeTLB code
+> The i915 gmbus controller provides a special "INDEX" cycle for performing
+> such a small write followed by a read.  The INDEX can be either one or two
+> bytes long.  The advantage of using such a cycle is that the CPU has
+> slightly less work to do once the read with INDEX cycle is started.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-This begs for more description...
-Other than that it looks correct.
+Two minor bikesheds below.
 
-> Acked-by: Hillf Danton <dhillf@gmail.com>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
 > ---
->  mm/hugetlb.c    |   21 ++++++++++++++++++++-
->  mm/memcontrol.c |    5 +++++
->  2 files changed, 25 insertions(+), 1 deletions(-)
+>  drivers/gpu/drm/i915/intel_i2c.c |   32 ++++++++++++++++++++++++++++++--
+>  1 files changed, 30 insertions(+), 2 deletions(-)
 > 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index c672187..91361a0 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -21,6 +21,8 @@
->  #include <linux/rmap.h>
->  #include <linux/swap.h>
->  #include <linux/swapops.h>
-> +#include <linux/memcontrol.h>
-> +#include <linux/page_cgroup.h>
->  
->  #include <asm/page.h>
->  #include <asm/pgtable.h>
-> @@ -542,6 +544,9 @@ static void free_huge_page(struct page *page)
->  	BUG_ON(page_mapcount(page));
->  	INIT_LIST_HEAD(&page->lru);
->  
-> +	if (mapping)
-> +		mem_cgroup_hugetlb_uncharge_page(hstate_index(h),
-> +						 pages_per_huge_page(h), page);
->  	spin_lock(&hugetlb_lock);
->  	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
->  		update_and_free_page(h, page);
-> @@ -1019,12 +1024,15 @@ static void vma_commit_reservation(struct hstate *h,
->  static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  				    unsigned long addr, int avoid_reserve)
->  {
-> +	int ret, idx;
->  	struct hstate *h = hstate_vma(vma);
->  	struct page *page;
-> +	struct mem_cgroup *memcg = NULL;
->  	struct address_space *mapping = vma->vm_file->f_mapping;
->  	struct inode *inode = mapping->host;
->  	long chg;
->  
-> +	idx = hstate_index(h);
->  	/*
->  	 * Processes that did not create the mapping will have no reserves and
->  	 * will not have accounted against quota. Check that the quota can be
-> @@ -1039,6 +1047,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  		if (hugetlb_get_quota(inode->i_mapping, chg))
->  			return ERR_PTR(-ENOSPC);
->  
-> +	ret = mem_cgroup_hugetlb_charge_page(idx, pages_per_huge_page(h),
-> +					     &memcg);
-> +	if (ret) {
-> +		hugetlb_put_quota(inode->i_mapping, chg);
-> +		return ERR_PTR(-ENOSPC);
-> +	}
->  	spin_lock(&hugetlb_lock);
->  	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
->  	spin_unlock(&hugetlb_lock);
-> @@ -1046,6 +1060,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	if (!page) {
->  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
->  		if (!page) {
-> +			mem_cgroup_hugetlb_uncharge_memcg(idx,
-> +							 pages_per_huge_page(h),
-> +							 memcg);
->  			hugetlb_put_quota(inode->i_mapping, chg);
->  			return ERR_PTR(-ENOSPC);
->  		}
-> @@ -1054,7 +1071,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	set_page_private(page, (unsigned long) mapping);
->  
->  	vma_commit_reservation(h, vma, addr);
-> -
-> +	/* update page cgroup details */
-> +	mem_cgroup_hugetlb_commit_charge(idx, pages_per_huge_page(h),
-> +					 memcg, page);
->  	return page;
+> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+> index 43a3ca3..c71f3dc 100644
+> --- a/drivers/gpu/drm/i915/intel_i2c.c
+> +++ b/drivers/gpu/drm/i915/intel_i2c.c
+> @@ -204,13 +204,15 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
 >  }
 >  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 4b36c5e..7a9ea94 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2901,6 +2901,11 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+>  static int
+> -gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
+> +gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
+> +		u32 gmbus1)
+
+Can we call this gmbus1_index to make it clear that this is just to
+specifiy an index write in gmbus1 and not the entire thing?
+
+>  {
+>  	int reg_offset = dev_priv->gpio_mmio_base;
+>  	u16 len = msg->len;
+>  	u8 *buf = msg->buf;
 >  
->  	if (PageSwapCache(page))
->  		return NULL;
-> +	/*
-> +	 * HugeTLB page uncharge happen in the HugeTLB compound page destructor
-> +	 */
-> +	if (PageHuge(page))
-> +		return NULL;
+>  	I915_WRITE(GMBUS1 + reg_offset,
+> +		   gmbus1 |
+>  		   GMBUS_CYCLE_WAIT |
+>  		   (len << GMBUS_BYTE_COUNT_SHIFT) |
+>  		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
+> @@ -300,8 +302,34 @@ gmbus_xfer(struct i2c_adapter *adapter,
+>  	I915_WRITE(GMBUS0 + reg_offset, bus->reg0);
 >  
->  	if (PageTransHuge(page)) {
->  		nr_pages <<= compound_order(page);
+>  	for (i = 0; i < num; i++) {
+> +		bool last = i + 1 == num;
+> +		u32 gmbus5 = 0;
+> +		u32 gmbus1 = 0;
+> +
+> +		/*
+> +		 * The gmbus controller can combine a 1 or 2 byte write with a
+> +		 * read that immediately follows it by using an "INDEX" cycle.
+> +		 */
+> +		if (!last &&
+> +		    !(msgs[i].flags & I2C_M_RD) &&
+> +		    (msgs[i + 1].flags & I2C_M_RD) &&
+> +		    msgs[i].len <= 2) {
+> +			if (msgs[i].len == 2)
+> +				gmbus5 = GMBUS_2BYTE_INDEX_EN |
+> +					 msgs[i].buf[1] |
+> +					 (msgs[i].buf[0] << 8);
+> +			if (msgs[i].len == 1)
+> +				gmbus1 = GMBUS_CYCLE_INDEX |
+> +					 (msgs[i].buf[0] <<
+> +					  GMBUS_SLAVE_INDEX_SHIFT);
+> +			i += 1;  /* set i to the index of the read xfer */
+> +		}
+
+Thas fallthrough is imo to clever code. What about extracting
+gmbus_xfer_index_read which does all this and then directly calls
+gmbus_xfer_read?
+
+i.e.
+
+if (complated condition for index read) {
+	gmbus_xfer_index_read();
+	i += 1; /* set i to the index of the read xfer */
+} else if (is_read) {
+	gmbus_xfer_read();
+} else {
+	gmbus_xfer_write();
+}
+
+This way we also don't need to clobber gmbus_xfer with the new gmbus1,
+gmbus5 local variables.
+
+> +
+> +		/* GMBUS5 holds 16-bit index, but must be 0 if not used */
+> +		I915_WRITE(GMBUS5 + reg_offset, gmbus5);
+
+gmbus_xfer_index_read could then also clear gmbus5 after calling
+gmbux_xfer_read.
+
+> +
+>  		if (msgs[i].flags & I2C_M_RD)
+> -			ret = gmbus_xfer_read(dev_priv, &msgs[i]);
+> +			ret = gmbus_xfer_read(dev_priv, &msgs[i], gmbus1);
+>  		else
+>  			ret = gmbus_xfer_write(dev_priv, &msgs[i]);
+>  
 > -- 
-> 1.7.9
+> 1.7.7.3
 > 
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
