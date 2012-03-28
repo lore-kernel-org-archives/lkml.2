@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188Ab2C1Vjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 17:39:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52531 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932293Ab2C1Vjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 17:39:53 -0400
-Date: Wed, 28 Mar 2012 23:32:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
-Message-ID: <20120328213215.GA8903@redhat.com>
-References: <20120327223420.GB9669@moon> <20120327224640.GA5328@mail.hallyn.com> <m162dpo45j.fsf@fess.ebiederm.org> <20120328064838.GA2286@moon> <m1k425mae1.fsf@fess.ebiederm.org> <20120328075549.GA2204@moon> <20120328081639.GB2286@moon> <20120328194312.GA22211@mail.hallyn.com> <20120328194613.GA3678@redhat.com> <20120328213044.GA26190@peqn>
+	id S933196Ab2C1Vlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 17:41:44 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:42042 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293Ab2C1Vlm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 17:41:42 -0400
+Date: Wed, 28 Mar 2012 23:41:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, acme@redhat.com,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
+        robert.richter@amd.com, linux-kernel@vger.kernel.org, mjw@redhat.com
+Subject: Re: [PATCH 04/15] perf: Add ability to dump user regs
+Message-ID: <20120328214131.GJ17189@somewhere.redhat.com>
+References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
+ <1332938158-5244-5-git-send-email-jolsa@redhat.com>
+ <20120328140115.GE4826@redhat.com>
+ <20120328142021.GC1647@m.brq.redhat.com>
+ <20120328151230.GF4826@redhat.com>
+ <20120328160610.GH17189@somewhere.redhat.com>
+ <20120328170234.GE1647@m.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120328213044.GA26190@peqn>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120328170234.GE1647@m.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28, Serge Hallyn wrote:
->
-> Quoting Oleg Nesterov (oleg@redhat.com):
-> > On 03/28, Serge E. Hallyn wrote:
-> > >
-> > > If you want to
-> > > just add the struct cred to the f_owner and do proper uid conversion,
-> > > I'll support that too.  (Just grab a ref to the cred in
-> > > fs/fcntl.c:f_modown(), and drop the ref in fs/file_table.c:__fput() ).
-> >
-> > In this case f_owner.*uid should go away, I guess.
->
-> Yup.
->
-> Which I guess is all the more reason *not* to do this unless we end up
-> not going with Eric's userns mapping patchset (which is unlikely).
+On Wed, Mar 28, 2012 at 07:02:34PM +0200, Jiri Olsa wrote:
+> On Wed, Mar 28, 2012 at 06:06:13PM +0200, Frederic Weisbecker wrote:
+> > On Wed, Mar 28, 2012 at 11:12:30AM -0400, Frank Ch. Eigler wrote:
+> > > Hi, Jiri -
+> > > 
+> > > > [...]
+> > > > > [...]  Upon a normal syscall entry to the kernel, not
+> > > > > all user registers are saved explicitly for such easy retrieval.  The
+> > > > > others may be spilled to the stack by gcc during the various sys_*
+> > > > > functions or elsewhere.  [...]
+> > > > 
+> > > > Are you reffering to x86_64 where only portion of registers
+> > > > is stored by SAVE_ARGS macro? Seems like 32 bits stores the
+> > > > whole pt_regs.
+> > > 
+> > > I believe that's the right area.  I'm not sure even the 32-bit variant
+> > > is complete enough, for example exempting MMX/SSE registers.  These
+> > > may also contain spilled registers before long.
+> > > 
+> > > 
+> > > > Generally you could need all the registers to start the unwind, but
+> > > > I was assuming that for most cases the stack pointer and instruction
+> > > > pointer should be enough.. but I might be wrong here.
+> > > 
+> > > Yeah; the question is how much is missed besides those "most cases".
+> > > 
+> > > 
+> > > > > To recover these registers at run time, we found that the kernel
+> > > > > stack itself has to be partially unwound [... Without that, it ...]
+> > > > > may accidentally pass garbage data to perf userspace.  Correcting
+> > > > > this could require a kernel-space libunwind.
+> > > 
+> > > > AFAIK not going to happen any time soon ;)
+> > > 
+> > > Understood.  Then the code needs to ensure that it does not purport to
+> > > pass register values that it does not know.  (Back when we were at
+> > > this stage in systemtap, we got some reasonable backtraces even
+> > > without kernel unwinding, ie. tolerating missing registers.)
+> > 
+> > Right.
+> > 
+> > I think in normal syscall case we save rdi, rsi, rdx, rax and rip.
+> > If we take the syscall slow path we save rbx, rbp, r12-15.
+> > 
+> > Unfortunately we don't save rsp, which must be the most important
+> > for cfi unwinding.
+> 
+> hm, I think we always have stack pointer
+> 
+> should be saved by cpu itself together with other control
+> regs like: ip cs eflags sp ss
+> 
+> For syscalls, we also have the ones stored by SAVE_ARGS
+> The rest of the registers (SAVE_REST) are available
+> only for the sake of the syscall_trace_enter during
+> the slow path, but it's poped out before executing
+> the actuall syscall.
 
-Agreed,
-
-> > And sigio_perm()
-> > should be unified with kill_ok_by_cred() somehow (modulo
-> > security_file_send_sigiotask).
-> >
-> > Right?
->
-> Maybe, but other differences include current being the signal sender in
-> one and recipient in the other, and CAP_KILL being relevent in only
-> one.
-
-Yes, yes, sure. "current" is meaningless for sigio_perm().
-
-That is why I asked, the "somehow" above is not clear to me.
-
-Oleg.
-
+Ah good point!
