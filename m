@@ -1,80 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab2C1O2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 10:28:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43727 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab2C1O2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 10:28:13 -0400
-Date: Wed, 28 Mar 2012 11:28:08 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RFC PATCHSET] perf ui: Small preparation on further UI work
-Message-ID: <20120328142808.GA8482@infradead.org>
-References: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
- <20120326173817.GN25820@infradead.org>
- <87pqbx320u.fsf@youngshil.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87pqbx320u.fsf@youngshil.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754191Ab2C1O2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 10:28:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32981 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab2C1O2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 10:28:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124323875"
+Message-Id: <20120328131153.382173637@intel.com>
+User-Agent: quilt/0.51-1
+Date: Wed, 28 Mar 2012 20:13:12 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Linux Memory Management List <linux-mm@kvack.org>
+cc: Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+cc: Suresh Jayaraman <sjayaraman@suse.com>,
+        Andrea Righi <andrea@betterlinux.com>
+cc: Jeff Moyer <jmoyer@redhat.com>
+cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/6] blk-cgroup: buffered write IO controller - bandwidth limit
+References: <20120328121308.568545879@intel.com>
+Content-Disposition: inline; filename=writeback-io-controller.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Mar 28, 2012 at 11:14:25AM +0900, Namhyung Kim escreveu:
-> Em Tue, Mar 27, 2012 at 01:44:42PM +0300, Pekka Enberg escreveu: 
-> > Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+A bare per-cgroup buffered write IO controller.
 
-> > So I would just leave things in tools/perf/util/ui/ and do what you did
-> > in moving the TUI specific bits to a separate function, even ui__init()
-> > would be ok for now, and then at setup_browser() check what kind of
-> > interface is being used and call ui__init() if it is the TUI and the
-> > gtk init one if GTK+ was chosen.
-> 
-> I think it'd be better moving the TUI specific codes to a separate file
-> (under a separate directory, like tools/perf/util/ui/tui - but it looks
-> like so deep nesting) rather than a function since the generic
+Basically, when there are N dd tasks running in the blkcg,
+blkcg->dirty_ratelimit will be balanced around
 
-What do you have against directory trees? :P We need to chop off the
-/util/ part, but apart from that...
+	blkcg->buffered_write_bps / N
 
-> code (setup_browser) should be compiled without the TUI support.
-> Otherwise we'll see some #ifdef's in the source file(s).
-> 
-> Or, we can put those codes under the same directory (tools/perf/util/ui)
-> and have different suffixes - say, if generic code were XXX.c, TUI one
-> would be XXX-tui.c and GTK+ one would be XXX-gtk.c.
+and each blkcg task will be throttled under
 
-... what is the difference of using:
+	blkcg->dirty_ratelimit
+or 
+	min(blkcg->dirty_ratelimit, bdi->dirty_ratelimit)
+when there are other dirtier tasks in the system.
 
-tools/perf/util/ui/tui/init.c
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/blk-cgroup.h |   20 +++++++++++
+ mm/page-writeback.c        |   59 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 79 insertions(+)
 
-instead of:
+--- linux-next.orig/mm/page-writeback.c	2012-03-28 15:36:16.414093131 +0800
++++ linux-next/mm/page-writeback.c	2012-03-28 15:40:25.446088022 +0800
+@@ -1145,6 +1145,54 @@ static long bdi_min_pause(struct backing
+ 	return pages >= DIRTY_POLL_THRESH ? 1 + t / 2 : t;
+ }
+ 
++#ifdef CONFIG_BLK_DEV_THROTTLING
++static void blkcg_update_dirty_ratelimit(struct blkio_cgroup *blkcg,
++					 unsigned long dirtied,
++					 unsigned long elapsed)
++{
++	unsigned long long bps = blkcg_buffered_write_bps(blkcg);
++	unsigned long long ratelimit;
++	unsigned long dirty_rate;
++
++	dirty_rate = (dirtied - blkcg->dirtied_stamp) * HZ;
++	dirty_rate /= elapsed;
++
++	ratelimit = blkcg->dirty_ratelimit;
++	ratelimit *= div_u64(bps, dirty_rate + 1);
++	ratelimit = min(ratelimit, bps);
++	ratelimit >>= PAGE_SHIFT;
++
++	blkcg->dirty_ratelimit = (blkcg->dirty_ratelimit + ratelimit) / 2 + 1;
++}
++
++void blkcg_update_bandwidth(struct blkio_cgroup *blkcg)
++{
++	unsigned long now = jiffies;
++	unsigned long dirtied;
++	unsigned long elapsed;
++
++	if (!blkcg)
++		return;
++	if (!spin_trylock(&blkcg->lock))
++		return;
++
++	elapsed = now - blkcg->bw_time_stamp;
++	dirtied = percpu_counter_read(&blkcg->nr_dirtied);
++
++	if (elapsed > MAX_PAUSE * 2)
++		goto snapshot;
++	if (elapsed <= MAX_PAUSE)
++		goto unlock;
++
++	blkcg_update_dirty_ratelimit(blkcg, dirtied, elapsed);
++snapshot:
++	blkcg->dirtied_stamp = dirtied;
++	blkcg->bw_time_stamp = now;
++unlock:
++	spin_unlock(&blkcg->lock);
++}
++#endif
++
+ /*
+  * balance_dirty_pages() must be called by processes which are generating dirty
+  * data.  It looks at the number of dirty pages in the machine and will force
+@@ -1174,6 +1222,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long pos_ratio;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 	unsigned long start_time = jiffies;
++	struct blkio_cgroup *blkcg = task_blkio_cgroup(current);
+ 
+ 	for (;;) {
+ 		unsigned long now = jiffies;
+@@ -1198,6 +1247,8 @@ static void balance_dirty_pages(struct a
+ 		freerun = dirty_freerun_ceiling(dirty_thresh,
+ 						background_thresh);
+ 		if (nr_dirty <= freerun) {
++			if (blkcg_buffered_write_bps(blkcg))
++				goto blkcg_bps;
+ 			current->dirty_paused_when = now;
+ 			current->nr_dirtied = 0;
+ 			current->nr_dirtied_pause =
+@@ -1263,6 +1314,14 @@ static void balance_dirty_pages(struct a
+ 			task_ratelimit = (u64)task_ratelimit *
+ 				blkcg_weight(blkcg) / BLKIO_WEIGHT_DEFAULT;
+ 
++		if (blkcg_buffered_write_bps(blkcg) &&
++		    task_ratelimit > blkcg_dirty_ratelimit(blkcg)) {
++blkcg_bps:
++			blkcg_update_bandwidth(blkcg);
++			dirty_ratelimit = blkcg_dirty_ratelimit(blkcg);
++			task_ratelimit = dirty_ratelimit;
++		}
++
+ 		max_pause = bdi_max_pause(bdi, bdi_dirty);
+ 		min_pause = bdi_min_pause(bdi, max_pause,
+ 					  task_ratelimit, dirty_ratelimit,
+--- linux-next.orig/include/linux/blk-cgroup.h	2012-03-28 15:36:16.414093131 +0800
++++ linux-next/include/linux/blk-cgroup.h	2012-03-28 15:39:46.730088815 +0800
+@@ -122,6 +122,10 @@ struct blkio_cgroup {
+ 	struct hlist_head blkg_list;
+ 	struct list_head policy_list; /* list of blkio_policy_node */
+ 	struct percpu_counter nr_dirtied;
++	unsigned long bw_time_stamp;
++	unsigned long dirtied_stamp;
++	unsigned long dirty_ratelimit;
++	unsigned long long buffered_write_bps;
+ };
+ 
+ struct blkio_group_stats {
+@@ -217,6 +221,14 @@ static inline unsigned int blkcg_weight(
+ {
+ 	return blkcg->weight;
+ }
++static inline uint64_t blkcg_buffered_write_bps(struct blkio_cgroup *blkcg)
++{
++	return blkcg->buffered_write_bps;
++}
++static inline unsigned long blkcg_dirty_ratelimit(struct blkio_cgroup *blkcg)
++{
++	return blkcg->dirty_ratelimit;
++}
+ 
+ typedef void (blkio_unlink_group_fn) (void *key, struct blkio_group *blkg);
+ 
+@@ -272,6 +284,14 @@ static inline unsigned int blkcg_weight(
+ {
+ 	return BLKIO_WEIGHT_DEFAULT;
+ }
++static inline uint64_t blkcg_buffered_write_bps(struct blkio_cgroup *blkcg)
++{
++	return 0;
++}
++static inline unsigned long blkcg_dirty_ratelimit(struct blkio_cgroup *blkcg)
++{
++	return 0;
++}
+ 
+ #endif
+ 
 
-tools/perf/util/ui/tui-init.c
 
-?
-
-Since we'll be introducing new files, it seems the first step would be
-to just do a simple, no changes in the files, move of
-tools/perf/util/ui/ to tools/perf/ui/ and then introduce
-tools/perf/ui/tui/{init,etc}.c
-
-Gtk would as well be moved to tools/perf/ui/gtk/.
-
-At some point we would then introduce some sort of plugin mechanism
-where files found in /usr/lib/perf/ui/ or some other suitable directory
-would be loaded in a modprobe like way, i.e. if the user asks for --gtk,
-it would try to find /usr/lib/perf/ui/gtk.so and try to load it, etc.
-
-That way we start to reduce the miriad libraries that we have linked in
-the main perf binary, making it easier for packaging, etc.
-
-- Arnaldo
