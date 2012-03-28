@@ -1,110 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab2C1WZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:25:48 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:54534 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab2C1WZr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:25:47 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6663"; a="174437494"
-Message-ID: <4F738FEA.9020109@codeaurora.org>
-Date: Wed, 28 Mar 2012 15:25:46 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, Paul Walmsley <paul@pwsan.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>
-Subject: Re: [PATCH v7 2/3] clk: introduce the common clock framework
-References: <1331878280-2758-1-git-send-email-mturquette@linaro.org> <1331878280-2758-3-git-send-email-mturquette@linaro.org> <20120320140220.GE32469@S2101-09.ap.freescale.net> <efca11f1b68186dbf1771c09fe3a2f0a.squirrel@www.codeaurora.org> <CAJOA=zNmgSQfYAUZ-vqqTk0w3s3eKz3tjVOpyDgO35Q_Ogkz0g@mail.gmail.com> <4F6946AA.4070201@codeaurora.org> <4F6CEC0C.4060704@codeaurora.org> <CAJOA=zNDKesFtuRgv+6brmBvmbQQecKEOJ89EiG-+YzXVTosWw@mail.gmail.com> <4F6CF555.4080109@codeaurora.org> <CAJOA=zOnR1NwZ1Cmkfb+b7f7=N_vg+txAUqKXF2Nf2nVYFMjjg@mail.gmail.com> <4F6D0167.3040704@codeaurora.org> <CAJOA=zM47mB8tY2hV1QDVm1GZRqQrjrktkbLQ-Vp7hBjA8H5xg@mail.gmail.com> <4F728050.9030904@codeaurora.org> <CAJOA=zM0_czNzdqXfJDn8vzfpVLywBvYTg3SxKs6BHUOsRNd9w@mail.gmail.com>
-In-Reply-To: <CAJOA=zM0_czNzdqXfJDn8vzfpVLywBvYTg3SxKs6BHUOsRNd9w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758851Ab2C1W1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:27:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:10705 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758693Ab2C1W1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 18:27:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124514674"
+Message-Id: <20120328131153.548884752@intel.com>
+User-Agent: quilt/0.51-1
+Date: Wed, 28 Mar 2012 20:13:14 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Linux Memory Management List <linux-mm@kvack.org>
+cc: Vivek Goyal <vgoyal@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Suresh Jayaraman <sjayaraman@suse.com>,
+        Andrea Righi <andrea@betterlinux.com>
+cc: Jeff Moyer <jmoyer@redhat.com>
+cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 6/6] blk-cgroup: buffered write IO controller - debug trace
+References: <20120328121308.568545879@intel.com>
+Content-Disposition: inline; filename=writeback-io-controller-trace.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 10:08 AM, Turquette, Mike wrote:
-> On Tue, Mar 27, 2012 at 8:06 PM, Saravana Kannan<skannan@codeaurora.org>  wrote:
+test-blkio-cgroup.sh
 
-snip
+	#!/bin/sh
 
->> I think there is still a problem with not being able to differentiate
->> between pre-change recalc and post-change recalc. This applies for any set
->> parent and set rate on a clock that has children.
->>
->> Consider this simple example:
->> * Divider clock B is fed from clock A.
->> * Clock B can never output>  120 MHz due to downstream
->>   HW/clock limitations.
->> * Clock A is running at 200 MHz
->> * Clock B divider is set to 2.
->>
->> Now, say the rate of clock A is changing from 200 MHz to 300 MHz (due to set
->> rate or set parent). In this case, the clock B divider should be set to 3
->> pre-rate change to guarantee that the output of clock B is never>  120 MHz.
->> So the rate of clock B will go from 100 MHz (200/2) to 66 MHz (200/3) to 100
->> MHz (300/3) and everything is good.
->>
->> Assume we somehow managed to do the above. So, now clock A is at 300 MHz,
->> clock B divider is at 3 and the clock B output is 100 MHz.
->>
->> Now, say the rate of clock A changes from 300 MHz to 100 MHz. In this case
->> the clock B divider should only be changed post rate change. If we do it pre
->> rate change, then the output will go from 100 MHz (300/3) to 150 MHz (300/1)
->> to 100 MHz (100/1). We went past the 120 MHz limit of clock B's output rate.
->>
->> If we do this post rate change, we can do this without exceeding the max
->> output limit of clock B. It will go from 100 MHz (300/3) to 33 MHz (100/3)
->> to 100 MHz (100/1). We never went past the 120 MHz limit.
->>
->> So, at least for this reason above, I think we need to pass a pre/post
->> parameter to the recalc ops.
+	mount /dev/sda7 /fs
 
-Sorry if I wasn't clear. But the case above is a separate issue from 
-what I mention below. What are your thoughts on handling this? Pass 
-"msg" to recalc_rates?
+	echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
+	echo 1 > /debug/tracing/events/writeback/blkcg_dirty_ratelimit/enable
 
->> While we are at it, we should probably just add a failure option for recalc
->> to make it easy to reject unacceptable rate changes. To keep the clock
->> framework code simpler, you could decide to allow errors only for the
->> pre-change recalc calls. That way, the error case roll back code won't be
->> crazy.
->
-> recalc is too late to catch this.  I think you mean round_rate.  We
-> want to determine which rate changes are out-of-spec during
-> clk_calc_new_rates (for clk_set_rate) which involves round_rate being
-> a bit smarter about what it can and cannot do.
+	rmdir /cgroup/buffered_write
+	mkdir /cgroup/buffered_write
+	echo $$ > /cgroup/buffered_write/tasks
+	echo $((2<<20)) > /cgroup/buffered_write/blkio.throttle.buffered_write_bps
 
-The case I'm referring to is set_parent(). set_rate() and set_parent() 
-have a lot of common implications and it doesn't look like the clock 
-framework is handling the common cases the same way for both 
-set_parent() and set_rate().
+	dd if=/dev/zero of=/fs/zero1 bs=1M count=100 &
+	dd if=/dev/zero of=/fs/zero2 bs=1M count=100 &
 
-It almost feels like set_parent() and set_rate() should just be wrappers 
-around some common function that handles most of the work. After all, 
-set_parent() is just a slimmed down version of set_rate(). Set rate is 
-just a combination of set parent and set divider.
+run 1:
+	104857600 bytes (105 MB) copied, 97.8103 s, 1.1 MB/s
+	104857600 bytes (105 MB) copied, 97.9835 s, 1.1 MB/s
+run 2:
+	104857600 bytes (105 MB) copied, 98.5704 s, 1.1 MB/s
+	104857600 bytes (105 MB) copied, 98.6268 s, 1.1 MB/s
 
->
-> Anyways I'm looking at ways to do this in my clk-dependencies branch.
->
+average bps:	100MiB / 98.248s = 1.02MiB/s
 
-Are you also looking into the pre/post rate change divider handling case 
-I mentioned above?
+run 1 trace:
+              dd-3485  [000] ....   658.737063: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=1932 dirty_ratelimit=1064 balanced_dirty_ratelimit=1088
+              dd-3485  [000] ....   658.976945: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2000 dirty_ratelimit=1076 balanced_dirty_ratelimit=1084
+              dd-3485  [000] ....   659.212830: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2440 dirty_ratelimit=992 balanced_dirty_ratelimit=900
+              dd-3485  [002] ....   659.470651: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=1860 dirty_ratelimit=1044 balanced_dirty_ratelimit=1088
+              dd-3485  [002] ....   659.714535: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2360 dirty_ratelimit=976 balanced_dirty_ratelimit=904
+              dd-3485  [002] ....   659.976381: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=1832 dirty_ratelimit=1036 balanced_dirty_ratelimit=1088
+              dd-3485  [000] ....   660.222254: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2340 dirty_ratelimit=972 balanced_dirty_ratelimit=904
+              dd-3485  [000] ....   660.484089: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=1464 dirty_ratelimit=1164 balanced_dirty_ratelimit=1352
+              dd-3485  [000] ....   660.701984: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2640 dirty_ratelimit=1036 balanced_dirty_ratelimit=900
+              dd-3485  [000] ....   660.947856: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=1948 dirty_ratelimit=1064 balanced_dirty_ratelimit=1084
+              dd-3485  [000] ....   661.187727: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2000 dirty_ratelimit=1076 balanced_dirty_ratelimit=1084
+              dd-3485  [000] ....   661.423572: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2440 dirty_ratelimit=992 balanced_dirty_ratelimit=900
+              dd-3485  [000] ....   661.681431: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2232 dirty_ratelimit=952 balanced_dirty_ratelimit=908
+              dd-3485  [002] ....   661.949290: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=1432 dirty_ratelimit=1156 balanced_dirty_ratelimit=1356
+              dd-3485  [002] ....   662.169176: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2616 dirty_ratelimit=1032 balanced_dirty_ratelimit=900
+              dd-3485  [000] ....   662.417016: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2320 dirty_ratelimit=972 balanced_dirty_ratelimit=908
+              dd-3485  [000] ....   662.678903: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=1464 dirty_ratelimit=1164 balanced_dirty_ratelimit=1352
+              dd-3485  [000] ....   662.896764: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2640 dirty_ratelimit=1036 balanced_dirty_ratelimit=900
+              dd-3485  [002] ....   663.142644: blkcg_dirty_ratelimit: kbps=2048 dirty_rate=2340 dirty_ratelimit=972 balanced_dirty_ratelimit=904
 
-Thanks,
-Saravana
+It looks good enough as a proposal.  Could be made more accurate if necessary.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/trace/events/writeback.h |   34 +++++++++++++++++++++++++++++
+ mm/page-writeback.c              |    2 +
+ 2 files changed, 36 insertions(+)
+
+--- linux-next.orig/mm/page-writeback.c	2012-03-28 15:36:16.426093131 +0800
++++ linux-next/mm/page-writeback.c	2012-03-28 15:36:47.906092485 +0800
+@@ -1163,6 +1163,8 @@ static void blkcg_update_dirty_ratelimit
+ 	ratelimit >>= PAGE_SHIFT;
+ 
+ 	blkcg->dirty_ratelimit = (blkcg->dirty_ratelimit + ratelimit) / 2 + 1;
++	trace_blkcg_dirty_ratelimit(bps, dirty_rate,
++				    blkcg->dirty_ratelimit, ratelimit);
+ }
+ 
+ void blkcg_update_bandwidth(struct blkio_cgroup *blkcg)
+--- linux-next.orig/include/trace/events/writeback.h	2012-03-28 14:25:16.026180561 +0800
++++ linux-next/include/trace/events/writeback.h	2012-03-28 15:36:47.906092485 +0800
+@@ -249,6 +249,40 @@ TRACE_EVENT(global_dirty_state,
+ 
+ #define KBps(x)			((x) << (PAGE_SHIFT - 10))
+ 
++TRACE_EVENT(blkcg_dirty_ratelimit,
++
++	TP_PROTO(unsigned long bps,
++		 unsigned long dirty_rate,
++		 unsigned long dirty_ratelimit,
++		 unsigned long balanced_dirty_ratelimit),
++
++	TP_ARGS(bps, dirty_rate, dirty_ratelimit, balanced_dirty_ratelimit),
++
++	TP_STRUCT__entry(
++		__field(unsigned long,	kbps)
++		__field(unsigned long,	dirty_rate)
++		__field(unsigned long,	dirty_ratelimit)
++		__field(unsigned long,	balanced_dirty_ratelimit)
++	),
++
++	TP_fast_assign(
++		__entry->kbps = bps >> 10;
++		__entry->dirty_rate = KBps(dirty_rate);
++		__entry->dirty_ratelimit = KBps(dirty_ratelimit);
++		__entry->balanced_dirty_ratelimit =
++					  KBps(balanced_dirty_ratelimit);
++	),
++
++	TP_printk("kbps=%lu dirty_rate=%lu "
++		  "dirty_ratelimit=%lu "
++		  "balanced_dirty_ratelimit=%lu",
++		  __entry->kbps,
++		  __entry->dirty_rate,
++		  __entry->dirty_ratelimit,
++		  __entry->balanced_dirty_ratelimit
++	)
++);
++
+ TRACE_EVENT(bdi_dirty_ratelimit,
+ 
+ 	TP_PROTO(struct backing_dev_info *bdi,
+
+
