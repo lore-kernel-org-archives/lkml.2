@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab2C1MTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 08:19:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54671 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab2C1MTY (ORCPT
+	id S1752126Ab2C1MU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 08:20:57 -0400
+Received: from mail.meprolight.com ([194.90.149.17]:60717 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751227Ab2C1MU4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 08:19:24 -0400
-Date: Wed, 28 Mar 2012 23:19:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-Subject: Re: [PULL REQUEST] DMA-mapping framework redesign preparation
- patches
-Message-Id: <20120328231910.759801b2f9173ea0a1247fbb@canb.auug.org.au>
-In-Reply-To: <00b701cd0cb9$5a4ea900$0eebfb00$%szyprowski@samsung.com>
-References: <1328898737-15854-1-git-send-email-m.szyprowski@samsung.com>
-	<20120213112145.4b8990c739d297cd30714d52@canb.auug.org.au>
-	<00b701cd0cb9$5a4ea900$0eebfb00$%szyprowski@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Mar_2012_23_19_10_+1100_3wK5ySiHIExxtj7z"
+	Wed, 28 Mar 2012 08:20:56 -0400
+From: Alex Gershgorin <alexg@meprolight.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 28 Mar 2012 14:20:27 +0200
+Subject: RE: [PATCH v2] regulator: i.MX35-PDK Add regulator support
+Thread-Topic: [PATCH v2] regulator: i.MX35-PDK Add regulator support
+Thread-Index: Ac0M3AYia0/btYDDTomiIRnMJErwzgAAEuiQ
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD22@MEP-EXCH.meprolight.com>
+References: <1332935527-21414-1-git-send-email-alexg@meprolight.com>,<CAOMZO5DE0wcdbk7xbXuOFKJ=NNtSrWTPaLjRAdDfewOmPR-eVw@mail.gmail.com>
+In-Reply-To: <CAOMZO5DE0wcdbk7xbXuOFKJ=NNtSrWTPaLjRAdDfewOmPR-eVw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Mar_2012_23_19_10_+1100_3wK5ySiHIExxtj7z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Fabio,
 
-Hi Marek,
+Thanks for you comments,
 
-On Wed, 28 Mar 2012 10:04:08 +0200 Marek Szyprowski <m.szyprowski@samsung.c=
-om> wrote:
->
-> I've prepared a separate git repository for all our dma-mapping related w=
-orks.=20
-> Could you update your database with the new entry? From now the dma-mappi=
-ng=20
-> updates will be available at:
->=20
-> git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git dma-mapping=
--next
+On Wed, Mar 28, 2012 at 8:52 AM, Alex Gershgorin <alexg@meprolight.com> wrote:
+> This version rebased for v3.4, also removes ranges from regulators
+> who do not have consumers and adds consumers for same regulators.
 
-I have changed to use that new tree.
+> > In your subject: prefix it with "ARM" as this patch should go via the arm tree.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> > Also, do not put comments about kernel version in the commit log.
+> > If you want to talk about kernel version/patch history you can do so
+> > below the --- line.
 
---Signature=_Wed__28_Mar_2012_23_19_10_+1100_3wK5ySiHIExxtj7z
-Content-Type: application/pgp-signature
+I will take note of this 
+...
+> +static struct regulator_consumer_supply vcam_consumers[] = {
+> +       /* sgtl5000 */
+> +       REGULATOR_SUPPLY("VDDA", "1-000a"),
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> > This should be "0-000a" instead.
 
-iQIcBAEBCAAGBQJPcwG+AAoJEECxmPOUX5FEN6YP/jg1Xk2guXfoYfwPKHUQmqjL
-dyvLzxbicmCYxo2dcpToNzmAfmhfHerEEFzglAW+CTscE+qOxHeFojN5ePopxvYw
-WgW8Fccz8oI44g1D5ysgyud/W9YtsobXCCpDp4CBbvA7v1mALnO119hOnJIiixiV
-nKo4fZ7UT1VFC15BEpSnm1ImQlWDKtgcoMAD0jBp6XHfpKzjzKPTArClveUK4pf4
-XOM8fDeEM65GGid9PLSCRMxrKEsLg+6VLWGNw/05d92inun9FND/R75NxqL/I9BX
-yJwMfbsKTmSCA5sa+Ukf4PuwQ0WJ+O5tvv+8USNxxnK5jHAxMRBI19BLCg9wQ9MM
-jQH7ebB0eBBtZWab3aLqFNTVfjVvEr8Hu32xhD+mtEHARS8LeXCImFIySEHlzSG3
-4IYiTjizH4exzPUfjE9WZj/dbsWMNzxRBv65QKzCsUFGd6Es/RtvHvxzgJlVk++l
-Z46w3Bg5iWPr/ON420SHEoPjAeeDQnxhswuY93tlUsBZvPTHe9vlK7QPzACbuNLU
-SxpIlAukOmMyrwFq59UYOmm/rWpxt/gxmpr/oVEZNsTLUTvpy2mqJoOyJNgDUJKT
-HOpu9iZdRgrIDE6/WoCoHw5Jw2YBbpAyCjApoFjXQY53fw3ow2SgyZUuDLYRcHnp
-nBdpAOZFD+nHxosbKoLB
-=Fc7s
------END PGP SIGNATURE-----
+oops... I will correct this 
 
---Signature=_Wed__28_Mar_2012_23_19_10_+1100_3wK5ySiHIExxtj7z--
+
