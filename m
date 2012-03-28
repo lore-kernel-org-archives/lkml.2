@@ -1,88 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab2C1Nwe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 09:52:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48788 "EHLO mx1.redhat.com"
+	id S1758075Ab2C1Nw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 09:52:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16445 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab2C1Nwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 09:52:33 -0400
-Date: Wed, 28 Mar 2012 15:51:40 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 39/39] autonuma: NUMA scheduler SMT awareness
-Message-ID: <20120328135140.GD5906@redhat.com>
-References: <1332783986-24195-1-git-send-email-aarcange@redhat.com>
- <1332783986-24195-40-git-send-email-aarcange@redhat.com>
- <1332788223.16159.185.camel@twins>
- <20120327000012.GC5906@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327000012.GC5906@redhat.com>
+	id S1756854Ab2C1Nw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 09:52:58 -0400
+Date: Wed, 28 Mar 2012 10:52:12 -0300
+From: Flavio Leitner <fbl@redhat.com>
+To: Alexandru Copot <alex.mihai.c@gmail.com>
+Cc: davem@davemloft.net, eric.dumazet@gmail.com, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Baluta <dbaluta@ixiacom.com>
+Subject: Re: [PATCH] tcp: bind() use stronger condition for bind_conflict
+Message-ID: <20120328105212.1cb8dfe5@asterix.rh>
+In-Reply-To: <1332882712-10756-1-git-send-email-alex.mihai.c@gmail.com>
+References: <1332882712-10756-1-git-send-email-alex.mihai.c@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 02:00:12AM +0200, Andrea Arcangeli wrote:
-> On Mon, Mar 26, 2012 at 08:57:03PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2012-03-26 at 19:46 +0200, Andrea Arcangeli wrote:
-> > > Add SMT awareness to the NUMA scheduler so that it will not move load
-> > > from fully idle SMT threads, to semi idle SMT threads.
-> > 
-> > This shows a complete fail in design, you're working around the regular
-> > scheduler/load-balancer instead of with it and hence are duplicating all
-> > kinds of stuff.
-> > 
-> > I'll not have that..
+On Wed, 28 Mar 2012 00:11:52 +0300
+Alexandru Copot <alex.mihai.c@gmail.com> wrote:
+
+> We must try harder to get unique (addr, port) pairs when
+> doing port autoselection for sockets with SO_REUSEADDR
+> option set.
 > 
-> I think here you're misunderstanding implementation issues with
-> design.
+> We achieve this by adding a relaxation parameter to
+> inet_csk_bind_conflict. When 'relax' parameter is off
+> we return a conflict whenever the current searched
+> pair (addr, port) is not unique.
 > 
-> I already mentioned the need of closer integration in CFS as point 4
-> of my TODO list in the first email of this thread. The current
+> This tries to address the problems reported in patch:
+> 	8d238b25b1ec22a73b1c2206f111df2faaff8285
+> 	Revert "tcp: bind() fix when many ports are bound"
+> 
+> Signed-off-by: Alexandru Copot <alex.mihai.c@gmail.com>
+> Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
+> ---
+>  include/net/inet6_connection_sock.h |    2 +-
+>  include/net/inet_connection_sock.h  |    4 ++--
+>  net/ipv4/inet_connection_sock.c     |   17 +++++++++++++----
+>  net/ipv6/inet6_connection_sock.c    |    3 ++-
+>  4 files changed, 18 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/net/inet6_connection_sock.h b/include/net/inet6_connection_sock.h
+> index 3207e58..9d29ae2 100644
+> --- a/include/net/inet6_connection_sock.h
+> +++ b/include/net/inet6_connection_sock.h
+> @@ -23,7 +23,7 @@ struct sock;
+>  struct sockaddr;
+>  
+>  extern int inet6_csk_bind_conflict(const struct sock *sk,
+> -				   const struct inet_bind_bucket *tb);
+> +				   const struct inet_bind_bucket *tb, int relax);
+>  
+>  extern struct dst_entry* inet6_csk_route_req(struct sock *sk,
+>  					     const struct request_sock *req);
+> diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
+> index dbf9aab..f05a032 100644
+> --- a/include/net/inet_connection_sock.h
+> +++ b/include/net/inet_connection_sock.h
+> @@ -60,7 +60,7 @@ struct inet_connection_sock_af_ops {
+>  #endif
+>  	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
+>  	int	    (*bind_conflict)(const struct sock *sk,
+> -				     const struct inet_bind_bucket *tb);
+> +				     const struct inet_bind_bucket *tb, int relax);
+>  };
+>  
+>  /** inet_connection_sock - INET connection oriented sock
+> @@ -245,7 +245,7 @@ extern struct request_sock *inet_csk_search_req(const struct sock *sk,
+>  						const __be32 raddr,
+>  						const __be32 laddr);
+>  extern int inet_csk_bind_conflict(const struct sock *sk,
+> -				  const struct inet_bind_bucket *tb);
+> +				  const struct inet_bind_bucket *tb, int relax);
+>  extern int inet_csk_get_port(struct sock *sk, unsigned short snum);
+>  
+>  extern struct dst_entry* inet_csk_route_req(struct sock *sk,
+> diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+> index 19d66ce..bf50e77 100644
+> --- a/net/ipv4/inet_connection_sock.c
+> +++ b/net/ipv4/inet_connection_sock.c
+> @@ -53,7 +53,7 @@ void inet_get_local_port_range(int *low, int *high)
+>  EXPORT_SYMBOL(inet_get_local_port_range);
+>  
+>  int inet_csk_bind_conflict(const struct sock *sk,
+> -			   const struct inet_bind_bucket *tb)
+> +			   const struct inet_bind_bucket *tb, int relax)
+>  {
+>  	struct sock *sk2;
+>  	struct hlist_node *node;
+> @@ -79,6 +79,13 @@ int inet_csk_bind_conflict(const struct sock *sk,
+>  				    sk2_rcv_saddr == sk_rcv_saddr(sk))
+>  					break;
+>  			}
+> +			if (!relax && reuse && sk2->sk_reuse &&
+> +					sk2->sk_state != TCP_LISTEN) {
+> +				const __be32 sk2_rcv_saddr = sk_rcv_saddr(sk2);
+> +				if (!sk2_rcv_saddr || !sk_rcv_saddr(sk) ||
+> +						sk2_rcv_saddr == sk_rcv_saddr(sk))
 
-I pushed an autonuma-alpha11 branch where I dropped the SMT logic
-entirely from the AutoNUMA scheduler. The one you naked. Not just
-that, I dropped the idle balancing as well.
+I am still checking the patch, but the above is out of coding style.
+perhaps:
++				if (!sk2_rcv_saddr || !sk_rcv_saddr(sk) ||
++				    sk2_rcv_saddr == sk_rcv_saddr(sk))
 
-It seems slower to react but its active idle balancing is smarter and
-in average it's maxing out the memory channels bandwidth better now.
 
-I hope I eliminated the code duplication. What remains AutoNUMA is the
-NUMA load active balancing which CFS has zero clues about.
+> +					break;
+> +			}
+>  		}
+>  	}
+>  	return node != NULL;
+> @@ -122,12 +129,13 @@ again:
+>  					    (tb->num_owners < smallest_size || smallest_size == -1)) {
+>  						smallest_size = tb->num_owners;
+>  						smallest_rover = rover;
+> -						if (atomic_read(&hashinfo->bsockets) > (high - low) + 1) {
+> +						if (atomic_read(&hashinfo->bsockets) > (high - low) + 1 &&
+> +							!inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb, 0)) {
 
-I did a full regression test and it passed it, and now multi instance
-stream shall also run much faster with nr_process > 1 and nr_process <
-nr_cpus/2.
+Same above.
 
-About the need of closer integration with CFS, note also that your
-kernel/sched/numa.c code was doing things like:
+>  							snum = smallest_rover;
+>  							goto tb_found;
+>  						}
+>  					}
+> -					if (!inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb)) {
+> +					if (!inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb, 0)) {
+>  						snum = rover;
+>  						goto tb_found;
+>  					}
+> @@ -178,12 +186,13 @@ tb_found:
+>  			goto success;
+>  		} else {
+>  			ret = 1;
+> -			if (inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb)) {
+> +			if (inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb, 1)) {
+>  				if (sk->sk_reuse && sk->sk_state != TCP_LISTEN &&
+>  				    smallest_size != -1 && --attempts >= 0) {
+>  					spin_unlock(&head->lock);
+>  					goto again;
+>  				}
+> +
+>  				goto fail_unlock;
+>  			}
+>  		}
+> diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection_sock.c
+> index 02dd203..dfc8bc3 100644
+> --- a/net/ipv6/inet6_connection_sock.c
+> +++ b/net/ipv6/inet6_connection_sock.c
+> @@ -28,7 +28,8 @@
+>  #include <net/inet6_connection_sock.h>
+>  
+>  int inet6_csk_bind_conflict(const struct sock *sk,
+> -			    const struct inet_bind_bucket *tb)
+> +			    const struct inet_bind_bucket *tb,
+> +				int relax)
 
-+       // XXX should be sched_domain aware
-+       for_each_online_node(node) {
+Same here
+Maybe you can wait for more feedbacks before spin another patch 
+version just to fix that.
 
-So I hope you will understand why I had to took a bit of shortcuts but
-over time I'm fully committed to integrate numa.c better wherever
-possible and especially remove the call at every schedule so it will
-scale fine to thousand of CPUs. It's just not trivial to do it.
 
-About your code, I've an hard time to believe that driving the
-scheduler depending on an home node static placement decided at
-exec/fork like your code does, could have a chance to compete with the
-AutoNUMA math for workloads with very variable load and several
-threads and processes going idle and loading the CPUs again. Real life
-unfortunately isn't as trivial as a multi instance stream. I believe
-you can handle multi instance streams ok though.
+fbl
+
+>  {
+>  	const struct sock *sk2;
+>  	const struct hlist_node *node;
+
