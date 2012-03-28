@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab2C1GWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 02:22:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29776 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab2C1GWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 02:22:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="122519236"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        Aaron Lu <aaron.lu@amd.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Subject: [PATCH v3 0/7] SATA ZPODD support
-Date: Wed, 28 Mar 2012 14:21:55 +0800
-Message-Id: <1332915722-15963-1-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1751467Ab2C1G10 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 02:27:26 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:39002 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab2C1G1Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 02:27:25 -0400
+Message-ID: <4F72AF45.5010101@monstr.eu>
+Date: Wed, 28 Mar 2012 08:27:17 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] arch/microblaze fixes for 3.4
+References: <4F701AB1.2050200@monstr.eu> <CA+55aFyQ54NA2VpjQP+L5G18BWfeRNn6pZ_vOXQY4ob4bwgGEg@mail.gmail.com>
+In-Reply-To: <CA+55aFyQ54NA2VpjQP+L5G18BWfeRNn6pZ_vOXQY4ob4bwgGEg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Linus Torvalds wrote:
+> On Mon, Mar 26, 2012 at 12:28 AM, Michal Simek <monstr@monstr.eu> wrote:
+>> Please pull the following two patches.
+> 
+> Two patches? There's much more than that there, and you list them too. Whazzup?
 
-This is the v3 patches to add SATA ZPODD support.
+agrrr. c&p fault, sorry. I will send new one.
 
-I split the ACPI D3Cold state support patches out.
-You can find it here:
+Thanks,
+Michal
 
-[PATCH v2 0/2] ACPI D3Cold state support
-https://lkml.org/lkml/2012/3/27/52
 
-v3:
-- Split the ACPI D3Cold state support patches out
-- Adds "Device Attention" bit check
 
-v2:
-- _PR3 indicates D3Cold support
-- move can_power_off flag to pm_subsys_data
-- allow all combinations of power resource and device
-- split patches into smaller ones to make review easy
-
-v1:
-https://lkml.org/lkml/2012/2/13/86
-
-[PATCH v3 1/7] libata-acpi: set acpi state for SATA port
-[PATCH v3 2/7] libata-acpi: add ata port runtime D3Cold support
-[PATCH v3 3/7] libata-acpi: register/unregister device to/from power resource
-[PATCH v3 4/7] libata: detech Device Attention support
-[PATCH v3 5/7] libata: tell scsi layer device supports runtime power off
-[PATCH v3 6/7] PM / Runtime: Add can_power_off flag to subsys data
-[PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-
- drivers/ata/libata-acpi.c  |  137 +++++++++++++++++++++++++++++++++++++++----
- drivers/ata/libata-core.c  |    3 +
- drivers/ata/libata-scsi.c  |    8 ++-
- drivers/ata/libata.h       |    8 +-
- drivers/scsi/scsi_pm.c     |    8 +++
- drivers/scsi/sr.c          |   44 ++++++++++++++
- drivers/scsi/sr.h          |    2 +
- include/linux/ata.h        |    1 +
- include/linux/libata.h     |    2 +
- include/linux/pm.h         |    1 +
- include/scsi/scsi_device.h |    3 +
- 11 files changed, 197 insertions(+), 20 deletions(-)
-
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
