@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab2C1Cpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Mar 2012 22:45:30 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60565 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756564Ab2C1Cp3 (ORCPT
+	id S932342Ab2C1Cwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Mar 2012 22:52:36 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:53513 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192Ab2C1Cwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Mar 2012 22:45:29 -0400
+	Tue, 27 Mar 2012 22:52:32 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2S2qP8e009362
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1332834834-5185-1-git-send-email-hayeswang@realtek.com> <20120327225407.GB22177@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH net-next 1/5] r8169: modify pll power function
+Date: Wed, 28 Mar 2012 10:52:24 +0800
+Message-ID: <B353B7C4530143B29686566C4F883487@realtek.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <1332834841-13925-1-git-send-email-paul.liu@linaro.org>
-References: <1332834841-13925-1-git-send-email-paul.liu@linaro.org>
-Date: Wed, 28 Mar 2012 10:45:27 +0800
-Message-ID: <CAAQ0ZWRh30PhS_zDhG5U1s8vTjETNQ0auHa9oNRt+Pv4zeCN1Q@mail.gmail.com>
-Subject: Re: [PATCH] Regulator: anatop-regulator: patching to device-tree
- property "reg".
-From: Shawn Guo <shawn.guo@linaro.org>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac0MbOOtjjhLGZseSBWWRIKsJyTjCwAHcilA
+In-Reply-To: <20120327225407.GB22177@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 March 2012 15:54, Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org> wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
->
-> Change "reg" to "anatop-reg-offset" due to there is a warning of handling no
-> size field in reg.
->
-> This patch also adds the missing device-tree binding documentation.
->
-> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Liam Girdwood <lrg@ti.com>
+ Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Wednesday, March 28, 2012 6:54 AM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH net-next 1/5] r8169: modify pll power function
+> 
+> Hayes Wang <hayeswang@realtek.com> :
+> > Adjust r810x_pll_power_down, r810x_pll_power_up, and 
+> r8168_pll_power_up.
+> > Always power up device during rtl_open.
+> > For r810x, turn off more power when the WOL is disabled.
+> 
+> Would the "Always power up" part qualify as a "fix something" change ?
+> 
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+I don't see any issue about this yet. It seems to be reasonable to make suer the
+device would work when the open is called no matter the power is turned off
+before or not. 
+
+Best Regards,
+Hayes
+
