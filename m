@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab2C1P3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 11:29:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47024 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab2C1P3F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 11:29:05 -0400
-Date: Wed, 28 Mar 2012 08:28:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: MyungJoo Ham <myungjoo.ham@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, cw00.choi@samsung.com
-Subject: Re: [PATCH v7 0/6] Introduce External Connector Class (extcon)
-Message-ID: <20120328152859.GA21001@kroah.com>
-References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
- <CAJ0PZbTScHq0MMjSWZ0X5qHChhS+6TL-xSnsqEwS34N2VFLaSw@mail.gmail.com>
- <20120328144450.GA19030@kroah.com>
- <201203281524.08021.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201203281524.08021.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932285Ab2C1P3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 11:29:20 -0400
+Received: from plane.gmane.org ([80.91.229.3]:41882 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932241Ab2C1P3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 11:29:17 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Nikos Chantziaras <realnc@gmail.com>
+Subject: Re: [ANNOUNCE] BFS CPU scheduler version 0.420 AKA "Smoking" for
+ linux kernel 3.3.0
+Date: Wed, 28 Mar 2012 18:28:53 +0300
+Organization: Lucas Barks
+Message-ID: <jkvao0$b12$1@dough.gmane.org>
+References: <CABqErrHS6C6RVMKChaPGACoaWoXCKf+6dS5KFrWG04+DnZO6Dw@mail.gmail.com> <201203240553.32526.gene.heskett@gmail.com> <57375.1332641134@turing-police.cc.vt.edu> <20120328051243.GA2138@fancy-poultry.org> <jkv0q5$kgu$1@dough.gmane.org> <20120328135336.GA1841@fancy-poultry.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: athedsl-354751.home.otenet.gr
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120325 Thunderbird/11.0
+In-Reply-To: <20120328135336.GA1841@fancy-poultry.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 03:24:07PM +0000, Arnd Bergmann wrote:
-> On Wednesday 28 March 2012, Greg KH wrote:
-> > 
-> > On Wed, Mar 28, 2012 at 06:39:08PM +0900, MyungJoo Ham wrote:
-> > > Dear Arnd,
-> > > 
-> > > Could you please consider the EXTCON patchset for the current merge window?
-> > 
-> > Wait, no, the current merge window for new stuff closed a week or so
-> > before 3.3 came out.  This needs to be in linux-next before the merge
-> > window opens to ensure that things work properly there before it can be
-> > accepted into the mainline tree.
-> > 
-> > So this could go into 3.5 at the earliest.
-> 
-> Right. I'm also not convinced that arm-soc is the right place for this to
-> go, and I had not planned to add the patches there. Unfortunately I also
-> haven't followed the last few versions and will have to do at least one
-> more review round and Ack/Nak the interfaces. I should probably do that
-> once -rc1 is out, so please send me a reminder if you don't hear back from
-> me in time.
-> 
-> Any opinions on which tree this should go through? I could take it into
-> arm-soc, but it's not really ARM-only. Maybe having it go through the
-> staging tree would be better, leaving MyungJoo in charge afterwards.
-> I guess we should also add a MAINTAINERS entry for the new subsystem.
+On 28/03/12 16:53, Heinz Diehl wrote:
+> On 28.03.2012, Nikos Chantziaras wrote:
+>
+>> CFS: ALSA XRUNs in JACK.
+>> BFS: much less ALSA XRUNs in JACK
+>
+> BFS runs on all of my machines, and I know why. But that's not the
+> point here. Why do people not accept and learn from each other? I'm
+> quite shure that both CFS and BFS has good and bad things, why not
+> take the best from both of them and improve it further?
 
-If acks come through, and I'll be glad to review it after -rc1 as well,
-I can take it through one of my trees to get merged to Linus for 3.5.
+I totally agree.  What ticks me off is people who claim that using BFS 
+means you must be schizophrenic, even though some of them posted 
+numbers.  Even on servers, BFS helped people.  For example, a server 
+running mainline was behaving badly until it was switched to BFS.  The 
+difference was quite impressive:
 
-thanks,
+http://ck-hack.blogspot.com/2011/08/phoronix-revisits-bfs.html
 
-greg k-h
+But still, many people decide to keep the "you're imagining it" 
+attitude, as if they're preparing flame-bait.
+
