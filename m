@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab2C1L22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 07:28:28 -0400
-Received: from mail2.charite.de ([141.42.206.200]:36505 "EHLO mail2.charite.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932383Ab2C1L20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 07:28:26 -0400
-Date: Wed, 28 Mar 2012 13:28:22 +0200
-From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: 3.3.0: "INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)"
-Message-ID: <20120328112822.GH16671@charite.de>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <20120327141536.GP25457@charite.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120327141536.GP25457@charite.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932517Ab2C1L2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 07:28:55 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42017 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932453Ab2C1L2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 07:28:53 -0400
+Subject: Re: [Keyrings] [PATCH 2/9] keys: update the description with info
+ about "logon" keys
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: jmorris@namei.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, Jeff Layton <jlayton@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 28 Mar 2012 07:28:18 -0400
+In-Reply-To: <20120328104619.10417.78851.stgit@warthog.procyon.org.uk>
+References: <20120328104607.10417.85745.stgit@warthog.procyon.org.uk>
+	 <20120328104619.10417.78851.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1332934098.2297.11.camel@falcor>
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032811-2398-0000-0000-00000561A6B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>:
+On Wed, 2012-03-28 at 11:46 +0100, David Howells wrote:
+> From: Jeff Layton <jlayton@redhat.com>
 > 
-> Mar 23 11:54:00 mail kernel:
-> Mar 23 11:54:00 mail kernel: [347213.025005] INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)
-> Mar 23 11:54:00 mail kernel: [347213.025005] Pid: 12654, comm: cleanup Not tainted 3.3.0 #1
-> Mar 23 11:54:00 mail kernel: [347213.025005] Call Trace:
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1062ccb>] ? __rcu_pending+0x10a/0x311
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c106388d>] ? rcu_check_callbacks+0x9b/0xa1
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c102c434>] ? update_process_times+0x2a/0x53
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c104f206>] ? tick_sched_timer+0x4f/0x90
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a101>] ? __remove_hrtimer+0x25/0x79
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a2ff>] ? __run_hrtimer.isra.32+0x38/0xbe
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103ad95>] ? hrtimer_interrupt+0xda/0x23d
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1016493>] ? smp_apic_timer_interrupt+0x4c/0x81
-> Mar 23 11:54:00 mail kernel: [347213.025005]  [<c127b5d9>] ? apic_timer_interrupt+0x31/0x38
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+> 
+>  Documentation/security/keys.txt |   15 ++++++++++++++-
+>  1 files changed, 14 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+> index 7877170..4c8cf36 100644
+> --- a/Documentation/security/keys.txt
+> +++ b/Documentation/security/keys.txt
+> @@ -123,7 +123,7 @@ KEY SERVICE OVERVIEW
+> 
+>  The key service provides a number of features besides keys:
+> 
+> - (*) The key service defines two special key types:
+> + (*) The key service defines three special key types:
+> 
+>       (+) "keyring"
+> 
+> @@ -137,6 +137,19 @@ The key service provides a number of features besides keys:
+>  	 blobs of data. These can be created, updated and read by userspace,
+>  	 and aren't intended for use by kernel services.
+> 
+> +     (+) "logon"
+> +
+> +         Like a "user" key, a "logon" key has a payload that is an arbitrary
+> +         blob of data. It is intended as a place to store secrets that the
+> +         to which the kernel should have access but that should not be
+> +         accessable from userspace.
 
-I read http://www.kernel.org/doc/Documentation/RCU/stallwarn.txt
-but couldn't find "rcu_bh detected stall" being mentioned there.
+The last sentence is a bit awkward.  Can we rephrase it a bit?  Maybe
+"which is accessible by the kernel, ..."?
 
-I reported the same issue on 3.2.9 (same machine!) on the 13th of march:
+thanks,
 
-Mar 12 12:58:38 mail kernel: [440746.244002] INFO: rcu_bh detected stall on CPU 2 (t=0 jiffies)
-Mar 12 12:58:38 mail kernel: [440746.244002] Pid: 27980, comm: /usr/sbin/amavi Tainted: G        W    3.2.9 #1
-Mar 12 12:58:38 mail kernel: [440746.244002] Call Trace:
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1061d26>] ? __rcu_pending+0x10a/0x30e
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c10626ca>] ? rcu_check_callbacks+0xd4/0xde
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1035cf2>] ? update_process_times+0x2a/0x53
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c104e1d2>] ? tick_sched_timer+0x4d/0x8e
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1043b53>] ? __remove_hrtimer+0x25/0x79
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1043d4f>] ? __run_hrtimer.isra.32+0x37/0xbd
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c10445d5>] ? hrtimer_interrupt+0xdb/0x23d
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1015e4c>] ? smp_apic_timer_interrupt+0x4c/0x81
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1275491>] ? apic_timer_interrupt+0x31/0x38 
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b8c2>] ? do_page_fault+0x141/0x38f
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1030d8d>] ? irq_exit+0x34/0x87
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1015e51>] ? smp_apic_timer_interrupt+0x51/0x81
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
-Mar 12 12:58:38 mail kernel: [440746.244002]  [<c12756b7>] ? error_code+0x67/0x6c
+Mimi
 
-and so did Tilman Schmidt in February:
-https://lkml.org/lkml/2012/2/18/34
+> +
+> +         The description can be arbitrary, but must be prefixed with a non-zero
+> +         length string that describes the key "subclass". The subclass is
+> +         separated from the rest of the description by a ':'. "logon" keys can
+> +         be created and updated by userspace, but the payload is only readable
+> +         from kernel space.
+> +
+>   (*) Each process subscribes to three keyrings: a thread-specific keyring, a
+>       process-specific keyring, and a session-specific keyring.
 
--- 
-Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
-ralf.hildebrandt@charite.de        Campus Benjamin Franklin
-http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
-Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
+
+
