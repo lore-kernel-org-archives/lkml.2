@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab2C1Wkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 18:40:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36984 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758638Ab2C1Wkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 18:40:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124520410"
-Date: Thu, 29 Mar 2012 06:35:42 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        Suresh Jayaraman <sjayaraman@suse.com>,
-        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
-Message-ID: <20120328223542.GA11065@localhost>
-References: <20120328121308.568545879@intel.com>
- <20120328211017.GF3376@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328211017.GF3376@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758994Ab2C1Wnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 18:43:47 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:40947 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933199Ab2C1WnW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 18:43:22 -0400
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 0/5] x86: Cleanup and simplify cpu-specific data
+Date: Wed, 28 Mar 2012 19:43:02 -0300
+Message-Id: <1332974587-15452-1-git-send-email-kjwinchester@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20120227115905.GB9943@elte.hu>
+References: <20120227115905.GB9943@elte.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
+Various per-cpu fields are define in arch/x86/kernel/smpboot.c that are
+basically equivalent to the cpu-specific data in struct cpuinfo_x86.
+By moving these fields into the structure, a number of codepaths can be
+simplified since they no longer need to care about those fields not
+existing on !SMP builds.
 
-On Wed, Mar 28, 2012 at 05:10:18PM -0400, Vivek Goyal wrote:
-> On Wed, Mar 28, 2012 at 08:13:08PM +0800, Fengguang Wu wrote:
-> > 
-> > Here is one possible solution to "buffered write IO controller", based on Linux
-> > v3.3
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git  buffered-write-io-controller
-> > 
-> > Features:
-> > - support blkio.weight
-> 
-> So this does proportional write bandwidth division on bdi for buffered
-> writes?
+The size effects on allno (UP) and allyes (MAX_SMP) kernels are as
+follows:
 
-Right. That is done in patch 3, costing only 3 lines in balance_dirty_pages().
+text      data      bss	      dec        hex      filename
+ 1369227    181536   1399180    2949943   2d0337  vmlinux.i386.allno
+ 1370216    181600   1399012    2950828	  2d06ac  vmlinux.i386.allno.after
+ 1608231    310968    505088    2424287   24fddf  vmlinux.x86_64.allno
+ 1609232    311032    504896    2425160   250148  vmlinux.x86_64.allno.after
+97643748   6891747  34668544  139204039  84c15c7  vmlinux.i386.allyes
+97643582   6892011  34668544  139204137  84c1629  vmlinux.i386.allyes.after
+85869519  13567071  44511232  143947822  894782e  vmlinux.x86_64.allyes
+85869134  13568607  44511232  143948973  8947cad  vmlinux.x86_64.allyes.after
 
-> > - support blkio.throttle.buffered_write_bps
-> 
-> This is absolute limit systemwide or per bdi?
 
-It's per-blkcg absolute limit. It can be extended to per-blkcg-per-bdi
-limits w/o changing the basic algorithms. We only need to change interface and
-vectorize the variables:
-        struct percpu_counter nr_dirtied;
-        unsigned long bw_time_stamp;
-        unsigned long dirtied_stamp;
-        unsigned long dirty_ratelimit;
-        unsigned long long buffered_write_bps;
-and add a "bdi" parameter to relevant functions.
+As can be seen, the kernels get slighly larger, but the code reduction/
+simplification should be enough to compensate for it.
 
-> [..]
-> > The test results included in the last patch look pretty good in despite of the
-> > simple implementation.
-> > 
-> >  [PATCH 1/6] blk-cgroup: move blk-cgroup.h in include/linux/blk-cgroup.h
-> >  [PATCH 2/6] blk-cgroup: account dirtied pages
-> >  [PATCH 3/6] blk-cgroup: buffered write IO controller - bandwidth weight
-> >  [PATCH 4/6] blk-cgroup: buffered write IO controller - bandwidth limit
-> >  [PATCH 5/6] blk-cgroup: buffered write IO controller - bandwidth limit interface
-> >  [PATCH 6/6] blk-cgroup: buffered write IO controller - debug trace
-> > 
-> 
-> Hi Fengguang,
-> 
-> Only patch 0 and patch 4 have shown up in my mail box. Same seems to be
-> the case for lkml. I am wondering what happened to rest of the patches.
+Changes in v5:
+- Reduced the number of files affected in the patchset by keeping helper
+functions in arch/x86/include/asm/smp.h
+- Rebased to latest tip/master
 
-Sorry I shut down my laptop before all emails are sent out.
+Kevin Winchester (5):
+  x86: Move per cpu cpu_llc_shared_map to a field in struct cpuinfo_x86
+  x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
+  x86: Move per cpu cpu_sibling_map to a field in struct cpuinfo_x86
+  x86: Move per cpu cpu_core_map to a field in struct cpuinfo_x86
+  x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings
+    into common.c
 
-> Will understand the patches better once I have the full set.
+ arch/x86/include/asm/perf_event_p4.h  |   14 +++---------
+ arch/x86/include/asm/processor.h      |   10 +++++++++
+ arch/x86/include/asm/smp.h            |   17 ++++----------
+ arch/x86/include/asm/topology.h       |    8 +++----
+ arch/x86/kernel/apic/apic_numachip.c  |    2 +-
+ arch/x86/kernel/cpu/amd.c             |   19 +++++-----------
+ arch/x86/kernel/cpu/common.c          |    5 +++++
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   11 ++--------
+ arch/x86/kernel/cpu/mcheck/mce_amd.c  |    2 --
+ arch/x86/kernel/cpu/perf_event_p4.c   |    4 ++--
+ arch/x86/kernel/cpu/proc.c            |    5 ++---
+ arch/x86/kernel/process.c             |    5 ++---
+ arch/x86/kernel/smpboot.c             |   39 +++++++--------------------------
+ arch/x86/oprofile/nmi_int.c           |    6 -----
+ arch/x86/oprofile/op_model_p4.c       |   11 +---------
+ arch/x86/xen/smp.c                    |    6 -----
+ drivers/cpufreq/p4-clockmod.c         |    2 --
+ drivers/cpufreq/powernow-k8.c         |    7 ------
+ drivers/cpufreq/speedstep-ich.c       |    2 --
+ drivers/hwmon/coretemp.c              |    4 ----
+ 20 files changed, 48 insertions(+), 131 deletions(-)
 
-OK, thanks!
+-- 
+1.7.9.5
 
-Fengguang
