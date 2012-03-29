@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933357Ab2C2AJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 20:09:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58637 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab2C2AJD (ORCPT
+	id S933308Ab2C2AK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 20:10:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:24884 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932609Ab2C2AKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 20:09:03 -0400
-Date: Wed, 28 Mar 2012 17:09:00 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-cc: Sasha Levin <levinsasha928@gmail.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: BUG: sleeping function called from invalid context at
- fs/proc/task_mmu.c:826
-In-Reply-To: <20120328181820.GB14224@redhat.com>
-Message-ID: <alpine.DEB.2.00.1203281706430.8554@chino.kir.corp.google.com>
-References: <20120328181820.GB14224@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 28 Mar 2012 20:10:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6663"; a="174463036"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: Satyam Sharma <satyam@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] sched: Fix __schedule_bug() output when called from an interrupt
+Date: Wed, 28 Mar 2012 17:10:47 -0700
+Message-Id: <1332979847-27102-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.10.rc2.27.g59012
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012, Dave Jones wrote:
+If schedule is called from an interrupt handler __schedule_bug()
+will call show_regs() with the registers saved during the
+interrupt handling done in do_IRQ(). This means we'll see the
+registers and the backtrace for the process that was interrupted
+and not the full backtrace explaining who called schedule().
 
-> Just hit this on v3.3-7919-g6658a69
-> 
-> 	Dave
-> 
-> BUG: sleeping function called from invalid context at fs/proc/task_mmu.c:826
-> in_atomic(): 1, irqs_disabled(): 0, pid: 15123, name: trinity
-> INFO: lockdep is turned off.
-> Pid: 15123, comm: trinity Not tainted 3.3.0+ #30
-> Call Trace:
->  [<ffffffff8109bf75>] __might_sleep+0x145/0x200
->  [<ffffffff8122ee77>] ? pagemap_pte_range+0x67/0x340
->  [<ffffffff8122ef3f>] pagemap_pte_range+0x12f/0x340
->  [<ffffffff811924b9>] walk_page_range+0x389/0x520
->  [<ffffffff8122e9a2>] pagemap_read+0x282/0x350
->  [<ffffffff8122ee10>] ? clear_refs_pte_range+0x180/0x180
->  [<ffffffff8122d340>] ? get_vmalloc_info+0x110/0x110
->  [<ffffffff8122e5c0>] ? pid_numa_maps_open+0x20/0x20
->  [<ffffffff811c3a43>] vfs_read+0xb3/0x180
->  [<ffffffff811c3b5d>] sys_read+0x4d/0x90
->  [<ffffffff816c02a9>] system_call_fastpath+0x16/0x1b
-> 
+This is due to 838225b (sched: use show_regs() to improve
+__schedule_bug() output, 2007-10-24) which improperly assumed
+that get_irq_regs() would return the registers for the current
+stack because it is being called from within an interrupt
+handler. Simply remove the show_reg() code so that we dump a
+backtrace for the interrupt handler that called schedule().
 
-This looks like it was already reported as 
-http://marc.info/?l=linux-kernel&m=133289254323384 by Sasha Levin.  We're 
-waiting for a patch to push to stable from Naoya Horiguchi.
+Cc: Satyam Sharma <satyam@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+
+I ran across this when I was presented with a scheduling while
+atomic log with a stacktrace pointing at spin_unlock_irqrestore().
+It made no sense and I had to guess what interrupt handler could
+be called and poke around for someone calling schedule() in an
+interrupt handler. A simple test of putting an msleep() in
+an interrupt handler works better with this patch because you 
+can actually see the msleep() call in the backtrace.
+
+ kernel/sched/core.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3b4e8b7..b496a0b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3101,8 +3101,6 @@ EXPORT_SYMBOL(sub_preempt_count);
+  */
+ static noinline void __schedule_bug(struct task_struct *prev)
+ {
+-	struct pt_regs *regs = get_irq_regs();
+-
+ 	if (oops_in_progress)
+ 		return;
+ 
+@@ -3113,11 +3111,7 @@ static noinline void __schedule_bug(struct task_struct *prev)
+ 	print_modules();
+ 	if (irqs_disabled())
+ 		print_irqtrace_events(prev);
+-
+-	if (regs)
+-		show_regs(regs);
+-	else
+-		dump_stack();
++	dump_stack();
+ }
+ 
+ /*
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
