@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759894Ab2C2Qti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:49:38 -0400
+	id S1759747Ab2C2Qts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:49:48 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:61721 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759753Ab2C2Qr7 (ORCPT
+	with ESMTP id S1759737Ab2C2Qrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 12:47:59 -0400
+	Thu, 29 Mar 2012 12:47:48 -0400
 From: Jiang Liu <liuj97@gmail.com>
-To: Greg KH <greg@kroah.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Jes Sorensen <jes@sgi.com>,
-        David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-altix@sgi.com, Jiang Liu <liuj97@gmail.com>,
-        Keping Chen <chenkeping@huawei.com>
-Subject: [PATCH v2 3/3] IRQ,IA64: normalize return value of chip->irq_set_affinity() method
-Date: Fri, 30 Mar 2012 00:44:53 +0800
-Message-Id: <1333039493-4090-3-git-send-email-jiang.liu@huawei.com>
+To: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>, Cliff Wickman <cpw@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>
+Subject: [PATCH v2 2/3] IRQ,x86: normalize return value of chip->irq_set_affinity() method
+Date: Fri, 30 Mar 2012 00:44:52 +0800
+Message-Id: <1333039493-4090-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1333039493-4090-1-git-send-email-jiang.liu@huawei.com>
 References: <1333039493-4090-1-git-send-email-jiang.liu@huawei.com>
@@ -29,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On IA64 platforms, interrupt controller chip's irq_set_affinity() method
+On x86 platforms, interrupt controller chip's irq_set_affinity() method
 always copies affinity mask to irq_data->affinity field but still returns
 0(IRQ_SET_MASK_OK). That return value causes the interrupt core logic
 unnecessarily copies the mask to irq_data->affinity field again.
@@ -38,76 +36,80 @@ the duplicated copy operation.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- arch/ia64/kernel/iosapic.c   |    4 +++-
- arch/ia64/kernel/msi_ia64.c  |    4 ++--
- arch/ia64/sn/kernel/irq.c    |    2 +-
- arch/ia64/sn/kernel/msi_sn.c |    2 +-
- 4 files changed, 7 insertions(+), 5 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
+ arch/x86/platform/uv/uv_irq.c  |    2 +-
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
-index ef4b5d8..47a4d1e 100644
---- a/arch/ia64/kernel/iosapic.c
-+++ b/arch/ia64/kernel/iosapic.c
-@@ -373,8 +373,10 @@ iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		iosapic_write(iosapic, IOSAPIC_RTE_LOW(rte_index), low32);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 6d10a66..092a715 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2346,6 +2346,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+ 		__target_IO_APIC_irq(irq, dest, data->chip_data);
++		ret = IRQ_SET_MASK_OK_NOCOPY;
  	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 	return ret;
+@@ -2404,7 +2405,7 @@ ir_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		send_cleanup_vector(cfg);
  
-+	return IRQ_SET_MASK_OK_NOCOPY;
-+#else
-+	return IRQ_SET_MASK_OK;
- #endif
+ 	cpumask_copy(data->affinity, mask);
 -	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #else
+@@ -3209,7 +3210,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 
+ 	__write_msi_msg(data->msi_desc, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ #endif /* CONFIG_SMP */
+ 
+@@ -3366,7 +3367,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 
+ 	dmar_msi_write(irq, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif /* CONFIG_SMP */
+@@ -3419,7 +3420,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 
+ 	hpet_msi_write(data->handler_data, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif /* CONFIG_SMP */
+@@ -3499,7 +3500,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 		return -1;
+ 
+ 	target_ht_irq(data->irq, dest, cfg->vector);
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index f25c276..a22c416 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	if (cfg->move_in_progress)
+ 		send_cleanup_vector(cfg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
  }
  
  /*
-diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-index fb2f1e6..ca66c6a 100644
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -41,7 +41,7 @@ static int ia64_set_msi_irq_affinity(struct irq_data *idata,
- 	write_msi_msg(irq, &msg);
- 	cpumask_copy(idata->affinity, cpumask_of(cpu));
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-@@ -157,7 +157,7 @@ static int dmar_msi_set_affinity(struct irq_data *data,
- 	dmar_msi_write(irq, &msg);
- 	cpumask_copy(data->affinity, mask);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-diff --git a/arch/ia64/sn/kernel/irq.c b/arch/ia64/sn/kernel/irq.c
-index 62cf4dd..aa58931 100644
---- a/arch/ia64/sn/kernel/irq.c
-+++ b/arch/ia64/sn/kernel/irq.c
-@@ -216,7 +216,7 @@ static int sn_set_affinity_irq(struct irq_data *data,
- 				 sn_irq_lh[irq], list)
- 		(void)sn_retarget_vector(sn_irq_info, nasid, slice);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #ifdef CONFIG_SMP
-diff --git a/arch/ia64/sn/kernel/msi_sn.c b/arch/ia64/sn/kernel/msi_sn.c
-index 2b98b9e..ebb5b55 100644
---- a/arch/ia64/sn/kernel/msi_sn.c
-+++ b/arch/ia64/sn/kernel/msi_sn.c
-@@ -208,7 +208,7 @@ static int sn_set_msi_irq_affinity(struct irq_data *data,
- 	write_msi_msg(irq, &msg);
- 	cpumask_copy(data->affinity, cpu_mask);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
 -- 
 1.7.5.4
 
