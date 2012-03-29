@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab2C2Pg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 11:36:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22694 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932608Ab2C2Pgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 11:36:48 -0400
-Message-ID: <4F748187.1070209@parallels.com>
-Date: Thu, 29 Mar 2012 19:36:39 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	id S933473Ab2C2Pir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 11:38:47 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50285 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab2C2Pim convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 11:38:42 -0400
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/8] NFSd: precursor and cleanup patch set
-References: <20120328150152.2646.33607.stgit@localhost6.localdomain6> <20120329143218.GI16938@fieldses.org>
-In-Reply-To: <20120329143218.GI16938@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120209185043.GA12089@joshcartwright.net>
+References: <20120209185043.GA12089@joshcartwright.net>
+Date: Thu, 29 Mar 2012 08:38:41 -0700
+Message-ID: <CAN8TOE-9fxbc8PM8oNVBc_tUdkYBhV6jTG8_M5GdjLNGpLhKKA@mail.gmail.com>
+Subject: Re: [PATCH] jffs2: Fix lock acquisition order bug in gc path
+From: Brian Norris <computersforpeace@gmail.com>
+To: Josh Cartwright <joshc@linux.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-29.03.2012 18:32, J. Bruce Fields пишет:
-> On Wed, Mar 28, 2012 at 07:08:53PM +0400, Stanislav Kinsbursky wrote:
->> This patch set prepares ground for making NFSd export and expkey caches
->> allocated and registered per network namespace context.
->> Mainly, it just replaces hard-coded pointers with dereferenced everywhere
->> required.
->
-> Thanks.  I'll be travelling next week and may not get to look at this
-> till I get back.
->
+On Thu, Feb 9, 2012 at 10:50 AM, Josh Cartwright <joshc@linux.com> wrote:
+> The locking policy is such that the erase_complete_block spinlock is
+> nested within the alloc_sem mutex. �This fixes a case in which the
+> acquisition order was erroneously reversed. �This issue was caught by
+> the following lockdep splat:
 
-Yep, sure. No rush here...
+(Bump.) Anybody interested in this patch? It seemed sane to me, and I
+had it sitting in my inbox. It does need a trivial rebase, BTW.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Brian
