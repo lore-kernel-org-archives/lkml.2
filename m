@@ -1,43 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab2C2UHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:07:07 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60235 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933798Ab2C2UG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:06:57 -0400
-Message-ID: <1333051616.15602.23.camel@joe2Laptop>
-Subject: Re: [PATCH] percpu: use KERN_CONT in pcpu_dump_alloc_info()
-From: Joe Perches <joe@perches.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 29 Mar 2012 13:06:56 -0700
-In-Reply-To: <CAOS58YOWA9U3Esb2535v_iivPaXeFYYS3nWd2KKF1=MsfZ0Piw@mail.gmail.com>
-References: <20120329164842.GE28941@google.com>
-	 <1333044612.15602.4.camel@joe2Laptop>
-	 <CAOS58YOWA9U3Esb2535v_iivPaXeFYYS3nWd2KKF1=MsfZ0Piw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933819Ab2C2UHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:07:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54659 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759744Ab2C2UC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 16:02:28 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH v17 04/15] net/compat.c,linux/filter.h: share compat_sock_fprog
+Date: Thu, 29 Mar 2012 15:01:49 -0500
+Message-Id: <1333051320-30872-5-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1333051320-30872-1-git-send-email-wad@chromium.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-29 at 12:51 -0700, Tejun Heo wrote:
-> Hello, Joe.
+Any other users of bpf_*_filter that take a struct sock_fprog from
+userspace will need to be able to also accept a compat_sock_fprog
+if the arch supports compat calls.  This change let's the existing
+compat_sock_fprog be shared.
 
-Hello Tejun.
+Signed-off-by: Will Drewry <wad@chromium.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-> On Thu, Mar 29, 2012 at 11:10 AM, Joe Perches <joe@perches.com> wrote:
-> > Perhaps it's better to try to print lines
-> > in fewer printks?  Maybe use a line buffer?
-> What practical difference would that make?
+v14..v17: rebase/nochanges
+v13: rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
+v12: rebase on to linux-next
+v11: introduction
+---
+ include/linux/filter.h |   11 +++++++++++
+ net/compat.c           |    8 --------
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
-It'd be just for avoidance of any other possible
-interleaving from other threads.
-
-It's an __init function so that's not too likely,
-but if it every happens...
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index aaa2e80..f2e5315 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -10,6 +10,7 @@
+ 
+ #ifdef __KERNEL__
+ #include <linux/atomic.h>
++#include <linux/compat.h>
+ #endif
+ 
+ /*
+@@ -132,6 +133,16 @@ struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
+ 
+ #ifdef __KERNEL__
+ 
++#ifdef CONFIG_COMPAT
++/*
++ * A struct sock_filter is architecture independent.
++ */
++struct compat_sock_fprog {
++	u16		len;
++	compat_uptr_t	filter;		/* struct sock_filter * */
++};
++#endif
++
+ struct sk_buff;
+ struct sock;
+ 
+diff --git a/net/compat.c b/net/compat.c
+index 64b4515..a3a008e 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -326,14 +326,6 @@ void scm_detach_fds_compat(struct msghdr *kmsg, struct scm_cookie *scm)
+ 	__scm_destroy(scm);
+ }
+ 
+-/*
+- * A struct sock_filter is architecture independent.
+- */
+-struct compat_sock_fprog {
+-	u16		len;
+-	compat_uptr_t	filter;		/* struct sock_filter * */
+-};
+-
+ static int do_set_attach_filter(struct socket *sock, int level, int optname,
+ 				char __user *optval, unsigned int optlen)
+ {
+-- 
+1.7.5.4
 
