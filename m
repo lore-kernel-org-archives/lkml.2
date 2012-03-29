@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994Ab2C2VP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:15:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33798 "EHLO
+	id S934006Ab2C2VQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:16:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33795 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933922Ab2C2VM6 (ORCPT
+	with ESMTP id S933921Ab2C2VM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:12:58 -0400
+	Thu, 29 Mar 2012 17:12:57 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH 10/17] ia64: mark const init data with __initconst instead of __initdata
-Date: Thu, 29 Mar 2012 23:12:27 +0200
-Message-Id: <1333055554-31300-10-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: kernel@pengutronix.de, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net
+Subject: [PATCH 16/17] drivers/x86: mark const init data with __initconst instead of __initdata
+Date: Thu, 29 Mar 2012 23:12:33 +0200
+Message-Id: <1333055554-31300-16-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <20120329211131.GA31250@pengutronix.de>
 References: <20120329211131.GA31250@pengutronix.de>
@@ -39,39 +41,40 @@ because a section containing const variables is marked read only and so
 cannot contain non-const variables.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
+Cc: platform-driver-x86@vger.kernel.org
+Cc: ibm-acpi-devel@lists.sourceforge.net
 ---
- arch/ia64/xen/irq_xen.c |    2 +-
- arch/ia64/xen/irq_xen.h |    2 +-
+ drivers/platform/x86/dell-laptop.c   |    2 +-
+ drivers/platform/x86/thinkpad_acpi.c |    2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/ia64/xen/irq_xen.c b/arch/ia64/xen/irq_xen.c
-index 3bb1223..01f479e 100644
---- a/arch/ia64/xen/irq_xen.c
-+++ b/arch/ia64/xen/irq_xen.c
-@@ -433,7 +433,7 @@ xen_resend_irq(unsigned int vector)
- 	(void)resend_irq_on_evtchn(vector);
- }
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index a05fc9c..882bfa4 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -94,7 +94,7 @@ static struct rfkill *wifi_rfkill;
+ static struct rfkill *bluetooth_rfkill;
+ static struct rfkill *wwan_rfkill;
  
--const struct pv_irq_ops xen_irq_ops __initdata = {
-+const struct pv_irq_ops xen_irq_ops __initconst = {
- 	.register_ipi = xen_register_ipi,
+-static const struct dmi_system_id __initdata dell_device_table[] = {
++static const struct dmi_system_id dell_device_table[] __initconst = {
+ 	{
+ 		.ident = "Dell laptop",
+ 		.matches = {
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index d68c000..dc1900c 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -522,7 +522,7 @@ static acpi_handle ec_handle;
  
- 	.assign_irq_vector = xen_assign_irq_vector,
-diff --git a/arch/ia64/xen/irq_xen.h b/arch/ia64/xen/irq_xen.h
-index 26110f3..1778517 100644
---- a/arch/ia64/xen/irq_xen.h
-+++ b/arch/ia64/xen/irq_xen.h
-@@ -27,7 +27,7 @@ extern void (*late_time_init)(void);
- extern char xen_event_callback;
- void __init xen_init_IRQ(void);
- 
--extern const struct pv_irq_ops xen_irq_ops __initdata;
-+extern const struct pv_irq_ops xen_irq_ops __initconst;
- extern void xen_smp_intr_init(void);
- extern void xen_send_ipi(int cpu, int vec);
+ #define TPACPI_HANDLE(object, parent, paths...)			\
+ 	static acpi_handle  object##_handle;			\
+-	static const acpi_handle *object##_parent __initdata =	\
++	static const acpi_handle *object##_parent __initconst =	\
+ 						&parent##_handle; \
+ 	static char *object##_paths[] __initdata = { paths }
  
 -- 
 1.7.9.1
