@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638Ab2C2SNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 14:13:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52526 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932604Ab2C2SNY (ORCPT
+	id S933681Ab2C2SNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 14:13:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45993 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933634Ab2C2SNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 14:13:24 -0400
+	Thu, 29 Mar 2012 14:13:31 -0400
+Date: Thu, 29 Mar 2012 14:08:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "Brown, Len" <len.brown@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <jbeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
+ platform
+Message-ID: <20120329180842.GA14789@phenom.dumpdata.com>
+References: <4F46530B020000780007F751@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
+ <20120226173458.GB18098@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923350BAC09@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC8292335105EFA@SHSMSX101.ccr.corp.intel.com>
+ <20120326164835.GE10236@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233510F52B@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233510F5C5@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <4F74A2C9.1000009@zytor.com>
-References: <CAGXu5jK3ezCN2=hy=AARh=T9L8YzCTKAXH6dbAH7FGX3P8VkoQ@mail.gmail.com>
-	<20120327172133.GB10142@thunk.org>
-	<CAGXu5jJx85b2ysgx2aXWUUf4dJMc34Cukp3S1VKiC_Pc5U2+Pw@mail.gmail.com>
-	<20120327173744.GD10142@thunk.org>
-	<CAGXu5j+itrR6cCWpXZAA0ZEP2KhdHdhcYA-R6pc=B97a_rHbaQ@mail.gmail.com>
-	<4F74A2C9.1000009@zytor.com>
-Date: Thu, 29 Mar 2012 11:13:23 -0700
-Message-ID: <CAGXu5jKaHygqzfbtahSBCM=EQmqkS8br5ndnLp0QCRFaka11SA@mail.gmail.com>
-Subject: Re: Correct way to include siginfo.h?
-From: Kees Cook <keescook@google.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233510F5C5@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090203.4F74A63C.0014,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 10:58 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 03/27/2012 11:01 AM, Kees Cook wrote:
->>
->> No, siginfo, IIUC, is defined to be SI_MAX_SIZE bytes. The union for
->> seccomp (on SIGSYS) just uses a long and 2 ints. It'd be nice for
->> there to be a stable way to get the kernel's siginfo instead of
->> glibc's.
->>
->
-> Make it safe for the kernel to export and make glibc use the kernel's
-> version, just like everything else...
+> >> If it benefits other architectures (say ARM) then adding in hooks
+> >> there (in osl for example) makes sense - but I am not sure if ARM
+> >> has a form of _PUR code/calls it needs to do.
+> >> 
+> >> So with that in mind, neither of those options seems proper - as all
+> >> of them depend on changing something in drivers/acpi/*.
+> >> 
+> >> I've one or two suggestions of what could be done to still make this
+> >> work, but I need you to first see what happens if the native acpi_pad
+> >> runs under Xen with the latest upstream code (along with three
+> >> patches that are in a BZ I pointed you too).
+> > 
+> > Do you mean test the patch
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/x86/xen/enlighten.c;h=b132ade26f778f2cfec7c2d5c7b6db48afe424d5;hp=4172af8ceeb363d06912af15bf89e8508752b794;hb=d4c6fa73fe984e504d52f3d6bba291fd76fe49f7;hpb=aab008db8063364dc3c8ccf4981c21124866b395
 
-We'll have to poke the glibc folks. In the meantime, Will Drewry found
-a stable way to handle this. Just make the first set of includes and
-defines be:
+Right.
+> > ?  
+> 
+> Ah, you want to test https://bugzilla.redhat.com/show_bug.cgi?id=804347
 
-#include <asm/siginfo.h>
-#define __have_siginfo_t 1
-#define __have_sigval_t 1
-#define __have_sigevent_t 1
+No. That is a fix on that is required to boot v3.4-rc0 - if you are using
+that version.
 
-Then the glibc includes won't attempt the redefinition.
+> Anyway, I didn't have proper h/w platform, but seems the bug (ioapic) is irrelated to pad thread we are talking?
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Correct (it is irrelevant).
