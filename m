@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab2C2KeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 06:34:17 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59150 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab2C2KeG convert rfc822-to-8bit (ORCPT
+	id S1757939Ab2C2Kfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 06:35:51 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42537 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab2C2Kfo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 06:34:06 -0400
+	Thu, 29 Mar 2012 06:35:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F73F1E0.7080803@gmail.com>
+In-Reply-To: <201203281233.42914.vda.linux@googlemail.com>
 References: <201203262047.17865.vda.linux@googlemail.com> <201203281213.07856.vda.linux@googlemail.com>
- <4F72E893.9070502@gmail.com> <201203281323.18194.vda.linux@googlemail.com> <4F73F1E0.7080803@gmail.com>
+ <4F72E6DB.1090207@gmail.com> <201203281233.42914.vda.linux@googlemail.com>
 From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 29 Mar 2012 12:33:44 +0200
-Message-ID: <CAK1hOcMOOhyrBXYv9msCNGoWTTOLKAbwKzP3Tn6G57Ldk8M9Sw@mail.gmail.com>
+Date: Thu, 29 Mar 2012 12:35:22 +0200
+Message-ID: <CAK1hOcO7YpLUebe=+TmN2WLyuFPqAyLNco1B7q+mhE2_BmAe3A@mail.gmail.com>
 Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
 To: roma1390 <roma1390@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
@@ -25,41 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 7:23 AM, roma1390 <roma1390@gmail.com> wrote:
-> On 2012.03.28 14:23, Denys Vlasenko wrote:
+On Wed, Mar 28, 2012 at 12:33 PM, Denys Vlasenko
+<vda.linux@googlemail.com> wrote:
+> On Wednesday 28 March 2012 12:24, roma1390 wrote:
+>> On 2012.03.28 13:13, Denys Vlasenko wrote:
+>> > Second: run
+>> > arm-linux-gnueabi-gcc -O2 -Wall test_{org,new}.c -S
+>> > and email me resulting test_{org,new}.s files.
 >>
->> It looks ok - it is a bit faster that original code;
->> but I expect algorithm #2 will do better.
->>
->> BTW, please always run test of original code too when you measure speed,
->> and post both results.
+>> test_{org,new}.s attached.
 >
+> Bingo.
 >
-> And the test results are:
+>        bl      __aeabi_uidivmod
 >
-> ./test_new-org-with-noinline_for_stack
-> Conversions per second: 8:5188000 123:4340000 123456:3536000
-> 12345678:3164000 123456789:2036000 2^32:2032000 2^64:1544000
-> Conversions per second: 8:5016000 123:4320000 123456:3536000
-> 12345678:3272000 123456789:2032000 2^32:1964000 2^64:1540000
-> Conversions per second: 8:5192000 123:4336000 123456:3420000
-> 12345678:3268000 123456789:2036000 2^32:2032000 2^64:1544000
-> Conversions per second: 8:5164000 123:4336000 123456:3536000
-> 12345678:3272000 123456789:1968000 2^32:2032000 2^64:1544000
-> Tested 524288                               ^C
+> Not good. Your gcc did not optimize division by constant.
 >
-> # ./test_new-org-with-noinline_for_stack_if-LONG_MAX_header_arm
-> Conversions per second: 8:5020000 123:4332000 123456:3536000
-> 12345678:3272000 123456789:2828000 2^32:2260000 2^64:1536000
-> Conversions per second: 8:5192000 123:4332000 123456:3416000
-> 12345678:3252000 123456789:2828000 2^32:2336000 2^64:1540000
-> Conversions per second: 8:5172000 123:4336000 123456:3540000
-> 12345678:3272000 123456789:2736000 2^32:2336000 2^64:1536000
-> Conversions per second: 8:5192000 123:4192000 123456:3520000
-> 12345678:3276000 123456789:2828000 2^32:2340000 2^64:1484000
-> Tested 524288                               ^C
+> Can you add  "noinline_for_stack":
+>
+> static noinline_for_stack <=== HERE
+> char *put_dec(char *buf, unsigned long long n)
+>
+> and regenerate and resend the test_new.s?
 
-Thanks! They look good now.
+Since you confirmed that noinlining helps,
+I recommend you to file a gcc bug report:
+your gcc misses an optimization when it inlines
+that function.
 
 -- 
 vda
