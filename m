@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751135Ab2C2FgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 01:36:13 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:58149 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750974Ab2C2FgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 01:36:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJLzc095LEyG/2dsb2JhbABFuQmBCIIJAQEFOhwjEAgDDgouFCUDIROICbpVE5EMBJVgiVCGXoJ7
-Date: Thu, 29 Mar 2012 16:35:56 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Dave Jones <davej@redhat.com>,
-        viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-ID: <20120329053556.GM5091@dastard>
-References: <20120313182220.GA11500@redhat.com>
- <20120327155149.d41a235b.akpm@linux-foundation.org>
- <20120328001550.GA3077@redhat.com>
- <20120328043951.GA32741@dastard>
- <20120328164720.d1aea752.akpm@linux-foundation.org>
- <20120329005442.GB16008@redhat.com>
- <20120328181023.274401d1.akpm@linux-foundation.org>
- <1332984523.30775.12.camel@joe2Laptop>
- <20120328184602.e6b11a37.akpm@linux-foundation.org>
+	id S1752740Ab2C2Fga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 01:36:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23996 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974Ab2C2FgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 01:36:23 -0400
+X-IronPort-AV: E=Sophos;i="4.75,335,1330876800"; 
+   d="scan'208";a="4646239"
+Message-ID: <4F73F4E6.4060104@cn.fujitsu.com>
+Date: Thu, 29 Mar 2012 13:36:38 +0800
+From: Ren Mingxin <renmx@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20110412 CentOS/3.1.3-1.el6.centos Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328184602.e6b11a37.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>, jens.axboe@oracle.com
+CC: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] virtio_blk: add helper function to support mass of disks
+ naming
+References: <4F72B5B3.6020602@cn.fujitsu.com> <20120328105819.GD6194@redhat.com>
+In-Reply-To: <20120328105819.GD6194@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-29 13:34:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-29 13:34:06,
+	Serialize complete at 2012-03-29 13:34:06
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 06:46:02PM -0700, Andrew Morton wrote:
-> On Wed, 28 Mar 2012 18:28:43 -0700 Joe Perches <joe@perches.com> wrote:
-> 
-> > On Wed, 2012-03-28 at 18:10 -0700, Andrew Morton wrote:
-> > > On Wed, 28 Mar 2012 20:54:42 -0400 Dave Jones <davej@redhat.com> wrote:
-> > > >  > Yup.  How does the below look?
-> > > > Don't see anything immediately wrong with it.
-> > > > Any thoughts on what to do about the similar problem in setxattr ? (memdup_user)
-> > []
-> > > diff -puN fs/xattr.c~fs-xattrc-setxattr-improve-handling-of-allocation-failures fs/xattr.c
-> > []
-> > > @@ -334,13 +335,25 @@ setxattr(struct dentry *d, const char __
-> > []
-> > > +		kvalue = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
-> > > +		if (!kvalue) {
-> > > +			vvalue = vmalloc(size);
-> > []
-> > > +	if (vvalue)
-> > > +		vfree(vvalue);
-> > > +	else
-> > > +		kfree(kvalue);
-> > >  	return error;
-> > 
-> > These patterns are pretty common, maybe create a standard helper?
-> 
-> Could.  There was some discussion last year and implementations were
-> tossed around.
-> 
-> I'm a bit apprehensive - kernel code is supposed to be robust, and
-> large allocations are not robust and vmalloc() is crappy.  Formalising
-> these things in an API probably won't make anything worse, but will
-> deprive us of opportunities for ritualistic humiliation and
-> knuckle-rapping.
+  On 03/28/2012 06:58 PM, Michael S. Tsirkin wrote:
+> On Wed, Mar 28, 2012 at 02:54:43PM +0800, Ren Mingxin wrote:
+>>   Hi,
+>>
+>> The current virtblk's naming algorithm just supports 26^3
+>> disks. If there are mass of virtblks(exceeding 26^3), there
+>> will be disks with the same name.
+>>
+>> According to "sd_format_disk_name()", I add function
+>> "virtblk_name_format()" for virtblk to support mass of
+>> disks.
+>>
+>> Signed-off-by: Ren Mingxin<renmx@cn.fujitsu.com>
+> Nod. This is basically what 3e1a7ff8a0a7b948f2684930166954f9e8e776fe
+> did. Except, maybe we should move this function into block core
+> instead of duplicating it? Where would be a good place to put it?
 
-I did a sweep of this recently, considering helpers for exactly such
-an allocation and replacing the existing per-filesystem wrappers for
-it. IIRC, there are wrappper functions in ext4, gfs2, and ntfs, XFS
-now open codes it in a couple of places, there's alloc_fdmem(), cgroup
-pidlists and the network code does it in several places, etc. 
-Even some drivers are doing this.  It's a widespread pattern.
+Yes, this was also what I thought.
 
-The easiest way to find the trivial wrappers is to grep for
-is_vmalloc_addr, because all the wrapper functions use this code to
-determine what to do:
+How about placing the "sd_format_disk_name()"
+as "disk_name_format()" into "block/genhd.c"
+("include/linux/genhd.h")?
 
-	if (is_vmalloc_addr(p))
-		vfree(p)
-	else
-		kfree(p)
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks.
+Ren
