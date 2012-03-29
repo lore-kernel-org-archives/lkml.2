@@ -1,155 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933882Ab2C2UMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:12:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29499 "EHLO mx1.redhat.com"
+	id S933892Ab2C2UMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:12:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6838 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933851Ab2C2ULp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:11:45 -0400
+	id S933866Ab2C2ULz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 16:11:55 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: <x86@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        thomas.mingarelli@hp.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/3] x86, nmi: Add new NMI queues to deal with IO_CHK and SERR
-Date: Thu, 29 Mar 2012 16:11:16 -0400
-Message-Id: <1333051877-15755-3-git-send-email-dzickus@redhat.com>
+        thomas.mingarelli@hp.com, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 3/3] x86,nmi: Fix page faults by nmiaction if kmemcheck is enabled
+Date: Thu, 29 Mar 2012 16:11:17 -0400
+Message-Id: <1333051877-15755-4-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1333051877-15755-1-git-send-email-dzickus@redhat.com>
 References: <1333051877-15755-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In discussions with Thomas Mingarelli about hpwdt, he explained to me some
-issues they were some when using their virtual NMI button to test the
-hpwdt driver.
+From: Li Zhong <zhong@linux.vnet.ibm.com>
 
-It turns out the virtual NMI button used on HP's machines do no send
-unknown NMIs but instead send IO_CHK NMIs.  The way the kernel code
-is written, the hpwdt driver can not register itself against that type
-of NMI and therefore can not successfully capture system information
-before panic'ing.
+This patch tries to fix the problem of page fault exception caused by
+accessing nmiaction structure in nmi if kmemcheck is enabled.
 
-To solve this I created two new NMI queues to allow driver to register
-against the IO_CHK and SERR NMIs.  Or in the hpwdt all three (if you
-include unknown NMIs too).
+If kmemcheck is enabled, the memory allocated through slab are in pages
+that are marked non-present, so that some checks could be done in the
+page fault handling code ( e.g. whether the memory is read before
+written to ).
+As nmiaction is allocated in this way, so it resides in a non-present
+page. Then there is a page fault while the nmi code accessing the
+nmiaction structure, which would then cause a warning by
+WARN_ON_ONCE(in_nmi()) in kmemcheck_fault(), called by do_page_fault().
 
-The change is straightforward and just mimics what the unknown NMI does.
+v2: as Peter suggested, changed the nmiaction to use static storage.
 
-Reported-and-tested-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+v3: as Peter suggested, use macro to shorten the codes. Also keep the
+original usage of register_nmi_handler, so users of this call doesn't
+need change.
+
+[simplified wrappers -dcz]
+
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/x86/include/asm/nmi.h |    2 ++
- arch/x86/kernel/nmi.c      |   18 ++++++++++++++++++
- drivers/watchdog/hpwdt.c   |   27 ++++++++++++++++++++-------
- 3 files changed, 40 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/nmi.h |   20 ++++++++++++-
+ arch/x86/kernel/nmi.c      |   65 ++++---------------------------------------
+ 2 files changed, 24 insertions(+), 61 deletions(-)
 
 diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index fd3f9f1..07162df 100644
+index 07162df..730abfe 100644
 --- a/arch/x86/include/asm/nmi.h
 +++ b/arch/x86/include/asm/nmi.h
-@@ -27,6 +27,8 @@ void arch_trigger_all_cpu_backtrace(void);
- enum {
- 	NMI_LOCAL=0,
- 	NMI_UNKNOWN,
-+	NMI_SERR,
-+	NMI_IO_CHECK,
- 	NMI_MAX
- };
+@@ -37,8 +37,24 @@ enum {
+ 
+ typedef int (*nmi_handler_t)(unsigned int, struct pt_regs *);
+ 
+-int register_nmi_handler(unsigned int, nmi_handler_t, unsigned long,
+-			 const char *);
++struct nmiaction {
++	struct list_head list;
++	nmi_handler_t handler;
++	unsigned int flags;
++	const char *name;
++};
++
++#define register_nmi_handler(t, fn, fg, n)		\
++({							\
++	static struct nmiaction fn##_na = {		\
++		.handler = (fn),			\
++		.name = (n),				\
++		.flags = (fg),				\
++	};						\
++	__register_nmi_handler((t), &fn##_na);	\
++})
++
++int __register_nmi_handler(unsigned int, struct nmiaction *);
+ 
+ void unregister_nmi_handler(unsigned int, const char *);
  
 diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index 47acaf3..ac9c1b7 100644
+index ac9c1b7..585be4b 100644
 --- a/arch/x86/kernel/nmi.c
 +++ b/arch/x86/kernel/nmi.c
-@@ -54,6 +54,14 @@ static struct nmi_desc nmi_desc[NMI_MAX] =
- 		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[1].lock),
- 		.head = LIST_HEAD_INIT(nmi_desc[1].head),
- 	},
-+	{
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[2].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[2].head),
-+	},
-+	{
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[3].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[3].head),
-+	},
+@@ -31,14 +31,6 @@
+ #include <asm/nmi.h>
+ #include <asm/x86_init.h>
  
- };
- 
-@@ -120,6 +128,8 @@ static int __setup_nmi(unsigned int type, struct nmiaction *action)
- 	 * to manage expectations
- 	 */
- 	WARN_ON_ONCE(type == NMI_UNKNOWN && !list_empty(&desc->head));
-+	WARN_ON_ONCE(type == NMI_SERR && !list_empty(&desc->head));
-+	WARN_ON_ONCE(type == NMI_IO_CHECK && !list_empty(&desc->head));
- 
- 	/*
- 	 * some handlers need to be executed first otherwise a fake
-@@ -212,6 +222,10 @@ EXPORT_SYMBOL_GPL(unregister_nmi_handler);
- static notrace __kprobes void
- pci_serr_error(unsigned char reason, struct pt_regs *regs)
- {
-+	/* check to see if anyone registered against these types of errors */
-+	if (nmi_handle(NMI_SERR, regs, false))
-+		return;
-+
- 	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
- 		 reason, smp_processor_id());
- 
-@@ -241,6 +255,10 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
- {
- 	unsigned long i;
- 
-+	/* check to see if anyone registered against these types of errors */
-+	if (nmi_handle(NMI_IO_CHECK, regs, false))
-+		return;
-+
- 	pr_emerg(
- 	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
- 		 reason, smp_processor_id());
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index deee02c8..e974c07 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -732,19 +732,32 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
- 	 * Only one function can register for NMI_UNKNOWN
- 	 */
- 	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout, 0, "hpwdt");
--	if (retval != 0) {
--		dev_warn(&dev->dev,
--			"Unable to register a die notifier (err=%d).\n",
--			retval);
--		if (cru_rom_addr)
--			iounmap(cru_rom_addr);
--	}
-+	if (retval)
-+		goto error;
-+	retval = register_nmi_handler(NMI_SERR, hpwdt_pretimeout, 0, "hpwdt");
-+	if (retval)
-+		goto error1;
-+	retval = register_nmi_handler(NMI_IO_CHECK, hpwdt_pretimeout, 0, "hpwdt");
-+	if (retval)
-+		goto error2;
- 
- 	dev_info(&dev->dev,
- 			"HP Watchdog Timer Driver: NMI decoding initialized"
- 			", allow kernel dump: %s (default = 0/OFF)\n",
- 			(allow_kdump == 0) ? "OFF" : "ON");
- 	return 0;
-+
-+error2:
-+	unregister_nmi_handler(NMI_SERR, "hpwdt");
-+error1:
-+	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
-+error:
-+	dev_warn(&dev->dev,
-+		"Unable to register a die notifier (err=%d).\n",
-+		retval);
-+	if (cru_rom_addr)
-+		iounmap(cru_rom_addr);
-+	return retval;
+-#define NMI_MAX_NAMELEN	16
+-struct nmiaction {
+-	struct list_head list;
+-	nmi_handler_t handler;
+-	unsigned int flags;
+-	char *name;
+-};
+-
+ struct nmi_desc {
+ 	spinlock_t lock;
+ 	struct list_head head;
+@@ -115,11 +107,14 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs,
+ 	return handled;
  }
  
- static void hpwdt_exit_nmi_decoding(void)
+-static int __setup_nmi(unsigned int type, struct nmiaction *action)
++int __register_nmi_handler(unsigned int type, struct nmiaction *action)
+ {
+ 	struct nmi_desc *desc = nmi_to_desc(type);
+ 	unsigned long flags;
+ 
++	if (!action->handler)
++		return -EINVAL;
++
+ 	spin_lock_irqsave(&desc->lock, flags);
+ 
+ 	/*
+@@ -143,8 +138,9 @@ static int __setup_nmi(unsigned int type, struct nmiaction *action)
+ 	spin_unlock_irqrestore(&desc->lock, flags);
+ 	return 0;
+ }
++EXPORT_SYMBOL(__register_nmi_handler);
+ 
+-static struct nmiaction *__free_nmi(unsigned int type, const char *name)
++void unregister_nmi_handler(unsigned int type, const char *name)
+ {
+ 	struct nmi_desc *desc = nmi_to_desc(type);
+ 	struct nmiaction *n;
+@@ -167,56 +163,7 @@ static struct nmiaction *__free_nmi(unsigned int type, const char *name)
+ 
+ 	spin_unlock_irqrestore(&desc->lock, flags);
+ 	synchronize_rcu();
+-	return (n);
+ }
+-
+-int register_nmi_handler(unsigned int type, nmi_handler_t handler,
+-			unsigned long nmiflags, const char *devname)
+-{
+-	struct nmiaction *action;
+-	int retval = -ENOMEM;
+-
+-	if (!handler)
+-		return -EINVAL;
+-
+-	action = kzalloc(sizeof(struct nmiaction), GFP_KERNEL);
+-	if (!action)
+-		goto fail_action;
+-
+-	action->handler = handler;
+-	action->flags = nmiflags;
+-	action->name = kstrndup(devname, NMI_MAX_NAMELEN, GFP_KERNEL);
+-	if (!action->name)
+-		goto fail_action_name;
+-
+-	retval = __setup_nmi(type, action);
+-
+-	if (retval)
+-		goto fail_setup_nmi;
+-
+-	return retval;
+-
+-fail_setup_nmi:
+-	kfree(action->name);
+-fail_action_name:
+-	kfree(action);
+-fail_action:	
+-
+-	return retval;
+-}
+-EXPORT_SYMBOL_GPL(register_nmi_handler);
+-
+-void unregister_nmi_handler(unsigned int type, const char *name)
+-{
+-	struct nmiaction *a;
+-
+-	a = __free_nmi(type, name);
+-	if (a) {
+-		kfree(a->name);
+-		kfree(a);
+-	}
+-}
+-
+ EXPORT_SYMBOL_GPL(unregister_nmi_handler);
+ 
+ static notrace __kprobes void
 -- 
 1.7.7.6
 
