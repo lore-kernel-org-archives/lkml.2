@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760020Ab2C2U0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:26:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64873 "EHLO mx1.redhat.com"
+	id S933045Ab2C2Ua0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:30:26 -0400
+Received: from mailhost.anl.gov ([130.202.113.50]:63958 "EHLO mailhost.anl.gov"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759841Ab2C2U0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:26:36 -0400
-Date: Thu, 29 Mar 2012 22:26:28 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] pagemap: remove remaining unneeded spin_lock()
-Message-ID: <20120329202628.GD20930@redhat.com>
-References: <1333010379-31126-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
+	id S1759223Ab2C2UaV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 16:30:21 -0400
+X-Greylist: delayed 1091 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Mar 2012 16:30:21 EDT
+From: Karl Pickett <kjp@ci.uchicago.edu>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333010379-31126-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Transfer-Encoding: 8BIT
+Subject: Is prctl(PR_SET_CHILD_SUBREAPER) going to break my code which checks getppid == 1?
+Date: Thu, 29 Mar 2012 15:12:07 -0500
+Message-Id: <46799FA3-D575-4A2D-8DEB-CE5149A4110D@ci.uchicago.edu>
+Cc: kay.sievers@vrfy.org, Oleg Nesterov <oleg@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 04:39:39AM -0400, Naoya Horiguchi wrote:
-> commit: 025c5b2451e4 "thp: optimize away unnecessary page table locking"
-> moves spin_lock() into pmd_trans_huge_lock() in order to avoid locking
-> unless pmd is for thp. So this spin_lock() is a bug.
-> 
-> Reported-by: Sasha Levin <levinsasha928@gmail.com>
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org
+Re: http://thread.gmane.org/gmane.linux.kernel/1236479
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+I'm wondering if this is going to break code that checks getppid() == 1?
+
+I have a TCL/TK GUI app that spawns ssh.  I want the ssh to die immediately if the GUI process crashes, so ssh is launched with a wrapper c program that does:
+
+   prctl(PR_SET_PDEATHSIG, SIGHUP);
+   if (getppid() == 1) /* parent died already? */
+       return 0;
+
+So what is getppid() going to return for some user using this new 'session manager reaper'?  How else am I supposed to do proper processes supervision (with TCL/TK as a parent...)?  Also, this program is open source but we distribute binaries that work on as many platforms as possible... we find most users don't want to compile things.
+
+
+
+
+
