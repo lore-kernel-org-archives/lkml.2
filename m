@@ -1,108 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab2C2V5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:57:40 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:49404 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab2C2V5e (ORCPT
+	id S1759210Ab2C2V6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:58:50 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:18647
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752705Ab2C2V6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:57:34 -0400
-Date: Thu, 29 Mar 2012 14:56:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: remove the context test in rcu_read_unlock_special()
-Message-ID: <20120329215613.GX2450@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4F741B98.2070709@cn.fujitsu.com>
+	Thu, 29 Mar 2012 17:58:43 -0400
+X-SpamScore: -17
+X-BigFish: VPS-17(zzbb2dI103dK1dbaL1432N98dKzz1202hzzz2fh668h839hd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F74DAE6.9000001@am.sony.com>
+Date: Thu, 29 Mar 2012 14:57:58 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F741B98.2070709@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032921-1780-0000-0000-0000045E2E71
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000264; HX=3.00000186; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00126329; UDB=6.00030098; UTC=2012-03-29
- 21:57:31
+To: "Rowand, Frank" <Frank_Rowand@sonyusa.com>
+CC: Alessio Igor Bogani <abogani@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jan Beulich <jbeulich@novell.com>,
+        Kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Bird, Tim" <Tim.Bird@am.sony.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: [PATCH] Let modpost parses vmlinux instead of vmlinux.o
+References: <4F737193.4030709@am.sony.com> <1333032786-12457-1-git-send-email-abogani@kernel.org> <4F74D9C3.5010907@am.sony.com>
+In-Reply-To: <4F74D9C3.5010907@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 04:21:44PM +0800, Lai Jiangshan wrote:
-> Because of commit#26861f and #10f39bb1b2, the context test in
-> rcu_read_unlock_special() are not needed.
+On 03/29/12 14:53, Frank Rowand wrote:
+> On 03/29/12 07:53, Alessio Igor Bogani wrote:
+>> Dear Mr. Rowand,
 > 
-> commit#26861f and #10f39bb1b2 ensure ->rcu_read_unlock_special is zero
-> after rcu_read_unlock(), which implies:
+> No need to be formal, "Frank" is ok.
 > 
-> if ->rcu_read_unlock_special is non-zero, the out-most RCU C.S. can
-> be interrupted or can be preempted, such context is safe to
-> call rcu_read_unlock_special().
+> 
+>>
+>> What do you think about this patch?
+> 
+> It does not work for me.  The resulting Module.symvers is empty.
+> 
+> Before applying the Makefile patch, "make V=1" shows the command
+                                      ^^^ "make V=1 vmlinux"
+> to generate Module.symvers is:
+> 
+>   scripts/mod/modpost   -o /a/home/frowand/me/src/linux/kernel-org/build/crest/Module.symvers    -S   vmlinux.o
+> 
+> after applying the patch, the command becomes:
+> 
+>   scripts/mod/modpost   -o /a/home/frowand/me/src/linux/kernel-org/build/crest/Module.symvers    -S   -s
+> 
+> 
+> -Frank
+> 
+>> Thanks!
+>>
+>> Ciao,
+>> Alessio
+>>
+>> ---
+>>  Makefile                 |    2 +-
+>>  scripts/Makefile.modpost |    2 +-
+>>  2 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Makefile b/Makefile
+>> index 123d858..b589d1f 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -876,7 +876,7 @@ quiet_cmd_vmlinux-modpost = LD      $@
+>>  define rule_vmlinux-modpost
+>>  	:
+>>  	+$(call cmd,vmlinux-modpost)
+>> -	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost $@
+>> +	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost $*
+>>  	$(Q)echo 'cmd_$@ := $(cmd_vmlinux-modpost)' > $(dot-target).cmd
+>>  endef
+>>  
+>> diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+>> index 56dfafc..ca0db29 100644
+>> --- a/scripts/Makefile.modpost
+>> +++ b/scripts/Makefile.modpost
+>> @@ -93,7 +93,7 @@ __modpost: $(modules:.ko=.o) FORCE
+>>  quiet_cmd_kernel-mod = MODPOST $@
+>>        cmd_kernel-mod = $(modpost) $@
+>>  
+>> -vmlinux.o: FORCE
+>> +vmlinux vmlinux.o: FORCE
+>>  	$(call cmd,kernel-mod)
+>>  
+>>  # Declare generated files as targets for modpost
+> 
+> .
+> 
 
-In theory, I am very much in favor of this, but in practice we need to
-put a WARN_ON_ONCE() in the "if" statement to be removed for a few years
-first.  If there are never any warnings (or, more likely, once such
-warnings have been fixed for some time), then this patch below would be
-eminently sensible.
-
-							Thanx, Paul
-
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-> index 22ecea0..22e2ef1 100644
-> --- a/kernel/rcutiny_plugin.h
-> +++ b/kernel/rcutiny_plugin.h
-> @@ -571,12 +571,6 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
->  	if (special & RCU_READ_UNLOCK_NEED_QS)
->  		rcu_preempt_cpu_qs();
-> 
-> -	/* Hardware IRQ handlers cannot block. */
-> -	if (in_irq() || in_serving_softirq()) {
-> -		local_irq_restore(flags);
-> -		return;
-> -	}
-> -
->  	/* Clean up if blocked during RCU read-side critical section. */
->  	if (special & RCU_READ_UNLOCK_BLOCKED) {
->  		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index c023464..2bd3689 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -338,12 +338,6 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
->  		rcu_preempt_qs(smp_processor_id());
->  	}
-> 
-> -	/* Hardware IRQ handlers cannot block. */
-> -	if (in_irq() || in_serving_softirq()) {
-> -		local_irq_restore(flags);
-> -		return;
-> -	}
-> -
->  	/* Clean up if blocked during RCU read-side critical section. */
->  	if (special & RCU_READ_UNLOCK_BLOCKED) {
->  		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 671f959..7074f97 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -318,12 +318,8 @@ static inline void invoke_softirq(void)
->  #else
->  		do_softirq();
->  #endif
-> -	} else {
-> -		__local_bh_disable((unsigned long)__builtin_return_address(0),
-> -				SOFTIRQ_OFFSET);
-> +	} else
->  		wakeup_softirqd();
-> -		__local_bh_enable(SOFTIRQ_OFFSET);
-> -	}
->  }
-> 
->  /*
-> 
 
