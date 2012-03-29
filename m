@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760425Ab2C2Xi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 19:38:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55724 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760346Ab2C2Xiu (ORCPT
+	id S933344Ab2C2Xkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 19:40:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50355 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760366Ab2C2Xkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 19:38:50 -0400
-Date: Fri, 30 Mar 2012 10:38:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Neuling <mikey@neuling.org>,
-        David Howells <dhowells@redhat.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        arnd@arndb.de, hpa@zytor.com
-Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
-Message-Id: <20120330103840.790c6486dbe71e5ff901321e@canb.auug.org.au>
-In-Reply-To: <CACxGe6sokpFa_KEi+jxPX3caF4CpfxzZ4f53S1Y_+caXVLBNtg@mail.gmail.com>
-References: <5599.1332958811@redhat.com>
-	<30702.1332989444@neuling.org>
-	<1332994469.3010.7.camel@pasglop>
-	<20120329210117.A9A073E06B4@localhost>
-	<20120330095020.a2e01d86c2d09f186c53d63d@canb.auug.org.au>
-	<CACxGe6sokpFa_KEi+jxPX3caF4CpfxzZ4f53S1Y_+caXVLBNtg@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN"
+	Thu, 29 Mar 2012 19:40:41 -0400
+Date: Thu, 29 Mar 2012 16:40:37 -0700
+From: Greg K H <gregkh@linuxfoundation.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/14] edac: rewrite the sysfs code to use struct device
+Message-ID: <20120329234037.GA16094@kroah.com>
+References: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
+ <1333040821-6253-2-git-send-email-mchehab@redhat.com>
+ <20120329220300.GA16491@kroah.com>
+ <4F74EDEC.5020804@redhat.com>
+MIME-Version: 1.0
+In-Reply-To: <4F74EDEC.5020804@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 29, 2012 at 08:19:08PM -0300, Mauro Carvalho Chehab wrote:
+> > Sweet, as per the documentation in the Documentation/kobjects.txt file,
+> > I get to publically mock you for thinking you are smarter than the
+> > kernel and this is an acceptable way to "outwhit" the driver core from
+> > spitting errors at you when the kobject is released.
+> 
+> There's nothing there to free: all EDAC structures are allocated once
+> (see edac_mc_alloc() and edac_align_ptr() logic, at drivers/edac/edac_mc.c).
+> 
+> Even the struct device for all csrows/channels/mcu is done on a single alloc
+> there. Trying to free it earlier would cause a segfault.
 
-Hi Grant,
+That's wrong then, these are multiple struct devices, all with their own
+reference counts, you can't just treat them all as the same thing, even
+if it happens to line up with the module reference count.
 
-On Thu, 29 Mar 2012 16:52:25 -0600 Grant Likely <grant.likely@secretlab.ca>=
- wrote:
->
-> Cool.  If that checks out in linux-next, then I'll ask Linus to pull.
->=20
-> BTW, can you add that branch permanently to linux-next?  That's the
-> branch I'll use when queuing up irqdomain fixes for mainline.
+> I didn't wrote that logic, nor I was tempted to change it: as this subsystem 
+> is focused on memory error detection, having every data structure used there
+> on a single page helps to minimize the probability of having an error at the 
+> memory used to store the EDAC data.
 
-OK, I have added that branch.   Meanwhile, Linus has merged that branch
-as well, so I will remove it from my fixes tree again :-)
+Possibly, but again, you have multiple reference counts, you can't just
+wave them off as being inconvenient.  Please read the documentation for
+more details why.
 
-I *may* get linux-next for today started soon :-)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPdPKAAAoJEECxmPOUX5FENgYP/3AcM4jCtROCqhyrdPDyVQBu
-tpkGp+a2QJS71vJ0uE1gUZ77i1sIrdMVMuSxZ0OOCBj9Lml/cHQocT56cgHUIRCm
-ZJMzzD1VFqKgCOIB2Rwquilwb6kXeDQPqzJaTEBYftiimJ7t000omwkQn2GSW45r
-c768/jLZni54AYjKKIyNVLLQ+oZPjrrpW4wI6RqbHCyqNXsV2TZCkm16gllWGcPc
-RNdJDdCJY3RoWYBApgvn3VGvyp5abieNbpRfnW2h3oSOn5bw26zj2JlbtnucVxWa
-4B5rH9DTfjJMIuMXkkP3DFIsJA9AtMSm1q1+X+pkZm7VTyKz6eeus+HDbhHYKczx
-/6QNachzI1SeXDMW30SMuftL8/3Oq3w9/cbs71DDGBjc/yt0oRd2518y6Z+LLmpg
-5s+wolFafsrTxFYVkw46O50Lgy3m4wyxIa38p7+ZFgZ8MCJsAyXr0ZxI0YwlzyiO
-cGO/CgIcRZU1N8ZwXZRskNboIypKwo/abRvWlKi+fo8NTLUgl7R60T0JR4fntSHH
-EqRREoIKQnNCYTbXq7BuS5dQfm9TYkMFVKZJz3XtEa+0FLYs499OV9U0aY4V4rM1
-wZ46sqvFS4AoAZYxG4atxD5TThrbI3KA5BFStuvPUaCVPM/f7Y9pm+of7Z4vGnkK
-q9pPoez/b82tG9vU1+GV
-=oc4z
------END PGP SIGNATURE-----
-
---Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN--
+greg k-h
