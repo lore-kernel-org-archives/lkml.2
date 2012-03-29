@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab2C2UGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:06:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39709 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933762Ab2C2UGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:06:33 -0400
-Message-ID: <4F74C0B2.1010100@zytor.com>
-Date: Thu, 29 Mar 2012 13:06:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-CC: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        David Sharp <dhsharp@google.com>,
-        Justin Teravest <teravest@google.com>,
-        Laurent Chavey <chavey@google.com>, Michael Davidson <md@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace
- handler
-References: <1332787168-20457-1-git-send-email-vnagarnaik@google.com> <1332787168-20457-5-git-send-email-vnagarnaik@google.com> <4F714982.6020208@zytor.com> <CAL26m8Jfb8bgfDLKZtn2LkYHD6uCccD3UcsSMbHtpnUKR5_mxw@mail.gmail.com> <4F73CC3A.2080901@zytor.com> <CAL26m8+zbbqngfK0fYb+A2UBQ1fZ9Uxrf4VLWqU1VuMzkcF4xw@mail.gmail.com> <20120329062031.GB1376@gmail.com> <CAL26m8+BmN=DxR7LbukM7S4w9XcURjfDFizUNpEcZA_8g4JNVg@mail.gmail.com> <4F74B42F.3050100@zytor.com> <CAL26m8JA4HJQayJW2nYbVpHD7mgd0Bz6rFMipq2Nf6OECiyk1Q@mail.gmail.com>
-In-Reply-To: <CAL26m8JA4HJQayJW2nYbVpHD7mgd0Bz6rFMipq2Nf6OECiyk1Q@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933800Ab2C2UG5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:06:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57295 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759876Ab2C2UCg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 16:02:36 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH v17 07/15] asm/syscall.h: add syscall_get_arch
+Date: Thu, 29 Mar 2012 15:01:52 -0500
+Message-Id: <1333051320-30872-8-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1333051320-30872-1-git-send-email-wad@chromium.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 12:43 PM, Vaibhav Nagarnaik wrote:
-> 
-> However, we agree that the syscall tracing as implemented currently is
-> a bit unwieldy. We would want to be a part of the re-designing effort
-> if there is a momentum in the community towards that goal. We would be
-> happy to contribute towards this effort.
-> 
+Adds a stub for a function that will return the AUDIT_ARCH_*
+value appropriate to the supplied task based on the system
+call convention.
 
-I had a long discussion with Frederic over IRC earlier today.  We came
-up with the following strawman:
+For audit's use, the value can generally be hard-coded at the
+audit-site.  However, for other functionality not inlined into
+syscall entry/exit, this makes that information available.
+seccomp_filter is the first planned consumer and, as such,
+the comment indicates a tie to HAVE_ARCH_SECCOMP_FILTER.  That
+is probably an unneeded detail.
 
-1. A system call thunk (which could be enabled/disabled by patching the
-syscall table.)  This provides an entry and exit hook, and also sets a
-per-thread flag to capture userspace traffic.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Suggested-by: Roland McGrath <mcgrathr@chromium.org>
+Signed-off-by: Will Drewry <wad@chromium.org>
 
-2. Instrumenting get_user/put_user/copy_from_user/copy_to_user to
-capture traffic to userspace.  This captures the *full* set of system
-call arguments, including things addressed via pointers.  Furthermore,
-it captures the exact versions fed to or returned from the kernel, and
-deals with data-dependent collection like ioctl().
+v14..v17: rebase/nochanges
+v13: rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
+v12: rebase on to linux-next
+v11: fixed improper return type
+v10: introduced
+---
+ include/asm-generic/syscall.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-This has to be done with extreme care to avoid introducing overhead in
-the no-tracing case, however, as these functions are extraordinarily
-performance sensitive.  This probably will require careful patching in
-the first enable/last disable case.
+diff --git a/include/asm-generic/syscall.h b/include/asm-generic/syscall.h
+index 5c122ae..a2c13dc 100644
+--- a/include/asm-generic/syscall.h
++++ b/include/asm-generic/syscall.h
+@@ -142,4 +142,18 @@ void syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
+ 			   unsigned int i, unsigned int n,
+ 			   const unsigned long *args);
+ 
++/**
++ * syscall_get_arch - return the AUDIT_ARCH for the current system call
++ * @task:	task of interest, must be in system call entry tracing
++ * @regs:	task_pt_regs() of @task
++ *
++ * Returns the AUDIT_ARCH_* based on the system call convention in use.
++ *
++ * It's only valid to call this when @task is stopped on entry to a system
++ * call, due to %TIF_SYSCALL_TRACE, %TIF_SYSCALL_AUDIT, or %TIF_SECCOMP.
++ *
++ * Note, at present this function is only required with
++ * CONFIG_HAVE_ARCH_SECCOMP_FILTER.
++ */
++int syscall_get_arch(struct task_struct *task, struct pt_regs *regs);
+ #endif	/* _ASM_SYSCALL_H */
+-- 
+1.7.5.4
 
-3. There will need to be userspace tools written to decode the resulting
-trace buffer.  This is pretty much needed anyway, but once you throw in
-complex data structures it becomes even more so.  A trace will basically
-consist of:
-
-SYSCALL_ENTRY <syscall number> <arg1..6>
-COPY_FROM_USER <address> <data>
-  ...
-COPY_TO_USER <address> <data>
-  ...
-SYSCALL_EXIT <return value>
-
-Outputting this in human-readable format requires some reasonably
-sophisticated logic, but the *HUGE* advantage is that not only is all
-the information there, it is *correct by construction*.
-
-	-hpa
