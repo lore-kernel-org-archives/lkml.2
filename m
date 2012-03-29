@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab2C2CtC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 22:49:02 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:14756 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524Ab2C2Csy (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 28 Mar 2012 22:48:54 -0400
-Message-ID: <4F73CD75.6010807@suse.com>
-Date: Thu, 29 Mar 2012 08:18:21 +0530
-From: Suresh Jayaraman <sjayaraman@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
-References: <20120328121308.568545879@intel.com> <20120328211017.GF3376@redhat.com>
-In-Reply-To: <20120328211017.GF3376@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933123Ab2C2Cuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 22:50:54 -0400
+Received: from ozlabs.org ([203.10.76.45]:43587 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933001Ab2C2Cuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 22:50:46 -0400
+To: David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paul.gortmaker@windriver.com, arnd@arndb.de, hpa@zytor.com,
+        sfr@canb.auug.org.au
+Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
+In-reply-to: <5599.1332958811@redhat.com>
+References: <5599.1332958811@redhat.com>
+Comments: In-reply-to David Howells <dhowells@redhat.com>
+   message dated "Wed, 28 Mar 2012 19:20:11 +0100."
+Date: Thu, 29 Mar 2012 13:50:44 +1100
+Message-ID: <30702.1332989444@neuling.org>
+From: Michael Neuling <mikey@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 02:40 AM, Vivek Goyal wrote:
-> On Wed, Mar 28, 2012 at 08:13:08PM +0800, Fengguang Wu wrote:
->>
->> Here is one possible solution to "buffered write IO controller", based on Linux
->> v3.3
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git  buffered-write-io-controller
->>
->> Features:
->> - support blkio.weight
+> Here are a bunch of patches to disintegrate asm/system.h into a set of separate
+> bits to relieve the problem of circular inclusion dependencies.
 > 
-> So this does proportional write bandwidth division on bdi for buffered
-> writes?
-
-yes.
-
+> The following changes since commit 437538267b672f9320833907f1b5acbb2605f4be:
 > 
->> - support blkio.throttle.buffered_write_bps
+>   Merge tag 'fbdev-updates-for-3.4' of git://github.com/schandinat/linux-2.6 (2012-03-22 20:43:40 -0700)
 > 
-> This is absolute limit systemwide or per bdi?
-
-system-wide and Fengguang thinks that per bdi should be implemented
-trivially.
-
-> [..]
->> The test results included in the last patch look pretty good in despite of the
->> simple implementation.
->>
->>  [PATCH 1/6] blk-cgroup: move blk-cgroup.h in include/linux/blk-cgroup.h
->>  [PATCH 2/6] blk-cgroup: account dirtied pages
->>  [PATCH 3/6] blk-cgroup: buffered write IO controller - bandwidth weight
->>  [PATCH 4/6] blk-cgroup: buffered write IO controller - bandwidth limit
->>  [PATCH 5/6] blk-cgroup: buffered write IO controller - bandwidth limit interface
->>  [PATCH 6/6] blk-cgroup: buffered write IO controller - debug trace
->>
+> are available in the git repository at:
 > 
-> Hi Fengguang,
-> 
-> Only patch 0 and patch 4 have shown up in my mail box. Same seems to be
-> the case for lkml. I am wondering what happened to rest of the patches.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-asm_system.git split-asm-system_h
 
-Same here. But, the rest of the patches showed up much later. In any
-case you can access the fullset from here
+It would have been nice to have this in linux-next for a day or two to
+sort out the merge issues,  hence....
 
-http://git.kernel.org/?p=linux/kernel/git/wfg/linux.git;a=shortlog;h=refs/heads/buffered-write-io-controller
+This seems to have broken linus tree when compiling a pseries_defconfig
 
+We are currently getting:
+kernel/irq/irqdomain.c: In function 'irq_debugfs_init':
+kernel/irq/irqdomain.c:698:63: error: 'powerpc_debugfs_root' undeclared (first use in this function)
+kernel/irq/irqdomain.c:698:63: note: each undeclared identifier is reported only once for each function it appears in
 
-> Will understand the patches better once I have the full set.
-> 
+  ae3a197 Disintegrate asm/system.h for PowerPC
+is conflicting with 
+  cc79ca6 irq_domain: Move irq_domain code from powerpc to kernel/irq
+from Grant's tree.
 
+Adding the following patch fixes it for pseries_defconfig, although I'm
+not sure it's the right fix.
 
+Grant: why does powerpc_debugfs_root appear in generic code?  This seems
+very bogus.
+
+Mikey
+
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index af48e59..3ebf4ef 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -12,6 +12,7 @@
+ #include <linux/slab.h>
+ #include <linux/smp.h>
+ #include <linux/fs.h>
++#include <asm/debug.h>
+ 
+ #define IRQ_DOMAIN_MAP_LEGACY 0 /* driver allocated fixed range of irqs.
+ 				 * ie. legacy 8259, gets irqs 1..15 */
