@@ -1,69 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933681Ab2C2SNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 14:13:45 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45993 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933634Ab2C2SNb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 14:13:31 -0400
-Date: Thu, 29 Mar 2012 14:08:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "Brown, Len" <len.brown@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
- platform
-Message-ID: <20120329180842.GA14789@phenom.dumpdata.com>
-References: <4F46530B020000780007F751@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
- <20120226173458.GB18098@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350BAC09@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC8292335105EFA@SHSMSX101.ccr.corp.intel.com>
- <20120326164835.GE10236@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC829233510F52B@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233510F5C5@SHSMSX101.ccr.corp.intel.com>
+	id S1759772Ab2C2SOv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 14:14:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38706 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759221Ab2C2SOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 14:14:47 -0400
+Message-ID: <4F74A68E.9060202@zytor.com>
+Date: Thu, 29 Mar 2012 11:14:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233510F5C5@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090203.4F74A63C.0014,ss=1,re=0.000,fgs=0
+To: Kees Cook <keescook@google.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Correct way to include siginfo.h?
+References: <CAGXu5jK3ezCN2=hy=AARh=T9L8YzCTKAXH6dbAH7FGX3P8VkoQ@mail.gmail.com> <20120327172133.GB10142@thunk.org> <CAGXu5jJx85b2ysgx2aXWUUf4dJMc34Cukp3S1VKiC_Pc5U2+Pw@mail.gmail.com> <20120327173744.GD10142@thunk.org> <CAGXu5j+itrR6cCWpXZAA0ZEP2KhdHdhcYA-R6pc=B97a_rHbaQ@mail.gmail.com> <4F74A2C9.1000009@zytor.com> <CAGXu5jKaHygqzfbtahSBCM=EQmqkS8br5ndnLp0QCRFaka11SA@mail.gmail.com>
+In-Reply-To: <CAGXu5jKaHygqzfbtahSBCM=EQmqkS8br5ndnLp0QCRFaka11SA@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> If it benefits other architectures (say ARM) then adding in hooks
-> >> there (in osl for example) makes sense - but I am not sure if ARM
-> >> has a form of _PUR code/calls it needs to do.
-> >> 
-> >> So with that in mind, neither of those options seems proper - as all
-> >> of them depend on changing something in drivers/acpi/*.
-> >> 
-> >> I've one or two suggestions of what could be done to still make this
-> >> work, but I need you to first see what happens if the native acpi_pad
-> >> runs under Xen with the latest upstream code (along with three
-> >> patches that are in a BZ I pointed you too).
-> > 
-> > Do you mean test the patch
-> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/x86/xen/enlighten.c;h=b132ade26f778f2cfec7c2d5c7b6db48afe424d5;hp=4172af8ceeb363d06912af15bf89e8508752b794;hb=d4c6fa73fe984e504d52f3d6bba291fd76fe49f7;hpb=aab008db8063364dc3c8ccf4981c21124866b395
-
-Right.
-> > ?  
+On 03/29/2012 11:13 AM, Kees Cook wrote:
 > 
-> Ah, you want to test https://bugzilla.redhat.com/show_bug.cgi?id=804347
+> We'll have to poke the glibc folks. In the meantime, Will Drewry found
+> a stable way to handle this. Just make the first set of includes and
+> defines be:
+> 
 
-No. That is a fix on that is required to boot v3.4-rc0 - if you are using
-that version.
+Well, "recent events" hopefully make that a bit easier.
 
-> Anyway, I didn't have proper h/w platform, but seems the bug (ioapic) is irrelated to pad thread we are talking?
+	-hpa
 
-Correct (it is irrelevant).
