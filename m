@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760074Ab2C2UDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:03:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59477 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759824Ab2C2UCe (ORCPT
+	id S1760059Ab2C2UC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:02:58 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33691 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759173Ab2C2UCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:02:34 -0400
+	Thu, 29 Mar 2012 16:02:31 -0400
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
         corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
         coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
         Will Drewry <wad@chromium.org>
-Subject: [PATCH v17 06/15] arch/x86: add syscall_get_arch to syscall.h
-Date: Thu, 29 Mar 2012 15:01:51 -0500
-Message-Id: <1333051320-30872-7-git-send-email-wad@chromium.org>
+Subject: [PATCH v17 05/15] seccomp: kill the seccomp_t typedef
+Date: Thu, 29 Mar 2012 15:01:50 -0500
+Message-Id: <1333051320-30872-6-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1333051320-30872-1-git-send-email-wad@chromium.org>
 References: <1333051320-30872-1-git-send-email-wad@chromium.org>
@@ -30,68 +30,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add syscall_get_arch() to export the current AUDIT_ARCH_* based on system call
-entry path.
+Replaces the seccomp_t typedef with struct seccomp to match modern
+kernel style.
 
-Reviewed-by: H. Peter Anvin <hpa@zytor.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Will Drewry <wad@chromium.org>
-
-v17: rebase and reviewed-by
-v14: rebase/nochanges
+v14..v17: rebase/nochanges
 v13: rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
----
- arch/x86/include/asm/syscall.h |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+v12: rebase on to linux-next
+v8-v11: no changes
+v7: struct seccomp_struct -> struct seccomp
+v6: original inclusion in this series.
 
-diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index d962e56..1d713e4 100644
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -13,6 +13,7 @@
- #ifndef _ASM_X86_SYSCALL_H
- #define _ASM_X86_SYSCALL_H
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reviewed-by: James Morris <jmorris@namei.org>
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ include/linux/sched.h   |    2 +-
+ include/linux/seccomp.h |   10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index ba60897..cad1502 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1452,7 +1452,7 @@ struct task_struct {
+ 	uid_t loginuid;
+ 	unsigned int sessionid;
+ #endif
+-	seccomp_t seccomp;
++	struct seccomp seccomp;
  
-+#include <linux/audit.h>
- #include <linux/sched.h>
- #include <linux/err.h>
- #include <asm/asm-offsets.h>	/* For NR_syscalls */
-@@ -87,6 +88,12 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 	memcpy(&regs->bx + i, args, n * sizeof(args[0]));
+ /* Thread group tracking */
+    	u32 parent_exec_id;
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index cc7a4e9..d61f27f 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -7,7 +7,9 @@
+ #include <linux/thread_info.h>
+ #include <asm/seccomp.h>
+ 
+-typedef struct { int mode; } seccomp_t;
++struct seccomp {
++	int mode;
++};
+ 
+ extern void __secure_computing(int);
+ static inline void secure_computing(int this_syscall)
+@@ -19,7 +21,7 @@ static inline void secure_computing(int this_syscall)
+ extern long prctl_get_seccomp(void);
+ extern long prctl_set_seccomp(unsigned long);
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp *s)
+ {
+ 	return s->mode;
+ }
+@@ -28,7 +30,7 @@ static inline int seccomp_mode(seccomp_t *s)
+ 
+ #include <linux/errno.h>
+ 
+-typedef struct { } seccomp_t;
++struct seccomp { };
+ 
+ #define secure_computing(x) do { } while (0)
+ 
+@@ -42,7 +44,7 @@ static inline long prctl_set_seccomp(unsigned long arg2)
+ 	return -EINVAL;
  }
  
-+static inline int syscall_get_arch(struct task_struct *task,
-+				   struct pt_regs *regs)
-+{
-+	return AUDIT_ARCH_I386;
-+}
-+
- #else	 /* CONFIG_X86_64 */
- 
- static inline void syscall_get_arguments(struct task_struct *task,
-@@ -211,6 +218,22 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 		}
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp *s)
+ {
+ 	return 0;
  }
- 
-+static inline int syscall_get_arch(struct task_struct *task,
-+				   struct pt_regs *regs)
-+{
-+#ifdef CONFIG_IA32_EMULATION
-+	/*
-+	 * TS_COMPAT is set for 32-bit syscall entries and then
-+	 * remains set until we return to user mode.
-+	 *
-+	 * TIF_IA32 tasks should always have TS_COMPAT set at
-+	 * system call time.
-+	 */
-+	if (task_thread_info(task)->status & TS_COMPAT)
-+		return AUDIT_ARCH_I386;
-+#endif
-+	return AUDIT_ARCH_X86_64;
-+}
- #endif	/* CONFIG_X86_32 */
- 
- #endif	/* _ASM_X86_SYSCALL_H */
 -- 
 1.7.5.4
 
