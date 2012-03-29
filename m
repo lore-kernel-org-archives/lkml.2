@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2C2G2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 02:28:06 -0400
-Received: from mta103.odn.ne.jp ([143.90.14.143]:56011 "EHLO cmta103.odn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab2C2G16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 02:27:58 -0400
-Message-ID: <4F7400EC.8060301@yahoo.co.jp>
-Date: Thu, 29 Mar 2012 15:27:56 +0900
-From: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1753615Ab2C2G2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 02:28:31 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60268 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab2C2G2V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 02:28:21 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F74009C.3050809@jp.fujitsu.com>
+Date: Thu, 29 Mar 2012 15:26:36 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Gwendal Grignou <gwendal@google.com>
-CC: IDE/ATA development list <linux-ide@vger.kernel.org>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
- Sil3726
-References: <4F5ECD06.3000608@yahoo.co.jp> <4F5F7C4C.7080800@teksavvy.com> <4F662AFB.9050106@yahoo.co.jp> <CAMHSBOWg+rxxrVjf05r1tYDpW1S75XzdrLQ+U8TrjC9okRYtuA@mail.gmail.com> <4F6AAC37.7040907@yahoo.co.jp> <4F6B30D9.2070805@yahoo.co.jp> <CAMHSBOVD4wAtwAravVkDjyWV+Nwtuybt=yae=26PcGxxirw=Lg@mail.gmail.com> <4F6B679C.60004@yahoo.co.jp> <CAMHSBOWDYyLRREZNGqhBtvF_gSrvB-b=PVx3qULCqpc7yeJCcQ@mail.gmail.com> <4F6C1AE5.5060405@yahoo.co.jp> <CAMHSBOXuX1U8uPyN136AQ_LRW85Ex8EUu1-_hdBqnSMtdmg+0Q@mail.gmail.com> <4F6C4967.80309@yahoo.co.jp> <4F6E728A.3090203@yahoo.co.jp> <CAMHSBOVtj8pXVtSK7qUmzSzXTCJWTK6-m7ZY6TB3gj-dT70ptw@mail.gmail.com> <4F6FBB3E.8060409@yahoo.co.jp> <4F6FD4CD.5040608@yahoo.co.jp> <4F703BEB.1040309@yahoo.co.jp> <4F70527A.4000005@world.odn.ne.jp> <CAMHSBOWOLj0igQYK16qQ+BznzmS2KV89dw4ahRz0h5tUw+YOdQ@mail.gmail.com> <4F72A1C5.8070704@yahoo.co.jp> <CAMHSBOVaswiCg4WisCLMWkqndixM54wzN6Gwn1bTaKKLsCk1Yg@mail.gmail.com>
-In-Reply-To: <CAMHSBOVaswiCg4WisCLMWkqndixM54wzN6Gwn1bTaKKLsCk1Yg@mail.gmail.com>
-X-Enigmail-Version: 1.4
+To: Glauber Costa <glommer@parallels.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, davem@davemloft.net
+Subject: [BUGFIX][PATCH 1/3] memcg/tcp : fix to see memcg's use_hierarchy
+ in tcp memcontrol
+References: <4F73FF9D.4090809@jp.fujitsu.com>
+In-Reply-To: <4F73FF9D.4090809@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Gwendal,
+Now, tcp memory control cgroup ignores memcg's use_hierarchy value
+and act as use_hierarchy=1 always. After this patch, tcp memcontrol will
+work as memcg is designed.
 
-Thank you for your great help. I'll ask to Fedora Project about this.
+Note:
+  I know there is a discussion to remove use_hierarchy but this
+  is BUG, now.
 
-Best Regrads,
-Akira
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h |    3 +++
+ mm/memcontrol.c            |    5 +++++
+ net/ipv4/tcp_memcontrol.c  |    2 +-
+ 3 files changed, 9 insertions(+), 1 deletions(-)
 
-(2012/03/29 15:08), Gwendal Grignou wrote:
-> On Wed, Mar 28, 2012 at 1:29 PM, ANEZAKI, Akira
-> <fireblade1230@yahoo.co.jp> wrote:
->> Hello Gwendal,
->>
->> (2012/03/27 20:17), Gwendal Grignou wrote:
->>> Regarding the machine with 10 disks, I see that all the drives have
->>> been found; I don't see any other error from the /var/log/messages
->>> snippet that could explain md not finding the volumes.
->>
->> I have attached 11 disks log. RAID1 is not assembled. Both of md1 and
->> md2 were not assembled. md1 is root partition.
-> From your original post md1 is composed of sda2 and sdb2. Both disks
-> are not behind a PMP, so it is different problem.
-> 
-> Gwendal.
->>
->> Best Regards,
->> Akira
->>
-  :
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index f94efd2..e116b7c 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -199,6 +199,9 @@ void mem_cgroup_split_huge_fixup(struct page *head);
+ bool mem_cgroup_bad_page_check(struct page *page);
+ void mem_cgroup_print_bad_page(struct page *page);
+ #endif
++
++bool mem_cgroup_use_hierarchy(struct mem_cgroup *memcg);
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct mem_cgroup;
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7d698df..467881f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -867,6 +867,11 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+ 	return memcg;
+ }
+ 
++bool mem_cgroup_use_hierarchy(struct mem_cgroup *memcg)
++{
++	return memcg->use_hierarchy;
++}
++
+ /**
+  * mem_cgroup_iter - iterate over memory cgroup hierarchy
+  * @root: hierarchy root
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index e795272..32764a6 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -75,7 +75,7 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	tcp->tcp_memory_pressure = 0;
+ 
+ 	parent_cg = tcp_prot.proto_cgroup(parent);
+-	if (parent_cg)
++	if (parent_cg && mem_cgroup_use_hierarchy(parent))
+ 		res_parent = parent_cg->memory_allocated;
+ 
+ 	res_counter_init(&tcp->tcp_memory_allocated, res_parent);
+-- 
+1.7.4.1
+
 
