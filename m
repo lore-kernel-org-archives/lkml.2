@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab2C2J55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:57:57 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59719 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab2C2J5u (ORCPT
+	id S932386Ab2C2J7O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:59:14 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51047 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376Ab2C2J7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:57:50 -0400
-Date: Thu, 29 Mar 2012 12:57:44 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: joeyli <jlee@suse.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acer-wmi: ignore missing Aspire 5741G keys
-Message-ID: <20120329095744.GB3576@swordfish.minsk.epam.com>
-References: <20120306123355.GA3904@swordfish.minsk.epam.com>
- <1331266669.10557.107.camel@linux-s257.site>
- <20120312101956.GA8522@swordfish.minsk.epam.com>
- <1331607878.10557.145.camel@linux-s257.site>
+	Thu, 29 Mar 2012 05:59:05 -0400
+Date: Thu, 29 Mar 2012 11:58:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <liuj97@gmail.com>
+cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Jes Sorensen <jes@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        "H . Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-altix@sgi.com, x86@kernel.org,
+        chenkeping@huawei.com
+Subject: Re: [PATCH] IRQ: normalize chip->irq_set_affinity return value on
+ x86 and IA64
+In-Reply-To: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
+Message-ID: <alpine.LFD.2.02.1203291154010.2542@ionos>
+References: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331607878.10557.145.camel@linux-s257.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (03/13/12 11:04), joeyli wrote:
+On Tue, 6 Mar 2012, Jiang Liu wrote:
+
+> On x86 and IA64 platforms, interrupt controller chip's irq_set_affinity()
+> method always copies affinity mask to irq_data->affinity field but still
+> returns 0(IRQ_SET_MASK_OK). That return value causes the interrupt core
+> logic unnecessarily copies the mask to irq_data->affinity field again.
+> So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
+> the duplicated copy operation.
 > 
-> Appreciate for your acpidump and dmidecode log, I keep it for regression
-> check.
+> This patch applies to v3.3-rc6 and has been tested on x86 platforms.
 > 
-> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  arch/ia64/kernel/iosapic.c     |    4 +++-
+>  arch/ia64/kernel/msi_ia64.c    |    4 ++--
+>  arch/ia64/sn/kernel/irq.c      |    2 +-
+>  arch/ia64/sn/kernel/msi_sn.c   |    2 +-
+>  arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
+>  arch/x86/platform/uv/uv_irq.c  |    2 +-
+>  kernel/irq/internals.h         |    3 +++
+>  kernel/irq/manage.c            |   39 ++++++++++++++++++++++-----------------
+>  kernel/irq/migration.c         |    6 +-----
 
-Sorry to buther, somehow I missed 0x85 KEY_TOUCHPAD_TOGGLE while preparing original
-patch. Probably it got lost in atkbd error lines
-	[ 5593.029779] atkbd serio0: Unknown key pressed (translated set 2, code 0x93 on isa0060/serio0).
-	[ 5593.029788] atkbd serio0: Use 'setkeycodes e013 <keycode>' to make it known.
-	[ 5593.043166] atkbd serio0: Unknown key released (translated set 2, code 0x93 on isa0060/serio0).
-	[ 5593.043174] atkbd serio0: Use 'setkeycodes e013 <keycode>' to make it known.
 
-Sent it to you titled `acer-wmi: add Aspire 5741G touchpad toggle key'.
+This does not work that way. The patch wants to be split in 3 parts
+(core, x86, ia64). The patches are completely independent. Please
+resend.
 
+Thanks,
 
-	-ss
+	tglx
