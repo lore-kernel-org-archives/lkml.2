@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab2C2DQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 23:16:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60202 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758287Ab2C2DQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 23:16:34 -0400
-Message-ID: <4F73D405.6040805@zytor.com>
-Date: Wed, 28 Mar 2012 20:16:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1758900Ab2C2DRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 23:17:48 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:40906 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758210Ab2C2DRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 23:17:41 -0400
+Message-ID: <4F73D44C.5090604@panasas.com>
+Date: Wed, 28 Mar 2012 20:17:32 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        David Sharp <dhsharp@google.com>,
-        Justin Teravest <teravest@google.com>,
-        Laurent Chavey <chavey@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace
- handler
-References: <1332787168-20457-1-git-send-email-vnagarnaik@google.com> <1332787168-20457-5-git-send-email-vnagarnaik@google.com> <4F714982.6020208@zytor.com> <CAL26m8Jfb8bgfDLKZtn2LkYHD6uCccD3UcsSMbHtpnUKR5_mxw@mail.gmail.com> <4F73CC3A.2080901@zytor.com> <CAL26m8+zbbqngfK0fYb+A2UBQ1fZ9Uxrf4VLWqU1VuMzkcF4xw@mail.gmail.com>
-In-Reply-To: <CAL26m8+zbbqngfK0fYb+A2UBQ1fZ9Uxrf4VLWqU1VuMzkcF4xw@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
+References: <1332986348.19172.43.camel@lade.trondhjem.org>  <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>  <1332986928.19172.45.camel@lade.trondhjem.org>  <CA+55aFyQ0r5mN9=3DUVENCtdj8VMLRjiXTc5Xd4o+F=s9B8xMg@mail.gmail.com> <1332988097.19172.51.camel@lade.trondhjem.org>
+In-Reply-To: <1332988097.19172.51.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 08:02 PM, Vaibhav Nagarnaik wrote:
+On 03/28/2012 07:28 PM, Myklebust, Trond wrote:
+
+> On Wed, 2012-03-28 at 19:20 -0700, Linus Torvalds wrote:
+>> On Wed, Mar 28, 2012 at 7:08 PM, Myklebust, Trond
+>> <Trond.Myklebust@netapp.com> wrote:
+>>>
+>>> Sure thing... I wasn't aware of that semantic difference, but I'm quite
+>>> happy to add it to my script...
+>>
+>> Thanks. And I noticed that it's supposed to be "tags/xyz" with a "s".
+>>
+>> Of course, you might as well just say "xyz" without mentioning the
+>> tag[s] part at all, unless you have a branch with the same name and
+>> want to explicitly disambiguate.
+>>
+>>                    Linus
 > 
-> But if it doesn't seem to help, then I will not push this patch.
+> The reason for adding the 'tags' label originally was precisely because
+> I had an identically named branch, and I wanted to be able to send you
+> the signed tag instead.
+> 
+> I've attached the script that I use to generate pull requests just in
+> case someone else doesn't have their own version. It should be fairly
+> obvious to modify...
 > 
 
-Consider this patch and anything even remotely like it NAKed with
-extreme prejudice.
 
-	-hpa
 
+That's funny after my 20th time of running the command by hand and
+doing a "man git-request-pull" because I can never remember the order
+of things, and I always get the URL wrong 3 times, I decided I should write
+a script, boom here it is sent on the mailing list.
+
+Thank you Trond for sharing, here is a new user
+Boaz
