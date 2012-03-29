@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759532Ab2C2QA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:00:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47442 "EHLO mx2.suse.de"
+	id S933583Ab2C2QAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:00:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47482 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759512Ab2C2QAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 12:00:24 -0400
-Date: Thu, 29 Mar 2012 18:00:20 +0200
-Message-ID: <s5hlimjtn1n.wl%tiwai@suse.de>
+	id S1759512Ab2C2QAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 12:00:34 -0400
+Date: Thu, 29 Mar 2012 18:00:32 +0200
+Message-ID: <s5hk423tn1b.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Randy Dunlap <rdunlap@xenotime.net>
 Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] sound: fix oss/msnd_pinnacle module param type
-In-Reply-To: <4F73BA35.7010009@xenotime.net>
+Subject: Re: [PATCH] sound: fix isa/opti9xx module param type
+In-Reply-To: <4F73BA39.5020509@xenotime.net>
 References: <20120328171401.354ddb56727a26fe64b35ddf@canb.auug.org.au>
-	<4F73BA35.7010009@xenotime.net>
+	<4F73BA39.5020509@xenotime.net>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,35 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 28 Mar 2012 18:26:13 -0700,
+At Wed, 28 Mar 2012 18:26:17 -0700,
 Randy Dunlap wrote:
 > 
 > From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> Fix module parameter data type to eliminate build warning.
+> Fix module parameter data type to eliminate build warnings.
 > 
-> sound/oss/msnd_pinnacle.c:1727:1: warning: return from incompatible pointer type
+> sound/isa/opti9xx/opti92x-ad1848.c:87:1: warning: return from incompatible pointer type
+> sound/isa/opti9xx/opti92x-ad1848.c:87:1: warning: return from incompatible pointer type
 > 
 > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Applied now.  Thanks.
+Applied this one, too.
 
 
 Takashi
 
 > ---
->  sound/oss/msnd_pinnacle.c |    2 +-
+>  sound/isa/opti9xx/opti92x-ad1848.c |    2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> --- linux-next-20120328.orig/sound/oss/msnd_pinnacle.c
-> +++ linux-next-20120328/sound/oss/msnd_pinnacle.c
-> @@ -1631,7 +1631,7 @@ static int ide_irq __initdata = 0;
->  static int joystick_io __initdata = 0;
->  
->  /* If we have the digital daugherboard... */
-> -static int digital __initdata = 0;
-> +static bool digital __initdata = false;
+> --- linux-next-20120328.orig/sound/isa/opti9xx/opti92x-ad1848.c
+> +++ linux-next-20120328/sound/isa/opti9xx/opti92x-ad1848.c
+> @@ -65,7 +65,7 @@ static int index = SNDRV_DEFAULT_IDX1;	/
+>  static char *id = SNDRV_DEFAULT_STR1;		/* ID for this card */
+>  //static bool enable = SNDRV_DEFAULT_ENABLE1;	/* Enable this card */
+>  #ifdef CONFIG_PNP
+> -static int isapnp = 1;			/* Enable ISA PnP detection */
+> +static bool isapnp = true;			/* Enable ISA PnP detection */
 >  #endif
->  
->  static int fifosize __initdata =	DEFFIFOSIZE;
+>  static long port = SNDRV_DEFAULT_PORT1; 	/* 0x530,0xe80,0xf40,0x604 */
+>  static long mpu_port = SNDRV_DEFAULT_PORT1;	/* 0x300,0x310,0x320,0x330 */
 > 
