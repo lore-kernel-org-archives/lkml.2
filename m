@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936630Ab2C3Wvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:51:48 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36695 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934982Ab2C3VGK (ORCPT
+	id S936615Ab2C3Wvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:51:45 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41906 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934984Ab2C3VGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 17:06:10 -0400
-Message-Id: <20120330195729.871022633@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 054/108] drm/radeon/kms: add connector quirk for Fujitsu D3003-S2 board
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+Message-Id: <201203302105.q2UL57B5006304@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 29 Mar 2012 16:19:45 -0400
+Subject: [PATCH] arch/tile: export the page_home() function.
+In-Reply-To: <4F761E1C.80808.com>
+References: <4F761E1C.80808.com>
+To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 21:05:08.0085 (UTC) FILETIME=[C97DD250:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Alex Deucher <alexander.deucher@amd.com>
-
-commit 4c1b2d2da3451f5c8dd59bd7e05bd9729d2aee05 upstream.
-
-vbios lists DVI-I port as VGA and DVI-D.
-
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=47007
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ arch/tile/mm/homecache.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -484,6 +484,20 @@ static bool radeon_atom_apply_quirks(str
- 		struct radeon_device *rdev = dev->dev_private;
- 		*i2c_bus = radeon_lookup_i2c_gpio(rdev, 0x93);
+diff --git a/arch/tile/mm/homecache.c b/arch/tile/mm/homecache.c
+index 1cc6ae4..499f737 100644
+--- a/arch/tile/mm/homecache.c
++++ b/arch/tile/mm/homecache.c
+@@ -394,6 +394,7 @@ int page_home(struct page *page)
+ 		return pte_to_home(*virt_to_pte(NULL, kva));
  	}
-+
-+	/* Fujitsu D3003-S2 board lists DVI-I as DVI-D and VGA */
-+	if ((dev->pdev->device == 0x9802) &&
-+	    (dev->pdev->subsystem_vendor == 0x1734) &&
-+	    (dev->pdev->subsystem_device == 0x11bd)) {
-+		if (*connector_type == DRM_MODE_CONNECTOR_VGA) {
-+			*connector_type = DRM_MODE_CONNECTOR_DVII;
-+			*line_mux = 0x3103;
-+		} else if (*connector_type == DRM_MODE_CONNECTOR_DVID) {
-+			*connector_type = DRM_MODE_CONNECTOR_DVII;
-+		}
-+	}
-+
-+
- 	return true;
  }
++EXPORT_SYMBOL(page_home);
  
-
+ void homecache_change_page_home(struct page *page, int order, int home)
+ {
+-- 
+1.6.5.2
 
