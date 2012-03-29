@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760004Ab2C2RHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 13:07:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13078 "EHLO mx1.redhat.com"
+	id S1760029Ab2C2RIa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 13:08:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37193 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759588Ab2C2RHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 13:07:07 -0400
+	id S1759683Ab2C2RHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 13:07:09 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg K H <gregkh@linuxfoundation.org>,
-        Aristeu Rozanski Filho <arozansk@redhat.com>
-Subject: [PATCH 00/14] Fix the EDAC API
-Date: Thu, 29 Mar 2012 14:06:47 -0300
-Message-Id: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        Greg K H <gregkh@linuxfoundation.org>
+Subject: [PATCH 14/14] edac: Only expose csrows/channels on legacy API if they're populated
+Date: Thu, 29 Mar 2012 14:07:01 -0300
+Message-Id: <1333040821-6253-15-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
+References: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EDAC API is broken for any memory controller that doesn't use
-a DIMM rank as its primary unit.
+This patch actually fixes a bug with the legacy API, where, at the
+same csrow, some channels may have different DIMMs. This can happen
+on FB-DIMM/RAMBUS and modern Intel controllers.
 
-That covers RAMBUS and FB-DIMM drivers, where it is impossible to
-track a single rank, as the hank is hidden by a buffer controller
-(AMB - Advanced Memory Buffer, in the case of FB-DIMM).
+This is the case, for example, of Nehalem machines:
 
-Also, newer Intel architectures (Nehalem and Sandy Bridge) brings
-advanced memory controllers, where the cachesize can be different
-than 128 bits, and up to 4 channels can be interlaced. The current
-EDAC API doesn't work for those.
+$ ./edac-ctl --layout
+       +-----------------------------------+
+       |                mc0                |
+       | channel0  | channel1  | channel2  |
+-------+-----------------------------------+
+slot2: |     0 MB  |     0 MB  |     0 MB  |
+slot1: |  1024 MB  |     0 MB  |     0 MB  |
+slot0: |  1024 MB  |  1024 MB  |  1024 MB  |
+-------+-----------------------------------+
 
-So, all drivers that need that do some sort of tricks to lie to the
-EDAC core, in order for the memory to be somehow exposed. There are
-several cases where this is done wrong.
+Before this patch, non-filled memories were shown. Now, only what's
+filled is there:
 
-The only way to fix is to create a new ABI capable of exporting what
-the driver actually sees, and not some virtual information, produced
-by the driver just to make the EDAC core happy.
+grep . /sys/devices/system/edac/mc/mc0/csrow*/ch?*
+/sys/devices/system/edac/mc/mc0/csrow0/ch0_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow0/ch0_dimm_label:CPU#0Channel#0_DIMM#0
+/sys/devices/system/edac/mc/mc0/csrow0/ch1_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow0/ch1_dimm_label:CPU#0Channel#0_DIMM#1
+/sys/devices/system/edac/mc/mc0/csrow1/ch0_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow1/ch0_dimm_label:CPU#0Channel#1_DIMM#0
+/sys/devices/system/edac/mc/mc0/csrow2/ch0_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow2/ch0_dimm_label:CPU#0Channel#2_DIMM#0
 
-As requested by Greg, the first step is to convert the EDAC MC code
-to use struct device. That means that 3 drivers also need to be
-converted (amd64, i7core and mpc85xx_edac), as they create their own
-ABI's.
+Thanks-to: Aristeu Rozanski Filho <arozansk@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/edac_mc_sysfs.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-Those patches were compile-tested on all architectures.
-
-It was also tested on all types of Memory Controllers with EDAC support
-I was able to find at Red Hat Labs:
-	e752x_edac (a Xeon i3100 chipset)
-	i3000_edac
-	i3200_edac
-	i5000_edac
-	i5100_edac
-	i5400_edac
-	i7300_edac
-	i7core_edac (Nehalem)
-	sb_edac (Sandy Bridge E5)
-	amd64_edac
-	
-Several of them with multiple memory controllers (the amd64 hardware
-I used is the bigger one, in terms of MC, with 8 memory controllers).
-
-There are 3 intended changes that are out of this series:
-
-	- ABI documentation. I'll write the ABI patch as soon as I
-merge this series at -next;
-
-	- New API UE/CE error counters. They're needed, but, as the
-discussions weren't finished, let's postpone it. I'll start work on
-it after the merge of this series.
-
-	- MCA error trace. Also, there wasn't any agreement yet.
-So, keep this out of this series, until we come to some conclusion.
-
-Regards,
-Mauro
-
-Mauro Carvalho Chehab (14):
-  edac: rewrite the sysfs code to use struct device
-  mpc85xx_edac: convert sysfs logic to use struct device
-  amd64_edac: convert sysfs logic to use struct device
-  i7core_edac: convert it to use struct device
-  edac: Get rid of the old kobj's from the edac mc code
-  edac: add a new per-dimm API and make the old per-virtual-rank API
-    obsolete
-  edac: add a sysfs node to report the maximum location for the system
-  edac: Add debufs nodes to allow doing fake error inject
-  edac: Create a per-Memory Controller bus
-  edac: Move grain/dtype/edac_type calculus to be out of channel loop
-  i82975x_edac: Test nr_pages earlier to save a few CPU cycles
-  i5100_edac: Fix a warning when compiled with 32 bits
-  i7300_edac: Get rid of some wrongly-solved rebase conflict
-  edac: Only expose csrows/channels on legacy API if they're populated
-
- drivers/edac/Kconfig          |    8 +
- drivers/edac/amd64_edac.c     |   43 +-
- drivers/edac/amd64_edac.h     |   29 +-
- drivers/edac/amd64_edac_dbg.c |   89 ++--
- drivers/edac/amd64_edac_inj.c |  128 +++--
- drivers/edac/cpc925_edac.c    |   54 +-
- drivers/edac/e752x_edac.c     |   31 +-
- drivers/edac/e7xxx_edac.c     |   32 +-
- drivers/edac/edac_mc.c        |   60 +-
- drivers/edac/edac_mc_sysfs.c  | 1322 +++++++++++++++++++++--------------------
- drivers/edac/edac_module.c    |   13 +-
- drivers/edac/edac_module.h    |    9 +-
- drivers/edac/i5000_edac.c     |    3 -
- drivers/edac/i5100_edac.c     |    4 +-
- drivers/edac/i7300_edac.c     |    3 -
- drivers/edac/i7core_edac.c    |  336 +++++++----
- drivers/edac/i82875p_edac.c   |    4 -
- drivers/edac/i82975x_edac.c   |    9 +-
- drivers/edac/mpc85xx_edac.c   |   93 ++--
- include/linux/edac.h          |   69 +--
- 20 files changed, 1250 insertions(+), 1089 deletions(-)
-
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 319612c..112fff2 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -347,6 +347,16 @@ static struct device_attribute *dynamic_csrow_ce_count_attr[] = {
+ 	&dev_attr_legacy_ch5_ce_count.attr
+ };
+ 
++static inline int nr_pages_per_csrow(struct csrow_info *csrow)
++{
++	int chan, nr_pages = 0;
++
++	for (chan = 0; chan < csrow->nr_channels; chan++)
++		nr_pages += csrow->channels[chan].dimm->nr_pages;
++
++	return nr_pages;
++}
++
+ /* Create a CSROW object under specifed edac_mc_device */
+ static int edac_create_csrow_object(struct mem_ctl_info *mci,
+ 				    struct csrow_info *csrow, int index)
+@@ -371,6 +381,9 @@ static int edac_create_csrow_object(struct mem_ctl_info *mci,
+ 		return err;
+ 
+ 	for (chan = 0; chan < csrow->nr_channels; chan++) {
++		/* Only expose populated DIMMs */
++		if (!csrow->channels[chan].dimm->nr_pages)
++			continue;
+ 		err = device_create_file(&csrow->dev,
+ 					 dynamic_csrow_dimm_attr[chan]);
+ 		if (err < 0)
+@@ -405,6 +418,9 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
+ 	struct csrow_info *csrow;
+ 
+ 	for (i = 0; i < mci->num_csrows; i++) {
++		csrow = &mci->csrows[i];
++		if (!nr_pages_per_csrow(csrow))
++			continue;
+ 		err = edac_create_csrow_object(mci, &mci->csrows[i], i);
+ 		if (err < 0)
+ 			goto error;
+@@ -414,7 +430,11 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
+ error:
+ 	for (--i; i >= 0; i--) {
+ 		csrow = &mci->csrows[i];
++		if (!nr_pages_per_csrow(csrow))
++			continue;
+ 		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
++			if (!csrow->channels[chan].dimm->nr_pages)
++				continue;
+ 			device_remove_file(&csrow->dev,
+ 						dynamic_csrow_dimm_attr[chan]);
+ 			device_remove_file(&csrow->dev,
+@@ -433,7 +453,11 @@ static void edac_delete_csrow_objects(struct mem_ctl_info *mci)
+ 
+ 	for (i = mci->num_csrows - 1; i >= 0; i--) {
+ 		csrow = &mci->csrows[i];
++		if (!nr_pages_per_csrow(csrow))
++			continue;
+ 		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
++			if (!csrow->channels[chan].dimm->nr_pages)
++				continue;
+ 			debugf1("Removing csrow %d channel %d sysfs nodes\n",
+ 				i, chan);
+ 			device_remove_file(&csrow->dev,
 -- 
 1.7.8
 
