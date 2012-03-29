@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580Ab2C2RSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 13:18:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49074 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759642Ab2C2RSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 13:18:09 -0400
-Date: Thu, 29 Mar 2012 19:17:19 +0200 (CEST)
-From: John Kacur <jkacur@redhat.com>
-To: Borislav Petkov <bp@amd64.org>
-cc: John Kacur <jkacur@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ftrace: Remove a superfluous check
-In-Reply-To: <20120329171140.GE6409@aftab>
-Message-ID: <alpine.LFD.2.02.1203291914040.10113@tycho>
-References: <1333039463-24268-1-git-send-email-bp@amd64.org> <alpine.LFD.2.02.1203291902280.10113@tycho> <20120329171140.GE6409@aftab>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933634Ab2C2RTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 13:19:10 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933074Ab2C2RS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 13:18:59 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: user-mode-linux-devel@lists.sourceforge.net, toralf.foerster@gmx.de,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 2/2] um: Use asm-generic/switch_to.h
+Date: Thu, 29 Mar 2012 19:18:50 +0200
+Message-Id: <1333041530-2998-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1333041530-2998-1-git-send-email-richard@nod.at>
+References: <1333041530-2998-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/include/asm/Kbuild  |    1 +
+ arch/um/kernel/process.c    |    6 +-----
+ arch/x86/um/asm/switch_to.h |    7 -------
+ 3 files changed, 2 insertions(+), 12 deletions(-)
+ delete mode 100644 arch/x86/um/asm/switch_to.h
 
+diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+index bb5d6e6..fff2435 100644
+--- a/arch/um/include/asm/Kbuild
++++ b/arch/um/include/asm/Kbuild
+@@ -1,3 +1,4 @@
+ generic-y += bug.h cputime.h device.h emergency-restart.h futex.h hardirq.h
+ generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
+ generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
++generic-y += switch_to.h
+diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
+index f386d04..2b73ded 100644
+--- a/arch/um/kernel/process.c
++++ b/arch/um/kernel/process.c
+@@ -88,11 +88,8 @@ static inline void set_current(struct task_struct *task)
+ 
+ extern void arch_switch_to(struct task_struct *to);
+ 
+-void *_switch_to(void *prev, void *next, void *last)
++void *__switch_to(struct task_struct *from, struct task_struct *to)
+ {
+-	struct task_struct *from = prev;
+-	struct task_struct *to = next;
+-
+ 	to->thread.prev_sched = from;
+ 	set_current(to);
+ 
+@@ -111,7 +108,6 @@ void *_switch_to(void *prev, void *next, void *last)
+ 	} while (current->thread.saved_task);
+ 
+ 	return current->thread.prev_sched;
+-
+ }
+ 
+ void interrupt_end(void)
+diff --git a/arch/x86/um/asm/switch_to.h b/arch/x86/um/asm/switch_to.h
+deleted file mode 100644
+index cf97d20..0000000
+--- a/arch/x86/um/asm/switch_to.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef _ASM_UM_SWITCH_TO_H_
+-#define _ASM_UM_SWITCH_TO_H_
+-
+-extern void *_switch_to(void *prev, void *next, void *last);
+-#define switch_to(prev, next, last) prev = _switch_to(prev, next, last)
+-
+-#endif
+-- 
+1.7.7.3
 
-On Thu, 29 Mar 2012, Borislav Petkov wrote:
-
-> On Thu, Mar 29, 2012 at 07:03:23PM +0200, John Kacur wrote:
-> > If you're going to do this, then you can drop the label too.
-> 
-> Jahaa... thanks.
-> 
-> Here's an updated patch:
-> 
-> --
-> From 135c25a609739bbdf1c33e62119517b47f0e1d07 Mon Sep 17 00:00:00 2001
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> Date: Thu, 29 Mar 2012 18:41:15 +0200
-> Subject: [PATCH] ftrace: Remove a superfluous check
-> 
-> register_ftrace_function() checks ftrace_disabled and calls
-> __register_ftrace_function which does it again.
-> 
-> Drop the first check and add the unlikely hint to the second one. Also,
-> drop the label as John correctly notices.
-> 
-> No functional change.
-> 
-> Cc: John Kacur <jkacur@redhat.com>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  kernel/trace/ftrace.c |    8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 867bd1dd2dd0..0df8f8088ffe 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -311,7 +311,7 @@ static int remove_ftrace_list_ops(struct ftrace_ops **list,
->  
->  static int __register_ftrace_function(struct ftrace_ops *ops)
->  {
-> -	if (ftrace_disabled)
-> +	if (unlikely(ftrace_disabled))
->  		return -ENODEV;
->  
->  	if (FTRACE_WARN_ON(ops == &global_ops))
-> @@ -4304,16 +4304,12 @@ int register_ftrace_function(struct ftrace_ops *ops)
->  
->  	mutex_lock(&ftrace_lock);
->  
-> -	if (unlikely(ftrace_disabled))
-> -		goto out_unlock;
-> -
->  	ret = __register_ftrace_function(ops);
->  	if (!ret)
->  		ret = ftrace_startup(ops, 0);
->  
-> -
-> - out_unlock:
->  	mutex_unlock(&ftrace_lock);
-> +
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(register_ftrace_function);
-> -- 
-> 1.7.9.3.362.g71319
-> 
-
-It looks okay to me. Technically it's not functionally equivalent though, 
-because now when __register_ftrace_function is called directly, (in other 
-paths), the test has an unlikely there. See what Steven says, otherwise, 
-you can have my reviewed by.
-
-Thanks
-
-John
