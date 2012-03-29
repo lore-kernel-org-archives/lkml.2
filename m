@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab2C2BTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 21:19:35 -0400
-Received: from home.keithp.com ([63.227.221.253]:59815 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757915Ab2C2BT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 21:19:29 -0400
-From: Keith Packard <keithp@keithp.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Keith Packard <keithp@keithp.com>
-Subject: [PATCH] Revert "Bluetooth: Always enable management interface"
-Date: Wed, 28 Mar 2012 18:19:18 -0700
-Message-Id: <1332983958-2734-1-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.9
+	id S1758641Ab2C2BT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 21:19:58 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:56414 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758170Ab2C2BTw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 21:19:52 -0400
+Message-ID: <4F73B8B8.8000609@xenotime.net>
+Date: Wed, 28 Mar 2012 18:19:52 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Rafal Kapela <raf.kapela@gmail.com>
+CC: gregkh@linuxfoundation.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation:"the the" in ABI/stable/sysfs-driver-usb-usbtmc
+ Documentation misspelling
+References: <1332437749-25766-1-git-send-email-raf.kapela@gmail.com>
+In-Reply-To: <1332437749-25766-1-git-send-email-raf.kapela@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 4b95a24ce12c4545fd7d2e3075841dc3119d1d71.
+On 03/22/2012 10:35 AM, Rafal Kapela wrote:
 
-My USB bluetooth device does not show up with this patch in place.
+> Signed-off-by: Rafal Kapela <raf.kapela@gmail.com>
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
 
-This patch seems so innocuous, but when added to the kernel, it keeps
-my USB bluetooth device from appearing to user mode at all. With the
-mgmt interface enabled:
+Applied, thanks.
 
-	$ hcitool dev
-	Devices:
 
-With this patch reverted:
+> ---
+>  Documentation/ABI/stable/sysfs-driver-usb-usbtmc |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/ABI/stable/sysfs-driver-usb-usbtmc b/Documentation/ABI/stable/sysfs-driver-usb-usbtmc
+> index 23a43b8..2a7f9a0 100644
+> --- a/Documentation/ABI/stable/sysfs-driver-usb-usbtmc
+> +++ b/Documentation/ABI/stable/sysfs-driver-usb-usbtmc
+> @@ -55,7 +55,7 @@ What:		/sys/bus/usb/drivers/usbtmc/devices/*/auto_abort
+>  Date:		August 2008
+>  Contact:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>  Description:
+> -		This file determines if the the transaction of the USB TMC
+> +		This file determines if the transaction of the USB TMC
+>  		device is to be automatically aborted if there is any error.
+>  		For more details about this, please see the document,
+>  		"Universal Serial Bus Test and Measurement Class Specification
 
-	$ hcitool dev
-	Devices:
-		hci0	04:0C:CE:DF:7B:C9
 
-I bisected to this revision, and then reverted it on top of version
 
-	v3.3-6972-ge22057c	e22057c8599373e5caef0bc42bdb95d2a361ab0d
-
-(which is where I'm trying to move drm-intel-fixes to)
-
-I think this is the third consecutive merge window that has broken my
-bluetooth interface in some way? At least I know enough to check
-now...
-
- net/bluetooth/hci_sock.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
-index 63afd23..d8b16cf 100644
---- a/net/bluetooth/hci_sock.c
-+++ b/net/bluetooth/hci_sock.c
-@@ -50,6 +50,8 @@
- #include <net/bluetooth/hci_core.h>
- #include <net/bluetooth/hci_mon.h>
- 
-+static bool enable_mgmt;
-+
- static atomic_t monitor_promisc = ATOMIC_INIT(0);
- 
- /* ----- HCI socket interface ----- */
-@@ -649,7 +651,7 @@ static int hci_sock_bind(struct socket *sock, struct sockaddr *addr, int addr_le
- 		break;
- 
- 	case HCI_CHANNEL_CONTROL:
--		if (haddr.hci_dev != HCI_DEV_NONE) {
-+		if (haddr.hci_dev != HCI_DEV_NONE || !enable_mgmt) {
- 			err = -EINVAL;
- 			goto done;
- 		}
-@@ -1127,3 +1129,6 @@ void hci_sock_cleanup(void)
- 
- 	proto_unregister(&hci_sk_proto);
- }
-+
-+module_param(enable_mgmt, bool, 0644);
-+MODULE_PARM_DESC(enable_mgmt, "Enable Management interface");
 -- 
-1.7.9
-
+~Randy
