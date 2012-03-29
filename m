@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab2C2Ua0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:30:26 -0400
-Received: from mailhost.anl.gov ([130.202.113.50]:63958 "EHLO mailhost.anl.gov"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759223Ab2C2UaV convert rfc822-to-8bit (ORCPT
+	id S932943Ab2C2Uco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:32:44 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42572 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab2C2Uch convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:30:21 -0400
-X-Greylist: delayed 1091 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Mar 2012 16:30:21 EDT
-From: Karl Pickett <kjp@ci.uchicago.edu>
-Content-Type: text/plain; charset=us-ascii
+	Thu, 29 Mar 2012 16:32:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+1xoqcf6qJOouKXGEHsjWSBJdA7qtMnuVopq+hoHS+TX8fvSg@mail.gmail.com>
+References: <CA+1xoqcf6qJOouKXGEHsjWSBJdA7qtMnuVopq+hoHS+TX8fvSg@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 29 Mar 2012 22:32:16 +0200
+Message-ID: <CA+1xoqcJAwgTgQG=nZPsH_SLkPFkGt2rUiVWGn5SO5JOAC1RAA@mail.gmail.com>
+Subject: sched: WARNING: at include/linux/cpumask.h:108 select_fallback_rq+0x241/0x280()
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Subject: Is prctl(PR_SET_CHILD_SUBREAPER) going to break my code which checks getppid == 1?
-Date: Thu, 29 Mar 2012 15:12:07 -0500
-Message-Id: <46799FA3-D575-4A2D-8DEB-CE5149A4110D@ci.uchicago.edu>
-Cc: kay.sievers@vrfy.org, Oleg Nesterov <oleg@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re: http://thread.gmane.org/gmane.linux.kernel/1236479
+(and now with lkml)
 
-I'm wondering if this is going to break code that checks getppid() == 1?
+Hi all,
 
-I have a TCL/TK GUI app that spawns ssh.  I want the ssh to die immediately if the GUI process crashes, so ssh is launched with a wrapper c program that does:
+I got the following spew using trinity in a kvm tools guest on the
+latest linux-next kernel.
 
-   prctl(PR_SET_PDEATHSIG, SIGHUP);
-   if (getppid() == 1) /* parent died already? */
-       return 0;
+This is the result of trying to offline CPU1. I'm not sure how to
+reproduce it easily besides putting some pressure on the system and
+shutting down CPUs until it happens.
 
-So what is getppid() going to return for some user using this new 'session manager reaper'?  How else am I supposed to do proper processes supervision (with TCL/TK as a parent...)?  Also, this program is open source but we distribute binaries that work on as many platforms as possible... we find most users don't want to compile things.
-
-
-
-
-
+[  317.238839] Cannot set affinity for irq 0
+[  317.238839] ------------[ cut here ]------------
+[  317.238839] WARNING: at include/linux/cpumask.h:108
+select_fallback_rq+0x241/0x280()
+[  317.238839] Pid: 13, comm: migration/1 Not tainted
+3.3.0-next-20120329-sasha #4
+[  317.238839] Call Trace:
+[  317.238839]  [<ffffffff810b26b5>] warn_slowpath_common+0x75/0xb0
+[  317.238839]  [<ffffffff810b2705>] warn_slowpath_null+0x15/0x20
+[  317.238839]  [<ffffffff810e5991>] select_fallback_rq+0x241/0x280
+[  317.238839]  [<ffffffff810f1a40>] ? dequeue_task_fair+0x100/0x100
+[  317.238839]  [<ffffffff810f1a40>] ? dequeue_task_fair+0x100/0x100
+[  317.238839]  [<ffffffff810ecd20>] migrate_tasks+0x80/0xf0
+[  317.238839]  [<ffffffff826fe03a>] ? migration_call+0xae/0x16b
+[  317.238839]  [<ffffffff826fe073>] migration_call+0xe7/0x16b
+[  317.238839]  [<ffffffff810ddebf>] notifier_call_chain+0x5f/0x150
+[  317.238839]  [<ffffffff810ddfb9>] __raw_notifier_call_chain+0x9/0x10
+[  317.238839]  [<ffffffff810b489b>] __cpu_notify+0x1b/0x30
+[  317.238839]  [<ffffffff826c3fbd>] take_cpu_down+0x2d/0x40
+[  317.238839]  [<ffffffff811357fa>] stop_machine_cpu_stop+0xda/0x1a0
+[  317.238839]  [<ffffffff81135720>] ? queue_stop_cpus_work+0x190/0x190
+[  317.238839]  [<ffffffff811352ae>] cpu_stopper_thread+0xee/0x200
+[  317.238839]  [<ffffffff82705c1a>] ? __schedule+0x49a/0x860
+[  317.238839]  [<ffffffff811351c0>] ? res_counter_init+0x50/0x50
+[  317.238839]  [<ffffffff810d715e>] kthread+0xbe/0xd0
+[  317.238839]  [<ffffffff82709e74>] kernel_thread_helper+0x4/0x10
+[  317.238839]  [<ffffffff810e3ee0>] ? finish_task_switch+0x80/0x110
+[  317.238839]  [<ffffffff82708174>] ? retint_restore_args+0x13/0x13
+[  317.238839]  [<ffffffff810d70a0>] ? __init_kthread_worker+0x70/0x70
+[  317.238839]  [<ffffffff82709e70>] ? gs_change+0x13/0x13
+[  317.238839] ---[ end trace 79079cf527253aab ]---
+[  317.250645] [sched_delayed] process 2267 (trinity) no longer affine to cpu1
+[  317.323711] CPU 1 is now offline
+[  317.591059] [sched_delayed] process 1956 (trinity) no longer affine to cpu1
+[  317.812110] [sched_delayed] process 2004 (trinity) no longer affine to cpu1
+[  318.401016] [sched_delayed] process 2228 (trinity) no longer affine to cpu1
+[  318.581015] [sched_delayed] process 2099 (trinity) no longer affine to cpu1
