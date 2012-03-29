@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935038Ab2C3W7C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:59:02 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47253 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934886Ab2C3VFe (ORCPT
+	id S934955Ab2C3W7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:59:49 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41906 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934873Ab2C3VF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:34 -0400
-Message-Id: <20120330195728.981187562@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bernie Thompson <bernie@plugable.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 048/108] udlfb: remove sysfs framebuffer device with USB .disconnect()
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+	Fri, 30 Mar 2012 17:05:26 -0400
+Message-Id: <201203302105.q2UL53K2006282@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 29 Mar 2012 14:05:04 -0400
+Subject: [PATCH] arch/tile: make sure to build memcpy_user_64 without frame pointer
+In-Reply-To: <4F761E1C.80808.com>
+References: <4F761E1C.80808.com>
+To: Chris Metcalf <cmetcalf@tilera.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 21:05:03.0897 (UTC) FILETIME=[C6FEC890:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Add a comment explaining why this is important, and add a CFLAGS_REMOVE
+clause to the Makefile to make sure it happens.
 
-------------------
-
-From: Kay Sievers <kay.sievers@vrfy.org>
-
-commit ce880cb860f36694d2cdebfac9e6ae18176fe4c4 upstream.
-
-The USB graphics card driver delays the unregistering of the framebuffer
-device to a workqueue, which breaks the userspace visible remove uevent
-sequence. Recent userspace tools started to support USB graphics card
-hotplug out-of-the-box and rely on proper events sent by the kernel.
-
-The framebuffer device is a direct child of the USB interface which is
-removed immediately after the USB .disconnect() callback. But the fb device
-in /sys stays around until its final cleanup, at a time where all the parent
-devices have been removed already.
-
-To work around that, we remove the sysfs fb device directly in the USB
-.disconnect() callback and leave only the cleanup of the internal fb
-data to the delayed work.
-
-Before:
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb0 (graphics)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
- remove   /2-1.2:1.0/graphics/fb0 (graphics)
-
-After:
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb1 (graphics)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb1 (graphics)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
-
-Tested-by: Bernie Thompson <bernie@plugable.com>
-Acked-by: Bernie Thompson <bernie@plugable.com>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/video/fbmem.c |   18 +++++++++++++++++-
- drivers/video/udlfb.c |    2 +-
- include/linux/fb.h    |    1 +
- 3 files changed, 19 insertions(+), 2 deletions(-)
+ arch/tile/lib/Makefile         |    1 +
+ arch/tile/lib/memcpy_user_64.c |    8 +++++++-
+ 2 files changed, 8 insertions(+), 1 deletions(-)
 
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1651,6 +1651,7 @@ static int do_unregister_framebuffer(str
- 	if (ret)
- 		return -EINVAL;
+diff --git a/arch/tile/lib/Makefile b/arch/tile/lib/Makefile
+index 0c26086..985f598 100644
+--- a/arch/tile/lib/Makefile
++++ b/arch/tile/lib/Makefile
+@@ -7,6 +7,7 @@ lib-y = cacheflush.o checksum.o cpumask.o delay.o uaccess.o \
+ 	strchr_$(BITS).o strlen_$(BITS).o
  
-+	unlink_framebuffer(fb_info);
- 	if (fb_info->pixmap.addr &&
- 	    (fb_info->pixmap.flags & FB_PIXMAP_DEFAULT))
- 		kfree(fb_info->pixmap.addr);
-@@ -1658,7 +1659,6 @@ static int do_unregister_framebuffer(str
- 	registered_fb[i] = NULL;
- 	num_registered_fb--;
- 	fb_cleanup_device(fb_info);
--	device_destroy(fb_class, MKDEV(FB_MAJOR, i));
- 	event.info = fb_info;
- 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
- 
-@@ -1667,6 +1667,22 @@ static int do_unregister_framebuffer(str
- 	return 0;
- }
- 
-+int unlink_framebuffer(struct fb_info *fb_info)
-+{
-+	int i;
-+
-+	i = fb_info->node;
-+	if (i < 0 || i >= FB_MAX || registered_fb[i] != fb_info)
-+		return -EINVAL;
-+
-+	if (fb_info->dev) {
-+		device_destroy(fb_class, MKDEV(FB_MAJOR, i));
-+		fb_info->dev = NULL;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL(unlink_framebuffer);
-+
- void remove_conflicting_framebuffers(struct apertures_struct *a,
- 				     const char *name, bool primary)
- {
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -1666,7 +1666,7 @@ static void dlfb_usb_disconnect(struct u
- 	for (i = 0; i < ARRAY_SIZE(fb_device_attrs); i++)
- 		device_remove_file(info->dev, &fb_device_attrs[i]);
- 	device_remove_bin_file(info->dev, &edid_attr);
--
-+	unlink_framebuffer(info);
- 	usb_set_intfdata(interface, NULL);
- 
- 	/* if clients still have us open, will be freed on last close */
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -997,6 +997,7 @@ extern ssize_t fb_sys_write(struct fb_in
- /* drivers/video/fbmem.c */
- extern int register_framebuffer(struct fb_info *fb_info);
- extern int unregister_framebuffer(struct fb_info *fb_info);
-+extern int unlink_framebuffer(struct fb_info *fb_info);
- extern void remove_conflicting_framebuffers(struct apertures_struct *a,
- 				const char *name, bool primary);
- extern int fb_prepare_logo(struct fb_info *fb_info, int rotate);
-
+ ifeq ($(CONFIG_TILEGX),y)
++CFLAGS_REMOVE_memcpy_user_64.o = -fno-omit-frame-pointer
+ lib-y += memcpy_user_64.o
+ else
+ lib-y += atomic_32.o atomic_asm_32.o memcpy_tile64.o
+diff --git a/arch/tile/lib/memcpy_user_64.c b/arch/tile/lib/memcpy_user_64.c
+index 4763b3a..37440ca 100644
+--- a/arch/tile/lib/memcpy_user_64.c
++++ b/arch/tile/lib/memcpy_user_64.c
+@@ -14,7 +14,13 @@
+  * Do memcpy(), but trap and return "n" when a load or store faults.
+  *
+  * Note: this idiom only works when memcpy() compiles to a leaf function.
+- * If "sp" is updated during memcpy, the "jrp lr" will be incorrect.
++ * Here leaf function not only means it does not have calls, but also
++ * requires no stack operations (sp, stack frame pointer) and no
++ * use of callee-saved registers, else "jrp lr" will be incorrect since
++ * unwinding stack frame is bypassed. Since memcpy() is not complex so
++ * these conditions are satisfied here, but we need to be careful when
++ * modifying this file. This is not a clean solution but is the best
++ * one so far.
+  *
+  * Also note that we are capturing "n" from the containing scope here.
+  */
+-- 
+1.6.5.2
 
