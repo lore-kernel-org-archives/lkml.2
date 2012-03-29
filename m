@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab2C2MZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 08:25:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53954 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab2C2MZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 08:25:44 -0400
-Date: Thu, 29 Mar 2012 14:25:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Geunsik Lim <geunsik.lim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH, v2] Fix potentially derefencing uninitialized 'r'.
-Message-ID: <20120329122450.GA30566@tiehlicka.suse.cz>
-References: <1329814703-14398-1-git-send-email-geunsik.lim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329814703-14398-1-git-send-email-geunsik.lim@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759261Ab2C2M0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 08:26:10 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:60780 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab2C2M0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 08:26:06 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH v3 0/4] tools: Add a toplevel Makefile
+Date: Thu, 29 Mar 2012 14:25:53 +0200
+Message-Id: <1333023957-22746-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-02-12 17:58:23, Geunsik Lim wrote:
-> From: Geunsik Lim <geunsik.lim@samsung.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-The warning seems to be bogus. The only caller is for_each_mem_pfn_range
-and even if we had type->cnt == 0 we would return before accessing r.
-I guess it would be more reasonable to silent the warning by
-__maybe_unused.
 
-> 
-> v2: reorganize the code with better way to avoid compilation warning
-> via the comment of Andrew Morton.
-> 
-> v1: struct memblock_region 'r' will not be initialized potentially
-> because of while() condition in __next_mem_pfn_range()function.
-> Solve the compilation warning related problem by initializing
-> r data structure.
-> 
-> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-> ---
->  mm/memblock.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 77b5f22..b8c40c5 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -673,14 +673,18 @@ void __init_memblock __next_mem_pfn_range(int *idx, int nid,
->  	struct memblock_type *type = &memblock.memory;
->  	struct memblock_region *r;
->  
-> -	while (++*idx < type->cnt) {
-> +	do {
->  		r = &type->regions[*idx];
->  
-> +	   if (++*idx < type->cnt) {
->  		if (PFN_UP(r->base) >= PFN_DOWN(r->base + r->size))
->  			continue;
->  		if (nid == MAX_NUMNODES || nid == r->nid)
->  			break;
-> -	}
-> +	   } else
-> +		break;
-> +	} while (1);
-> +
->  	if (*idx >= type->cnt) {
->  		*idx = -1;
->  		return;
-> -- 
-> 1.7.8.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hi all,
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+yet another version of the toplevel Makefile integration of tools/.
+This round gives you the ability to build the tools from the toplevel
+Makefile (explanation below can be found also in patch 4/4's commit
+message):
+
+"Now you can do
+
+$ make tools/<toolname>
+
+from the toplevel kernel directory and have the respective tool built.
+
+If you want to build and install it, do
+
+$ make tools/<toolname> tinstall
+
+The install target is called "tinstall" so that there's no conflict with
+the main kernel install target and should mean "tool install".
+
+$ make tools/ <toolname>_clean
+
+should clean the respective tool directories.
+
+If you want to clean all in tools, simply do
+
+$ make  tools/ cleanall
+
+Also, if you want to get what the possible targets are, simply calling
+
+$ make tools/
+
+should give you the short help."
+
+Also included are all suggestions from the last time.
+
+Thanks.
+
+Changelog:
+
+* v2:
+
+here's a refreshed version from yesterday incorporating all comments and
+suggestions along with a third patch that adds a 'help' target as the
+default one causing the following below. Btw, Arnaldo, could you please
+pick those up if there are no complaints since the first patch touches
+perf and I don't have a clear idea who else to send it to anyway :).
+
+Thanks.
+
+$ make
+Possible targets:
+
+  cpupower   - a tool for all things x86 CPU power
+  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer
+  lguest     - a minimal 32-bit x86 hypervisor
+  perf       - Linux performance measurements tool
+  slub       - slabs reporting tool
+  turbostat  - Intel CPU idle stats and freq reporting tool
+  usb        - USB testing tools
+  virtio     - vhost test module
+  x86_energy_perf_policy - Intel energy policy tool
+
+Cleaning targets:
+
+  all of the above with the "_clean" string appended cleans
+    the respective build directory.
+  clean: a summary clean target to clean _all_ folders
+
+
+* v1:
+
+this is a refresh and carve-out of an old patchset. It adds a toplevel
+Makefile to tools/ so that one can build the tool of her/his liking by
+simply doing
+
+$ cd tools/
+$ make <toolname>
+
+By default, we build perf. There's also a scripts/Makefile.lib now which
+should contain all make-related generic stuff which can be used by all
+tools' build process after including this file.
+
+</Changelog>
+
+Any comments/suggestions are welcome,
+thanks.
