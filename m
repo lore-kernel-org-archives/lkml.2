@@ -1,127 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab2C2JVr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:21:47 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50047 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758657Ab2C2JVh (ORCPT
+	id S1758779Ab2C2JWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:22:36 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:47613 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2C2JW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:21:37 -0400
-Message-ID: <4F742999.9080001@linux.vnet.ibm.com>
-Date: Thu, 29 Mar 2012 17:21:29 +0800
+	Thu, 29 Mar 2012 05:22:28 -0400
+Message-ID: <4F7429C7.9030307@linux.vnet.ibm.com>
+Date: Thu, 29 Mar 2012 17:22:15 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 02/13] KVM: MMU: abstract spte write-protect
+Subject: [PATCH 03/13] KVM: MMU: split FNAME(prefetch_invalid_gpte)
 References: <4F742951.7080003@linux.vnet.ibm.com>
 In-Reply-To: <4F742951.7080003@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12032909-4790-0000-0000-000001FDC257
+x-cbid: 12032909-2000-0000-0000-000006F452E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a common function to abstract spte write-protect to cleanup the
-code
+Split FNAME(prefetch_invalid_gpte) to check gpte independently which will
+be used in the later patch
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c |   57 ++++++++++++++++++++++++++++++---------------------
- 1 files changed, 33 insertions(+), 24 deletions(-)
+ arch/x86/kvm/paging_tmpl.h |   29 +++++++++++++++++------------
+ 1 files changed, 17 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index c759e4f..ad40647 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1015,27 +1015,43 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
- 		rmap_remove(kvm, sptep);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 1561028..b9fd1c4 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -337,24 +337,29 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
+ 					addr, access);
  }
 
-+/* Return true if the spte is dropped. */
-+static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
-+			       int *flush)
+-static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
+-				    struct kvm_mmu_page *sp, u64 *spte,
+-				    pt_element_t gpte)
++static bool FNAME(invalid_gpte)(struct kvm_vcpu *vcpu, pt_element_t gpte)
+ {
+ 	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
+-		goto no_present;
++		return true;
+
+ 	if (!is_present_gpte(gpte))
+-		goto no_present;
++		return true;
+
+ 	if (!(gpte & PT_ACCESSED_MASK))
+-		goto no_present;
++		return true;
+
+ 	return false;
++}
+
+-no_present:
+-	drop_spte(vcpu->kvm, spte);
+-	return true;
++static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
++					 u64 *spte, pt_element_t gpte)
 +{
-+	u64 spte = *sptep;
-+
-+	if (!is_writable_pte(spte))
-+		return false;
-+
-+	*flush |= true;
-+
-+	if (large) {
-+		pgprintk("rmap_write_protect(large): spte %p %llx\n",
-+			 spte, *spte);
-+		BUG_ON(!is_large_pte(spte));
-+
-+		drop_spte(kvm, sptep);
-+		--kvm->stat.lpages;
++	if (FNAME(invalid_gpte)(vcpu, gpte)) {
++		drop_spte(vcpu->kvm, spte);
 +		return true;
 +	}
 +
-+	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
-+	spte = spte & ~PT_WRITABLE_MASK;
-+	mmu_spte_update(sptep, spte);
-+
 +	return false;
-+}
-+
- static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
- {
- 	u64 *spte = NULL;
- 	int write_protected = 0;
+ }
 
- 	while ((spte = rmap_next(rmapp, spte))) {
--		rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
--
--		if (!is_writable_pte(*spte))
--			continue;
--
--		if (level == PT_PAGE_TABLE_LEVEL) {
--			mmu_spte_update(spte, *spte & ~PT_WRITABLE_MASK);
--		} else {
--			BUG_ON(!is_large_pte(*spte));
--			drop_spte(kvm, spte);
--			--kvm->stat.lpages;
-+		if (spte_write_protect(kvm, spte, level > PT_PAGE_TABLE_LEVEL,
-+		      &write_protected))
- 			spte = NULL;
--		}
--
--		write_protected = 1;
- 	}
+ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+@@ -365,7 +370,7 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 	pfn_t pfn;
 
- 	return write_protected;
-@@ -3858,6 +3874,7 @@ int kvm_mmu_setup(struct kvm_vcpu *vcpu)
- void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
- {
- 	struct kvm_mmu_page *sp;
-+	int flush = 0;
+ 	gpte = *(const pt_element_t *)pte;
+-	if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
++	if (FNAME(prefetch_invalid_gpte)(vcpu, spte, gpte))
+ 		return;
 
- 	list_for_each_entry(sp, &kvm->arch.active_mmu_pages, link) {
- 		int i;
-@@ -3872,16 +3889,8 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
- 			      !is_last_spte(pt[i], sp->role.level))
- 				continue;
+ 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
+@@ -441,7 +446,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
 
--			if (is_large_pte(pt[i])) {
--				drop_spte(kvm, &pt[i]);
--				--kvm->stat.lpages;
--				continue;
--			}
--
--			/* avoid RMW */
--			if (is_writable_pte(pt[i]))
--				mmu_spte_update(&pt[i],
--						pt[i] & ~PT_WRITABLE_MASK);
-+			spte_write_protect(kvm, &pt[i],
-+					   is_large_pte(pt[i]), &flush);
+ 		gpte = gptep[i];
+
+-		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
++		if (FNAME(prefetch_invalid_gpte)(vcpu, spte, gpte))
+ 			continue;
+
+ 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte,
+@@ -792,7 +797,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 					  sizeof(pt_element_t)))
+ 			return -EINVAL;
+
+-		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, &sp->spt[i], gpte)) {
++		if (FNAME(prefetch_invalid_gpte)(vcpu, &sp->spt[i], gpte)) {
+ 			vcpu->kvm->tlbs_dirty++;
+ 			continue;
  		}
- 	}
- 	kvm_flush_remote_tlbs(kvm);
 -- 
 1.7.7.6
 
