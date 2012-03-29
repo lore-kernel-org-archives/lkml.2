@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933831Ab2C2UH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:07:56 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36959 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759668Ab2C2UC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:02:26 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
-        Will Drewry <wad@chromium.org>
-Subject: [PATCH v17 03/15] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
-Date: Thu, 29 Mar 2012 15:01:48 -0500
-Message-Id: <1333051320-30872-4-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333051320-30872-1-git-send-email-wad@chromium.org>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	id S933842Ab2C2UIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:08:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39730 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933805Ab2C2UHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 16:07:51 -0400
+Message-ID: <4F74C10B.3040503@zytor.com>
+Date: Thu, 29 Mar 2012 13:07:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Maarten ter Huurne <maarten@treewalker.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] /dev/mem: Add kernel config option to omit this device.
+References: <1333041724-20532-1-git-send-email-maarten@treewalker.org> <4F749C26.60804@zytor.com> <1679935.Pf8rWZIDTT@hyperion>
+In-Reply-To: <1679935.Pf8rWZIDTT@hyperion>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces a new BPF ancillary instruction that all LD calls will be
-mapped through when skb_run_filter() is being used for seccomp BPF.  The
-rewriting will be done using a secondary chk_filter function that is run
-after skb_chk_filter.
+On 03/29/2012 12:32 PM, Maarten ter Huurne wrote:
+> On Thursday 29 March 2012 10:30:14 H. Peter Anvin wrote:
+>> On 03/29/2012 10:22 AM, Maarten ter Huurne wrote:
+>>> Many systems don't need /dev/mem, so make it optional.
+>>> It saves some space on embedded systems.
+>>>
+>>> Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+>>
+>> I would like to see it being modular if it is made optional.  I think
+>> that would be the right thing anyway.
+> 
+> By modular, do you mean splitting off the code from drivers/char/mem.c into 
+> a new source file?
+> 
+> In mem.c there are several static functions used by more than one device, 
+> but I think /dev/mem, /dev/kmem and /dev/port are relatively independent of 
+> the other devices, so splitting off those three would be an option.
+> 
 
-The code change is guarded by CONFIG_SECCOMP_FILTER which is added,
-along with the seccomp_bpf_load() function later in this series.
+Yes, splitting them and making it possible to compile them as modules.
 
-This is based on http://lkml.org/lkml/2012/3/2/141
+And certainly the devices you list above are really quite different
+from, say /dev/null or /dev/zero.
 
-v17: rebase
-v16: -
-v15: include seccomp.h explicitly for when seccomp_bpf_load exists.
-v14: First cut using a single additional instruction
-... v13: made bpf functions generic.
-
-Suggested-by: Indan Zupancic <indan@nul.nu>
-Signed-off-by: Will Drewry <wad@chromium.org>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- include/linux/filter.h |    1 +
- net/core/filter.c      |    6 ++++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index 8eeb205..aaa2e80 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -228,6 +228,7 @@ enum {
- 	BPF_S_ANC_HATYPE,
- 	BPF_S_ANC_RXHASH,
- 	BPF_S_ANC_CPU,
-+	BPF_S_ANC_SECCOMP_LD_W,
- };
- 
- #endif /* __KERNEL__ */
-diff --git a/net/core/filter.c b/net/core/filter.c
-index cf4989a..b6caa49 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -38,6 +38,7 @@
- #include <linux/filter.h>
- #include <linux/reciprocal_div.h>
- #include <linux/ratelimit.h>
-+#include <linux/seccomp.h>
- 
- /* No hurry in this branch */
- static void *__load_pointer(const struct sk_buff *skb, int k, unsigned int size)
-@@ -349,6 +350,11 @@ load_b:
- 				A = 0;
- 			continue;
- 		}
-+#ifdef CONFIG_SECCOMP_FILTER
-+		case BPF_S_ANC_SECCOMP_LD_W:
-+			A = seccomp_bpf_load(fentry->k);
-+			continue;
-+#endif
- 		default:
- 			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
- 				       fentry->code, fentry->jt,
--- 
-1.7.5.4
+	-hpa
 
