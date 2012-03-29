@@ -1,241 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab2C2Fhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 01:37:31 -0400
-Received: from ns.lbox.cz ([62.245.111.135]:38339 "EHLO ns.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab2C2FhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 01:37:23 -0400
-Date: Thu, 29 Mar 2012 07:36:39 +0200
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: gregkh@linuxfoundation.org
-Cc: mel@csn.ul.ie, stable@vger.kernel.org,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "mm: vmscan: forcibly scan highmem if there are too many
-	buffer_heads pinning highmem" has been added to the 3.3-stable tree
-Message-ID: <20120329053639.GA7603@pcnci2.linuxbox.cz>
-References: <13325234973644@kroah.org>
+	id S1753300Ab2C2FpS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 01:45:18 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39518 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab2C2FpJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 01:45:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-In-Reply-To: <13325234973644@kroah.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovaws by Kaspersky antivirus, 7190113 records (last update: 20120329)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 7190113 records (last update: 20120329)
-X-Spam-Score: 2.8 (**), 15 required
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.2 (ns.lbox.cz [62.245.111.135]); Thu, 29 Mar 2012 07:36:41 +0200 (CEST)
-X-Spam-Report: -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
-    -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                                [score: 0.0005]
-     0.0 T_FILL_THIS_FORM_SHORT Fill in a short form with personal information
-     4.6 AWL                    AWL: From: address is in the auto white-list
-     1.0 DIRTY_DOMAIN           Spurious domain
+In-Reply-To: <Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
+References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
+	<Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
+Date: Thu, 29 Mar 2012 13:45:07 +0800
+X-Google-Sender-Auth: 0RNyV1tdg38w-lnUACPPt4QaBFg
+Message-ID: <CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        Aaron Lu <aaron.lu@amd.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-acpi <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 28, 2012 at 10:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 28 Mar 2012, Lin Ming wrote:
+>
+>> ZPODD(Zero Power Optical Disk Drive) is a new feature in
+>> SATA 3.1 specification. It provides a way to power off unused ODD.
+>>
+>> ZPODD support is checked in in sr_probe().
+>> can_power_off flag is set during suspend if ZPODD is supported.
+>>
+>> ATA port's runtime suspend callback will actually power off the ODD
+>> and its runtime resume callback will actually power on the ODD.
+>>
+>> When ODD is powered off(D3Cold state), inserting disk will trigger a
+>> wakeup event(GPE). GPE AML handler notifies the associated device. Then
+>> ODD is resumed in the notify handler.
+>
+>> --- a/drivers/scsi/sr.c
+>> +++ b/drivers/scsi/sr.c
+>
+>> @@ -80,12 +82,38 @@ static int sr_probe(struct device *);
+>>  static int sr_remove(struct device *);
+>>  static int sr_done(struct scsi_cmnd *);
+>>
+>> +static int sr_suspend(struct device *dev, pm_message_t mesg)
+>> +{
+>> +     struct scsi_cd *cd;
+>> +
+>> +     cd = dev_get_drvdata(dev);
+>> +     if (cd->device->power_off)
+>> +             dev->power.subsys_data->can_power_off = true;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int sr_resume(struct device *dev)
+>> +{
+>> +     struct scsi_cd *cd;
+>> +
+>> +     cd = dev_get_drvdata(dev);
+>> +     if (cd->device->power_off) {
+>> +             dev->power.subsys_data->can_power_off = false;
+>> +             cd->poweroff_event = 0;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>
+> Calling this flag "can_power_off" makes these routines look very
+> strange.  Either the device can power off or it can't, i.e., either it
+> supports ZPODD or it doesn't.  This doesn't change over time.
+>
+> If you rename the flag "may_power_off" then its meaning will be more
+> clear.
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, will rename it.
 
-Hi,
+>
+>> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>>       unsigned int events;
+>>       int ret;
+>>
+>> +     /* Not necessary to check events if enter ZPODD state */
+>> +     if (cd->device->power_off &&
+>> +                     pm_runtime_suspended(&cd->device->sdev_gendev))
+>> +             return 0;
+>
+> The comment is wrong and the new code does the wrong thing.  You _do_
+> have to check for events even in the ZPODD state, which means
+> sr_check_events must power-up the device if necessary.
+> sd_check_events in James Bottomley's scsi-misc tree now does the right
+> thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
 
-I'm not 100% sure, but I think this one could go to 3.0.x as well, am I rig=
-ht?
-If it's so, could I try to provide backport? (it't doesn't apply cleanly).
-Mel, would You care to review then? Or do You plan to send Your own backpor=
-t?
+The problem is userspace(GNOME, for example) will check for events
+every seconds.
+If sr is power up so frequently then we lost the expected power
+savings from ZPODD.
 
-cheers!
+There are 2 events:
 
-nik
+DISK_EVENT_MEDIA_CHANGE
+DISK_EVENT_EJECT_REQUEST
 
+In current implementation, if sr is in ZPODD state, then it means
+there is no disk in the CDROM.
+So if sr is in ZPODD state, MEDIA_CHANGE would never happen.
 
-On Fri, Mar 23, 2012 at 10:24:57AM -0700, gregkh@linuxfoundation.org wrote:
->=20
-> This is a note to let you know that I've just added the patch titled
->=20
->     mm: vmscan: forcibly scan highmem if there are too many buffer_heads =
-pinning highmem
->=20
-> to the 3.3-stable tree which can be found at:
->     http://www.kernel.org/git/?p=3Dlinux/kernel/git/stable/stable-queue.g=
-it;a=3Dsummary
->=20
-> The filename of the patch is:
->      mm-vmscan-forcibly-scan-highmem-if-there-are-too-many-buffer_heads-p=
-inning-highmem.patch
-> and it can be found in the queue-3.3 subdirectory.
->=20
-> If you, or anyone else, feels it should not be added to the stable tree,
-> please let <stable@vger.kernel.org> know about it.
->=20
->=20
-> From cc715d99e529d470dde2f33a6614f255adea71f3 Mon Sep 17 00:00:00 2001
-> From: Mel Gorman <mel@csn.ul.ie>
-> Date: Wed, 21 Mar 2012 16:34:00 -0700
-> Subject: mm: vmscan: forcibly scan highmem if there are too many buffer_h=
-eads pinning highmem
->=20
-> From: Mel Gorman <mel@csn.ul.ie>
->=20
-> commit cc715d99e529d470dde2f33a6614f255adea71f3 upstream.
->=20
-> Stuart Foster reported on bugzilla that copying large amounts of data
-> from NTFS caused an OOM kill on 32-bit X86 with 16G of memory.  Andrew
-> Morton correctly identified that the problem was NTFS was using 512
-> blocks meaning each page had 8 buffer_heads in low memory pinning it.
->=20
-> In the past, direct reclaim used to scan highmem even if the allocating
-> process did not specify __GFP_HIGHMEM but not any more.  kswapd no longer
-> will reclaim from zones that are above the high watermark.  The intention
-> in both cases was to minimise unnecessary reclaim.  The downside is on
-> machines with large amounts of highmem that lowmem can be fully consumed
-> by buffer_heads with nothing trying to free them.
->=20
-> The following patch is based on a suggestion by Andrew Morton to extend
-> the buffer_heads_over_limit case to force kswapd and direct reclaim to
-> scan the highmem zone regardless of the allocation request or watermarks.
->=20
-> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=3D42578
->=20
-> [hughd@google.com: move buffer_heads_over_limit check up]
-> [akpm@linux-foundation.org: buffer_heads_over_limit is unlikely]
-> Reported-by: Stuart Foster <smf.linux@ntlworld.com>
-> Tested-by: Stuart Foster <smf.linux@ntlworld.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->=20
->=20
-> ---
->  mm/vmscan.c |   42 +++++++++++++++++++++++++++++-------------
->  1 file changed, 29 insertions(+), 13 deletions(-)
->=20
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1643,18 +1643,6 @@ static void move_active_pages_to_lru(str
->  	unsigned long pgmoved =3D 0;
->  	struct page *page;
-> =20
-> -	if (buffer_heads_over_limit) {
-> -		spin_unlock_irq(&zone->lru_lock);
-> -		list_for_each_entry(page, list, lru) {
-> -			if (page_has_private(page) && trylock_page(page)) {
-> -				if (page_has_private(page))
-> -					try_to_release_page(page, 0);
-> -				unlock_page(page);
-> -			}
-> -		}
-> -		spin_lock_irq(&zone->lru_lock);
-> -	}
-> -
->  	while (!list_empty(list)) {
->  		struct lruvec *lruvec;
-> =20
-> @@ -1737,6 +1725,14 @@ static void shrink_active_list(unsigned
->  			continue;
->  		}
-> =20
-> +		if (unlikely(buffer_heads_over_limit)) {
-> +			if (page_has_private(page) && trylock_page(page)) {
-> +				if (page_has_private(page))
-> +					try_to_release_page(page, 0);
-> +				unlock_page(page);
-> +			}
-> +		}
-> +
->  		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
->  			nr_rotated +=3D hpage_nr_pages(page);
->  			/*
-> @@ -2235,6 +2231,14 @@ static bool shrink_zones(int priority, s
->  	unsigned long nr_soft_scanned;
->  	bool aborted_reclaim =3D false;
-> =20
-> +	/*
-> +	 * If the number of buffer_heads in the machine exceeds the maximum
-> +	 * allowed level, force direct reclaim to scan the highmem zone as
-> +	 * highmem pages could be pinning lowmem pages storing buffer_heads
-> +	 */
-> +	if (buffer_heads_over_limit)
-> +		sc->gfp_mask |=3D __GFP_HIGHMEM;
-> +
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->  					gfp_zone(sc->gfp_mask), sc->nodemask) {
->  		if (!populated_zone(zone))
-> @@ -2724,6 +2728,17 @@ loop_again:
->  			 */
->  			age_active_anon(zone, &sc, priority);
-> =20
-> +			/*
-> +			 * If the number of buffer_heads in the machine
-> +			 * exceeds the maximum allowed level and this node
-> +			 * has a highmem zone, force kswapd to reclaim from
-> +			 * it to relieve lowmem pressure.
-> +			 */
-> +			if (buffer_heads_over_limit && is_highmem_idx(i)) {
-> +				end_zone =3D i;
-> +				break;
-> +			}
-> +
->  			if (!zone_watermark_ok_safe(zone, order,
->  					high_wmark_pages(zone), 0, 0)) {
->  				end_zone =3D i;
-> @@ -2786,7 +2801,8 @@ loop_again:
->  				(zone->present_pages +
->  					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
->  				KSWAPD_ZONE_BALANCE_GAP_RATIO);
-> -			if (!zone_watermark_ok_safe(zone, order,
-> +			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
-> +				    !zone_watermark_ok_safe(zone, order,
->  					high_wmark_pages(zone) + balance_gap,
->  					end_zone, 0)) {
->  				shrink_zone(priority, zone, &sc);
->=20
->=20
-> Patches currently in stable-queue which might be from mel@csn.ul.ie are
->=20
-> queue-3.3/mm-vmscan-forcibly-scan-highmem-if-there-are-too-many-buffer_he=
-ads-pinning-highmem.patch
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
+EJECT_REQUEST seems can be ignored, since there is no disk in the CDROM at all.
 
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
+>
+>> +
+>>       /* no changer support */
+>>       if (CDSL_CURRENT != slot)
+>>               return 0;
+>> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>>       cd->media_present = scsi_status_is_good(ret) ||
+>>               (scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
+>>
+>> +     if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
+>> +             scsi_autopm_put_device(cd->device);
+>
+> You can see your mistake here.  You call scsi_autopm_put_device here
+> without calling scsi_autopm_get_device earlier.
 
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-www.linuxbox.cz
+Let me check this.
 
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+Thanks for the review.
+Lin Ming
 
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iEYEARECAAYFAk9z9OcACgkQ3xdJJrLygV4OHQCeNJC4pgLw6zWScLt9E3b/kkab
-vwkAni/dh7Fd9UXa3S5zlF38iPA3J0IA
-=B5sp
------END PGP SIGNATURE-----
-
---Q68bSM7Ycu6FN28Q--
+>
+> Alan Stern
