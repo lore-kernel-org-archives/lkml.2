@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759179Ab2C2L3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 07:29:17 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:32957 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab2C2L3L (ORCPT
+	id S1759202Ab2C2Lbe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 07:31:34 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63932 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759078Ab2C2Lb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 07:29:11 -0400
-Message-ID: <1333020132.27838.5.camel@ayu>
-Subject: Re: 3.3 panic on boot caused by
- 4949be16822e92a18ea0cc1616319926628092ee
-From: Calvin Walton <calvin.walton@kepstin.ca>
-To: George Spelvin <linux@horizon.com>
-Cc: jbarnes@virtuousgeek.org, mjg@redhat.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Date: Thu, 29 Mar 2012 07:22:12 -0400
-In-Reply-To: <20120329101216.17321.qmail@science.horizon.com>
-References: <20120329101216.17321.qmail@science.horizon.com>
+	Thu, 29 Mar 2012 07:31:27 -0400
+Subject: Re: =?UTF-8?Q?=E7=AD=94=E5=A4=8D=3A?=
+ =?UTF-8?Q?_=E7=AD=94=E5=A4=8D=3A?= [PATCH] set fake_rtable's dst to NULL to
+ avoid kernel Oops.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Peter Huang (Peng)" <peter.huangpeng@huawei.com>
+Cc: linux-kernel@vger.kernel.org, harry.majun@huawei.com, zhoukang7@huawei.com,
+        "'netdev'" <netdev@vger.kernel.org>
+In-Reply-To: <004501cd0d8f$c4e133b0$4ea39b10$%huangpeng@huawei.com>
+References: <002501cd0d74$317fd100$947f7300$%huangpeng@huawei.com>
+	 <1333002975.2325.82.camel@edumazet-glaptop>
+	 <002601cd0d76$c4987440$4dc95cc0$%huangpeng@huawei.com>
+	 <1333011120.2325.354.camel@edumazet-glaptop>
+	 <004501cd0d8f$c4e133b0$4ea39b10$%huangpeng@huawei.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.0
-Content-Transfer-Encoding: 7bit
+Date: Thu, 29 Mar 2012 13:31:22 +0200
+Message-ID: <1333020682.2325.517.camel@edumazet-glaptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-29 at 06:12 -0400, George Spelvin wrote:
-> Hopefully there's enough information here to track down the regression.
-> The processor is a i7-2700k, with 16G of memory.
+On Thu, 2012-03-29 at 17:38 +0800, Peter Huang (Peng) wrote:
+> Thks for your mail.
 > 
-> Sorry for the delay; I noticed this last week, but didn't get around to
-> transcribing the oops until just now.
+> >Check net/bridge/br_netfilter.c and commits e688a6048076 (net: introduce
+> >DST_NOPEER dst flag )  4adf0af6818f3ea5 (bridge: send correct MTU value
+> >in PMTU (revised))
 > 
-> [502]$ git bisect bad
-> 4949be16822e92a18ea0cc1616319926628092ee is the first bad commit
-> commit 4949be16822e92a18ea0cc1616319926628092ee
-> Author: Matthew Garrett <mjg@redhat.com>
-> Date:   Tue Mar 6 13:41:49 2012 -0500
-> 
->     PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
+> This patch already included in kernel-3.3, but for our case, virtual tap device's delayed
+> Deletion will also cause kernel oops even in kernel3.3.
 
-With any luck, your issue should be fixed by this patch:
-http://article.gmane.org/gmane.linux.kernel.pci/14503
+I was suggesting you take a look at the commit content ;)
 
-Hopefully it will be included in an upcoming stable release :)
+Then you can see the code in br_nf_local_in(), a bit cleaner than yours.
 
--- 
-Calvin Walton <calvin.walton@kepstin.ca>
+
 
