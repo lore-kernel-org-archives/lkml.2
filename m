@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470Ab2C2NaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 09:30:18 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:56916 "EHLO
+	id S1759487Ab2C2Nae (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 09:30:34 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:27506 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758592Ab2C2N17 (ORCPT
+	with ESMTP id S1753865Ab2C2N14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 09:27:59 -0400
+	Thu, 29 Mar 2012 09:27:56 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
 Cc: plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
         linux-kernel@vger.kernel.org, arnd@arndb.de, olof@lixom.net,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 05/12] USB: ohci-at91: rework and fix initialization
-Date: Thu, 29 Mar 2012 15:27:16 +0200
-Message-Id: <c75ee9a49a205e74db26aaa9834c3caf1da15b89.1333026637.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 12/12] ARM: at91: fix check of valid GPIO for SPI and USB
+Date: Thu, 29 Mar 2012 15:27:23 +0200
+Message-Id: <8849f8f500eeccdf26576228f1c3a98bdc627ecd.1333026637.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9.4
 In-Reply-To: <cover.1333026637.git.nicolas.ferre@atmel.com>
 References: <cover.1333026637.git.nicolas.ferre@atmel.com>
@@ -24,150 +24,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DT information are filled in a pdata structure and then passed on
-to the usual check code of the probe function. Thus we do not need to
-redo the gpio checking and irq configuration in the DT-related code.
-On the other hand, we setup GPIO direction in driver for vbus and
-overcurrent. It will be useful when moving to pinctrl subsystem.
+SPI chip select pins have to be checked by gpio_is_valid().
+The USB host overcurrent_pin checking was missing.
 
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 ---
- drivers/usb/host/ohci-at91.c |   88 ++++++++++++++++++++++--------------------
- 1 file changed, 46 insertions(+), 42 deletions(-)
+ arch/arm/mach-at91/at91sam9260_devices.c |    3 +++
+ arch/arm/mach-at91/at91sam9261_devices.c |    3 +++
+ arch/arm/mach-at91/at91sam9263_devices.c |    3 +++
+ arch/arm/mach-at91/at91sam9g45_devices.c |    5 ++++-
+ arch/arm/mach-at91/at91sam9rl_devices.c  |    3 +++
+ 5 files changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 4d266ae..1262532 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -492,7 +492,7 @@ static u64 at91_ohci_dma_mask = DMA_BIT_MASK(32);
- static int __devinit ohci_at91_of_init(struct platform_device *pdev)
- {
- 	struct device_node *np = pdev->dev.of_node;
--	int i, ret, gpio;
-+	int i, gpio;
- 	enum of_gpio_flags flags;
- 	struct at91_usbh_data	*pdata;
- 	u32 ports;
-@@ -520,42 +520,11 @@ static int __devinit ohci_at91_of_init(struct platform_device *pdev)
- 		if (!gpio_is_valid(gpio))
- 			continue;
- 		pdata->vbus_pin_active_low[i] = flags & OF_GPIO_ACTIVE_LOW;
--		ret = gpio_request(gpio, "ohci_vbus");
--		if (ret) {
--			dev_warn(&pdev->dev, "can't request vbus gpio %d", gpio);
--			continue;
--		}
--		ret = gpio_direction_output(gpio, !(flags & OF_GPIO_ACTIVE_LOW) ^ 1);
--		if (ret)
--			dev_warn(&pdev->dev, "can't put vbus gpio %d as output %d",
--				 !(flags & OF_GPIO_ACTIVE_LOW) ^ 1, gpio);
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index 7e5651e..5652dde 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -598,6 +598,9 @@ void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices)
+ 		else
+ 			cs_pin = spi1_standard_cs[devices[i].chip_select];
+ 
++		if (!gpio_is_valid(cs_pin))
++			continue;
++
+ 		if (devices[i].bus_num == 0)
+ 			enable_spi0 = 1;
+ 		else
+diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
+index 096da87..4db961a 100644
+--- a/arch/arm/mach-at91/at91sam9261_devices.c
++++ b/arch/arm/mach-at91/at91sam9261_devices.c
+@@ -415,6 +415,9 @@ void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices)
+ 		else
+ 			cs_pin = spi1_standard_cs[devices[i].chip_select];
+ 
++		if (!gpio_is_valid(cs_pin))
++			continue;
++
+ 		if (devices[i].bus_num == 0)
+ 			enable_spi0 = 1;
+ 		else
+diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+index 5cdca89d..32ce589 100644
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -672,6 +672,9 @@ void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices)
+ 		else
+ 			cs_pin = spi1_standard_cs[devices[i].chip_select];
+ 
++		if (!gpio_is_valid(cs_pin))
++			continue;
++
+ 		if (devices[i].bus_num == 0)
+ 			enable_spi0 = 1;
+ 		else
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 763deba..9cff8b4 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -133,7 +133,7 @@ void __init at91_add_device_usbh_ohci(struct at91_usbh_data *data)
+ 
+ 	/* Enable overcurrent notification */
+ 	for (i = 0; i < data->ports; i++) {
+-		if (data->overcurrent_pin[i])
++		if (gpio_is_valid(data->overcurrent_pin[i]))
+ 			at91_set_gpio_input(data->overcurrent_pin[i], 1);
  	}
  
--	for (i = 0; i < 2; i++) {
--		gpio = of_get_named_gpio_flags(np, "atmel,oc-gpio", i, &flags);
--		pdata->overcurrent_pin[i] = gpio;
--		if (!gpio_is_valid(gpio))
--			continue;
--		ret = gpio_request(gpio, "ohci_overcurrent");
--		if (ret) {
--			dev_err(&pdev->dev, "can't request overcurrent gpio %d", gpio);
--			continue;
--		}
--
--		ret = gpio_direction_input(gpio);
--		if (ret) {
--			dev_err(&pdev->dev, "can't configure overcurrent gpio %d as input", gpio);
--			continue;
--		}
--
--		ret = request_irq(gpio_to_irq(gpio),
--				  ohci_hcd_at91_overcurrent_irq,
--				  IRQF_SHARED, "ohci_overcurrent", pdev);
--		if (ret) {
--			gpio_free(gpio);
--			dev_warn(& pdev->dev, "cannot get GPIO IRQ for overcurrent\n");
--		}
--	}
-+	for (i = 0; i < 2; i++)
-+		pdata->overcurrent_pin[i] =
-+			of_get_named_gpio_flags(np, "atmel,oc-gpio", i, &flags);
+@@ -788,6 +788,9 @@ void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices)
+ 		else
+ 			cs_pin = spi1_standard_cs[devices[i].chip_select];
  
- 	pdev->dev.platform_data = pdata;
- 
-@@ -574,6 +543,8 @@ static int ohci_hcd_at91_drv_probe(struct platform_device *pdev)
- {
- 	struct at91_usbh_data	*pdata;
- 	int			i;
-+	int			gpio;
-+	int			ret;
- 
- 	i = ohci_at91_of_init(pdev);
- 
-@@ -586,23 +557,56 @@ static int ohci_hcd_at91_drv_probe(struct platform_device *pdev)
- 		for (i = 0; i < ARRAY_SIZE(pdata->vbus_pin); i++) {
- 			if (!gpio_is_valid(pdata->vbus_pin[i]))
- 				continue;
--			gpio_request(pdata->vbus_pin[i], "ohci_vbus");
-+			gpio = pdata->vbus_pin[i];
++		if (!gpio_is_valid(cs_pin))
++			continue;
 +
-+			ret = gpio_request(gpio, "ohci_vbus");
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+					"can't request vbus gpio %d\n", gpio);
-+				continue;
-+			}
-+			ret = gpio_direction_output(gpio,
-+					pdata->vbus_pin_active_low[i] ^ 1);
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+					"can't put vbus gpio %d as output %d\n",
-+					gpio, pdata->vbus_pin_active_low[i] ^ 1);
-+				gpio_free(gpio);
-+				continue;
-+			}
-+
- 			ohci_at91_usb_set_power(pdata, i, 1);
- 		}
+ 		if (devices[i].bus_num == 0)
+ 			enable_spi0 = 1;
+ 		else
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index eda72e8..fe4ae22 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -419,6 +419,9 @@ void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices)
+ 		else
+ 			cs_pin = spi_standard_cs[devices[i].chip_select];
  
- 		for (i = 0; i < ARRAY_SIZE(pdata->overcurrent_pin); i++) {
--			int ret;
--
- 			if (!gpio_is_valid(pdata->overcurrent_pin[i]))
- 				continue;
--			gpio_request(pdata->overcurrent_pin[i], "ohci_overcurrent");
-+			gpio = pdata->overcurrent_pin[i];
++		if (!gpio_is_valid(cs_pin))
++			continue;
 +
-+			ret = gpio_request(gpio, "ohci_overcurrent");
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+					"can't request overcurrent gpio %d\n",
-+					gpio);
-+				continue;
-+			}
-+
-+			ret = gpio_direction_input(gpio);
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+					"can't configure overcurrent gpio %d as input\n",
-+					gpio);
-+				gpio_free(gpio);
-+				continue;
-+			}
+ 		/* enable chip-select pin */
+ 		at91_set_gpio_output(cs_pin, 1);
  
--			ret = request_irq(gpio_to_irq(pdata->overcurrent_pin[i]),
-+			ret = request_irq(gpio_to_irq(gpio),
- 					  ohci_hcd_at91_overcurrent_irq,
- 					  IRQF_SHARED, "ohci_overcurrent", pdev);
- 			if (ret) {
--				gpio_free(pdata->overcurrent_pin[i]);
--				dev_warn(& pdev->dev, "cannot get GPIO IRQ for overcurrent\n");
-+				gpio_free(gpio);
-+				dev_err(&pdev->dev,
-+					"can't get gpio IRQ for overcurrent\n");
- 			}
- 		}
- 	}
 -- 
 1.7.9.4
 
