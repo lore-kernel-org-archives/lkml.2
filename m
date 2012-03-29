@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934002Ab2C2VOB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:14:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933967Ab2C2VNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:13:24 -0400
-Date: Thu, 29 Mar 2012 17:13:15 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Dave Chinner <david@fromorbit.com>,
-        viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-ID: <20120329211315.GB18684@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Joe Perches <joe@perches.com>, Dave Chinner <david@fromorbit.com>,
-	viro@zeniv.linux.org.uk,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	David Rientjes <rientjes@google.com>
-References: <20120329005442.GB16008@redhat.com>
- <20120328181023.274401d1.akpm@linux-foundation.org>
- <1332984523.30775.12.camel@joe2Laptop>
- <20120328184602.e6b11a37.akpm@linux-foundation.org>
- <20120329015059.GA22697@redhat.com>
- <20120328190211.4ac8a653.akpm@linux-foundation.org>
- <20120329020820.GB22697@redhat.com>
- <20120328192804.7326bce9.akpm@linux-foundation.org>
- <20120329025959.GA21577@redhat.com>
- <20120329140934.ec290e6a.akpm@linux-foundation.org>
+	id S933959Ab2C2VOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:14:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33848 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933938Ab2C2VND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 17:13:03 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Cc: kernel@pengutronix.de, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: [PATCH 14/17] media/video/s5p-tv: mark const init data with __initconst instead of __initdata
+Date: Thu, 29 Mar 2012 23:12:31 +0200
+Message-Id: <1333055554-31300-14-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <20120329211131.GA31250@pengutronix.de>
+References: <20120329211131.GA31250@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120329140934.ec290e6a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 02:09:34PM -0700, Andrew Morton wrote:
- > On Wed, 28 Mar 2012 23:00:00 -0400
- > Dave Jones <davej@redhat.com> wrote:
- > 
- > > On Wed, Mar 28, 2012 at 07:28:04PM -0700, Andrew Morton wrote:
- > >  > > But it looks like
- > >  > > key_add (see other thread from this evening) and probably others can be
- > >  > > called as a user and gobble up vmalloc space. omnomnom.
- > >  > 
- > >  > hm, the keys code appears to prevent the user from reserving more than
- > >  > 20000 bytes of memory total (key_payload_reserve()), so it doesn't look
- > >  > very useful for screwing up vmalloc().
- > > 
- > > Then how did I trick it into trying an order 8 allocation ?
- > > 
- > > trinity: page allocation failure: order:8, mode:0x40d0
- > > Pid: 27119, comm: trinity Not tainted 3.3.0+ #31
- > > Call Trace:
- > >  [<ffffffff8115dd66>] warn_alloc_failed+0xf6/0x160
- > >  [<ffffffff816ad436>] ? __alloc_pages_direct_compact+0x1d0/0x1e2
- > >  [<ffffffff81162492>] __alloc_pages_nodemask+0x8b2/0xb10
- > >  [<ffffffff8119dae6>] alloc_pages_current+0xb6/0x120
- > >  [<ffffffff8115d3b4>] __get_free_pages+0x14/0x50
- > >  [<ffffffff811ac64f>] kmalloc_order_trace+0x3f/0x1a0
- > >  [<ffffffff811aca0a>] __kmalloc+0x25a/0x280
- > >  [<ffffffff812c034a>] sys_add_key+0x9a/0x210
- > >  [<ffffffff813386be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- > >  [<ffffffff816c04e9>] system_call_fastpath+0x16/0x1b
- > 
- > Ah, that's different.  The memory at *payload doesn't live beyond the
- > syscall so it can't be used to cause vmalloc fragmentation.
- > 
- > We should squish the warning:
+As long as there is no other non-const variable marked __initdata in the
+same compilation unit it doesn't hurt. If there were one however
+compilation would fail with
 
-That's the same patch I sent in the other thread, so ack ;-)
+	error: $variablename causes a section type conflict
 
-	Dave
+because a section containing const variables is marked read only and so
+cannot contain non-const variables.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-media@vger.kernel.org
+---
+ drivers/media/video/s5p-tv/mixer_drv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/s5p-tv/mixer_drv.c b/drivers/media/video/s5p-tv/mixer_drv.c
+index a2c0c25..edca065 100644
+--- a/drivers/media/video/s5p-tv/mixer_drv.c
++++ b/drivers/media/video/s5p-tv/mixer_drv.c
+@@ -461,7 +461,7 @@ static struct platform_driver mxr_driver __refdata = {
+ static int __init mxr_init(void)
+ {
+ 	int i, ret;
+-	static const char banner[] __initdata = KERN_INFO
++	static const char banner[] __initconst = KERN_INFO
+ 		"Samsung TV Mixer driver, "
+ 		"(c) 2010-2011 Samsung Electronics Co., Ltd.\n";
+ 	printk(banner);
+-- 
+1.7.9.1
+
