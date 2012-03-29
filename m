@@ -1,107 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759535Ab2C2UCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 16:02:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759350Ab2C2UCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:02:03 -0400
-Message-ID: <4F74BFB6.5090204@redhat.com>
-Date: Thu, 29 Mar 2012 16:01:58 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
-Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if
- task is already on a correct node
-References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home> <4F6B7854.1040203@redhat.com> <alpine.DEB.2.00.1203221421570.25011@router.home> <4F74A344.7070805@redhat.com> <4F74BB67.30703@gmail.com>
-In-Reply-To: <4F74BB67.30703@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759783Ab2C2UC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 16:02:29 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62589 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759173Ab2C2UCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 16:02:18 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH v17 00/15] seccomp_filter: BPF-based syscall filtering
+Date: Thu, 29 Mar 2012 15:01:45 -0500
+Message-Id: <1333051320-30872-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 03:43 PM, KOSAKI Motohiro wrote:
-> (3/29/12 2:00 PM), Larry Woodman wrote:
->> On 03/22/2012 03:30 PM, Christoph Lameter wrote:
->>> On Thu, 22 Mar 2012, Larry Woodman wrote:
->>>
->>>>> Application may manage their locality given a range of nodes and 
->>>>> each of
->>>>> the x .. x+n nodes has their particular purpose.
->>>> So to be clear on this, in that case the intention would be move 3 
->>>> to 4, 4 to
->>>> 5 and 5 to 6
->>>> to keep the node ordering the same?
->>> Yup. Have a look at do_migrate_pages and the descrition in the 
->>> comment by
->>> there by Paul Jackson.
->>>
->>>
->> Christoph and others what do you think about this???
->>
->>
->>         for_each_node_mask(s, tmp) {
->> +
->> +            /* IFF there is an equal number of source and
->> +             * destination nodes, maintain relative node distance
->> +             * even when source and destination nodes overlap.
->> +             * However, when the node weight is unequal, never move
->> +             * memory out of any destination nodes */
->> +            if ((nodes_weight(*from_nodes) != 
->> nodes_weight(*to_nodes)) &&
->> +                        (node_isset(s, *to_nodes)))
->> +                continue;
->> +
->>             d = node_remap(s, *from_nodes, *to_nodes);
->>             if (s == d)
->>                 continue;
->
-> I'm confused. Could you please explain why you choose nodes_weight()? 
-> On my first impression,
-> it seems almostly unrelated factor.
+Please see prior revisions for a detailed discussion of this patch
+series.
 
-nodes_weight() tells us the number of nodes in the cpuset so if you are 
-migrating
-from say 2, 3 &4 to 3, 4 &5 we wont go from 2 to 5 and call it done like 
-the original
-patch did.  With this patch we will preserve the migrating of 2, 3 &4 to 
-3, 4 &5  yet
-if we are migrating from 0-7 to 3-4 we wont do this:
+This series is a rebase on to:
+  b5174fa3a7f4f8f150bfa3b917c92608953dfa0f
+with very minor changes due to rebasing and tweaks noticed by a few
+initial users.  (I will rebase again for v3.4-rc1 when that time comes.)
 
-Migrating 7 to 4
-Migrating 6 to 3
-Migrating 5 to 4
-Migrating 4 to 3
-Migrating 1 to 4
-Migrating 3 to 4
-Migrating 0 to 3
-Migrating 2 to 3
+I realize now is a noisy time, but I wanted to get the most current
+revision on the list.
 
-Instead, will do this:
+As per prior posts, I am now including luto@'s PR_SET_NO_NEW_PRIVS
+changes in the series for clarity and ease of testing.  This latest
+rebased required required bumping the prctl() numbers for the
+NO_NEW_PRIVS work due to the new reaper options.
 
-Migrating 7 to 4
-Migrating 6 to 3
-Migrating 5 to 4
-Migrating 1 to 4
-Migrating 0 to 3
-Migrating 2 to 3
+For those inclined, the whole series can be found here too:
+   https://github.com/redpig/linux/tree/seccomp
 
-Larry
+At this point, I'm not aware of any outstanding concerns, complaints,
+etc. If there are any, I'd love to know.
 
->
->
-> -- 
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign 
-> http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thanks!
+will
+
+
+Andy Lutomirski (1):
+  Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from granting privs
+
+John Johansen (1):
+  Fix apparmor for PR_{GET,SET}_NO_NEW_PRIVS
+
+Kees Cook (1):
+  seccomp: remove duplicated failure logging
+
+Will Drewry (12):
+  sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
+  net/compat.c,linux/filter.h: share compat_sock_fprog
+  seccomp: kill the seccomp_t typedef
+  arch/x86: add syscall_get_arch to syscall.h
+  asm/syscall.h: add syscall_get_arch
+  seccomp: add system call filtering using BPF
+  seccomp: add SECCOMP_RET_ERRNO
+  signal, x86: add SIGSYS info and make it synchronous.
+  seccomp: Add SECCOMP_RET_TRAP
+  ptrace,seccomp: Add PTRACE_SECCOMP support
+  x86: Enable HAVE_ARCH_SECCOMP_FILTER
+  Documentation: prctl/seccomp_filter
+
+ Documentation/prctl/seccomp_filter.txt |  163 ++++++++++++
+ arch/Kconfig                           |   24 ++
+ arch/x86/Kconfig                       |    1 +
+ arch/x86/ia32/ia32_signal.c            |    4 +
+ arch/x86/include/asm/ia32.h            |    6 +
+ arch/x86/include/asm/syscall.h         |   23 ++
+ arch/x86/kernel/ptrace.c               |    7 +-
+ fs/exec.c                              |   10 +-
+ include/asm-generic/siginfo.h          |   22 ++
+ include/asm-generic/syscall.h          |   14 +
+ include/linux/Kbuild                   |    1 +
+ include/linux/audit.h                  |    8 +-
+ include/linux/filter.h                 |   12 +
+ include/linux/prctl.h                  |   15 +
+ include/linux/ptrace.h                 |    5 +-
+ include/linux/sched.h                  |    4 +-
+ include/linux/seccomp.h                |  105 +++++++-
+ include/linux/security.h               |    1 +
+ kernel/auditsc.c                       |   10 +-
+ kernel/fork.c                          |    3 +
+ kernel/seccomp.c                       |  447 ++++++++++++++++++++++++++++++--
+ kernel/signal.c                        |    9 +-
+ kernel/sys.c                           |   12 +-
+ net/compat.c                           |    8 -
+ net/core/filter.c                      |    6 +
+ samples/Makefile                       |    2 +-
+ samples/seccomp/Makefile               |   38 +++
+ samples/seccomp/bpf-direct.c           |  176 +++++++++++++
+ samples/seccomp/bpf-fancy.c            |  102 ++++++++
+ samples/seccomp/bpf-helper.c           |   89 +++++++
+ samples/seccomp/bpf-helper.h           |  238 +++++++++++++++++
+ samples/seccomp/dropper.c              |   68 +++++
+ security/apparmor/domain.c             |   35 +++
+ security/commoncap.c                   |    7 +-
+ security/selinux/hooks.c               |   10 +-
+ 35 files changed, 1628 insertions(+), 57 deletions(-)
+ create mode 100644 Documentation/prctl/seccomp_filter.txt
+ create mode 100644 samples/seccomp/Makefile
+ create mode 100644 samples/seccomp/bpf-direct.c
+ create mode 100644 samples/seccomp/bpf-fancy.c
+ create mode 100644 samples/seccomp/bpf-helper.c
+ create mode 100644 samples/seccomp/bpf-helper.h
+ create mode 100644 samples/seccomp/dropper.c
+
+-- 
+1.7.5.4
 
