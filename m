@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759457Ab2C2WDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 18:03:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62844 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab2C2WDF (ORCPT
+	id S933181Ab2C2WMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 18:12:37 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44442 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab2C2WMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 18:03:05 -0400
-Date: Thu, 29 Mar 2012 15:03:00 -0700
-From: Greg K H <gregkh@linuxfoundation.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/14] edac: rewrite the sysfs code to use struct device
-Message-ID: <20120329220300.GA16491@kroah.com>
-References: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
- <1333040821-6253-2-git-send-email-mchehab@redhat.com>
-MIME-Version: 1.0
-In-Reply-To: <1333040821-6253-2-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	Thu, 29 Mar 2012 18:12:31 -0400
+Date: Thu, 29 Mar 2012 18:12:20 -0400 (EDT)
+Message-Id: <20120329.181220.1671496234086192108.davem@davemloft.net>
+To: fubar@us.ibm.com
+Cc: wpan@redhat.com, netdev@vger.kernel.org, andy@greyhouse.net,
+        lwang@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net] bonding: emit event when bonding changes MAC
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <15892.1333041584@death.nxdomain>
+References: <5e96194e81e0540ebd35cf0bb1b407aa15a20613.1332910907.git.wpan@redhat.com>
+	<15892.1333041584@death.nxdomain>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Mar 2012 15:12:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 02:06:48PM -0300, Mauro Carvalho Chehab wrote:
-> +static void mci_attr_release(struct device *device)
->  {
-> -	int err;
-> -
-> -	debugf4("%s()\n", __func__);
-> -
-> -	while (sysfs_attrib) {
-> -		debugf4("%s() sysfs_attrib = %p\n",__func__, sysfs_attrib);
-> -		if (sysfs_attrib->grp) {
-> -			struct mcidev_sysfs_group_kobj *grp_kobj;
-> -
-> -			grp_kobj = kzalloc(sizeof(*grp_kobj), GFP_KERNEL);
-> -			if (!grp_kobj)
-> -				return -ENOMEM;
-> -
-> -			grp_kobj->grp = sysfs_attrib->grp;
-> -			grp_kobj->mci = mci;
-> -			list_add_tail(&grp_kobj->list, &mci->grp_kobj_list);
-> -
-> -			debugf0("%s() grp %s, mci %p\n", __func__,
-> -				sysfs_attrib->grp->name, mci);
-> -
-> -			err = kobject_init_and_add(&grp_kobj->kobj,
-> -						&ktype_inst_grp,
-> -						&mci->edac_mci_kobj,
-> -						sysfs_attrib->grp->name);
-> -			if (err < 0) {
-> -				printk(KERN_ERR "kobject_init_and_add failed: %d\n", err);
-> -				return err;
-> -			}
-> -			err = edac_create_mci_instance_attributes(mci,
-> -					grp_kobj->grp->mcidev_attr,
-> -					&grp_kobj->kobj);
-> -
-> -			if (err < 0)
-> -				return err;
-> -		} else if (sysfs_attrib->attr.name) {
-> -			debugf4("%s() file %s\n", __func__,
-> -				sysfs_attrib->attr.name);
-> -
-> -			err = sysfs_create_file(kobj, &sysfs_attrib->attr);
-> -			if (err < 0) {
-> -				printk(KERN_ERR "sysfs_create_file failed: %d\n", err);
-> -				return err;
-> -			}
-> -		} else
-> -			break;
-> -
-> -		sysfs_attrib++;
-> -	}
-> -
-> -	return 0;
-> +	debugf1("Releasing mci device %s\n", dev_name(device));
->  }
+From: Jay Vosburgh <fubar@us.ibm.com>
+Date: Thu, 29 Mar 2012 10:19:44 -0700
 
-Sweet, as per the documentation in the Documentation/kobjects.txt file,
-I get to publically mock you for thinking you are smarter than the
-kernel and this is an acceptable way to "outwhit" the driver core from
-spitting errors at you when the kobject is released.
+> Weiping Pan <wpan@redhat.com> wrote:
+> 
+>>When a bonding device is configured with fail_over_mac=active,
+>>we expect to see the MAC address of the new active slave as the source MAC
+>>address after failover. But we see that the source MAC address is the MAC
+>>address of previous active slave.
+>>
+>>Emit NETDEV_CHANGEADDR event when bonding changes its MAC address, in order
+>>to let arp_netdev_event flush neighbour cache and route cache.
+>>
+>>How to reproduce this bug ?
+>>
+>>                       -----------hostB----------------
+>>hostA ----- switch ---|-- eth0--bond0(192.168.100.2/24)|
+>>(192.168.100.1/24  \--|-- eth1-/                       |
+>>                       --------------------------------
+>>
+>>1 on hostB,
+>>modprobe bonding mode=1 miimon=500 fail_over_mac=active downdelay=1000
+>>num_grat_arp=1
+>>ifconfig bond0 192.168.100.2/24 up
+>>ifenslave bond0 eth0
+>>ifenslave bond0 eth1
+>>
+>>then eth0 is the active slave, and MAC of bond0 is MAC of eth0.
+>>
+>>2 on hostA, ping 192.168.100.2
+>>
+>>3 on hostB,
+>>tcpdump -i bond0 -p icmp -XXX
+>>you will see bond0 uses MAC of eth0 as source MAC in icmp reply.
+>>
+>>4 on hostB,
+>>ifconfig eth0 down
+>>tcpdump -i bond0 -p icmp -XXX (just keep it running in step 3)
+>>you will see first bond0 uses MAC of eth1 as source MAC in icmp
+>>reply, then it will use MAC of eth0 as source MAC.
+>>
+>>Signed-off-by: Weiping Pan <wpan@redhat.com>
+> 
+> Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
 
-Please fix this up, it's unacceptable.
-
-> +static void mc_attr_release(struct device *device)
-> +{
-> +	debugf1("Releasing device %s\n", dev_name(device));
-> +}
-
-Hey, you did it again, not nice :(
-
-You also just leaked memory as well :(
-
-Please fix.
-
-greg k-h
+Applied, thanks everyone.
