@@ -1,173 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759923Ab2C2SYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 14:24:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39788 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759221Ab2C2SYT (ORCPT
+	id S1759963Ab2C2S1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 14:27:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63699 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759221Ab2C2S1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 14:24:19 -0400
+	Thu, 29 Mar 2012 14:27:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120329155542.GA31285@redhat.com>
-References: <20120329155542.GA31285@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 29 Mar 2012 11:23:57 -0700
-X-Google-Sender-Auth: LljK7cC38JaEhV7IFTk3VrzjK70
-Message-ID: <CA+55aFySh2VJ3+Hdu8oFR3oBERS0uh=3ezBsbkWQNfsLHSDyqw@mail.gmail.com>
-Subject: Re: lockups shortly after booting in current git.
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, "Theodore Ts'o" <tytso@mit.edu>
+In-Reply-To: <CAGXu5jJPx4ROsyn3TDwpjAD0r150rDf54Y5heyVEHjShgXcT9g@mail.gmail.com>
+References: <20120323233212.GA18484@www.outflux.net>
+	<4F6F6839.6020605@schaufler-ca.com>
+	<CAGXu5jJB8nD1LJSJSDx2CF_j_-uLKOmq++2OHBVvXhvao37EeQ@mail.gmail.com>
+	<4F70A067.9070907@schaufler-ca.com>
+	<CAGXu5jJPx4ROsyn3TDwpjAD0r150rDf54Y5heyVEHjShgXcT9g@mail.gmail.com>
+Date: Thu, 29 Mar 2012 11:27:35 -0700
+X-Google-Sender-Auth: psGTXpMGc8cGqGLANSPxuiaKeuA
+Message-ID: <CAGXu5jLv1kRjYt1OuiSo1so2DFchVz++ug-x8mBgVJfcizYcsA@mail.gmail.com>
+Subject: Re: [PATCH] audit: always report seccomp violations
+From: Kees Cook <keescook@chromium.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Casey Schaufler <casey@schaufler-ca.com>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 8:55 AM, Dave Jones <davej@redhat.com> wrote:
-> In v3.3-8839-gb5174fa I see some behaviour on my laptop
-> that I haven't noticed on other machines.
-> It boots up, I can log in, and start up a terminal, firefox, banshee
-> and use the system, and all is good. Then if I lock the screen,
-> walk away for a while and come back to it, the loadavg has sky-rocketed,
-> and every process is hung. Trying to run any commands that perform disk io
-> hang immediately.
+On Mon, Mar 26, 2012 at 10:02 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Mar 26, 2012 at 9:59 AM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>> On 3/26/2012 8:56 AM, Kees Cook wrote:
+>>> On Sun, Mar 25, 2012 at 11:47 AM, Casey Schaufler
+>>> <casey@schaufler-ca.com> wrote:
+>>>> On 3/23/2012 4:32 PM, Kees Cook wrote:
+>>>>> When a program violates its own seccomp rules, that is a pretty dire
+>>>>> situation, and the audit message should always be reported (not just
+>>>>> when there is already a rule active for the process).
+>>>> Hmm. If the program is never going to violate its own
+>>>> seccomp rules it seems sort of silly to have them in the
+>>>> first place, doesn't it? Oh, I know that the expectation
+>>>> of seccomp is that the application would only try something
+>>>> you've disallowed if it gets compromised. Problem is that
+>>> Well, either compromised or doing something new (e.g. a library in the
+>>> code has changed).
+>>>
+>>>> Modern Programmers tend to rely very heavily on the opaque
+>>>> behavior of APIs that they don't understand nor particularly
+>>>> care if they understand. When assumptions are made about the
+>>>> behavior of the API code, and the API code changes, as
+>>>> occurs with amazing frequency on today's mobile devices,
+>>>> there are going to be surprises. I would wager that the
+>>>> modern frequency of API changes will result in this behavior
+>>>> being very unpopular.
+>>> You seem to be advocating for my patch -- instead of the program
+>>> "silently" getting killed, now there will be notification. A seccomp
+>>> failure is extremely uncommon; much less common that core dumps. This
+>>> is why it should always be reported -- it is uncommon and important to
+>>> notice.
+>>
+>> Silence is golden. The situation that I am concerned with is one where
+>> a library changes and a program preforms an action that results in a
+>> violation. The application runtime environment notices the applications
+>> demise and restarts it, resulting in a repeat of the violation.
+>>
+>> In a classic computer environment you would want the log filled with
+>> notifications so that the user could do something about it. On a
+>> phone, settop box, TV set or seatback entertainment system logging is
+>> evil. No one who has any business seeing a log message has any desire
+>> to see one. It does not matter how important the log message might be.
+>>
+>> It's getting harder and harder to have rational error handling at the
+>> OS level as application environments move to higher levels and greater
+>> abstraction. Because seccomp is an OS interface level facility there
+>> are going to be many cases where it fails to align with the intent of
+>> its highly abstracted users. When it does, the programmers are not
+>> going to look at the OS level logs, they are going to look at the API
+>> definitions and such.
+>>
+>> In the end I am opposed to any logging that can't be turned off. There
+>> is enough difference in environments and expectations that you can't
+>> say that something should always be reported. I am not saying that I
+>> approve of this situation, but it is clear that most modern application
+>> developers want to hear as little from the OS as possible. Even in
+>> cases where they should be paying attention.
 >
-> There's a (truncated) sysrq-t output at http://codemonkey.org.uk/junk/process-trace.txt
->
-> Top showed kworker was going nuts. Trying to run perf resulted in a black screen.
+> Handling logging output is up to the system owner. Already all
+> segfaults are reported to dmesg. Seccomp violation is a much less
+> common case, so I think the benefit outweighs the potential for
+> "clutter". If a system owner wants to ignore klog, they can go ahead
+> and do so. :)
 
-Ok, so the filesystem and the disk do seem to be very active. That
-could be normal, but I assume this trace was done at a time when you
-*expected* the system to be idle.
+Eric, do you have thoughts on this? I'd really like to see seccomp
+failures regardless of audit daemon state.
 
-Your process trace has quite a few processes waiting for disk or filesystem:
+-Kees
 
-3x firefox (these are waiting for the sys_mmap below):
-  schedule+0x29/0x70
-  rwsem_down_failed_common+0xb5/0x150
-  rwsem_down_read_failed+0x15/0x17
-  call_rwsem_down_read_failed+0x14/0x30
-  do_page_fault+0x1b6/0x5d0
-  page_fault+0x25/0x30
-
-firefox (this one is waiting for the page fault below to finish):
-  schedule+0x29/0x70
-  rwsem_down_failed_common+0xb5/0x150
-  rwsem_down_write_failed+0x13/0x20
-  call_rwsem_down_write_failed+0x13/0x20
-  sys_mmap_pgoff+0x125/0x210
-  sys_mmap+0x22/0x30
-  system_call_fastpath+0x16/0x1b
-
-firefox (waiting for the jbd2 journal):
-  schedule+0x29/0x70
-  start_this_handle+0x2dd/0x6d0
-  jbd2__journal_start+0x12a/0x1a0
-  jbd2_journal_start+0x13/0x20
-  ext4_journal_start_sb+0x7e/0x2d0
-  ext4_dirty_inode+0x26/0x60
-  __mark_inode_dirty+0x3c/0x240
-  file_update_time+0xd7/0x140
-  do_wp_page+0x3ec/0x720
-  handle_pte_fault+0x27d/0xa10
-  handle_mm_fault+0x1e8/0x2f0
-  do_page_fault+0x16b/0x5d0
-  page_fault+0x25/0x30
-
-npviewer.bin (waiting for inode->i_mutex - apparently the same file as
-'banshee'):
-  __mutex_lock_common+0x1b5/0x4c0
-  mutex_lock_nested+0x44/0x50
-  generic_file_aio_write+0x58/0xe0
-  ext4_file_write+0xca/0x270
-  do_sync_write+0xd2/0x110
-  vfs_write+0xb6/0x180
-  sys_write+0x4d/0x90
-  sysenter_dispatch+0x7/0x26
-
-banshee (waiting on actual IO):
-  schedule+0x29/0x70
-  io_schedule+0x8f/0xd0
-  sleep_on_page+0xe/0x20
-  __wait_on_bit+0x5f/0x90
-  wait_on_page_bit+0x78/0x80
-  grab_cache_page_write_begin+0xae/0xf0
-  ext4_da_write_begin+0xa0/0x2e0
-  generic_file_buffered_write+0x107/0x2c0
-  __generic_file_aio_write+0x22c/0x440
-  generic_file_aio_write+0x74/0xe0
-  ext4_file_write+0xca/0x270
-  do_sync_write+0xd2/0x110
-  vfs_write+0xb6/0x180
-  sys_write+0x4d/0x90
-  system_call_fastpath+0x16/0x1b
-
-xscreensaver-co D (waiting for the ext4 journal):
-  schedule+0x29/0x70
-  start_this_handle+0x2dd/0x6d0
-  jbd2__journal_start+0x12a/0x1a0
-  jbd2_journal_start+0x13/0x20
-  ext4_journal_start_sb+0x7e/0x2d0
-  ext4_dirty_inode+0x26/0x60
-  __mark_inode_dirty+0x3c/0x240
-  file_update_time+0xd7/0x140
-  __generic_file_aio_write+0x1f8/0x440
-  generic_file_aio_write+0x74/0xe0
-  ext4_file_write+0xca/0x270
-  do_sync_write+0xd2/0x110
-  vfs_write+0xb6/0x180
-  sys_write+0x4d/0x90
-  system_call_fastpath+0x16/0x1b
-
-kworker/1:0 D (waiting for scsi_test_unit_ready):
-  schedule+0x29/0x70
-  schedule_timeout+0x385/0x4f0
-  wait_for_common+0x112/0x160
-  wait_for_completion+0x1d/0x20
-  blk_execute_rq+0x1b8/0x200
-  scsi_execute+0xee/0x180
-  scsi_execute_req+0xbd/0x130
-  scsi_test_unit_ready+0x9d/0x140
-  sd_check_events+0x12e/0x1c0
-  disk_events_workfn+0x62/0x120
-  process_one_work+0x1d3/0x740
-  worker_thread+0x15f/0x350
-  kthread+0xb7/0xc0
-  kernel_thread_helper+0x4/0x10
-
-so it ostensibly looks like a disk driver thing, but at the same time
-what I find very surprising is that these are all waiting for
-*writes*.
-
-And quite frankly, that's quite unusual. Writes are often async, so
-when the disk goes south it usually shows up as people waiting for the
-*reads*. Sure, eventually the flushing gets to be synchronous and you
-*also* get writers blocked, but from my experience it tends to be the
-readers that block first.
-
-Now, it's a truncated list of processes, and looking at the lock data
-at the end there are some missing processes that are clearly also
-stuck:
-
-  1 lock held by xfconfd/1512:
-  #0:  (&type->i_mutex_dir_key#3){+.+.+.}, at: [<ffffffff811d42bb>]
-do_last+0x38b/0x900
-
-but even that looks like a *writer* because anything blocked within
-that do_last() function would likely be blocked on "vfs_create()":
-it's somebody opening a non-existing file with O_CREAT.
-
-Now, lack of readers *may* be because you have everything cached, so
-maybe I'm just barking up the wrong tree, but my gut feel is that this
-mig hbe writeback-related rather than necessarily related to disk IO
-itself.
-
-That's doubly true since I see processes waiting for the journal lock,
-but I don't actually see anything waiting for journal IO completion.
-Did something not release the journal lock. Even banshee - that *is*
-waiting for actual IO - seems to wait for page_writeback, which is not
-done by the *disk* driver, but by the filesystem (end_page_writeback).
-So that would be consistent with the ext4 changes having broken that.
-
-Was there a previous post-3.3 git kernel that worked?
-
-                      Linus
+-- 
+Kees Cook
+ChromeOS Security
