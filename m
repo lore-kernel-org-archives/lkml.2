@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab2C2IL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:11:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48366 "EHLO gate.crashing.org"
+	id S1753090Ab2C2IMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 04:12:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56858 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab2C2ILu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:11:50 -0400
-Message-ID: <1333008684.3010.9.camel@pasglop>
-Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-arch@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        paul.gortmaker@windriver.com, hpa@zytor.com, akpm@linux-foundation.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Date: Thu, 29 Mar 2012 19:11:24 +1100
-In-Reply-To: <CA+55aFzjQ7qb=bPAj_gGoGLPXOGweTaqtmOBZH4mUt8E_KQwsg@mail.gmail.com>
-References: <5599.1332958811@redhat.com> <30702.1332989444@neuling.org>
-	 <20120329135555.06593144b65bf81cc9191f8a@canb.auug.org.au>
-	 <20120329151544.ef2117821dfb459e8b52af48@canb.auug.org.au>
-	 <CA+55aFzn=bsH76hPDUgS-FBP=RVu51gwmRdqjkw5RJO=Q_cRfA@mail.gmail.com>
-	 <20120329154238.1ce219f7c998da45452af4b2@canb.auug.org.au>
-	 <CA+55aFzjQ7qb=bPAj_gGoGLPXOGweTaqtmOBZH4mUt8E_KQwsg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753246Ab2C2IL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 04:11:58 -0400
+Date: Thu, 29 Mar 2012 10:11:57 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 08/10] hugetlbfs: Add a list for tracking in-use
+ HugeTLB pages
+Message-ID: <20120329081157.GD30465@tiehlicka.suse.cz>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1331919570-2264-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120328135845.GH20949@tiehlicka.suse.cz>
+ <87vclo1v8l.fsf@skywalker.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vclo1v8l.fsf@skywalker.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-28 at 22:02 -0700, Linus Torvalds wrote:
-> On Wed, Mar 28, 2012 at 9:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed 28-03-12 23:08:34, Aneesh Kumar K.V wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
+> 
+> > On Fri 16-03-12 23:09:28, Aneesh Kumar K.V wrote:
+> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> >> 
+> >> hugepage_activelist will be used to track currently used HugeTLB pages.
+> >> We need to find the in-use HugeTLB pages to support memcg removal.
+> >> On memcg removal we update the page's memory cgroup to point to
+> >> parent cgroup.
+> >> 
+> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> >> ---
+> >>  include/linux/hugetlb.h |    1 +
+> >>  mm/hugetlb.c            |   23 ++++++++++++++++++-----
+> >>  2 files changed, 19 insertions(+), 5 deletions(-)
+> >> 
+> >> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> >> index cbd8dc5..6919100 100644
+> >> --- a/include/linux/hugetlb.h
+> >> +++ b/include/linux/hugetlb.h
+> > [...]
+> >> @@ -2319,14 +2322,24 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+> >>  		page = pte_page(pte);
+> >>  		if (pte_dirty(pte))
+> >>  			set_page_dirty(page);
+> >> -		list_add(&page->lru, &page_list);
+> >> +
+> >> +		spin_lock(&hugetlb_lock);
+> >> +		list_move(&page->lru, &page_list);
+> >> +		spin_unlock(&hugetlb_lock);
 > >
-> > How about this (build tested on powerpc allyesconfig):
+> > Why do we really need the spinlock here?
 > 
-> Looks better.
 > 
-> Grant - what's the plan about that CONFIG_VIRQ_DEBUG thing? In theory
-> something like it could be useful as a generic thing, but at least
-> right now it is clearly powerpc-specific (not just that the config
-> option only exists for powerpc: it has that whole
-> 'powerpc_debugfs_root' thing in it)?
-> 
-> Stephen's patch very much looks like the right thing, but if there was
-> some plan to actually make this generic ...
+> It does a list_del from hugepage_activelist.
 
-Yes, as I said earlier I think Grant should make it generic, there's
-no reason to keep that powerpc specific, it's fairly useful and nothing
-in userspace relies on the existing location of the debugfs file that I
-know about.
+right you are.
+sorry
 
-Another option is to put the mapping information in /proc/interrupts but
-worry that changing anything in there (like adding a column) will break
-countless userspace tools.
-
-Cheers,
-Ben.
- 
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
