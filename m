@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334Ab2C1Xyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 19:54:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49780 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758905Ab2C1Xyj (ORCPT
+	id S933423Ab2C2AHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 20:07:05 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:59253 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933046Ab2C2AG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 19:54:39 -0400
-Date: Wed, 28 Mar 2012 16:54:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the scsi tree
-Message-ID: <20120328235435.GB17212@kroah.com>
-References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
- <1332748641.2836.8.camel@dabdike>
- <20120326140721.GA19827@kroah.com>
- <20120327221721.GA3233@p183.telecom.by>
- <20120327222216.GB469@kroah.com>
- <20120327223510.GB3233@p183.telecom.by>
- <20120327223939.GC3233@p183.telecom.by>
+	Wed, 28 Mar 2012 20:06:59 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6663"; a="176751040"
+Message-ID: <4F73A798.6030607@codeaurora.org>
+Date: Wed, 28 Mar 2012 17:06:48 -0700
+From: Michael Bohan <mbohan@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120327223939.GC3233@p183.telecom.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: rnayak@ti.com, lrg@ti.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: Regulator supplies when using Device Tree
+References: <4F6BCF47.4090200@codeaurora.org> <20120326130005.GQ3098@opensource.wolfsonmicro.com> <4F726B96.8070508@codeaurora.org> <20120328100957.GD3232@opensource.wolfsonmicro.com> <4F736451.8020900@codeaurora.org> <20120328193341.GD3232@opensource.wolfsonmicro.com>
+In-Reply-To: <20120328193341.GD3232@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 01:39:39AM +0300, Alexey Dobriyan wrote:
-> On Wed, Mar 28, 2012 at 01:35:10AM +0300, Alexey Dobriyan wrote:
-> > On Tue, Mar 27, 2012 at 03:22:16PM -0700, Greg KH wrote:
-> 
-> > > > The amount of code once removed from staging prevented me from doing
-> > > > any work on them.
-> > > > 
-> > > > Looking at staging ->read_proc users this is going to be a problem for
-> > > > its removal. :-(
-> > > 
-> > > Why?
-> > 
-> > Because if staging does count, I can't remove the interface
-> > without breaking allmodconfig and it would take forever to convert
-> > staging stuff. I don't have energy to do it anymore.
-> > Mainline still have several _hard_ ->read_proc conversions.
-> > I've tried several times and failed.
-> > 
-> > If staging doesn't count, I will break allmodconfig and all those nasty
-> > emails will show up anyway implying that staging does count.
-> 
-> It's comparable to what mainline has besides staging.
-> I'm talking about this.
-> 
-> $ grep -e read_proc -w -n -r drivers/staging/
-> drivers/staging/comedi/proc.c:92:               comedi_proc->read_proc = comedi_read;
-> drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:298:      e->read_proc = show_debug_level;
-> drivers/staging/serial/68360serial.c:2428:      /* .read_proc = rs_360_read_proc, */
-> drivers/staging/rtl8192e/rtllib_module.c:262:   e->read_proc = show_debug_level;
+On 3/28/2012 12:33 PM, Mark Brown wrote:
+> On Wed, Mar 28, 2012 at 12:19:45PM -0700, Michael Bohan wrote:
+>> Within the regulator driver, we currently have to do an
+>> of_get_property(of_node, "foo-supply", NULL) to determine whether
+>> the device has a supply, and thus whether we should assign
+>> rdesc->supply_name to "foo" or not when calling
+>
+> No, this would be completely idiotic.  Please think about what I'm
+> saying here.  To repeat, supplies of all kinds are always requested with
+> the name the chip uses for the supply.  This means that any machine
+> binding is *totally* irrelevant to the regulator driver.
 
-Only the comedi one should probably stick around, and even then, it
-really should be moved to a sysfs file or three, or even better, a
-debugfs file.
+I'm not sure we're even talking about the same problem here. I agree 
+that the name used for the supply should correspond with the data sheet 
+- I just don't know how that's relevant.
 
-> $ grep -e create_proc_read_entry -w -n -r drivers/staging/
-> drivers/staging/telephony/ixj.c:7763:   create_proc_read_entry ("ixj", 0, NULL, ixj_read_proc, NULL);
-> drivers/staging/ft1000/ft1000-usb/ft1000_proc.c:189:            ft1000_proc_file = create_proc_read_entry(dev->name, 0644,
-> drivers/staging/ft1000/ft1000-usb/ft1000_proc.c:221:            create_proc_read_entry(dev->name, 0644,
-> drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:181:         create_proc_read_entry(dev->name, 0644, info->proc_ft1000,
-> drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:200: create_proc_read_entry(dev->name, 0644, info->proc_ft1000,
-> drivers/staging/rtl8192u/r8192U_core.c:714:     e = create_proc_read_entry("stats-rx", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192u/r8192U_core.c:724:     e = create_proc_read_entry("stats-tx", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192u/r8192U_core.c:733:     e = create_proc_read_entry("stats-ap", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192u/r8192U_core.c:742:     e = create_proc_read_entry("registers", S_IFREG | S_IRUGO,
-> drivers/staging/cxt1e1/sbeproc.c:325:    e = create_proc_read_entry ("info", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8187se/r8180_core.c:343:     e = create_proc_read_entry("stats-hw", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8187se/r8180_core.c:351:     e = create_proc_read_entry("stats-rx", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8187se/r8180_core.c:360:     e = create_proc_read_entry("stats-tx", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8187se/r8180_core.c:368:     e = create_proc_read_entry("registers", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:873:      e = create_proc_read_entry("stats-rx", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:881:      e = create_proc_read_entry("stats-tx", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:889:      e = create_proc_read_entry("stats-ap", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:897:      e = create_proc_read_entry("registers-0", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:903:      e = create_proc_read_entry("registers-1", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:909:      e = create_proc_read_entry("registers-2", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:915:      e = create_proc_read_entry("registers-3", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:921:      e = create_proc_read_entry("registers-4", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:927:      e = create_proc_read_entry("registers-5", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:933:      e = create_proc_read_entry("registers-6", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:939:      e = create_proc_read_entry("registers-7", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:945:      e = create_proc_read_entry("registers-8", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:951:      e = create_proc_read_entry("registers-9", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:957:      e = create_proc_read_entry("registers-a", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:963:      e = create_proc_read_entry("registers-b", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:969:      e = create_proc_read_entry("registers-c", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:975:      e = create_proc_read_entry("registers-d", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:981:      e = create_proc_read_entry("registers-e", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:987:      e = create_proc_read_entry("RF-A", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:993:      e = create_proc_read_entry("RF-B", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:999:      e = create_proc_read_entry("RF-C", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:1005:     e = create_proc_read_entry("RF-D", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:1011:     e = create_proc_read_entry("SEC-CAM-1", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:1017:     e = create_proc_read_entry("SEC-CAM-2", S_IFREG | S_IRUGO,
-> drivers/staging/rtl8192e/rtl8192e/rtl_debug.c:1023:     e = create_proc_read_entry("SEC-CAM-3", S_IFREG | S_IRUGO,
-> drivers/staging/wlags49_h2/wl_main.c:912:       create_proc_read_entry( "wlags", 0, NULL, scull_read_procmem, dev );
+Put simply, whose responsibility is it to assign the 
+regulator_desc->supply_name pointer before registering a regulator 
+device added from Device Tree? And do you agree that if you assign this 
+pointer to a name for which there isn't a Device Tree property specified 
+in that device_node, then regulator_register() will fail? This happens 
+because of_get_regulator() tacks on a "-supply" at the end and then 
+calls of_get_property() on the resulting string. That call will fail 
+since there is no property specified in the device_node. This is the 
+scenario I'm trying to avoid. Thus I add an additional check with 
+of_get_property() in my driver to see if the property does exist before 
+registering the regulator device, since both cases are reasonable. One 
+is a regulator device with a supply, and one is a regulator device 
+without a supply.
 
+Are you aware of any other examples of submitted drivers with Device 
+Tree support that implement regulator devices that optionally have an 
+upstream supply? I looked at your tree recently and couldn't see any 
+such cases.
 
-I don't understand, I thought you were talking about scsi drivers, why
-list all of these?  What does your patch do?
+Thanks,
+Mike
 
-greg k-h
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
