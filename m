@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab2C2BvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 21:51:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932422Ab2C2BvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 21:51:07 -0400
-Date: Wed, 28 Mar 2012 21:50:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Dave Chinner <david@fromorbit.com>,
-        viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-ID: <20120329015059.GA22697@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Joe Perches <joe@perches.com>, Dave Chinner <david@fromorbit.com>,
-	viro@zeniv.linux.org.uk,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	David Rientjes <rientjes@google.com>
-References: <20120313182220.GA11500@redhat.com>
- <20120327155149.d41a235b.akpm@linux-foundation.org>
- <20120328001550.GA3077@redhat.com>
- <20120328043951.GA32741@dastard>
- <20120328164720.d1aea752.akpm@linux-foundation.org>
- <20120329005442.GB16008@redhat.com>
- <20120328181023.274401d1.akpm@linux-foundation.org>
- <1332984523.30775.12.camel@joe2Laptop>
- <20120328184602.e6b11a37.akpm@linux-foundation.org>
+	id S933060Ab2C2B4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 21:56:48 -0400
+Received: from imx9.toshiba.co.jp ([202.33.96.51]:51087 "EHLO
+	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932422Ab2C2B4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 21:56:43 -0400
+Message-ID: <4F73BD9F.7090301@toshiba.co.jp>
+Date: Thu, 29 Mar 2012 10:40:47 +0900
+From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20120322 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328184602.e6b11a37.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Y <santoshsy@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-scsi@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd.bergmann@linaro.org, saugata.das@linaro.org, dsaxena@linaro.org,
+        stephen.doel@linaro.org, venkat@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
+        sreekumar.c@samsung.com, vinholikatti@gmail.com, linkinjeon@gmail.com,
+        michaelc@cs.wisc.edu
+Subject: Re: [PATCH v3 2/5] [SCSI] ufshcd: UFS UTP Transfer requests handling
+References: <1330497714-26504-3-git-send-email-santoshsy@gmail.com> <4F6FF1E3.7080908@toshiba.co.jp> <CALMYJDvvY_7FpiVGuguK8i1C_n9ogJhrgsH+KerDc62Omn35aA@mail.gmail.com>
+In-Reply-To: <CALMYJDvvY_7FpiVGuguK8i1C_n9ogJhrgsH+KerDc62Omn35aA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 06:46:02PM -0700, Andrew Morton wrote:
+Santosh Y wrote:
+>> +               case READ_12:
+>> +               case WRITE_12:
+>
+> Just a minor change, this will be READ_16 and WRITE_16.
 
- > Could.  There was some discussion last year and implementations were
- > tossed around.
- > 
- > I'm a bit apprehensive - kernel code is supposed to be robust, and
- > large allocations are not robust and vmalloc() is crappy.
-
-Can you expand on crappy ?  Also, what happens if something allocates
-and sits on a bunch of vmalloc'd memory ? would we start seeing oom kills ?
-(thinking of the context of my fuzzing tool where a bunch of instances could
- feasibly call these syscalls and not sit on huge amounts per thread, but
- collectively...  I'm wondering if it could be provoked into killing
- processes I don't own)
-
-	Dave
-
+Thanks. Your feedback will be correct.
