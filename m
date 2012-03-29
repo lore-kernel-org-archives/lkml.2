@@ -1,188 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759362Ab2C2NuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 09:50:19 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40698 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab2C2NuO convert rfc822-to-8bit (ORCPT
+	id S1759374Ab2C2Ny5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 09:54:57 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:39682 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758910Ab2C2Nyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 09:50:14 -0400
+	Thu, 29 Mar 2012 09:54:52 -0400
+X-IronPort-AV: E=Sophos;i="4.75,337,1330905600"; 
+   d="scan'208";a="11643562"
+Date: Thu, 29 Mar 2012 14:56:10 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen-blkfront: set pages are FOREIGN_FRAME
+ when sharing them
+In-Reply-To: <20120327175843.GA4299@andromeda.dapyr.net>
+Message-ID: <alpine.DEB.2.00.1203291449360.15151@kaball-desktop>
+References: <1332856198-29770-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120327175843.GA4299@andromeda.dapyr.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
-References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
-	<Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
-	<CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
-Date: Thu, 29 Mar 2012 21:50:12 +0800
-X-Google-Sender-Auth: _zm49e5sY3GIBpcgVSAh9icp1_g
-Message-ID: <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>, Alan Stern <stern@rowland.harvard.edu>
-Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 27 Mar 2012, Konrad Rzeszutek Wilk wrote:
+> On Tue, Mar 27, 2012 at 02:49:58PM +0100, Stefano Stabellini wrote:
+> > Set pages as FOREIGN_FRAME whenever blkfront shares them with another
+> > domain. Then when blkfront un-share them, also removes the
+> > FOREIGN_FRAME_BIT from the p2m.
+> > 
+> > We do it so that when the source and the destination domain are the same
+> > (blkfront connected to blkback in the same domain) we can more easily
+> > recognize which ones are the source pfns and which ones are the
+> > destination pfns (both are going to be pointing to the same mfns).
+> > 
+> > Without this patch enstablishing a connection between blkfront and QEMU
+> > qdisk in the same domain causes QEMU to hang and never return.
+> > Considering that it fixes a serious bug, it should be backported to
+> > previous releases.
+> 
+> 
+> ERROR: "set_phys_to_machine" [drivers/block/xen-blkfront.ko] undefined!
 
-On Thu, Mar 29, 2012 at 1:45 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Wed, Mar 28, 2012 at 10:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> On Wed, 28 Mar 2012, Lin Ming wrote:
->>
->>> ZPODD(Zero Power Optical Disk Drive) is a new feature in
->>> SATA 3.1 specification. It provides a way to power off unused ODD.
->>>
->>> ZPODD support is checked in in sr_probe().
->>> can_power_off flag is set during suspend if ZPODD is supported.
->>>
->>> ATA port's runtime suspend callback will actually power off the ODD
->>> and its runtime resume callback will actually power on the ODD.
->>>
->>> When ODD is powered off(D3Cold state), inserting disk will trigger a
->>> wakeup event(GPE). GPE AML handler notifies the associated device. Then
->>> ODD is resumed in the notify handler.
->>
->>> --- a/drivers/scsi/sr.c
->>> +++ b/drivers/scsi/sr.c
->>
->>> @@ -80,12 +82,38 @@ static int sr_probe(struct device *);
->>>  static int sr_remove(struct device *);
->>>  static int sr_done(struct scsi_cmnd *);
->>>
->>> +static int sr_suspend(struct device *dev, pm_message_t mesg)
->>> +{
->>> +     struct scsi_cd *cd;
->>> +
->>> +     cd = dev_get_drvdata(dev);
->>> +     if (cd->device->power_off)
->>> +             dev->power.subsys_data->can_power_off = true;
->>> +
->>> +     return 0;
->>> +}
->>> +
->>> +static int sr_resume(struct device *dev)
->>> +{
->>> +     struct scsi_cd *cd;
->>> +
->>> +     cd = dev_get_drvdata(dev);
->>> +     if (cd->device->power_off) {
->>> +             dev->power.subsys_data->can_power_off = false;
->>> +             cd->poweroff_event = 0;
->>> +     }
->>> +
->>> +     return 0;
->>> +}
->>
->> Calling this flag "can_power_off" makes these routines look very
->> strange.  Either the device can power off or it can't, i.e., either it
->> supports ZPODD or it doesn't.  This doesn't change over time.
->>
->> If you rename the flag "may_power_off" then its meaning will be more
->> clear.
->
-> OK, will rename it.
->
->>
->>> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
->>>       unsigned int events;
->>>       int ret;
->>>
->>> +     /* Not necessary to check events if enter ZPODD state */
->>> +     if (cd->device->power_off &&
->>> +                     pm_runtime_suspended(&cd->device->sdev_gendev))
->>> +             return 0;
->>
->> The comment is wrong and the new code does the wrong thing.  You _do_
->> have to check for events even in the ZPODD state, which means
->> sr_check_events must power-up the device if necessary.
->> sd_check_events in James Bottomley's scsi-misc tree now does the right
->> thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
->
-> The problem is userspace(GNOME, for example) will check for events
-> every seconds.
-> If sr is power up so frequently then we lost the expected power
-> savings from ZPODD.
-
-Agreed.
-BTW, it's udevd on my Linux box that changed the default poll msecs kernel param
-which caused sr_check_events being called every 2 seconds.
-
->
-> There are 2 events:
->
-> DISK_EVENT_MEDIA_CHANGE
-> DISK_EVENT_EJECT_REQUEST
->
-> In current implementation, if sr is in ZPODD state, then it means
-> there is no disk in the CDROM.
-> So if sr is in ZPODD state, MEDIA_CHANGE would never happen.
->
-> EJECT_REQUEST seems can be ignored, since there is no disk in the CDROM at all.
->
-
-For the ODD to be put into suspend state, the conditions should be:
-1 tray closed
-2 no media inside
-I think we missed the condition 1 check now.
-
-And if we follow the two conditions, the events can be safely ignored.
-
-What do you think of blocking events for it when going to suspend and unblocking
-when resume? This could erase the unnecessary calls of the check events function
-when ODD is suspended.
-But disk_(un)block_events are not exported and can't be used in sr
-module. So I'm
-not sure how to do this.
-
-Another thing to consider is, user might want to eject the tray by
-software like the
-eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
-thinking how to do this correctly.
-
->>
->>> +
->>>       /* no changer support */
->>>       if (CDSL_CURRENT != slot)
->>>               return 0;
->>> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
->>>       cd->media_present = scsi_status_is_good(ret) ||
->>>               (scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
->>>
->>> +     if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
->>> +             scsi_autopm_put_device(cd->device);
->>
->> You can see your mistake here.  You call scsi_autopm_put_device here
->> without calling scsi_autopm_get_device earlier.
->
-> Let me check this.
-
-I guess the earlier call of get device is this?
-
- 869 int scsi_sysfs_add_sdev(struct scsi_device *sdev)
-... ...
- 891
- 892        /* The following call will keep sdev active indefinitely, until
- 893         * its driver does a corresponding scsi_autopm_pm_device().  Only
- 894         * drivers supporting autosuspend will do this.
- 895         */
- 896        scsi_autopm_get_device(sdev);
- 897
-
--Aaron
-
->
-> Thanks for the review.
-> Lin Ming
->
->>
->> Alan Stern
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I cannot reproduce this error: set_phys_to_machine is defined in
+arch/x86/include/asm/xen/page.h, that is included by include/xen/page.h,
+that is included by blkfront).
+What CS did you apply this patch to? What is your config?
