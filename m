@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab2C2DD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 23:03:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42929 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2C2DDY convert rfc822-to-8bit (ORCPT
+	id S1758705Ab2C2DFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 23:05:05 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:34491 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049Ab2C2DFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 23:03:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F73CC3A.2080901@zytor.com>
-References: <1332787168-20457-1-git-send-email-vnagarnaik@google.com>
- <1332787168-20457-5-git-send-email-vnagarnaik@google.com> <4F714982.6020208@zytor.com>
- <CAL26m8Jfb8bgfDLKZtn2LkYHD6uCccD3UcsSMbHtpnUKR5_mxw@mail.gmail.com> <4F73CC3A.2080901@zytor.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Wed, 28 Mar 2012 20:02:54 -0700
-Message-ID: <CAL26m8+zbbqngfK0fYb+A2UBQ1fZ9Uxrf4VLWqU1VuMzkcF4xw@mail.gmail.com>
-Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace handler
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        David Sharp <dhsharp@google.com>,
-        Justin Teravest <teravest@google.com>,
-        Laurent Chavey <chavey@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 28 Mar 2012 23:05:01 -0400
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Mar 2012 23:05:01 EDT
+Date: Thu, 29 Mar 2012 10:57:03 +0800
+From: Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] cgroup: update MAINTAINERS entry
+X-Originating-IP: [10.166.88.150]
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Message-id: <4F73CF7F.8090309@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=GB2312
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
+ Thunderbird/11.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 7:43 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> But instead you add a penalty for every syscall, even if tracing is
-> disabled.  Not cool.
+Update my email address.
 
-I just ran a small test binary which calls syscall(SYS_getuid) in a
-tight loop and calculates the latency per syscall.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-Without my patch: it is 70 ns/call
-With my patch: it is 83 ns/call
-
-So yes, it does add a bit of latency to the syscall even if tracing is
-disabled. I wonder if I can change the redirection function so that it
-doesn't add so much latency.
-
-But if it doesn't seem to help, then I will not push this patch.
-
-
-
-Vaibhav Nagarnaik
+--- linux-kernel.orig/MAINTAINERS	2012-03-28 22:52:37.000000000 -0400
++++ linux-kernel/MAINTAINERS	2012-03-28 22:52:01.000000000 -0400
+@@ -1939,7 +1939,7 @@ F:	drivers/connector/
+ 
+ CONTROL GROUPS (CGROUPS)
+ M:	Tejun Heo <tj@kernel.org>
+-M:	Li Zefan <lizf@cn.fujitsu.com>
++M:	Li Zefan <lizefan@huawei.com>
+ L:	containers@lists.linux-foundation.org
+ L:	cgroups@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
