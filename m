@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759948Ab2C2Qun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:50:43 -0400
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:41309 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759536Ab2C2Qtc (ORCPT
+	id S1759957Ab2C2Quv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:50:51 -0400
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:47681 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759828Ab2C2Qtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 12:49:32 -0400
+	Thu, 29 Mar 2012 12:49:31 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
         Yufeng Shen <miletus@chromium.org>
 Cc: Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 09/16 v2] Input: atmel_mxt_ts - optimize writing of object table entries
-Date: Fri, 30 Mar 2012 00:49:19 +0800
-Message-Id: <1333039766-8617-10-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 03/16 v2] Input: atmel_mxt_ts - refactor mxt_read/write_reg to take a length
+Date: Fri, 30 Mar 2012 00:49:13 +0800
+Message-Id: <1333039766-8617-4-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
 References: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
@@ -25,66 +25,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Write each object using a single bulk i2c write transfer.
+The i2c bus requires 5 bytes to do a 1 byte read (1-byte i2c address + 2
+byte offset + 1-byte i2c address + 1 byte data), or 4 bytes to do a
+1-byte write (1 byte i2c address + 2 byte offset + 1 byte data).
+
+By taking a length with reads and writes, the driver can amortize
+transaction overhead by performing larger transactions where appropriate.
+
+This patch just sets up the new API.  Later patches refactor reads/writes
+to take advantage of the larger transactions.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   47 +++++++++++++----------------
+ 1 files changed, 21 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index a865967..3abc5b0 100644
+index 15ae6fd..971f9dc 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -628,33 +628,33 @@ end:
- static int mxt_check_reg_init(struct mxt_data *data)
+@@ -397,8 +397,7 @@ static int mxt_fw_write(struct i2c_client *client,
+ 	return 0;
+ }
+ 
+-static int __mxt_read_reg(struct i2c_client *client,
+-			       u16 reg, u16 len, void *val)
++static int mxt_read_reg(struct i2c_client *client, u16 reg, u16 len, void *val)
  {
- 	const struct mxt_platform_data *pdata = data->pdata;
--	struct mxt_object *object;
- 	struct device *dev = &data->client->dev;
--	int index = 0;
--	int i, j, config_offset, config_size;
-+	int i, offset;
-+	int ret;
+ 	struct i2c_msg xfer[2];
+ 	u8 buf[2];
+@@ -419,28 +418,25 @@ static int __mxt_read_reg(struct i2c_client *client,
+ 	xfer[1].buf = val;
  
- 	if (!pdata->config) {
- 		dev_dbg(dev, "No cfg data defined, skipping reg init\n");
- 		return 0;
- 	}
- 
--	for (i = 0; i < data->info.object_num; i++) {
--		object = data->object_table + i;
-+	for (offset = 0, i = 0; i < data->info.object_num; i++) {
-+		struct mxt_object *object = &data->object_table[i];
-+		size_t config_size;
- 
- 		if (!mxt_object_writable(object->type))
- 			continue;
- 
- 		config_size = object->size * object->instances;
--		for (j = 0; j < config_size; j++) {
--			config_offset = index + j;
--			if (config_offset > pdata->config_length) {
--				dev_err(dev, "Not enough config data!\n");
--				return -EINVAL;
--			}
--			mxt_write_object(data, object->type, j,
--					 pdata->config[config_offset]);
-+		if (offset + config_size > pdata->config_length) {
-+			dev_err(dev, "Not enough config data!\n");
-+			return -EINVAL;
- 		}
--		index += config_size;
-+
-+		ret = mxt_write_reg(data->client, object->start_address,
-+				    config_size, &pdata->config[offset]);
-+		if (ret)
-+			return ret;
-+		offset += config_size;
+ 	if (i2c_transfer(client->adapter, xfer, 2) != 2) {
+-		dev_err(&client->dev, "%s: i2c transfer failed\n", __func__);
++		dev_err(&client->dev, "%s: i2c read failed\n", __func__);
+ 		return -EIO;
  	}
  
  	return 0;
+ }
+ 
+-static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
++static int mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
++			 const void *val)
+ {
+-	return __mxt_read_reg(client, reg, 1, val);
+-}
+-
+-static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
+-{
+-	u8 buf[3];
++	size_t count = 2 + len;		/* + 2-byte offset */
++	u8 buf[count];
+ 
+ 	buf[0] = reg & 0xff;
+ 	buf[1] = (reg >> 8) & 0xff;
+-	buf[2] = val;
++	memcpy(&buf[2], val, len);
+ 
+-	if (i2c_master_send(client, buf, 3) != 3) {
+-		dev_err(&client->dev, "%s: i2c send failed\n", __func__);
++	if (i2c_master_send(client, buf, count) != count) {
++		dev_err(&client->dev, "%s: i2c write failed\n", __func__);
+ 		return -EIO;
+ 	}
+ 
+@@ -450,8 +446,7 @@ static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
+ static int mxt_read_object_table(struct i2c_client *client,
+ 				      u16 reg, u8 *object_buf)
+ {
+-	return __mxt_read_reg(client, reg, MXT_OBJECT_SIZE,
+-				   object_buf);
++	return mxt_read_reg(client, reg, MXT_OBJECT_SIZE, object_buf);
+ }
+ 
+ static struct mxt_object *
+@@ -481,8 +476,8 @@ static int mxt_read_message(struct mxt_data *data,
+ 		return -EINVAL;
+ 
+ 	reg = object->start_address;
+-	return __mxt_read_reg(data->client, reg,
+-			sizeof(struct mxt_message), message);
++	return mxt_read_reg(data->client, reg, sizeof(struct mxt_message),
++			    message);
+ }
+ 
+ static int mxt_read_object(struct mxt_data *data,
+@@ -496,7 +491,7 @@ static int mxt_read_object(struct mxt_data *data,
+ 		return -EINVAL;
+ 
+ 	reg = object->start_address;
+-	return __mxt_read_reg(data->client, reg + offset, 1, val);
++	return mxt_read_reg(data->client, reg + offset, 1, val);
+ }
+ 
+ static int mxt_write_object(struct mxt_data *data,
+@@ -510,7 +505,7 @@ static int mxt_write_object(struct mxt_data *data,
+ 		return -EINVAL;
+ 
+ 	reg = object->start_address;
+-	return mxt_write_reg(data->client, reg + offset, val);
++	return mxt_write_reg(data->client, reg + offset, 1, &val);
+ }
+ 
+ static void mxt_input_report(struct mxt_data *data, int single_id)
+@@ -757,27 +752,27 @@ static int mxt_get_info(struct mxt_data *data)
+ 	int error;
+ 	u8 val;
+ 
+-	error = mxt_read_reg(client, MXT_FAMILY_ID, &val);
++	error = mxt_read_reg(client, MXT_FAMILY_ID, 1, &val);
+ 	if (error)
+ 		return error;
+ 	info->family_id = val;
+ 
+-	error = mxt_read_reg(client, MXT_VARIANT_ID, &val);
++	error = mxt_read_reg(client, MXT_VARIANT_ID, 1, &val);
+ 	if (error)
+ 		return error;
+ 	info->variant_id = val;
+ 
+-	error = mxt_read_reg(client, MXT_VERSION, &val);
++	error = mxt_read_reg(client, MXT_VERSION, 1, &val);
+ 	if (error)
+ 		return error;
+ 	info->version = val;
+ 
+-	error = mxt_read_reg(client, MXT_BUILD, &val);
++	error = mxt_read_reg(client, MXT_BUILD, 1, &val);
+ 	if (error)
+ 		return error;
+ 	info->build = val;
+ 
+-	error = mxt_read_reg(client, MXT_OBJECT_NUM, &val);
++	error = mxt_read_reg(client, MXT_OBJECT_NUM, 1, &val);
+ 	if (error)
+ 		return error;
+ 	info->object_num = val;
+@@ -860,12 +855,12 @@ static int mxt_initialize(struct mxt_data *data)
+ 	msleep(MXT_RESET_TIME);
+ 
+ 	/* Update matrix size at info struct */
+-	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
++	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, 1, &val);
+ 	if (error)
+ 		return error;
+ 	info->matrix_xsize = val;
+ 
+-	error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, &val);
++	error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, 1, &val);
+ 	if (error)
+ 		return error;
+ 	info->matrix_ysize = val;
 -- 
 1.7.7.3
 
