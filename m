@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab2C2IMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:12:40 -0400
-Received: from exprod5og111.obsmtp.com ([64.18.0.22]:45463 "EHLO
-	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab2C2IMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:12:35 -0400
-Message-ID: <4F74196C.2030206@ge.com>
-Date: Thu, 29 Mar 2012 09:12:28 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Gerard Snitselaar <dev@snitselaar.org>
-CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] staging/vme: Fix module parameters in next-20120323
-References: <1332498065-15573-1-git-send-email-dev@snitselaar.org>
-In-Reply-To: <1332498065-15573-1-git-send-email-dev@snitselaar.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751659Ab2C2IOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 04:14:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14036 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492Ab2C2IOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 04:14:25 -0400
+Subject: Re: K7/Athlon Optimization Causes Build Fail on Kernel 3.3 i686
+From: Matt Fleming <matt.fleming@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Trevor Turner <turn3r.tr3v0r@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20120329074802.GA31955@liondog.tnic>
+References: <CANYHJ6jjuO7yV_kbPsnJ6X+KXrsz2PRPPXHN4Rkr-vgoSG-E4A@mail.gmail.com>
+	 <20120328111957.GA6765@x1.osrc.amd.com>
+	 <CANYHJ6j6cxz47TGk8kdU58eau17Fi1K=fH2icmd=v19VjNggKw@mail.gmail.com>
+	 <20120328171059.GA7919@x1.osrc.amd.com> <4F7346BB.9020907@xenotime.net>
+	 <20120328172759.GC6765@x1.osrc.amd.com>
+	 <20120329074802.GA31955@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 29 Mar 2012 09:14:15 +0100
+Message-ID: <1333008855.4289.3.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2012 08:12:30.0540 (UTC) FILETIME=[AFD410C0:01CD0D83]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/03/12 10:21, Gerard Snitselaar wrote:
-> loopback should be declared bool, and variant probably shouldn't be
-> const.
+On Thu, 2012-03-29 at 09:48 +0200, Borislav Petkov wrote:
+> On Wed, Mar 28, 2012 at 07:27:59PM +0200, Borislav Petkov wrote:
+> > On Wed, Mar 28, 2012 at 10:13:31AM -0700, Randy Dunlap wrote:
+> > > > in your config. K7 and EFI are from different epochs anyway and cannot
+> > > > obviously be enabled both on the same system with the current Kconfig
+> > > > for EFI.
+> > 
+> > > but the Kconfig files shouldn't allow such a failing .config to be
+> > > created, or the Makefiles are inadequate, or <mumble something>....
+> > 
+> > Yeah, something like the following:
+> > 
+> > config MK7
+> > 	bool "Athlon/Duron/K7"
+> > 	depends on X86_32 && !EFI_STUB
+> > 
+> > or the other way around:
+> > 
+> > config EFI_STUB
+> >        bool "EFI stub support"
+> >        depends on EFI && !MK7
 > 
-> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
-
-Looks good, thanks,
-
-Acked-by: Martyn Welch <martyn.welch@ge.com>
-
+> Trevor,
+> 
+> can you apply the following patch and retest please? You shouldn't
+> be able to select EFI_STUB and K7 optimizations at the same time in
+> Kconfig.
+> 
+> Thanks.
+> 
+> --
+> From 24e9ee38516a770a275dde217c250cf8b78521d5 Mon Sep 17 00:00:00 2001
+> From: Borislav Petkov <bp@alien8.de>
+> Date: Thu, 29 Mar 2012 09:39:51 +0200
+> Subject: [PATCH] AMD, K7: Fix compilation error when EFI_STUG is enabled
+> 
+> Trevor Turner reported that building the 3.3 kernel on his K7 box fails.
+> Reproducing the issue locally got us also the exact build error:
+> 
+> arch/x86/boot/compressed/eboot.o: In function `efi_main':
+> eboot.c:(.text+0x1530): undefined reference to `_mmx_memcpy'
+> eboot.c:(.text+0x17d0): undefined reference to `_mmx_memcpy'
+> make[2]: *** [arch/x86/boot/compressed/vmlinux] Error 1
+> make[1]: *** [arch/x86/boot/compressed/vmlinux] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> 
+> due to the fact that K7 has special MMX memcpy routines which EFI_STUB
+> uses through memcpy but is not linked against them thus the build
+> failure.
+> 
+> Instead of making this work, we decided to make EFI_STUB and K7 mutually
+> exclusive since they're from different epochs anyway. The patch below
+> fixes that.
+> 
+> Reported-by: Trevor Turner <turn3r.tr3v0r@gmail.com>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
 > ---
->  drivers/staging/vme/devices/vme_pio2_core.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/devices/vme_pio2_core.c b/drivers/staging/vme/devices/vme_pio2_core.c
-> index 9fedc44..573c800 100644
-> --- a/drivers/staging/vme/devices/vme_pio2_core.c
-> +++ b/drivers/staging/vme/devices/vme_pio2_core.c
-> @@ -35,10 +35,10 @@ static int vector[PIO2_CARDS_MAX];
->  static int vector_num;
->  static int level[PIO2_CARDS_MAX];
->  static int level_num;
-> -static const char *variant[PIO2_CARDS_MAX];
-> +static char *variant[PIO2_CARDS_MAX];
->  static int variant_num;
->  
-> -static int loopback;
-> +static bool loopback;
->  
->  static int pio2_match(struct vme_dev *);
->  static int __devinit pio2_probe(struct vme_dev *);
+>  arch/x86/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
+Hmm... I think what might make more sense is to make EFI (not EFI_STUB)
+depend on !MK7, since I doubt people actually need both MK7 and any EFI
+firmware support.
 
--- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
