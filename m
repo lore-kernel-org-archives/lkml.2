@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab2C2Avf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 20:51:35 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53710 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210Ab2C2Ava (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 20:51:30 -0400
-Date: Thu, 29 Mar 2012 11:51:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jikos@jikos.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Przemo Firszt <przemo@firszt.eu>
-Subject: linux-next: build warning after merge of the hid tree
-Message-Id: <20120329115117.70e8660dbd0c73354486eba9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA"
+	id S933058Ab2C2AwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 20:52:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50099 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758210Ab2C2AwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 20:52:10 -0400
+Date: Wed, 28 Mar 2012 20:52:06 -0400
+From: Dave Jones <davej@redhat.com>
+To: dhowells@redhat.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: large allocations in sys_add_key trigger page allocation failure.
+Message-ID: <20120329005206.GA16008@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, dhowells@redhat.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just triggered this ..
 
-Hi Jiri,
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.957215] trinity: page allocation failure: order:8, mode:0x40d0
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.957659] Pid: 18257, comm: trinity Not tainted 3.3.0+ #31
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.966766] Call Trace:
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.967218]  [<ffffffff8115dd66>] warn_alloc_failed+0xf6/0x160
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.967910]  [<ffffffff816b66b6>] ? preempt_schedule+0x46/0x60
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.969266]  [<ffffffff811607d0>] ? page_alloc_cpu_notify+0x60/0x60
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.970056]  [<ffffffff81162492>] __alloc_pages_nodemask+0x8b2/0xb10
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.971127]  [<ffffffff8119dae6>] alloc_pages_current+0xb6/0x120
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.972203]  [<ffffffff8115d3b4>] __get_free_pages+0x14/0x50
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.973285]  [<ffffffff811ac64f>] kmalloc_order_trace+0x3f/0x1a0
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.974349]  [<ffffffff811aca0a>] __kmalloc+0x25a/0x280
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.975585]  [<ffffffff812c034a>] sys_add_key+0x9a/0x210
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.976501]  [<ffffffff813386be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+Mar 28 20:01:13 dhcp-189-232 kernel: [15750.977567]  [<ffffffff816c04e9>] system_call_fastpath+0x16/0x1b
 
-After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
 
-drivers/hid/Kconfig:595:error: recursive dependency detected!
-drivers/hid/Kconfig:595:	symbol HID_WACOM depends on HID_WACOM
+An order 8 allocation seems kind of excessive.
+There's already a fallback to vmalloc() in place, but can we just silence this spew
+with the patch below ?
 
-Caused (very obviously) by commit 224b321b312e ("HID: wacom: Remove
-CONFIG_HID_WACOM_POWER_SUPPLY option").
+	Dave
 
-Please test this stuff.  And don't rush stuff in during the merge window ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+--- 
 
---Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA
-Content-Type: application/pgp-signature
+Suppress large allocation warnings from sys_add_key
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+We already fallback to vmalloc, so this is just noise.
 
-iQIcBAEBCAAGBQJPc7IFAAoJEECxmPOUX5FE6SwQAKi+SWrXD+14HqmJ7d4ax/Va
-nim6zHdX72LxxKOiJpz85Wb98brDFTPoi9mNLyQ+LZBBUDYOyc2W8dc8vPP76toy
-up8MeZwQq2hY4KeSYuXLyriNRsYhYYDYryRO61fmc2H6/C4kwIdT17dRobf/lLY8
-Rm0ZrFFWfQJULEZXAIbS4n0zIqscJr9yOiEIT/ZFMd6yWWm/j5dD7E4yetLS5lJ7
-cI7wsiWTooWM4zWUykxiwarJrlfGP/IYwkstvKLqi3reUHIzZ2dYmTXFIORya5hX
-bkNjLWOlzYubojsa32Z+0mfyVgT4kgm/tjY4+U9afm+R4q0LaqtdCPpCe8kFMo+4
-3WPK3vOfj0oPqK2VMerTvXAW1tX732Ui+50b+2koLFHjkIc9W0OASH36HiZWqizF
-3a6a9Xw9T6qX8ZepAWWIiG+7CM+K8/31w2WU1zfFmLTXIGu+sZppyKKQZFLLCsa3
-ZiFIbu830uIG/9KP6Gsl/x40+383iLSck8tFMa4GLMh0EZKG7yDgngAyRthLrxoB
-btdyS/0hJ9Z1mX5Xx0GUO3T+yrJOYf/t7tjlMdlyqfu8CMfJbZV0oRBLzc9Z6zTP
-xAweamhn3WKuz8qf0R6E90Phn1YOqz+3Er3ljHaYRQScqicLMy6c3si+jduBzSGa
-/idHLx9Ntct3UkxOcWHb
-=Tp2x
------END PGP SIGNATURE-----
+Signed-off-by: Dave Jones <davej@redhat.com>
 
---Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA--
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index fb767c6..f65c72a 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -84,7 +84,7 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+ 	vm = false;
+ 	if (_payload) {
+ 		ret = -ENOMEM;
+-		payload = kmalloc(plen, GFP_KERNEL);
++		payload = kmalloc(plen, __GFP_NOWARN | GFP_KERNEL);
+ 		if (!payload) {
+ 			if (plen <= PAGE_SIZE)
+ 				goto error2;
