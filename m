@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab2C2DRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 23:17:48 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:40906 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210Ab2C2DRl (ORCPT
+	id S1758938Ab2C2Der (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 23:34:47 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:36411 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758638Ab2C2Deo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 23:17:41 -0400
-Message-ID: <4F73D44C.5090604@panasas.com>
-Date: Wed, 28 Mar 2012 20:17:32 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
-References: <1332986348.19172.43.camel@lade.trondhjem.org>  <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>  <1332986928.19172.45.camel@lade.trondhjem.org>  <CA+55aFyQ0r5mN9=3DUVENCtdj8VMLRjiXTc5Xd4o+F=s9B8xMg@mail.gmail.com> <1332988097.19172.51.camel@lade.trondhjem.org>
-In-Reply-To: <1332988097.19172.51.camel@lade.trondhjem.org>
+	Wed, 28 Mar 2012 23:34:44 -0400
+Message-ID: <1332992022.1870.183.camel@aeonflux>
+Subject: Re: [PATCH] Revert "Bluetooth: Always enable management interface"
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Gustavo Padovan <gustavo@padovan.org>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org,
+        Johan Hedberg <johan.hedberg@intel.com>
+Date: Thu, 29 Mar 2012 05:33:42 +0200
+In-Reply-To: <86r4wct9q7.fsf@sumi.keithp.com>
+References: <1332983958-2734-1-git-send-email-keithp@keithp.com>
+	 <20120329022839.GA26111@joana> <86r4wct9q7.fsf@sumi.keithp.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 07:28 PM, Myklebust, Trond wrote:
+Hi Keith,
 
-> On Wed, 2012-03-28 at 19:20 -0700, Linus Torvalds wrote:
->> On Wed, Mar 28, 2012 at 7:08 PM, Myklebust, Trond
->> <Trond.Myklebust@netapp.com> wrote:
->>>
->>> Sure thing... I wasn't aware of that semantic difference, but I'm quite
->>> happy to add it to my script...
->>
->> Thanks. And I noticed that it's supposed to be "tags/xyz" with a "s".
->>
->> Of course, you might as well just say "xyz" without mentioning the
->> tag[s] part at all, unless you have a branch with the same name and
->> want to explicitly disambiguate.
->>
->>                    Linus
+> > A consequence is that you'll need to use newer version of bluez, at least 4.99.
+> > Or call the bluetooth daemon (from a pre 4.99 version) with a parameter to
+> > disable the new interface:
 > 
-> The reason for adding the 'tags' label originally was precisely because
-> I had an identically named branch, and I wanted to be able to send you
-> the signed tag instead.
-> 
-> I've attached the script that I use to generate pull requests just in
-> case someone else doesn't have their own version. It should be fairly
-> obvious to modify...
-> 
+> That's not OK -- you're breaking user space with this kernel change. I
+> know I get bashed every time I suggest that we 'fix' the kernel and
+> require new user space X bits...
+
+I think we actually have a broken user space in this case. I do have a
+hunch on what went wrong. It is not the kernel's fault here.
+
+If I am anywhere right, then bluetoothd fails to bring up the device.
+That is why you don't see anything with "hcitool dev", but the device
+should be present. Check "hciconfig -a".
+
+Check your bluetoothd startup line and add "-P mgmtops". That will
+disable the broken plugin.
+
+Regards
+
+Marcel
 
 
-
-That's funny after my 20th time of running the command by hand and
-doing a "man git-request-pull" because I can never remember the order
-of things, and I always get the URL wrong 3 times, I decided I should write
-a script, boom here it is sent on the mailing list.
-
-Thank you Trond for sharing, here is a new user
-Boaz
