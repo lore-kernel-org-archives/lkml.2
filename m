@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929Ab2C2Crv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 22:47:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51961 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758786Ab2C2Cro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 22:47:44 -0400
-Message-ID: <1332989256.29774.2.camel@phoenix>
-Subject: [PATCH] regulator: Only update [LDOx|DCx]_HIB_MODE bits in
- wm8350_[ldo|dcdc]_set_suspend_disable
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 29 Mar 2012 10:47:36 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S933062Ab2C2CtC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 22:49:02 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:14756 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932524Ab2C2Csy (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 28 Mar 2012 22:48:54 -0400
+Message-ID: <4F73CD75.6010807@suse.com>
+Date: Thu, 29 Mar 2012 08:18:21 +0530
+From: Suresh Jayaraman <sjayaraman@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
+References: <20120328121308.568545879@intel.com> <20120328211017.GF3376@redhat.com>
+In-Reply-To: <20120328211017.GF3376@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What we want is to disable output by setting [LDOx|DCx]_HIB_MODE bits.
-Current code also clears other bits in LDOx/DCDCx Low Power register.
+On 03/29/2012 02:40 AM, Vivek Goyal wrote:
+> On Wed, Mar 28, 2012 at 08:13:08PM +0800, Fengguang Wu wrote:
+>>
+>> Here is one possible solution to "buffered write IO controller", based on Linux
+>> v3.3
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git  buffered-write-io-controller
+>>
+>> Features:
+>> - support blkio.weight
+> 
+> So this does proportional write bandwidth division on bdi for buffered
+> writes?
 
-R202 (CAh) LDO1 Low Power
-BIT[13:12] LDO1 Hibernate behaviour:
-00 = Select voltage image settings
-01 = disable output
-10 = reserved
-11 = reserved
+yes.
 
-R182 (B6h) DCDC1 Low Power
-BIT[14:12] DC-DC1 Hibernate behaviour:
-000 = Use current settings (no change)
-001 = Select voltage image settings
-010 = Force standby mode
-011 = Force standby mode and voltage image settings.
-100 = Force LDO mode
-101 = Force LDO mode and voltage image settings.
-110 = Reserved.
-111 = Disable output
+> 
+>> - support blkio.throttle.buffered_write_bps
+> 
+> This is absolute limit systemwide or per bdi?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/wm8350-regulator.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+system-wide and Fengguang thinks that per bdi should be implemented
+trivially.
 
-diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
-index c5f3b40..05ecfb8 100644
---- a/drivers/regulator/wm8350-regulator.c
-+++ b/drivers/regulator/wm8350-regulator.c
-@@ -535,25 +535,25 @@ static int wm8350_dcdc_set_suspend_disable(struct regulator_dev *rdev)
- 		val = wm8350_reg_read(wm8350, WM8350_DCDC1_LOW_POWER);
- 		wm8350->pmic.dcdc1_hib_mode = val & WM8350_DCDC_HIB_MODE_MASK;
- 		wm8350_reg_write(wm8350, WM8350_DCDC1_LOW_POWER,
--			WM8350_DCDC_HIB_MODE_DIS);
-+				 val | WM8350_DCDC_HIB_MODE_DIS);
- 		break;
- 	case WM8350_DCDC_3:
- 		val = wm8350_reg_read(wm8350, WM8350_DCDC3_LOW_POWER);
- 		wm8350->pmic.dcdc3_hib_mode = val & WM8350_DCDC_HIB_MODE_MASK;
- 		wm8350_reg_write(wm8350, WM8350_DCDC3_LOW_POWER,
--			WM8350_DCDC_HIB_MODE_DIS);
-+				 val | WM8350_DCDC_HIB_MODE_DIS);
- 		break;
- 	case WM8350_DCDC_4:
- 		val = wm8350_reg_read(wm8350, WM8350_DCDC4_LOW_POWER);
- 		wm8350->pmic.dcdc4_hib_mode = val & WM8350_DCDC_HIB_MODE_MASK;
- 		wm8350_reg_write(wm8350, WM8350_DCDC4_LOW_POWER,
--			WM8350_DCDC_HIB_MODE_DIS);
-+				 val | WM8350_DCDC_HIB_MODE_DIS);
- 		break;
- 	case WM8350_DCDC_6:
- 		val = wm8350_reg_read(wm8350, WM8350_DCDC6_LOW_POWER);
- 		wm8350->pmic.dcdc6_hib_mode = val & WM8350_DCDC_HIB_MODE_MASK;
- 		wm8350_reg_write(wm8350, WM8350_DCDC6_LOW_POWER,
--			WM8350_DCDC_HIB_MODE_DIS);
-+				 val | WM8350_DCDC_HIB_MODE_DIS);
- 		break;
- 	case WM8350_DCDC_2:
- 	case WM8350_DCDC_5:
-@@ -749,7 +749,7 @@ static int wm8350_ldo_set_suspend_disable(struct regulator_dev *rdev)
- 
- 	/* all LDOs have same mV bits */
- 	val = wm8350_reg_read(wm8350, volt_reg) & ~WM8350_LDO1_HIB_MODE_MASK;
--	wm8350_reg_write(wm8350, volt_reg, WM8350_LDO1_HIB_MODE_DIS);
-+	wm8350_reg_write(wm8350, volt_reg, val | WM8350_LDO1_HIB_MODE_DIS);
- 	return 0;
- }
- 
--- 
-1.7.5.4
+> [..]
+>> The test results included in the last patch look pretty good in despite of the
+>> simple implementation.
+>>
+>>  [PATCH 1/6] blk-cgroup: move blk-cgroup.h in include/linux/blk-cgroup.h
+>>  [PATCH 2/6] blk-cgroup: account dirtied pages
+>>  [PATCH 3/6] blk-cgroup: buffered write IO controller - bandwidth weight
+>>  [PATCH 4/6] blk-cgroup: buffered write IO controller - bandwidth limit
+>>  [PATCH 5/6] blk-cgroup: buffered write IO controller - bandwidth limit interface
+>>  [PATCH 6/6] blk-cgroup: buffered write IO controller - debug trace
+>>
+> 
+> Hi Fengguang,
+> 
+> Only patch 0 and patch 4 have shown up in my mail box. Same seems to be
+> the case for lkml. I am wondering what happened to rest of the patches.
 
+Same here. But, the rest of the patches showed up much later. In any
+case you can access the fullset from here
+
+http://git.kernel.org/?p=linux/kernel/git/wfg/linux.git;a=shortlog;h=refs/heads/buffered-write-io-controller
+
+
+> Will understand the patches better once I have the full set.
+> 
 
 
