@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077Ab2C2Ay5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 20:54:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42652 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932443Ab2C2Ayt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 20:54:49 -0400
-Date: Wed, 28 Mar 2012 20:54:42 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, viro@zeniv.linux.org.uk,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-ID: <20120329005442.GB16008@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Dave Chinner <david@fromorbit.com>, viro@zeniv.linux.org.uk,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	David Rientjes <rientjes@google.com>
-References: <20120313182220.GA11500@redhat.com>
- <20120327155149.d41a235b.akpm@linux-foundation.org>
- <20120328001550.GA3077@redhat.com>
- <20120328043951.GA32741@dastard>
- <20120328164720.d1aea752.akpm@linux-foundation.org>
+	id S933169Ab2C2A7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 20:59:33 -0400
+Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:36588 "EHLO
+	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932832Ab2C2A7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 20:59:30 -0400
+Message-ID: <4F73B3EE.9060401@lougher.demon.co.uk>
+Date: Thu, 29 Mar 2012 01:59:26 +0100
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.12 (X11/20080227)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328164720.d1aea752.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Squashfs updates for 3.4
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 04:47:20PM -0700, Andrew Morton wrote:
- > On Wed, 28 Mar 2012 15:39:51 +1100
- > Dave Chinner <david@fromorbit.com> wrote:
- > 
- > > > Well, the unusual thing was that I was fuzzing system calls for a few hours.
- > > > 
- > > > My fuzzing tool was able to trigger these very easily after an hour or two
- > > > of uptime and memory had fragmented a little, so yeah, quite trivial.
- > > 
- > > We've recently been seeing reports of xfsdump trigging a similar
- > > allocation failures in the XFS attr code when we are doing hundreds
- > > of thousands of attribute lookups to back them up.
- > > 
- > > ad650f5 xfs: fallback to vmalloc for large buffers in xfs_attrmulti_attr_get
- > > 
- > > I think that falling back to vmalloc here is much better solution
- > > than failing to retreive the attribute - it will work no matter how
- > > fragmented memory gets. That means we don't get incomplete
- > > backups occurring after days or months of uptime and successful
- > > backups...
- > 
- > Yup.  How does the below look?
+Hi Linus,
 
-Don't see anything immediately wrong with it.
-Any thoughts on what to do about the similar problem in setxattr ? (memdup_user)
+Please pull the following Squashfs updates...
 
-	Dave
+Thanks
+
+Phillip
+
+
+The following changes since commit 192cfd58774b4d17b2fe8bdc77d89c2ef4e0591d:
+
+   Linux 3.3-rc6 (2012-03-03 17:08:09 -0800)
+
+are available in the git repository at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-next.git tags/squashfs-updates
+
+for you to fetch changes up to 4b0180a49f08dd1c681cdc99edc9e0cec0a833fa:
+
+   Squashfs: add mount time sanity check for block_size and block_log match (2012-03-10 03:01:02 +0000)
+
+----------------------------------------------------------------
+Add an extra mount time sanity check, plus some code cleanups and bug fixes.
+
+----------------------------------------------------------------
+Ajeet Yadav (1):
+       Squashfs: use define instead of constant
+
+Phillip Lougher (6):
+       Squashfs: update comment removing reference to zlib only
+       Squashfs: remove redundant length initialisation in squashfs_readdir
+       Squashfs: remove redundant length initialisation in squashfs_lookup
+       Squashfs: get rid of obsolete definitions in header file
+       Squashfs: fix f_pos check in get_dir_index_using_offset
+       Squashfs: add mount time sanity check for block_size and block_log match
+
+  fs/squashfs/block.c       |    3 ++-
+  fs/squashfs/dir.c         |    7 +++----
+  fs/squashfs/namei.c       |    5 ++---
+  fs/squashfs/squashfs_fs.h |   19 +++----------------
+  fs/squashfs/super.c       |    5 +++++
+  5 files changed, 15 insertions(+), 24 deletions(-)
