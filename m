@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab2C2AwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 20:52:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50099 "EHLO mx1.redhat.com"
+	id S933077Ab2C2Ay5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 20:54:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42652 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758210Ab2C2AwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 20:52:10 -0400
-Date: Wed, 28 Mar 2012 20:52:06 -0400
+	id S932443Ab2C2Ayt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 20:54:49 -0400
+Date: Wed, 28 Mar 2012 20:54:42 -0400
 From: Dave Jones <davej@redhat.com>
-To: dhowells@redhat.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: large allocations in sys_add_key trigger page allocation failure.
-Message-ID: <20120329005206.GA16008@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, dhowells@redhat.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, viro@zeniv.linux.org.uk,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: suppress page allocation failure warnings from sys_listxattr
+Message-ID: <20120329005442.GB16008@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Dave Chinner <david@fromorbit.com>, viro@zeniv.linux.org.uk,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	David Rientjes <rientjes@google.com>
+References: <20120313182220.GA11500@redhat.com>
+ <20120327155149.d41a235b.akpm@linux-foundation.org>
+ <20120328001550.GA3077@redhat.com>
+ <20120328043951.GA32741@dastard>
+ <20120328164720.d1aea752.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120328164720.d1aea752.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just triggered this ..
+On Wed, Mar 28, 2012 at 04:47:20PM -0700, Andrew Morton wrote:
+ > On Wed, 28 Mar 2012 15:39:51 +1100
+ > Dave Chinner <david@fromorbit.com> wrote:
+ > 
+ > > > Well, the unusual thing was that I was fuzzing system calls for a few hours.
+ > > > 
+ > > > My fuzzing tool was able to trigger these very easily after an hour or two
+ > > > of uptime and memory had fragmented a little, so yeah, quite trivial.
+ > > 
+ > > We've recently been seeing reports of xfsdump trigging a similar
+ > > allocation failures in the XFS attr code when we are doing hundreds
+ > > of thousands of attribute lookups to back them up.
+ > > 
+ > > ad650f5 xfs: fallback to vmalloc for large buffers in xfs_attrmulti_attr_get
+ > > 
+ > > I think that falling back to vmalloc here is much better solution
+ > > than failing to retreive the attribute - it will work no matter how
+ > > fragmented memory gets. That means we don't get incomplete
+ > > backups occurring after days or months of uptime and successful
+ > > backups...
+ > 
+ > Yup.  How does the below look?
 
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.957215] trinity: page allocation failure: order:8, mode:0x40d0
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.957659] Pid: 18257, comm: trinity Not tainted 3.3.0+ #31
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.966766] Call Trace:
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.967218]  [<ffffffff8115dd66>] warn_alloc_failed+0xf6/0x160
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.967910]  [<ffffffff816b66b6>] ? preempt_schedule+0x46/0x60
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.969266]  [<ffffffff811607d0>] ? page_alloc_cpu_notify+0x60/0x60
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.970056]  [<ffffffff81162492>] __alloc_pages_nodemask+0x8b2/0xb10
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.971127]  [<ffffffff8119dae6>] alloc_pages_current+0xb6/0x120
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.972203]  [<ffffffff8115d3b4>] __get_free_pages+0x14/0x50
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.973285]  [<ffffffff811ac64f>] kmalloc_order_trace+0x3f/0x1a0
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.974349]  [<ffffffff811aca0a>] __kmalloc+0x25a/0x280
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.975585]  [<ffffffff812c034a>] sys_add_key+0x9a/0x210
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.976501]  [<ffffffff813386be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-Mar 28 20:01:13 dhcp-189-232 kernel: [15750.977567]  [<ffffffff816c04e9>] system_call_fastpath+0x16/0x1b
-
-
-An order 8 allocation seems kind of excessive.
-There's already a fallback to vmalloc() in place, but can we just silence this spew
-with the patch below ?
+Don't see anything immediately wrong with it.
+Any thoughts on what to do about the similar problem in setxattr ? (memdup_user)
 
 	Dave
-
---- 
-
-Suppress large allocation warnings from sys_add_key
-
-We already fallback to vmalloc, so this is just noise.
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index fb767c6..f65c72a 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -84,7 +84,7 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
- 	vm = false;
- 	if (_payload) {
- 		ret = -ENOMEM;
--		payload = kmalloc(plen, GFP_KERNEL);
-+		payload = kmalloc(plen, __GFP_NOWARN | GFP_KERNEL);
- 		if (!payload) {
- 			if (plen <= PAGE_SIZE)
- 				goto error2;
