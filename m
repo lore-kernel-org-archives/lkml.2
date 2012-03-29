@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933425Ab2C2Xma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 19:42:30 -0400
-Received: from joshcartwright.net ([69.164.192.171]:56397 "EHLO
-	li107-171.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932551Ab2C2Xm0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 19:42:26 -0400
-Date: Thu, 29 Mar 2012 19:29:29 -0400
-From: Josh Cartwright <joshc@linux.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: [PATCH] jffs2: Fix lock acquisition order bug in gc path
-Message-ID: <20120329232929.GA21848@joshcartwright.net>
-References: <20120209185043.GA12089@joshcartwright.net>
- <CAN8TOE-9fxbc8PM8oNVBc_tUdkYBhV6jTG8_M5GdjLNGpLhKKA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAN8TOE-9fxbc8PM8oNVBc_tUdkYBhV6jTG8_M5GdjLNGpLhKKA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933463Ab2C2XrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 19:47:13 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35185
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932551Ab2C2XrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 19:47:05 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: scsi: storvsc: Properly handle errors from the host
+Date: Thu, 29 Mar 2012 16:54:43 -0700
+Message-Id: <1333065283-30484-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 08:38:41AM -0700, Brian Norris wrote:
-> On Thu, Feb 9, 2012 at 10:50 AM, Josh Cartwright <joshc@linux.com> wrote:
-> > The locking policy is such that the erase_complete_block spinlock is
-> > nested within the alloc_sem mutex.  This fixes a case in which the
-> > acquisition order was erroneously reversed.  This issue was caught by
-> > the following lockdep splat:
-> 
-> (Bump.) Anybody interested in this patch? It seemed sane to me, and I
-> had it sitting in my inbox. It does need a trivial rebase, BTW.
+If the host returns error for pass through commands, deal with
+appropriately. I would like to thank James for patiently helping
+me with this patch.
 
-I'm certainly still interested in it, for what its worth :).  We've had
-no problems here for the month and a half its been in our tree.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/scsi/storvsc_drv.c |   20 ++++++++++++++++----
+ 1 files changed, 16 insertions(+), 4 deletions(-)
 
-I'll send out a rebased V2.
-
-Thanks!
-
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 83a1972..5053769 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -785,12 +785,24 @@ static void storvsc_command_completion(struct storvsc_cmd_request *cmd_request)
+ 	/*
+ 	 * If there is an error; offline the device since all
+ 	 * error recovery strategies would have already been
+-	 * deployed on the host side.
++	 * deployed on the host side. However, if the command
++	 * were a pass-through command deal with it appropriately.
+ 	 */
+-	if (vm_srb->srb_status == SRB_STATUS_ERROR)
+-		scmnd->result = DID_TARGET_FAILURE << 16;
+-	else
++	switch (vm_srb->srb_status) {
++	case SRB_STATUS_ERROR:
++		switch (scmnd->cmnd[0]) {
++		case ATA_16:
++		case ATA_12:
++			scmnd->result = DID_PASSTHROUGH << 16;
++			break;
++		default:
++			scmnd->result = DID_TARGET_FAILURE << 16;
++		}
++		break;
++	default:
+ 		scmnd->result = vm_srb->scsi_status;
++	}
++
+ 
+ 	/*
+ 	 * If the LUN is invalid; remove the device.
 -- 
-                                            joshc
+1.7.4.1
 
