@@ -1,179 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759475Ab2C2OmV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 10:42:21 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:49919 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab2C2OmP (ORCPT
+	id S933237Ab2C2Omh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 10:42:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60102 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2C2OmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 10:42:15 -0400
+	Thu, 29 Mar 2012 10:42:24 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         David Safford <safford@linux.vnet.ibm.com>,
         Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v4 09/12] ima: add ima_inode_setxattr/removexattr function and calls
-Date: Thu, 29 Mar 2012 10:41:37 -0400
-Message-Id: <1333032100-4159-10-git-send-email-zohar@linux.vnet.ibm.com>
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+Subject: [PATCH v4 11/12] ima: add support for different security.ima data types
+Date: Thu, 29 Mar 2012 10:41:39 -0400
+Message-Id: <1333032100-4159-12-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1333032100-4159-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1333032100-4159-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032914-3352-0000-0000-000003AA0827
+x-cbid: 12032914-4242-0000-0000-00000130669F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on xattr_permission comments, the restriction to modify 'security'
-xattr is left up to the underlying fs or lsm. Ensure that not just anyone
-can modify or remove 'security.ima'.
+IMA-appraisal currently verifies the integrity of a file based on a
+known 'good' measurement value.  This patch reserves the first byte
+of 'security.ima' as a place holder for the type of method used for
+verifying file data integrity.
 
 Changelog v1:
-- Unless IMA-APPRAISE is configured, use stub ima_inode_removexattr()/setxattr()
-  functions.  (Moved ima_inode_removexattr()/setxattr() to ima_appraise.c)
+- Use the newly defined 'struct evm_ima_xattr_data'
 
-Changelog:
-  - take i_mutex to fix locking (Dmitry Kasatkin)
-  - ima_reset_appraise_flags should only be called when modifying or
-    removing the 'security.ima' xattr. Requires CAP_SYS_ADMIN privilege.
-    (Incorporated fix from Roberto Sassu)
-  - Even if allowed to update security.ima, reset the appraisal flags,
-    forcing re-appraisal.
-  - Replace CAP_MAC_ADMIN with CAP_SYS_ADMIN
-  - static inline ima_inode_setxattr()/ima_inode_removexattr() stubs
-  - ima_protect_xattr should be static
-
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- include/linux/ima.h                   |   17 ++++++++++
- security/integrity/ima/ima_appraise.c |   57 +++++++++++++++++++++++++++++++++
- security/security.c                   |    6 +++
- 3 files changed, 80 insertions(+), 0 deletions(-)
+ security/integrity/ima/ima_api.c      |    6 +++---
+ security/integrity/ima/ima_appraise.c |   23 +++++++++++++----------
+ security/integrity/integrity.h        |    2 +-
+ 3 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index e2bfbb1..2c7223d 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -44,10 +44,27 @@ static inline int ima_file_mmap(struct file *file, unsigned long prot)
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 55deeb1..b5cbef5 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -147,8 +147,8 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 	if (!(iint->flags & IMA_COLLECTED)) {
+ 		u64 i_version = file->f_dentry->d_inode->i_version;
  
- #ifdef CONFIG_IMA_APPRAISE
- extern void ima_inode_post_setattr(struct dentry *dentry);
-+extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-+		       const void *xattr_value, size_t xattr_value_len);
-+extern int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name);
- #else
- static inline void ima_inode_post_setattr(struct dentry *dentry)
- {
- 	return;
- }
-+
-+static inline int ima_inode_setxattr(struct dentry *dentry,
-+				     const char *xattr_name,
-+				     const void *xattr_value,
-+				     size_t xattr_value_len)
-+{
-+	return 0;
-+}
-+
-+static inline int ima_inode_removexattr(struct dentry *dentry,
-+					const char *xattr_name)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_IMA_APPRAISE_H */
- #endif /* _LINUX_IMA_H */
+-		memset(iint->digest, 0, IMA_DIGEST_SIZE);
+-		result = ima_calc_hash(file, iint->digest);
++		iint->ima_xattr.type = IMA_XATTR_DIGEST;
++		result = ima_calc_hash(file, iint->ima_xattr.digest);
+ 		if (!result) {
+ 			iint->version = i_version;
+ 			iint->flags |= IMA_COLLECTED;
+@@ -196,7 +196,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 		return;
+ 	}
+ 	memset(&entry->template, 0, sizeof(entry->template));
+-	memcpy(entry->template.digest, iint->digest, IMA_DIGEST_SIZE);
++	memcpy(entry->template.digest, iint->ima_xattr.digest, IMA_DIGEST_SIZE);
+ 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
+ 
+ 	result = ima_store_template(entry, violation, inode);
 diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 681cb6e..becc7e0 100644
+index 220b20e..9a7d1eb 100644
 --- a/security/integrity/ima/ima_appraise.c
 +++ b/security/integrity/ima/ima_appraise.c
-@@ -169,3 +169,60 @@ void ima_inode_post_setattr(struct dentry *dentry)
- 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_IMA);
- 	return;
- }
-+
-+/*
-+ * ima_protect_xattr - protect 'security.ima'
-+ *
-+ * Ensure that not just anyone can modify or remove 'security.ima'.
-+ */
-+static int ima_protect_xattr(struct dentry *dentry, const char *xattr_name,
-+			     const void *xattr_value, size_t xattr_value_len)
-+{
-+	if (strcmp(xattr_name, XATTR_NAME_IMA) == 0) {
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+static void ima_reset_appraise_flags(struct inode *inode)
-+{
-+	struct integrity_iint_cache *iint;
-+
-+	if (!ima_initialized || !ima_appraise || !S_ISREG(inode->i_mode))
-+		return;
-+
-+	iint = integrity_iint_find(inode);
-+	if (!iint)
-+		return;
-+
-+	iint->flags &= ~(IMA_COLLECTED | IMA_APPRAISED | IMA_MEASURED);
-+	return;
-+}
-+
-+int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-+		       const void *xattr_value, size_t xattr_value_len)
-+{
-+	int result;
-+
-+	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
-+				   xattr_value_len);
-+	if (result == 1) {
-+		ima_reset_appraise_flags(dentry->d_inode);
-+		result = 0;
-+	}
-+	return result;
-+}
-+
-+int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
-+{
-+	int result;
-+
-+	result = ima_protect_xattr(dentry, xattr_name, NULL, 0);
-+	if (result == 1) {
-+		ima_reset_appraise_flags(dentry->d_inode);
-+		result = 0;
-+	}
-+	return result;
-+}
-diff --git a/security/security.c b/security/security.c
-index e50bbf4..7bb127e 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -557,6 +557,9 @@ int security_inode_setxattr(struct dentry *dentry, const char *name,
- 	ret = security_ops->inode_setxattr(dentry, name, value, size, flags);
- 	if (ret)
- 		return ret;
-+	ret = ima_inode_setxattr(dentry, name, value, size);
-+	if (ret)
-+		return ret;
- 	return evm_inode_setxattr(dentry, name, value, size);
+@@ -46,9 +46,9 @@ int ima_must_appraise(struct inode *inode, enum ima_hooks func, int mask)
+ static void ima_fix_xattr(struct dentry *dentry,
+ 			  struct integrity_iint_cache *iint)
+ {
+-	iint->digest[0] = IMA_XATTR_DIGEST;
+-	__vfs_setxattr_noperm(dentry, XATTR_NAME_IMA,
+-			      iint->digest, IMA_DIGEST_SIZE + 1, 0);
++	iint->ima_xattr.type = IMA_XATTR_DIGEST;
++	__vfs_setxattr_noperm(dentry, XATTR_NAME_IMA, (u8 *)&iint->ima_xattr,
++			      sizeof iint->ima_xattr, 0);
  }
  
-@@ -592,6 +595,9 @@ int security_inode_removexattr(struct dentry *dentry, const char *name)
- 	ret = security_ops->inode_removexattr(dentry, name);
- 	if (ret)
- 		return ret;
-+	ret = ima_inode_removexattr(dentry, name);
-+	if (ret)
-+		return ret;
- 	return evm_inode_removexattr(dentry, name);
- }
+ /*
+@@ -64,7 +64,7 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ {
+ 	struct dentry *dentry = file->f_dentry;
+ 	struct inode *inode = dentry->d_inode;
+-	u8 xattr_value[IMA_DIGEST_SIZE];
++	struct evm_ima_xattr_data xattr_value;
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+ 	const char *op = "appraise_data";
+ 	char *cause = "unknown";
+@@ -78,8 +78,8 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ 	if (iint->flags & IMA_APPRAISED)
+ 		return iint->ima_status;
  
+-	rc = inode->i_op->getxattr(dentry, XATTR_NAME_IMA, xattr_value,
+-				   IMA_DIGEST_SIZE);
++	rc = inode->i_op->getxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
++				   sizeof xattr_value);
+ 	if (rc <= 0) {
+ 		if (rc && rc != -ENODATA)
+ 			goto out;
+@@ -90,7 +90,8 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ 		goto out;
+ 	}
+ 
+-	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
++	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
++				 rc, iint);
+ 	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
+ 		if ((status == INTEGRITY_NOLABEL)
+ 		    || (status == INTEGRITY_NOXATTRS))
+@@ -100,14 +101,16 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ 		goto out;
+ 	}
+ 
+-	rc = memcmp(xattr_value, iint->digest, IMA_DIGEST_SIZE);
++	rc = memcmp(xattr_value.digest, iint->ima_xattr.digest,
++		    IMA_DIGEST_SIZE);
+ 	if (rc) {
+ 		status = INTEGRITY_FAIL;
+ 		cause = "invalid-hash";
+ 		print_hex_dump_bytes("security.ima: ", DUMP_PREFIX_NONE,
+-				     xattr_value, IMA_DIGEST_SIZE);
++				     &xattr_value, sizeof xattr_value);
+ 		print_hex_dump_bytes("collected: ", DUMP_PREFIX_NONE,
+-				     iint->digest, IMA_DIGEST_SIZE);
++				     (u8 *)&iint->ima_xattr,
++				     sizeof iint->ima_xattr);
+ 		goto out;
+ 	}
+ 	status = INTEGRITY_PASS;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 295702d..c145331 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -39,7 +39,7 @@ struct integrity_iint_cache {
+ 	struct inode *inode;	/* back pointer to inode in question */
+ 	u64 version;		/* track inode changes */
+ 	unsigned char flags;
+-	u8 digest[SHA1_DIGEST_SIZE];
++	struct evm_ima_xattr_data ima_xattr;
+ 	enum integrity_status ima_status;
+ 	enum integrity_status evm_status;
+ };
 -- 
 1.7.6.5
 
