@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab2C2PBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 11:01:10 -0400
-Received: from pmx.elettra.trieste.it ([140.105.206.203]:55844 "EHLO
-	pmx.elettra.trieste.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933373Ab2C2PBD (ORCPT
+	id S1759489Ab2C2PCH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 11:02:07 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50199 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933373Ab2C2PB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 11:01:03 -0400
-X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Mar 2012 11:01:03 EDT
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Frank Rowand <frank.rowand@am.sony.com>
-Cc: Rowand Frank <Frank_Rowand@sonyusa.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jan Beulich <jbeulich@novell.com>,
-        Kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tim Bird <Tim.Bird@am.sony.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH] Let modpost parses vmlinux instead of vmlinux.o
-Date: Thu, 29 Mar 2012 16:53:06 +0200
-Message-Id: <1333032786-12457-1-git-send-email-abogani@kernel.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <4F737193.4030709@am.sony.com>
-References: <4F737193.4030709@am.sony.com>
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.3.29.143916
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_1099 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FROM_NAME_PHRASE 0, NO_URI_FOUND 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __MULTIPLE_RCPTS_CC_X2 0, __SANE_MSGID 0, __TO_MALFORMED_2 0'
+	Thu, 29 Mar 2012 11:01:56 -0400
+Date: Thu, 29 Mar 2012 16:04:14 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Donald" <donald@asix.com.tw>
+Cc: "'Greg KH'" <gregkh@linuxfoundation.org>,
+        "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
+Message-ID: <20120329160414.1e70d4c5@pyramind.ukuu.org.uk>
+In-Reply-To: <005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
+References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>
+	<20120313160951.GA18810@kroah.com>
+	<005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Rowand,
 
-What do you think about this patch?
-Thanks!
+> +static void mos7810_control_callback(struct urb *urb)
+> +{
+> +	if (!urb)
+> +		return;
 
-Ciao,
-Alessio
+How can this ever occur. If its not theoretically possible then this
+check is just going to hide bugs in future.
 
----
- Makefile                 |    2 +-
- scripts/Makefile.modpost |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> +static void mos7810_led_off(unsigned long arg)
+> +{
+> +	struct moschip_port *mcs = (struct moschip_port *) arg;
+> +
+> +	if (!mcs)
+> +		return;
 
-diff --git a/Makefile b/Makefile
-index 123d858..b589d1f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -876,7 +876,7 @@ quiet_cmd_vmlinux-modpost = LD      $@
- define rule_vmlinux-modpost
- 	:
- 	+$(call cmd,vmlinux-modpost)
--	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost $@
-+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost $*
- 	$(Q)echo 'cmd_$@ := $(cmd_vmlinux-modpost)' > $(dot-target).cmd
- endef
- 
-diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
-index 56dfafc..ca0db29 100644
---- a/scripts/Makefile.modpost
-+++ b/scripts/Makefile.modpost
-@@ -93,7 +93,7 @@ __modpost: $(modules:.ko=.o) FORCE
- quiet_cmd_kernel-mod = MODPOST $@
-       cmd_kernel-mod = $(modpost) $@
- 
--vmlinux.o: FORCE
-+vmlinux vmlinux.o: FORCE
- 	$(call cmd,kernel-mod)
- 
- # Declare generated files as targets for modpost
--- 
-1.7.5.4
+Ditto
 
+> +	/* Turn on MCS7810 LED */
+> +	if (serial->num_ports == 1 && mos7840_port->mos7810_led_flag == 0) {
+> +		mos7840_port->mos7810_led_flag = 1;
+> +		mos7810_set_reg(mos7840_port, 0x0301,
+> MODEM_CONTROL_REGISTER);
+> +		mod_timer(&mos7840_port->mos7810_led_timer1, jiffies + 500);
+> +	}
+
+The assumption that serial->num_ports = 1 means "has LED" is going to
+cause problems later if another deivce appears with 1 port and no LED. I
+think it would be much clearer to have something like
+
+	if (mos7840_port->has_led)
+
+for these tests of the driver
+
+> +static int mos7810_check(struct usb_serial *serial)
+> +{
+> +	int i, pass_count = 0;
+> +	__u16 Data = 0, MCR_Data = 0;
+> +	__u16 test_pattern = 0x55AA, write_pattern;
+
+generally linux style is all lower case for egister names. Not a big deal
+
+> +		/* If this a MCS7810 device, both test patterns must match
+> */
+> +		if (((test_pattern >> i) & 0x0001) != ((~(Data >> 1)) &
+> 0x0001))
+
+		if (((test_pattern >> i) ^ (~Data >> 1)) & 0x0001) ?
+
+again trivia...
+
+
+> +			mos7840_port->mos7810_led_timer1.expires =
+> +							jiffies + 500;
+
+This 500 value depends upon the HZ value of the kernel which won't always
+be 1000 on all platforms. You probably want
+
+			jiffies + msecs_to_jiffies(500);
+
+(or indeed HZ/2)
+
+> +				/* Turn off MCS7810 LED */
+> +				usb_control_msg(serial->dev,
+> +					usb_sndctrlpipe(serial->dev, 0),
+> +					MCS_WRREQ, MCS_WR_RTYPE, 0x0300,
+> +					MODEM_CONTROL_REGISTER,	NULL, 0,
+> +					MOS_WDR_TIMEOUT);
+> +
+
+Might be clearer if these occurences were a separate small function - gcc
+will inline them if it makes sense, and it will be clearer.
+
+
+Alan
