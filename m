@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab2C2OOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 10:14:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40419 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758633Ab2C2OOu (ORCPT
+	id S933111Ab2C2OPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 10:15:10 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:27608 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758633Ab2C2OPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 10:14:50 -0400
-Date: Thu, 29 Mar 2012 15:14:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH v2] ASoC: da7210: Add support for spi regmap
-Message-ID: <20120329141447.GR3668@opensource.wolfsonmicro.com>
-References: <1333028189.19925.10.camel@matrix>
+	Thu, 29 Mar 2012 10:15:06 -0400
+X-IronPort-AV: E=Sophos;i="4.75,337,1330905600"; 
+   d="scan'208";a="11645060"
+Message-ID: <1333030435.2485.128.camel@leeds.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] xen-blkfront: set pages are FOREIGN_FRAME
+ when sharing them
+From: Wei Liu <wei.liu2@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <wei.liu2@citrix.com>, Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Date: Thu, 29 Mar 2012 15:13:55 +0100
+In-Reply-To: <alpine.DEB.2.00.1203291449360.15151@kaball-desktop>
+References: <1332856198-29770-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20120327175843.GA4299@andromeda.dapyr.net>
+	 <alpine.DEB.2.00.1203291449360.15151@kaball-desktop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D8QxnvyRlKGQJxl7"
-Content-Disposition: inline
-In-Reply-To: <1333028189.19925.10.camel@matrix>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-03-29 at 14:56 +0100, Stefano Stabellini wrote:
+> On Tue, 27 Mar 2012, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Mar 27, 2012 at 02:49:58PM +0100, Stefano Stabellini wrote:
+> > > Set pages as FOREIGN_FRAME whenever blkfront shares them with another
+> > > domain. Then when blkfront un-share them, also removes the
+> > > FOREIGN_FRAME_BIT from the p2m.
+> > > 
+> > > We do it so that when the source and the destination domain are the same
+> > > (blkfront connected to blkback in the same domain) we can more easily
+> > > recognize which ones are the source pfns and which ones are the
+> > > destination pfns (both are going to be pointing to the same mfns).
+> > > 
+> > > Without this patch enstablishing a connection between blkfront and QEMU
+> > > qdisk in the same domain causes QEMU to hang and never return.
+> > > Considering that it fixes a serious bug, it should be backported to
+> > > previous releases.
+> > 
+> > 
+> > ERROR: "set_phys_to_machine" [drivers/block/xen-blkfront.ko] undefined!
+> 
+> I cannot reproduce this error: set_phys_to_machine is defined in
+> arch/x86/include/asm/xen/page.h, that is included by include/xen/page.h,
+> that is included by blkfront).
+> What CS did you apply this patch to? What is your config?
+> 
 
---D8QxnvyRlKGQJxl7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In arch/x86/xen/p2m.c, set_phys_to_machine is not exported. You need
+another patch to do that.
 
-On Thu, Mar 29, 2012 at 07:06:29PM +0530, Ashish Chavan wrote:
-> This patch adds support for spi regmap feature to existing da7210
-> driver.
+It might be that you were using a monolithic kernel so that you didn't
+see this error.
 
-Applied, thanks.
 
---D8QxnvyRlKGQJxl7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Wei.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-iQIcBAEBAgAGBQJPdG47AAoJEBus8iNuMP3deu0P/RMRoAGuM4xRDf53jCbqEY7z
-3krqGOU2/iWHLiHLk2/SrrGZcXpyZRIQYcrR6nnOmczaDhlzVenboyKzhQk53FfW
-VLvIJ+4qBECnuPHg/clrgu42e4RSatB6Rz/qbJ0+WwM+bD4s6wR4OAqs2TBevwR7
-fklAFftm7FFmfRVFOLB/WKHTPI1a9ruA3FZa08bMPUVW57Fvn4tSesEJbs4h+z73
-6bc3sCujvSZ5Fe70eE0oB+1Sx2sy29U619k+C+6fWNPJKLcnXuyWrQY6CRehEJAG
-+Q8+c3eZ3R1Eb2Y8FeJul8BcMiuT0dc8+f+KspM0kYQ+5M/I4oa71LZLFXNso3R8
-fUOhufxjy8BACjljaSD5dg1ODywz4Zg2KPFp7Liqr6aS1kNn9bJUNTTLL44KwjeX
-7CvDM0EQXGyhN2NR9Os/MyD6+pR6m1+9FCw/GjXriBjhQGgF4gz7j1msNqiJdOQm
-1zSZ6y+A4CgEiN75UraOQIVZkj6AHOcUNgx9bQOGhCiuNW5IsdzCjRCJnDpMI/2L
-Z318Kf7JdeoUAa16FMs0sprlaS3aeSU4BGZr1bOrDvM0D60LD2ZmccmFwblk5ngQ
-s/A0s2vrzTmLbxPS/5OtNQzzRND/s4X8c6ZULYPbez4BThtbbA7s3IgkNnCI5xTk
-9+eFTk0zm2NKXZSkg4dy
-=Yfpz
------END PGP SIGNATURE-----
 
---D8QxnvyRlKGQJxl7--
