@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab2C2GdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 02:33:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37072 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741Ab2C2GdS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 02:33:18 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F7401C6.7020806@jp.fujitsu.com>
-Date: Thu, 29 Mar 2012 15:31:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1755054Ab2C2Gdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 02:33:36 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:43007 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751741Ab2C2Gd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 02:33:29 -0400
+Message-ID: <4F740235.7090508@msgid.tls.msk.ru>
+Date: Thu, 29 Mar 2012 10:33:25 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, davem@davemloft.net
-Subject: [BUGFIX][PATCH 3/3] memcg/tcp: ignore tcp usage before accounting
- started.
-References: <4F73FF9D.4090809@jp.fujitsu.com>
-In-Reply-To: <4F73FF9D.4090809@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH] kvm-amd: Auto-load on CPUs with SVM.
+References: <20120321063350.GA3468@leaf> <4F72F549.6060407@redhat.com> <20120328183228.GA24889@leaf>
+In-Reply-To: <20120328183228.GA24889@leaf>
+X-Enigmail-Version: 1.3.4
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tcp memcontrol starts accouting after res->limit is set. So, if a sockets
-starts before setting res->limit, there are already used resource.
-After setting res->limit, the resource will be uncharged and make res_counter
-below 0. This causes warning.
+On 28.03.2012 22:32, Josh Triplett wrote:
+> Enable x86 feature-based autoloading for the kvm-amd module on CPUs
+> with X86_FEATURE_SVM.
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
-This patch fixes that by adding res_counter_uncharge_nowarn() and ignore the usage.
+It appears to work fine on my amd boxen.  The only problem
+is that I've no idea when it will be possible to finally
+disable the init script (shipped in Debian and other distros)
+to load the module based on /proc/cpuinfo contents.  It will
+do nothing on kernels with this (or kvm-intel) change applied,
+but we still need to support older kernels without that feature... :)
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/res_counter.h |    2 ++
- include/net/sock.h          |    3 ++-
- kernel/res_counter.c        |   18 ++++++++++++++++++
- 3 files changed, 22 insertions(+), 1 deletions(-)
+Josh, and I'm sure you will be the first who'll file a bugreport
+against qemu-kvm in Debian requesting the startup script to be
+removed!.. ;))
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index da81af0..e081948 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -134,6 +134,8 @@ int __must_check res_counter_charge_nofail(struct res_counter *counter,
- 
- void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
- void res_counter_uncharge(struct res_counter *counter, unsigned long val);
-+void res_counter_uncharge_nowarn(struct res_counter *counter,
-+				unsigned long val);
- 
- /**
-  * res_counter_margin - calculate chargeable space of a counter
-diff --git a/include/net/sock.h b/include/net/sock.h
-index a6ba1f8..a1b3f4802 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1048,7 +1048,8 @@ static inline void memcg_memory_allocated_add(struct cg_proto *prot,
- static inline void memcg_memory_allocated_sub(struct cg_proto *prot,
- 					      unsigned long amt)
- {
--	res_counter_uncharge(prot->memory_allocated, amt << PAGE_SHIFT);
-+	res_counter_uncharge_nowarn(prot->memory_allocated,
-+				amt << PAGE_SHIFT);
- }
- 
- static inline u64 memcg_memory_allocated_read(struct cg_proto *prot)
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index d508363..2bb01ac 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -113,6 +113,24 @@ void res_counter_uncharge(struct res_counter *counter, unsigned long val)
- 	local_irq_restore(flags);
- }
- 
-+void res_counter_uncharge_nowarn(struct res_counter *counter,
-+					unsigned long val)
-+{
-+	struct res_counter *c;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+
-+	for (c = counter; c != NULL; c = c->parent) {
-+		spin_lock(&c->lock);
-+		if (c->usage < val)
-+			val = c->usage;
-+		res_counter_uncharge_locked(c, val);
-+		spin_unlock(&c->lock);
-+	}
-+	local_irq_restore(flags);
-+}
-+
- 
- static inline unsigned long long *
- res_counter_member(struct res_counter *counter, int member)
--- 
-1.7.4.1
+Thanks,
 
-
+/mjt
