@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759747Ab2C2Qts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:49:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61721 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759737Ab2C2Qrs (ORCPT
+	id S1759911Ab2C2Qt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:49:59 -0400
+Received: from mail-gy0-f202.google.com ([209.85.160.202]:58688 "EHLO
+	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759077Ab2C2Qt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 12:47:48 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>, Cliff Wickman <cpw@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>
-Subject: [PATCH v2 2/3] IRQ,x86: normalize return value of chip->irq_set_affinity() method
-Date: Fri, 30 Mar 2012 00:44:52 +0800
-Message-Id: <1333039493-4090-2-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333039493-4090-1-git-send-email-jiang.liu@huawei.com>
-References: <1333039493-4090-1-git-send-email-jiang.liu@huawei.com>
+	Thu, 29 Mar 2012 12:49:29 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Cc: Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 00/16 v2] cleanup atmel_mxt_ts
+Date: Fri, 30 Mar 2012 00:49:10 +0800
+Message-Id: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 platforms, interrupt controller chip's irq_set_affinity() method
-always copies affinity mask to irq_data->affinity field but still returns
-0(IRQ_SET_MASK_OK). That return value causes the interrupt core logic
-unnecessarily copies the mask to irq_data->affinity field again.
-So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
-the duplicated copy operation.
+This patchset cleans up the atmel_mxt_ts touchscreen driver.
+In particular, v2 implements the following:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
- arch/x86/platform/uv/uv_irq.c  |    2 +-
- 2 files changed, 7 insertions(+), 6 deletions(-)
+1) sysfs
+   a) fw_update only by root
+2) faster initialization
+   a) read/write sets of registers using i2c block transactions
+   b) fetch object table as a set of i2c reads, one per object
+   c) write config data as a set of i2c writes, one per object
+3) faster interrupt processing & initialization times
+   a) cache important values at init instead of computing in isr
+   b) don't read message checksum byte (which isn't even enabled in fw)
+4) more correct MT-B support
+   a) send all (changed) contacts in a single EV_SYN/SYN_REPORT
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6d10a66..092a715 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2346,6 +2346,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		/* Only the high 8 bits are valid. */
- 		dest = SET_APIC_LOGICAL_ID(dest);
- 		__target_IO_APIC_irq(irq, dest, data->chip_data);
-+		ret = IRQ_SET_MASK_OK_NOCOPY;
- 	}
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 	return ret;
-@@ -2404,7 +2405,7 @@ ir_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		send_cleanup_vector(cfg);
- 
- 	cpumask_copy(data->affinity, mask);
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #else
-@@ -3209,7 +3210,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 
- 	__write_msi_msg(data->msi_desc, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-@@ -3366,7 +3367,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 
- 	dmar_msi_write(irq, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif /* CONFIG_SMP */
-@@ -3419,7 +3420,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- 
- 	hpet_msi_write(data->handler_data, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif /* CONFIG_SMP */
-@@ -3499,7 +3500,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 		return -1;
- 
- 	target_ht_irq(data->irq, dest, cfg->vector);
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index f25c276..a22c416 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- 	if (cfg->move_in_progress)
- 		send_cleanup_vector(cfg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- /*
+v2:
+  * Writable config via sysfs has been removed to resolve possible
+    conflict with Nick Dyer's implementation.
+  * Using T44 has been removed from this patchset, hopefully it can
+    be reexamined after most of these patches are accepted.
+
+The patches were tested using an MXT224E.
+
+Daniel Kurtz (16):
+  Input: atmel_mxt_ts - use CONFIG_PM_SLEEP
+  Input: atmel_mxt_ts - only allow root to update firmware
+  Input: atmel_mxt_ts - refactor mxt_read/write_reg to take a length
+  Input: atmel_mxt_ts - store actual size and instance
+  Input: atmel_mxt_ts - verify object size in mxt_write_object
+  Input: atmel_mxt_ts - do not read extra (checksum) byte
+  Input: atmel_mxt_ts - dump each message on just 1 line
+  Input: atmel_mxt_ts - refactor mxt_object_show
+  Input: atmel_mxt_ts - optimize writing of object table entries
+  Input: atmel_mxt_ts - refactor get info
+  Input: atmel_mxt_ts - refactor reading object table
+  Input: atmel_mxt_ts - simplify event reporting
+  Input: atmel_mxt_ts - cache T9 reportid range when reading object
+    table
+  Input: atmel_mxt_ts - parse vector field of data packets
+  Input: atmel_mxt_ts - send all MT-B slots in one input report
+  Input: atmel_mxt_ts - parse T6 reports
+
+ drivers/input/touchscreen/atmel_mxt_ts.c |  477 ++++++++++++------------------
+ 1 files changed, 191 insertions(+), 286 deletions(-)
+
 -- 
-1.7.5.4
+1.7.7.3
 
