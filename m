@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634Ab2C2QEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:04:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52155 "EHLO
+	id S933631Ab2C2QPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:15:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47026 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933616Ab2C2QEj (ORCPT
+	with ESMTP id S1758981Ab2C2QPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 12:04:39 -0400
-Date: Thu, 29 Mar 2012 09:04:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Mandeep Singh Baines <msb@chromium.org>, lizefan@huawei.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: cgroups commit 61d1d219c4 breaks systemd
-Message-ID: <20120329160433.GC28941@google.com>
-References: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
+	Thu, 29 Mar 2012 12:15:31 -0400
+Date: Thu, 29 Mar 2012 09:15:27 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the scsi tree
+Message-ID: <20120329161527.GC28858@kroah.com>
+References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
+ <1332748641.2836.8.camel@dabdike>
+ <20120326140721.GA19827@kroah.com>
+ <20120327221721.GA3233@p183.telecom.by>
+ <20120327222216.GB469@kroah.com>
+ <20120327223510.GB3233@p183.telecom.by>
+ <20120328235217.GA17212@kroah.com>
+ <20120329073240.GA21382@perelman.Home>
+ <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
+ <20120329090332.GA21472@perelman.Home>
 MIME-Version: 1.0
+In-Reply-To: <20120329090332.GA21472@perelman.Home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(using Li's new address and quoting whole message for him)
+On Thu, Mar 29, 2012 at 02:03:51AM -0700, Gerard Snitselaar wrote:
+> On Thu Mar 29 12, Stephen Rothwell wrote:
+> > On Thu, 29 Mar 2012 00:32:40 -0700 Gerard Snitselaar <dev@snitselaar.org> wrote:
+> > >
+> > > On Wed Mar 28 12, Greg KH wrote:
+> > > > > > > 
+> > > > > > > See commits 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
+> > > > > > > Especially the first one.
+> > > > 
+> > > > I don't know where to find these patches, care to send them to me, or
+> > > > point me at a link with them?
+> > > > 
+> > > 
+> > > They are visible in next-20120329
+> > 
+> > I don't think so.  They were in next-2012032[67], but were removed again.
+> > 
+> > -- 
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> Sorry, poorly worded on my part. What I meant to say was I could see
+> the commits in the repository when doing
+>  
+> git show 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
 
-The change has been in linux-next for quite some time and I've been
-booting fedora 16 a lot of times on top of this.  Weird.  I'll try to
-find out what's wrong and if I can't spot it quick enough, will send a
-revert patch to Linus.  We can try again later.  Mandeep, any ideas?
+Can someone just email me them?
 
-Thanks.
-
-On Thu, Mar 29, 2012 at 12:01:26AM +0200, Jiri Kosina wrote:
-> Hi,
-> 
-> I am not able to boot current Linus' tree on system which is using 
-> systemd. In the early boot phase I get
-> 
-> 	Failed to create root cgroup hierarchy: No such process
-> 	Failed to allocate manager object: No such process
-> 
-> and that's it, the system is completely unusable afterwards (not having 
-> any console spawned, no networking, etc).
-> 
-> Bisection pointed to
-> 
-> 	commit 61d1d219c4c0761059236a46867bc49943c4d29d
-> 	Author: Mandeep Singh Baines <msb@chromium.org>
-> 	Date:   Mon Jan 30 12:51:56 2012 -0800
-> 
-> 	    cgroup: remove extra calls to find_existing_css_set
-> 
-> and I have verified that reverting this single commit on top of current 
-> Linus' tree makes the problem go away and the system boots properly.
-> 
-> strace output shows that with 61d1d219c applied, systemd is failing while 
-> trying to add itself to the systemd cgroup:
-> 
-> mkdir("/sys", 0755)                     = -1 EEXIST (File exists)
-> mkdir("/sys/fs", 0755)                  = -1 EEXIST (File exists)
-> mkdir("/sys/fs/cgroup", 0755)           = -1 EEXIST (File exists)
-> mkdir("/sys/fs/cgroup/systemd", 0755)   = -1 EEXIST (File exists)
-> mkdir("/sys/fs/cgroup/systemd/system", 0755) = 0
-> open("/sys/fs/cgroup/systemd/system/tasks", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666) = 6
-> fstat(6, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4ecb000
-> write(6, "357\n", 4)                    = -1 ESRCH (No such process)
-> close(6)                                = 0
-> munmap(0x7f60c4ecb000, 4096)            = 0
-> writev(3, [{"<27>", 4}, {"systemd", 7}, {"[357]: ", 7}, {"Failed to create root cgroup hierarchy: No such process", 55}, {"\n", 1}], 5) = 74
-> open("/sys/fs/cgroup/systemd/system/tasks", O_RDONLY|O_CLOEXEC) = 6
-> fstat(6, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4ecb000
-> read(6, "357\n", 4096)                  = 4
-> open("/sys/fs/cgroup/systemd/tasks", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666) = 7
-> fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4eca000
-> write(7, "357\n", 4)                    = -1 ESRCH (No such process)
-> close(7)                                = 0
-> munmap(0x7f60c4eca000, 4096)            = 0
-> read(6, "", 4096)                       = 0
-> close(6)                                = 0
-> munmap(0x7f60c4ecb000, 4096)            = 0
-> open("/sys/fs/cgroup/systemd/system/tasks", O_RDONLY|O_CLOEXEC) = 6
-> fstat(6, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60c4ecb000
-> read(6, "", 4096)                       = 0
-> close(6)                                = 0
-> munmap(0x7f60c4ecb000, 4096)            = 0
-> open("/sys/fs/cgroup/systemd/system", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 6
-> getdents(6, /* 7 entries */, 32768)     = 240
-> getdents(6, /* 0 entries */, 32768)     = 0
-> lstat("/sys/fs/cgroup/systemd/system/tasks", {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-> rmdir("/sys/fs/cgroup/systemd/system")  = 0
-> close(6)                                = 0
-> close(4)                                = 0
-> close(5)                                = 0
-> close(0)                                = 0
-> writev(3, [{"<27>", 4}, {"systemd", 7}, {"[357]: ", 7}, {"Failed to allocate manager object: No such process", 50}, {"\n", 1}], 5) = 69
-
--- 
-tejun
