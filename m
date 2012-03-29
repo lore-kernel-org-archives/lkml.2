@@ -1,104 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597Ab2C2RVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 13:21:11 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:51548 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759732Ab2C2RVA (ORCPT
+	id S933654Ab2C2RYC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 13:24:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6706 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757666Ab2C2RX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 13:21:00 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Weiping Pan <wpan@redhat.com>
-cc: netdev@vger.kernel.org, andy@greyhouse.net, lwang@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] bonding: emit event when bonding changes MAC
-In-reply-to: <5e96194e81e0540ebd35cf0bb1b407aa15a20613.1332910907.git.wpan@redhat.com>
-References: <5e96194e81e0540ebd35cf0bb1b407aa15a20613.1332910907.git.wpan@redhat.com>
-Comments: In-reply-to Weiping Pan <wpan@redhat.com>
-   message dated "Wed, 28 Mar 2012 13:18:24 +0800."
-X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
-Date: Thu, 29 Mar 2012 10:19:44 -0700
-Message-ID: <15892.1333041584@death.nxdomain>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12032917-6148-0000-0000-000004A51347
+	Thu, 29 Mar 2012 13:23:56 -0400
+X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ujHqK8gl_DAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=swt5PWyrT_LeX1jwsxkA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1333041834.23924.186.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] ftrace: Remove a superfluous check
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Kacur <jkacur@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 29 Mar 2012 13:23:54 -0400
+In-Reply-To: <alpine.LFD.2.02.1203291914040.10113@tycho>
+References: <1333039463-24268-1-git-send-email-bp@amd64.org>
+	 <alpine.LFD.2.02.1203291902280.10113@tycho> <20120329171140.GE6409@aftab>
+	 <alpine.LFD.2.02.1203291914040.10113@tycho>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Weiping Pan <wpan@redhat.com> wrote:
+On Thu, 2012-03-29 at 19:17 +0200, John Kacur wrote:
+> 
 
->When a bonding device is configured with fail_over_mac=active,
->we expect to see the MAC address of the new active slave as the source MAC
->address after failover. But we see that the source MAC address is the MAC
->address of previous active slave.
->
->Emit NETDEV_CHANGEADDR event when bonding changes its MAC address, in order
->to let arp_netdev_event flush neighbour cache and route cache.
->
->How to reproduce this bug ?
->
->                       -----------hostB----------------
->hostA ----- switch ---|-- eth0--bond0(192.168.100.2/24)|
->(192.168.100.1/24  \--|-- eth1-/                       |
->                       --------------------------------
->
->1 on hostB,
->modprobe bonding mode=1 miimon=500 fail_over_mac=active downdelay=1000
->num_grat_arp=1
->ifconfig bond0 192.168.100.2/24 up
->ifenslave bond0 eth0
->ifenslave bond0 eth1
->
->then eth0 is the active slave, and MAC of bond0 is MAC of eth0.
->
->2 on hostA, ping 192.168.100.2
->
->3 on hostB,
->tcpdump -i bond0 -p icmp -XXX
->you will see bond0 uses MAC of eth0 as source MAC in icmp reply.
->
->4 on hostB,
->ifconfig eth0 down
->tcpdump -i bond0 -p icmp -XXX (just keep it running in step 3)
->you will see first bond0 uses MAC of eth1 as source MAC in icmp
->reply, then it will use MAC of eth0 as source MAC.
->
->Signed-off-by: Weiping Pan <wpan@redhat.com>
+> It looks okay to me. Technically it's not functionally equivalent though, 
+> because now when __register_ftrace_function is called directly, (in other 
+> paths), the test has an unlikely there. See what Steven says, otherwise, 
+> you can have my reviewed by.
 
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+Unlikely()s shouldn't affect things functionally, its just an
+optimization hint.
 
+Also, this check is unlikely to be true, so the hint is valid here.
 
->---
-> drivers/net/bonding/bond_main.c |    8 +++++++-
-> 1 files changed, 7 insertions(+), 1 deletions(-)
->
->diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->index b920d82..a20b585 100644
->--- a/drivers/net/bonding/bond_main.c
->+++ b/drivers/net/bonding/bond_main.c
->@@ -892,9 +892,15 @@ static void bond_do_fail_over_mac(struct bonding *bond,
->
-> 	switch (bond->params.fail_over_mac) {
-> 	case BOND_FOM_ACTIVE:
->-		if (new_active)
->+		if (new_active) {
-> 			memcpy(bond->dev->dev_addr,  new_active->dev->dev_addr,
-> 			       new_active->dev->addr_len);
->+			write_unlock_bh(&bond->curr_slave_lock);
->+			read_unlock(&bond->lock);
->+			call_netdevice_notifiers(NETDEV_CHANGEADDR, bond->dev);
->+			read_lock(&bond->lock);
->+			write_lock_bh(&bond->curr_slave_lock);
->+		}
-> 		break;
-> 	case BOND_FOM_FOLLOW:
-> 		/*
->-- 
->1.7.4
->
->--
->To unsubscribe from this list: send the line "unsubscribe netdev" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+-- Steve
+
 
