@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab2C2ILU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:11:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40866 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab2C2ILQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:11:16 -0400
-Message-ID: <4F7418D8.40900@kernel.dk>
-Date: Thu, 29 Mar 2012 10:10:00 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Amit Shah <amit.shah@redhat.com>, Moyer Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH] virtio-blk: Call revalidate_disk() upon online disk resize
-References: <20120328203200.GE3376@redhat.com>
-In-Reply-To: <20120328203200.GE3376@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753300Ab2C2IL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 04:11:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48366 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751734Ab2C2ILu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 04:11:50 -0400
+Message-ID: <1333008684.3010.9.camel@pasglop>
+Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-arch@vger.kernel.org,
+        Michael Neuling <mikey@neuling.org>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        paul.gortmaker@windriver.com, hpa@zytor.com, akpm@linux-foundation.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Date: Thu, 29 Mar 2012 19:11:24 +1100
+In-Reply-To: <CA+55aFzjQ7qb=bPAj_gGoGLPXOGweTaqtmOBZH4mUt8E_KQwsg@mail.gmail.com>
+References: <5599.1332958811@redhat.com> <30702.1332989444@neuling.org>
+	 <20120329135555.06593144b65bf81cc9191f8a@canb.auug.org.au>
+	 <20120329151544.ef2117821dfb459e8b52af48@canb.auug.org.au>
+	 <CA+55aFzn=bsH76hPDUgS-FBP=RVu51gwmRdqjkw5RJO=Q_cRfA@mail.gmail.com>
+	 <20120329154238.1ce219f7c998da45452af4b2@canb.auug.org.au>
+	 <CA+55aFzjQ7qb=bPAj_gGoGLPXOGweTaqtmOBZH4mUt8E_KQwsg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 10:32 PM, Vivek Goyal wrote:
-> If a virtio disk is open in guest and a disk resize operation is done,
-> (virsh blockresize), new size is not visible to tools like "fdisk -l".
-> This seems to be happening as we update only part->nr_sects and not
-> bdev->bd_inode size.
+On Wed, 2012-03-28 at 22:02 -0700, Linus Torvalds wrote:
+> On Wed, Mar 28, 2012 at 9:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > How about this (build tested on powerpc allyesconfig):
 > 
-> Call revalidate_disk() which should take care of it. I tested growing disk
-> size of already open disk and it works for me.
+> Looks better.
+> 
+> Grant - what's the plan about that CONFIG_VIRQ_DEBUG thing? In theory
+> something like it could be useful as a generic thing, but at least
+> right now it is clearly powerpc-specific (not just that the config
+> option only exists for powerpc: it has that whole
+> 'powerpc_debugfs_root' thing in it)?
+> 
+> Stephen's patch very much looks like the right thing, but if there was
+> some plan to actually make this generic ...
 
-Thanks, obviously right. Applied.
+Yes, as I said earlier I think Grant should make it generic, there's
+no reason to keep that powerpc specific, it's fairly useful and nothing
+in userspace relies on the existing location of the debugfs file that I
+know about.
 
--- 
-Jens Axboe
+Another option is to put the mapping information in /proc/interrupts but
+worry that changing anything in there (like adding a column) will break
+countless userspace tools.
+
+Cheers,
+Ben.
+ 
 
