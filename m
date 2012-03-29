@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab2C2WMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 18:12:37 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44442 "EHLO
+	id S1760128Ab2C2WO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 18:14:28 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44455 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab2C2WMb (ORCPT
+	with ESMTP id S1753978Ab2C2WOV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 18:12:31 -0400
-Date: Thu, 29 Mar 2012 18:12:20 -0400 (EDT)
-Message-Id: <20120329.181220.1671496234086192108.davem@davemloft.net>
-To: fubar@us.ibm.com
-Cc: wpan@redhat.com, netdev@vger.kernel.org, andy@greyhouse.net,
-        lwang@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] bonding: emit event when bonding changes MAC
+	Thu, 29 Mar 2012 18:14:21 -0400
+Date: Thu, 29 Mar 2012 18:13:11 -0400 (EDT)
+Message-Id: <20120329.181311.91358289912662112.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: zhuangfeiran@ict.ac.cn, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix a bug in emitting the 16-bit immediate operand of
+ AND
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <15892.1333041584@death.nxdomain>
-References: <5e96194e81e0540ebd35cf0bb1b407aa15a20613.1332910907.git.wpan@redhat.com>
-	<15892.1333041584@death.nxdomain>
+In-Reply-To: <1333021525.3402.22.camel@edumazet-laptop>
+References: <4F742AE4.6050006@ict.ac.cn>
+	<1333021525.3402.22.camel@edumazet-laptop>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Mar 2012 15:12:26 -0700 (PDT)
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Mar 2012 15:13:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jay Vosburgh <fubar@us.ibm.com>
-Date: Thu, 29 Mar 2012 10:19:44 -0700
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 29 Mar 2012 13:45:25 +0200
 
-> Weiping Pan <wpan@redhat.com> wrote:
+> Le jeudi 29 mars 2012 à 17:27 +0800, zhuangfeiran@ict.ac.cn a écrit :
+>> When K >= 0xFFFF0000, AND needs the two least significant bytes of K as
+>> its operand, but EMIT2() gives it the least significant byte of K and
+>> 0x2. EMIT() should be used here to replace EMIT2().
+>> 
+>> Signed-off-by: Feiran Zhuang  <zhuangfeiran@ict.ac.cn>
+>> ---
+>>  arch/x86/net/bpf_jit_comp.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+>> index 5671752..5a5b6e4 100644
+>> --- a/arch/x86/net/bpf_jit_comp.c
+>> +++ b/arch/x86/net/bpf_jit_comp.c
+>> @@ -289,7 +289,7 @@ void bpf_jit_compile(struct sk_filter *fp)
+>>  					EMIT2(0x24, K & 0xFF); /* and imm8,%al */
+>>  				} else if (K >= 0xFFFF0000) {
+>>  					EMIT2(0x66, 0x25);	/* and imm16,%ax */
+>> -					EMIT2(K, 2);
+>> +					EMIT(K, 2);
+>>  				} else {
+>>  					EMIT1_off32(0x25, K);	/* and imm32,%eax */
+>>  				}
 > 
->>When a bonding device is configured with fail_over_mac=active,
->>we expect to see the MAC address of the new active slave as the source MAC
->>address after failover. But we see that the source MAC address is the MAC
->>address of previous active slave.
->>
->>Emit NETDEV_CHANGEADDR event when bonding changes its MAC address, in order
->>to let arp_netdev_event flush neighbour cache and route cache.
->>
->>How to reproduce this bug ?
->>
->>                       -----------hostB----------------
->>hostA ----- switch ---|-- eth0--bond0(192.168.100.2/24)|
->>(192.168.100.1/24  \--|-- eth1-/                       |
->>                       --------------------------------
->>
->>1 on hostB,
->>modprobe bonding mode=1 miimon=500 fail_over_mac=active downdelay=1000
->>num_grat_arp=1
->>ifconfig bond0 192.168.100.2/24 up
->>ifenslave bond0 eth0
->>ifenslave bond0 eth1
->>
->>then eth0 is the active slave, and MAC of bond0 is MAC of eth0.
->>
->>2 on hostA, ping 192.168.100.2
->>
->>3 on hostB,
->>tcpdump -i bond0 -p icmp -XXX
->>you will see bond0 uses MAC of eth0 as source MAC in icmp reply.
->>
->>4 on hostB,
->>ifconfig eth0 down
->>tcpdump -i bond0 -p icmp -XXX (just keep it running in step 3)
->>you will see first bond0 uses MAC of eth1 as source MAC in icmp
->>reply, then it will use MAC of eth0 as source MAC.
->>
->>Signed-off-by: Weiping Pan <wpan@redhat.com>
+> Good catch, thanks !
 > 
-> Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Applied, thanks everyone.
+Applied.
