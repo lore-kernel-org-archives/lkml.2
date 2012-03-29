@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab2C2C4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 22:56:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35451 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab2C2C4M (ORCPT
+	id S1758216Ab2C2C7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 22:59:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24191 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab2C2C7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 22:56:12 -0400
-Date: Thu, 29 Mar 2012 13:55:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michael Neuling <mikey@neuling.org>
-Cc: David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, arnd@arndb.de, hpa@zytor.com
-Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
-Message-Id: <20120329135555.06593144b65bf81cc9191f8a@canb.auug.org.au>
-In-Reply-To: <30702.1332989444@neuling.org>
-References: <5599.1332958811@redhat.com>
-	<30702.1332989444@neuling.org>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Wed, 28 Mar 2012 22:59:16 -0400
+X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=oix_wqQkZ80A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=UNxasA3ZaOMBbe4kUYcA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1332989953.23924.183.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace
+ handler
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        David Sharp <dhsharp@google.com>,
+        Justin Teravest <teravest@google.com>,
+        Laurent Chavey <chavey@google.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 28 Mar 2012 22:59:13 -0400
+In-Reply-To: <4F73CC3A.2080901@zytor.com>
+References: <1332787168-20457-1-git-send-email-vnagarnaik@google.com>
+	 <1332787168-20457-5-git-send-email-vnagarnaik@google.com>
+	 <4F714982.6020208@zytor.com>
+	 <CAL26m8Jfb8bgfDLKZtn2LkYHD6uCccD3UcsSMbHtpnUKR5_mxw@mail.gmail.com>
+	 <4F73CC3A.2080901@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Mar_2012_13_55_55_+1100_+Sz8x5i=ERevKuqy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Mar_2012_13_55_55_+1100_+Sz8x5i=ERevKuqy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2012-03-28 at 19:43 -0700, H. Peter Anvin wrote:
 
-On Thu, 29 Mar 2012 13:50:44 +1100 Michael Neuling <mikey@neuling.org> wrot=
-e:
->
-> > Here are a bunch of patches to disintegrate asm/system.h into a set of =
-separate
-> > bits to relieve the problem of circular inclusion dependencies.
-> >=20
-> > The following changes since commit 437538267b672f9320833907f1b5acbb2605=
-f4be:
-> >=20
-> >   Merge tag 'fbdev-updates-for-3.4' of git://github.com/schandinat/linu=
-x-2.6 (2012-03-22 20:43:40 -0700)
-> >=20
-> > are available in the git repository at:
-> >=20
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-asm_syst=
-em.git split-asm-system_h
->=20
-> It would have been nice to have this in linux-next for a day or two to
-> sort out the merge issues,  hence....
+> The syscall interface is the single most stable interface in the kernel.
+>  Just plunk down the system call number and the six arguments in the
+> buffer, and be done with it.  On the way out, there is a single return
+> argument, *by design*.  No need to burden the kernel in this way! That
+> this information can be perfectly well decoded in userspace is already
+> shown by strace, although it would be highly beneficial if the kernel
+> build could export information to strace and other tools.  There is
+> absolutely no need for it to live in kernel memory, though.
 
-Um, what can I say but "yeah, it would have been nice" :-(
+Even if it did live in kernel memory (which it does now, and I'm not
+sure if we can change it due to the *don't break existing tools* law).
+We should be able to at least compress it so that it doesn't waste as
+much memory.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- Steve
 
---Signature=_Thu__29_Mar_2012_13_55_55_+1100_+Sz8x5i=ERevKuqy
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPc887AAoJEECxmPOUX5FEU/AQAI1Zwtb8A5CcTf5Z7DizPGKc
-O1MxOCC+eORfajR/iGpGNrRjHxlQL/LEf7a2dNyHazyBPq8s2+OrGctLMLTMis+y
-VBtqSX4sAUYRxScEY4WaLJ51Zh2R4YF5w0qO2L4pLhPp2e2t9lGC/5kG/xO+9Adc
-sBPf3zPAzYEh4scJSOjjBc7tlws+gnEBRm0o7ws4kRXC/Mj6uIQDZsxNYX/tBOS1
-h8ERrgTWo0s6LzAz+VViLx/QoAH58W2u0YVQfPD7bItAYgs+6nyl3LOXa0JXKGM+
-ABeuO90gMwZ2BGlf5QRvKvRfQIc331jQyasGUxuHYQ36+rpzsoTNGAz4GrU1RDX2
-NrgHdlrM1WiJX/Pjig5yqoz2n+NnIt3p5fbAL5VkbvrDKQtkuprM3A/WOVL6uekT
-kXPtntNpNxGwAxgdpsJriZvXLiZ3ltgL9o2HFKHNx9t6jeUb1Lg2MfBv+Sc7o+bX
-ikUJ8EsjaXDkK2zMV2dkjMIXZvE6fbX5HTLX5D9MI3Gq8iasuBFkaQ8smXGV1kiG
-bGjH+Hu9EtKjZgjiqGRUHzhzHB2WzXbbo5Y0pp0MgpGrSmUeuvs/Qflr9mnI4Lxh
-K2cIoRk3wFZUM66AQ8rOETlf8MkXn4a53JhB+e8RlxAosIMKGi80MwgLIqlonRrn
-YgD8ntFAJtiBazHU6/x5
-=RtUV
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Mar_2012_13_55_55_+1100_+Sz8x5i=ERevKuqy--
