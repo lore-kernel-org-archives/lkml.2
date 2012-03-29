@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760158Ab2C2WTg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 18:19:36 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:44631
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759407Ab2C2WT2 (ORCPT
+	id S1760173Ab2C2W1b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 18:27:31 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57170 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759487Ab2C2W1X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 18:19:28 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzzz2fh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F74DFDC.6060904@am.sony.com>
-Date: Thu, 29 Mar 2012 15:19:08 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Thu, 29 Mar 2012 18:27:23 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Daniel Walker <dwalker@fifo99.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@android.com" <kernel-team@android.com>
-Subject: Re: [RFC] Android Logger vs. Shared Memory FIGHT!
-References: <20120328210631.GB2297@fifo99.com>	<20120329145055.GE13912@fifo99.com>	<4F748CF6.4010205@am.sony.com>	<20120329175209.GE16476@fifo99.com> <20120329195007.07d53db7@pyramind.ukuu.org.uk>
-In-Reply-To: <20120329195007.07d53db7@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <20120309124119.GV3273@opensource.wolfsonmicro.com>
+References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+ <1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
+ <1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com> <20120309124119.GV3273@opensource.wolfsonmicro.com>
+From: Erik Gilling <konkers@google.com>
+Date: Thu, 29 Mar 2012 15:27:01 -0700
+Message-ID: <CACSP8ShU5tu=9N53PtYMLyFVFMS9whNRhMvu7nu8rBoPuVCy+Q@mail.gmail.com>
+Subject: Re: [PATCH v6 1/5] Extcon (external connector): import Android's
+ switch class and modify.
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        NeilBrown <neilb@suse.de>, gregkh@linuxfoundation.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        myungjoo.ham@gmail.com, John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mike Lockwood <lockwood@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 11:50 AM, Alan Cox wrote:
-> The question is whether you are trying to record data for analysis in a
-> hostile environment or you are trying to do useful debugging. If your
-> apps are non hostile then PR_SET_NAME is actually useful in logging to
-> split apart different executions of the same daemon.
-> 
-> The Android logger has no security model of any real kind so it's clearly
-> about the debug side. In that case the PID lets you correlate with other
-> logs, the comm data might be useful.
+On Fri, Mar 9, 2012 at 4:41 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Feb 27, 2012 at 09:15:35PM +0900, MyungJoo Ham wrote:
+>
+>> +#ifdef CONFIG_ANDROID
+>> +             extcon_class = class_create(THIS_MODULE, "switch");
+>> +#else /* !CONFIG_ANDROID */
+>> +             extcon_class = class_create(THIS_MODULE, "extcon");
+>> +#endif /* CONFIG_ANDROID */
+>
+> This seems somewhat sad - if ANDROID is turned on the standard ABI
+> vanishes.  It'd be much nicer to do this with a symlink (or with
+> symlinks within the android directory if the driver core doesn't support
+> that).  That way userspace code can be written to the new ABI and will
+> work on Android systems without ifdefery.
 
-The current model has limited security, other than being in the kernel
-and thus harder to corrupt (but still subject to DOS attacks
-via overruning the log).
+This won't work if userspace code is receiving uevents through netlink
+and comparing based on the device name which it does in android.  Why
+change the name at all?  Extcon is much more specific than "switch."
+A switch can can be used for more than just external connections such
+as availability of HMDI audio (which is only available once a HDMI
+mode is chosen and the interface is enabled.)
 
-I think the envisioned security issues are more about preventing
-access to application logs which might reveal sensitive information
-(due to un-careful logging), than about analysing a hostile
-environment.  But if it can be made harder for a bad program to
-cover it's tracks, that would be nice.
- -- Tim
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
-
+-Erik
