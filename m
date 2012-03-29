@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539Ab2C2HDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 03:03:53 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33767 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758110Ab2C2HDr (ORCPT
+	id S1758694Ab2C2HEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 03:04:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59236 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757915Ab2C2HE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 03:03:47 -0400
-X-Originating-IP: 217.70.178.146
-X-Originating-IP: 50.43.46.74
-Date: Thu, 29 Mar 2012 00:03:36 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH] kvm-amd: Auto-load on CPUs with SVM.
-Message-ID: <20120329070336.GA11227@leaf>
-References: <20120321063350.GA3468@leaf>
- <4F72F549.6060407@redhat.com>
- <20120328183228.GA24889@leaf>
- <4F740235.7090508@msgid.tls.msk.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F740235.7090508@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 Mar 2012 03:04:27 -0400
+Message-ID: <1333004662.8548.3.camel@phoenix>
+Subject: [PATCH 2/2] regulator: Trivial comment fix for wm831x-ldo driver
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 29 Mar 2012 15:04:22 +0800
+In-Reply-To: <1333004575.8548.1.camel@phoenix>
+References: <1333004575.8548.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 10:33:25AM +0400, Michael Tokarev wrote:
-> On 28.03.2012 22:32, Josh Triplett wrote:
-> > Enable x86 feature-based autoloading for the kvm-amd module on CPUs
-> > with X86_FEATURE_SVM.
-> > 
-> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> It appears to work fine on my amd boxen.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/wm831x-ldo.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks for testing it.  Can I interpret that as a Tested-by/Acked-by?
+diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
+index 641e9f6..a86a7be 100644
+--- a/drivers/regulator/wm831x-ldo.c
++++ b/drivers/regulator/wm831x-ldo.c
+@@ -105,7 +105,7 @@ static int wm831x_gp_ldo_list_voltage(struct regulator_dev *rdev,
+ 	/* 0.9-1.6V in 50mV steps */
+ 	if (selector <= WM831X_GP_LDO_SELECTOR_LOW)
+ 		return 900000 + (selector * 50000);
+-	/* 1.7-3.3V in 50mV steps */
++	/* 1.7-3.3V in 100mV steps */
+ 	if (selector <= WM831X_GP_LDO_MAX_SELECTOR)
+ 		return 1600000 + ((selector - WM831X_GP_LDO_SELECTOR_LOW)
+ 				  * 100000);
+@@ -414,7 +414,7 @@ static int wm831x_aldo_list_voltage(struct regulator_dev *rdev,
+ 	/* 1-1.6V in 50mV steps */
+ 	if (selector <= WM831X_ALDO_SELECTOR_LOW)
+ 		return 1000000 + (selector * 50000);
+-	/* 1.7-3.5V in 50mV steps */
++	/* 1.7-3.5V in 100mV steps */
+ 	if (selector <= WM831X_ALDO_MAX_SELECTOR)
+ 		return 1600000 + ((selector - WM831X_ALDO_SELECTOR_LOW)
+ 				  * 100000);
+-- 
+1.7.5.4
 
-> The only problem
-> is that I've no idea when it will be possible to finally
-> disable the init script (shipped in Debian and other distros)
-> to load the module based on /proc/cpuinfo contents.  It will
-> do nothing on kernels with this (or kvm-intel) change applied,
-> but we still need to support older kernels without that feature... :)
 
-Each stable release of Debian has a specific minimum kernel version that
-it supports, typically determined by the requirements of packages such
-as udev.  As far as I know, the next stable release will ship with 3.2,
-and I don't think the necessary infrastructure exists in 3.2 to backport
-this patch (though I'd love to hear otherwise if it does), so that
-release will probably need to include the init script.  However, the
-next release should have no problem safely dropping it and requiring a
-sufficiently new kernel.
 
-In unstable (after the release), qemu-kvm could just go ahead and
-drop the script with a NEWS.Debian entry telling people to add the
-necessary module to /etc/modules if they have an older kernel.
-
-> Josh, and I'm sure you will be the first who'll file a bugreport
-> against qemu-kvm in Debian requesting the startup script to be
-> removed!.. ;))
-
-I don't know where you could possibly get that idea. ;)
-
-- Josh Triplett
