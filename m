@@ -1,38 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759450Ab2C2Ogf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 10:36:35 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:43975 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705Ab2C2Oga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 10:36:30 -0400
-Message-ID: <4F747368.3040509@parallels.com>
-Date: Thu, 29 Mar 2012 18:36:24 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	id S933208Ab2C2Oh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 10:37:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40638 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933121Ab2C2OhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 10:37:20 -0400
+Date: Thu, 29 Mar 2012 11:37:12 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] perf tools: Including pre-generated flex files
+Message-ID: <20120329143712.GH8482@infradead.org>
+References: <20120327181547.GA7374@infradead.org>
+ <CA+55aFynFze+AJxUtkiAaOTJ58cK8=aiDi-fQqQ3bDV54w-=+A@mail.gmail.com>
+ <20120329122208.GC6949@m.brq.redhat.com>
 MIME-Version: 1.0
-To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] Lockd: pass network namespace to creation and destruction
- routines
-References: <20120329142209.20506.43224.stgit@localhost6.localdomain6>
-In-Reply-To: <20120329142209.20506.43224.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120329122208.GC6949@m.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch has a flaw. Thus will be v2.
-Sorry.
+Em Thu, Mar 29, 2012 at 02:22:08PM +0200, Jiri Olsa escreveu:
+> I just tried to generate the parser on RHEL6 and got:
+> 
+>     CC util/parse-events-bison.o
+> util/parse-events-bison.c:222:6: error: "YYENABLE_NLS" is not defined
+> util/parse-events-bison.c:664:6: error: "YYLTYPE_IS_TRIVIAL" is not
+> defined
+> 
+> looks like bison bug, that RHEL6 did not picked up fix for yet.
+> 
+> I agree with not including the parser sources in git, but we'll probably
+> get some screaming from ppl having similar issue like above.
+> 
+> Also I'm not fully sure we could even use generated bison/flex
+> files cross architectures.. need to check :)
 
--- 
-Best regards,
-Stanislav Kinsbursky
+I got yet another error here:
+
+[acme@sandy linux]$ rm -rf ../build/perf/
+[acme@sandy linux]$ mkdir ../build/perf/
+[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/git/build/perf
+install
+make: Entering directory `/home/git/linux/tools/perf'
+    MKDIR /home/git/build/perf/arch/x86/util
+<SNIP>
+    MKDIR /home/git/build/perf/util/ui/browsers
+PERF_VERSION = perf.urgent.for.mingo.6.g7e025ca
+make: Leaving directory `/home/git/linux/tools/perf'
+make: Entering directory `/home/git/linux/tools/perf'
+    GEN /home/git/build/perf/common-cmds.h
+    * new build flags or prefix
+    CC /home/git/build/perf/bench/mem-memcpy-x86-64-asm.o
+<SNIP>
+    CC /home/git/build/perf/util/trace-event-parse.o
+    BISON event-parser
+    CC /home/git/build/perf/util/parse-events-bison.o
+    FLEX event-parser
+    BISON pmu-parser
+util/parse-events-bison.c:150:10: error: missing terminating " character
+util/parse-events-bison.c:150:10: error: ""util/par" is not a valid
+filename
+util/parse-events-bison.c:145:1: error: unterminated #if
+util/parse-events-bison.c:147: error: expected specifier-qualifier-list
+at end of input
+make: *** [/home/git/build/perf/util/parse-events-bison.o] Error 1
+make: *** Waiting for unfinished jobs....
+    FLEX pmu-parser
+make: Leaving directory `/home/git/linux/tools/perf'
+[acme@sandy linux]$ 
+
+- Arnaldo
