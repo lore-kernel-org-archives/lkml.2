@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664Ab2C2IwK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:52:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33496 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab2C2IwF (ORCPT
+	id S1758553Ab2C2JEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:04:10 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39938 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2C2JEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:52:05 -0400
-Subject: Re: =?UTF-8?Q?=E7=AD=94=E5=A4=8D=3A?= [PATCH] set fake_rtable's
- dst to NULL to avoid kernel Oops.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Peter Huang (Peng)" <peter.huangpeng@huawei.com>
-Cc: linux-kernel@vger.kernel.org, harry.majun@huawei.com, zhoukang7@huawei.com,
-        "'netdev'" <netdev@vger.kernel.org>
-In-Reply-To: <002601cd0d76$c4987440$4dc95cc0$%huangpeng@huawei.com>
-References: <002501cd0d74$317fd100$947f7300$%huangpeng@huawei.com>
-	 <1333002975.2325.82.camel@edumazet-glaptop>
-	 <002601cd0d76$c4987440$4dc95cc0$%huangpeng@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 29 Mar 2012 10:52:00 +0200
-Message-ID: <1333011120.2325.354.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Mar 2012 05:04:02 -0400
+Date: Thu, 29 Mar 2012 02:03:51 -0700
+From: Gerard Snitselaar <dev@snitselaar.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the scsi tree
+Message-ID: <20120329090332.GA21472@perelman.Home>
+Reply-To: Gerard Snitselaar <dev@snitselaar.org>
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
+ <1332748641.2836.8.camel@dabdike>
+ <20120326140721.GA19827@kroah.com>
+ <20120327221721.GA3233@p183.telecom.by>
+ <20120327222216.GB469@kroah.com>
+ <20120327223510.GB3233@p183.telecom.by>
+ <20120328235217.GA17212@kroah.com>
+ <20120329073240.GA21382@perelman.Home>
+ <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-29 at 14:40 +0800, Peter Huang (Peng) wrote:
-> We already check current kernel-3.3, it has the same problem.
+On Thu Mar 29 12, Stephen Rothwell wrote:
+> On Thu, 29 Mar 2012 00:32:40 -0700 Gerard Snitselaar <dev@snitselaar.org> wrote:
+> >
+> > On Wed Mar 28 12, Greg KH wrote:
+> > > > > > 
+> > > > > > See commits 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
+> > > > > > Especially the first one.
+> > > 
+> > > I don't know where to find these patches, care to send them to me, or
+> > > point me at a link with them?
+> > > 
+> > 
+> > They are visible in next-20120329
 > 
-> I am not very sure that if this modify could cause other problems or not,
-> Because I don't know where fake_rtable was used.
+> I don't think so.  They were in next-2012032[67], but were removed again.
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-Check net/bridge/br_netfilter.c and commits e688a6048076 (net: introduce
-DST_NOPEER dst flag )  4adf0af6818f3ea5 (bridge: send correct MTU value
-in PMTU (revised))
-
-Apparently bug is because struct net_bridge is freed while its embedded
-fake_rtable is still used by some packets.
-
-I am not sure we are allowed to NULLify skb->dst, it might break
-netfilter.
-
-Maybe real fix would be to use a non embedded dst.
-
-
-
+Sorry, poorly worded on my part. What I meant to say was I could see
+the commits in the repository when doing
+ 
+git show 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
