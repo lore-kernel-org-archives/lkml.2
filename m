@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894Ab2C2C2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 22:28:25 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:19901 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753875Ab2C2C2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 22:28:18 -0400
-X-IronPort-AV: E=Sophos;i="4.75,335,1330934400"; 
-   d="sh'?scan'208";a="637066644"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "Linux Kernel mailing list" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
-Thread-Topic: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
-Thread-Index: AQHNDU+E6ZdFWqFeI0qI10V6oguVYJaA+9eAgAAAowCAAAM+AIAAAjSA
-Date: Thu, 29 Mar 2012 02:28:11 +0000
-Message-ID: <1332988097.19172.51.camel@lade.trondhjem.org>
-References: <1332986348.19172.43.camel@lade.trondhjem.org>
-	 <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>
-	 <1332986928.19172.45.camel@lade.trondhjem.org>
-	 <CA+55aFyQ0r5mN9=3DUVENCtdj8VMLRjiXTc5Xd4o+F=s9B8xMg@mail.gmail.com>
-In-Reply-To: <CA+55aFyQ0r5mN9=3DUVENCtdj8VMLRjiXTc5Xd4o+F=s9B8xMg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: multipart/mixed;
-	boundary="_002_13329880971917251camelladetrondhjemorg_"
+	id S1758928Ab2C2C2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 22:28:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38737 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab2C2C2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 22:28:46 -0400
+Date: Wed, 28 Mar 2012 23:28:39 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: Re: [PATCH] Revert "Bluetooth: Always enable management interface"
+Message-ID: <20120329022839.GA26111@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@intel.com>
+References: <1332983958-2734-1-git-send-email-keithp@keithp.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332983958-2734-1-git-send-email-keithp@keithp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_13329880971917251camelladetrondhjemorg_
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <77C4C92EA03A7144B58BA03853FDB5B2@tahoe.netapp.com>
-Content-Transfer-Encoding: base64
+Hi Keith,
 
-T24gV2VkLCAyMDEyLTAzLTI4IGF0IDE5OjIwIC0wNzAwLCBMaW51cyBUb3J2YWxkcyB3cm90ZToN
-Cj4gT24gV2VkLCBNYXIgMjgsIDIwMTIgYXQgNzowOCBQTSwgTXlrbGVidXN0LCBUcm9uZA0KPiA8
-VHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20+IHdyb3RlOg0KPiA+DQo+ID4gU3VyZSB0aGluZy4u
-LiBJIHdhc24ndCBhd2FyZSBvZiB0aGF0IHNlbWFudGljIGRpZmZlcmVuY2UsIGJ1dCBJJ20gcXVp
-dGUNCj4gPiBoYXBweSB0byBhZGQgaXQgdG8gbXkgc2NyaXB0Li4uDQo+IA0KPiBUaGFua3MuIEFu
-ZCBJIG5vdGljZWQgdGhhdCBpdCdzIHN1cHBvc2VkIHRvIGJlICJ0YWdzL3h5eiIgd2l0aCBhICJz
-Ii4NCj4gDQo+IE9mIGNvdXJzZSwgeW91IG1pZ2h0IGFzIHdlbGwganVzdCBzYXkgInh5eiIgd2l0
-aG91dCBtZW50aW9uaW5nIHRoZQ0KPiB0YWdbc10gcGFydCBhdCBhbGwsIHVubGVzcyB5b3UgaGF2
-ZSBhIGJyYW5jaCB3aXRoIHRoZSBzYW1lIG5hbWUgYW5kDQo+IHdhbnQgdG8gZXhwbGljaXRseSBk
-aXNhbWJpZ3VhdGUuDQo+IA0KPiAgICAgICAgICAgICAgICAgICAgTGludXMNCg0KVGhlIHJlYXNv
-biBmb3IgYWRkaW5nIHRoZSAndGFncycgbGFiZWwgb3JpZ2luYWxseSB3YXMgcHJlY2lzZWx5IGJl
-Y2F1c2UNCkkgaGFkIGFuIGlkZW50aWNhbGx5IG5hbWVkIGJyYW5jaCwgYW5kIEkgd2FudGVkIHRv
-IGJlIGFibGUgdG8gc2VuZCB5b3UNCnRoZSBzaWduZWQgdGFnIGluc3RlYWQuDQoNCkkndmUgYXR0
-YWNoZWQgdGhlIHNjcmlwdCB0aGF0IEkgdXNlIHRvIGdlbmVyYXRlIHB1bGwgcmVxdWVzdHMganVz
-dCBpbg0KY2FzZSBzb21lb25lIGVsc2UgZG9lc24ndCBoYXZlIHRoZWlyIG93biB2ZXJzaW9uLiBJ
-dCBzaG91bGQgYmUgZmFpcmx5DQpvYnZpb3VzIHRvIG1vZGlmeS4uLg0KDQotLSANClRyb25kIE15
-a2xlYnVzdA0KTGludXggTkZTIGNsaWVudCBtYWludGFpbmVyDQoNCk5ldEFwcA0KVHJvbmQuTXlr
-bGVidXN0QG5ldGFwcC5jb20NCnd3dy5uZXRhcHAuY29tDQoNCg==
+* Keith Packard <keithp@keithp.com> [2012-03-28 18:19:18 -0700]:
 
---_002_13329880971917251camelladetrondhjemorg_
-Content-Type: application/x-shellscript; name="git_make_linus_mail.sh"
-Content-Description: git_make_linus_mail.sh
-Content-Disposition: attachment; filename="git_make_linus_mail.sh"; size=2687;
-	creation-date="Thu, 29 Mar 2012 02:28:11 GMT";
-	modification-date="Thu, 29 Mar 2012 02:28:11 GMT"
-Content-ID: <173C1A53C5686F4B889D4D3376A3585E@tahoe.netapp.com>
-Content-Transfer-Encoding: base64
+> This reverts commit 4b95a24ce12c4545fd7d2e3075841dc3119d1d71.
+> 
+> My USB bluetooth device does not show up with this patch in place.
+> 
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+> 
+> This patch seems so innocuous, but when added to the kernel, it keeps
+> my USB bluetooth device from appearing to user mode at all. With the
+> mgmt interface enabled:
 
-IyEvYmluL2Jhc2gNCiMNCiMNCnByZXR0eT1tZWRpdW0NCmRpZmY9MA0Kbm9fZm9ya19wb2ludD0w
-DQpzaG9ydD0wDQp0YWc9MA0KdGFyZ2V0X2JyYW5jaD1tYXN0ZXINCnJlZl9icmFuY2g9b3JpZ2lu
-L21hc3Rlcg0KcmVwbz0ic3NoOi8vdHJvbmRteUBsaW51eC1uZnMub3JnL34vZXhwb3J0cy9saW51
-eC1uZnMuZ2l0Ig0KIw0KZGllICgpIHsNCgljbWQ9JCgke0JBU0VOQU1FfSAkMCkNCgljYXQgPDwg
-RU9GDQp1c2FnZTogJHtjbWR9IFtPUFRJT05dIFtPVVRGSUxFXQ0KT1BUSU9OcyBhcmU6DQogICAt
-ZCwgLS1kaWZmCQkJQXBwZW5kIGEgZGlmZiBvZiBhbGwgY2hhbmdlcw0KICAgLXIsIC0tcmVmZXJl
-bmNlIEJSQU5DSAlVc2UgdGhlIHJlZmVyZW5jZSBicmFuY2ggbmFtZWQgQlJBTkNIDQoJCQkJCShk
-ZWZhdWx0OiAke3JlZl9icmFuY2h9KQ0KICAgICAgIC0tcmVwbyBSRVBPCQlVcmwgdG8gdXNlIGFz
-IHRoZSBnaXQgcmVwb3NpdG9yeQ0KICAgLXMsIC0tc2hvcnQJCQlHZW5lcmF0ZSBhIHNob3J0IGxv
-Zw0KICAgLXQsIC0tdGFyZ2V0IEJSQU5DSAkJVXNlIHRoZSBicmFuY2ggbmFtZWQgQlJBTkNIDQoJ
-CQkJCShkZWZhdWx0OiAke21hc3Rlcn0pDQogICAgICAgLS10YWcgVEFHCQlVc2UgdGhlIHRhZyBz
-aWduZWQgbmFtZWQgVEFHDQpFT0YNCglleGl0ICQxDQp9DQojDQpmYWlsICgpIHsNCgllY2hvICQx
-DQoJZXhpdCAkMg0KfQ0KIw0KZ2l0X3B1c2ggKCkgew0KCWdpdCBwdXNoICR7cmVwb30gIiRAIiB8
-fCBmYWlsICJnaXQgcHVzaCBmYWlsZWQhIiAkPw0KfQ0KIw0KQVJHUz0kKC91c3IvYmluL2dldG9w
-dCAtLWxvbmdvcHRpb25zPSJkaWZmLGhlbHAscmVmZXJlbmNlOixyZXBvOixzaG9ydCx0YWc6LHRh
-cmdldDoiICJkaHI6c3Q6IiAiJEAiKQ0KZXZhbCBzZXQgLS0gIiRBUkdTIg0KIw0Kd2hpbGUgdHJ1
-ZQ0KZG8NCgljYXNlICIkMSIgaW4NCgktLWRpZmZ8LWQpDQoJCWRpZmY9MQ0KCQlzaGlmdA0KCQk7
-Ow0KCS0tcmVmZXJlbmNlfC1yKQ0KCQlyZWZfYnJhbmNoPSQyDQoJCW5vX2ZvcmtfcG9pbnQ9MQ0K
-CQlzaGlmdCAyDQoJCTs7DQoJLS1yZXBvKQ0KCQlyZXBvPSQyDQoJCXNoaWZ0IDINCgkJOzsNCgkt
-LXNob3J0fC1zKQ0KCQlwcmV0dHk9c2hvcnQNCgkJc2hvcnQ9MQ0KCQlzaGlmdA0KCQk7Ow0KCS0t
-dGFnKQ0KCQl0YXJnZXRfYnJhbmNoPSQyDQoJCXRhZz0xDQoJCXNoaWZ0IDINCgkJOzsNCgktLXRh
-cmdldHwtdCkNCgkJdGFyZ2V0X2JyYW5jaD0kMg0KCQl0YWc9MA0KCQlzaGlmdCAyDQoJCTs7DQoJ
-LS0pDQoJCXNoaWZ0DQoJCWJyZWFrDQoJCTs7DQoJKikNCgkJZGllIDENCgkJOzsNCgllc2FjDQpk
-b25lDQoNCnRhcmdldF9maWxlPSR7MTotIi90bXAvbGludXMudHh0In0NCmlmIFsgJG5vX2Zvcmtf
-cG9pbnQgLWVxIDAgXQ0KdGhlbg0KCWZvcmtfcG9pbnQ9IiQoZ2l0IGNoZXJyeSAke3JlZl9icmFu
-Y2h9ICR7dGFyZ2V0X2JyYW5jaH0gfCBoZWFkIC1uMSB8IHNlZCAtZSAncy9eKyAqLy8nKV4iDQpl
-bHNlDQoJZm9ya19wb2ludD0iJHtyZWZfYnJhbmNofSINCmZpDQoNCiMNCnByaW50X2JsdXJiKCkN
-CnsNCgljYXQgPDxFTkQNCkhpIExpbnVzLA0KDQpQbGVhc2UgcHVsbCBmcm9tIHRoZSQxIHJlcG9z
-aXRvcnkgYXQNCg0KICAgZ2l0IHB1bGwgZ2l0Oi8vZ2l0LmxpbnV4LW5mcy5vcmcvcHJvamVjdHMv
-dHJvbmRteS9saW51eC1uZnMuZ2l0JDINCg0KVGhpcyB3aWxsIHVwZGF0ZSB0aGUgZm9sbG93aW5n
-IGZpbGVzIHRocm91Z2ggdGhlIGFwcGVuZGVkIGNoYW5nZXNldHMuDQoNCiAgQ2hlZXJzLA0KICAg
-IFRyb25kDQoNCi0tLS0NCkVORA0KfQ0KIw0KKCBcDQogIGlmIFsgIiR0YXJnZXRfYnJhbmNoIiA9
-ICJtYXN0ZXIiIF07IFwNCiAgdGhlbiBcDQoJZ2l0X3B1c2ggJHt0YXJnZXRfYnJhbmNofTsgXA0K
-CXByaW50X2JsdXJiICIiICIiOyBcDQogIGVsaWYgWyAkdGFnIC1lcSAxIF07IFwNCiAgdGhlbiBc
-DQoJZ2l0X3B1c2ggdGFnICR7dGFyZ2V0X2JyYW5jaH07IFwNCglwcmludF9ibHVyYiAiIHNpZ25l
-ZCB0YWcgXCIke3RhcmdldF9icmFuY2h9XCIgaW4gdGhlIiAiIHRhZ3MvJHRhcmdldF9icmFuY2gi
-OyBcDQogIGVsc2UgXA0KCWdpdF9wdXNoICR7dGFyZ2V0X2JyYW5jaH07IFwNCglwcmludF9ibHVy
-YiAiIFwiJHt0YXJnZXRfYnJhbmNofVwiIGJyYW5jaCBvZiB0aGUiICIgJHRhcmdldF9icmFuY2gi
-OyBcDQogIGZpOyBcDQogIFwNCiAgZ2l0IGRpZmYgLS1zdGF0ICR7Zm9ya19wb2ludH0uLiR7dGFy
-Z2V0X2JyYW5jaH07IFwNCiAgZWNobyA7IFwNCiAgaWYgWyAkc2hvcnQgLWVxIDEgXTsgXA0KICB0
-aGVuIFwNCgkgIGdpdCBsb2cgLS1uby1tZXJnZXMgLS1wcmV0dHk9JHtwcmV0dHl9ICR7Zm9ya19w
-b2ludH0uLiR7dGFyZ2V0X2JyYW5jaH0gfCBnaXQgc2hvcnRsb2c7IFwNCiAgZWxzZSBcDQoJICBn
-aXQgbG9nIC0tbm8tbWVyZ2VzIC0tcHJldHR5PSR7cHJldHR5fSAke2ZvcmtfcG9pbnR9Li4ke3Rh
-cmdldF9icmFuY2h9OyBcDQogIGZpOyBcDQogIGVjaG8gOyBcDQogIFsgJGRpZmYgLWVxIDEgXSAm
-JiBnaXQgZGlmZiAtcCAke2ZvcmtfcG9pbnR9Li4ke3RhcmdldF9icmFuY2h9IFwNCikgPiAke3Rh
-cmdldF9maWxlfQ0KIw0KIyBnaXQgc2hvcnRsb2cgJHtmb3JrX3BvaW50fS4uJHt0YXJnZXRfYnJh
-bmNofQ0KIyBnaXQgLS1zdGF0IC0tc3VtbWFyeSAtTSAke2ZvcmtfcG9pbnR9Li4ke3RhcmdldF9i
-cmFuY2h9DQo=
+It is because it changes the way the userspace <-> kernel interface. We added a
+new interface and that flag was preventing the code to use it by default, but
+now that we finished to implement the new interface it will be enabled by default.
 
---_002_13329880971917251camelladetrondhjemorg_--
+A consequence is that you'll need to use newer version of bluez, at least 4.99.
+Or call the bluetooth daemon (from a pre 4.99 version) with a parameter to
+disable the new interface:
+
+$ bluetoothd -P mgmtops
+
+Then your bluetooth will be back.
+
+	Gustavo
