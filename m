@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871Ab2C2VAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:00:00 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52897 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933849Ab2C2U7z convert rfc822-to-8bit (ORCPT
+	id S933890Ab2C2VAL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:00:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40949 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933866Ab2C2U76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 16:59:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120329203926.GA13970@thunk.org>
-References: <20120329155542.GA31285@redhat.com> <CA+55aFxOcMt_mcr+ZYwc-SpKbROnh4Gn7jqrFY_SZcBy1Ev7Qw@mail.gmail.com>
- <20120329182632.GA6891@redhat.com> <CA+55aFx-nzGm1ZZD5bNxmPF2orkXc1_4nCE0jdtznz+AqhBx3A@mail.gmail.com>
- <20120329195354.GA11790@redhat.com> <CA+55aFxyutCDZhVa8HCu=hpn0454sfoM27Jwh2heCN0cqg5pjA@mail.gmail.com>
- <20120329202619.GA14001@redhat.com> <20120329203926.GA13970@thunk.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 29 Mar 2012 13:59:33 -0700
-X-Google-Sender-Auth: njLw1CaEzz12Y-Sx6aCAAlEb7CM
-Message-ID: <CA+55aFwJkN2BmZJmWfB6FU0TuVKfmh4um8pMKYVUk3aG7JkNwQ@mail.gmail.com>
-Subject: Re: lockups shortly after booting in current git.
-To: "Ted Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Mar 2012 16:59:58 -0400
+Date: Thu, 29 Mar 2012 13:59:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        stable@vger.kernel.org, Romain Francoise <romain@orebokech.com>,
+        Chris Holland <bandidoirlandes@gmail.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Hatem Masmoudi <hatem.masmoudi@gmail.com>, janek <jan0x6c@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH resend] ASPM: Fix pcie devices with non-pcie children
+Message-Id: <20120329135956.7034cd9d.akpm@linux-foundation.org>
+In-Reply-To: <20120329205635.GA2072@srcf.ucam.org>
+References: <1332857861-11562-1-git-send-email-mjg@redhat.com>
+	<20120329163206.GA3480@burratino>
+	<20120329134614.438e8aaf.akpm@linux-foundation.org>
+	<20120329205635.GA2072@srcf.ucam.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 1:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
->
-> I'd suggest restricting the bisect to fs/ first, and if that comes up
-> with something non-sensical, you can always use the good/bad data
-> points for a whole tree bisect.
->
-> One commit that you might want to try testing is b43d17f31^, and see
-> whether that works.  One potential commit that might be suspicious is
-> b43d17f31 given the stack trace shows one process apparently waiting
-> on PageWriteback.
+On Thu, 29 Mar 2012 21:56:35 +0100
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 
-Ahh, that does sound interesting and relevant.
+> On Thu, Mar 29, 2012 at 01:46:14PM -0700, Andrew Morton wrote:
+> 
+> > Just about the only person who wasn't copied on this email is, umm, the
+> > PCI maintainer!
+> 
+> Jesse just handed that off to Bjornâ€¦
 
-Yeah, maybe the directed approach is worth it. In fact, considering
-the above commie, maybe it might be worth it to be *very* directed,
-and just test that one thing first, and maybe even skip the bisection
-entirely and just test a revert if it looks promising.
+Oh.  So he did.   My search of MAINTAINERS turned up the probably wrong
 
-                       Linus
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci.git
