@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759686Ab2C2RwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 13:52:15 -0400
-Received: from fifo99.com ([67.223.236.141]:45260 "EHLO fifo99.com"
+	id S933594Ab2C2R6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 13:58:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38587 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757282Ab2C2RwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 13:52:10 -0400
-Date: Thu, 29 Mar 2012 10:52:10 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@android.com" <kernel-team@android.com>
-Subject: Re: [RFC] Android Logger vs. Shared Memory FIGHT!
-Message-ID: <20120329175209.GE16476@fifo99.com>
-References: <20120328210631.GB2297@fifo99.com>
- <20120329145055.GE13912@fifo99.com>
- <4F748CF6.4010205@am.sony.com>
+	id S1752096Ab2C2R6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 13:58:45 -0400
+Message-ID: <4F74A2C9.1000009@zytor.com>
+Date: Thu, 29 Mar 2012 10:58:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F748CF6.4010205@am.sony.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kees Cook <keescook@google.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Correct way to include siginfo.h?
+References: <CAGXu5jK3ezCN2=hy=AARh=T9L8YzCTKAXH6dbAH7FGX3P8VkoQ@mail.gmail.com> <20120327172133.GB10142@thunk.org> <CAGXu5jJx85b2ysgx2aXWUUf4dJMc34Cukp3S1VKiC_Pc5U2+Pw@mail.gmail.com> <20120327173744.GD10142@thunk.org> <CAGXu5j+itrR6cCWpXZAA0ZEP2KhdHdhcYA-R6pc=B97a_rHbaQ@mail.gmail.com>
+In-Reply-To: <CAGXu5j+itrR6cCWpXZAA0ZEP2KhdHdhcYA-R6pc=B97a_rHbaQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 09:25:26AM -0700, Tim Bird wrote:
-> At the moment, I'm not considering an alternative for logger that runs
-> completely in user-space.  Having said that, this test is certainly interesting,
-> and may provide some performance numbers for logger or alternatives that would
-> be useful to compare.
+On 03/27/2012 11:01 AM, Kees Cook wrote:
+> 
+> No, siginfo, IIUC, is defined to be SI_MAX_SIZE bytes. The union for
+> seccomp (on SIGSYS) just uses a long and 2 ints. It'd be nice for
+> there to be a stable way to get the kernel's siginfo instead of
+> glibc's.
+> 
 
+Make it safe for the kernel to export and make glibc use the kernel's
+version, just like everything else...
 
-I was just thinking what does an accurate PID actually get you? If you
-looking at some logs with a PID of 20048, does that mean something to
-you? It doesn't actually mean much because you can't map that back to
-anything. If you have the device, and the process is still running then
-you could look it up ..
+	-hpa
 
-So lets say logger was modified to record comm values.. That way you
-could record the actual process name AND the pid. Well if you use
-prctl(PR_SET_NAME), you can forge comm values. So that doesn't get you
-much either..
-
-So even if you record accurate PID values, it doesn't mean anything
-anyway.
-
-Daniel
