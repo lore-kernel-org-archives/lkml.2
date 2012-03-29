@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab2C2GhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 02:37:20 -0400
+	id S1755859Ab2C2Ghe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 02:37:34 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55510 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756732Ab2C2Gg5 (ORCPT
+	with ESMTP id S1753848Ab2C2Ggu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 02:36:57 -0400
-X-AuditID: 9c93016f-b7c86ae000005478-26-4f7402ff3ccc
+	Thu, 29 Mar 2012 02:36:50 -0400
+X-AuditID: 9c93016f-b7c86ae000005478-1e-4f7402fee7ed
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 5/7] perf ui/gtk: Rename functions for consistency
-Date: Thu, 29 Mar 2012 15:36:42 +0900
-Message-Id: <1333003004-6391-6-git-send-email-namhyung.kim@lge.com>
+Subject: [PATCH 1/7] perf tools: Move UI bits to tools/perf/ui directory
+Date: Thu, 29 Mar 2012 15:36:38 +0900
+Message-Id: <1333003004-6391-2-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1333003004-6391-1-git-send-email-namhyung.kim@lge.com>
 References: <1333003004-6391-1-git-send-email-namhyung.kim@lge.com>
@@ -24,130 +24,6792 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use double underscore characters to distinguish its subsystem
-and actual function name.
+Move those files to new directory in order to be prepared to
+further UI work. Makefile and header file pathes are adjusted
+accordingly.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/perf/builtin-report.c |    2 +-
- tools/perf/ui/gtk/browser.c |   24 ++++++++++++------------
- tools/perf/util/cache.h     |    8 ++++----
- 3 files changed, 17 insertions(+), 17 deletions(-)
+ tools/perf/Makefile                    |   40 +-
+ tools/perf/ui/browser.c                |  597 ++++++++++++++
+ tools/perf/ui/browser.h                |   65 ++
+ tools/perf/ui/browsers/annotate.c      |  433 +++++++++++
+ tools/perf/ui/browsers/hists.c         | 1338 ++++++++++++++++++++++++++++++++
+ tools/perf/ui/browsers/map.c           |  154 ++++
+ tools/perf/ui/browsers/map.h           |    6 +
+ tools/perf/ui/helpline.c               |   79 ++
+ tools/perf/ui/helpline.h               |   16 +
+ tools/perf/ui/keysyms.h                |   27 +
+ tools/perf/ui/libslang.h               |   29 +
+ tools/perf/ui/progress.c               |   32 +
+ tools/perf/ui/progress.h               |    8 +
+ tools/perf/ui/setup.c                  |  155 ++++
+ tools/perf/ui/ui.h                     |   11 +
+ tools/perf/ui/util.c                   |  250 ++++++
+ tools/perf/ui/util.h                   |   14 +
+ tools/perf/util/debug.h                |    2 +-
+ tools/perf/util/hist.h                 |    2 +-
+ tools/perf/util/ui/browser.c           |  597 --------------
+ tools/perf/util/ui/browser.h           |   65 --
+ tools/perf/util/ui/browsers/annotate.c |  433 -----------
+ tools/perf/util/ui/browsers/hists.c    | 1338 --------------------------------
+ tools/perf/util/ui/browsers/map.c      |  154 ----
+ tools/perf/util/ui/browsers/map.h      |    6 -
+ tools/perf/util/ui/helpline.c          |   79 --
+ tools/perf/util/ui/helpline.h          |   16 -
+ tools/perf/util/ui/keysyms.h           |   27 -
+ tools/perf/util/ui/libslang.h          |   29 -
+ tools/perf/util/ui/progress.c          |   32 -
+ tools/perf/util/ui/progress.h          |    8 -
+ tools/perf/util/ui/setup.c             |  155 ----
+ tools/perf/util/ui/ui.h                |   11 -
+ tools/perf/util/ui/util.c              |  250 ------
+ tools/perf/util/ui/util.h              |   14 -
+ 35 files changed, 3236 insertions(+), 3236 deletions(-)
+ create mode 100644 tools/perf/ui/browser.c
+ create mode 100644 tools/perf/ui/browser.h
+ create mode 100644 tools/perf/ui/browsers/annotate.c
+ create mode 100644 tools/perf/ui/browsers/hists.c
+ create mode 100644 tools/perf/ui/browsers/map.c
+ create mode 100644 tools/perf/ui/browsers/map.h
+ create mode 100644 tools/perf/ui/helpline.c
+ create mode 100644 tools/perf/ui/helpline.h
+ create mode 100644 tools/perf/ui/keysyms.h
+ create mode 100644 tools/perf/ui/libslang.h
+ create mode 100644 tools/perf/ui/progress.c
+ create mode 100644 tools/perf/ui/progress.h
+ create mode 100644 tools/perf/ui/setup.c
+ create mode 100644 tools/perf/ui/ui.h
+ create mode 100644 tools/perf/ui/util.c
+ create mode 100644 tools/perf/ui/util.h
+ delete mode 100644 tools/perf/util/ui/browser.c
+ delete mode 100644 tools/perf/util/ui/browser.h
+ delete mode 100644 tools/perf/util/ui/browsers/annotate.c
+ delete mode 100644 tools/perf/util/ui/browsers/hists.c
+ delete mode 100644 tools/perf/util/ui/browsers/map.c
+ delete mode 100644 tools/perf/util/ui/browsers/map.h
+ delete mode 100644 tools/perf/util/ui/helpline.c
+ delete mode 100644 tools/perf/util/ui/helpline.h
+ delete mode 100644 tools/perf/util/ui/keysyms.h
+ delete mode 100644 tools/perf/util/ui/libslang.h
+ delete mode 100644 tools/perf/util/ui/progress.c
+ delete mode 100644 tools/perf/util/ui/progress.h
+ delete mode 100644 tools/perf/util/ui/setup.c
+ delete mode 100644 tools/perf/util/ui/ui.h
+ delete mode 100644 tools/perf/util/ui/util.c
+ delete mode 100644 tools/perf/util/ui/util.h
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 50a05739091d..38a05fee017a 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -675,7 +675,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b492e3a51268..919d5149b392 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -490,22 +490,22 @@ else
+ 		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+ 		BASIC_CFLAGS += -I/usr/include/slang
+ 		EXTLIBS += -lnewt -lslang
+-		LIB_OBJS += $(OUTPUT)util/ui/setup.o
+-		LIB_OBJS += $(OUTPUT)util/ui/browser.o
+-		LIB_OBJS += $(OUTPUT)util/ui/browsers/annotate.o
+-		LIB_OBJS += $(OUTPUT)util/ui/browsers/hists.o
+-		LIB_OBJS += $(OUTPUT)util/ui/browsers/map.o
+-		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
+-		LIB_OBJS += $(OUTPUT)util/ui/progress.o
+-		LIB_OBJS += $(OUTPUT)util/ui/util.o
+-		LIB_H += util/ui/browser.h
+-		LIB_H += util/ui/browsers/map.h
+-		LIB_H += util/ui/helpline.h
+-		LIB_H += util/ui/keysyms.h
+-		LIB_H += util/ui/libslang.h
+-		LIB_H += util/ui/progress.h
+-		LIB_H += util/ui/util.h
+-		LIB_H += util/ui/ui.h
++		LIB_OBJS += $(OUTPUT)ui/setup.o
++		LIB_OBJS += $(OUTPUT)ui/browser.o
++		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
++		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
++		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
++		LIB_OBJS += $(OUTPUT)ui/helpline.o
++		LIB_OBJS += $(OUTPUT)ui/progress.o
++		LIB_OBJS += $(OUTPUT)ui/util.o
++		LIB_H += ui/browser.h
++		LIB_H += ui/browsers/map.h
++		LIB_H += ui/helpline.h
++		LIB_H += ui/keysyms.h
++		LIB_H += ui/libslang.h
++		LIB_H += ui/progress.h
++		LIB_H += ui/util.h
++		LIB_H += ui/ui.h
+ 	endif
+ endif
  
- 	if (strcmp(report.input_name, "-") != 0) {
- 		if (report.use_gtk)
--			perf_gtk_setup_browser(true);
-+			perf_gtk__setup_browser(true);
- 		else
- 			setup_browser(true);
- 	} else {
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 0112dcbd6e52..1a7c8bec407e 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -9,23 +9,23 @@
+@@ -775,16 +775,16 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
  
- #define MAX_COLUMNS			32
+-$(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
++$(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
--void perf_gtk_setup_browser(bool fallback_to_pager __used)
-+void perf_gtk__setup_browser(bool fallback_to_pager __used)
- {
- 	gtk_init(NULL, NULL);
- }
+-$(OUTPUT)util/ui/browsers/annotate.o: util/ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
++$(OUTPUT)ui/browsers/annotate.o: ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
--void perf_gtk_exit_browser(bool wait_for_ok __used)
-+void perf_gtk__exit_browser(bool wait_for_ok __used)
- {
- 	gtk_main_quit();
- }
+-$(OUTPUT)util/ui/browsers/hists.o: util/ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
++$(OUTPUT)ui/browsers/hists.o: ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
--static void perf_gtk_signal(int sig)
-+static void perf_gtk__signal(int sig)
- {
- 	psignal(sig, "perf");
- 	gtk_main_quit();
- }
+-$(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
++$(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
--static void perf_gtk_resize_window(GtkWidget *window)
-+static void perf_gtk__resize_window(GtkWidget *window)
- {
- 	GdkRectangle rect;
- 	GdkScreen *screen;
-@@ -45,7 +45,7 @@ static void perf_gtk_resize_window(GtkWidget *window)
- 	gtk_window_resize(GTK_WINDOW(window), width, height);
- }
- 
--static void perf_gtk_show_hists(GtkWidget *window, struct hists *hists)
-+static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- {
- 	GType col_types[MAX_COLUMNS];
- 	GtkCellRenderer *renderer;
-@@ -141,11 +141,11 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 	GtkWidget *notebook;
- 	GtkWidget *window;
- 
--	signal(SIGSEGV, perf_gtk_signal);
--	signal(SIGFPE,  perf_gtk_signal);
--	signal(SIGINT,  perf_gtk_signal);
--	signal(SIGQUIT, perf_gtk_signal);
--	signal(SIGTERM, perf_gtk_signal);
-+	signal(SIGSEGV, perf_gtk__signal);
-+	signal(SIGFPE,  perf_gtk__signal);
-+	signal(SIGINT,  perf_gtk__signal);
-+	signal(SIGQUIT, perf_gtk__signal);
-+	signal(SIGTERM, perf_gtk__signal);
- 
- 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
- 
-@@ -167,7 +167,7 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 							GTK_POLICY_AUTOMATIC,
- 							GTK_POLICY_AUTOMATIC);
- 
--		perf_gtk_show_hists(scrolled_window, hists);
-+		perf_gtk__show_hists(scrolled_window, hists);
- 
- 		tab_label = gtk_label_new(evname);
- 
-@@ -178,7 +178,7 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 
- 	gtk_widget_show_all(window);
- 
--	perf_gtk_resize_window(window);
-+	perf_gtk__resize_window(window);
- 
- 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
- 
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index d22ca689fb15..3428b777396d 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -46,15 +46,15 @@ void exit_browser(bool wait_for_ok);
- #endif
- 
- #ifdef NO_GTK2_SUPPORT
--static inline void perf_gtk_setup_browser(bool fallback_to_pager)
-+static inline void perf_gtk__setup_browser(bool fallback_to_pager)
- {
- 	if (fallback_to_pager)
- 		setup_pager();
- }
--static inline void perf_gtk_exit_browser(bool wait_for_ok __used) {}
-+static inline void perf_gtk__exit_browser(bool wait_for_ok __used) {}
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+new file mode 100644
+index 000000000000..7ccbbd3c8e53
+--- /dev/null
++++ b/tools/perf/ui/browser.c
+@@ -0,0 +1,597 @@
++#include "../util/util.h"
++#include "../util/cache.h"
++#include "../perf.h"
++#include "libslang.h"
++#include <newt.h>
++#include "ui.h"
++#include "util.h"
++#include <linux/compiler.h>
++#include <linux/list.h>
++#include <linux/rbtree.h>
++#include <stdlib.h>
++#include <sys/ttydefaults.h>
++#include "browser.h"
++#include "helpline.h"
++#include "keysyms.h"
++#include "../util/color.h"
++
++static int ui_browser__percent_color(struct ui_browser *browser,
++				     double percent, bool current)
++{
++	if (current && (!browser->use_navkeypressed || browser->navkeypressed))
++		return HE_COLORSET_SELECTED;
++	if (percent >= MIN_RED)
++		return HE_COLORSET_TOP;
++	if (percent >= MIN_GREEN)
++		return HE_COLORSET_MEDIUM;
++	return HE_COLORSET_NORMAL;
++}
++
++void ui_browser__set_color(struct ui_browser *self __used, int color)
++{
++	SLsmg_set_color(color);
++}
++
++void ui_browser__set_percent_color(struct ui_browser *self,
++				   double percent, bool current)
++{
++	 int color = ui_browser__percent_color(self, percent, current);
++	 ui_browser__set_color(self, color);
++}
++
++void ui_browser__gotorc(struct ui_browser *self, int y, int x)
++{
++	SLsmg_gotorc(self->y + y, self->x + x);
++}
++
++static struct list_head *
++ui_browser__list_head_filter_entries(struct ui_browser *browser,
++				     struct list_head *pos)
++{
++	do {
++		if (!browser->filter || !browser->filter(browser, pos))
++			return pos;
++		pos = pos->next;
++	} while (pos != browser->entries);
++
++	return NULL;
++}
++
++static struct list_head *
++ui_browser__list_head_filter_prev_entries(struct ui_browser *browser,
++					  struct list_head *pos)
++{
++	do {
++		if (!browser->filter || !browser->filter(browser, pos))
++			return pos;
++		pos = pos->prev;
++	} while (pos != browser->entries);
++
++	return NULL;
++}
++
++void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whence)
++{
++	struct list_head *head = self->entries;
++	struct list_head *pos;
++
++	if (self->nr_entries == 0)
++		return;
++
++	switch (whence) {
++	case SEEK_SET:
++		pos = ui_browser__list_head_filter_entries(self, head->next);
++		break;
++	case SEEK_CUR:
++		pos = self->top;
++		break;
++	case SEEK_END:
++		pos = ui_browser__list_head_filter_prev_entries(self, head->prev);
++		break;
++	default:
++		return;
++	}
++
++	assert(pos != NULL);
++
++	if (offset > 0) {
++		while (offset-- != 0)
++			pos = ui_browser__list_head_filter_entries(self, pos->next);
++	} else {
++		while (offset++ != 0)
++			pos = ui_browser__list_head_filter_prev_entries(self, pos->prev);
++	}
++
++	self->top = pos;
++}
++
++void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
++{
++	struct rb_root *root = self->entries;
++	struct rb_node *nd;
++
++	switch (whence) {
++	case SEEK_SET:
++		nd = rb_first(root);
++		break;
++	case SEEK_CUR:
++		nd = self->top;
++		break;
++	case SEEK_END:
++		nd = rb_last(root);
++		break;
++	default:
++		return;
++	}
++
++	if (offset > 0) {
++		while (offset-- != 0)
++			nd = rb_next(nd);
++	} else {
++		while (offset++ != 0)
++			nd = rb_prev(nd);
++	}
++
++	self->top = nd;
++}
++
++unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
++{
++	struct rb_node *nd;
++	int row = 0;
++
++	if (self->top == NULL)
++                self->top = rb_first(self->entries);
++
++	nd = self->top;
++
++	while (nd != NULL) {
++		ui_browser__gotorc(self, row, 0);
++		self->write(self, nd, row);
++		if (++row == self->height)
++			break;
++		nd = rb_next(nd);
++	}
++
++	return row;
++}
++
++bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row)
++{
++	return self->top_idx + row == self->index;
++}
++
++void ui_browser__refresh_dimensions(struct ui_browser *self)
++{
++	self->width = SLtt_Screen_Cols - 1;
++	self->height = SLtt_Screen_Rows - 2;
++	self->y = 1;
++	self->x = 0;
++}
++
++void ui_browser__handle_resize(struct ui_browser *browser)
++{
++	ui__refresh_dimensions(false);
++	ui_browser__show(browser, browser->title, ui_helpline__current);
++	ui_browser__refresh(browser);
++}
++
++int ui_browser__warning(struct ui_browser *browser, int timeout,
++			const char *format, ...)
++{
++	va_list args;
++	char *text;
++	int key = 0, err;
++
++	va_start(args, format);
++	err = vasprintf(&text, format, args);
++	va_end(args);
++
++	if (err < 0) {
++		va_start(args, format);
++		ui_helpline__vpush(format, args);
++		va_end(args);
++	} else {
++		while ((key == ui__question_window("Warning!", text,
++						   "Press any key...",
++						   timeout)) == K_RESIZE)
++			ui_browser__handle_resize(browser);
++		free(text);
++	}
++
++	return key;
++}
++
++int ui_browser__help_window(struct ui_browser *browser, const char *text)
++{
++	int key;
++
++	while ((key = ui__help_window(text)) == K_RESIZE)
++		ui_browser__handle_resize(browser);
++
++	return key;
++}
++
++bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text)
++{
++	int key;
++
++	while ((key = ui__dialog_yesno(text)) == K_RESIZE)
++		ui_browser__handle_resize(browser);
++
++	return key == K_ENTER || toupper(key) == 'Y';
++}
++
++void ui_browser__reset_index(struct ui_browser *self)
++{
++	self->index = self->top_idx = 0;
++	self->seek(self, 0, SEEK_SET);
++}
++
++void __ui_browser__show_title(struct ui_browser *browser, const char *title)
++{
++	SLsmg_gotorc(0, 0);
++	ui_browser__set_color(browser, NEWT_COLORSET_ROOT);
++	slsmg_write_nstring(title, browser->width + 1);
++}
++
++void ui_browser__show_title(struct ui_browser *browser, const char *title)
++{
++	pthread_mutex_lock(&ui__lock);
++	__ui_browser__show_title(browser, title);
++	pthread_mutex_unlock(&ui__lock);
++}
++
++int ui_browser__show(struct ui_browser *self, const char *title,
++		     const char *helpline, ...)
++{
++	int err;
++	va_list ap;
++
++	ui_browser__refresh_dimensions(self);
++
++	pthread_mutex_lock(&ui__lock);
++	__ui_browser__show_title(self, title);
++
++	self->title = title;
++	free(self->helpline);
++	self->helpline = NULL;
++
++	va_start(ap, helpline);
++	err = vasprintf(&self->helpline, helpline, ap);
++	va_end(ap);
++	if (err > 0)
++		ui_helpline__push(self->helpline);
++	pthread_mutex_unlock(&ui__lock);
++	return err ? 0 : -1;
++}
++
++void ui_browser__hide(struct ui_browser *browser __used)
++{
++	pthread_mutex_lock(&ui__lock);
++	ui_helpline__pop();
++	pthread_mutex_unlock(&ui__lock);
++}
++
++static void ui_browser__scrollbar_set(struct ui_browser *browser)
++{
++	int height = browser->height, h = 0, pct = 0,
++	    col = browser->width,
++	    row = browser->y - 1;
++
++	if (browser->nr_entries > 1) {
++		pct = ((browser->index * (browser->height - 1)) /
++		       (browser->nr_entries - 1));
++	}
++
++	SLsmg_set_char_set(1);
++
++	while (h < height) {
++	        ui_browser__gotorc(browser, row++, col);
++		SLsmg_write_char(h == pct ? SLSMG_DIAMOND_CHAR : SLSMG_CKBRD_CHAR);
++		++h;
++	}
++
++	SLsmg_set_char_set(0);
++}
++
++static int __ui_browser__refresh(struct ui_browser *browser)
++{
++	int row;
++	int width = browser->width;
++
++	row = browser->refresh(browser);
++	ui_browser__set_color(browser, HE_COLORSET_NORMAL);
++
++	if (!browser->use_navkeypressed || browser->navkeypressed)
++		ui_browser__scrollbar_set(browser);
++	else
++		width += 1;
++
++	SLsmg_fill_region(browser->y + row, browser->x,
++			  browser->height - row, width, ' ');
++
++	return 0;
++}
++
++int ui_browser__refresh(struct ui_browser *browser)
++{
++	pthread_mutex_lock(&ui__lock);
++	__ui_browser__refresh(browser);
++	pthread_mutex_unlock(&ui__lock);
++
++	return 0;
++}
++
++/*
++ * Here we're updating nr_entries _after_ we started browsing, i.e.  we have to
++ * forget about any reference to any entry in the underlying data structure,
++ * that is why we do a SEEK_SET. Think about 'perf top' in the hists browser
++ * after an output_resort and hist decay.
++ */
++void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries)
++{
++	off_t offset = nr_entries - browser->nr_entries;
++
++	browser->nr_entries = nr_entries;
++
++	if (offset < 0) {
++		if (browser->top_idx < (u64)-offset)
++			offset = -browser->top_idx;
++
++		browser->index += offset;
++		browser->top_idx += offset;
++	}
++
++	browser->top = NULL;
++	browser->seek(browser, browser->top_idx, SEEK_SET);
++}
++
++int ui_browser__run(struct ui_browser *self, int delay_secs)
++{
++	int err, key;
++
++	while (1) {
++		off_t offset;
++
++		pthread_mutex_lock(&ui__lock);
++		err = __ui_browser__refresh(self);
++		SLsmg_refresh();
++		pthread_mutex_unlock(&ui__lock);
++		if (err < 0)
++			break;
++
++		key = ui__getch(delay_secs);
++
++		if (key == K_RESIZE) {
++			ui__refresh_dimensions(false);
++			ui_browser__refresh_dimensions(self);
++			__ui_browser__show_title(self, self->title);
++			ui_helpline__puts(self->helpline);
++			continue;
++		}
++
++		if (self->use_navkeypressed && !self->navkeypressed) {
++			if (key == K_DOWN || key == K_UP ||
++			    key == K_PGDN || key == K_PGUP ||
++			    key == K_HOME || key == K_END ||
++			    key == ' ') {
++				self->navkeypressed = true;
++				continue;
++			} else
++				return key;
++		}
++
++		switch (key) {
++		case K_DOWN:
++			if (self->index == self->nr_entries - 1)
++				break;
++			++self->index;
++			if (self->index == self->top_idx + self->height) {
++				++self->top_idx;
++				self->seek(self, +1, SEEK_CUR);
++			}
++			break;
++		case K_UP:
++			if (self->index == 0)
++				break;
++			--self->index;
++			if (self->index < self->top_idx) {
++				--self->top_idx;
++				self->seek(self, -1, SEEK_CUR);
++			}
++			break;
++		case K_PGDN:
++		case ' ':
++			if (self->top_idx + self->height > self->nr_entries - 1)
++				break;
++
++			offset = self->height;
++			if (self->index + offset > self->nr_entries - 1)
++				offset = self->nr_entries - 1 - self->index;
++			self->index += offset;
++			self->top_idx += offset;
++			self->seek(self, +offset, SEEK_CUR);
++			break;
++		case K_PGUP:
++			if (self->top_idx == 0)
++				break;
++
++			if (self->top_idx < self->height)
++				offset = self->top_idx;
++			else
++				offset = self->height;
++
++			self->index -= offset;
++			self->top_idx -= offset;
++			self->seek(self, -offset, SEEK_CUR);
++			break;
++		case K_HOME:
++			ui_browser__reset_index(self);
++			break;
++		case K_END:
++			offset = self->height - 1;
++			if (offset >= self->nr_entries)
++				offset = self->nr_entries - 1;
++
++			self->index = self->nr_entries - 1;
++			self->top_idx = self->index - offset;
++			self->seek(self, -offset, SEEK_END);
++			break;
++		default:
++			return key;
++		}
++	}
++	return -1;
++}
++
++unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
++{
++	struct list_head *pos;
++	struct list_head *head = self->entries;
++	int row = 0;
++
++	if (self->top == NULL || self->top == self->entries)
++                self->top = ui_browser__list_head_filter_entries(self, head->next);
++
++	pos = self->top;
++
++	list_for_each_from(pos, head) {
++		if (!self->filter || !self->filter(self, pos)) {
++			ui_browser__gotorc(self, row, 0);
++			self->write(self, pos, row);
++			if (++row == self->height)
++				break;
++		}
++	}
++
++	return row;
++}
++
++static struct ui_browser__colorset {
++	const char *name, *fg, *bg;
++	int colorset;
++} ui_browser__colorsets[] = {
++	{
++		.colorset = HE_COLORSET_TOP,
++		.name	  = "top",
++		.fg	  = "red",
++		.bg	  = "default",
++	},
++	{
++		.colorset = HE_COLORSET_MEDIUM,
++		.name	  = "medium",
++		.fg	  = "green",
++		.bg	  = "default",
++	},
++	{
++		.colorset = HE_COLORSET_NORMAL,
++		.name	  = "normal",
++		.fg	  = "default",
++		.bg	  = "default",
++	},
++	{
++		.colorset = HE_COLORSET_SELECTED,
++		.name	  = "selected",
++		.fg	  = "black",
++		.bg	  = "lightgray",
++	},
++	{
++		.colorset = HE_COLORSET_CODE,
++		.name	  = "code",
++		.fg	  = "blue",
++		.bg	  = "default",
++	},
++	{
++		.name = NULL,
++	}
++};
++
++
++static int ui_browser__color_config(const char *var, const char *value,
++				    void *data __used)
++{
++	char *fg = NULL, *bg;
++	int i;
++
++	/* same dir for all commands */
++	if (prefixcmp(var, "colors.") != 0)
++		return 0;
++
++	for (i = 0; ui_browser__colorsets[i].name != NULL; ++i) {
++		const char *name = var + 7;
++
++		if (strcmp(ui_browser__colorsets[i].name, name) != 0)
++			continue;
++
++		fg = strdup(value);
++		if (fg == NULL)
++			break;
++
++		bg = strchr(fg, ',');
++		if (bg == NULL)
++			break;
++
++		*bg = '\0';
++		while (isspace(*++bg));
++		ui_browser__colorsets[i].bg = bg;
++		ui_browser__colorsets[i].fg = fg;
++		return 0;
++	}
++
++	free(fg);
++	return -1;
++}
++
++void ui_browser__argv_seek(struct ui_browser *browser, off_t offset, int whence)
++{
++	switch (whence) {
++	case SEEK_SET:
++		browser->top = browser->entries;
++		break;
++	case SEEK_CUR:
++		browser->top = browser->top + browser->top_idx + offset;
++		break;
++	case SEEK_END:
++		browser->top = browser->top + browser->nr_entries + offset;
++		break;
++	default:
++		return;
++	}
++}
++
++unsigned int ui_browser__argv_refresh(struct ui_browser *browser)
++{
++	unsigned int row = 0, idx = browser->top_idx;
++	char **pos;
++
++	if (browser->top == NULL)
++		browser->top = browser->entries;
++
++	pos = (char **)browser->top;
++	while (idx < browser->nr_entries) {
++		if (!browser->filter || !browser->filter(browser, *pos)) {
++			ui_browser__gotorc(browser, row, 0);
++			browser->write(browser, pos, row);
++			if (++row == browser->height)
++				break;
++		}
++
++		++idx;
++		++pos;
++	}
++
++	return row;
++}
++
++void ui_browser__init(void)
++{
++	int i = 0;
++
++	perf_config(ui_browser__color_config, NULL);
++
++	while (ui_browser__colorsets[i].name) {
++		struct ui_browser__colorset *c = &ui_browser__colorsets[i++];
++		sltt_set_color(c->colorset, c->name, c->fg, c->bg);
++	}
++}
+diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
+new file mode 100644
+index 000000000000..dc4db88b077a
+--- /dev/null
++++ b/tools/perf/ui/browser.h
+@@ -0,0 +1,65 @@
++#ifndef _PERF_UI_BROWSER_H_
++#define _PERF_UI_BROWSER_H_ 1
++
++#include <stdbool.h>
++#include <sys/types.h>
++#include "../util/types.h"
++
++#define HE_COLORSET_TOP		50
++#define HE_COLORSET_MEDIUM	51
++#define HE_COLORSET_NORMAL	52
++#define HE_COLORSET_SELECTED	53
++#define HE_COLORSET_CODE	54
++
++struct ui_browser {
++	u64	      index, top_idx;
++	void	      *top, *entries;
++	u16	      y, x, width, height;
++	void	      *priv;
++	const char    *title;
++	char	      *helpline;
++	unsigned int  (*refresh)(struct ui_browser *self);
++	void	      (*write)(struct ui_browser *self, void *entry, int row);
++	void	      (*seek)(struct ui_browser *self, off_t offset, int whence);
++	bool	      (*filter)(struct ui_browser *self, void *entry);
++	u32	      nr_entries;
++	bool	      navkeypressed;
++	bool	      use_navkeypressed;
++};
++
++void ui_browser__set_color(struct ui_browser *self, int color);
++void ui_browser__set_percent_color(struct ui_browser *self,
++				   double percent, bool current);
++bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row);
++void ui_browser__refresh_dimensions(struct ui_browser *self);
++void ui_browser__reset_index(struct ui_browser *self);
++
++void ui_browser__gotorc(struct ui_browser *self, int y, int x);
++void __ui_browser__show_title(struct ui_browser *browser, const char *title);
++void ui_browser__show_title(struct ui_browser *browser, const char *title);
++int ui_browser__show(struct ui_browser *self, const char *title,
++		     const char *helpline, ...);
++void ui_browser__hide(struct ui_browser *self);
++int ui_browser__refresh(struct ui_browser *self);
++int ui_browser__run(struct ui_browser *browser, int delay_secs);
++void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries);
++void ui_browser__handle_resize(struct ui_browser *browser);
++
++int ui_browser__warning(struct ui_browser *browser, int timeout,
++			const char *format, ...);
++int ui_browser__help_window(struct ui_browser *browser, const char *text);
++bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text);
++int ui_browser__input_window(const char *title, const char *text, char *input,
++			     const char *exit_msg, int delay_sec);
++
++void ui_browser__argv_seek(struct ui_browser *browser, off_t offset, int whence);
++unsigned int ui_browser__argv_refresh(struct ui_browser *browser);
++
++void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence);
++unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self);
++
++void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whence);
++unsigned int ui_browser__list_head_refresh(struct ui_browser *self);
++
++void ui_browser__init(void);
++#endif /* _PERF_UI_BROWSER_H_ */
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+new file mode 100644
+index 000000000000..27df31a0355f
+--- /dev/null
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -0,0 +1,433 @@
++#include "../../util/util.h"
++#include "../browser.h"
++#include "../helpline.h"
++#include "../libslang.h"
++#include "../ui.h"
++#include "../util.h"
++#include "../../util/annotate.h"
++#include "../../util/hist.h"
++#include "../../util/sort.h"
++#include "../../util/symbol.h"
++#include <pthread.h>
++#include <newt.h>
++
++struct annotate_browser {
++	struct ui_browser b;
++	struct rb_root	  entries;
++	struct rb_node	  *curr_hot;
++	struct objdump_line *selection;
++	int		    nr_asm_entries;
++	int		    nr_entries;
++	bool		    hide_src_code;
++};
++
++struct objdump_line_rb_node {
++	struct rb_node	rb_node;
++	double		percent;
++	u32		idx;
++	int		idx_asm;
++};
++
++static inline
++struct objdump_line_rb_node *objdump_line__rb(struct objdump_line *self)
++{
++	return (struct objdump_line_rb_node *)(self + 1);
++}
++
++static bool objdump_line__filter(struct ui_browser *browser, void *entry)
++{
++	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
++
++	if (ab->hide_src_code) {
++		struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
++		return ol->offset == -1;
++	}
++
++	return false;
++}
++
++static void annotate_browser__write(struct ui_browser *self, void *entry, int row)
++{
++	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
++	struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
++	bool current_entry = ui_browser__is_current_entry(self, row);
++	int width = self->width;
++
++	if (ol->offset != -1) {
++		struct objdump_line_rb_node *olrb = objdump_line__rb(ol);
++		ui_browser__set_percent_color(self, olrb->percent, current_entry);
++		slsmg_printf(" %7.2f ", olrb->percent);
++	} else {
++		ui_browser__set_percent_color(self, 0, current_entry);
++		slsmg_write_nstring(" ", 9);
++	}
++
++	SLsmg_write_char(':');
++	slsmg_write_nstring(" ", 8);
++
++	/* The scroll bar isn't being used */
++	if (!self->navkeypressed)
++		width += 1;
++
++	if (!ab->hide_src_code && ol->offset != -1)
++		if (!current_entry || (self->use_navkeypressed &&
++				       !self->navkeypressed))
++			ui_browser__set_color(self, HE_COLORSET_CODE);
++
++	if (!*ol->line)
++		slsmg_write_nstring(" ", width - 18);
++	else
++		slsmg_write_nstring(ol->line, width - 18);
++
++	if (current_entry)
++		ab->selection = ol;
++}
++
++static double objdump_line__calc_percent(struct objdump_line *self,
++					 struct symbol *sym, int evidx)
++{
++	double percent = 0.0;
++
++	if (self->offset != -1) {
++		int len = sym->end - sym->start;
++		unsigned int hits = 0;
++		struct annotation *notes = symbol__annotation(sym);
++		struct source_line *src_line = notes->src->lines;
++		struct sym_hist *h = annotation__histogram(notes, evidx);
++		s64 offset = self->offset;
++		struct objdump_line *next;
++
++		next = objdump__get_next_ip_line(&notes->src->source, self);
++		while (offset < (s64)len &&
++		       (next == NULL || offset < next->offset)) {
++			if (src_line) {
++				percent += src_line[offset].percent;
++			} else
++				hits += h->addr[offset];
++
++			++offset;
++		}
++		/*
++ 		 * If the percentage wasn't already calculated in
++ 		 * symbol__get_source_line, do it now:
++ 		 */
++		if (src_line == NULL && h->sum)
++			percent = 100.0 * hits / h->sum;
++	}
++
++	return percent;
++}
++
++static void objdump__insert_line(struct rb_root *self,
++				 struct objdump_line_rb_node *line)
++{
++	struct rb_node **p = &self->rb_node;
++	struct rb_node *parent = NULL;
++	struct objdump_line_rb_node *l;
++
++	while (*p != NULL) {
++		parent = *p;
++		l = rb_entry(parent, struct objdump_line_rb_node, rb_node);
++		if (line->percent < l->percent)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&line->rb_node, parent, p);
++	rb_insert_color(&line->rb_node, self);
++}
++
++static void annotate_browser__set_top(struct annotate_browser *self,
++				      struct rb_node *nd)
++{
++	struct objdump_line_rb_node *rbpos;
++	struct objdump_line *pos;
++	unsigned back;
++
++	ui_browser__refresh_dimensions(&self->b);
++	back = self->b.height / 2;
++	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
++	pos = ((struct objdump_line *)rbpos) - 1;
++	self->b.top_idx = self->b.index = rbpos->idx;
++
++	while (self->b.top_idx != 0 && back != 0) {
++		pos = list_entry(pos->node.prev, struct objdump_line, node);
++
++		--self->b.top_idx;
++		--back;
++	}
++
++	self->b.top = pos;
++	self->curr_hot = nd;
++}
++
++static void annotate_browser__calc_percent(struct annotate_browser *browser,
++					   int evidx)
++{
++	struct map_symbol *ms = browser->b.priv;
++	struct symbol *sym = ms->sym;
++	struct annotation *notes = symbol__annotation(sym);
++	struct objdump_line *pos;
++
++	browser->entries = RB_ROOT;
++
++	pthread_mutex_lock(&notes->lock);
++
++	list_for_each_entry(pos, &notes->src->source, node) {
++		struct objdump_line_rb_node *rbpos = objdump_line__rb(pos);
++		rbpos->percent = objdump_line__calc_percent(pos, sym, evidx);
++		if (rbpos->percent < 0.01) {
++			RB_CLEAR_NODE(&rbpos->rb_node);
++			continue;
++		}
++		objdump__insert_line(&browser->entries, rbpos);
++	}
++	pthread_mutex_unlock(&notes->lock);
++
++	browser->curr_hot = rb_last(&browser->entries);
++}
++
++static bool annotate_browser__toggle_source(struct annotate_browser *browser)
++{
++	struct objdump_line *ol;
++	struct objdump_line_rb_node *olrb;
++	off_t offset = browser->b.index - browser->b.top_idx;
++
++	browser->b.seek(&browser->b, offset, SEEK_CUR);
++	ol = list_entry(browser->b.top, struct objdump_line, node);
++	olrb = objdump_line__rb(ol);
++
++	if (browser->hide_src_code) {
++		if (olrb->idx_asm < offset)
++			offset = olrb->idx;
++
++		browser->b.nr_entries = browser->nr_entries;
++		browser->hide_src_code = false;
++		browser->b.seek(&browser->b, -offset, SEEK_CUR);
++		browser->b.top_idx = olrb->idx - offset;
++		browser->b.index = olrb->idx;
++	} else {
++		if (olrb->idx_asm < 0) {
++			ui_helpline__puts("Only available for assembly lines.");
++			browser->b.seek(&browser->b, -offset, SEEK_CUR);
++			return false;
++		}
++
++		if (olrb->idx_asm < offset)
++			offset = olrb->idx_asm;
++
++		browser->b.nr_entries = browser->nr_asm_entries;
++		browser->hide_src_code = true;
++		browser->b.seek(&browser->b, -offset, SEEK_CUR);
++		browser->b.top_idx = olrb->idx_asm - offset;
++		browser->b.index = olrb->idx_asm;
++	}
++
++	return true;
++}
++
++static int annotate_browser__run(struct annotate_browser *self, int evidx,
++				 void(*timer)(void *arg),
++				 void *arg, int delay_secs)
++{
++	struct rb_node *nd = NULL;
++	struct map_symbol *ms = self->b.priv;
++	struct symbol *sym = ms->sym;
++	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
++			   "H: Go to hottest line, ->/ENTER: Line action, "
++			   "S: Toggle source code view";
++	int key;
++
++	if (ui_browser__show(&self->b, sym->name, help) < 0)
++		return -1;
++
++	annotate_browser__calc_percent(self, evidx);
++
++	if (self->curr_hot)
++		annotate_browser__set_top(self, self->curr_hot);
++
++	nd = self->curr_hot;
++
++	while (1) {
++		key = ui_browser__run(&self->b, delay_secs);
++
++		if (delay_secs != 0) {
++			annotate_browser__calc_percent(self, evidx);
++			/*
++			 * Current line focus got out of the list of most active
++			 * lines, NULL it so that if TAB|UNTAB is pressed, we
++			 * move to curr_hot (current hottest line).
++			 */
++			if (nd != NULL && RB_EMPTY_NODE(nd))
++				nd = NULL;
++		}
++
++		switch (key) {
++		case K_TIMER:
++			if (timer != NULL)
++				timer(arg);
++
++			if (delay_secs != 0)
++				symbol__annotate_decay_histogram(sym, evidx);
++			continue;
++		case K_TAB:
++			if (nd != NULL) {
++				nd = rb_prev(nd);
++				if (nd == NULL)
++					nd = rb_last(&self->entries);
++			} else
++				nd = self->curr_hot;
++			break;
++		case K_UNTAB:
++			if (nd != NULL)
++				nd = rb_next(nd);
++				if (nd == NULL)
++					nd = rb_first(&self->entries);
++			else
++				nd = self->curr_hot;
++			break;
++		case 'H':
++		case 'h':
++			nd = self->curr_hot;
++			break;
++		case 'S':
++		case 's':
++			if (annotate_browser__toggle_source(self))
++				ui_helpline__puts(help);
++			continue;
++		case K_ENTER:
++		case K_RIGHT:
++			if (self->selection == NULL) {
++				ui_helpline__puts("Huh? No selection. Report to linux-kernel@vger.kernel.org");
++				continue;
++			}
++
++			if (self->selection->offset == -1) {
++				ui_helpline__puts("Actions are only available for assembly lines.");
++				continue;
++			} else {
++				char *s = strstr(self->selection->line, "callq ");
++				struct annotation *notes;
++				struct symbol *target;
++				u64 ip;
++
++				if (s == NULL) {
++					ui_helpline__puts("Actions are only available for the 'callq' instruction.");
++					continue;
++				}
++
++				s = strchr(s, ' ');
++				if (s++ == NULL) {
++					ui_helpline__puts("Invallid callq instruction.");
++					continue;
++				}
++
++				ip = strtoull(s, NULL, 16);
++				ip = ms->map->map_ip(ms->map, ip);
++				target = map__find_symbol(ms->map, ip, NULL);
++				if (target == NULL) {
++					ui_helpline__puts("The called function was not found.");
++					continue;
++				}
++
++				notes = symbol__annotation(target);
++				pthread_mutex_lock(&notes->lock);
++
++				if (notes->src == NULL && symbol__alloc_hist(target) < 0) {
++					pthread_mutex_unlock(&notes->lock);
++					ui__warning("Not enough memory for annotating '%s' symbol!\n",
++						    target->name);
++					continue;
++				}
++
++				pthread_mutex_unlock(&notes->lock);
++				symbol__tui_annotate(target, ms->map, evidx,
++						     timer, arg, delay_secs);
++				ui_browser__show_title(&self->b, sym->name);
++			}
++			continue;
++		case K_LEFT:
++		case K_ESC:
++		case 'q':
++		case CTRL('c'):
++			goto out;
++		default:
++			continue;
++		}
++
++		if (nd != NULL)
++			annotate_browser__set_top(self, nd);
++	}
++out:
++	ui_browser__hide(&self->b);
++	return key;
++}
++
++int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
++			     void(*timer)(void *arg), void *arg, int delay_secs)
++{
++	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx,
++				    timer, arg, delay_secs);
++}
++
++int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
++			 void(*timer)(void *arg), void *arg,
++			 int delay_secs)
++{
++	struct objdump_line *pos, *n;
++	struct annotation *notes;
++	struct map_symbol ms = {
++		.map = map,
++		.sym = sym,
++	};
++	struct annotate_browser browser = {
++		.b = {
++			.refresh = ui_browser__list_head_refresh,
++			.seek	 = ui_browser__list_head_seek,
++			.write	 = annotate_browser__write,
++			.filter  = objdump_line__filter,
++			.priv	 = &ms,
++			.use_navkeypressed = true,
++		},
++	};
++	int ret;
++
++	if (sym == NULL)
++		return -1;
++
++	if (map->dso->annotate_warned)
++		return -1;
++
++	if (symbol__annotate(sym, map, sizeof(struct objdump_line_rb_node)) < 0) {
++		ui__error("%s", ui_helpline__last_msg);
++		return -1;
++	}
++
++	ui_helpline__push("Press <- or ESC to exit");
++
++	notes = symbol__annotation(sym);
++
++	list_for_each_entry(pos, &notes->src->source, node) {
++		struct objdump_line_rb_node *rbpos;
++		size_t line_len = strlen(pos->line);
++
++		if (browser.b.width < line_len)
++			browser.b.width = line_len;
++		rbpos = objdump_line__rb(pos);
++		rbpos->idx = browser.nr_entries++;
++		if (pos->offset != -1)
++			rbpos->idx_asm = browser.nr_asm_entries++;
++		else
++			rbpos->idx_asm = -1;
++	}
++
++	browser.b.nr_entries = browser.nr_entries;
++	browser.b.entries = &notes->src->source,
++	browser.b.width += 18; /* Percentage */
++	ret = annotate_browser__run(&browser, evidx, timer, arg, delay_secs);
++	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
++		list_del(&pos->node);
++		objdump_line__free(pos);
++	}
++	return ret;
++}
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+new file mode 100644
+index 000000000000..16b04bd5d2b0
+--- /dev/null
++++ b/tools/perf/ui/browsers/hists.c
+@@ -0,0 +1,1338 @@
++#include <stdio.h>
++#include "../libslang.h"
++#include <stdlib.h>
++#include <string.h>
++#include <newt.h>
++#include <linux/rbtree.h>
++
++#include "../../util/evsel.h"
++#include "../../util/evlist.h"
++#include "../../util/hist.h"
++#include "../../util/pstack.h"
++#include "../../util/sort.h"
++#include "../../util/util.h"
++
++#include "../browser.h"
++#include "../helpline.h"
++#include "../util.h"
++#include "../ui.h"
++#include "map.h"
++
++struct hist_browser {
++	struct ui_browser   b;
++	struct hists	    *hists;
++	struct hist_entry   *he_selection;
++	struct map_symbol   *selection;
++	bool		     has_symbols;
++};
++
++static int hists__browser_title(struct hists *self, char *bf, size_t size,
++				const char *ev_name);
++
++static void hist_browser__refresh_dimensions(struct hist_browser *self)
++{
++	/* 3 == +/- toggle symbol before actual hist_entry rendering */
++	self->b.width = 3 + (hists__sort_list_width(self->hists) +
++			     sizeof("[k]"));
++}
++
++static void hist_browser__reset(struct hist_browser *self)
++{
++	self->b.nr_entries = self->hists->nr_entries;
++	hist_browser__refresh_dimensions(self);
++	ui_browser__reset_index(&self->b);
++}
++
++static char tree__folded_sign(bool unfolded)
++{
++	return unfolded ? '-' : '+';
++}
++
++static char map_symbol__folded(const struct map_symbol *self)
++{
++	return self->has_children ? tree__folded_sign(self->unfolded) : ' ';
++}
++
++static char hist_entry__folded(const struct hist_entry *self)
++{
++	return map_symbol__folded(&self->ms);
++}
++
++static char callchain_list__folded(const struct callchain_list *self)
++{
++	return map_symbol__folded(&self->ms);
++}
++
++static void map_symbol__set_folding(struct map_symbol *self, bool unfold)
++{
++	self->unfolded = unfold ? self->has_children : false;
++}
++
++static int callchain_node__count_rows_rb_tree(struct callchain_node *self)
++{
++	int n = 0;
++	struct rb_node *nd;
++
++	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
++		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
++		struct callchain_list *chain;
++		char folded_sign = ' '; /* No children */
++
++		list_for_each_entry(chain, &child->val, list) {
++			++n;
++			/* We need this because we may not have children */
++			folded_sign = callchain_list__folded(chain);
++			if (folded_sign == '+')
++				break;
++		}
++
++		if (folded_sign == '-') /* Have children and they're unfolded */
++			n += callchain_node__count_rows_rb_tree(child);
++	}
++
++	return n;
++}
++
++static int callchain_node__count_rows(struct callchain_node *node)
++{
++	struct callchain_list *chain;
++	bool unfolded = false;
++	int n = 0;
++
++	list_for_each_entry(chain, &node->val, list) {
++		++n;
++		unfolded = chain->ms.unfolded;
++	}
++
++	if (unfolded)
++		n += callchain_node__count_rows_rb_tree(node);
++
++	return n;
++}
++
++static int callchain__count_rows(struct rb_root *chain)
++{
++	struct rb_node *nd;
++	int n = 0;
++
++	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
++		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
++		n += callchain_node__count_rows(node);
++	}
++
++	return n;
++}
++
++static bool map_symbol__toggle_fold(struct map_symbol *self)
++{
++	if (!self->has_children)
++		return false;
++
++	self->unfolded = !self->unfolded;
++	return true;
++}
++
++static void callchain_node__init_have_children_rb_tree(struct callchain_node *self)
++{
++	struct rb_node *nd = rb_first(&self->rb_root);
++
++	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
++		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
++		struct callchain_list *chain;
++		bool first = true;
++
++		list_for_each_entry(chain, &child->val, list) {
++			if (first) {
++				first = false;
++				chain->ms.has_children = chain->list.next != &child->val ||
++							 !RB_EMPTY_ROOT(&child->rb_root);
++			} else
++				chain->ms.has_children = chain->list.next == &child->val &&
++							 !RB_EMPTY_ROOT(&child->rb_root);
++		}
++
++		callchain_node__init_have_children_rb_tree(child);
++	}
++}
++
++static void callchain_node__init_have_children(struct callchain_node *self)
++{
++	struct callchain_list *chain;
++
++	list_for_each_entry(chain, &self->val, list)
++		chain->ms.has_children = !RB_EMPTY_ROOT(&self->rb_root);
++
++	callchain_node__init_have_children_rb_tree(self);
++}
++
++static void callchain__init_have_children(struct rb_root *self)
++{
++	struct rb_node *nd;
++
++	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
++		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
++		callchain_node__init_have_children(node);
++	}
++}
++
++static void hist_entry__init_have_children(struct hist_entry *self)
++{
++	if (!self->init_have_children) {
++		self->ms.has_children = !RB_EMPTY_ROOT(&self->sorted_chain);
++		callchain__init_have_children(&self->sorted_chain);
++		self->init_have_children = true;
++	}
++}
++
++static bool hist_browser__toggle_fold(struct hist_browser *self)
++{
++	if (map_symbol__toggle_fold(self->selection)) {
++		struct hist_entry *he = self->he_selection;
++
++		hist_entry__init_have_children(he);
++		self->hists->nr_entries -= he->nr_rows;
++
++		if (he->ms.unfolded)
++			he->nr_rows = callchain__count_rows(&he->sorted_chain);
++		else
++			he->nr_rows = 0;
++		self->hists->nr_entries += he->nr_rows;
++		self->b.nr_entries = self->hists->nr_entries;
++
++		return true;
++	}
++
++	/* If it doesn't have children, no toggling performed */
++	return false;
++}
++
++static int callchain_node__set_folding_rb_tree(struct callchain_node *self, bool unfold)
++{
++	int n = 0;
++	struct rb_node *nd;
++
++	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
++		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
++		struct callchain_list *chain;
++		bool has_children = false;
++
++		list_for_each_entry(chain, &child->val, list) {
++			++n;
++			map_symbol__set_folding(&chain->ms, unfold);
++			has_children = chain->ms.has_children;
++		}
++
++		if (has_children)
++			n += callchain_node__set_folding_rb_tree(child, unfold);
++	}
++
++	return n;
++}
++
++static int callchain_node__set_folding(struct callchain_node *node, bool unfold)
++{
++	struct callchain_list *chain;
++	bool has_children = false;
++	int n = 0;
++
++	list_for_each_entry(chain, &node->val, list) {
++		++n;
++		map_symbol__set_folding(&chain->ms, unfold);
++		has_children = chain->ms.has_children;
++	}
++
++	if (has_children)
++		n += callchain_node__set_folding_rb_tree(node, unfold);
++
++	return n;
++}
++
++static int callchain__set_folding(struct rb_root *chain, bool unfold)
++{
++	struct rb_node *nd;
++	int n = 0;
++
++	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
++		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
++		n += callchain_node__set_folding(node, unfold);
++	}
++
++	return n;
++}
++
++static void hist_entry__set_folding(struct hist_entry *self, bool unfold)
++{
++	hist_entry__init_have_children(self);
++	map_symbol__set_folding(&self->ms, unfold);
++
++	if (self->ms.has_children) {
++		int n = callchain__set_folding(&self->sorted_chain, unfold);
++		self->nr_rows = unfold ? n : 0;
++	} else
++		self->nr_rows = 0;
++}
++
++static void hists__set_folding(struct hists *self, bool unfold)
++{
++	struct rb_node *nd;
++
++	self->nr_entries = 0;
++
++	for (nd = rb_first(&self->entries); nd; nd = rb_next(nd)) {
++		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
++		hist_entry__set_folding(he, unfold);
++		self->nr_entries += 1 + he->nr_rows;
++	}
++}
++
++static void hist_browser__set_folding(struct hist_browser *self, bool unfold)
++{
++	hists__set_folding(self->hists, unfold);
++	self->b.nr_entries = self->hists->nr_entries;
++	/* Go to the start, we may be way after valid entries after a collapse */
++	ui_browser__reset_index(&self->b);
++}
++
++static void ui_browser__warn_lost_events(struct ui_browser *browser)
++{
++	ui_browser__warning(browser, 4,
++		"Events are being lost, check IO/CPU overload!\n\n"
++		"You may want to run 'perf' using a RT scheduler policy:\n\n"
++		" perf top -r 80\n\n"
++		"Or reduce the sampling frequency.");
++}
++
++static int hist_browser__run(struct hist_browser *self, const char *ev_name,
++			     void(*timer)(void *arg), void *arg, int delay_secs)
++{
++	int key;
++	char title[160];
++
++	self->b.entries = &self->hists->entries;
++	self->b.nr_entries = self->hists->nr_entries;
++
++	hist_browser__refresh_dimensions(self);
++	hists__browser_title(self->hists, title, sizeof(title), ev_name);
++
++	if (ui_browser__show(&self->b, title,
++			     "Press '?' for help on key bindings") < 0)
++		return -1;
++
++	while (1) {
++		key = ui_browser__run(&self->b, delay_secs);
++
++		switch (key) {
++		case K_TIMER:
++			timer(arg);
++			ui_browser__update_nr_entries(&self->b, self->hists->nr_entries);
++
++			if (self->hists->stats.nr_lost_warned !=
++			    self->hists->stats.nr_events[PERF_RECORD_LOST]) {
++				self->hists->stats.nr_lost_warned =
++					self->hists->stats.nr_events[PERF_RECORD_LOST];
++				ui_browser__warn_lost_events(&self->b);
++			}
++
++			hists__browser_title(self->hists, title, sizeof(title), ev_name);
++			ui_browser__show_title(&self->b, title);
++			continue;
++		case 'D': { /* Debug */
++			static int seq;
++			struct hist_entry *h = rb_entry(self->b.top,
++							struct hist_entry, rb_node);
++			ui_helpline__pop();
++			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
++					   seq++, self->b.nr_entries,
++					   self->hists->nr_entries,
++					   self->b.height,
++					   self->b.index,
++					   self->b.top_idx,
++					   h->row_offset, h->nr_rows);
++		}
++			break;
++		case 'C':
++			/* Collapse the whole world. */
++			hist_browser__set_folding(self, false);
++			break;
++		case 'E':
++			/* Expand the whole world. */
++			hist_browser__set_folding(self, true);
++			break;
++		case K_ENTER:
++			if (hist_browser__toggle_fold(self))
++				break;
++			/* fall thru */
++		default:
++			goto out;
++		}
++	}
++out:
++	ui_browser__hide(&self->b);
++	return key;
++}
++
++static char *callchain_list__sym_name(struct callchain_list *self,
++				      char *bf, size_t bfsize)
++{
++	if (self->ms.sym)
++		return self->ms.sym->name;
++
++	snprintf(bf, bfsize, "%#" PRIx64, self->ip);
++	return bf;
++}
++
++#define LEVEL_OFFSET_STEP 3
++
++static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
++						     struct callchain_node *chain_node,
++						     u64 total, int level,
++						     unsigned short row,
++						     off_t *row_offset,
++						     bool *is_current_entry)
++{
++	struct rb_node *node;
++	int first_row = row, width, offset = level * LEVEL_OFFSET_STEP;
++	u64 new_total, remaining;
++
++	if (callchain_param.mode == CHAIN_GRAPH_REL)
++		new_total = chain_node->children_hit;
++	else
++		new_total = total;
++
++	remaining = new_total;
++	node = rb_first(&chain_node->rb_root);
++	while (node) {
++		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
++		struct rb_node *next = rb_next(node);
++		u64 cumul = callchain_cumul_hits(child);
++		struct callchain_list *chain;
++		char folded_sign = ' ';
++		int first = true;
++		int extra_offset = 0;
++
++		remaining -= cumul;
++
++		list_for_each_entry(chain, &child->val, list) {
++			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
++			const char *str;
++			int color;
++			bool was_first = first;
++
++			if (first)
++				first = false;
++			else
++				extra_offset = LEVEL_OFFSET_STEP;
++
++			folded_sign = callchain_list__folded(chain);
++			if (*row_offset != 0) {
++				--*row_offset;
++				goto do_next;
++			}
++
++			alloc_str = NULL;
++			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
++			if (was_first) {
++				double percent = cumul * 100.0 / new_total;
++
++				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
++					str = "Not enough memory!";
++				else
++					str = alloc_str;
++			}
++
++			color = HE_COLORSET_NORMAL;
++			width = self->b.width - (offset + extra_offset + 2);
++			if (ui_browser__is_current_entry(&self->b, row)) {
++				self->selection = &chain->ms;
++				color = HE_COLORSET_SELECTED;
++				*is_current_entry = true;
++			}
++
++			ui_browser__set_color(&self->b, color);
++			ui_browser__gotorc(&self->b, row, 0);
++			slsmg_write_nstring(" ", offset + extra_offset);
++			slsmg_printf("%c ", folded_sign);
++			slsmg_write_nstring(str, width);
++			free(alloc_str);
++
++			if (++row == self->b.height)
++				goto out;
++do_next:
++			if (folded_sign == '+')
++				break;
++		}
++
++		if (folded_sign == '-') {
++			const int new_level = level + (extra_offset ? 2 : 1);
++			row += hist_browser__show_callchain_node_rb_tree(self, child, new_total,
++									 new_level, row, row_offset,
++									 is_current_entry);
++		}
++		if (row == self->b.height)
++			goto out;
++		node = next;
++	}
++out:
++	return row - first_row;
++}
++
++static int hist_browser__show_callchain_node(struct hist_browser *self,
++					     struct callchain_node *node,
++					     int level, unsigned short row,
++					     off_t *row_offset,
++					     bool *is_current_entry)
++{
++	struct callchain_list *chain;
++	int first_row = row,
++	     offset = level * LEVEL_OFFSET_STEP,
++	     width = self->b.width - offset;
++	char folded_sign = ' ';
++
++	list_for_each_entry(chain, &node->val, list) {
++		char ipstr[BITS_PER_LONG / 4 + 1], *s;
++		int color;
++
++		folded_sign = callchain_list__folded(chain);
++
++		if (*row_offset != 0) {
++			--*row_offset;
++			continue;
++		}
++
++		color = HE_COLORSET_NORMAL;
++		if (ui_browser__is_current_entry(&self->b, row)) {
++			self->selection = &chain->ms;
++			color = HE_COLORSET_SELECTED;
++			*is_current_entry = true;
++		}
++
++		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
++		ui_browser__gotorc(&self->b, row, 0);
++		ui_browser__set_color(&self->b, color);
++		slsmg_write_nstring(" ", offset);
++		slsmg_printf("%c ", folded_sign);
++		slsmg_write_nstring(s, width - 2);
++
++		if (++row == self->b.height)
++			goto out;
++	}
++
++	if (folded_sign == '-')
++		row += hist_browser__show_callchain_node_rb_tree(self, node,
++								 self->hists->stats.total_period,
++								 level + 1, row,
++								 row_offset,
++								 is_current_entry);
++out:
++	return row - first_row;
++}
++
++static int hist_browser__show_callchain(struct hist_browser *self,
++					struct rb_root *chain,
++					int level, unsigned short row,
++					off_t *row_offset,
++					bool *is_current_entry)
++{
++	struct rb_node *nd;
++	int first_row = row;
++
++	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
++		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
++
++		row += hist_browser__show_callchain_node(self, node, level,
++							 row, row_offset,
++							 is_current_entry);
++		if (row == self->b.height)
++			break;
++	}
++
++	return row - first_row;
++}
++
++static int hist_browser__show_entry(struct hist_browser *self,
++				    struct hist_entry *entry,
++				    unsigned short row)
++{
++	char s[256];
++	double percent;
++	int printed = 0;
++	int width = self->b.width - 6; /* The percentage */
++	char folded_sign = ' ';
++	bool current_entry = ui_browser__is_current_entry(&self->b, row);
++	off_t row_offset = entry->row_offset;
++
++	if (current_entry) {
++		self->he_selection = entry;
++		self->selection = &entry->ms;
++	}
++
++	if (symbol_conf.use_callchain) {
++		hist_entry__init_have_children(entry);
++		folded_sign = hist_entry__folded(entry);
++	}
++
++	if (row_offset == 0) {
++		hist_entry__snprintf(entry, s, sizeof(s), self->hists);
++		percent = (entry->period * 100.0) / self->hists->stats.total_period;
++
++		ui_browser__set_percent_color(&self->b, percent, current_entry);
++		ui_browser__gotorc(&self->b, row, 0);
++		if (symbol_conf.use_callchain) {
++			slsmg_printf("%c ", folded_sign);
++			width -= 2;
++		}
++
++		slsmg_printf(" %5.2f%%", percent);
++
++		/* The scroll bar isn't being used */
++		if (!self->b.navkeypressed)
++			width += 1;
++
++		if (!current_entry || !self->b.navkeypressed)
++			ui_browser__set_color(&self->b, HE_COLORSET_NORMAL);
++
++		if (symbol_conf.show_nr_samples) {
++			slsmg_printf(" %11u", entry->nr_events);
++			width -= 12;
++		}
++
++		if (symbol_conf.show_total_period) {
++			slsmg_printf(" %12" PRIu64, entry->period);
++			width -= 13;
++		}
++
++		slsmg_write_nstring(s, width);
++		++row;
++		++printed;
++	} else
++		--row_offset;
++
++	if (folded_sign == '-' && row != self->b.height) {
++		printed += hist_browser__show_callchain(self, &entry->sorted_chain,
++							1, row, &row_offset,
++							&current_entry);
++		if (current_entry)
++			self->he_selection = entry;
++	}
++
++	return printed;
++}
++
++static void ui_browser__hists_init_top(struct ui_browser *browser)
++{
++	if (browser->top == NULL) {
++		struct hist_browser *hb;
++
++		hb = container_of(browser, struct hist_browser, b);
++		browser->top = rb_first(&hb->hists->entries);
++	}
++}
++
++static unsigned int hist_browser__refresh(struct ui_browser *self)
++{
++	unsigned row = 0;
++	struct rb_node *nd;
++	struct hist_browser *hb = container_of(self, struct hist_browser, b);
++
++	ui_browser__hists_init_top(self);
++
++	for (nd = self->top; nd; nd = rb_next(nd)) {
++		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
++
++		if (h->filtered)
++			continue;
++
++		row += hist_browser__show_entry(hb, h, row);
++		if (row == self->height)
++			break;
++	}
++
++	return row;
++}
++
++static struct rb_node *hists__filter_entries(struct rb_node *nd)
++{
++	while (nd != NULL) {
++		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
++		if (!h->filtered)
++			return nd;
++
++		nd = rb_next(nd);
++	}
++
++	return NULL;
++}
++
++static struct rb_node *hists__filter_prev_entries(struct rb_node *nd)
++{
++	while (nd != NULL) {
++		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
++		if (!h->filtered)
++			return nd;
++
++		nd = rb_prev(nd);
++	}
++
++	return NULL;
++}
++
++static void ui_browser__hists_seek(struct ui_browser *self,
++				   off_t offset, int whence)
++{
++	struct hist_entry *h;
++	struct rb_node *nd;
++	bool first = true;
++
++	if (self->nr_entries == 0)
++		return;
++
++	ui_browser__hists_init_top(self);
++
++	switch (whence) {
++	case SEEK_SET:
++		nd = hists__filter_entries(rb_first(self->entries));
++		break;
++	case SEEK_CUR:
++		nd = self->top;
++		goto do_offset;
++	case SEEK_END:
++		nd = hists__filter_prev_entries(rb_last(self->entries));
++		first = false;
++		break;
++	default:
++		return;
++	}
++
++	/*
++	 * Moves not relative to the first visible entry invalidates its
++	 * row_offset:
++	 */
++	h = rb_entry(self->top, struct hist_entry, rb_node);
++	h->row_offset = 0;
++
++	/*
++	 * Here we have to check if nd is expanded (+), if it is we can't go
++	 * the next top level hist_entry, instead we must compute an offset of
++	 * what _not_ to show and not change the first visible entry.
++	 *
++	 * This offset increments when we are going from top to bottom and
++	 * decreases when we're going from bottom to top.
++	 *
++	 * As we don't have backpointers to the top level in the callchains
++	 * structure, we need to always print the whole hist_entry callchain,
++	 * skipping the first ones that are before the first visible entry
++	 * and stop when we printed enough lines to fill the screen.
++	 */
++do_offset:
++	if (offset > 0) {
++		do {
++			h = rb_entry(nd, struct hist_entry, rb_node);
++			if (h->ms.unfolded) {
++				u16 remaining = h->nr_rows - h->row_offset;
++				if (offset > remaining) {
++					offset -= remaining;
++					h->row_offset = 0;
++				} else {
++					h->row_offset += offset;
++					offset = 0;
++					self->top = nd;
++					break;
++				}
++			}
++			nd = hists__filter_entries(rb_next(nd));
++			if (nd == NULL)
++				break;
++			--offset;
++			self->top = nd;
++		} while (offset != 0);
++	} else if (offset < 0) {
++		while (1) {
++			h = rb_entry(nd, struct hist_entry, rb_node);
++			if (h->ms.unfolded) {
++				if (first) {
++					if (-offset > h->row_offset) {
++						offset += h->row_offset;
++						h->row_offset = 0;
++					} else {
++						h->row_offset += offset;
++						offset = 0;
++						self->top = nd;
++						break;
++					}
++				} else {
++					if (-offset > h->nr_rows) {
++						offset += h->nr_rows;
++						h->row_offset = 0;
++					} else {
++						h->row_offset = h->nr_rows + offset;
++						offset = 0;
++						self->top = nd;
++						break;
++					}
++				}
++			}
++
++			nd = hists__filter_prev_entries(rb_prev(nd));
++			if (nd == NULL)
++				break;
++			++offset;
++			self->top = nd;
++			if (offset == 0) {
++				/*
++				 * Last unfiltered hist_entry, check if it is
++				 * unfolded, if it is then we should have
++				 * row_offset at its last entry.
++				 */
++				h = rb_entry(nd, struct hist_entry, rb_node);
++				if (h->ms.unfolded)
++					h->row_offset = h->nr_rows;
++				break;
++			}
++			first = false;
++		}
++	} else {
++		self->top = nd;
++		h = rb_entry(nd, struct hist_entry, rb_node);
++		h->row_offset = 0;
++	}
++}
++
++static struct hist_browser *hist_browser__new(struct hists *hists)
++{
++	struct hist_browser *self = zalloc(sizeof(*self));
++
++	if (self) {
++		self->hists = hists;
++		self->b.refresh = hist_browser__refresh;
++		self->b.seek = ui_browser__hists_seek;
++		self->b.use_navkeypressed = true;
++		if (sort__branch_mode == 1)
++			self->has_symbols = sort_sym_from.list.next != NULL;
++		else
++			self->has_symbols = sort_sym.list.next != NULL;
++	}
++
++	return self;
++}
++
++static void hist_browser__delete(struct hist_browser *self)
++{
++	free(self);
++}
++
++static struct hist_entry *hist_browser__selected_entry(struct hist_browser *self)
++{
++	return self->he_selection;
++}
++
++static struct thread *hist_browser__selected_thread(struct hist_browser *self)
++{
++	return self->he_selection->thread;
++}
++
++static int hists__browser_title(struct hists *self, char *bf, size_t size,
++				const char *ev_name)
++{
++	char unit;
++	int printed;
++	const struct dso *dso = self->dso_filter;
++	const struct thread *thread = self->thread_filter;
++	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++
++	nr_events = convert_unit(nr_events, &unit);
++	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
++
++	if (self->uid_filter_str)
++		printed += snprintf(bf + printed, size - printed,
++				    ", UID: %s", self->uid_filter_str);
++	if (thread)
++		printed += scnprintf(bf + printed, size - printed,
++				    ", Thread: %s(%d)",
++				    (thread->comm_set ? thread->comm : ""),
++				    thread->pid);
++	if (dso)
++		printed += scnprintf(bf + printed, size - printed,
++				    ", DSO: %s", dso->short_name);
++	return printed;
++}
++
++static inline void free_popup_options(char **options, int n)
++{
++	int i;
++
++	for (i = 0; i < n; ++i) {
++		free(options[i]);
++		options[i] = NULL;
++	}
++}
++
++static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
++				    const char *helpline, const char *ev_name,
++				    bool left_exits,
++				    void(*timer)(void *arg), void *arg,
++				    int delay_secs)
++{
++	struct hists *self = &evsel->hists;
++	struct hist_browser *browser = hist_browser__new(self);
++	struct branch_info *bi;
++	struct pstack *fstack;
++	char *options[16];
++	int nr_options = 0;
++	int key = -1;
++	char buf[64];
++
++	if (browser == NULL)
++		return -1;
++
++	fstack = pstack__new(2);
++	if (fstack == NULL)
++		goto out;
++
++	ui_helpline__push(helpline);
++
++	memset(options, 0, sizeof(options));
++
++	while (1) {
++		const struct thread *thread = NULL;
++		const struct dso *dso = NULL;
++		int choice = 0,
++		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
++		    annotate_f = -2, annotate_t = -2, browse_map = -2;
++
++		nr_options = 0;
++
++		key = hist_browser__run(browser, ev_name, timer, arg, delay_secs);
++
++		if (browser->he_selection != NULL) {
++			thread = hist_browser__selected_thread(browser);
++			dso = browser->selection->map ? browser->selection->map->dso : NULL;
++		}
++		switch (key) {
++		case K_TAB:
++		case K_UNTAB:
++			if (nr_events == 1)
++				continue;
++			/*
++			 * Exit the browser, let hists__browser_tree
++			 * go to the next or previous
++			 */
++			goto out_free_stack;
++		case 'a':
++			if (!browser->has_symbols) {
++				ui_browser__warning(&browser->b, delay_secs * 2,
++			"Annotation is only available for symbolic views, "
++			"include \"sym*\" in --sort to use it.");
++				continue;
++			}
++
++			if (browser->selection == NULL ||
++			    browser->selection->sym == NULL ||
++			    browser->selection->map->dso->annotate_warned)
++				continue;
++			goto do_annotate;
++		case 'd':
++			goto zoom_dso;
++		case 't':
++			goto zoom_thread;
++		case 's':
++			if (ui_browser__input_window("Symbol to show",
++					"Please enter the name of symbol you want to see",
++					buf, "ENTER: OK, ESC: Cancel",
++					delay_secs * 2) == K_ENTER) {
++				self->symbol_filter_str = *buf ? buf : NULL;
++				hists__filter_by_symbol(self);
++				hist_browser__reset(browser);
++			}
++			continue;
++		case K_F1:
++		case 'h':
++		case '?':
++			ui_browser__help_window(&browser->b,
++					"h/?/F1        Show this window\n"
++					"UP/DOWN/PGUP\n"
++					"PGDN/SPACE    Navigate\n"
++					"q/ESC/CTRL+C  Exit browser\n\n"
++					"For multiple event sessions:\n\n"
++					"TAB/UNTAB Switch events\n\n"
++					"For symbolic views (--sort has sym):\n\n"
++					"->            Zoom into DSO/Threads & Annotate current symbol\n"
++					"<-            Zoom out\n"
++					"a             Annotate current symbol\n"
++					"C             Collapse all callchains\n"
++					"E             Expand all callchains\n"
++					"d             Zoom into current DSO\n"
++					"t             Zoom into current Thread\n"
++					"s             Filter symbol by name");
++			continue;
++		case K_ENTER:
++		case K_RIGHT:
++			/* menu */
++			break;
++		case K_LEFT: {
++			const void *top;
++
++			if (pstack__empty(fstack)) {
++				/*
++				 * Go back to the perf_evsel_menu__run or other user
++				 */
++				if (left_exits)
++					goto out_free_stack;
++				continue;
++			}
++			top = pstack__pop(fstack);
++			if (top == &browser->hists->dso_filter)
++				goto zoom_out_dso;
++			if (top == &browser->hists->thread_filter)
++				goto zoom_out_thread;
++			continue;
++		}
++		case K_ESC:
++			if (!left_exits &&
++			    !ui_browser__dialog_yesno(&browser->b,
++					       "Do you really want to exit?"))
++				continue;
++			/* Fall thru */
++		case 'q':
++		case CTRL('c'):
++			goto out_free_stack;
++		default:
++			continue;
++		}
++
++		if (!browser->has_symbols)
++			goto add_exit_option;
++
++		if (sort__branch_mode == 1) {
++			bi = browser->he_selection->branch_info;
++			if (browser->selection != NULL &&
++			    bi &&
++			    bi->from.sym != NULL &&
++			    !bi->from.map->dso->annotate_warned &&
++				asprintf(&options[nr_options], "Annotate %s",
++					 bi->from.sym->name) > 0)
++				annotate_f = nr_options++;
++
++			if (browser->selection != NULL &&
++			    bi &&
++			    bi->to.sym != NULL &&
++			    !bi->to.map->dso->annotate_warned &&
++			    (bi->to.sym != bi->from.sym ||
++			     bi->to.map->dso != bi->from.map->dso) &&
++				asprintf(&options[nr_options], "Annotate %s",
++					 bi->to.sym->name) > 0)
++				annotate_t = nr_options++;
++		} else {
++
++			if (browser->selection != NULL &&
++			    browser->selection->sym != NULL &&
++			    !browser->selection->map->dso->annotate_warned &&
++				asprintf(&options[nr_options], "Annotate %s",
++					 browser->selection->sym->name) > 0)
++				annotate = nr_options++;
++		}
++
++		if (thread != NULL &&
++		    asprintf(&options[nr_options], "Zoom %s %s(%d) thread",
++			     (browser->hists->thread_filter ? "out of" : "into"),
++			     (thread->comm_set ? thread->comm : ""),
++			     thread->pid) > 0)
++			zoom_thread = nr_options++;
++
++		if (dso != NULL &&
++		    asprintf(&options[nr_options], "Zoom %s %s DSO",
++			     (browser->hists->dso_filter ? "out of" : "into"),
++			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
++			zoom_dso = nr_options++;
++
++		if (browser->selection != NULL &&
++		    browser->selection->map != NULL &&
++		    asprintf(&options[nr_options], "Browse map details") > 0)
++			browse_map = nr_options++;
++add_exit_option:
++		options[nr_options++] = (char *)"Exit";
++retry_popup_menu:
++		choice = ui__popup_menu(nr_options, options);
++
++		if (choice == nr_options - 1)
++			break;
++
++		if (choice == -1) {
++			free_popup_options(options, nr_options - 1);
++			continue;
++		}
++
++		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
++			struct hist_entry *he;
++			int err;
++do_annotate:
++			he = hist_browser__selected_entry(browser);
++			if (he == NULL)
++				continue;
++
++			/*
++			 * we stash the branch_info symbol + map into the
++			 * the ms so we don't have to rewrite all the annotation
++			 * code to use branch_info.
++			 * in branch mode, the ms struct is not used
++			 */
++			if (choice == annotate_f) {
++				he->ms.sym = he->branch_info->from.sym;
++				he->ms.map = he->branch_info->from.map;
++			}  else if (choice == annotate_t) {
++				he->ms.sym = he->branch_info->to.sym;
++				he->ms.map = he->branch_info->to.map;
++			}
++
++			/*
++			 * Don't let this be freed, say, by hists__decay_entry.
++			 */
++			he->used = true;
++			err = hist_entry__tui_annotate(he, evsel->idx,
++						       timer, arg, delay_secs);
++			he->used = false;
++			/*
++			 * offer option to annotate the other branch source or target
++			 * (if they exists) when returning from annotate
++			 */
++			if ((err == 'q' || err == CTRL('c'))
++			    && annotate_t != -2 && annotate_f != -2)
++				goto retry_popup_menu;
++
++			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
++			if (err)
++				ui_browser__handle_resize(&browser->b);
++
++		} else if (choice == browse_map)
++			map__browse(browser->selection->map);
++		else if (choice == zoom_dso) {
++zoom_dso:
++			if (browser->hists->dso_filter) {
++				pstack__remove(fstack, &browser->hists->dso_filter);
++zoom_out_dso:
++				ui_helpline__pop();
++				browser->hists->dso_filter = NULL;
++				sort_dso.elide = false;
++			} else {
++				if (dso == NULL)
++					continue;
++				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s DSO\"",
++						   dso->kernel ? "the Kernel" : dso->short_name);
++				browser->hists->dso_filter = dso;
++				sort_dso.elide = true;
++				pstack__push(fstack, &browser->hists->dso_filter);
++			}
++			hists__filter_by_dso(self);
++			hist_browser__reset(browser);
++		} else if (choice == zoom_thread) {
++zoom_thread:
++			if (browser->hists->thread_filter) {
++				pstack__remove(fstack, &browser->hists->thread_filter);
++zoom_out_thread:
++				ui_helpline__pop();
++				browser->hists->thread_filter = NULL;
++				sort_thread.elide = false;
++			} else {
++				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s(%d) thread\"",
++						   thread->comm_set ? thread->comm : "",
++						   thread->pid);
++				browser->hists->thread_filter = thread;
++				sort_thread.elide = true;
++				pstack__push(fstack, &browser->hists->thread_filter);
++			}
++			hists__filter_by_thread(self);
++			hist_browser__reset(browser);
++		}
++	}
++out_free_stack:
++	pstack__delete(fstack);
++out:
++	hist_browser__delete(browser);
++	free_popup_options(options, nr_options - 1);
++	return key;
++}
++
++struct perf_evsel_menu {
++	struct ui_browser b;
++	struct perf_evsel *selection;
++	bool lost_events, lost_events_warned;
++};
++
++static void perf_evsel_menu__write(struct ui_browser *browser,
++				   void *entry, int row)
++{
++	struct perf_evsel_menu *menu = container_of(browser,
++						    struct perf_evsel_menu, b);
++	struct perf_evsel *evsel = list_entry(entry, struct perf_evsel, node);
++	bool current_entry = ui_browser__is_current_entry(browser, row);
++	unsigned long nr_events = evsel->hists.stats.nr_events[PERF_RECORD_SAMPLE];
++	const char *ev_name = event_name(evsel);
++	char bf[256], unit;
++	const char *warn = " ";
++	size_t printed;
++
++	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
++						       HE_COLORSET_NORMAL);
++
++	nr_events = convert_unit(nr_events, &unit);
++	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
++			   unit, unit == ' ' ? "" : " ", ev_name);
++	slsmg_printf("%s", bf);
++
++	nr_events = evsel->hists.stats.nr_events[PERF_RECORD_LOST];
++	if (nr_events != 0) {
++		menu->lost_events = true;
++		if (!current_entry)
++			ui_browser__set_color(browser, HE_COLORSET_TOP);
++		nr_events = convert_unit(nr_events, &unit);
++		printed += scnprintf(bf, sizeof(bf), ": %ld%c%schunks LOST!",
++				     nr_events, unit, unit == ' ' ? "" : " ");
++		warn = bf;
++	}
++
++	slsmg_write_nstring(warn, browser->width - printed);
++
++	if (current_entry)
++		menu->selection = evsel;
++}
++
++static int perf_evsel_menu__run(struct perf_evsel_menu *menu,
++				int nr_events, const char *help,
++				void(*timer)(void *arg), void *arg, int delay_secs)
++{
++	struct perf_evlist *evlist = menu->b.priv;
++	struct perf_evsel *pos;
++	const char *ev_name, *title = "Available samples";
++	int key;
++
++	if (ui_browser__show(&menu->b, title,
++			     "ESC: exit, ENTER|->: Browse histograms") < 0)
++		return -1;
++
++	while (1) {
++		key = ui_browser__run(&menu->b, delay_secs);
++
++		switch (key) {
++		case K_TIMER:
++			timer(arg);
++
++			if (!menu->lost_events_warned && menu->lost_events) {
++				ui_browser__warn_lost_events(&menu->b);
++				menu->lost_events_warned = true;
++			}
++			continue;
++		case K_RIGHT:
++		case K_ENTER:
++			if (!menu->selection)
++				continue;
++			pos = menu->selection;
++browse_hists:
++			perf_evlist__set_selected(evlist, pos);
++			/*
++			 * Give the calling tool a chance to populate the non
++			 * default evsel resorted hists tree.
++			 */
++			if (timer)
++				timer(arg);
++			ev_name = event_name(pos);
++			key = perf_evsel__hists_browse(pos, nr_events, help,
++						       ev_name, true, timer,
++						       arg, delay_secs);
++			ui_browser__show_title(&menu->b, title);
++			switch (key) {
++			case K_TAB:
++				if (pos->node.next == &evlist->entries)
++					pos = list_entry(evlist->entries.next, struct perf_evsel, node);
++				else
++					pos = list_entry(pos->node.next, struct perf_evsel, node);
++				goto browse_hists;
++			case K_UNTAB:
++				if (pos->node.prev == &evlist->entries)
++					pos = list_entry(evlist->entries.prev, struct perf_evsel, node);
++				else
++					pos = list_entry(pos->node.prev, struct perf_evsel, node);
++				goto browse_hists;
++			case K_ESC:
++				if (!ui_browser__dialog_yesno(&menu->b,
++						"Do you really want to exit?"))
++					continue;
++				/* Fall thru */
++			case 'q':
++			case CTRL('c'):
++				goto out;
++			default:
++				continue;
++			}
++		case K_LEFT:
++			continue;
++		case K_ESC:
++			if (!ui_browser__dialog_yesno(&menu->b,
++					       "Do you really want to exit?"))
++				continue;
++			/* Fall thru */
++		case 'q':
++		case CTRL('c'):
++			goto out;
++		default:
++			continue;
++		}
++	}
++
++out:
++	ui_browser__hide(&menu->b);
++	return key;
++}
++
++static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
++					   const char *help,
++					   void(*timer)(void *arg), void *arg,
++					   int delay_secs)
++{
++	struct perf_evsel *pos;
++	struct perf_evsel_menu menu = {
++		.b = {
++			.entries    = &evlist->entries,
++			.refresh    = ui_browser__list_head_refresh,
++			.seek	    = ui_browser__list_head_seek,
++			.write	    = perf_evsel_menu__write,
++			.nr_entries = evlist->nr_entries,
++			.priv	    = evlist,
++		},
++	};
++
++	ui_helpline__push("Press ESC to exit");
++
++	list_for_each_entry(pos, &evlist->entries, node) {
++		const char *ev_name = event_name(pos);
++		size_t line_len = strlen(ev_name) + 7;
++
++		if (menu.b.width < line_len)
++			menu.b.width = line_len;
++		/*
++		 * Cache the evsel name, tracepoints have a _high_ cost per
++		 * event_name() call.
++		 */
++		if (pos->name == NULL)
++			pos->name = strdup(ev_name);
++	}
++
++	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, timer,
++				    arg, delay_secs);
++}
++
++int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
++				  void(*timer)(void *arg), void *arg,
++				  int delay_secs)
++{
++
++	if (evlist->nr_entries == 1) {
++		struct perf_evsel *first = list_entry(evlist->entries.next,
++						      struct perf_evsel, node);
++		const char *ev_name = event_name(first);
++		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
++						ev_name, false, timer, arg,
++						delay_secs);
++	}
++
++	return __perf_evlist__tui_browse_hists(evlist, help,
++					       timer, arg, delay_secs);
++}
+diff --git a/tools/perf/ui/browsers/map.c b/tools/perf/ui/browsers/map.c
+new file mode 100644
+index 000000000000..98851d55a53e
+--- /dev/null
++++ b/tools/perf/ui/browsers/map.c
+@@ -0,0 +1,154 @@
++#include "../libslang.h"
++#include <elf.h>
++#include <newt.h>
++#include <inttypes.h>
++#include <sys/ttydefaults.h>
++#include <string.h>
++#include <linux/bitops.h>
++#include "../../util/util.h"
++#include "../../util/debug.h"
++#include "../../util/symbol.h"
++#include "../browser.h"
++#include "../helpline.h"
++#include "map.h"
++
++static int ui_entry__read(const char *title, char *bf, size_t size, int width)
++{
++	struct newtExitStruct es;
++	newtComponent form, entry;
++	const char *result;
++	int err = -1;
++
++	newtCenteredWindow(width, 1, title);
++	form = newtForm(NULL, NULL, 0);
++	if (form == NULL)
++		return -1;
++
++	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
++	if (entry == NULL)
++		goto out_free_form;
++
++	newtFormAddComponent(form, entry);
++	newtFormAddHotKey(form, NEWT_KEY_ENTER);
++	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
++	newtFormAddHotKey(form, NEWT_KEY_LEFT);
++	newtFormAddHotKey(form, CTRL('c'));
++	newtFormRun(form, &es);
++
++	if (result != NULL) {
++		strncpy(bf, result, size);
++		err = 0;
++	}
++out_free_form:
++	newtPopWindow();
++	newtFormDestroy(form);
++	return err;
++}
++
++struct map_browser {
++	struct ui_browser b;
++	struct map	  *map;
++	u8		  addrlen;
++};
++
++static void map_browser__write(struct ui_browser *self, void *nd, int row)
++{
++	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
++	struct map_browser *mb = container_of(self, struct map_browser, b);
++	bool current_entry = ui_browser__is_current_entry(self, row);
++	int width;
++
++	ui_browser__set_percent_color(self, 0, current_entry);
++	slsmg_printf("%*" PRIx64 " %*" PRIx64 " %c ",
++		     mb->addrlen, sym->start, mb->addrlen, sym->end,
++		     sym->binding == STB_GLOBAL ? 'g' :
++		     sym->binding == STB_LOCAL  ? 'l' : 'w');
++	width = self->width - ((mb->addrlen * 2) + 4);
++	if (width > 0)
++		slsmg_write_nstring(sym->name, width);
++}
++
++/* FIXME uber-kludgy, see comment on cmd_report... */
++static u32 *symbol__browser_index(struct symbol *self)
++{
++	return ((void *)self) - sizeof(struct rb_node) - sizeof(u32);
++}
++
++static int map_browser__search(struct map_browser *self)
++{
++	char target[512];
++	struct symbol *sym;
++	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
++
++	if (err)
++		return err;
++
++	if (target[0] == '0' && tolower(target[1]) == 'x') {
++		u64 addr = strtoull(target, NULL, 16);
++		sym = map__find_symbol(self->map, addr, NULL);
++	} else
++		sym = map__find_symbol_by_name(self->map, target, NULL);
++
++	if (sym != NULL) {
++		u32 *idx = symbol__browser_index(sym);
++
++		self->b.top = &sym->rb_node;
++		self->b.index = self->b.top_idx = *idx;
++	} else
++		ui_helpline__fpush("%s not found!", target);
++
++	return 0;
++}
++
++static int map_browser__run(struct map_browser *self)
++{
++	int key;
++
++	if (ui_browser__show(&self->b, self->map->dso->long_name,
++			     "Press <- or ESC to exit, %s / to search",
++			     verbose ? "" : "restart with -v to use") < 0)
++		return -1;
++
++	while (1) {
++		key = ui_browser__run(&self->b, 0);
++
++		if (verbose && key == '/')
++			map_browser__search(self);
++		else
++			break;
++	}
++
++	ui_browser__hide(&self->b);
++	return key;
++}
++
++int map__browse(struct map *self)
++{
++	struct map_browser mb = {
++		.b = {
++			.entries = &self->dso->symbols[self->type],
++			.refresh = ui_browser__rb_tree_refresh,
++			.seek	 = ui_browser__rb_tree_seek,
++			.write	 = map_browser__write,
++		},
++		.map = self,
++	};
++	struct rb_node *nd;
++	char tmp[BITS_PER_LONG / 4];
++	u64 maxaddr = 0;
++
++	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
++		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
++
++		if (maxaddr < pos->end)
++			maxaddr = pos->end;
++		if (verbose) {
++			u32 *idx = symbol__browser_index(pos);
++			*idx = mb.b.nr_entries;
++		}
++		++mb.b.nr_entries;
++	}
++
++	mb.addrlen = snprintf(tmp, sizeof(tmp), "%" PRIx64, maxaddr);
++	return map_browser__run(&mb);
++}
+diff --git a/tools/perf/ui/browsers/map.h b/tools/perf/ui/browsers/map.h
+new file mode 100644
+index 000000000000..df8581a43e17
+--- /dev/null
++++ b/tools/perf/ui/browsers/map.h
+@@ -0,0 +1,6 @@
++#ifndef _PERF_UI_MAP_BROWSER_H_
++#define _PERF_UI_MAP_BROWSER_H_ 1
++struct map;
++
++int map__browse(struct map *self);
++#endif /* _PERF_UI_MAP_BROWSER_H_ */
+diff --git a/tools/perf/ui/helpline.c b/tools/perf/ui/helpline.c
+new file mode 100644
+index 000000000000..dc540237e50b
+--- /dev/null
++++ b/tools/perf/ui/helpline.c
+@@ -0,0 +1,79 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#include "../util/debug.h"
++#include "helpline.h"
++#include "ui.h"
++#include "libslang.h"
++
++void ui_helpline__pop(void)
++{
++}
++
++char ui_helpline__current[512];
++
++void ui_helpline__push(const char *msg)
++{
++	const size_t sz = sizeof(ui_helpline__current);
++
++	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
++	SLsmg_set_color(0);
++	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
++	SLsmg_refresh();
++	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
++}
++
++void ui_helpline__vpush(const char *fmt, va_list ap)
++{
++	char *s;
++
++	if (vasprintf(&s, fmt, ap) < 0)
++		vfprintf(stderr, fmt, ap);
++	else {
++		ui_helpline__push(s);
++		free(s);
++	}
++}
++
++void ui_helpline__fpush(const char *fmt, ...)
++{
++	va_list ap;
++
++	va_start(ap, fmt);
++	ui_helpline__vpush(fmt, ap);
++	va_end(ap);
++}
++
++void ui_helpline__puts(const char *msg)
++{
++	ui_helpline__pop();
++	ui_helpline__push(msg);
++}
++
++void ui_helpline__init(void)
++{
++	ui_helpline__puts(" ");
++}
++
++char ui_helpline__last_msg[1024];
++
++int ui_helpline__show_help(const char *format, va_list ap)
++{
++	int ret;
++	static int backlog;
++
++	pthread_mutex_lock(&ui__lock);
++	ret = vscnprintf(ui_helpline__last_msg + backlog,
++			sizeof(ui_helpline__last_msg) - backlog, format, ap);
++	backlog += ret;
++
++	if (ui_helpline__last_msg[backlog - 1] == '\n') {
++		ui_helpline__puts(ui_helpline__last_msg);
++		SLsmg_refresh();
++		backlog = 0;
++	}
++	pthread_mutex_unlock(&ui__lock);
++
++	return ret;
++}
+diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
+new file mode 100644
+index 000000000000..7bab6b34e35e
+--- /dev/null
++++ b/tools/perf/ui/helpline.h
+@@ -0,0 +1,16 @@
++#ifndef _PERF_UI_HELPLINE_H_
++#define _PERF_UI_HELPLINE_H_ 1
++
++#include <stdio.h>
++#include <stdarg.h>
++
++void ui_helpline__init(void);
++void ui_helpline__pop(void);
++void ui_helpline__push(const char *msg);
++void ui_helpline__vpush(const char *fmt, va_list ap);
++void ui_helpline__fpush(const char *fmt, ...);
++void ui_helpline__puts(const char *msg);
++
++extern char ui_helpline__current[];
++
++#endif /* _PERF_UI_HELPLINE_H_ */
+diff --git a/tools/perf/ui/keysyms.h b/tools/perf/ui/keysyms.h
+new file mode 100644
+index 000000000000..809eca5707fa
+--- /dev/null
++++ b/tools/perf/ui/keysyms.h
+@@ -0,0 +1,27 @@
++#ifndef _PERF_KEYSYMS_H_
++#define _PERF_KEYSYMS_H_ 1
++
++#include "libslang.h"
++
++#define K_DOWN	SL_KEY_DOWN
++#define K_END	SL_KEY_END
++#define K_ENTER	'\r'
++#define K_ESC	033
++#define K_F1	SL_KEY_F(1)
++#define K_HOME	SL_KEY_HOME
++#define K_LEFT	SL_KEY_LEFT
++#define K_PGDN	SL_KEY_NPAGE
++#define K_PGUP	SL_KEY_PPAGE
++#define K_RIGHT	SL_KEY_RIGHT
++#define K_TAB	'\t'
++#define K_UNTAB	SL_KEY_UNTAB
++#define K_UP	SL_KEY_UP
++#define K_BKSPC 0x7f
++#define K_DEL	SL_KEY_DELETE
++
++/* Not really keys */
++#define K_TIMER	 -1
++#define K_ERROR	 -2
++#define K_RESIZE -3
++
++#endif /* _PERF_KEYSYMS_H_ */
+diff --git a/tools/perf/ui/libslang.h b/tools/perf/ui/libslang.h
+new file mode 100644
+index 000000000000..4d54b6450f5b
+--- /dev/null
++++ b/tools/perf/ui/libslang.h
+@@ -0,0 +1,29 @@
++#ifndef _PERF_UI_SLANG_H_
++#define _PERF_UI_SLANG_H_ 1
++/*
++ * slang versions <= 2.0.6 have a "#if HAVE_LONG_LONG" that breaks
++ * the build if it isn't defined. Use the equivalent one that glibc
++ * has on features.h.
++ */
++#include <features.h>
++#ifndef HAVE_LONG_LONG
++#define HAVE_LONG_LONG __GLIBC_HAVE_LONG_LONG
++#endif
++#include <slang.h>
++
++#if SLANG_VERSION < 20104
++#define slsmg_printf(msg, args...) \
++	SLsmg_printf((char *)(msg), ##args)
++#define slsmg_write_nstring(msg, len) \
++	SLsmg_write_nstring((char *)(msg), len)
++#define sltt_set_color(obj, name, fg, bg) \
++	SLtt_set_color(obj,(char *)(name), (char *)(fg), (char *)(bg))
++#else
++#define slsmg_printf SLsmg_printf
++#define slsmg_write_nstring SLsmg_write_nstring
++#define sltt_set_color SLtt_set_color
++#endif
++
++#define SL_KEY_UNTAB 0x1000
++
++#endif /* _PERF_UI_SLANG_H_ */
+diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
+new file mode 100644
+index 000000000000..d306ac62270a
+--- /dev/null
++++ b/tools/perf/ui/progress.c
+@@ -0,0 +1,32 @@
++#include "../util/cache.h"
++#include "progress.h"
++#include "libslang.h"
++#include "ui.h"
++#include "browser.h"
++
++void ui_progress__update(u64 curr, u64 total, const char *title)
++{
++	int bar, y;
++	/*
++	 * FIXME: We should have a per UI backend way of showing progress,
++	 * stdio will just show a percentage as NN%, etc.
++	 */
++	if (use_browser <= 0)
++		return;
++
++	if (total == 0)
++		return;
++
++	ui__refresh_dimensions(true);
++	pthread_mutex_lock(&ui__lock);
++	y = SLtt_Screen_Rows / 2 - 2;
++	SLsmg_set_color(0);
++	SLsmg_draw_box(y, 0, 3, SLtt_Screen_Cols);
++	SLsmg_gotorc(y++, 1);
++	SLsmg_write_string((char *)title);
++	SLsmg_set_color(HE_COLORSET_SELECTED);
++	bar = ((SLtt_Screen_Cols - 2) * curr) / total;
++	SLsmg_fill_region(y, 1, 1, bar, ' ');
++	SLsmg_refresh();
++	pthread_mutex_unlock(&ui__lock);
++}
+diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
+new file mode 100644
+index 000000000000..d9c205b59aa1
+--- /dev/null
++++ b/tools/perf/ui/progress.h
+@@ -0,0 +1,8 @@
++#ifndef _PERF_UI_PROGRESS_H_
++#define _PERF_UI_PROGRESS_H_ 1
++
++#include <../types.h>
++
++void ui_progress__update(u64 curr, u64 total, const char *title);
++
++#endif
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+new file mode 100644
+index 000000000000..d111b0047324
+--- /dev/null
++++ b/tools/perf/ui/setup.c
+@@ -0,0 +1,155 @@
++#include <newt.h>
++#include <signal.h>
++#include <stdbool.h>
++
++#include "../util/cache.h"
++#include "../util/debug.h"
++#include "browser.h"
++#include "helpline.h"
++#include "ui.h"
++#include "util.h"
++#include "libslang.h"
++#include "keysyms.h"
++
++pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
++
++static volatile int ui__need_resize;
++
++void ui__refresh_dimensions(bool force)
++{
++	if (force || ui__need_resize) {
++		ui__need_resize = 0;
++		pthread_mutex_lock(&ui__lock);
++		SLtt_get_screen_size();
++		SLsmg_reinit_smg();
++		pthread_mutex_unlock(&ui__lock);
++	}
++}
++
++static void ui__sigwinch(int sig __used)
++{
++	ui__need_resize = 1;
++}
++
++static void ui__setup_sigwinch(void)
++{
++	static bool done;
++
++	if (done)
++		return;
++
++	done = true;
++	pthread__unblock_sigwinch();
++	signal(SIGWINCH, ui__sigwinch);
++}
++
++int ui__getch(int delay_secs)
++{
++	struct timeval timeout, *ptimeout = delay_secs ? &timeout : NULL;
++	fd_set read_set;
++	int err, key;
++
++	ui__setup_sigwinch();
++
++	FD_ZERO(&read_set);
++	FD_SET(0, &read_set);
++
++	if (delay_secs) {
++		timeout.tv_sec = delay_secs;
++		timeout.tv_usec = 0;
++	}
++
++        err = select(1, &read_set, NULL, NULL, ptimeout);
++
++	if (err == 0)
++		return K_TIMER;
++
++	if (err == -1) {
++		if (errno == EINTR)
++			return K_RESIZE;
++		return K_ERROR;
++	}
++
++	key = SLang_getkey();
++	if (key != K_ESC)
++		return key;
++
++	FD_ZERO(&read_set);
++	FD_SET(0, &read_set);
++	timeout.tv_sec = 0;
++	timeout.tv_usec = 20;
++        err = select(1, &read_set, NULL, NULL, &timeout);
++	if (err == 0)
++		return K_ESC;
++
++	SLang_ungetkey(key);
++	return SLkp_getkey();
++}
++
++static void newt_suspend(void *d __used)
++{
++	newtSuspend();
++	raise(SIGTSTP);
++	newtResume();
++}
++
++static int ui__init(void)
++{
++	int err = SLkp_init();
++
++	if (err < 0)
++		goto out;
++
++	SLkp_define_keysym((char *)"^(kB)", SL_KEY_UNTAB);
++out:
++	return err;
++}
++
++static void ui__exit(void)
++{
++	SLtt_set_cursor_visibility(1);
++	SLsmg_refresh();
++	SLsmg_reset_smg();
++	SLang_reset_tty();
++}
++
++static void ui__signal(int sig)
++{
++	ui__exit();
++	psignal(sig, "perf");
++	exit(0);
++}
++
++void setup_browser(bool fallback_to_pager)
++{
++	if (!isatty(1) || !use_browser || dump_trace) {
++		use_browser = 0;
++		if (fallback_to_pager)
++			setup_pager();
++		return;
++	}
++
++	use_browser = 1;
++	newtInit();
++	ui__init();
++	newtSetSuspendCallback(newt_suspend, NULL);
++	ui_helpline__init();
++	ui_browser__init();
++
++	signal(SIGSEGV, ui__signal);
++	signal(SIGFPE, ui__signal);
++	signal(SIGINT, ui__signal);
++	signal(SIGQUIT, ui__signal);
++	signal(SIGTERM, ui__signal);
++}
++
++void exit_browser(bool wait_for_ok)
++{
++	if (use_browser > 0) {
++		if (wait_for_ok)
++			ui__question_window("Fatal Error",
++					    ui_helpline__last_msg,
++					    "Press any key...", 0);
++		ui__exit();
++	}
++}
+diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
+new file mode 100644
+index 000000000000..7b67045479f6
+--- /dev/null
++++ b/tools/perf/ui/ui.h
+@@ -0,0 +1,11 @@
++#ifndef _PERF_UI_H_
++#define _PERF_UI_H_ 1
++
++#include <pthread.h>
++#include <stdbool.h>
++
++extern pthread_mutex_t ui__lock;
++
++void ui__refresh_dimensions(bool force);
++
++#endif /* _PERF_UI_H_ */
+diff --git a/tools/perf/ui/util.c b/tools/perf/ui/util.c
+new file mode 100644
+index 000000000000..b7814fd14bee
+--- /dev/null
++++ b/tools/perf/ui/util.c
+@@ -0,0 +1,250 @@
++#include "../util/util.h"
++#include <signal.h>
++#include <stdbool.h>
++#include <string.h>
++#include <sys/ttydefaults.h>
++
++#include "../util/cache.h"
++#include "../util/debug.h"
++#include "browser.h"
++#include "keysyms.h"
++#include "helpline.h"
++#include "ui.h"
++#include "util.h"
++#include "libslang.h"
++
++static void ui_browser__argv_write(struct ui_browser *browser,
++				   void *entry, int row)
++{
++	char **arg = entry;
++	bool current_entry = ui_browser__is_current_entry(browser, row);
++
++	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
++						       HE_COLORSET_NORMAL);
++	slsmg_write_nstring(*arg, browser->width);
++}
++
++static int popup_menu__run(struct ui_browser *menu)
++{
++	int key;
++
++	if (ui_browser__show(menu, " ", "ESC: exit, ENTER|->: Select option") < 0)
++		return -1;
++
++	while (1) {
++		key = ui_browser__run(menu, 0);
++
++		switch (key) {
++		case K_RIGHT:
++		case K_ENTER:
++			key = menu->index;
++			break;
++		case K_LEFT:
++		case K_ESC:
++		case 'q':
++		case CTRL('c'):
++			key = -1;
++			break;
++		default:
++			continue;
++		}
++
++		break;
++	}
++
++	ui_browser__hide(menu);
++	return key;
++}
++
++int ui__popup_menu(int argc, char * const argv[])
++{
++	struct ui_browser menu = {
++		.entries    = (void *)argv,
++		.refresh    = ui_browser__argv_refresh,
++		.seek	    = ui_browser__argv_seek,
++		.write	    = ui_browser__argv_write,
++		.nr_entries = argc,
++	};
++
++	return popup_menu__run(&menu);
++}
++
++int ui_browser__input_window(const char *title, const char *text, char *input,
++			     const char *exit_msg, int delay_secs)
++{
++	int x, y, len, key;
++	int max_len = 60, nr_lines = 0;
++	static char buf[50];
++	const char *t;
++
++	t = text;
++	while (1) {
++		const char *sep = strchr(t, '\n');
++
++		if (sep == NULL)
++			sep = strchr(t, '\0');
++		len = sep - t;
++		if (max_len < len)
++			max_len = len;
++		++nr_lines;
++		if (*sep == '\0')
++			break;
++		t = sep + 1;
++	}
++
++	max_len += 2;
++	nr_lines += 8;
++	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
++	x = SLtt_Screen_Cols / 2 - max_len / 2;
++
++	SLsmg_set_color(0);
++	SLsmg_draw_box(y, x++, nr_lines, max_len);
++	if (title) {
++		SLsmg_gotorc(y, x + 1);
++		SLsmg_write_string((char *)title);
++	}
++	SLsmg_gotorc(++y, x);
++	nr_lines -= 7;
++	max_len -= 2;
++	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
++				   nr_lines, max_len, 1);
++	y += nr_lines;
++	len = 5;
++	while (len--) {
++		SLsmg_gotorc(y + len - 1, x);
++		SLsmg_write_nstring((char *)" ", max_len);
++	}
++	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
++
++	SLsmg_gotorc(y + 3, x);
++	SLsmg_write_nstring((char *)exit_msg, max_len);
++	SLsmg_refresh();
++
++	x += 2;
++	len = 0;
++	key = ui__getch(delay_secs);
++	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
++		if (key == K_BKSPC) {
++			if (len == 0)
++				goto next_key;
++			SLsmg_gotorc(y, x + --len);
++			SLsmg_write_char(' ');
++		} else {
++			buf[len] = key;
++			SLsmg_gotorc(y, x + len++);
++			SLsmg_write_char(key);
++		}
++		SLsmg_refresh();
++
++		/* XXX more graceful overflow handling needed */
++		if (len == sizeof(buf) - 1) {
++			ui_helpline__push("maximum size of symbol name reached!");
++			key = K_ENTER;
++			break;
++		}
++next_key:
++		key = ui__getch(delay_secs);
++	}
++
++	buf[len] = '\0';
++	strncpy(input, buf, len+1);
++	return key;
++}
++
++int ui__question_window(const char *title, const char *text,
++			const char *exit_msg, int delay_secs)
++{
++	int x, y;
++	int max_len = 0, nr_lines = 0;
++	const char *t;
++
++	t = text;
++	while (1) {
++		const char *sep = strchr(t, '\n');
++		int len;
++
++		if (sep == NULL)
++			sep = strchr(t, '\0');
++		len = sep - t;
++		if (max_len < len)
++			max_len = len;
++		++nr_lines;
++		if (*sep == '\0')
++			break;
++		t = sep + 1;
++	}
++
++	max_len += 2;
++	nr_lines += 4;
++	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
++	x = SLtt_Screen_Cols / 2 - max_len / 2;
++
++	SLsmg_set_color(0);
++	SLsmg_draw_box(y, x++, nr_lines, max_len);
++	if (title) {
++		SLsmg_gotorc(y, x + 1);
++		SLsmg_write_string((char *)title);
++	}
++	SLsmg_gotorc(++y, x);
++	nr_lines -= 2;
++	max_len -= 2;
++	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
++				   nr_lines, max_len, 1);
++	SLsmg_gotorc(y + nr_lines - 2, x);
++	SLsmg_write_nstring((char *)" ", max_len);
++	SLsmg_gotorc(y + nr_lines - 1, x);
++	SLsmg_write_nstring((char *)exit_msg, max_len);
++	SLsmg_refresh();
++	return ui__getch(delay_secs);
++}
++
++int ui__help_window(const char *text)
++{
++	return ui__question_window("Help", text, "Press any key...", 0);
++}
++
++int ui__dialog_yesno(const char *msg)
++{
++	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
++}
++
++int __ui__warning(const char *title, const char *format, va_list args)
++{
++	char *s;
++
++	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
++		int key;
++
++		pthread_mutex_lock(&ui__lock);
++		key = ui__question_window(title, s, "Press any key...", 0);
++		pthread_mutex_unlock(&ui__lock);
++		free(s);
++		return key;
++	}
++
++	fprintf(stderr, "%s:\n", title);
++	vfprintf(stderr, format, args);
++	return K_ESC;
++}
++
++int ui__warning(const char *format, ...)
++{
++	int key;
++	va_list args;
++
++	va_start(args, format);
++	key = __ui__warning("Warning", format, args);
++	va_end(args);
++	return key;
++}
++
++int ui__error(const char *format, ...)
++{
++	int key;
++	va_list args;
++
++	va_start(args, format);
++	key = __ui__warning("Error", format, args);
++	va_end(args);
++	return key;
++}
+diff --git a/tools/perf/ui/util.h b/tools/perf/ui/util.h
+new file mode 100644
+index 000000000000..2d1738bd71c8
+--- /dev/null
++++ b/tools/perf/ui/util.h
+@@ -0,0 +1,14 @@
++#ifndef _PERF_UI_UTIL_H_
++#define _PERF_UI_UTIL_H_ 1
++
++#include <stdarg.h>
++
++int ui__getch(int delay_secs);
++int ui__popup_menu(int argc, char * const argv[]);
++int ui__help_window(const char *text);
++int ui__dialog_yesno(const char *msg);
++int ui__question_window(const char *title, const char *text,
++			const char *exit_msg, int delay_secs);
++int __ui__warning(const char *title, const char *format, va_list args);
++
++#endif /* _PERF_UI_UTIL_H_ */
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index f2ce88d04f54..6bebe7f0a20c 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -26,7 +26,7 @@ static inline void ui_progress__update(u64 curr __used, u64 total __used,
  #else
--void perf_gtk_setup_browser(bool fallback_to_pager);
--void perf_gtk_exit_browser(bool wait_for_ok);
-+void perf_gtk__setup_browser(bool fallback_to_pager);
-+void perf_gtk__exit_browser(bool wait_for_ok);
+ extern char ui_helpline__last_msg[];
+ int ui_helpline__show_help(const char *format, va_list ap);
+-#include "ui/progress.h"
++#include "../ui/progress.h"
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
  #endif
  
- char *alias_lookup(const char *alias);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 2cae9df40e04..cfc64e293f90 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -138,7 +138,7 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
+ #define K_LEFT -1
+ #define K_RIGHT -2
+ #else
+-#include "ui/keysyms.h"
++#include "../ui/keysyms.h"
+ int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+ 			     void(*timer)(void *arg), void *arg, int delay_secs);
+ 
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+deleted file mode 100644
+index 556829124b02..000000000000
+--- a/tools/perf/util/ui/browser.c
++++ /dev/null
+@@ -1,597 +0,0 @@
+-#include "../util.h"
+-#include "../cache.h"
+-#include "../../perf.h"
+-#include "libslang.h"
+-#include <newt.h>
+-#include "ui.h"
+-#include "util.h"
+-#include <linux/compiler.h>
+-#include <linux/list.h>
+-#include <linux/rbtree.h>
+-#include <stdlib.h>
+-#include <sys/ttydefaults.h>
+-#include "browser.h"
+-#include "helpline.h"
+-#include "keysyms.h"
+-#include "../color.h"
+-
+-static int ui_browser__percent_color(struct ui_browser *browser,
+-				     double percent, bool current)
+-{
+-	if (current && (!browser->use_navkeypressed || browser->navkeypressed))
+-		return HE_COLORSET_SELECTED;
+-	if (percent >= MIN_RED)
+-		return HE_COLORSET_TOP;
+-	if (percent >= MIN_GREEN)
+-		return HE_COLORSET_MEDIUM;
+-	return HE_COLORSET_NORMAL;
+-}
+-
+-void ui_browser__set_color(struct ui_browser *self __used, int color)
+-{
+-	SLsmg_set_color(color);
+-}
+-
+-void ui_browser__set_percent_color(struct ui_browser *self,
+-				   double percent, bool current)
+-{
+-	 int color = ui_browser__percent_color(self, percent, current);
+-	 ui_browser__set_color(self, color);
+-}
+-
+-void ui_browser__gotorc(struct ui_browser *self, int y, int x)
+-{
+-	SLsmg_gotorc(self->y + y, self->x + x);
+-}
+-
+-static struct list_head *
+-ui_browser__list_head_filter_entries(struct ui_browser *browser,
+-				     struct list_head *pos)
+-{
+-	do {
+-		if (!browser->filter || !browser->filter(browser, pos))
+-			return pos;
+-		pos = pos->next;
+-	} while (pos != browser->entries);
+-
+-	return NULL;
+-}
+-
+-static struct list_head *
+-ui_browser__list_head_filter_prev_entries(struct ui_browser *browser,
+-					  struct list_head *pos)
+-{
+-	do {
+-		if (!browser->filter || !browser->filter(browser, pos))
+-			return pos;
+-		pos = pos->prev;
+-	} while (pos != browser->entries);
+-
+-	return NULL;
+-}
+-
+-void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whence)
+-{
+-	struct list_head *head = self->entries;
+-	struct list_head *pos;
+-
+-	if (self->nr_entries == 0)
+-		return;
+-
+-	switch (whence) {
+-	case SEEK_SET:
+-		pos = ui_browser__list_head_filter_entries(self, head->next);
+-		break;
+-	case SEEK_CUR:
+-		pos = self->top;
+-		break;
+-	case SEEK_END:
+-		pos = ui_browser__list_head_filter_prev_entries(self, head->prev);
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	assert(pos != NULL);
+-
+-	if (offset > 0) {
+-		while (offset-- != 0)
+-			pos = ui_browser__list_head_filter_entries(self, pos->next);
+-	} else {
+-		while (offset++ != 0)
+-			pos = ui_browser__list_head_filter_prev_entries(self, pos->prev);
+-	}
+-
+-	self->top = pos;
+-}
+-
+-void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
+-{
+-	struct rb_root *root = self->entries;
+-	struct rb_node *nd;
+-
+-	switch (whence) {
+-	case SEEK_SET:
+-		nd = rb_first(root);
+-		break;
+-	case SEEK_CUR:
+-		nd = self->top;
+-		break;
+-	case SEEK_END:
+-		nd = rb_last(root);
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	if (offset > 0) {
+-		while (offset-- != 0)
+-			nd = rb_next(nd);
+-	} else {
+-		while (offset++ != 0)
+-			nd = rb_prev(nd);
+-	}
+-
+-	self->top = nd;
+-}
+-
+-unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
+-{
+-	struct rb_node *nd;
+-	int row = 0;
+-
+-	if (self->top == NULL)
+-                self->top = rb_first(self->entries);
+-
+-	nd = self->top;
+-
+-	while (nd != NULL) {
+-		ui_browser__gotorc(self, row, 0);
+-		self->write(self, nd, row);
+-		if (++row == self->height)
+-			break;
+-		nd = rb_next(nd);
+-	}
+-
+-	return row;
+-}
+-
+-bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row)
+-{
+-	return self->top_idx + row == self->index;
+-}
+-
+-void ui_browser__refresh_dimensions(struct ui_browser *self)
+-{
+-	self->width = SLtt_Screen_Cols - 1;
+-	self->height = SLtt_Screen_Rows - 2;
+-	self->y = 1;
+-	self->x = 0;
+-}
+-
+-void ui_browser__handle_resize(struct ui_browser *browser)
+-{
+-	ui__refresh_dimensions(false);
+-	ui_browser__show(browser, browser->title, ui_helpline__current);
+-	ui_browser__refresh(browser);
+-}
+-
+-int ui_browser__warning(struct ui_browser *browser, int timeout,
+-			const char *format, ...)
+-{
+-	va_list args;
+-	char *text;
+-	int key = 0, err;
+-
+-	va_start(args, format);
+-	err = vasprintf(&text, format, args);
+-	va_end(args);
+-
+-	if (err < 0) {
+-		va_start(args, format);
+-		ui_helpline__vpush(format, args);
+-		va_end(args);
+-	} else {
+-		while ((key == ui__question_window("Warning!", text,
+-						   "Press any key...",
+-						   timeout)) == K_RESIZE)
+-			ui_browser__handle_resize(browser);
+-		free(text);
+-	}
+-
+-	return key;
+-}
+-
+-int ui_browser__help_window(struct ui_browser *browser, const char *text)
+-{
+-	int key;
+-
+-	while ((key = ui__help_window(text)) == K_RESIZE)
+-		ui_browser__handle_resize(browser);
+-
+-	return key;
+-}
+-
+-bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text)
+-{
+-	int key;
+-
+-	while ((key = ui__dialog_yesno(text)) == K_RESIZE)
+-		ui_browser__handle_resize(browser);
+-
+-	return key == K_ENTER || toupper(key) == 'Y';
+-}
+-
+-void ui_browser__reset_index(struct ui_browser *self)
+-{
+-	self->index = self->top_idx = 0;
+-	self->seek(self, 0, SEEK_SET);
+-}
+-
+-void __ui_browser__show_title(struct ui_browser *browser, const char *title)
+-{
+-	SLsmg_gotorc(0, 0);
+-	ui_browser__set_color(browser, NEWT_COLORSET_ROOT);
+-	slsmg_write_nstring(title, browser->width + 1);
+-}
+-
+-void ui_browser__show_title(struct ui_browser *browser, const char *title)
+-{
+-	pthread_mutex_lock(&ui__lock);
+-	__ui_browser__show_title(browser, title);
+-	pthread_mutex_unlock(&ui__lock);
+-}
+-
+-int ui_browser__show(struct ui_browser *self, const char *title,
+-		     const char *helpline, ...)
+-{
+-	int err;
+-	va_list ap;
+-
+-	ui_browser__refresh_dimensions(self);
+-
+-	pthread_mutex_lock(&ui__lock);
+-	__ui_browser__show_title(self, title);
+-
+-	self->title = title;
+-	free(self->helpline);
+-	self->helpline = NULL;
+-
+-	va_start(ap, helpline);
+-	err = vasprintf(&self->helpline, helpline, ap);
+-	va_end(ap);
+-	if (err > 0)
+-		ui_helpline__push(self->helpline);
+-	pthread_mutex_unlock(&ui__lock);
+-	return err ? 0 : -1;
+-}
+-
+-void ui_browser__hide(struct ui_browser *browser __used)
+-{
+-	pthread_mutex_lock(&ui__lock);
+-	ui_helpline__pop();
+-	pthread_mutex_unlock(&ui__lock);
+-}
+-
+-static void ui_browser__scrollbar_set(struct ui_browser *browser)
+-{
+-	int height = browser->height, h = 0, pct = 0,
+-	    col = browser->width,
+-	    row = browser->y - 1;
+-
+-	if (browser->nr_entries > 1) {
+-		pct = ((browser->index * (browser->height - 1)) /
+-		       (browser->nr_entries - 1));
+-	}
+-
+-	SLsmg_set_char_set(1);
+-
+-	while (h < height) {
+-	        ui_browser__gotorc(browser, row++, col);
+-		SLsmg_write_char(h == pct ? SLSMG_DIAMOND_CHAR : SLSMG_CKBRD_CHAR);
+-		++h;
+-	}
+-
+-	SLsmg_set_char_set(0);
+-}
+-
+-static int __ui_browser__refresh(struct ui_browser *browser)
+-{
+-	int row;
+-	int width = browser->width;
+-
+-	row = browser->refresh(browser);
+-	ui_browser__set_color(browser, HE_COLORSET_NORMAL);
+-
+-	if (!browser->use_navkeypressed || browser->navkeypressed)
+-		ui_browser__scrollbar_set(browser);
+-	else
+-		width += 1;
+-
+-	SLsmg_fill_region(browser->y + row, browser->x,
+-			  browser->height - row, width, ' ');
+-
+-	return 0;
+-}
+-
+-int ui_browser__refresh(struct ui_browser *browser)
+-{
+-	pthread_mutex_lock(&ui__lock);
+-	__ui_browser__refresh(browser);
+-	pthread_mutex_unlock(&ui__lock);
+-
+-	return 0;
+-}
+-
+-/*
+- * Here we're updating nr_entries _after_ we started browsing, i.e.  we have to
+- * forget about any reference to any entry in the underlying data structure,
+- * that is why we do a SEEK_SET. Think about 'perf top' in the hists browser
+- * after an output_resort and hist decay.
+- */
+-void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries)
+-{
+-	off_t offset = nr_entries - browser->nr_entries;
+-
+-	browser->nr_entries = nr_entries;
+-
+-	if (offset < 0) {
+-		if (browser->top_idx < (u64)-offset)
+-			offset = -browser->top_idx;
+-
+-		browser->index += offset;
+-		browser->top_idx += offset;
+-	}
+-
+-	browser->top = NULL;
+-	browser->seek(browser, browser->top_idx, SEEK_SET);
+-}
+-
+-int ui_browser__run(struct ui_browser *self, int delay_secs)
+-{
+-	int err, key;
+-
+-	while (1) {
+-		off_t offset;
+-
+-		pthread_mutex_lock(&ui__lock);
+-		err = __ui_browser__refresh(self);
+-		SLsmg_refresh();
+-		pthread_mutex_unlock(&ui__lock);
+-		if (err < 0)
+-			break;
+-
+-		key = ui__getch(delay_secs);
+-
+-		if (key == K_RESIZE) {
+-			ui__refresh_dimensions(false);
+-			ui_browser__refresh_dimensions(self);
+-			__ui_browser__show_title(self, self->title);
+-			ui_helpline__puts(self->helpline);
+-			continue;
+-		}
+-
+-		if (self->use_navkeypressed && !self->navkeypressed) {
+-			if (key == K_DOWN || key == K_UP ||
+-			    key == K_PGDN || key == K_PGUP ||
+-			    key == K_HOME || key == K_END ||
+-			    key == ' ') {
+-				self->navkeypressed = true;
+-				continue;
+-			} else
+-				return key;
+-		}
+-
+-		switch (key) {
+-		case K_DOWN:
+-			if (self->index == self->nr_entries - 1)
+-				break;
+-			++self->index;
+-			if (self->index == self->top_idx + self->height) {
+-				++self->top_idx;
+-				self->seek(self, +1, SEEK_CUR);
+-			}
+-			break;
+-		case K_UP:
+-			if (self->index == 0)
+-				break;
+-			--self->index;
+-			if (self->index < self->top_idx) {
+-				--self->top_idx;
+-				self->seek(self, -1, SEEK_CUR);
+-			}
+-			break;
+-		case K_PGDN:
+-		case ' ':
+-			if (self->top_idx + self->height > self->nr_entries - 1)
+-				break;
+-
+-			offset = self->height;
+-			if (self->index + offset > self->nr_entries - 1)
+-				offset = self->nr_entries - 1 - self->index;
+-			self->index += offset;
+-			self->top_idx += offset;
+-			self->seek(self, +offset, SEEK_CUR);
+-			break;
+-		case K_PGUP:
+-			if (self->top_idx == 0)
+-				break;
+-
+-			if (self->top_idx < self->height)
+-				offset = self->top_idx;
+-			else
+-				offset = self->height;
+-
+-			self->index -= offset;
+-			self->top_idx -= offset;
+-			self->seek(self, -offset, SEEK_CUR);
+-			break;
+-		case K_HOME:
+-			ui_browser__reset_index(self);
+-			break;
+-		case K_END:
+-			offset = self->height - 1;
+-			if (offset >= self->nr_entries)
+-				offset = self->nr_entries - 1;
+-
+-			self->index = self->nr_entries - 1;
+-			self->top_idx = self->index - offset;
+-			self->seek(self, -offset, SEEK_END);
+-			break;
+-		default:
+-			return key;
+-		}
+-	}
+-	return -1;
+-}
+-
+-unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
+-{
+-	struct list_head *pos;
+-	struct list_head *head = self->entries;
+-	int row = 0;
+-
+-	if (self->top == NULL || self->top == self->entries)
+-                self->top = ui_browser__list_head_filter_entries(self, head->next);
+-
+-	pos = self->top;
+-
+-	list_for_each_from(pos, head) {
+-		if (!self->filter || !self->filter(self, pos)) {
+-			ui_browser__gotorc(self, row, 0);
+-			self->write(self, pos, row);
+-			if (++row == self->height)
+-				break;
+-		}
+-	}
+-
+-	return row;
+-}
+-
+-static struct ui_browser__colorset {
+-	const char *name, *fg, *bg;
+-	int colorset;
+-} ui_browser__colorsets[] = {
+-	{
+-		.colorset = HE_COLORSET_TOP,
+-		.name	  = "top",
+-		.fg	  = "red",
+-		.bg	  = "default",
+-	},
+-	{
+-		.colorset = HE_COLORSET_MEDIUM,
+-		.name	  = "medium",
+-		.fg	  = "green",
+-		.bg	  = "default",
+-	},
+-	{
+-		.colorset = HE_COLORSET_NORMAL,
+-		.name	  = "normal",
+-		.fg	  = "default",
+-		.bg	  = "default",
+-	},
+-	{
+-		.colorset = HE_COLORSET_SELECTED,
+-		.name	  = "selected",
+-		.fg	  = "black",
+-		.bg	  = "lightgray",
+-	},
+-	{
+-		.colorset = HE_COLORSET_CODE,
+-		.name	  = "code",
+-		.fg	  = "blue",
+-		.bg	  = "default",
+-	},
+-	{
+-		.name = NULL,
+-	}
+-};
+-
+-
+-static int ui_browser__color_config(const char *var, const char *value,
+-				    void *data __used)
+-{
+-	char *fg = NULL, *bg;
+-	int i;
+-
+-	/* same dir for all commands */
+-	if (prefixcmp(var, "colors.") != 0)
+-		return 0;
+-
+-	for (i = 0; ui_browser__colorsets[i].name != NULL; ++i) {
+-		const char *name = var + 7;
+-
+-		if (strcmp(ui_browser__colorsets[i].name, name) != 0)
+-			continue;
+-
+-		fg = strdup(value);
+-		if (fg == NULL)
+-			break;
+-
+-		bg = strchr(fg, ',');
+-		if (bg == NULL)
+-			break;
+-
+-		*bg = '\0';
+-		while (isspace(*++bg));
+-		ui_browser__colorsets[i].bg = bg;
+-		ui_browser__colorsets[i].fg = fg;
+-		return 0;
+-	}
+-
+-	free(fg);
+-	return -1;
+-}
+-
+-void ui_browser__argv_seek(struct ui_browser *browser, off_t offset, int whence)
+-{
+-	switch (whence) {
+-	case SEEK_SET:
+-		browser->top = browser->entries;
+-		break;
+-	case SEEK_CUR:
+-		browser->top = browser->top + browser->top_idx + offset;
+-		break;
+-	case SEEK_END:
+-		browser->top = browser->top + browser->nr_entries + offset;
+-		break;
+-	default:
+-		return;
+-	}
+-}
+-
+-unsigned int ui_browser__argv_refresh(struct ui_browser *browser)
+-{
+-	unsigned int row = 0, idx = browser->top_idx;
+-	char **pos;
+-
+-	if (browser->top == NULL)
+-		browser->top = browser->entries;
+-
+-	pos = (char **)browser->top;
+-	while (idx < browser->nr_entries) {
+-		if (!browser->filter || !browser->filter(browser, *pos)) {
+-			ui_browser__gotorc(browser, row, 0);
+-			browser->write(browser, pos, row);
+-			if (++row == browser->height)
+-				break;
+-		}
+-
+-		++idx;
+-		++pos;
+-	}
+-
+-	return row;
+-}
+-
+-void ui_browser__init(void)
+-{
+-	int i = 0;
+-
+-	perf_config(ui_browser__color_config, NULL);
+-
+-	while (ui_browser__colorsets[i].name) {
+-		struct ui_browser__colorset *c = &ui_browser__colorsets[i++];
+-		sltt_set_color(c->colorset, c->name, c->fg, c->bg);
+-	}
+-}
+diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
+deleted file mode 100644
+index 6ee82f60feaf..000000000000
+--- a/tools/perf/util/ui/browser.h
++++ /dev/null
+@@ -1,65 +0,0 @@
+-#ifndef _PERF_UI_BROWSER_H_
+-#define _PERF_UI_BROWSER_H_ 1
+-
+-#include <stdbool.h>
+-#include <sys/types.h>
+-#include "../types.h"
+-
+-#define HE_COLORSET_TOP		50
+-#define HE_COLORSET_MEDIUM	51
+-#define HE_COLORSET_NORMAL	52
+-#define HE_COLORSET_SELECTED	53
+-#define HE_COLORSET_CODE	54
+-
+-struct ui_browser {
+-	u64	      index, top_idx;
+-	void	      *top, *entries;
+-	u16	      y, x, width, height;
+-	void	      *priv;
+-	const char    *title;
+-	char	      *helpline;
+-	unsigned int  (*refresh)(struct ui_browser *self);
+-	void	      (*write)(struct ui_browser *self, void *entry, int row);
+-	void	      (*seek)(struct ui_browser *self, off_t offset, int whence);
+-	bool	      (*filter)(struct ui_browser *self, void *entry);
+-	u32	      nr_entries;
+-	bool	      navkeypressed;
+-	bool	      use_navkeypressed;
+-};
+-
+-void ui_browser__set_color(struct ui_browser *self, int color);
+-void ui_browser__set_percent_color(struct ui_browser *self,
+-				   double percent, bool current);
+-bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row);
+-void ui_browser__refresh_dimensions(struct ui_browser *self);
+-void ui_browser__reset_index(struct ui_browser *self);
+-
+-void ui_browser__gotorc(struct ui_browser *self, int y, int x);
+-void __ui_browser__show_title(struct ui_browser *browser, const char *title);
+-void ui_browser__show_title(struct ui_browser *browser, const char *title);
+-int ui_browser__show(struct ui_browser *self, const char *title,
+-		     const char *helpline, ...);
+-void ui_browser__hide(struct ui_browser *self);
+-int ui_browser__refresh(struct ui_browser *self);
+-int ui_browser__run(struct ui_browser *browser, int delay_secs);
+-void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries);
+-void ui_browser__handle_resize(struct ui_browser *browser);
+-
+-int ui_browser__warning(struct ui_browser *browser, int timeout,
+-			const char *format, ...);
+-int ui_browser__help_window(struct ui_browser *browser, const char *text);
+-bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text);
+-int ui_browser__input_window(const char *title, const char *text, char *input,
+-			     const char *exit_msg, int delay_sec);
+-
+-void ui_browser__argv_seek(struct ui_browser *browser, off_t offset, int whence);
+-unsigned int ui_browser__argv_refresh(struct ui_browser *browser);
+-
+-void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence);
+-unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self);
+-
+-void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whence);
+-unsigned int ui_browser__list_head_refresh(struct ui_browser *self);
+-
+-void ui_browser__init(void);
+-#endif /* _PERF_UI_BROWSER_H_ */
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+deleted file mode 100644
+index 57a4c6ef3fd2..000000000000
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ /dev/null
+@@ -1,433 +0,0 @@
+-#include "../../util.h"
+-#include "../browser.h"
+-#include "../helpline.h"
+-#include "../libslang.h"
+-#include "../ui.h"
+-#include "../util.h"
+-#include "../../annotate.h"
+-#include "../../hist.h"
+-#include "../../sort.h"
+-#include "../../symbol.h"
+-#include <pthread.h>
+-#include <newt.h>
+-
+-struct annotate_browser {
+-	struct ui_browser b;
+-	struct rb_root	  entries;
+-	struct rb_node	  *curr_hot;
+-	struct objdump_line *selection;
+-	int		    nr_asm_entries;
+-	int		    nr_entries;
+-	bool		    hide_src_code;
+-};
+-
+-struct objdump_line_rb_node {
+-	struct rb_node	rb_node;
+-	double		percent;
+-	u32		idx;
+-	int		idx_asm;
+-};
+-
+-static inline
+-struct objdump_line_rb_node *objdump_line__rb(struct objdump_line *self)
+-{
+-	return (struct objdump_line_rb_node *)(self + 1);
+-}
+-
+-static bool objdump_line__filter(struct ui_browser *browser, void *entry)
+-{
+-	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
+-
+-	if (ab->hide_src_code) {
+-		struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
+-		return ol->offset == -1;
+-	}
+-
+-	return false;
+-}
+-
+-static void annotate_browser__write(struct ui_browser *self, void *entry, int row)
+-{
+-	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
+-	struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
+-	bool current_entry = ui_browser__is_current_entry(self, row);
+-	int width = self->width;
+-
+-	if (ol->offset != -1) {
+-		struct objdump_line_rb_node *olrb = objdump_line__rb(ol);
+-		ui_browser__set_percent_color(self, olrb->percent, current_entry);
+-		slsmg_printf(" %7.2f ", olrb->percent);
+-	} else {
+-		ui_browser__set_percent_color(self, 0, current_entry);
+-		slsmg_write_nstring(" ", 9);
+-	}
+-
+-	SLsmg_write_char(':');
+-	slsmg_write_nstring(" ", 8);
+-
+-	/* The scroll bar isn't being used */
+-	if (!self->navkeypressed)
+-		width += 1;
+-
+-	if (!ab->hide_src_code && ol->offset != -1)
+-		if (!current_entry || (self->use_navkeypressed &&
+-				       !self->navkeypressed))
+-			ui_browser__set_color(self, HE_COLORSET_CODE);
+-
+-	if (!*ol->line)
+-		slsmg_write_nstring(" ", width - 18);
+-	else
+-		slsmg_write_nstring(ol->line, width - 18);
+-
+-	if (current_entry)
+-		ab->selection = ol;
+-}
+-
+-static double objdump_line__calc_percent(struct objdump_line *self,
+-					 struct symbol *sym, int evidx)
+-{
+-	double percent = 0.0;
+-
+-	if (self->offset != -1) {
+-		int len = sym->end - sym->start;
+-		unsigned int hits = 0;
+-		struct annotation *notes = symbol__annotation(sym);
+-		struct source_line *src_line = notes->src->lines;
+-		struct sym_hist *h = annotation__histogram(notes, evidx);
+-		s64 offset = self->offset;
+-		struct objdump_line *next;
+-
+-		next = objdump__get_next_ip_line(&notes->src->source, self);
+-		while (offset < (s64)len &&
+-		       (next == NULL || offset < next->offset)) {
+-			if (src_line) {
+-				percent += src_line[offset].percent;
+-			} else
+-				hits += h->addr[offset];
+-
+-			++offset;
+-		}
+-		/*
+- 		 * If the percentage wasn't already calculated in
+- 		 * symbol__get_source_line, do it now:
+- 		 */
+-		if (src_line == NULL && h->sum)
+-			percent = 100.0 * hits / h->sum;
+-	}
+-
+-	return percent;
+-}
+-
+-static void objdump__insert_line(struct rb_root *self,
+-				 struct objdump_line_rb_node *line)
+-{
+-	struct rb_node **p = &self->rb_node;
+-	struct rb_node *parent = NULL;
+-	struct objdump_line_rb_node *l;
+-
+-	while (*p != NULL) {
+-		parent = *p;
+-		l = rb_entry(parent, struct objdump_line_rb_node, rb_node);
+-		if (line->percent < l->percent)
+-			p = &(*p)->rb_left;
+-		else
+-			p = &(*p)->rb_right;
+-	}
+-	rb_link_node(&line->rb_node, parent, p);
+-	rb_insert_color(&line->rb_node, self);
+-}
+-
+-static void annotate_browser__set_top(struct annotate_browser *self,
+-				      struct rb_node *nd)
+-{
+-	struct objdump_line_rb_node *rbpos;
+-	struct objdump_line *pos;
+-	unsigned back;
+-
+-	ui_browser__refresh_dimensions(&self->b);
+-	back = self->b.height / 2;
+-	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
+-	pos = ((struct objdump_line *)rbpos) - 1;
+-	self->b.top_idx = self->b.index = rbpos->idx;
+-
+-	while (self->b.top_idx != 0 && back != 0) {
+-		pos = list_entry(pos->node.prev, struct objdump_line, node);
+-
+-		--self->b.top_idx;
+-		--back;
+-	}
+-
+-	self->b.top = pos;
+-	self->curr_hot = nd;
+-}
+-
+-static void annotate_browser__calc_percent(struct annotate_browser *browser,
+-					   int evidx)
+-{
+-	struct map_symbol *ms = browser->b.priv;
+-	struct symbol *sym = ms->sym;
+-	struct annotation *notes = symbol__annotation(sym);
+-	struct objdump_line *pos;
+-
+-	browser->entries = RB_ROOT;
+-
+-	pthread_mutex_lock(&notes->lock);
+-
+-	list_for_each_entry(pos, &notes->src->source, node) {
+-		struct objdump_line_rb_node *rbpos = objdump_line__rb(pos);
+-		rbpos->percent = objdump_line__calc_percent(pos, sym, evidx);
+-		if (rbpos->percent < 0.01) {
+-			RB_CLEAR_NODE(&rbpos->rb_node);
+-			continue;
+-		}
+-		objdump__insert_line(&browser->entries, rbpos);
+-	}
+-	pthread_mutex_unlock(&notes->lock);
+-
+-	browser->curr_hot = rb_last(&browser->entries);
+-}
+-
+-static bool annotate_browser__toggle_source(struct annotate_browser *browser)
+-{
+-	struct objdump_line *ol;
+-	struct objdump_line_rb_node *olrb;
+-	off_t offset = browser->b.index - browser->b.top_idx;
+-
+-	browser->b.seek(&browser->b, offset, SEEK_CUR);
+-	ol = list_entry(browser->b.top, struct objdump_line, node);
+-	olrb = objdump_line__rb(ol);
+-
+-	if (browser->hide_src_code) {
+-		if (olrb->idx_asm < offset)
+-			offset = olrb->idx;
+-
+-		browser->b.nr_entries = browser->nr_entries;
+-		browser->hide_src_code = false;
+-		browser->b.seek(&browser->b, -offset, SEEK_CUR);
+-		browser->b.top_idx = olrb->idx - offset;
+-		browser->b.index = olrb->idx;
+-	} else {
+-		if (olrb->idx_asm < 0) {
+-			ui_helpline__puts("Only available for assembly lines.");
+-			browser->b.seek(&browser->b, -offset, SEEK_CUR);
+-			return false;
+-		}
+-
+-		if (olrb->idx_asm < offset)
+-			offset = olrb->idx_asm;
+-
+-		browser->b.nr_entries = browser->nr_asm_entries;
+-		browser->hide_src_code = true;
+-		browser->b.seek(&browser->b, -offset, SEEK_CUR);
+-		browser->b.top_idx = olrb->idx_asm - offset;
+-		browser->b.index = olrb->idx_asm;
+-	}
+-
+-	return true;
+-}
+-
+-static int annotate_browser__run(struct annotate_browser *self, int evidx,
+-				 void(*timer)(void *arg),
+-				 void *arg, int delay_secs)
+-{
+-	struct rb_node *nd = NULL;
+-	struct map_symbol *ms = self->b.priv;
+-	struct symbol *sym = ms->sym;
+-	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
+-			   "H: Go to hottest line, ->/ENTER: Line action, "
+-			   "S: Toggle source code view";
+-	int key;
+-
+-	if (ui_browser__show(&self->b, sym->name, help) < 0)
+-		return -1;
+-
+-	annotate_browser__calc_percent(self, evidx);
+-
+-	if (self->curr_hot)
+-		annotate_browser__set_top(self, self->curr_hot);
+-
+-	nd = self->curr_hot;
+-
+-	while (1) {
+-		key = ui_browser__run(&self->b, delay_secs);
+-
+-		if (delay_secs != 0) {
+-			annotate_browser__calc_percent(self, evidx);
+-			/*
+-			 * Current line focus got out of the list of most active
+-			 * lines, NULL it so that if TAB|UNTAB is pressed, we
+-			 * move to curr_hot (current hottest line).
+-			 */
+-			if (nd != NULL && RB_EMPTY_NODE(nd))
+-				nd = NULL;
+-		}
+-
+-		switch (key) {
+-		case K_TIMER:
+-			if (timer != NULL)
+-				timer(arg);
+-
+-			if (delay_secs != 0)
+-				symbol__annotate_decay_histogram(sym, evidx);
+-			continue;
+-		case K_TAB:
+-			if (nd != NULL) {
+-				nd = rb_prev(nd);
+-				if (nd == NULL)
+-					nd = rb_last(&self->entries);
+-			} else
+-				nd = self->curr_hot;
+-			break;
+-		case K_UNTAB:
+-			if (nd != NULL)
+-				nd = rb_next(nd);
+-				if (nd == NULL)
+-					nd = rb_first(&self->entries);
+-			else
+-				nd = self->curr_hot;
+-			break;
+-		case 'H':
+-		case 'h':
+-			nd = self->curr_hot;
+-			break;
+-		case 'S':
+-		case 's':
+-			if (annotate_browser__toggle_source(self))
+-				ui_helpline__puts(help);
+-			continue;
+-		case K_ENTER:
+-		case K_RIGHT:
+-			if (self->selection == NULL) {
+-				ui_helpline__puts("Huh? No selection. Report to linux-kernel@vger.kernel.org");
+-				continue;
+-			}
+-
+-			if (self->selection->offset == -1) {
+-				ui_helpline__puts("Actions are only available for assembly lines.");
+-				continue;
+-			} else {
+-				char *s = strstr(self->selection->line, "callq ");
+-				struct annotation *notes;
+-				struct symbol *target;
+-				u64 ip;
+-
+-				if (s == NULL) {
+-					ui_helpline__puts("Actions are only available for the 'callq' instruction.");
+-					continue;
+-				}
+-
+-				s = strchr(s, ' ');
+-				if (s++ == NULL) {
+-					ui_helpline__puts("Invallid callq instruction.");
+-					continue;
+-				}
+-
+-				ip = strtoull(s, NULL, 16);
+-				ip = ms->map->map_ip(ms->map, ip);
+-				target = map__find_symbol(ms->map, ip, NULL);
+-				if (target == NULL) {
+-					ui_helpline__puts("The called function was not found.");
+-					continue;
+-				}
+-
+-				notes = symbol__annotation(target);
+-				pthread_mutex_lock(&notes->lock);
+-
+-				if (notes->src == NULL && symbol__alloc_hist(target) < 0) {
+-					pthread_mutex_unlock(&notes->lock);
+-					ui__warning("Not enough memory for annotating '%s' symbol!\n",
+-						    target->name);
+-					continue;
+-				}
+-
+-				pthread_mutex_unlock(&notes->lock);
+-				symbol__tui_annotate(target, ms->map, evidx,
+-						     timer, arg, delay_secs);
+-				ui_browser__show_title(&self->b, sym->name);
+-			}
+-			continue;
+-		case K_LEFT:
+-		case K_ESC:
+-		case 'q':
+-		case CTRL('c'):
+-			goto out;
+-		default:
+-			continue;
+-		}
+-
+-		if (nd != NULL)
+-			annotate_browser__set_top(self, nd);
+-	}
+-out:
+-	ui_browser__hide(&self->b);
+-	return key;
+-}
+-
+-int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+-			     void(*timer)(void *arg), void *arg, int delay_secs)
+-{
+-	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx,
+-				    timer, arg, delay_secs);
+-}
+-
+-int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+-			 void(*timer)(void *arg), void *arg,
+-			 int delay_secs)
+-{
+-	struct objdump_line *pos, *n;
+-	struct annotation *notes;
+-	struct map_symbol ms = {
+-		.map = map,
+-		.sym = sym,
+-	};
+-	struct annotate_browser browser = {
+-		.b = {
+-			.refresh = ui_browser__list_head_refresh,
+-			.seek	 = ui_browser__list_head_seek,
+-			.write	 = annotate_browser__write,
+-			.filter  = objdump_line__filter,
+-			.priv	 = &ms,
+-			.use_navkeypressed = true,
+-		},
+-	};
+-	int ret;
+-
+-	if (sym == NULL)
+-		return -1;
+-
+-	if (map->dso->annotate_warned)
+-		return -1;
+-
+-	if (symbol__annotate(sym, map, sizeof(struct objdump_line_rb_node)) < 0) {
+-		ui__error("%s", ui_helpline__last_msg);
+-		return -1;
+-	}
+-
+-	ui_helpline__push("Press <- or ESC to exit");
+-
+-	notes = symbol__annotation(sym);
+-
+-	list_for_each_entry(pos, &notes->src->source, node) {
+-		struct objdump_line_rb_node *rbpos;
+-		size_t line_len = strlen(pos->line);
+-
+-		if (browser.b.width < line_len)
+-			browser.b.width = line_len;
+-		rbpos = objdump_line__rb(pos);
+-		rbpos->idx = browser.nr_entries++;
+-		if (pos->offset != -1)
+-			rbpos->idx_asm = browser.nr_asm_entries++;
+-		else
+-			rbpos->idx_asm = -1;
+-	}
+-
+-	browser.b.nr_entries = browser.nr_entries;
+-	browser.b.entries = &notes->src->source,
+-	browser.b.width += 18; /* Percentage */
+-	ret = annotate_browser__run(&browser, evidx, timer, arg, delay_secs);
+-	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
+-		list_del(&pos->node);
+-		objdump_line__free(pos);
+-	}
+-	return ret;
+-}
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+deleted file mode 100644
+index d7a1c4afe28b..000000000000
+--- a/tools/perf/util/ui/browsers/hists.c
++++ /dev/null
+@@ -1,1338 +0,0 @@
+-#include <stdio.h>
+-#include "../libslang.h"
+-#include <stdlib.h>
+-#include <string.h>
+-#include <newt.h>
+-#include <linux/rbtree.h>
+-
+-#include "../../evsel.h"
+-#include "../../evlist.h"
+-#include "../../hist.h"
+-#include "../../pstack.h"
+-#include "../../sort.h"
+-#include "../../util.h"
+-
+-#include "../browser.h"
+-#include "../helpline.h"
+-#include "../util.h"
+-#include "../ui.h"
+-#include "map.h"
+-
+-struct hist_browser {
+-	struct ui_browser   b;
+-	struct hists	    *hists;
+-	struct hist_entry   *he_selection;
+-	struct map_symbol   *selection;
+-	bool		     has_symbols;
+-};
+-
+-static int hists__browser_title(struct hists *self, char *bf, size_t size,
+-				const char *ev_name);
+-
+-static void hist_browser__refresh_dimensions(struct hist_browser *self)
+-{
+-	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+-	self->b.width = 3 + (hists__sort_list_width(self->hists) +
+-			     sizeof("[k]"));
+-}
+-
+-static void hist_browser__reset(struct hist_browser *self)
+-{
+-	self->b.nr_entries = self->hists->nr_entries;
+-	hist_browser__refresh_dimensions(self);
+-	ui_browser__reset_index(&self->b);
+-}
+-
+-static char tree__folded_sign(bool unfolded)
+-{
+-	return unfolded ? '-' : '+';
+-}
+-
+-static char map_symbol__folded(const struct map_symbol *self)
+-{
+-	return self->has_children ? tree__folded_sign(self->unfolded) : ' ';
+-}
+-
+-static char hist_entry__folded(const struct hist_entry *self)
+-{
+-	return map_symbol__folded(&self->ms);
+-}
+-
+-static char callchain_list__folded(const struct callchain_list *self)
+-{
+-	return map_symbol__folded(&self->ms);
+-}
+-
+-static void map_symbol__set_folding(struct map_symbol *self, bool unfold)
+-{
+-	self->unfolded = unfold ? self->has_children : false;
+-}
+-
+-static int callchain_node__count_rows_rb_tree(struct callchain_node *self)
+-{
+-	int n = 0;
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
+-		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
+-		struct callchain_list *chain;
+-		char folded_sign = ' '; /* No children */
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			++n;
+-			/* We need this because we may not have children */
+-			folded_sign = callchain_list__folded(chain);
+-			if (folded_sign == '+')
+-				break;
+-		}
+-
+-		if (folded_sign == '-') /* Have children and they're unfolded */
+-			n += callchain_node__count_rows_rb_tree(child);
+-	}
+-
+-	return n;
+-}
+-
+-static int callchain_node__count_rows(struct callchain_node *node)
+-{
+-	struct callchain_list *chain;
+-	bool unfolded = false;
+-	int n = 0;
+-
+-	list_for_each_entry(chain, &node->val, list) {
+-		++n;
+-		unfolded = chain->ms.unfolded;
+-	}
+-
+-	if (unfolded)
+-		n += callchain_node__count_rows_rb_tree(node);
+-
+-	return n;
+-}
+-
+-static int callchain__count_rows(struct rb_root *chain)
+-{
+-	struct rb_node *nd;
+-	int n = 0;
+-
+-	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		n += callchain_node__count_rows(node);
+-	}
+-
+-	return n;
+-}
+-
+-static bool map_symbol__toggle_fold(struct map_symbol *self)
+-{
+-	if (!self->has_children)
+-		return false;
+-
+-	self->unfolded = !self->unfolded;
+-	return true;
+-}
+-
+-static void callchain_node__init_have_children_rb_tree(struct callchain_node *self)
+-{
+-	struct rb_node *nd = rb_first(&self->rb_root);
+-
+-	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
+-		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
+-		struct callchain_list *chain;
+-		bool first = true;
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			if (first) {
+-				first = false;
+-				chain->ms.has_children = chain->list.next != &child->val ||
+-							 !RB_EMPTY_ROOT(&child->rb_root);
+-			} else
+-				chain->ms.has_children = chain->list.next == &child->val &&
+-							 !RB_EMPTY_ROOT(&child->rb_root);
+-		}
+-
+-		callchain_node__init_have_children_rb_tree(child);
+-	}
+-}
+-
+-static void callchain_node__init_have_children(struct callchain_node *self)
+-{
+-	struct callchain_list *chain;
+-
+-	list_for_each_entry(chain, &self->val, list)
+-		chain->ms.has_children = !RB_EMPTY_ROOT(&self->rb_root);
+-
+-	callchain_node__init_have_children_rb_tree(self);
+-}
+-
+-static void callchain__init_have_children(struct rb_root *self)
+-{
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		callchain_node__init_have_children(node);
+-	}
+-}
+-
+-static void hist_entry__init_have_children(struct hist_entry *self)
+-{
+-	if (!self->init_have_children) {
+-		self->ms.has_children = !RB_EMPTY_ROOT(&self->sorted_chain);
+-		callchain__init_have_children(&self->sorted_chain);
+-		self->init_have_children = true;
+-	}
+-}
+-
+-static bool hist_browser__toggle_fold(struct hist_browser *self)
+-{
+-	if (map_symbol__toggle_fold(self->selection)) {
+-		struct hist_entry *he = self->he_selection;
+-
+-		hist_entry__init_have_children(he);
+-		self->hists->nr_entries -= he->nr_rows;
+-
+-		if (he->ms.unfolded)
+-			he->nr_rows = callchain__count_rows(&he->sorted_chain);
+-		else
+-			he->nr_rows = 0;
+-		self->hists->nr_entries += he->nr_rows;
+-		self->b.nr_entries = self->hists->nr_entries;
+-
+-		return true;
+-	}
+-
+-	/* If it doesn't have children, no toggling performed */
+-	return false;
+-}
+-
+-static int callchain_node__set_folding_rb_tree(struct callchain_node *self, bool unfold)
+-{
+-	int n = 0;
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
+-		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
+-		struct callchain_list *chain;
+-		bool has_children = false;
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			++n;
+-			map_symbol__set_folding(&chain->ms, unfold);
+-			has_children = chain->ms.has_children;
+-		}
+-
+-		if (has_children)
+-			n += callchain_node__set_folding_rb_tree(child, unfold);
+-	}
+-
+-	return n;
+-}
+-
+-static int callchain_node__set_folding(struct callchain_node *node, bool unfold)
+-{
+-	struct callchain_list *chain;
+-	bool has_children = false;
+-	int n = 0;
+-
+-	list_for_each_entry(chain, &node->val, list) {
+-		++n;
+-		map_symbol__set_folding(&chain->ms, unfold);
+-		has_children = chain->ms.has_children;
+-	}
+-
+-	if (has_children)
+-		n += callchain_node__set_folding_rb_tree(node, unfold);
+-
+-	return n;
+-}
+-
+-static int callchain__set_folding(struct rb_root *chain, bool unfold)
+-{
+-	struct rb_node *nd;
+-	int n = 0;
+-
+-	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		n += callchain_node__set_folding(node, unfold);
+-	}
+-
+-	return n;
+-}
+-
+-static void hist_entry__set_folding(struct hist_entry *self, bool unfold)
+-{
+-	hist_entry__init_have_children(self);
+-	map_symbol__set_folding(&self->ms, unfold);
+-
+-	if (self->ms.has_children) {
+-		int n = callchain__set_folding(&self->sorted_chain, unfold);
+-		self->nr_rows = unfold ? n : 0;
+-	} else
+-		self->nr_rows = 0;
+-}
+-
+-static void hists__set_folding(struct hists *self, bool unfold)
+-{
+-	struct rb_node *nd;
+-
+-	self->nr_entries = 0;
+-
+-	for (nd = rb_first(&self->entries); nd; nd = rb_next(nd)) {
+-		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
+-		hist_entry__set_folding(he, unfold);
+-		self->nr_entries += 1 + he->nr_rows;
+-	}
+-}
+-
+-static void hist_browser__set_folding(struct hist_browser *self, bool unfold)
+-{
+-	hists__set_folding(self->hists, unfold);
+-	self->b.nr_entries = self->hists->nr_entries;
+-	/* Go to the start, we may be way after valid entries after a collapse */
+-	ui_browser__reset_index(&self->b);
+-}
+-
+-static void ui_browser__warn_lost_events(struct ui_browser *browser)
+-{
+-	ui_browser__warning(browser, 4,
+-		"Events are being lost, check IO/CPU overload!\n\n"
+-		"You may want to run 'perf' using a RT scheduler policy:\n\n"
+-		" perf top -r 80\n\n"
+-		"Or reduce the sampling frequency.");
+-}
+-
+-static int hist_browser__run(struct hist_browser *self, const char *ev_name,
+-			     void(*timer)(void *arg), void *arg, int delay_secs)
+-{
+-	int key;
+-	char title[160];
+-
+-	self->b.entries = &self->hists->entries;
+-	self->b.nr_entries = self->hists->nr_entries;
+-
+-	hist_browser__refresh_dimensions(self);
+-	hists__browser_title(self->hists, title, sizeof(title), ev_name);
+-
+-	if (ui_browser__show(&self->b, title,
+-			     "Press '?' for help on key bindings") < 0)
+-		return -1;
+-
+-	while (1) {
+-		key = ui_browser__run(&self->b, delay_secs);
+-
+-		switch (key) {
+-		case K_TIMER:
+-			timer(arg);
+-			ui_browser__update_nr_entries(&self->b, self->hists->nr_entries);
+-
+-			if (self->hists->stats.nr_lost_warned !=
+-			    self->hists->stats.nr_events[PERF_RECORD_LOST]) {
+-				self->hists->stats.nr_lost_warned =
+-					self->hists->stats.nr_events[PERF_RECORD_LOST];
+-				ui_browser__warn_lost_events(&self->b);
+-			}
+-
+-			hists__browser_title(self->hists, title, sizeof(title), ev_name);
+-			ui_browser__show_title(&self->b, title);
+-			continue;
+-		case 'D': { /* Debug */
+-			static int seq;
+-			struct hist_entry *h = rb_entry(self->b.top,
+-							struct hist_entry, rb_node);
+-			ui_helpline__pop();
+-			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
+-					   seq++, self->b.nr_entries,
+-					   self->hists->nr_entries,
+-					   self->b.height,
+-					   self->b.index,
+-					   self->b.top_idx,
+-					   h->row_offset, h->nr_rows);
+-		}
+-			break;
+-		case 'C':
+-			/* Collapse the whole world. */
+-			hist_browser__set_folding(self, false);
+-			break;
+-		case 'E':
+-			/* Expand the whole world. */
+-			hist_browser__set_folding(self, true);
+-			break;
+-		case K_ENTER:
+-			if (hist_browser__toggle_fold(self))
+-				break;
+-			/* fall thru */
+-		default:
+-			goto out;
+-		}
+-	}
+-out:
+-	ui_browser__hide(&self->b);
+-	return key;
+-}
+-
+-static char *callchain_list__sym_name(struct callchain_list *self,
+-				      char *bf, size_t bfsize)
+-{
+-	if (self->ms.sym)
+-		return self->ms.sym->name;
+-
+-	snprintf(bf, bfsize, "%#" PRIx64, self->ip);
+-	return bf;
+-}
+-
+-#define LEVEL_OFFSET_STEP 3
+-
+-static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
+-						     struct callchain_node *chain_node,
+-						     u64 total, int level,
+-						     unsigned short row,
+-						     off_t *row_offset,
+-						     bool *is_current_entry)
+-{
+-	struct rb_node *node;
+-	int first_row = row, width, offset = level * LEVEL_OFFSET_STEP;
+-	u64 new_total, remaining;
+-
+-	if (callchain_param.mode == CHAIN_GRAPH_REL)
+-		new_total = chain_node->children_hit;
+-	else
+-		new_total = total;
+-
+-	remaining = new_total;
+-	node = rb_first(&chain_node->rb_root);
+-	while (node) {
+-		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
+-		struct rb_node *next = rb_next(node);
+-		u64 cumul = callchain_cumul_hits(child);
+-		struct callchain_list *chain;
+-		char folded_sign = ' ';
+-		int first = true;
+-		int extra_offset = 0;
+-
+-		remaining -= cumul;
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
+-			const char *str;
+-			int color;
+-			bool was_first = first;
+-
+-			if (first)
+-				first = false;
+-			else
+-				extra_offset = LEVEL_OFFSET_STEP;
+-
+-			folded_sign = callchain_list__folded(chain);
+-			if (*row_offset != 0) {
+-				--*row_offset;
+-				goto do_next;
+-			}
+-
+-			alloc_str = NULL;
+-			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
+-			if (was_first) {
+-				double percent = cumul * 100.0 / new_total;
+-
+-				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
+-					str = "Not enough memory!";
+-				else
+-					str = alloc_str;
+-			}
+-
+-			color = HE_COLORSET_NORMAL;
+-			width = self->b.width - (offset + extra_offset + 2);
+-			if (ui_browser__is_current_entry(&self->b, row)) {
+-				self->selection = &chain->ms;
+-				color = HE_COLORSET_SELECTED;
+-				*is_current_entry = true;
+-			}
+-
+-			ui_browser__set_color(&self->b, color);
+-			ui_browser__gotorc(&self->b, row, 0);
+-			slsmg_write_nstring(" ", offset + extra_offset);
+-			slsmg_printf("%c ", folded_sign);
+-			slsmg_write_nstring(str, width);
+-			free(alloc_str);
+-
+-			if (++row == self->b.height)
+-				goto out;
+-do_next:
+-			if (folded_sign == '+')
+-				break;
+-		}
+-
+-		if (folded_sign == '-') {
+-			const int new_level = level + (extra_offset ? 2 : 1);
+-			row += hist_browser__show_callchain_node_rb_tree(self, child, new_total,
+-									 new_level, row, row_offset,
+-									 is_current_entry);
+-		}
+-		if (row == self->b.height)
+-			goto out;
+-		node = next;
+-	}
+-out:
+-	return row - first_row;
+-}
+-
+-static int hist_browser__show_callchain_node(struct hist_browser *self,
+-					     struct callchain_node *node,
+-					     int level, unsigned short row,
+-					     off_t *row_offset,
+-					     bool *is_current_entry)
+-{
+-	struct callchain_list *chain;
+-	int first_row = row,
+-	     offset = level * LEVEL_OFFSET_STEP,
+-	     width = self->b.width - offset;
+-	char folded_sign = ' ';
+-
+-	list_for_each_entry(chain, &node->val, list) {
+-		char ipstr[BITS_PER_LONG / 4 + 1], *s;
+-		int color;
+-
+-		folded_sign = callchain_list__folded(chain);
+-
+-		if (*row_offset != 0) {
+-			--*row_offset;
+-			continue;
+-		}
+-
+-		color = HE_COLORSET_NORMAL;
+-		if (ui_browser__is_current_entry(&self->b, row)) {
+-			self->selection = &chain->ms;
+-			color = HE_COLORSET_SELECTED;
+-			*is_current_entry = true;
+-		}
+-
+-		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
+-		ui_browser__gotorc(&self->b, row, 0);
+-		ui_browser__set_color(&self->b, color);
+-		slsmg_write_nstring(" ", offset);
+-		slsmg_printf("%c ", folded_sign);
+-		slsmg_write_nstring(s, width - 2);
+-
+-		if (++row == self->b.height)
+-			goto out;
+-	}
+-
+-	if (folded_sign == '-')
+-		row += hist_browser__show_callchain_node_rb_tree(self, node,
+-								 self->hists->stats.total_period,
+-								 level + 1, row,
+-								 row_offset,
+-								 is_current_entry);
+-out:
+-	return row - first_row;
+-}
+-
+-static int hist_browser__show_callchain(struct hist_browser *self,
+-					struct rb_root *chain,
+-					int level, unsigned short row,
+-					off_t *row_offset,
+-					bool *is_current_entry)
+-{
+-	struct rb_node *nd;
+-	int first_row = row;
+-
+-	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-
+-		row += hist_browser__show_callchain_node(self, node, level,
+-							 row, row_offset,
+-							 is_current_entry);
+-		if (row == self->b.height)
+-			break;
+-	}
+-
+-	return row - first_row;
+-}
+-
+-static int hist_browser__show_entry(struct hist_browser *self,
+-				    struct hist_entry *entry,
+-				    unsigned short row)
+-{
+-	char s[256];
+-	double percent;
+-	int printed = 0;
+-	int width = self->b.width - 6; /* The percentage */
+-	char folded_sign = ' ';
+-	bool current_entry = ui_browser__is_current_entry(&self->b, row);
+-	off_t row_offset = entry->row_offset;
+-
+-	if (current_entry) {
+-		self->he_selection = entry;
+-		self->selection = &entry->ms;
+-	}
+-
+-	if (symbol_conf.use_callchain) {
+-		hist_entry__init_have_children(entry);
+-		folded_sign = hist_entry__folded(entry);
+-	}
+-
+-	if (row_offset == 0) {
+-		hist_entry__snprintf(entry, s, sizeof(s), self->hists);
+-		percent = (entry->period * 100.0) / self->hists->stats.total_period;
+-
+-		ui_browser__set_percent_color(&self->b, percent, current_entry);
+-		ui_browser__gotorc(&self->b, row, 0);
+-		if (symbol_conf.use_callchain) {
+-			slsmg_printf("%c ", folded_sign);
+-			width -= 2;
+-		}
+-
+-		slsmg_printf(" %5.2f%%", percent);
+-
+-		/* The scroll bar isn't being used */
+-		if (!self->b.navkeypressed)
+-			width += 1;
+-
+-		if (!current_entry || !self->b.navkeypressed)
+-			ui_browser__set_color(&self->b, HE_COLORSET_NORMAL);
+-
+-		if (symbol_conf.show_nr_samples) {
+-			slsmg_printf(" %11u", entry->nr_events);
+-			width -= 12;
+-		}
+-
+-		if (symbol_conf.show_total_period) {
+-			slsmg_printf(" %12" PRIu64, entry->period);
+-			width -= 13;
+-		}
+-
+-		slsmg_write_nstring(s, width);
+-		++row;
+-		++printed;
+-	} else
+-		--row_offset;
+-
+-	if (folded_sign == '-' && row != self->b.height) {
+-		printed += hist_browser__show_callchain(self, &entry->sorted_chain,
+-							1, row, &row_offset,
+-							&current_entry);
+-		if (current_entry)
+-			self->he_selection = entry;
+-	}
+-
+-	return printed;
+-}
+-
+-static void ui_browser__hists_init_top(struct ui_browser *browser)
+-{
+-	if (browser->top == NULL) {
+-		struct hist_browser *hb;
+-
+-		hb = container_of(browser, struct hist_browser, b);
+-		browser->top = rb_first(&hb->hists->entries);
+-	}
+-}
+-
+-static unsigned int hist_browser__refresh(struct ui_browser *self)
+-{
+-	unsigned row = 0;
+-	struct rb_node *nd;
+-	struct hist_browser *hb = container_of(self, struct hist_browser, b);
+-
+-	ui_browser__hists_init_top(self);
+-
+-	for (nd = self->top; nd; nd = rb_next(nd)) {
+-		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-
+-		if (h->filtered)
+-			continue;
+-
+-		row += hist_browser__show_entry(hb, h, row);
+-		if (row == self->height)
+-			break;
+-	}
+-
+-	return row;
+-}
+-
+-static struct rb_node *hists__filter_entries(struct rb_node *nd)
+-{
+-	while (nd != NULL) {
+-		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		if (!h->filtered)
+-			return nd;
+-
+-		nd = rb_next(nd);
+-	}
+-
+-	return NULL;
+-}
+-
+-static struct rb_node *hists__filter_prev_entries(struct rb_node *nd)
+-{
+-	while (nd != NULL) {
+-		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		if (!h->filtered)
+-			return nd;
+-
+-		nd = rb_prev(nd);
+-	}
+-
+-	return NULL;
+-}
+-
+-static void ui_browser__hists_seek(struct ui_browser *self,
+-				   off_t offset, int whence)
+-{
+-	struct hist_entry *h;
+-	struct rb_node *nd;
+-	bool first = true;
+-
+-	if (self->nr_entries == 0)
+-		return;
+-
+-	ui_browser__hists_init_top(self);
+-
+-	switch (whence) {
+-	case SEEK_SET:
+-		nd = hists__filter_entries(rb_first(self->entries));
+-		break;
+-	case SEEK_CUR:
+-		nd = self->top;
+-		goto do_offset;
+-	case SEEK_END:
+-		nd = hists__filter_prev_entries(rb_last(self->entries));
+-		first = false;
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	/*
+-	 * Moves not relative to the first visible entry invalidates its
+-	 * row_offset:
+-	 */
+-	h = rb_entry(self->top, struct hist_entry, rb_node);
+-	h->row_offset = 0;
+-
+-	/*
+-	 * Here we have to check if nd is expanded (+), if it is we can't go
+-	 * the next top level hist_entry, instead we must compute an offset of
+-	 * what _not_ to show and not change the first visible entry.
+-	 *
+-	 * This offset increments when we are going from top to bottom and
+-	 * decreases when we're going from bottom to top.
+-	 *
+-	 * As we don't have backpointers to the top level in the callchains
+-	 * structure, we need to always print the whole hist_entry callchain,
+-	 * skipping the first ones that are before the first visible entry
+-	 * and stop when we printed enough lines to fill the screen.
+-	 */
+-do_offset:
+-	if (offset > 0) {
+-		do {
+-			h = rb_entry(nd, struct hist_entry, rb_node);
+-			if (h->ms.unfolded) {
+-				u16 remaining = h->nr_rows - h->row_offset;
+-				if (offset > remaining) {
+-					offset -= remaining;
+-					h->row_offset = 0;
+-				} else {
+-					h->row_offset += offset;
+-					offset = 0;
+-					self->top = nd;
+-					break;
+-				}
+-			}
+-			nd = hists__filter_entries(rb_next(nd));
+-			if (nd == NULL)
+-				break;
+-			--offset;
+-			self->top = nd;
+-		} while (offset != 0);
+-	} else if (offset < 0) {
+-		while (1) {
+-			h = rb_entry(nd, struct hist_entry, rb_node);
+-			if (h->ms.unfolded) {
+-				if (first) {
+-					if (-offset > h->row_offset) {
+-						offset += h->row_offset;
+-						h->row_offset = 0;
+-					} else {
+-						h->row_offset += offset;
+-						offset = 0;
+-						self->top = nd;
+-						break;
+-					}
+-				} else {
+-					if (-offset > h->nr_rows) {
+-						offset += h->nr_rows;
+-						h->row_offset = 0;
+-					} else {
+-						h->row_offset = h->nr_rows + offset;
+-						offset = 0;
+-						self->top = nd;
+-						break;
+-					}
+-				}
+-			}
+-
+-			nd = hists__filter_prev_entries(rb_prev(nd));
+-			if (nd == NULL)
+-				break;
+-			++offset;
+-			self->top = nd;
+-			if (offset == 0) {
+-				/*
+-				 * Last unfiltered hist_entry, check if it is
+-				 * unfolded, if it is then we should have
+-				 * row_offset at its last entry.
+-				 */
+-				h = rb_entry(nd, struct hist_entry, rb_node);
+-				if (h->ms.unfolded)
+-					h->row_offset = h->nr_rows;
+-				break;
+-			}
+-			first = false;
+-		}
+-	} else {
+-		self->top = nd;
+-		h = rb_entry(nd, struct hist_entry, rb_node);
+-		h->row_offset = 0;
+-	}
+-}
+-
+-static struct hist_browser *hist_browser__new(struct hists *hists)
+-{
+-	struct hist_browser *self = zalloc(sizeof(*self));
+-
+-	if (self) {
+-		self->hists = hists;
+-		self->b.refresh = hist_browser__refresh;
+-		self->b.seek = ui_browser__hists_seek;
+-		self->b.use_navkeypressed = true;
+-		if (sort__branch_mode == 1)
+-			self->has_symbols = sort_sym_from.list.next != NULL;
+-		else
+-			self->has_symbols = sort_sym.list.next != NULL;
+-	}
+-
+-	return self;
+-}
+-
+-static void hist_browser__delete(struct hist_browser *self)
+-{
+-	free(self);
+-}
+-
+-static struct hist_entry *hist_browser__selected_entry(struct hist_browser *self)
+-{
+-	return self->he_selection;
+-}
+-
+-static struct thread *hist_browser__selected_thread(struct hist_browser *self)
+-{
+-	return self->he_selection->thread;
+-}
+-
+-static int hists__browser_title(struct hists *self, char *bf, size_t size,
+-				const char *ev_name)
+-{
+-	char unit;
+-	int printed;
+-	const struct dso *dso = self->dso_filter;
+-	const struct thread *thread = self->thread_filter;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
+-
+-	nr_events = convert_unit(nr_events, &unit);
+-	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
+-
+-	if (self->uid_filter_str)
+-		printed += snprintf(bf + printed, size - printed,
+-				    ", UID: %s", self->uid_filter_str);
+-	if (thread)
+-		printed += scnprintf(bf + printed, size - printed,
+-				    ", Thread: %s(%d)",
+-				    (thread->comm_set ? thread->comm : ""),
+-				    thread->pid);
+-	if (dso)
+-		printed += scnprintf(bf + printed, size - printed,
+-				    ", DSO: %s", dso->short_name);
+-	return printed;
+-}
+-
+-static inline void free_popup_options(char **options, int n)
+-{
+-	int i;
+-
+-	for (i = 0; i < n; ++i) {
+-		free(options[i]);
+-		options[i] = NULL;
+-	}
+-}
+-
+-static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+-				    const char *helpline, const char *ev_name,
+-				    bool left_exits,
+-				    void(*timer)(void *arg), void *arg,
+-				    int delay_secs)
+-{
+-	struct hists *self = &evsel->hists;
+-	struct hist_browser *browser = hist_browser__new(self);
+-	struct branch_info *bi;
+-	struct pstack *fstack;
+-	char *options[16];
+-	int nr_options = 0;
+-	int key = -1;
+-	char buf[64];
+-
+-	if (browser == NULL)
+-		return -1;
+-
+-	fstack = pstack__new(2);
+-	if (fstack == NULL)
+-		goto out;
+-
+-	ui_helpline__push(helpline);
+-
+-	memset(options, 0, sizeof(options));
+-
+-	while (1) {
+-		const struct thread *thread = NULL;
+-		const struct dso *dso = NULL;
+-		int choice = 0,
+-		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+-		    annotate_f = -2, annotate_t = -2, browse_map = -2;
+-
+-		nr_options = 0;
+-
+-		key = hist_browser__run(browser, ev_name, timer, arg, delay_secs);
+-
+-		if (browser->he_selection != NULL) {
+-			thread = hist_browser__selected_thread(browser);
+-			dso = browser->selection->map ? browser->selection->map->dso : NULL;
+-		}
+-		switch (key) {
+-		case K_TAB:
+-		case K_UNTAB:
+-			if (nr_events == 1)
+-				continue;
+-			/*
+-			 * Exit the browser, let hists__browser_tree
+-			 * go to the next or previous
+-			 */
+-			goto out_free_stack;
+-		case 'a':
+-			if (!browser->has_symbols) {
+-				ui_browser__warning(&browser->b, delay_secs * 2,
+-			"Annotation is only available for symbolic views, "
+-			"include \"sym*\" in --sort to use it.");
+-				continue;
+-			}
+-
+-			if (browser->selection == NULL ||
+-			    browser->selection->sym == NULL ||
+-			    browser->selection->map->dso->annotate_warned)
+-				continue;
+-			goto do_annotate;
+-		case 'd':
+-			goto zoom_dso;
+-		case 't':
+-			goto zoom_thread;
+-		case 's':
+-			if (ui_browser__input_window("Symbol to show",
+-					"Please enter the name of symbol you want to see",
+-					buf, "ENTER: OK, ESC: Cancel",
+-					delay_secs * 2) == K_ENTER) {
+-				self->symbol_filter_str = *buf ? buf : NULL;
+-				hists__filter_by_symbol(self);
+-				hist_browser__reset(browser);
+-			}
+-			continue;
+-		case K_F1:
+-		case 'h':
+-		case '?':
+-			ui_browser__help_window(&browser->b,
+-					"h/?/F1        Show this window\n"
+-					"UP/DOWN/PGUP\n"
+-					"PGDN/SPACE    Navigate\n"
+-					"q/ESC/CTRL+C  Exit browser\n\n"
+-					"For multiple event sessions:\n\n"
+-					"TAB/UNTAB Switch events\n\n"
+-					"For symbolic views (--sort has sym):\n\n"
+-					"->            Zoom into DSO/Threads & Annotate current symbol\n"
+-					"<-            Zoom out\n"
+-					"a             Annotate current symbol\n"
+-					"C             Collapse all callchains\n"
+-					"E             Expand all callchains\n"
+-					"d             Zoom into current DSO\n"
+-					"t             Zoom into current Thread\n"
+-					"s             Filter symbol by name");
+-			continue;
+-		case K_ENTER:
+-		case K_RIGHT:
+-			/* menu */
+-			break;
+-		case K_LEFT: {
+-			const void *top;
+-
+-			if (pstack__empty(fstack)) {
+-				/*
+-				 * Go back to the perf_evsel_menu__run or other user
+-				 */
+-				if (left_exits)
+-					goto out_free_stack;
+-				continue;
+-			}
+-			top = pstack__pop(fstack);
+-			if (top == &browser->hists->dso_filter)
+-				goto zoom_out_dso;
+-			if (top == &browser->hists->thread_filter)
+-				goto zoom_out_thread;
+-			continue;
+-		}
+-		case K_ESC:
+-			if (!left_exits &&
+-			    !ui_browser__dialog_yesno(&browser->b,
+-					       "Do you really want to exit?"))
+-				continue;
+-			/* Fall thru */
+-		case 'q':
+-		case CTRL('c'):
+-			goto out_free_stack;
+-		default:
+-			continue;
+-		}
+-
+-		if (!browser->has_symbols)
+-			goto add_exit_option;
+-
+-		if (sort__branch_mode == 1) {
+-			bi = browser->he_selection->branch_info;
+-			if (browser->selection != NULL &&
+-			    bi &&
+-			    bi->from.sym != NULL &&
+-			    !bi->from.map->dso->annotate_warned &&
+-				asprintf(&options[nr_options], "Annotate %s",
+-					 bi->from.sym->name) > 0)
+-				annotate_f = nr_options++;
+-
+-			if (browser->selection != NULL &&
+-			    bi &&
+-			    bi->to.sym != NULL &&
+-			    !bi->to.map->dso->annotate_warned &&
+-			    (bi->to.sym != bi->from.sym ||
+-			     bi->to.map->dso != bi->from.map->dso) &&
+-				asprintf(&options[nr_options], "Annotate %s",
+-					 bi->to.sym->name) > 0)
+-				annotate_t = nr_options++;
+-		} else {
+-
+-			if (browser->selection != NULL &&
+-			    browser->selection->sym != NULL &&
+-			    !browser->selection->map->dso->annotate_warned &&
+-				asprintf(&options[nr_options], "Annotate %s",
+-					 browser->selection->sym->name) > 0)
+-				annotate = nr_options++;
+-		}
+-
+-		if (thread != NULL &&
+-		    asprintf(&options[nr_options], "Zoom %s %s(%d) thread",
+-			     (browser->hists->thread_filter ? "out of" : "into"),
+-			     (thread->comm_set ? thread->comm : ""),
+-			     thread->pid) > 0)
+-			zoom_thread = nr_options++;
+-
+-		if (dso != NULL &&
+-		    asprintf(&options[nr_options], "Zoom %s %s DSO",
+-			     (browser->hists->dso_filter ? "out of" : "into"),
+-			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
+-			zoom_dso = nr_options++;
+-
+-		if (browser->selection != NULL &&
+-		    browser->selection->map != NULL &&
+-		    asprintf(&options[nr_options], "Browse map details") > 0)
+-			browse_map = nr_options++;
+-add_exit_option:
+-		options[nr_options++] = (char *)"Exit";
+-retry_popup_menu:
+-		choice = ui__popup_menu(nr_options, options);
+-
+-		if (choice == nr_options - 1)
+-			break;
+-
+-		if (choice == -1) {
+-			free_popup_options(options, nr_options - 1);
+-			continue;
+-		}
+-
+-		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
+-			struct hist_entry *he;
+-			int err;
+-do_annotate:
+-			he = hist_browser__selected_entry(browser);
+-			if (he == NULL)
+-				continue;
+-
+-			/*
+-			 * we stash the branch_info symbol + map into the
+-			 * the ms so we don't have to rewrite all the annotation
+-			 * code to use branch_info.
+-			 * in branch mode, the ms struct is not used
+-			 */
+-			if (choice == annotate_f) {
+-				he->ms.sym = he->branch_info->from.sym;
+-				he->ms.map = he->branch_info->from.map;
+-			}  else if (choice == annotate_t) {
+-				he->ms.sym = he->branch_info->to.sym;
+-				he->ms.map = he->branch_info->to.map;
+-			}
+-
+-			/*
+-			 * Don't let this be freed, say, by hists__decay_entry.
+-			 */
+-			he->used = true;
+-			err = hist_entry__tui_annotate(he, evsel->idx,
+-						       timer, arg, delay_secs);
+-			he->used = false;
+-			/*
+-			 * offer option to annotate the other branch source or target
+-			 * (if they exists) when returning from annotate
+-			 */
+-			if ((err == 'q' || err == CTRL('c'))
+-			    && annotate_t != -2 && annotate_f != -2)
+-				goto retry_popup_menu;
+-
+-			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
+-			if (err)
+-				ui_browser__handle_resize(&browser->b);
+-
+-		} else if (choice == browse_map)
+-			map__browse(browser->selection->map);
+-		else if (choice == zoom_dso) {
+-zoom_dso:
+-			if (browser->hists->dso_filter) {
+-				pstack__remove(fstack, &browser->hists->dso_filter);
+-zoom_out_dso:
+-				ui_helpline__pop();
+-				browser->hists->dso_filter = NULL;
+-				sort_dso.elide = false;
+-			} else {
+-				if (dso == NULL)
+-					continue;
+-				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s DSO\"",
+-						   dso->kernel ? "the Kernel" : dso->short_name);
+-				browser->hists->dso_filter = dso;
+-				sort_dso.elide = true;
+-				pstack__push(fstack, &browser->hists->dso_filter);
+-			}
+-			hists__filter_by_dso(self);
+-			hist_browser__reset(browser);
+-		} else if (choice == zoom_thread) {
+-zoom_thread:
+-			if (browser->hists->thread_filter) {
+-				pstack__remove(fstack, &browser->hists->thread_filter);
+-zoom_out_thread:
+-				ui_helpline__pop();
+-				browser->hists->thread_filter = NULL;
+-				sort_thread.elide = false;
+-			} else {
+-				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s(%d) thread\"",
+-						   thread->comm_set ? thread->comm : "",
+-						   thread->pid);
+-				browser->hists->thread_filter = thread;
+-				sort_thread.elide = true;
+-				pstack__push(fstack, &browser->hists->thread_filter);
+-			}
+-			hists__filter_by_thread(self);
+-			hist_browser__reset(browser);
+-		}
+-	}
+-out_free_stack:
+-	pstack__delete(fstack);
+-out:
+-	hist_browser__delete(browser);
+-	free_popup_options(options, nr_options - 1);
+-	return key;
+-}
+-
+-struct perf_evsel_menu {
+-	struct ui_browser b;
+-	struct perf_evsel *selection;
+-	bool lost_events, lost_events_warned;
+-};
+-
+-static void perf_evsel_menu__write(struct ui_browser *browser,
+-				   void *entry, int row)
+-{
+-	struct perf_evsel_menu *menu = container_of(browser,
+-						    struct perf_evsel_menu, b);
+-	struct perf_evsel *evsel = list_entry(entry, struct perf_evsel, node);
+-	bool current_entry = ui_browser__is_current_entry(browser, row);
+-	unsigned long nr_events = evsel->hists.stats.nr_events[PERF_RECORD_SAMPLE];
+-	const char *ev_name = event_name(evsel);
+-	char bf[256], unit;
+-	const char *warn = " ";
+-	size_t printed;
+-
+-	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+-						       HE_COLORSET_NORMAL);
+-
+-	nr_events = convert_unit(nr_events, &unit);
+-	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
+-			   unit, unit == ' ' ? "" : " ", ev_name);
+-	slsmg_printf("%s", bf);
+-
+-	nr_events = evsel->hists.stats.nr_events[PERF_RECORD_LOST];
+-	if (nr_events != 0) {
+-		menu->lost_events = true;
+-		if (!current_entry)
+-			ui_browser__set_color(browser, HE_COLORSET_TOP);
+-		nr_events = convert_unit(nr_events, &unit);
+-		printed += scnprintf(bf, sizeof(bf), ": %ld%c%schunks LOST!",
+-				     nr_events, unit, unit == ' ' ? "" : " ");
+-		warn = bf;
+-	}
+-
+-	slsmg_write_nstring(warn, browser->width - printed);
+-
+-	if (current_entry)
+-		menu->selection = evsel;
+-}
+-
+-static int perf_evsel_menu__run(struct perf_evsel_menu *menu,
+-				int nr_events, const char *help,
+-				void(*timer)(void *arg), void *arg, int delay_secs)
+-{
+-	struct perf_evlist *evlist = menu->b.priv;
+-	struct perf_evsel *pos;
+-	const char *ev_name, *title = "Available samples";
+-	int key;
+-
+-	if (ui_browser__show(&menu->b, title,
+-			     "ESC: exit, ENTER|->: Browse histograms") < 0)
+-		return -1;
+-
+-	while (1) {
+-		key = ui_browser__run(&menu->b, delay_secs);
+-
+-		switch (key) {
+-		case K_TIMER:
+-			timer(arg);
+-
+-			if (!menu->lost_events_warned && menu->lost_events) {
+-				ui_browser__warn_lost_events(&menu->b);
+-				menu->lost_events_warned = true;
+-			}
+-			continue;
+-		case K_RIGHT:
+-		case K_ENTER:
+-			if (!menu->selection)
+-				continue;
+-			pos = menu->selection;
+-browse_hists:
+-			perf_evlist__set_selected(evlist, pos);
+-			/*
+-			 * Give the calling tool a chance to populate the non
+-			 * default evsel resorted hists tree.
+-			 */
+-			if (timer)
+-				timer(arg);
+-			ev_name = event_name(pos);
+-			key = perf_evsel__hists_browse(pos, nr_events, help,
+-						       ev_name, true, timer,
+-						       arg, delay_secs);
+-			ui_browser__show_title(&menu->b, title);
+-			switch (key) {
+-			case K_TAB:
+-				if (pos->node.next == &evlist->entries)
+-					pos = list_entry(evlist->entries.next, struct perf_evsel, node);
+-				else
+-					pos = list_entry(pos->node.next, struct perf_evsel, node);
+-				goto browse_hists;
+-			case K_UNTAB:
+-				if (pos->node.prev == &evlist->entries)
+-					pos = list_entry(evlist->entries.prev, struct perf_evsel, node);
+-				else
+-					pos = list_entry(pos->node.prev, struct perf_evsel, node);
+-				goto browse_hists;
+-			case K_ESC:
+-				if (!ui_browser__dialog_yesno(&menu->b,
+-						"Do you really want to exit?"))
+-					continue;
+-				/* Fall thru */
+-			case 'q':
+-			case CTRL('c'):
+-				goto out;
+-			default:
+-				continue;
+-			}
+-		case K_LEFT:
+-			continue;
+-		case K_ESC:
+-			if (!ui_browser__dialog_yesno(&menu->b,
+-					       "Do you really want to exit?"))
+-				continue;
+-			/* Fall thru */
+-		case 'q':
+-		case CTRL('c'):
+-			goto out;
+-		default:
+-			continue;
+-		}
+-	}
+-
+-out:
+-	ui_browser__hide(&menu->b);
+-	return key;
+-}
+-
+-static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
+-					   const char *help,
+-					   void(*timer)(void *arg), void *arg,
+-					   int delay_secs)
+-{
+-	struct perf_evsel *pos;
+-	struct perf_evsel_menu menu = {
+-		.b = {
+-			.entries    = &evlist->entries,
+-			.refresh    = ui_browser__list_head_refresh,
+-			.seek	    = ui_browser__list_head_seek,
+-			.write	    = perf_evsel_menu__write,
+-			.nr_entries = evlist->nr_entries,
+-			.priv	    = evlist,
+-		},
+-	};
+-
+-	ui_helpline__push("Press ESC to exit");
+-
+-	list_for_each_entry(pos, &evlist->entries, node) {
+-		const char *ev_name = event_name(pos);
+-		size_t line_len = strlen(ev_name) + 7;
+-
+-		if (menu.b.width < line_len)
+-			menu.b.width = line_len;
+-		/*
+-		 * Cache the evsel name, tracepoints have a _high_ cost per
+-		 * event_name() call.
+-		 */
+-		if (pos->name == NULL)
+-			pos->name = strdup(ev_name);
+-	}
+-
+-	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, timer,
+-				    arg, delay_secs);
+-}
+-
+-int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+-				  void(*timer)(void *arg), void *arg,
+-				  int delay_secs)
+-{
+-
+-	if (evlist->nr_entries == 1) {
+-		struct perf_evsel *first = list_entry(evlist->entries.next,
+-						      struct perf_evsel, node);
+-		const char *ev_name = event_name(first);
+-		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
+-						ev_name, false, timer, arg,
+-						delay_secs);
+-	}
+-
+-	return __perf_evlist__tui_browse_hists(evlist, help,
+-					       timer, arg, delay_secs);
+-}
+diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
+deleted file mode 100644
+index eca6575abfd0..000000000000
+--- a/tools/perf/util/ui/browsers/map.c
++++ /dev/null
+@@ -1,154 +0,0 @@
+-#include "../libslang.h"
+-#include <elf.h>
+-#include <newt.h>
+-#include <inttypes.h>
+-#include <sys/ttydefaults.h>
+-#include <string.h>
+-#include <linux/bitops.h>
+-#include "../../util.h"
+-#include "../../debug.h"
+-#include "../../symbol.h"
+-#include "../browser.h"
+-#include "../helpline.h"
+-#include "map.h"
+-
+-static int ui_entry__read(const char *title, char *bf, size_t size, int width)
+-{
+-	struct newtExitStruct es;
+-	newtComponent form, entry;
+-	const char *result;
+-	int err = -1;
+-
+-	newtCenteredWindow(width, 1, title);
+-	form = newtForm(NULL, NULL, 0);
+-	if (form == NULL)
+-		return -1;
+-
+-	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
+-	if (entry == NULL)
+-		goto out_free_form;
+-
+-	newtFormAddComponent(form, entry);
+-	newtFormAddHotKey(form, NEWT_KEY_ENTER);
+-	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
+-	newtFormAddHotKey(form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(form, CTRL('c'));
+-	newtFormRun(form, &es);
+-
+-	if (result != NULL) {
+-		strncpy(bf, result, size);
+-		err = 0;
+-	}
+-out_free_form:
+-	newtPopWindow();
+-	newtFormDestroy(form);
+-	return err;
+-}
+-
+-struct map_browser {
+-	struct ui_browser b;
+-	struct map	  *map;
+-	u8		  addrlen;
+-};
+-
+-static void map_browser__write(struct ui_browser *self, void *nd, int row)
+-{
+-	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
+-	struct map_browser *mb = container_of(self, struct map_browser, b);
+-	bool current_entry = ui_browser__is_current_entry(self, row);
+-	int width;
+-
+-	ui_browser__set_percent_color(self, 0, current_entry);
+-	slsmg_printf("%*" PRIx64 " %*" PRIx64 " %c ",
+-		     mb->addrlen, sym->start, mb->addrlen, sym->end,
+-		     sym->binding == STB_GLOBAL ? 'g' :
+-		     sym->binding == STB_LOCAL  ? 'l' : 'w');
+-	width = self->width - ((mb->addrlen * 2) + 4);
+-	if (width > 0)
+-		slsmg_write_nstring(sym->name, width);
+-}
+-
+-/* FIXME uber-kludgy, see comment on cmd_report... */
+-static u32 *symbol__browser_index(struct symbol *self)
+-{
+-	return ((void *)self) - sizeof(struct rb_node) - sizeof(u32);
+-}
+-
+-static int map_browser__search(struct map_browser *self)
+-{
+-	char target[512];
+-	struct symbol *sym;
+-	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
+-
+-	if (err)
+-		return err;
+-
+-	if (target[0] == '0' && tolower(target[1]) == 'x') {
+-		u64 addr = strtoull(target, NULL, 16);
+-		sym = map__find_symbol(self->map, addr, NULL);
+-	} else
+-		sym = map__find_symbol_by_name(self->map, target, NULL);
+-
+-	if (sym != NULL) {
+-		u32 *idx = symbol__browser_index(sym);
+-
+-		self->b.top = &sym->rb_node;
+-		self->b.index = self->b.top_idx = *idx;
+-	} else
+-		ui_helpline__fpush("%s not found!", target);
+-
+-	return 0;
+-}
+-
+-static int map_browser__run(struct map_browser *self)
+-{
+-	int key;
+-
+-	if (ui_browser__show(&self->b, self->map->dso->long_name,
+-			     "Press <- or ESC to exit, %s / to search",
+-			     verbose ? "" : "restart with -v to use") < 0)
+-		return -1;
+-
+-	while (1) {
+-		key = ui_browser__run(&self->b, 0);
+-
+-		if (verbose && key == '/')
+-			map_browser__search(self);
+-		else
+-			break;
+-	}
+-
+-	ui_browser__hide(&self->b);
+-	return key;
+-}
+-
+-int map__browse(struct map *self)
+-{
+-	struct map_browser mb = {
+-		.b = {
+-			.entries = &self->dso->symbols[self->type],
+-			.refresh = ui_browser__rb_tree_refresh,
+-			.seek	 = ui_browser__rb_tree_seek,
+-			.write	 = map_browser__write,
+-		},
+-		.map = self,
+-	};
+-	struct rb_node *nd;
+-	char tmp[BITS_PER_LONG / 4];
+-	u64 maxaddr = 0;
+-
+-	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
+-		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
+-
+-		if (maxaddr < pos->end)
+-			maxaddr = pos->end;
+-		if (verbose) {
+-			u32 *idx = symbol__browser_index(pos);
+-			*idx = mb.b.nr_entries;
+-		}
+-		++mb.b.nr_entries;
+-	}
+-
+-	mb.addrlen = snprintf(tmp, sizeof(tmp), "%" PRIx64, maxaddr);
+-	return map_browser__run(&mb);
+-}
+diff --git a/tools/perf/util/ui/browsers/map.h b/tools/perf/util/ui/browsers/map.h
+deleted file mode 100644
+index df8581a43e17..000000000000
+--- a/tools/perf/util/ui/browsers/map.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef _PERF_UI_MAP_BROWSER_H_
+-#define _PERF_UI_MAP_BROWSER_H_ 1
+-struct map;
+-
+-int map__browse(struct map *self);
+-#endif /* _PERF_UI_MAP_BROWSER_H_ */
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+deleted file mode 100644
+index 2f950c2641c8..000000000000
+--- a/tools/perf/util/ui/helpline.c
++++ /dev/null
+@@ -1,79 +0,0 @@
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+-
+-#include "../debug.h"
+-#include "helpline.h"
+-#include "ui.h"
+-#include "libslang.h"
+-
+-void ui_helpline__pop(void)
+-{
+-}
+-
+-char ui_helpline__current[512];
+-
+-void ui_helpline__push(const char *msg)
+-{
+-	const size_t sz = sizeof(ui_helpline__current);
+-
+-	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
+-	SLsmg_set_color(0);
+-	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
+-	SLsmg_refresh();
+-	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
+-}
+-
+-void ui_helpline__vpush(const char *fmt, va_list ap)
+-{
+-	char *s;
+-
+-	if (vasprintf(&s, fmt, ap) < 0)
+-		vfprintf(stderr, fmt, ap);
+-	else {
+-		ui_helpline__push(s);
+-		free(s);
+-	}
+-}
+-
+-void ui_helpline__fpush(const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	ui_helpline__vpush(fmt, ap);
+-	va_end(ap);
+-}
+-
+-void ui_helpline__puts(const char *msg)
+-{
+-	ui_helpline__pop();
+-	ui_helpline__push(msg);
+-}
+-
+-void ui_helpline__init(void)
+-{
+-	ui_helpline__puts(" ");
+-}
+-
+-char ui_helpline__last_msg[1024];
+-
+-int ui_helpline__show_help(const char *format, va_list ap)
+-{
+-	int ret;
+-	static int backlog;
+-
+-	pthread_mutex_lock(&ui__lock);
+-	ret = vscnprintf(ui_helpline__last_msg + backlog,
+-			sizeof(ui_helpline__last_msg) - backlog, format, ap);
+-	backlog += ret;
+-
+-	if (ui_helpline__last_msg[backlog - 1] == '\n') {
+-		ui_helpline__puts(ui_helpline__last_msg);
+-		SLsmg_refresh();
+-		backlog = 0;
+-	}
+-	pthread_mutex_unlock(&ui__lock);
+-
+-	return ret;
+-}
+diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/util/ui/helpline.h
+deleted file mode 100644
+index 7bab6b34e35e..000000000000
+--- a/tools/perf/util/ui/helpline.h
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#ifndef _PERF_UI_HELPLINE_H_
+-#define _PERF_UI_HELPLINE_H_ 1
+-
+-#include <stdio.h>
+-#include <stdarg.h>
+-
+-void ui_helpline__init(void);
+-void ui_helpline__pop(void);
+-void ui_helpline__push(const char *msg);
+-void ui_helpline__vpush(const char *fmt, va_list ap);
+-void ui_helpline__fpush(const char *fmt, ...);
+-void ui_helpline__puts(const char *msg);
+-
+-extern char ui_helpline__current[];
+-
+-#endif /* _PERF_UI_HELPLINE_H_ */
+diff --git a/tools/perf/util/ui/keysyms.h b/tools/perf/util/ui/keysyms.h
+deleted file mode 100644
+index 809eca5707fa..000000000000
+--- a/tools/perf/util/ui/keysyms.h
++++ /dev/null
+@@ -1,27 +0,0 @@
+-#ifndef _PERF_KEYSYMS_H_
+-#define _PERF_KEYSYMS_H_ 1
+-
+-#include "libslang.h"
+-
+-#define K_DOWN	SL_KEY_DOWN
+-#define K_END	SL_KEY_END
+-#define K_ENTER	'\r'
+-#define K_ESC	033
+-#define K_F1	SL_KEY_F(1)
+-#define K_HOME	SL_KEY_HOME
+-#define K_LEFT	SL_KEY_LEFT
+-#define K_PGDN	SL_KEY_NPAGE
+-#define K_PGUP	SL_KEY_PPAGE
+-#define K_RIGHT	SL_KEY_RIGHT
+-#define K_TAB	'\t'
+-#define K_UNTAB	SL_KEY_UNTAB
+-#define K_UP	SL_KEY_UP
+-#define K_BKSPC 0x7f
+-#define K_DEL	SL_KEY_DELETE
+-
+-/* Not really keys */
+-#define K_TIMER	 -1
+-#define K_ERROR	 -2
+-#define K_RESIZE -3
+-
+-#endif /* _PERF_KEYSYMS_H_ */
+diff --git a/tools/perf/util/ui/libslang.h b/tools/perf/util/ui/libslang.h
+deleted file mode 100644
+index 4d54b6450f5b..000000000000
+--- a/tools/perf/util/ui/libslang.h
++++ /dev/null
+@@ -1,29 +0,0 @@
+-#ifndef _PERF_UI_SLANG_H_
+-#define _PERF_UI_SLANG_H_ 1
+-/*
+- * slang versions <= 2.0.6 have a "#if HAVE_LONG_LONG" that breaks
+- * the build if it isn't defined. Use the equivalent one that glibc
+- * has on features.h.
+- */
+-#include <features.h>
+-#ifndef HAVE_LONG_LONG
+-#define HAVE_LONG_LONG __GLIBC_HAVE_LONG_LONG
+-#endif
+-#include <slang.h>
+-
+-#if SLANG_VERSION < 20104
+-#define slsmg_printf(msg, args...) \
+-	SLsmg_printf((char *)(msg), ##args)
+-#define slsmg_write_nstring(msg, len) \
+-	SLsmg_write_nstring((char *)(msg), len)
+-#define sltt_set_color(obj, name, fg, bg) \
+-	SLtt_set_color(obj,(char *)(name), (char *)(fg), (char *)(bg))
+-#else
+-#define slsmg_printf SLsmg_printf
+-#define slsmg_write_nstring SLsmg_write_nstring
+-#define sltt_set_color SLtt_set_color
+-#endif
+-
+-#define SL_KEY_UNTAB 0x1000
+-
+-#endif /* _PERF_UI_SLANG_H_ */
+diff --git a/tools/perf/util/ui/progress.c b/tools/perf/util/ui/progress.c
+deleted file mode 100644
+index 13aa64e50e11..000000000000
+--- a/tools/perf/util/ui/progress.c
++++ /dev/null
+@@ -1,32 +0,0 @@
+-#include "../cache.h"
+-#include "progress.h"
+-#include "libslang.h"
+-#include "ui.h"
+-#include "browser.h"
+-
+-void ui_progress__update(u64 curr, u64 total, const char *title)
+-{
+-	int bar, y;
+-	/*
+-	 * FIXME: We should have a per UI backend way of showing progress,
+-	 * stdio will just show a percentage as NN%, etc.
+-	 */
+-	if (use_browser <= 0)
+-		return;
+-
+-	if (total == 0)
+-		return;
+-
+-	ui__refresh_dimensions(true);
+-	pthread_mutex_lock(&ui__lock);
+-	y = SLtt_Screen_Rows / 2 - 2;
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y, 0, 3, SLtt_Screen_Cols);
+-	SLsmg_gotorc(y++, 1);
+-	SLsmg_write_string((char *)title);
+-	SLsmg_set_color(HE_COLORSET_SELECTED);
+-	bar = ((SLtt_Screen_Cols - 2) * curr) / total;
+-	SLsmg_fill_region(y, 1, 1, bar, ' ');
+-	SLsmg_refresh();
+-	pthread_mutex_unlock(&ui__lock);
+-}
+diff --git a/tools/perf/util/ui/progress.h b/tools/perf/util/ui/progress.h
+deleted file mode 100644
+index d9c205b59aa1..000000000000
+--- a/tools/perf/util/ui/progress.h
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#ifndef _PERF_UI_PROGRESS_H_
+-#define _PERF_UI_PROGRESS_H_ 1
+-
+-#include <../types.h>
+-
+-void ui_progress__update(u64 curr, u64 total, const char *title);
+-
+-#endif
+diff --git a/tools/perf/util/ui/setup.c b/tools/perf/util/ui/setup.c
+deleted file mode 100644
+index 85a69faa09aa..000000000000
+--- a/tools/perf/util/ui/setup.c
++++ /dev/null
+@@ -1,155 +0,0 @@
+-#include <newt.h>
+-#include <signal.h>
+-#include <stdbool.h>
+-
+-#include "../cache.h"
+-#include "../debug.h"
+-#include "browser.h"
+-#include "helpline.h"
+-#include "ui.h"
+-#include "util.h"
+-#include "libslang.h"
+-#include "keysyms.h"
+-
+-pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
+-
+-static volatile int ui__need_resize;
+-
+-void ui__refresh_dimensions(bool force)
+-{
+-	if (force || ui__need_resize) {
+-		ui__need_resize = 0;
+-		pthread_mutex_lock(&ui__lock);
+-		SLtt_get_screen_size();
+-		SLsmg_reinit_smg();
+-		pthread_mutex_unlock(&ui__lock);
+-	}
+-}
+-
+-static void ui__sigwinch(int sig __used)
+-{
+-	ui__need_resize = 1;
+-}
+-
+-static void ui__setup_sigwinch(void)
+-{
+-	static bool done;
+-
+-	if (done)
+-		return;
+-
+-	done = true;
+-	pthread__unblock_sigwinch();
+-	signal(SIGWINCH, ui__sigwinch);
+-}
+-
+-int ui__getch(int delay_secs)
+-{
+-	struct timeval timeout, *ptimeout = delay_secs ? &timeout : NULL;
+-	fd_set read_set;
+-	int err, key;
+-
+-	ui__setup_sigwinch();
+-
+-	FD_ZERO(&read_set);
+-	FD_SET(0, &read_set);
+-
+-	if (delay_secs) {
+-		timeout.tv_sec = delay_secs;
+-		timeout.tv_usec = 0;
+-	}
+-
+-        err = select(1, &read_set, NULL, NULL, ptimeout);
+-
+-	if (err == 0)
+-		return K_TIMER;
+-
+-	if (err == -1) {
+-		if (errno == EINTR)
+-			return K_RESIZE;
+-		return K_ERROR;
+-	}
+-
+-	key = SLang_getkey();
+-	if (key != K_ESC)
+-		return key;
+-
+-	FD_ZERO(&read_set);
+-	FD_SET(0, &read_set);
+-	timeout.tv_sec = 0;
+-	timeout.tv_usec = 20;
+-        err = select(1, &read_set, NULL, NULL, &timeout);
+-	if (err == 0)
+-		return K_ESC;
+-
+-	SLang_ungetkey(key);
+-	return SLkp_getkey();
+-}
+-
+-static void newt_suspend(void *d __used)
+-{
+-	newtSuspend();
+-	raise(SIGTSTP);
+-	newtResume();
+-}
+-
+-static int ui__init(void)
+-{
+-	int err = SLkp_init();
+-
+-	if (err < 0)
+-		goto out;
+-
+-	SLkp_define_keysym((char *)"^(kB)", SL_KEY_UNTAB);
+-out:
+-	return err;
+-}
+-
+-static void ui__exit(void)
+-{
+-	SLtt_set_cursor_visibility(1);
+-	SLsmg_refresh();
+-	SLsmg_reset_smg();
+-	SLang_reset_tty();
+-}
+-
+-static void ui__signal(int sig)
+-{
+-	ui__exit();
+-	psignal(sig, "perf");
+-	exit(0);
+-}
+-
+-void setup_browser(bool fallback_to_pager)
+-{
+-	if (!isatty(1) || !use_browser || dump_trace) {
+-		use_browser = 0;
+-		if (fallback_to_pager)
+-			setup_pager();
+-		return;
+-	}
+-
+-	use_browser = 1;
+-	newtInit();
+-	ui__init();
+-	newtSetSuspendCallback(newt_suspend, NULL);
+-	ui_helpline__init();
+-	ui_browser__init();
+-
+-	signal(SIGSEGV, ui__signal);
+-	signal(SIGFPE, ui__signal);
+-	signal(SIGINT, ui__signal);
+-	signal(SIGQUIT, ui__signal);
+-	signal(SIGTERM, ui__signal);
+-}
+-
+-void exit_browser(bool wait_for_ok)
+-{
+-	if (use_browser > 0) {
+-		if (wait_for_ok)
+-			ui__question_window("Fatal Error",
+-					    ui_helpline__last_msg,
+-					    "Press any key...", 0);
+-		ui__exit();
+-	}
+-}
+diff --git a/tools/perf/util/ui/ui.h b/tools/perf/util/ui/ui.h
+deleted file mode 100644
+index 7b67045479f6..000000000000
+--- a/tools/perf/util/ui/ui.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-#ifndef _PERF_UI_H_
+-#define _PERF_UI_H_ 1
+-
+-#include <pthread.h>
+-#include <stdbool.h>
+-
+-extern pthread_mutex_t ui__lock;
+-
+-void ui__refresh_dimensions(bool force);
+-
+-#endif /* _PERF_UI_H_ */
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+deleted file mode 100644
+index ad4374a16bb0..000000000000
+--- a/tools/perf/util/ui/util.c
++++ /dev/null
+@@ -1,250 +0,0 @@
+-#include "../util.h"
+-#include <signal.h>
+-#include <stdbool.h>
+-#include <string.h>
+-#include <sys/ttydefaults.h>
+-
+-#include "../cache.h"
+-#include "../debug.h"
+-#include "browser.h"
+-#include "keysyms.h"
+-#include "helpline.h"
+-#include "ui.h"
+-#include "util.h"
+-#include "libslang.h"
+-
+-static void ui_browser__argv_write(struct ui_browser *browser,
+-				   void *entry, int row)
+-{
+-	char **arg = entry;
+-	bool current_entry = ui_browser__is_current_entry(browser, row);
+-
+-	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+-						       HE_COLORSET_NORMAL);
+-	slsmg_write_nstring(*arg, browser->width);
+-}
+-
+-static int popup_menu__run(struct ui_browser *menu)
+-{
+-	int key;
+-
+-	if (ui_browser__show(menu, " ", "ESC: exit, ENTER|->: Select option") < 0)
+-		return -1;
+-
+-	while (1) {
+-		key = ui_browser__run(menu, 0);
+-
+-		switch (key) {
+-		case K_RIGHT:
+-		case K_ENTER:
+-			key = menu->index;
+-			break;
+-		case K_LEFT:
+-		case K_ESC:
+-		case 'q':
+-		case CTRL('c'):
+-			key = -1;
+-			break;
+-		default:
+-			continue;
+-		}
+-
+-		break;
+-	}
+-
+-	ui_browser__hide(menu);
+-	return key;
+-}
+-
+-int ui__popup_menu(int argc, char * const argv[])
+-{
+-	struct ui_browser menu = {
+-		.entries    = (void *)argv,
+-		.refresh    = ui_browser__argv_refresh,
+-		.seek	    = ui_browser__argv_seek,
+-		.write	    = ui_browser__argv_write,
+-		.nr_entries = argc,
+-	};
+-
+-	return popup_menu__run(&menu);
+-}
+-
+-int ui_browser__input_window(const char *title, const char *text, char *input,
+-			     const char *exit_msg, int delay_secs)
+-{
+-	int x, y, len, key;
+-	int max_len = 60, nr_lines = 0;
+-	static char buf[50];
+-	const char *t;
+-
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
+-	}
+-
+-	max_len += 2;
+-	nr_lines += 8;
+-	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
+-	x = SLtt_Screen_Cols / 2 - max_len / 2;
+-
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y, x++, nr_lines, max_len);
+-	if (title) {
+-		SLsmg_gotorc(y, x + 1);
+-		SLsmg_write_string((char *)title);
+-	}
+-	SLsmg_gotorc(++y, x);
+-	nr_lines -= 7;
+-	max_len -= 2;
+-	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
+-				   nr_lines, max_len, 1);
+-	y += nr_lines;
+-	len = 5;
+-	while (len--) {
+-		SLsmg_gotorc(y + len - 1, x);
+-		SLsmg_write_nstring((char *)" ", max_len);
+-	}
+-	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
+-
+-	SLsmg_gotorc(y + 3, x);
+-	SLsmg_write_nstring((char *)exit_msg, max_len);
+-	SLsmg_refresh();
+-
+-	x += 2;
+-	len = 0;
+-	key = ui__getch(delay_secs);
+-	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
+-		if (key == K_BKSPC) {
+-			if (len == 0)
+-				goto next_key;
+-			SLsmg_gotorc(y, x + --len);
+-			SLsmg_write_char(' ');
+-		} else {
+-			buf[len] = key;
+-			SLsmg_gotorc(y, x + len++);
+-			SLsmg_write_char(key);
+-		}
+-		SLsmg_refresh();
+-
+-		/* XXX more graceful overflow handling needed */
+-		if (len == sizeof(buf) - 1) {
+-			ui_helpline__push("maximum size of symbol name reached!");
+-			key = K_ENTER;
+-			break;
+-		}
+-next_key:
+-		key = ui__getch(delay_secs);
+-	}
+-
+-	buf[len] = '\0';
+-	strncpy(input, buf, len+1);
+-	return key;
+-}
+-
+-int ui__question_window(const char *title, const char *text,
+-			const char *exit_msg, int delay_secs)
+-{
+-	int x, y;
+-	int max_len = 0, nr_lines = 0;
+-	const char *t;
+-
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-		int len;
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
+-	}
+-
+-	max_len += 2;
+-	nr_lines += 4;
+-	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
+-	x = SLtt_Screen_Cols / 2 - max_len / 2;
+-
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y, x++, nr_lines, max_len);
+-	if (title) {
+-		SLsmg_gotorc(y, x + 1);
+-		SLsmg_write_string((char *)title);
+-	}
+-	SLsmg_gotorc(++y, x);
+-	nr_lines -= 2;
+-	max_len -= 2;
+-	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
+-				   nr_lines, max_len, 1);
+-	SLsmg_gotorc(y + nr_lines - 2, x);
+-	SLsmg_write_nstring((char *)" ", max_len);
+-	SLsmg_gotorc(y + nr_lines - 1, x);
+-	SLsmg_write_nstring((char *)exit_msg, max_len);
+-	SLsmg_refresh();
+-	return ui__getch(delay_secs);
+-}
+-
+-int ui__help_window(const char *text)
+-{
+-	return ui__question_window("Help", text, "Press any key...", 0);
+-}
+-
+-int ui__dialog_yesno(const char *msg)
+-{
+-	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
+-}
+-
+-int __ui__warning(const char *title, const char *format, va_list args)
+-{
+-	char *s;
+-
+-	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
+-		int key;
+-
+-		pthread_mutex_lock(&ui__lock);
+-		key = ui__question_window(title, s, "Press any key...", 0);
+-		pthread_mutex_unlock(&ui__lock);
+-		free(s);
+-		return key;
+-	}
+-
+-	fprintf(stderr, "%s:\n", title);
+-	vfprintf(stderr, format, args);
+-	return K_ESC;
+-}
+-
+-int ui__warning(const char *format, ...)
+-{
+-	int key;
+-	va_list args;
+-
+-	va_start(args, format);
+-	key = __ui__warning("Warning", format, args);
+-	va_end(args);
+-	return key;
+-}
+-
+-int ui__error(const char *format, ...)
+-{
+-	int key;
+-	va_list args;
+-
+-	va_start(args, format);
+-	key = __ui__warning("Error", format, args);
+-	va_end(args);
+-	return key;
+-}
+diff --git a/tools/perf/util/ui/util.h b/tools/perf/util/ui/util.h
+deleted file mode 100644
+index 2d1738bd71c8..000000000000
+--- a/tools/perf/util/ui/util.h
++++ /dev/null
+@@ -1,14 +0,0 @@
+-#ifndef _PERF_UI_UTIL_H_
+-#define _PERF_UI_UTIL_H_ 1
+-
+-#include <stdarg.h>
+-
+-int ui__getch(int delay_secs);
+-int ui__popup_menu(int argc, char * const argv[]);
+-int ui__help_window(const char *text);
+-int ui__dialog_yesno(const char *msg);
+-int ui__question_window(const char *title, const char *text,
+-			const char *exit_msg, int delay_secs);
+-int __ui__warning(const char *title, const char *format, va_list args);
+-
+-#endif /* _PERF_UI_UTIL_H_ */
 -- 
 1.7.7.6
 
