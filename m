@@ -1,108 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab2C2JWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:22:36 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:47613 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2C2JW2 (ORCPT
+	id S1758810Ab2C2JXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:23:05 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:34321 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2C2JW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:22:28 -0400
-Message-ID: <4F7429C7.9030307@linux.vnet.ibm.com>
-Date: Thu, 29 Mar 2012 17:22:15 +0800
+	Thu, 29 Mar 2012 05:22:59 -0400
+Message-ID: <4F7429E7.3010801@linux.vnet.ibm.com>
+Date: Thu, 29 Mar 2012 17:22:47 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 03/13] KVM: MMU: split FNAME(prefetch_invalid_gpte)
+Subject: [PATCH 04/13] KVM: MMU: introduce FNAME(get_sp_gpa)
 References: <4F742951.7080003@linux.vnet.ibm.com>
 In-Reply-To: <4F742951.7080003@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12032909-2000-0000-0000-000006F452E2
+x-cbid: 12032909-5564-0000-0000-000002034C30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split FNAME(prefetch_invalid_gpte) to check gpte independently which will
-be used in the later patch
+It can calculate the base gpa of the specified shadow page on any level,
+let it instead of FNAME(get_level1_sp_gpa)
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   29 +++++++++++++++++------------
- 1 files changed, 17 insertions(+), 12 deletions(-)
+ arch/x86/kvm/paging_tmpl.h |   26 ++++++++++++--------------
+ 1 files changed, 12 insertions(+), 14 deletions(-)
 
 diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 1561028..b9fd1c4 100644
+index b9fd1c4..f0fbde3 100644
 --- a/arch/x86/kvm/paging_tmpl.h
 +++ b/arch/x86/kvm/paging_tmpl.h
-@@ -337,24 +337,29 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
- 					addr, access);
+@@ -558,6 +558,16 @@ out_gpte_changed:
+ 	return NULL;
  }
 
--static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
--				    struct kvm_mmu_page *sp, u64 *spte,
--				    pt_element_t gpte)
-+static bool FNAME(invalid_gpte)(struct kvm_vcpu *vcpu, pt_element_t gpte)
- {
- 	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
--		goto no_present;
-+		return true;
-
- 	if (!is_present_gpte(gpte))
--		goto no_present;
-+		return true;
-
- 	if (!(gpte & PT_ACCESSED_MASK))
--		goto no_present;
-+		return true;
-
- 	return false;
-+}
-
--no_present:
--	drop_spte(vcpu->kvm, spte);
--	return true;
-+static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
-+					 u64 *spte, pt_element_t gpte)
++static gpa_t FNAME(get_sp_gpa)(struct kvm_mmu_page *sp)
 +{
-+	if (FNAME(invalid_gpte)(vcpu, gpte)) {
-+		drop_spte(vcpu->kvm, spte);
-+		return true;
-+	}
++	int offset, shift;
 +
-+	return false;
++	shift = PAGE_SHIFT - (PT_LEVEL_BITS - PT64_LEVEL_BITS) * sp->role.level;
++	offset = sp->role.quadrant << shift;
++
++	return gfn_to_gpa(sp->gfn) + offset;
++}
++
+ /*
+  * Page fault handler.  There are several causes for a page fault:
+  *   - there is no shadow pte for the guest pte
+@@ -659,18 +669,6 @@ out_unlock:
+ 	return 0;
  }
 
- static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-@@ -365,7 +370,7 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 	pfn_t pfn;
+-static gpa_t FNAME(get_level1_sp_gpa)(struct kvm_mmu_page *sp)
+-{
+-	int offset = 0;
+-
+-	WARN_ON(sp->role.level != 1);
+-
+-	if (PTTYPE == 32)
+-		offset = sp->role.quadrant << PT64_LEVEL_BITS;
+-
+-	return gfn_to_gpa(sp->gfn) + offset * sizeof(pt_element_t);
+-}
+-
+ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+ {
+ 	struct kvm_shadow_walk_iterator iterator;
+@@ -699,7 +697,7 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+ 			if (!sp->unsync)
+ 				break;
 
- 	gpte = *(const pt_element_t *)pte;
--	if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
-+	if (FNAME(prefetch_invalid_gpte)(vcpu, spte, gpte))
- 		return;
+-			pte_gpa = FNAME(get_level1_sp_gpa)(sp);
++			pte_gpa = FNAME(get_sp_gpa)(sp);
+ 			pte_gpa += (sptep - sp->spt) * sizeof(pt_element_t);
 
- 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
-@@ -441,7 +446,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 			if (mmu_page_zap_pte(vcpu->kvm, sp, sptep))
+@@ -780,7 +778,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 	/* direct kvm_mmu_page can not be unsync. */
+ 	BUG_ON(sp->role.direct);
 
- 		gpte = gptep[i];
+-	first_pte_gpa = FNAME(get_level1_sp_gpa)(sp);
++	first_pte_gpa = FNAME(get_sp_gpa)(sp);
 
--		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
-+		if (FNAME(prefetch_invalid_gpte)(vcpu, spte, gpte))
- 			continue;
-
- 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte,
-@@ -792,7 +797,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 					  sizeof(pt_element_t)))
- 			return -EINVAL;
-
--		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, &sp->spt[i], gpte)) {
-+		if (FNAME(prefetch_invalid_gpte)(vcpu, &sp->spt[i], gpte)) {
- 			vcpu->kvm->tlbs_dirty++;
- 			continue;
- 		}
+ 	for (i = 0; i < PT64_ENT_PER_PAGE; i++) {
+ 		unsigned pte_access;
 -- 
 1.7.7.6
 
