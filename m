@@ -1,98 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab2C2BEJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 21:04:09 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48015 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438Ab2C2BEA (ORCPT
+	id S932917Ab2C2BGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 21:06:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59552 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757042Ab2C2BGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 21:04:00 -0400
-X-AuditID: 9c930197-b7b09ae000000a5d-ec-4f73b4fa0df3
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RFC PATCHSET] perf ui: Small preparation on further UI work
-References: <1332751896-11210-1-git-send-email-namhyung.kim@lge.com>
-	<20120326173817.GN25820@infradead.org>
-	<87pqbx320u.fsf@youngshil.aot.lge.com>
-	<20120328142808.GA8482@infradead.org>
-Date: Thu, 29 Mar 2012 10:03:53 +0900
-In-Reply-To: <20120328142808.GA8482@infradead.org> (Arnaldo Carvalho de Melo's
-	message of "Wed, 28 Mar 2012 11:28:08 -0300")
-Message-ID: <87obrgcj5y.fsf@youngshil.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 28 Mar 2012 21:06:36 -0400
+Date: Wed, 28 Mar 2012 18:10:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, viro@zeniv.linux.org.uk,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: suppress page allocation failure warnings from sys_listxattr
+Message-Id: <20120328181023.274401d1.akpm@linux-foundation.org>
+In-Reply-To: <20120329005442.GB16008@redhat.com>
+References: <20120313182220.GA11500@redhat.com>
+	<20120327155149.d41a235b.akpm@linux-foundation.org>
+	<20120328001550.GA3077@redhat.com>
+	<20120328043951.GA32741@dastard>
+	<20120328164720.d1aea752.akpm@linux-foundation.org>
+	<20120329005442.GB16008@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 28 Mar 2012 20:54:42 -0400 Dave Jones <davej@redhat.com> wrote:
 
-On Wed, 28 Mar 2012 11:28:08 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Mar 28, 2012 at 11:14:25AM +0900, Namhyung Kim escreveu:
->> Em Tue, Mar 27, 2012 at 01:44:42PM +0300, Pekka Enberg escreveu: 
->> > Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
->
->> > So I would just leave things in tools/perf/util/ui/ and do what you did
->> > in moving the TUI specific bits to a separate function, even ui__init()
->> > would be ok for now, and then at setup_browser() check what kind of
->> > interface is being used and call ui__init() if it is the TUI and the
->> > gtk init one if GTK+ was chosen.
->> 
->> I think it'd be better moving the TUI specific codes to a separate file
->> (under a separate directory, like tools/perf/util/ui/tui - but it looks
->> like so deep nesting) rather than a function since the generic
->
-> What do you have against directory trees? :P We need to chop off the
-> /util/ part, but apart from that...
->
->> code (setup_browser) should be compiled without the TUI support.
->> Otherwise we'll see some #ifdef's in the source file(s).
->> 
->> Or, we can put those codes under the same directory (tools/perf/util/ui)
->> and have different suffixes - say, if generic code were XXX.c, TUI one
->> would be XXX-tui.c and GTK+ one would be XXX-gtk.c.
->
-> ... what is the difference of using:
->
-> tools/perf/util/ui/tui/init.c
->
-> instead of:
->
-> tools/perf/util/ui/tui-init.c
->
-> ?
->
+> On Wed, Mar 28, 2012 at 04:47:20PM -0700, Andrew Morton wrote:
+>  > On Wed, 28 Mar 2012 15:39:51 +1100
+>  > Dave Chinner <david@fromorbit.com> wrote:
+>  > 
+>  > > > Well, the unusual thing was that I was fuzzing system calls for a few hours.
+>  > > > 
+>  > > > My fuzzing tool was able to trigger these very easily after an hour or two
+>  > > > of uptime and memory had fragmented a little, so yeah, quite trivial.
+>  > > 
+>  > > We've recently been seeing reports of xfsdump trigging a similar
+>  > > allocation failures in the XFS attr code when we are doing hundreds
+>  > > of thousands of attribute lookups to back them up.
+>  > > 
+>  > > ad650f5 xfs: fallback to vmalloc for large buffers in xfs_attrmulti_attr_get
+>  > > 
+>  > > I think that falling back to vmalloc here is much better solution
+>  > > than failing to retreive the attribute - it will work no matter how
+>  > > fragmented memory gets. That means we don't get incomplete
+>  > > backups occurring after days or months of uptime and successful
+>  > > backups...
+>  > 
+>  > Yup.  How does the below look?
+> 
+> Don't see anything immediately wrong with it.
+> Any thoughts on what to do about the similar problem in setxattr ? (memdup_user)
+> 
 
-Nothing. I just want to remain the directory nesting level if you care. :)
+I can't think of anything clever.
 
+The dumb approach:
 
-> Since we'll be introducing new files, it seems the first step would be
-> to just do a simple, no changes in the files, move of
-> tools/perf/util/ui/ to tools/perf/ui/ and then introduce
-> tools/perf/ui/tui/{init,etc}.c
->
-> Gtk would as well be moved to tools/perf/ui/gtk/.
->
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: fs/xattr.c:setxattr(): improve handling of allocation failures
 
-Yeah, This is what I wanted to have from the begining. I'll revise my
-patches after moving the files to tools/perf/ui.
+This allocation can be as large as 64k.
 
-> At some point we would then introduce some sort of plugin mechanism
-> where files found in /usr/lib/perf/ui/ or some other suitable directory
-> would be loaded in a modprobe like way, i.e. if the user asks for --gtk,
-> it would try to find /usr/lib/perf/ui/gtk.so and try to load it, etc.
->
-> That way we start to reduce the miriad libraries that we have linked in
-> the main perf binary, making it easier for packaging, etc.
->
-> - Arnaldo
+- Add __GFP_NOWARN so that a falied kmalloc() is silent
 
-That would be great!
+- Fall back to vmalloc() if the kmalloc() failed
 
-Thanks,
-Namhyung
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Dave Jones <davej@codemonkey.org.uk>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/xattr.c |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
+
+diff -puN fs/xattr.c~fs-xattrc-setxattr-improve-handling-of-allocation-failures fs/xattr.c
+--- a/fs/xattr.c~fs-xattrc-setxattr-improve-handling-of-allocation-failures
++++ a/fs/xattr.c
+@@ -320,6 +320,7 @@ setxattr(struct dentry *d, const char __
+ {
+ 	int error;
+ 	void *kvalue = NULL;
++	void *vvalue = NULL;	/* If non-NULL, we used vmalloc() */
+ 	char kname[XATTR_NAME_MAX + 1];
+ 
+ 	if (flags & ~(XATTR_CREATE|XATTR_REPLACE))
+@@ -334,13 +335,25 @@ setxattr(struct dentry *d, const char __
+ 	if (size) {
+ 		if (size > XATTR_SIZE_MAX)
+ 			return -E2BIG;
+-		kvalue = memdup_user(value, size);
+-		if (IS_ERR(kvalue))
+-			return PTR_ERR(kvalue);
++		kvalue = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
++		if (!kvalue) {
++			vvalue = vmalloc(size);
++			if (!vvalue)
++				return -ENOMEM;
++			kvalue = vvalue;
++		}
++		if (copy_from_user(kvalue, value, size)) {
++			error = -EFAULT;
++			goto out;
++		}
+ 	}
+ 
+ 	error = vfs_setxattr(d, kname, kvalue, size, flags);
+-	kfree(kvalue);
++out:
++	if (vvalue)
++		vfree(vvalue);
++	else
++		kfree(kvalue);
+ 	return error;
+ }
+ 
+_
+
