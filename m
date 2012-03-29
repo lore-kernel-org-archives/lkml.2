@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab2C2JbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:31:23 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:60784 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409Ab2C2JbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:31:17 -0400
-Date: Thu, 29 Mar 2012 10:31:13 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: gregkh@linuxfoundation.org, stable@vger.kernel.org,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "mm: vmscan: forcibly scan highmem if there are too many
- buffer_heads pinning highmem" has been added to the 3.3-stable tree
-Message-ID: <20120329093113.GR1007@csn.ul.ie>
-References: <13325234973644@kroah.org>
- <20120329053639.GA7603@pcnci2.linuxbox.cz>
+	id S932486Ab2C2JdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:33:20 -0400
+Received: from smtp21.cstnet.cn ([159.226.251.21]:39050 "EHLO cstnet.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753322Ab2C2JdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 05:33:12 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Mar 2012 05:33:11 EDT
+Message-ID: <4F742AE4.6050006@ict.ac.cn>
+Date: Thu, 29 Mar 2012 17:27:00 +0800
+From: "zhuangfeiran@ict.ac.cn" <zhuangfeiran@ict.ac.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120329053639.GA7603@pcnci2.linuxbox.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: davem@davemloft.net
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com
+Subject: [PATCH] fix a bug in emitting the 16-bit immediate operand of AND
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-CM-TRANSID: RgCowJCbCGjVKnRPwCnNAg--.55256S2
+X-Coremail-Antispam: 1UD129KBjvdXoWrKF4fCr47KFy8GF4xAw47Arb_yoW3ZrX_Xr
+	1UJa97GwsYv347A3W5Cr4fCrsxCwnxCr4fXrnagry2y3s0yF45JFWvg3Wjq3y7GFWDZrW7
+	Zr4kZ34Ivan0qjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUIcSsGvfJTRUUUbbxYjxAI6xkYrwAYjxAI6xCIbckI1I0E57IF64kEYxAxM7k042IE
+	4asKkaVY67AtM7k042IEIxkG67AtM7k0a2IF6F4UM7kC6x804xWl14x267AKxVWUJVW8Jw
+	AFc2x0x2IEx4CE42xK8VAvwI8IcIk0rVWrJVCq3wAFIxvE14AKwVWUJVWUGwA2z4x0Y4vE
+	2Ix0cI8IcVAFwI0_Ar0_tr1l84ACjcxK6xIIjxv20xvEc7CjxVAFwI0_Gr1j6F4UJwA2z4
+	x0Y4vEx4A2jsIE14v26rxl6s0DM28EF7xvwVC2z280aVCY1x0267AKxVW0oVCq3wAawVAY
+	YI1S6c8GOVWUur45Jryln4vEF2I2jVAIwVAKzxkI7VAqrcv_JFW8Xr15M2kK6xCIbVAIwI
+	AEc20F6c8GOVW8Jr15Jr4lnxkEFVAGz4kfMc804VCY07AIYIkI8VC2zVCFFI0UMc02F40E
+	FcxC0VAKzVAqx4xG6I80ewAv7VC0I7IYx2IY67AKxVWUtVWrXwAv7VC2z280aVAFwI0_Cr
+	1j6rxdM4x0Y48IcVAKI48JMxk0xIA0c2IEe2xFo4CEbIxvr21l42xK82IYc2Ij64vIr41l
+	4IxY624lx4CE17CEb7AF67AKxVWUAVWUtwCIc40Y0x0EwIxGrwCI42IY6xAIw20EY4v20x
+	vaj40_WFyUJVCq3bIYCTnIWIevJa73UjIFyTuYvjxUg48BUUUUU
+X-CM-SenderInfo: p2kxt0pjihx21dq6xunwoduhdfq/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 07:36:39AM +0200, Nikola Ciprich wrote:
-> Hi,
-> 
-> I'm not 100% sure, but I think this one could go to 3.0.x as well, am I right?
-> If it's so, could I try to provide backport? (it't doesn't apply cleanly).
+When K >= 0xFFFF0000, AND needs the two least significant bytes of K as
+its operand, but EMIT2() gives it the least significant byte of K and
+0x2. EMIT() should be used here to replace EMIT2().
 
-If you want to try a backport go right ahead. There is an indirect dependency
-on [2bcf8879: mm: take pagevecs off reclaim stack] which is not suitable
-for backporting to -stable but handling that should be easy.
+Signed-off-by: Feiran Zhuang  <zhuangfeiran@ict.ac.cn>
+---
+ arch/x86/net/bpf_jit_comp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Mel, would You care to review then? Or do You plan to send Your own backport?
-> 
-
-I had not planned my own backport because the type of bug made it a low
-priority for me (copying NTFS with small block size on 32 bit X86 with 16G
-of RAM). If you backport it, I'll review the result. I will be at LSF/MM next
-week so I might be a bit slow to respond but I'll get around to it. Thanks.
-
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 5671752..5a5b6e4 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -289,7 +289,7 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 					EMIT2(0x24, K & 0xFF); /* and imm8,%al */
+ 				} else if (K >= 0xFFFF0000) {
+ 					EMIT2(0x66, 0x25);	/* and imm16,%ax */
+-					EMIT2(K, 2);
++					EMIT(K, 2);
+ 				} else {
+ 					EMIT1_off32(0x25, K);	/* and imm32,%eax */
+ 				}
 -- 
-Mel Gorman
-SUSE Labs
+1.7.5.4
+
+
