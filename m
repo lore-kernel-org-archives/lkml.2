@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab2C2J7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:59:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51047 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376Ab2C2J7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:59:05 -0400
-Date: Thu, 29 Mar 2012 11:58:49 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <liuj97@gmail.com>
-cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Jes Sorensen <jes@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H . Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-altix@sgi.com, x86@kernel.org,
-        chenkeping@huawei.com
-Subject: Re: [PATCH] IRQ: normalize chip->irq_set_affinity return value on
- x86 and IA64
-In-Reply-To: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
-Message-ID: <alpine.LFD.2.02.1203291154010.2542@ionos>
-References: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S932529Ab2C2J72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:59:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14421 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758935Ab2C2J7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 05:59:10 -0400
+Message-ID: <4F743247.5080407@redhat.com>
+Date: Thu, 29 Mar 2012 11:58:31 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Alan Meadows <alan.meadows@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com> <4F73568D.7000703@linux.vnet.ibm.com>
+In-Reply-To: <4F73568D.7000703@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012, Jiang Liu wrote:
+On 03/28/2012 08:21 PM, Raghavendra K T wrote:
+>
+>>
+>>
+>>         Looks like a good baseline on which to build the KVM
+>>         implementation.  We
+>>         might need some handshake to prevent interference on the host
+>>         side with
+>>         the PLE code.
+>>
+>
+> I think I still missed some point in Avi's comment. I agree that PLE
+> may be interfering with above patches (resulting in less performance
+> advantages). but we have not seen performance degradation with the
+> patches in earlier benchmarks. [ theoretically since patch has very
+> slight advantage over PLE that atleast it knows who should run next ].
 
-> On x86 and IA64 platforms, interrupt controller chip's irq_set_affinity()
-> method always copies affinity mask to irq_data->affinity field but still
-> returns 0(IRQ_SET_MASK_OK). That return value causes the interrupt core
-> logic unnecessarily copies the mask to irq_data->affinity field again.
-> So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
-> the duplicated copy operation.
-> 
-> This patch applies to v3.3-rc6 and has been tested on x86 platforms.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> ---
->  arch/ia64/kernel/iosapic.c     |    4 +++-
->  arch/ia64/kernel/msi_ia64.c    |    4 ++--
->  arch/ia64/sn/kernel/irq.c      |    2 +-
->  arch/ia64/sn/kernel/msi_sn.c   |    2 +-
->  arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
->  arch/x86/platform/uv/uv_irq.c  |    2 +-
->  kernel/irq/internals.h         |    3 +++
->  kernel/irq/manage.c            |   39 ++++++++++++++++++++++-----------------
->  kernel/irq/migration.c         |    6 +-----
+The advantage grows with the vcpu counts and overcommit ratio.  If you
+have N vcpus and M:1 overcommit, PLE has to guess from N/M queued vcpus
+while your patch knows who to wake up.
 
+>
+> So TODO in my list on this is:
+> 1. More analysis of performance on PLE mc.
+> 2. Seeing how to implement handshake to increase performance (if PLE +
+> patch combination have slight negative effect).
 
-This does not work that way. The patch wants to be split in 3 parts
-(core, x86, ia64). The patches are completely independent. Please
-resend.
+I can think of two options:
+- from the PLE handler, don't wake up a vcpu that is sleeping because it
+is waiting for a kick
+- look at other sources of pause loops (I guess smp_call_function() is
+the significant source) and adjust them to use the same mechanism, and
+ask the host to disable PLE exiting.
 
-Thanks,
+This can be done incrementally later.
 
-	tglx
+>
+> Sorry that, I could not do more analysis on PLE (as promised last time)
+> because of machine availability.
+>
+> I 'll do some work on this and comeback. But in the meantime, I do not
+> see it as blocking for next merge window.
+
+-- 
+error compiling committee.c: too many arguments to function
+
