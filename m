@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760410Ab2C2Xf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 19:35:27 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47166 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933422Ab2C2XfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 19:35:09 -0400
-Date: Thu, 29 Mar 2012 16:35:06 -0700
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: lockups shortly after booting in current git.
-Message-ID: <20120329233506.GG13970@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Dave Jones <davej@redhat.com>,
-	Wu Fengguang <fengguang.wu@intel.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFxyutCDZhVa8HCu=hpn0454sfoM27Jwh2heCN0cqg5pjA@mail.gmail.com>
- <20120329202619.GA14001@redhat.com>
- <20120329203926.GA13970@thunk.org>
- <CA+55aFwJkN2BmZJmWfB6FU0TuVKfmh4um8pMKYVUk3aG7JkNwQ@mail.gmail.com>
- <20120329211244.GA18684@redhat.com>
- <20120329214510.GD13970@thunk.org>
- <20120329214959.GA20783@redhat.com>
- <CA+55aFz5Di6K4TzrFrGdyrPQkadt1pkGrWv_9GyaVgUjx_4cwg@mail.gmail.com>
- <20120329225429.GA25320@redhat.com>
- <CA+55aFxwfzRniiTRVysvjnSaMYXQwrk8O8iQ-xdy1DXYxeL+cw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxwfzRniiTRVysvjnSaMYXQwrk8O8iQ-xdy1DXYxeL+cw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1760425Ab2C2Xi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 19:38:58 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55724 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760346Ab2C2Xiu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 19:38:50 -0400
+Date: Fri, 30 Mar 2012 10:38:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Neuling <mikey@neuling.org>,
+        David Howells <dhowells@redhat.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        arnd@arndb.de, hpa@zytor.com
+Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
+Message-Id: <20120330103840.790c6486dbe71e5ff901321e@canb.auug.org.au>
+In-Reply-To: <CACxGe6sokpFa_KEi+jxPX3caF4CpfxzZ4f53S1Y_+caXVLBNtg@mail.gmail.com>
+References: <5599.1332958811@redhat.com>
+	<30702.1332989444@neuling.org>
+	<1332994469.3010.7.camel@pasglop>
+	<20120329210117.A9A073E06B4@localhost>
+	<20120330095020.a2e01d86c2d09f186c53d63d@canb.auug.org.au>
+	<CACxGe6sokpFa_KEi+jxPX3caF4CpfxzZ4f53S1Y_+caXVLBNtg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 04:04:50PM -0700, Linus Torvalds wrote:
-> On Thu, Mar 29, 2012 at 3:54 PM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > 90 mins of 2x kernel builds in parallel along with
-> > 3x fsx runs. then my battery ran out.
-> >
-> > looks like we have a winner.
-> 
-> Ok, let's revert it. Do you want to write the description of what
-> happened, or should I just do it?
+--Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How about this:
+Hi Grant,
 
-Commit b43d17f31 (ext4: don't release page refs in ext4_end_bio) is
-apprently causing system lockups for a system using a LUKS backed
-system partition.  This luckup can be reproduced by running a make -j8
-kernel compile in parallel with fsx.
+On Thu, 29 Mar 2012 16:52:25 -0600 Grant Likely <grant.likely@secretlab.ca>=
+ wrote:
+>
+> Cool.  If that checks out in linux-next, then I'll ask Linus to pull.
+>=20
+> BTW, can you add that branch permanently to linux-next?  That's the
+> branch I'll use when queuing up irqdomain fixes for mainline.
 
-Since the commit in question was fixing a rare and fairly exotic race,
-and the lockup was found fairly quickly, it is being reverted as a
-regression fix.
+OK, I have added that branch.   Meanwhile, Linus has merged that branch
+as well, so I will remove it from my fixes tree again :-)
 
-						- Ted
+I *may* get linux-next for today started soon :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-P.S.  I've been using 3.3 + the ext4 development tree on my laptop for
-a while now, with a LUKS-encrypted+LVM setup on both a SSD and HDD on
-a Ubuntu 10.04 based system.  I've not noticed the problem that Dave
-is seeing under normal use.  So I'm wondering what was triggering it
-on what should have been an idle desktop system in his case.  But this
-is definitely a case where we should revert first, and ask questions
-later.
+--Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN
+Content-Type: application/pgp-signature
 
-Dave, thanks for noticing and reporting this!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPdPKAAAoJEECxmPOUX5FENgYP/3AcM4jCtROCqhyrdPDyVQBu
+tpkGp+a2QJS71vJ0uE1gUZ77i1sIrdMVMuSxZ0OOCBj9Lml/cHQocT56cgHUIRCm
+ZJMzzD1VFqKgCOIB2Rwquilwb6kXeDQPqzJaTEBYftiimJ7t000omwkQn2GSW45r
+c768/jLZni54AYjKKIyNVLLQ+oZPjrrpW4wI6RqbHCyqNXsV2TZCkm16gllWGcPc
+RNdJDdCJY3RoWYBApgvn3VGvyp5abieNbpRfnW2h3oSOn5bw26zj2JlbtnucVxWa
+4B5rH9DTfjJMIuMXkkP3DFIsJA9AtMSm1q1+X+pkZm7VTyKz6eeus+HDbhHYKczx
+/6QNachzI1SeXDMW30SMuftL8/3Oq3w9/cbs71DDGBjc/yt0oRd2518y6Z+LLmpg
+5s+wolFafsrTxFYVkw46O50Lgy3m4wyxIa38p7+ZFgZ8MCJsAyXr0ZxI0YwlzyiO
+cGO/CgIcRZU1N8ZwXZRskNboIypKwo/abRvWlKi+fo8NTLUgl7R60T0JR4fntSHH
+EqRREoIKQnNCYTbXq7BuS5dQfm9TYkMFVKZJz3XtEa+0FLYs499OV9U0aY4V4rM1
+wZ46sqvFS4AoAZYxG4atxD5TThrbI3KA5BFStuvPUaCVPM/f7Y9pm+of7Z4vGnkK
+q9pPoez/b82tG9vU1+GV
+=oc4z
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Mar_2012_10_38_40_+1100_ZVyG4WeEOZB/1FkN--
