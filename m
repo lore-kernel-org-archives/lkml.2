@@ -1,104 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab2C2FXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 01:23:50 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:36702 "EHLO linta.de"
+	id S1752996Ab2C2FYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 01:24:31 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:36703 "EHLO linta.de"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752240Ab2C2FXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752408Ab2C2FXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Mar 2012 01:23:44 -0400
-Date: Thu, 29 Mar 2012 07:23:35 +0200
+Date: Thu, 29 Mar 2012 07:23:08 +0200
 From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@linux-foundation.org, linux-pcmcia@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] PCMCIA updates for 3.4
-Message-ID: <20120329052335.GB5823@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@linux-foundation.org,
-	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <20120325170512.GA31282@comet.dominikbrodowski.net>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org
+Subject: Re: [git pull] cpupowerutils updates for 3.4
+Message-ID: <20120329052308.GA5823@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+	cpufreq@vger.kernel.org
+References: <20120325183807.GA26398@comet.dominikbrodowski.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LpQ9ahxlCli8rRTG"
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
 Content-Disposition: inline
-In-Reply-To: <20120325170512.GA31282@comet.dominikbrodowski.net>
+In-Reply-To: <20120325183807.GA26398@comet.dominikbrodowski.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---LpQ9ahxlCli8rRTG
-Content-Type: text/plain; charset=us-ascii
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-=2E.. and on this?
+Linus,
+
+any updates on this?
 
 Thanks & best,
 	Dominik
 
-On Sun, Mar 25, 2012 at 07:05:12PM +0200, Dominik Brodowski wrote:
+On Sun, Mar 25, 2012 at 08:38:07PM +0200, Dominik Brodowski wrote:
 > Linus,
 >=20
-> a few PCMCIA updates for 3.4 are available in the git repository at:
+> a few cpupower updates for 3.4 are available in the git repository at:
 >=20
->   git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia.git master
+>   git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.git m=
+aster
 >=20
 > Please pull from that location. The diffstat and list of changes is below,
-> the individual diffs are sent (at least) to the linux-pcmcia list.
+> the individual diffs are sent (at least) to the cpufreq list.
 >=20
 > Thanks,
 >         Dominik
 >=20
-> Axel Lin (3):
->       pcmcia: convert drivers/pcmcia/* to use module_platform_driver()
->       pcmcia: Convert to DEFINE_PCI_DEVICE_TABLE
->       ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
+> Franck Bui-Huu (5):
+>       cpupower tool: remove use of undefined variables from the clean tar=
+get of the top makefile
+>       cpupower tool: makefile: simplify the recipe used to generate cpupo=
+wer.pot target
+>       cpupower tool: allow to build in a separate directory
+>       cpupower tools: allow to build debug tools in a separate directory =
+too
+>       cpupower tools: add install target to the debug tools' makefiles
 >=20
-> Joachim Eastwood (1):
->       pcmcia at91_cf: fix raw gpio number usage
+> Ozan =C3=87a=C4=9Flayan (1):
+>       cpupower: Fix linking with --as-needed
 >=20
-> Yong Zhang (1):
->       pcmcia: irq: Remove IRQF_DISABLED
+> Thomas Renninger (7):
+>       cpupower: Better interface for accessing AMD pci registers
+>       cpupower: AMD fam14h/Ontario monitor can also be used by fam12h cpus
+>       cpupower: Add cpupower-idle-info manpage
+>       cpupower: Unify cpupower-frequency-* manpages
+>       cpupower: Fix number of idle states
+>       cpupower: Remove unneeded code and by that fix a memleak
+>       cpupower: Fix broken mask values
 >=20
->  drivers/pcmcia/at91_cf.c        |   52 +++++++++++++++++++--------------=
------
->  drivers/pcmcia/bcm63xx_pcmcia.c |    2 +-
->  drivers/pcmcia/bfin_cf_pcmcia.c |   13 +---------
->  drivers/pcmcia/db1xxx_ss.c      |   17 ++----------
->  drivers/pcmcia/electra_cf.c     |   12 +--------
->  drivers/pcmcia/i82092.c         |   11 ++------
->  drivers/pcmcia/m8xx_pcmcia.c    |   13 +---------
->  drivers/pcmcia/pd6729.c         |    9 +-----
->  drivers/pcmcia/pxa2xx_base.c    |   12 ++------
->  drivers/pcmcia/pxa2xx_viper.c   |   13 +---------
->  drivers/pcmcia/soc_common.c     |    2 +-
->  drivers/pcmcia/vrc4173_cardu.c  |    7 +---
->  drivers/pcmcia/xxs1500_ss.c     |   13 +---------
->  drivers/pcmcia/yenta_socket.c   |    2 +-
->  14 files changed, 47 insertions(+), 131 deletions(-)
+>  tools/power/cpupower/Makefile                      |   93 ++++++++++++--=
+------
+>  tools/power/cpupower/bench/Makefile                |   23 +++--
+>  tools/power/cpupower/debug/i386/Makefile           |   40 ++++++---
+>  tools/power/cpupower/debug/x86_64/Makefile         |   26 +++++-
+>  tools/power/cpupower/man/cpupower-frequency-info.1 |    4 +-
+>  tools/power/cpupower/man/cpupower-frequency-set.1  |    4 +-
+>  tools/power/cpupower/man/cpupower-idle-info.1      |   90 ++++++++++++++=
++++++
+>  tools/power/cpupower/man/cpupower-monitor.1        |    2 +-
+>  tools/power/cpupower/utils/cpuidle-info.c          |   12 +--
+>  tools/power/cpupower/utils/helpers/amd.c           |    4 +-
+>  tools/power/cpupower/utils/helpers/helpers.h       |   11 ++-
+>  tools/power/cpupower/utils/helpers/pci.c           |   35 +++++---
+>  .../cpupower/utils/idle_monitor/amd_fam14h_idle.c  |   25 +++---
+>  13 files changed, 259 insertions(+), 110 deletions(-)
+>  create mode 100644 tools/power/cpupower/man/cpupower-idle-info.1
 
-
-
---LpQ9ahxlCli8rRTG
+--2oS5YaxWCcQjTEyO
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPc/HXAAoJEJqXYIlMjaMN6foQALjPWZtyC3IwJkBOhusK3TWB
-XYMKpWEDg6BTtq5Y5fG+TiWliwwfjuNl5hcoR/YwhuRpIHBkLrImaty7JgT4awzl
-XXv24Y5p05w5eS1agQSCcUZUB1SayG7WHikc27U0RgktzO7nVhT872UOh0EtKBqC
-QHPcj5hSeKnozrL2ivcRWeSyRSE9XhQn/E6qtxbeeiKNeIsh5LHfdo3bZSW0imwM
-gCQ6BnVyn69ASclfg/bJbZFKSHte4LbqZYEHNQd4p1Lgv5iFjpOt5waOEX9Csl1+
-i9/fEt57GSV67TRZDvOIYtbNJaEqC23NQzhz/ZzYkPsbZYmJlVVHnKyoWTuPUH1P
-QpqXdxypa4yqy5WfBpnFvaAQ4Ilr+aZ4SZX0UWgEvCK2Xo44iVTOxJ0Jf/IGd14e
-5aF95sG5qU8TszhGerA0TsDgy84Tce3D37cUpoLmzp3+m9lP/ZBiOmNK7LipkJcZ
-O7Mai1rYicoXcoAeEoELOYvOwG8E8xxk8DeSKEFcRdXfC7hJ1vrvsXJVP04/9NB+
-2xOchAu9WybH5t+cqBJCxZYiuZ7S/HW9Qv6LnAFNNHbFksNBp516Wd6m6eQrpH/t
-3fYDIGfbKY5zO+uXj+B7qYf707VcD5/bM2oFc0xE+4rrteCX1WbjOIXYH39LIZI3
-DP2dBmlbC2nYFWvfXGLa
-=Ahfz
+iQIcBAEBAgAGBQJPc/G8AAoJEJqXYIlMjaMNM1EP/1WZO3+MmtGCNScfiQdf7lrE
+dVnTGbl4Zo/VdqMCmpLDkq6QnOr0VV4bz+8ldp1pGZjucGvQe3E4x9lYg7esj4ek
+85bIWkCT7Fxr6KbMNPqmHHUyrCHvsnFClDq3vHCxL6pcfttmLCglAg2TuszTO2XG
+loHAyJ7nC6WMCfOXaBOOcvzgQc6d4TxfycZDkOvrOekci1KJU0WIpGBjyldJB74y
+MWT13bBNzwpOuKB7lFxK411FPd04x5KBLDRiws6nkDIC3JtPxOuf5TipZy9QXaev
+tK/4mF9XyXp2TlCSPZFuIRFO8XiUAAOlSAqRP6egh1Z/RLNm+XYI4O50YGL7EuhA
+d1PkDTPiwtbtQbmdagkYMsVxVDneVlkj+zYZ5JezaEOq+49wYDz/8j4nsYNNh5tF
+Ixe3qkSVP6l/8CIgNmtXiwZYCiRChdgbjHoU729yPa8CFRMk17RyjiAWVzqU46zy
+P6QdIFt3lADfHmG3225hGVwxGodYOzwiVvWcjwaha0QuoMTX4szwwEDhEc8utxm0
+whcN1nGibtHS8lZe7O7XmNBJVOajaXv7qt3uEdhEklSK+N0nXuWlV98t9ljzaaMi
+ZdbQ+5szKBDL1TJEA/TuTYIuIc8+IZIwdNuPzZyVkdJp+Ys3ELN78MGcW4pBN4qh
+/acIQsX9SzEyY23rks4C
+=wRVB
 -----END PGP SIGNATURE-----
 
---LpQ9ahxlCli8rRTG--
+--2oS5YaxWCcQjTEyO--
