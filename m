@@ -1,140 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab2C2FpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 01:45:18 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39518 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab2C2FpJ convert rfc822-to-8bit (ORCPT
+	id S1753432Ab2C2Fs3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 01:48:29 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:34063 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752408Ab2C2FsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 01:45:09 -0400
+	Thu, 29 Mar 2012 01:48:23 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <linus.walleij@linaro.org>
+Cc: <rdunlap@xenotime.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <spear-devel@list.st.com>,
+        <viresh.linux@gmail.com>, Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH] Documentation: pinctrl: Add missing spi0_0 grp in example
+Date: Thu, 29 Mar 2012 11:03:27 +0530
+Message-ID: <35e4e184dbcec04659f3c9fe648b9307ca16c9cd.1332999069.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.10.rc2.10.gb47606
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
-References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
-	<Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
-Date: Thu, 29 Mar 2012 13:45:07 +0800
-X-Google-Sender-Auth: 0RNyV1tdg38w-lnUACPPt4QaBFg
-Message-ID: <CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        Aaron Lu <aaron.lu@amd.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-acpi <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 10:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 28 Mar 2012, Lin Ming wrote:
->
->> ZPODD(Zero Power Optical Disk Drive) is a new feature in
->> SATA 3.1 specification. It provides a way to power off unused ODD.
->>
->> ZPODD support is checked in in sr_probe().
->> can_power_off flag is set during suspend if ZPODD is supported.
->>
->> ATA port's runtime suspend callback will actually power off the ODD
->> and its runtime resume callback will actually power on the ODD.
->>
->> When ODD is powered off(D3Cold state), inserting disk will trigger a
->> wakeup event(GPE). GPE AML handler notifies the associated device. Then
->> ODD is resumed in the notify handler.
->
->> --- a/drivers/scsi/sr.c
->> +++ b/drivers/scsi/sr.c
->
->> @@ -80,12 +82,38 @@ static int sr_probe(struct device *);
->>  static int sr_remove(struct device *);
->>  static int sr_done(struct scsi_cmnd *);
->>
->> +static int sr_suspend(struct device *dev, pm_message_t mesg)
->> +{
->> +     struct scsi_cd *cd;
->> +
->> +     cd = dev_get_drvdata(dev);
->> +     if (cd->device->power_off)
->> +             dev->power.subsys_data->can_power_off = true;
->> +
->> +     return 0;
->> +}
->> +
->> +static int sr_resume(struct device *dev)
->> +{
->> +     struct scsi_cd *cd;
->> +
->> +     cd = dev_get_drvdata(dev);
->> +     if (cd->device->power_off) {
->> +             dev->power.subsys_data->can_power_off = false;
->> +             cd->poweroff_event = 0;
->> +     }
->> +
->> +     return 0;
->> +}
->
-> Calling this flag "can_power_off" makes these routines look very
-> strange.  Either the device can power off or it can't, i.e., either it
-> supports ZPODD or it doesn't.  This doesn't change over time.
->
-> If you rename the flag "may_power_off" then its meaning will be more
-> clear.
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ Documentation/pinctrl.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-OK, will rename it.
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index d97bccf..f2e27ef 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -640,7 +640,7 @@ struct foo_pmx_func {
+ 	const unsigned num_groups;
+ };
+ 
+-static const char * const spi0_groups[] = { "spi0_1_grp" };
++static const char * const spi0_groups[] = { "spi0_0_grp", "spi0_1_grp" };
+ static const char * const i2c0_groups[] = { "i2c0_grp" };
+ static const char * const mmc0_groups[] = { "mmc0_1_grp", "mmc0_2_grp",
+ 					"mmc0_3_grp" };
+-- 
+1.7.10.rc2.10.gb47606
 
->
->> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
->>       unsigned int events;
->>       int ret;
->>
->> +     /* Not necessary to check events if enter ZPODD state */
->> +     if (cd->device->power_off &&
->> +                     pm_runtime_suspended(&cd->device->sdev_gendev))
->> +             return 0;
->
-> The comment is wrong and the new code does the wrong thing.  You _do_
-> have to check for events even in the ZPODD state, which means
-> sr_check_events must power-up the device if necessary.
-> sd_check_events in James Bottomley's scsi-misc tree now does the right
-> thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
-
-The problem is userspace(GNOME, for example) will check for events
-every seconds.
-If sr is power up so frequently then we lost the expected power
-savings from ZPODD.
-
-There are 2 events:
-
-DISK_EVENT_MEDIA_CHANGE
-DISK_EVENT_EJECT_REQUEST
-
-In current implementation, if sr is in ZPODD state, then it means
-there is no disk in the CDROM.
-So if sr is in ZPODD state, MEDIA_CHANGE would never happen.
-
-EJECT_REQUEST seems can be ignored, since there is no disk in the CDROM at all.
-
->
->> +
->>       /* no changer support */
->>       if (CDSL_CURRENT != slot)
->>               return 0;
->> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
->>       cd->media_present = scsi_status_is_good(ret) ||
->>               (scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
->>
->> +     if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
->> +             scsi_autopm_put_device(cd->device);
->
-> You can see your mistake here.  You call scsi_autopm_put_device here
-> without calling scsi_autopm_get_device earlier.
-
-Let me check this.
-
-Thanks for the review.
-Lin Ming
-
->
-> Alan Stern
