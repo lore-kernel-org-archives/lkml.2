@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab2C2EZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 00:25:09 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43803 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab2C2EZD convert rfc822-to-8bit (ORCPT
+	id S1751710Ab2C2Ei5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 00:38:57 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:13112 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751207Ab2C2Eiw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 00:25:03 -0400
+	Thu, 29 Mar 2012 00:38:52 -0400
+X-IronPort-AV: E=Sophos;i="4.75,335,1330934400"; 
+   d="scan'208";a="637082720"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
+Thread-Topic: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
+Thread-Index: AQHNDU+E6ZdFWqFeI0qI10V6oguVYJaA+9eAgAAAowCAAAM+AIAAAjSAgAANwwCAAAd4AIAABtYAgAADZACAAAUFAA==
+Date: Thu, 29 Mar 2012 04:38:44 +0000
+Message-ID: <3379B519-55A9-41F5-AFDA-EBB5BFF891B7@netapp.com>
+References: <1332986348.19172.43.camel@lade.trondhjem.org>
+ <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>
+ <1332986928.19172.45.camel@lade.trondhjem.org>
+ <CA+55aFyQ0r5mN9=3DUVENCtdj8VMLRjiXTc5Xd4o+F=s9B8xMg@mail.gmail.com>
+ <1332988097.19172.51.camel@lade.trondhjem.org>
+ <4F73D44C.5090604@panasas.com>
+ <CA+55aFyHmQBXw3ik3qv81_3Zp+4r-VUt_TNBs-M19b6Zt7PDeQ@mail.gmail.com>
+ <1332994124.30608.5.camel@lade.trondhjem.org>
+ <CA+55aFwxkWpH1WyBnE1Lg9eRAfPsfcyoZev7-O9TGrPKTB1pOg@mail.gmail.com>
+In-Reply-To: <CA+55aFwxkWpH1WyBnE1Lg9eRAfPsfcyoZev7-O9TGrPKTB1pOg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <3456F07CBFA3324EB62A2564E1EB7837@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20120329151544.ef2117821dfb459e8b52af48@canb.auug.org.au>
-References: <5599.1332958811@redhat.com> <30702.1332989444@neuling.org>
- <20120329135555.06593144b65bf81cc9191f8a@canb.auug.org.au> <20120329151544.ef2117821dfb459e8b52af48@canb.auug.org.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Mar 2012 21:24:41 -0700
-X-Google-Sender-Auth: P2HaPrZ4BITXV8rGKRQi9498xro
-Message-ID: <CA+55aFzn=bsH76hPDUgS-FBP=RVu51gwmRdqjkw5RJO=Q_cRfA@mail.gmail.com>
-Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Michael Neuling <mikey@neuling.org>, David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>, akpm@linux-foundation.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, arnd@arndb.de, hpa@zytor.com,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 9:15 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> The following patch fixes (as much as possible) a powerpc allyesconfig build.
 
-Ugh:
+On Mar 29, 2012, at 12:20 AM, Linus Torvalds wrote:
 
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index af48e59..1f94ddf 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -12,6 +12,9 @@
->  #include <linux/slab.h>
->  #include <linux/smp.h>
->  #include <linux/fs.h>
-> +#ifdef CONFIG_VIRQ_DEBUG
-> +#include <asm/debug.h>
-> +#endif
+> On Wed, Mar 28, 2012 at 9:08 PM, Myklebust, Trond
+> <Trond.Myklebust@netapp.com> wrote:
+>> 
+>> Maybe I'm running an older version of git (Fedora 16 latest update), but
+>> when I do
+> 
+> Yeah, you need git 1.7.9 to get the tag content support.
+> 
+> With older git versions, spell out "tags/xyz" instead of just "xyz",
+> and it will all work, but it still won't actually show the tag
+> content.
 
-Can we please move that abortion into arch/powerpc/? Instead of making
-generic code even uglier..
+When I do the tags/nfs-for-3.4-1, it still gives me that ..BRANCH.NOT.VERIFIED.. crap in the pull message.
+Furthermore, it fails to actually push the tag to my upstream repository, meaning that I'm still prone to the 'Linus tried to pull, and the commit wasn't there" syndrome.
 
-                       Linus
+Could we perhaps set up a best practices webpage/wiki for this sort of thing with a pointer to that webpage in Documentations/SubmittingPatches? That way maintainers would have a source of information for which versions of 'git' that they need to use in order to provide you with the information that you want.
+
+Cheers
+  Trond
