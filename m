@@ -1,66 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912Ab2C2JZC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:25:02 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38764 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758842Ab2C2JYu (ORCPT
+	id S1758927Ab2C2JZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:25:25 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:60842 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab2C2JZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:24:50 -0400
-Date: Thu, 29 Mar 2012 11:25:32 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Daniel Vetter <daniel@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 5/7 v6] drm/i915/intel_i2c: use INDEX cycles for i2c read
- transactions
-Message-ID: <20120329092532.GF4106@phenom.ffwll.local>
-Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	Benson Leung <bleung@chromium.org>,
-	Yufeng Shen <miletus@chromium.org>
-References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
- <1332959199-32161-6-git-send-email-djkurtz@chromium.org>
- <1332960747_131180@CP5-2952>
- <CAGS+omBWDoc2YiKPmBJ7=iEr+1DFBZp0EDCpPwP9c7FcbC4iew@mail.gmail.com>
+	Thu, 29 Mar 2012 05:25:18 -0400
+Message-ID: <4F742A74.1050304@linux.vnet.ibm.com>
+Date: Thu, 29 Mar 2012 17:25:08 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGS+omBWDoc2YiKPmBJ7=iEr+1DFBZp0EDCpPwP9c7FcbC4iew@mail.gmail.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 08/13] KVM: MMU: fask check whether page is writable
+References: <4F742951.7080003@linux.vnet.ibm.com>
+In-Reply-To: <4F742951.7080003@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12032909-5564-0000-0000-000002034E42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 04:37:18PM +0800, Daniel Kurtz wrote:
-> On Thu, Mar 29, 2012 at 2:52 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Thu, 29 Mar 2012 02:26:37 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> >> It is very common for an i2c device to require a small 1 or 2 byte write
-> >> followed by a read.  For example, when reading from an i2c EEPROM it is
-> >> common to write and address, offset or index followed by a reading some
-> >> values.
-> >
-> > Hmm, I have
-> >
-> > "gmbus1, bits 8-15: 8-bit GMBUS slave register
-> > This field is redundant and should not be used."
-> >
-> > Scary. :)
-> 
-> Perhaps INDEX ops are only available on some chipsets?
-> Is this something you can double check?
+Using PTE_LIST_WRITE_PROTECT bit in rmap store the write-protect status to
+avoid unnecessary shadow page walking
 
-I think index ops are available, the text sounds more like a hint to the
-programmer that for VCH devices you should use word reg index access (i.e.
-gmbus 5). We'll see when it blows up.
--Daniel
+Also if no shadow page is indirect, the page is write-free
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c |   34 +++++++++++++++++++++++++++++++++-
+ 1 files changed, 33 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 84b9775..3887a07 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -797,6 +797,7 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
+ }
+
+ #define PTE_LIST_DESC		(0x1ull)
++#define PTE_LIST_WRITE_PROTECT	(0x2ull)
+ #define PTE_LIST_FLAG_MASK	(0x3ull)
+
+ static void
+@@ -1016,6 +1017,13 @@ static bool rmap_can_add(struct kvm_vcpu *vcpu)
+ 	return mmu_memory_cache_free_objects(cache);
+ }
+
++static void host_page_write_protect(u64 *spte, unsigned long *rmapp)
++{
++	if (!(*spte & SPTE_HOST_WRITEABLE) &&
++	      !(*rmapp & PTE_LIST_WRITE_PROTECT))
++		*rmapp |= PTE_LIST_WRITE_PROTECT;
++}
++
+ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+ {
+ 	struct kvm_mmu_page *sp;
+@@ -1023,7 +1031,10 @@ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+
+ 	sp = page_header(__pa(spte));
+ 	kvm_mmu_page_set_gfn(sp, spte - sp->spt, gfn);
++
+ 	rmapp = gfn_to_rmap(vcpu->kvm, gfn, sp->role.level);
++	host_page_write_protect(spte, rmapp);
++
+ 	return pte_list_add(vcpu, spte, rmapp);
+ }
+
+@@ -1130,8 +1141,17 @@ static int rmap_write_protect(struct kvm *kvm, u64 gfn)
+ 	int write_protected = 0;
+
+ 	slot = gfn_to_memslot(kvm, gfn);
++	rmapp = __gfn_to_rmap(gfn, PT_PAGE_TABLE_LEVEL, slot);
+
+-	for (i = PT_PAGE_TABLE_LEVEL;
++	if (*rmapp & PTE_LIST_WRITE_PROTECT)
++		return 0;
++
++	*rmapp |= PTE_LIST_WRITE_PROTECT;
++
++	write_protected |= __rmap_write_protect(kvm, rmapp,
++						PT_PAGE_TABLE_LEVEL);
++
++	for (i = PT_DIRECTORY_LEVEL;
+ 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
+ 		rmapp = __gfn_to_rmap(gfn, i, slot);
+ 		write_protected |= __rmap_write_protect(kvm, rmapp, i);
+@@ -1180,6 +1200,7 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 			new_spte &= ~shadow_accessed_mask;
+ 			mmu_spte_clear_track_bits(spte);
+ 			mmu_spte_set(spte, new_spte);
++			host_page_write_protect(spte, rmapp);
+ 			spte = rmap_next(rmapp, spte);
+ 		}
+ 	}
+@@ -2247,8 +2268,16 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ {
+ 	struct kvm_mmu_page *s;
+ 	struct hlist_node *node;
++	unsigned long *rmap;
+ 	bool need_unsync = false;
+
++	if (!vcpu->kvm->arch.indirect_shadow_pages)
++		return 0;
++
++	rmap = gfn_to_rmap(vcpu->kvm, gfn, PT_PAGE_TABLE_LEVEL);
++	if (!(*rmap & PTE_LIST_WRITE_PROTECT))
++		return 0;
++
+ 	for_each_gfn_indirect_valid_sp(vcpu->kvm, s, gfn, node) {
+ 		if (!can_unsync)
+ 			return 1;
+@@ -2262,6 +2291,9 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 	}
+ 	if (need_unsync)
+ 		kvm_unsync_pages(vcpu, gfn);
++
++	*rmap &= ~PTE_LIST_WRITE_PROTECT;
++
+ 	return 0;
+ }
+
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.7.6
+
