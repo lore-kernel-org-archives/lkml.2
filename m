@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759333Ab2C2T0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 15:26:20 -0400
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:1279 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab2C2T0P (ORCPT
+	id S1758963Ab2C2Tcn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 15:32:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46172 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab2C2Tch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 15:26:15 -0400
-From: Maarten ter Huurne <maarten@treewalker.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] /dev/mem: Add kernel config option to omit this device.
-Date: Thu, 29 Mar 2012 21:32:29 +0200
-Message-ID: <1679935.Pf8rWZIDTT@hyperion>
-User-Agent: KMail/4.8.0 (Linux/3.1.9-1.4-default; KDE/4.8.1; x86_64; ; )
-In-Reply-To: <4F749C26.60804@zytor.com>
-References: <1333041724-20532-1-git-send-email-maarten@treewalker.org> <4F749C26.60804@zytor.com>
+	Thu, 29 Mar 2012 15:32:37 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20120329052335.GB5823@comet.dominikbrodowski.net>
+References: <20120325170512.GA31282@comet.dominikbrodowski.net> <20120329052335.GB5823@comet.dominikbrodowski.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Mar 2012 12:32:15 -0700
+X-Google-Sender-Auth: LE7FkZMBGAk9ccoqD2_GCofSWjE
+Message-ID: <CA+55aFw==urhtbBA1Jc=wM+474JxUM+uMEBKe6wtpubCBLtydw@mail.gmail.com>
+Subject: Re: [git pull] PCMCIA updates for 3.4
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 March 2012 10:30:14 H. Peter Anvin wrote:
-> On 03/29/2012 10:22 AM, Maarten ter Huurne wrote:
-> > Many systems don't need /dev/mem, so make it optional.
-> > It saves some space on embedded systems.
-> > 
-> > Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
-> 
-> I would like to see it being modular if it is made optional.  I think
-> that would be the right thing anyway.
+On Wed, Mar 28, 2012 at 10:23 PM, Dominik Brodowski
+<linux@dominikbrodowski.net> wrote:
+> ... and on this?
+>
 
-By modular, do you mean splitting off the code from drivers/char/mem.c into 
-a new source file?
+Your original email used "torvalds@osdl.org", which goes into a
+kind-of-black hole. Please fix whatever crazy-old address book you
+have - that address is old, old, old.
 
-In mem.c there are several static functions used by more than one device, 
-but I think /dev/mem, /dev/kmem and /dev/port are relatively independent of 
-the other devices, so splitting off those three would be an option.
+Oh, and your *new* email had totally broken email headers too. WTF? That
 
-Bye,
-		Maarten
+  Mail-Followup-To: torvalds@linux-foundation.org,
+  	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
 
+is just pure and utter garbage. What the hell is wrong with your email
+setup? When I reply to that email, I sure as hell want to reply to
+*you*, not to *me*.
+
+So fix your email, right now it's terminally broken.
+
+Will look at the pull requests now that I actually see them, and when
+I'm over being upset by your idiotic email issues.
+
+                         Linus
