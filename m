@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab2C2JEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:04:10 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39938 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab2C2JEC (ORCPT
+	id S1758696Ab2C2JPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 05:15:12 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36256 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2C2JPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:04:02 -0400
-Date: Thu, 29 Mar 2012 02:03:51 -0700
-From: Gerard Snitselaar <dev@snitselaar.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the scsi tree
-Message-ID: <20120329090332.GA21472@perelman.Home>
-Reply-To: Gerard Snitselaar <dev@snitselaar.org>
-Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Alexey Dobriyan <adobriyan@gmail.com>,
-	James Bottomley <James.Bottomley@HansenPartnership.com>,
-	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
- <1332748641.2836.8.camel@dabdike>
- <20120326140721.GA19827@kroah.com>
- <20120327221721.GA3233@p183.telecom.by>
- <20120327222216.GB469@kroah.com>
- <20120327223510.GB3233@p183.telecom.by>
- <20120328235217.GA17212@kroah.com>
- <20120329073240.GA21382@perelman.Home>
- <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
+	Thu, 29 Mar 2012 05:15:04 -0400
+Date: Thu, 29 Mar 2012 11:15:47 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Daniel Vetter <daniel@ffwll.ch>,
+        Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 2/7 v6] drm/i915/intel_i2c: use double-buffered writes
+Message-ID: <20120329091547.GE4106@phenom.ffwll.local>
+Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Benson Leung <bleung@chromium.org>,
+	Yufeng Shen <miletus@chromium.org>
+References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
+ <1332959199-32161-3-git-send-email-djkurtz@chromium.org>
+ <1332960093_131068@CP5-2952>
+ <CAGS+omBkrjdrweGxS5r7KFyqx=JFVxy7_tqZsWTaGgfXu-VgtQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGS+omBkrjdrweGxS5r7KFyqx=JFVxy7_tqZsWTaGgfXu-VgtQ@mail.gmail.com>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu Mar 29 12, Stephen Rothwell wrote:
-> On Thu, 29 Mar 2012 00:32:40 -0700 Gerard Snitselaar <dev@snitselaar.org> wrote:
+On Thu, Mar 29, 2012 at 04:46:39PM +0800, Daniel Kurtz wrote:
+> On Thu, Mar 29, 2012 at 2:41 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > On Thu, 29 Mar 2012 02:26:34 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> >> The GMBUS controller GMBUS3 register is double-buffered.  Take advantage
+> >> of this  by writing two 4-byte words before the first wait for HW_RDY.
+> >> This helps keep the GMBUS controller from becoming idle during long writes.
+> >>
+> >> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 > >
-> > On Wed Mar 28 12, Greg KH wrote:
-> > > > > > 
-> > > > > > See commits 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
-> > > > > > Especially the first one.
-> > > 
-> > > I don't know where to find these patches, care to send them to me, or
-> > > point me at a link with them?
-> > > 
-> > 
-> > They are visible in next-20120329
+> > "For byte counts that are greater than four bytes, this register will be
+> > written with subsequent data only after the HW_RDY status bit is set"
+> >
+> > Hmm, I had interpretted that as should only be. But if you take into
+> > account that the register is indeed double-buffered, it does make sense
+> > that the hardware itself is only updated after the HW_RDY signal.
+> > Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 > 
-> I don't think so.  They were in next-2012032[67], but were removed again.
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> In fact, during my experiments using the GMBUS interrupts, the HW_RDY
+> interrupt would only trigger for transactions > 4 bytes after 2 writes
+> to GMBUS3.
 
-Sorry, poorly worded on my part. What I meant to say was I could see
-the commits in the repository when doing
- 
-git show 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
+I think that's rather important information. Can you add this to your
+commit message?
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
