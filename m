@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab2C2FYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 01:24:31 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:36703 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752408Ab2C2FXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 01:23:44 -0400
-Date: Thu, 29 Mar 2012 07:23:08 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org
-Subject: Re: [git pull] cpupowerutils updates for 3.4
-Message-ID: <20120329052308.GA5823@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-	cpufreq@vger.kernel.org
-References: <20120325183807.GA26398@comet.dominikbrodowski.net>
+	id S1752734Ab2C2FYo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 01:24:44 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48431 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab2C2FXr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 01:23:47 -0400
+Message-ID: <4F73F1E0.7080803@gmail.com>
+Date: Thu, 29 Mar 2012 08:23:44 +0300
+From: roma1390 <roma1390@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
-Content-Disposition: inline
-In-Reply-To: <20120325183807.GA26398@comet.dominikbrodowski.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Denys Vlasenko <vda.linux@googlemail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Douglas W Jones <jones@cs.uiowa.edu>,
+        Michal Nazarewicz <mnazarewicz@google.com>
+Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
+References: <201203262047.17865.vda.linux@googlemail.com> <201203281213.07856.vda.linux@googlemail.com> <4F72E893.9070502@gmail.com> <201203281323.18194.vda.linux@googlemail.com>
+In-Reply-To: <201203281323.18194.vda.linux@googlemail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012.03.28 14:23, Denys Vlasenko wrote:
+> It looks ok - it is a bit faster that original code;
+> but I expect algorithm #2 will do better.
+>
+> BTW, please always run test of original code too when you measure speed,
+> and post both results.
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+And the test results are:
 
-Linus,
+./test_new-org-with-noinline_for_stack
+Conversions per second: 8:5188000 123:4340000 123456:3536000 12345678:3164000 
+123456789:2036000 2^32:2032000 2^64:1544000
+Conversions per second: 8:5016000 123:4320000 123456:3536000 12345678:3272000 
+123456789:2032000 2^32:1964000 2^64:1540000
+Conversions per second: 8:5192000 123:4336000 123456:3420000 12345678:3268000 
+123456789:2036000 2^32:2032000 2^64:1544000
+Conversions per second: 8:5164000 123:4336000 123456:3536000 12345678:3272000 
+123456789:1968000 2^32:2032000 2^64:1544000
+Tested 524288                               ^C
 
-any updates on this?
+# ./test_new-org-with-noinline_for_stack_if-LONG_MAX_header_arm
+Conversions per second: 8:5020000 123:4332000 123456:3536000 12345678:3272000 
+123456789:2828000 2^32:2260000 2^64:1536000
+Conversions per second: 8:5192000 123:4332000 123456:3416000 12345678:3252000 
+123456789:2828000 2^32:2336000 2^64:1540000
+Conversions per second: 8:5172000 123:4336000 123456:3540000 12345678:3272000 
+123456789:2736000 2^32:2336000 2^64:1536000
+Conversions per second: 8:5192000 123:4192000 123456:3520000 12345678:3276000 
+123456789:2828000 2^32:2340000 2^64:1484000
+Tested 524288                               ^C
 
-Thanks & best,
-	Dominik
 
-On Sun, Mar 25, 2012 at 08:38:07PM +0200, Dominik Brodowski wrote:
-> Linus,
->=20
-> a few cpupower updates for 3.4 are available in the git repository at:
->=20
->   git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.git m=
-aster
->=20
-> Please pull from that location. The diffstat and list of changes is below,
-> the individual diffs are sent (at least) to the cpufreq list.
->=20
-> Thanks,
->         Dominik
->=20
-> Franck Bui-Huu (5):
->       cpupower tool: remove use of undefined variables from the clean tar=
-get of the top makefile
->       cpupower tool: makefile: simplify the recipe used to generate cpupo=
-wer.pot target
->       cpupower tool: allow to build in a separate directory
->       cpupower tools: allow to build debug tools in a separate directory =
-too
->       cpupower tools: add install target to the debug tools' makefiles
->=20
-> Ozan =C3=87a=C4=9Flayan (1):
->       cpupower: Fix linking with --as-needed
->=20
-> Thomas Renninger (7):
->       cpupower: Better interface for accessing AMD pci registers
->       cpupower: AMD fam14h/Ontario monitor can also be used by fam12h cpus
->       cpupower: Add cpupower-idle-info manpage
->       cpupower: Unify cpupower-frequency-* manpages
->       cpupower: Fix number of idle states
->       cpupower: Remove unneeded code and by that fix a memleak
->       cpupower: Fix broken mask values
->=20
->  tools/power/cpupower/Makefile                      |   93 ++++++++++++--=
-------
->  tools/power/cpupower/bench/Makefile                |   23 +++--
->  tools/power/cpupower/debug/i386/Makefile           |   40 ++++++---
->  tools/power/cpupower/debug/x86_64/Makefile         |   26 +++++-
->  tools/power/cpupower/man/cpupower-frequency-info.1 |    4 +-
->  tools/power/cpupower/man/cpupower-frequency-set.1  |    4 +-
->  tools/power/cpupower/man/cpupower-idle-info.1      |   90 ++++++++++++++=
-+++++
->  tools/power/cpupower/man/cpupower-monitor.1        |    2 +-
->  tools/power/cpupower/utils/cpuidle-info.c          |   12 +--
->  tools/power/cpupower/utils/helpers/amd.c           |    4 +-
->  tools/power/cpupower/utils/helpers/helpers.h       |   11 ++-
->  tools/power/cpupower/utils/helpers/pci.c           |   35 +++++---
->  .../cpupower/utils/idle_monitor/amd_fam14h_idle.c  |   25 +++---
->  13 files changed, 259 insertions(+), 110 deletions(-)
->  create mode 100644 tools/power/cpupower/man/cpupower-idle-info.1
-
---2oS5YaxWCcQjTEyO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPc/G8AAoJEJqXYIlMjaMNM1EP/1WZO3+MmtGCNScfiQdf7lrE
-dVnTGbl4Zo/VdqMCmpLDkq6QnOr0VV4bz+8ldp1pGZjucGvQe3E4x9lYg7esj4ek
-85bIWkCT7Fxr6KbMNPqmHHUyrCHvsnFClDq3vHCxL6pcfttmLCglAg2TuszTO2XG
-loHAyJ7nC6WMCfOXaBOOcvzgQc6d4TxfycZDkOvrOekci1KJU0WIpGBjyldJB74y
-MWT13bBNzwpOuKB7lFxK411FPd04x5KBLDRiws6nkDIC3JtPxOuf5TipZy9QXaev
-tK/4mF9XyXp2TlCSPZFuIRFO8XiUAAOlSAqRP6egh1Z/RLNm+XYI4O50YGL7EuhA
-d1PkDTPiwtbtQbmdagkYMsVxVDneVlkj+zYZ5JezaEOq+49wYDz/8j4nsYNNh5tF
-Ixe3qkSVP6l/8CIgNmtXiwZYCiRChdgbjHoU729yPa8CFRMk17RyjiAWVzqU46zy
-P6QdIFt3lADfHmG3225hGVwxGodYOzwiVvWcjwaha0QuoMTX4szwwEDhEc8utxm0
-whcN1nGibtHS8lZe7O7XmNBJVOajaXv7qt3uEdhEklSK+N0nXuWlV98t9ljzaaMi
-ZdbQ+5szKBDL1TJEA/TuTYIuIc8+IZIwdNuPzZyVkdJp+Ys3ELN78MGcW4pBN4qh
-/acIQsX9SzEyY23rks4C
-=wRVB
------END PGP SIGNATURE-----
-
---2oS5YaxWCcQjTEyO--
+roma1390
