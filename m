@@ -1,40 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab2C2Rab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 13:30:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38435 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab2C2Ra1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 13:30:27 -0400
-Message-ID: <4F749C26.60804@zytor.com>
-Date: Thu, 29 Mar 2012 10:30:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1759033Ab2C2Rfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 13:35:43 -0400
+Received: from mail.industriassula.com ([190.4.30.20]:2505 "EHLO
+	mail.industriassula.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759144Ab2C2Rfg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 13:35:36 -0400
+X-Footer: aW5kdXN0cmlhc3N1bGEuY29t
+To: stelle@info.com
+From: "yelsy carrasco" <mrstellaray@industriassula.com>
+Reply-to: bar_mikerichard@admin.in.th
+Subject: Message...
+X-Mailer: Kerio Connect 7.3.1 patch 1 WebMail Mini
+Message-ID: <20120329101014.4f194dbe@mail.industriassula.com>
+Date: Thu, 29 Mar 2012 10:10:14 -0500
+X-User-Agent: Opera/9.26 (Windows NT 5.1; U; en)
 MIME-Version: 1.0
-To: Maarten ter Huurne <maarten@treewalker.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] /dev/mem: Add kernel config option to omit this device.
-References: <1333041724-20532-1-git-send-email-maarten@treewalker.org>
-In-Reply-To: <1333041724-20532-1-git-send-email-maarten@treewalker.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 10:22 AM, Maarten ter Huurne wrote:
-> Many systems don't need /dev/mem, so make it optional.
-> It saves some space on embedded systems.
-> 
-> Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
-
-I would like to see it being modular if it is made optional.  I think
-that would be the right thing anyway.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+I am Mrs Stella Ray, send you letter from my sick bed in the hospital. Please help me to contact my lawyer Barrister Mike Richard Email: bar_mikerichard@admin.in.th for more details.
