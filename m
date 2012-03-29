@@ -1,95 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759251Ab2C2NtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 09:49:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36062 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab2C2NtI (ORCPT
+	id S1759362Ab2C2NuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 09:50:19 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40698 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab2C2NuO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 09:49:08 -0400
-Date: Thu, 29 Mar 2012 06:48:53 -0700
-From: "tip-bot for Liu, Chuansheng" <chuansheng.liu@intel.com>
-Message-ID: <tip-99dd5497e5be4fe4194cad181d45fd6569a930db@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yanmin_zhang@linux.intel.com, tglx@linutronix.de,
-        chuansheng.liu@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yanmin_zhang@linux.intel.com, tglx@linutronix.de,
-        chuansheng.liu@intel.com
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A05DFB3@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A05DFB3@SHSMSX101.ccr.corp.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Preserve lazy irq disable semantics in fixup_irqs()
-Git-Commit-ID: 99dd5497e5be4fe4194cad181d45fd6569a930db
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 29 Mar 2012 09:50:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Mar 2012 06:48:59 -0700 (PDT)
+In-Reply-To: <CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
+References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
+	<Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
+	<CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
+Date: Thu, 29 Mar 2012 21:50:12 +0800
+X-Google-Sender-Auth: _zm49e5sY3GIBpcgVSAh9icp1_g
+Message-ID: <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>, Alan Stern <stern@rowland.harvard.edu>
+Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  99dd5497e5be4fe4194cad181d45fd6569a930db
-Gitweb:     http://git.kernel.org/tip/99dd5497e5be4fe4194cad181d45fd6569a930db
-Author:     Liu, Chuansheng <chuansheng.liu@intel.com>
-AuthorDate: Mon, 26 Mar 2012 07:11:50 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 29 Mar 2012 15:28:47 +0200
+Hi,
 
-x86: Preserve lazy irq disable semantics in fixup_irqs()
+On Thu, Mar 29, 2012 at 1:45 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Wed, Mar 28, 2012 at 10:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> On Wed, 28 Mar 2012, Lin Ming wrote:
+>>
+>>> ZPODD(Zero Power Optical Disk Drive) is a new feature in
+>>> SATA 3.1 specification. It provides a way to power off unused ODD.
+>>>
+>>> ZPODD support is checked in in sr_probe().
+>>> can_power_off flag is set during suspend if ZPODD is supported.
+>>>
+>>> ATA port's runtime suspend callback will actually power off the ODD
+>>> and its runtime resume callback will actually power on the ODD.
+>>>
+>>> When ODD is powered off(D3Cold state), inserting disk will trigger a
+>>> wakeup event(GPE). GPE AML handler notifies the associated device. Then
+>>> ODD is resumed in the notify handler.
+>>
+>>> --- a/drivers/scsi/sr.c
+>>> +++ b/drivers/scsi/sr.c
+>>
+>>> @@ -80,12 +82,38 @@ static int sr_probe(struct device *);
+>>>  static int sr_remove(struct device *);
+>>>  static int sr_done(struct scsi_cmnd *);
+>>>
+>>> +static int sr_suspend(struct device *dev, pm_message_t mesg)
+>>> +{
+>>> +     struct scsi_cd *cd;
+>>> +
+>>> +     cd = dev_get_drvdata(dev);
+>>> +     if (cd->device->power_off)
+>>> +             dev->power.subsys_data->can_power_off = true;
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +static int sr_resume(struct device *dev)
+>>> +{
+>>> +     struct scsi_cd *cd;
+>>> +
+>>> +     cd = dev_get_drvdata(dev);
+>>> +     if (cd->device->power_off) {
+>>> +             dev->power.subsys_data->can_power_off = false;
+>>> +             cd->poweroff_event = 0;
+>>> +     }
+>>> +
+>>> +     return 0;
+>>> +}
+>>
+>> Calling this flag "can_power_off" makes these routines look very
+>> strange.  Either the device can power off or it can't, i.e., either it
+>> supports ZPODD or it doesn't.  This doesn't change over time.
+>>
+>> If you rename the flag "may_power_off" then its meaning will be more
+>> clear.
+>
+> OK, will rename it.
+>
+>>
+>>> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>>>       unsigned int events;
+>>>       int ret;
+>>>
+>>> +     /* Not necessary to check events if enter ZPODD state */
+>>> +     if (cd->device->power_off &&
+>>> +                     pm_runtime_suspended(&cd->device->sdev_gendev))
+>>> +             return 0;
+>>
+>> The comment is wrong and the new code does the wrong thing.  You _do_
+>> have to check for events even in the ZPODD state, which means
+>> sr_check_events must power-up the device if necessary.
+>> sd_check_events in James Bottomley's scsi-misc tree now does the right
+>> thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
+>
+> The problem is userspace(GNOME, for example) will check for events
+> every seconds.
+> If sr is power up so frequently then we lost the expected power
+> savings from ZPODD.
 
-The default irq_disable() sematics are to mark the interrupt disabled,
-but keep it unmasked. If the interrupt is delivered while marked
-disabled, the low level interrupt handler masks it and marks it
-pending. This is important for detecting wakeup interrupts during
-suspend and for edge type interrupts to avoid losing interrupts.
+Agreed.
+BTW, it's udevd on my Linux box that changed the default poll msecs kernel param
+which caused sr_check_events being called every 2 seconds.
 
-fixup_irqs() moves the interrupts away from an offlined cpu. For
-certain interrupt types it needs to mask the interrupt line before
-changing the affinity. After affinity has changed the interrupt line
-is unmasked again, but only if it is not marked disabled.
+>
+> There are 2 events:
+>
+> DISK_EVENT_MEDIA_CHANGE
+> DISK_EVENT_EJECT_REQUEST
+>
+> In current implementation, if sr is in ZPODD state, then it means
+> there is no disk in the CDROM.
+> So if sr is in ZPODD state, MEDIA_CHANGE would never happen.
+>
+> EJECT_REQUEST seems can be ignored, since there is no disk in the CDROM at all.
+>
 
-This breaks the lazy irq disable semantics and causes problems in
-suspend as the interrupt can be lost or wakeup functionality is
-broken.
+For the ODD to be put into suspend state, the conditions should be:
+1 tray closed
+2 no media inside
+I think we missed the condition 1 check now.
 
-Check irqd_irq_masked() instead of irqd_irq_disabled() because
-irqd_irq_masked() is only set, when the core code actually masked the
-interrupt line. If it's not set, we unmask the interrupt and let the
-lazy irq disable logic deal with an eventually incoming interrupt.
+And if we follow the two conditions, the events can be safely ignored.
 
-[ tglx: Massaged changelog and added a comment ]
+What do you think of blocking events for it when going to suspend and unblocking
+when resume? This could erase the unnecessary calls of the check events function
+when ODD is suspended.
+But disk_(un)block_events are not exported and can't be used in sr
+module. So I'm
+not sure how to do this.
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Link: http://lkml.kernel.org/r/27240C0AC20F114CBF8149A2696CBE4A05DFB3@SHSMSX101.ccr.corp.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/irq.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Another thing to consider is, user might want to eject the tray by
+software like the
+eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
+thinking how to do this correctly.
 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 7943e0c..3dafc60 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -282,8 +282,13 @@ void fixup_irqs(void)
- 		else if (!(warned++))
- 			set_affinity = 0;
- 
-+		/*
-+		 * We unmask if the irq was not marked masked by the
-+		 * core code. That respects the lazy irq disable
-+		 * behaviour.
-+		 */
- 		if (!irqd_can_move_in_process_context(data) &&
--		    !irqd_irq_disabled(data) && chip->irq_unmask)
-+		    !irqd_irq_masked(data) && chip->irq_unmask)
- 			chip->irq_unmask(data);
- 
- 		raw_spin_unlock(&desc->lock);
+>>
+>>> +
+>>>       /* no changer support */
+>>>       if (CDSL_CURRENT != slot)
+>>>               return 0;
+>>> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>>>       cd->media_present = scsi_status_is_good(ret) ||
+>>>               (scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
+>>>
+>>> +     if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
+>>> +             scsi_autopm_put_device(cd->device);
+>>
+>> You can see your mistake here.  You call scsi_autopm_put_device here
+>> without calling scsi_autopm_get_device earlier.
+>
+> Let me check this.
+
+I guess the earlier call of get device is this?
+
+ 869 int scsi_sysfs_add_sdev(struct scsi_device *sdev)
+... ...
+ 891
+ 892        /* The following call will keep sdev active indefinitely, until
+ 893         * its driver does a corresponding scsi_autopm_pm_device().  Only
+ 894         * drivers supporting autosuspend will do this.
+ 895         */
+ 896        scsi_autopm_get_device(sdev);
+ 897
+
+-Aaron
+
+>
+> Thanks for the review.
+> Lin Ming
+>
+>>
+>> Alan Stern
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
