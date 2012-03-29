@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690Ab2C2Lxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 07:53:42 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42482 "EHLO
+	id S1759216Ab2C2L7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 07:59:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41906 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759078Ab2C2Lxf (ORCPT
+	with ESMTP id S1751547Ab2C2L6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 07:53:35 -0400
-Message-ID: <4F744D3B.3030605@linaro.org>
-Date: Thu, 29 Mar 2012 12:53:31 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 29 Mar 2012 07:58:51 -0400
+Message-ID: <4F744E23.3040207@mvista.com>
+Date: Thu, 29 Mar 2012 15:57:23 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, lrg@ti.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+To: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Board breakage due to upstream patch
-References: <4F7430C7.6060505@linaro.org> <20120329110424.GD3668@opensource.wolfsonmicro.com>
-In-Reply-To: <20120329110424.GD3668@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] USB: yurex: remove allocation of coherent buffer for
+ setup-packet buffer
+References: <4F739CBB.8060602@gmail.com>
+In-Reply-To: <4F739CBB.8060602@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/03/12 12:04, Mark Brown wrote:
-> On Thu, Mar 29, 2012 at 10:52:07AM +0100, Lee Jones wrote:
-> 
->> Your patch "regulator: Support driver probe deferral" (below) prevents my Snowball Development Board from booting.
-> 
->> What's the correct thing to do?
-> 
-> Provide a report with a little more detail on the problem:
-> 
->    http://www.chiark.greenend.org.uk/~sgtatham/bugs.html
-> 
-> It's possible the patch I posted yesterday which fixes a deadlock in
-> error handling paths might help, though given that all we're doing is
-> changing the error code here I'd say regulator support on your your
-> board was broken anyway.  Given the lack of any detail in your report
-> I'm just guessing completely in the dark here.
+Hello.
 
-I haven't undertaken any debugging of the issue, as I don't have the
-time, nor do I have the knowledge to be able to tell you what might be
-happening as a result of the change.
+On 29-03-2012 3:20, Tomoki Sekiyama wrote:
 
-All I can tell you at this stage is that with your patch applied, my
-board doesn't boot past "Uncompressing Linux... done, booting the
-kernel..". Once reverted it boots again.
+> Removes allocation of coherent buffer for the control-request setup-packet
+> buffer from the yurex driver. Using coherent buffers for setup-packet is
+> obsoleted and does not work with some USB host implementations.
 
-I'll try to find some time to have a dig around, in order to provide you
-with some more useful information.
+> This patch also fixes missing URB_NO_TRANSFER_DMA_MAP flag in urb.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+   Looks like the patch should be split into two then as it does two different
+things.
+
+> Signed-off-by: Tomoki Sekiyama<tomoki.sekiyama@gmail.com>
+> ---
+>   drivers/usb/misc/yurex.c |   10 +++-------
+>   1 files changed, 3 insertions(+), 7 deletions(-)
+
+> diff --git a/drivers/usb/misc/yurex.c b/drivers/usb/misc/yurex.c
+> index 897edda..7020146 100644
+> --- a/drivers/usb/misc/yurex.c
+> +++ b/drivers/usb/misc/yurex.c
+> @@ -99,9 +99,7 @@ static void yurex_delete(struct kref *kref)
+>   	usb_put_dev(dev->udev);
+>   	if (dev->cntl_urb) {
+>   		usb_kill_urb(dev->cntl_urb);
+> -		if (dev->cntl_req)
+> -			usb_free_coherent(dev->udev, YUREX_BUF_SIZE,
+> -				dev->cntl_req, dev->cntl_urb->setup_dma);
+> +		kfree(dev->cntl_req);
+>   		if (dev->cntl_buffer)
+>   			usb_free_coherent(dev->udev, YUREX_BUF_SIZE,
+>   				dev->cntl_buffer, dev->cntl_urb->transfer_dma);
+> @@ -234,9 +232,7 @@ static int yurex_probe(struct usb_interface *interface, const struct usb_device_
+>   	}
+> 
+>   	/* allocate buffer for control req */
+> -	dev->cntl_req = usb_alloc_coherent(dev->udev, YUREX_BUF_SIZE,
+> -					   GFP_KERNEL,
+> -					&dev->cntl_urb->setup_dma);
+> +	dev->cntl_req = kmalloc(YUREX_BUF_SIZE, GFP_KERNEL);
+>   	if (!dev->cntl_req) {
+>   		err("Could not allocate cntl_req");
+>   		goto error;
+> @@ -286,7 +282,7 @@ static int yurex_probe(struct usb_interface *interface, const struct usb_device_
+>   			 usb_rcvintpipe(dev->udev, dev->int_in_endpointAddr),
+>   			 dev->int_buffer, YUREX_BUF_SIZE, yurex_interrupt,
+>   			 dev, 1);
+> -	dev->cntl_urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+> +	dev->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+>   	if (usb_submit_urb(dev->urb, GFP_KERNEL)) {
+>   		retval = -EIO;
+>   		err("Could not submitting URB");
+
+WBR, Sergei
