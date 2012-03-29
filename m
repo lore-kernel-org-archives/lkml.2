@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759871Ab2C2SKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 14:10:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37954 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759283Ab2C2SKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 14:10:14 -0400
-Message-ID: <1333044612.15602.4.camel@joe2Laptop>
-Subject: Re: [PATCH] percpu: use KERN_CONT in pcpu_dump_alloc_info()
-From: Joe Perches <joe@perches.com>
+	id S1759889Ab2C2SL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 14:11:27 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35348 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759033Ab2C2SLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 14:11:20 -0400
+Date: Thu, 29 Mar 2012 11:11:04 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
 To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+Cc: Jiri Kosina <jkosina@suse.cz>, Mandeep Singh Baines <msb@chromium.org>,
+        lizefan@huawei.com, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Paul Menage <paul@paulmenage.org>,
         Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 29 Mar 2012 11:10:12 -0700
-In-Reply-To: <20120329164842.GE28941@google.com>
-References: <20120329164842.GE28941@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Subject: Re: [PATCH for-3.4-fixes] cgroup: cgroup_attach_task() could
+ return -errno after success
+Message-ID: <20120329181104.GC27051@google.com>
+References: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
+ <20120329160433.GC28941@google.com>
+ <20120329162620.GD28941@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120329162620.GD28941@google.com>
+X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-29 at 09:48 -0700, Tejun Heo wrote:
-> >From cb129820f1e6ccf309510f4eb28df45cb0742005 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Thu, 29 Mar 2012 09:45:58 -0700
+Tejun Heo (tj@kernel.org) wrote:
+> 61d1d219c4 "cgroup: remove extra calls to find_existing_css_set" made
+> cgroup_task_migrate() return void.  An unfortunate side effect was
+> that cgroup_attach_task() was depending on that function's return
+> value to clear its @retval on the success path.  On cgroup mounts
+> without any subsystem with ->can_attach() callback,
+> cgroup_attach_task() ended up returning @retval without initializing
+> it on success.
 > 
-> pcpu_dump_alloc_info() was printing continued lines without KERN_CONT.
-> Use it.
+> For some reason, gcc failed to warn about it and it didn't cause
+> cgroup_attach_task() to return non-zero value in many cases, probably
+> due to difference in register allocation.  When the problem
+> materializes, systemd fails to populate /systemd cgroup mount and
+> fails to boot.
+> 
+> Fix it by initializing @retval to zero on declaration.
 > 
 > Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Kay Sievers <kay.sievers@vrfy.org>
+
+Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
+
+> Reported-by: Jiri Kosina <jkosina@suse.cz>
+> LKML-Reference: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
 > ---
-> Committed to percpu/for-3.4-fixes.
+> Jiri, can you please confirm the fix?
 > 
 > Thanks.
 > 
->  mm/percpu.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
+>  kernel/cgroup.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/mm/percpu.c b/mm/percpu.c
-> index f47af91..f921fdf 100644
-> --- a/mm/percpu.c
-> +++ b/mm/percpu.c
-> @@ -1132,20 +1132,20 @@ static void pcpu_dump_alloc_info(const char *lvl,
->  		for (alloc_end += gi->nr_units / upa;
->  		     alloc < alloc_end; alloc++) {
->  			if (!(alloc % apl)) {
-> -				printk("\n");
-> +				printk(KERN_CONT "\n");
->  				printk("%spcpu-alloc: ", lvl);
->  			}
-> -			printk("[%0*d] ", group_width, group);
-> +			printk(KERN_CONT "[%0*d] ", group_width, group);
->  
->  			for (unit_end += upa; unit < unit_end; unit++)
->  				if (gi->cpu_map[unit] != NR_CPUS)
-> -					printk("%0*d ", cpu_width,
-> +					printk(KERN_CONT "%0*d ", cpu_width,
->  					       gi->cpu_map[unit]);
->  				else
-> -					printk("%s ", empty_str);
-> +					printk(KERN_CONT "%s ", empty_str);
->  		}
->  	}
-> -	printk("\n");
-> +	printk(KERN_CONT "\n");
->  }
-
-Perhaps it's better to try to print lines
-in fewer printks?  Maybe use a line buffer?
-
-The first line could be newline terminated.
-"if (alloc)" tests for the individual newlines could be added.
-Why aren't the group widths on separate lines?
-All of the cpu_widths are on the same line as the parent group
-even if that exceeds apl.  Is that what's desired?
-
-
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index f4ea4b6..ed64cca 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1883,7 +1883,7 @@ static void cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+>   */
+>  int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+>  {
+> -	int retval;
+> +	int retval = 0;
+>  	struct cgroup_subsys *ss, *failed_ss = NULL;
+>  	struct cgroup *oldcgrp;
+>  	struct cgroupfs_root *root = cgrp->root;
