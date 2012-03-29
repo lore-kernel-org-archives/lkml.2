@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933715Ab2C2S4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 14:56:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58639 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758917Ab2C2S4F (ORCPT
+	id S933727Ab2C2S5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 14:57:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44867 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933594Ab2C2S5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 14:56:05 -0400
-Date: Thu, 29 Mar 2012 20:55:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <liuj97@gmail.com>
-cc: Greg KH <greg@kroah.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] IRQ: introduce irq_do_set_affinity() to reduce
- duplicated code
-In-Reply-To: <1333039493-4090-1-git-send-email-jiang.liu@huawei.com>
-Message-ID: <alpine.LFD.2.02.1203292049400.2542@ionos>
-References: <1333039493-4090-1-git-send-email-jiang.liu@huawei.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 29 Mar 2012 14:57:38 -0400
+Message-ID: <4F74B09B.3070100@kernel.dk>
+Date: Thu, 29 Mar 2012 20:57:31 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] blkcg: change a spin_lock() to spin_lock_irq()
+References: <20120329185119.GA21812@elgon.mountain>
+In-Reply-To: <20120329185119.GA21812@elgon.mountain>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012, Jiang Liu wrote:
+On 2012-03-29 20:51, Dan Carpenter wrote:
+> Smatch complains that we re-enable IRQs twice.  It looks like we forgot
+> to disable them here on the spin_trylock() failure path.  This was added
+> in 9f13ef678e "blkcg: use double locking instead of RCU for blkg
+> synchronization".
 
-> Introduce irq_do_set_affinity() to reduce duplicated code.
-> This patch also fixes a minor bug in irq_move_masked_irq(),
-> which treats return value IRQ_SET_MASK_OK_NOCOPY as error.
+Thanks, that is indeed a screwup. Fix applied.
 
-Again. Please don't do that.
+-- 
+Jens Axboe
 
-A bug fix is a bug fix and a cleanup is a cleanup. Mixing both is
-simply wrong. It's also completely non obvious from the subject line
-that this patch contains a bug fix - minor or not is completely
-irrelevant.
-
-The order is bug fix first, then cleanup and improvements. 
-
-Please be more careful about this.
-
-Thanks,
-
-	tglx
