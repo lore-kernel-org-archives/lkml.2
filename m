@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759983Ab2C2QwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:52:15 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:52143 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759880Ab2C2Qtc (ORCPT
+	id S1759922Ab2C2Qwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:52:31 -0400
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:63822 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759866Ab2C2Qtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 12:49:32 -0400
-MIME-Version: 1.0
+	Thu, 29 Mar 2012 12:49:31 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
@@ -16,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
         Yufeng Shen <miletus@chromium.org>
 Cc: Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 15/16 v2] Input: atmel_mxt_ts - send all MT-B slots in one input report
-Date: Fri, 30 Mar 2012 00:49:25 +0800
-Message-Id: <1333039766-8617-16-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 08/16 v2] Input: atmel_mxt_ts - refactor mxt_object_show
+Date: Fri, 30 Mar 2012 00:49:18 +0800
+Message-Id: <1333039766-8617-9-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
 References: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
@@ -26,59 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each interrupt contains information for all contacts with changing
-properties.  Process all of this information at once, and send it all in a
-a single input report (ie input events ending in EV_SYN/SYN_REPORT).
+Read each object with a single i2c transaction instead of byte-by-byte.
 
-This patch was tested using an MXT224E.
+Also, don't read T5, which is the message processor object.  Reading
+it is counter-productive since it either holds garbage (there is no
+pending message), or, it holds a real message which should be handled
+by the messages handling code (the isr).
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   43 ++++++++++++------------------
+ 1 files changed, 17 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index be1e2ec..d8b23ad 100644
+index b6e7109..a865967 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -532,9 +532,6 @@ static void mxt_input_touch(struct mxt_data *data, struct mxt_message *message)
- 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
- 		/* TODO: Use vector to report ORIENTATION & TOUCH_MINOR */
- 	}
--
--	input_mt_report_pointer_emulation(input_dev, false);
--	input_sync(input_dev);
+@@ -262,7 +262,6 @@ struct mxt_data {
+ static bool mxt_object_readable(unsigned int type)
+ {
+ 	switch (type) {
+-	case MXT_GEN_MESSAGE_T5:
+ 	case MXT_GEN_COMMAND_T6:
+ 	case MXT_GEN_POWER_T7:
+ 	case MXT_GEN_ACQUIRE_T8:
+@@ -459,6 +458,13 @@ mxt_get_object(struct mxt_data *data, u8 type)
+ 	return NULL;
  }
  
- static irqreturn_t mxt_interrupt(int irq, void *dev_id)
-@@ -542,7 +539,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 	struct mxt_data *data = dev_id;
- 	struct mxt_message message;
- 	struct device *dev = &data->client->dev;
-+	bool update_input;
- 
-+	update_input = false;
- 	do {
- 		if (mxt_read_message(data, &message)) {
- 			dev_err(dev, "Failed to read message\n");
-@@ -552,11 +551,17 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 		if (message.reportid >= data->T9_reportid_min &&
- 		    message.reportid <= data->T9_reportid_max) {
- 			mxt_input_touch(data, &message);
-+			update_input = true;
- 		} else {
- 			mxt_dump_message(dev, &message);
- 		}
- 	} while (message.reportid != 0xff);
- 
-+	if (update_input) {
-+		input_mt_report_pointer_emulation(data->input_dev, false);
-+		input_sync(data->input_dev);
-+	}
++static int mxt_read_object(struct mxt_data *data, struct mxt_object *object,
++			   void *val)
++{
++	return mxt_read_reg(data->client, object->start_address, object->size,
++			    val);
++}
 +
- end:
- 	return IRQ_HANDLED;
+ static int mxt_read_message(struct mxt_data *data,
+ 				 struct mxt_message *message)
+ {
+@@ -474,20 +480,6 @@ static int mxt_read_message(struct mxt_data *data,
+ 			    message);
  }
+ 
+-static int mxt_read_object(struct mxt_data *data,
+-				u8 type, u8 offset, u8 *val)
+-{
+-	struct mxt_object *object;
+-	u16 reg;
+-
+-	object = mxt_get_object(data, type);
+-	if (!object)
+-		return -EINVAL;
+-
+-	reg = object->start_address;
+-	return mxt_read_reg(data->client, reg + offset, 1, val);
+-}
+-
+ static int mxt_write_object(struct mxt_data *data,
+ 				 u8 type, u8 offset, u8 val)
+ {
+@@ -885,17 +877,16 @@ static void mxt_calc_resolution(struct mxt_data *data)
+ }
+ 
+ static ssize_t mxt_object_show(struct device *dev,
+-				    struct device_attribute *attr, char *buf)
++			       struct device_attribute *attr, char *buf)
+ {
+ 	struct mxt_data *data = dev_get_drvdata(dev);
+-	struct mxt_object *object;
+ 	int count = 0;
+ 	int i, j;
+ 	int error;
+-	u8 val;
++	u8 obuf[256];
+ 
+ 	for (i = 0; i < data->info.object_num; i++) {
+-		object = data->object_table + i;
++		struct mxt_object *object = &data->object_table[i];
+ 
+ 		count += snprintf(buf + count, PAGE_SIZE - count,
+ 				"Object[%d] (Type %d)\n",
+@@ -905,20 +896,20 @@ static ssize_t mxt_object_show(struct device *dev,
+ 
+ 		if (!mxt_object_readable(object->type)) {
+ 			count += snprintf(buf + count, PAGE_SIZE - count,
+-					"\n");
++					  "\n");
+ 			if (count >= PAGE_SIZE)
+ 				return PAGE_SIZE - 1;
+ 			continue;
+ 		}
+ 
+-		for (j = 0; j < object->size; j++) {
+-			error = mxt_read_object(data,
+-						object->type, j, &val);
+-			if (error)
+-				return error;
++		error = mxt_read_object(data, object, obuf);
++		if (error)
++			return error;
+ 
++		for (j = 0; j < object->size; j++) {
+ 			count += snprintf(buf + count, PAGE_SIZE - count,
+-					"\t[%2d]: %02x (%d)\n", j, val, val);
++					  "\t[%2d]: %02x (%d)\n", j, obuf[j],
++					  obuf[j]);
+ 			if (count >= PAGE_SIZE)
+ 				return PAGE_SIZE - 1;
+ 		}
 -- 
 1.7.7.3
 
