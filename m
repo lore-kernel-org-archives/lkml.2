@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760160Ab2C2WRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 18:17:11 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59996 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760091Ab2C2WRI convert rfc822-to-8bit (ORCPT
+	id S1760158Ab2C2WTg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 18:19:36 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:44631
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759407Ab2C2WT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 18:17:08 -0400
+	Thu, 29 Mar 2012 18:19:28 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzzz2fh668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F74DFDC.6060904@am.sony.com>
+Date: Thu, 29 Mar 2012 15:19:08 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1203292344140.2542@ionos>
-References: <5599.1332958811@redhat.com> <30702.1332989444@neuling.org>
- <20120329135555.06593144b65bf81cc9191f8a@canb.auug.org.au>
- <20120329151544.ef2117821dfb459e8b52af48@canb.auug.org.au>
- <CA+55aFzn=bsH76hPDUgS-FBP=RVu51gwmRdqjkw5RJO=Q_cRfA@mail.gmail.com>
- <20120329154238.1ce219f7c998da45452af4b2@canb.auug.org.au>
- <CA+55aFzjQ7qb=bPAj_gGoGLPXOGweTaqtmOBZH4mUt8E_KQwsg@mail.gmail.com>
- <1333008684.3010.9.camel@pasglop> <CACxGe6v+nMMuEM+bBMdYf_OeuaXb+NsS0qz-+puRtdzHLPH2hA@mail.gmail.com>
- <alpine.LFD.2.02.1203292344140.2542@ionos>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 29 Mar 2012 16:16:46 -0600
-X-Google-Sender-Auth: lYTILP724DtVgyqj9UdKGrVabtg
-Message-ID: <CACxGe6u_6kYZTVUafRH4acB0SEzqcGOxuxrNNsuMkrvVQaquYg@mail.gmail.com>
-Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-arch@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        paul.gortmaker@windriver.com, hpa@zytor.com, akpm@linux-foundation.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Daniel Walker <dwalker@fifo99.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@android.com" <kernel-team@android.com>
+Subject: Re: [RFC] Android Logger vs. Shared Memory FIGHT!
+References: <20120328210631.GB2297@fifo99.com>	<20120329145055.GE13912@fifo99.com>	<4F748CF6.4010205@am.sony.com>	<20120329175209.GE16476@fifo99.com> <20120329195007.07d53db7@pyramind.ukuu.org.uk>
+In-Reply-To: <20120329195007.07d53db7@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 3:48 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 29 Mar 2012, Grant Likely wrote:
->> On Thu, Mar 29, 2012 at 2:11 AM, Benjamin Herrenschmidt
->> The rightmost fields of /proc/interrupts are a weird set of
->> conditional outputs that don't really have any parsable formatting to
->> them.  It may be safe to apply my patch because it adds another field
->> in the middle of a section of conditional outputs* anyway so tools
->> already won't know what those fields mean.  But, regardless, I'm not
->> going to take responsibility for applying that patch unless encouraged
->> by several other maintainers to do so.
->
-> Go ahead. We changed that output several times in the last years
-> without causing the end of the universe.
+On 03/29/2012 11:50 AM, Alan Cox wrote:
+> The question is whether you are trying to record data for analysis in a
+> hostile environment or you are trying to do useful debugging. If your
+> apps are non hostile then PR_SET_NAME is actually useful in logging to
+> split apart different executions of the same daemon.
+> 
+> The Android logger has no security model of any real kind so it's clearly
+> about the debug side. In that case the PID lets you correlate with other
+> logs, the comm data might be useful.
 
-Okay, RFC patch sent.  I'm okay to wait for v3.5 for this, but it can
-go into v3.4 if anyone really wants it faster.
+The current model has limited security, other than being in the kernel
+and thus harder to corrupt (but still subject to DOS attacks
+via overruning the log).
 
-g.
+I think the envisioned security issues are more about preventing
+access to application logs which might reveal sensitive information
+(due to un-careful logging), than about analysing a hostile
+environment.  But if it can be made harder for a bad program to
+cover it's tracks, that would be nice.
+ -- Tim
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
