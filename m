@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933344Ab2C2Xkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 19:40:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50355 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760366Ab2C2Xkl (ORCPT
+	id S933425Ab2C2Xma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 19:42:30 -0400
+Received: from joshcartwright.net ([69.164.192.171]:56397 "EHLO
+	li107-171.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932551Ab2C2Xm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 19:40:41 -0400
-Date: Thu, 29 Mar 2012 16:40:37 -0700
-From: Greg K H <gregkh@linuxfoundation.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/14] edac: rewrite the sysfs code to use struct device
-Message-ID: <20120329234037.GA16094@kroah.com>
-References: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
- <1333040821-6253-2-git-send-email-mchehab@redhat.com>
- <20120329220300.GA16491@kroah.com>
- <4F74EDEC.5020804@redhat.com>
+	Thu, 29 Mar 2012 19:42:26 -0400
+Date: Thu, 29 Mar 2012 19:29:29 -0400
+From: Josh Cartwright <joshc@linux.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: [PATCH] jffs2: Fix lock acquisition order bug in gc path
+Message-ID: <20120329232929.GA21848@joshcartwright.net>
+References: <20120209185043.GA12089@joshcartwright.net>
+ <CAN8TOE-9fxbc8PM8oNVBc_tUdkYBhV6jTG8_M5GdjLNGpLhKKA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F74EDEC.5020804@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAN8TOE-9fxbc8PM8oNVBc_tUdkYBhV6jTG8_M5GdjLNGpLhKKA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 08:19:08PM -0300, Mauro Carvalho Chehab wrote:
-> > Sweet, as per the documentation in the Documentation/kobjects.txt file,
-> > I get to publically mock you for thinking you are smarter than the
-> > kernel and this is an acceptable way to "outwhit" the driver core from
-> > spitting errors at you when the kobject is released.
+On Thu, Mar 29, 2012 at 08:38:41AM -0700, Brian Norris wrote:
+> On Thu, Feb 9, 2012 at 10:50 AM, Josh Cartwright <joshc@linux.com> wrote:
+> > The locking policy is such that the erase_complete_block spinlock is
+> > nested within the alloc_sem mutex.  This fixes a case in which the
+> > acquisition order was erroneously reversed.  This issue was caught by
+> > the following lockdep splat:
 > 
-> There's nothing there to free: all EDAC structures are allocated once
-> (see edac_mc_alloc() and edac_align_ptr() logic, at drivers/edac/edac_mc.c).
-> 
-> Even the struct device for all csrows/channels/mcu is done on a single alloc
-> there. Trying to free it earlier would cause a segfault.
+> (Bump.) Anybody interested in this patch? It seemed sane to me, and I
+> had it sitting in my inbox. It does need a trivial rebase, BTW.
 
-That's wrong then, these are multiple struct devices, all with their own
-reference counts, you can't just treat them all as the same thing, even
-if it happens to line up with the module reference count.
+I'm certainly still interested in it, for what its worth :).  We've had
+no problems here for the month and a half its been in our tree.
 
-> I didn't wrote that logic, nor I was tempted to change it: as this subsystem 
-> is focused on memory error detection, having every data structure used there
-> on a single page helps to minimize the probability of having an error at the 
-> memory used to store the EDAC data.
+I'll send out a rebased V2.
 
-Possibly, but again, you have multiple reference counts, you can't just
-wave them off as being inconvenient.  Please read the documentation for
-more details why.
+Thanks!
 
-greg k-h
+-- 
+                                            joshc
+
