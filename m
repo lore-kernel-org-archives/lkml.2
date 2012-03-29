@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758515Ab2C2Ik3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:40:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6346 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758054Ab2C2IkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:40:21 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        stable@vger.kernel.org
-Subject: [PATCH] pagemap: remove remaining unneeded spin_lock()
-Date: Thu, 29 Mar 2012 04:39:39 -0400
-Message-Id: <1333010379-31126-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1758592Ab2C2IrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 04:47:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51705 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887Ab2C2IrA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 04:47:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332960093_131068@CP5-2952>
+References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
+ <1332959199-32161-3-git-send-email-djkurtz@chromium.org> <1332960093_131068@CP5-2952>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 29 Mar 2012 16:46:39 +0800
+X-Google-Sender-Auth: ce0V32naYuo9kyJEWL6z36l3D68
+Message-ID: <CAGS+omBkrjdrweGxS5r7KFyqx=JFVxy7_tqZsWTaGgfXu-VgtQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7 v6] drm/i915/intel_i2c: use double-buffered writes
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit: 025c5b2451e4 "thp: optimize away unnecessary page table locking"
-moves spin_lock() into pmd_trans_huge_lock() in order to avoid locking
-unless pmd is for thp. So this spin_lock() is a bug.
+On Thu, Mar 29, 2012 at 2:41 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Thu, 29 Mar 2012 02:26:34 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+>> The GMBUS controller GMBUS3 register is double-buffered.  Take advantage
+>> of this  by writing two 4-byte words before the first wait for HW_RDY.
+>> This helps keep the GMBUS controller from becoming idle during long writes.
+>>
+>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>
+> "For byte counts that are greater than four bytes, this register will be
+> written with subsequent data only after the HW_RDY status bit is set"
+>
+> Hmm, I had interpretted that as should only be. But if you take into
+> account that the register is indeed double-buffered, it does make sense
+> that the hardware itself is only updated after the HW_RDY signal.
+> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: stable@vger.kernel.org
----
- fs/proc/task_mmu.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+In fact, during my experiments using the GMBUS interrupts, the HW_RDY
+interrupt would only trigger for transactions > 4 bytes after 2 writes
+to GMBUS3.
 
-diff --git linux-3.3.0-6658a6991ce.orig/fs/proc/task_mmu.c linux-3.3.0-6658a6991ce/fs/proc/task_mmu.c
-index 9694cc2..06d2b70 100644
---- linux-3.3.0-6658a6991ce.orig/fs/proc/task_mmu.c
-+++ linux-3.3.0-6658a6991ce/fs/proc/task_mmu.c
-@@ -786,7 +786,6 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 
- 	/* find the first VMA at or above 'addr' */
- 	vma = find_vma(walk->mm, addr);
--	spin_lock(&walk->mm->page_table_lock);
- 	if (pmd_trans_huge_lock(pmd, vma) == 1) {
- 		for (; addr != end; addr += PAGE_SIZE) {
- 			unsigned long offset;
--- 
-1.7.7.6
 
+> -Chris
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
