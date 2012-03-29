@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab2C2J72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 05:59:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14421 "EHLO mx1.redhat.com"
+	id S1758964Ab2C2KAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 06:00:55 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:62798 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758935Ab2C2J7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 05:59:10 -0400
-Message-ID: <4F743247.5080407@redhat.com>
-Date: Thu, 29 Mar 2012 11:58:31 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1753961Ab2C2KAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 06:00:48 -0400
+Date: Thu, 29 Mar 2012 19:01:13 +0900
+From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+To: linux-mm@kvack.org
+Subject: [PATCH 1/2] linux: sparsemem: Initialize all memmap entries within sections
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <20120329190113.3891.38390934@jp.panasonic.com>
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Alan Meadows <alan.meadows@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com> <4F73568D.7000703@linux.vnet.ibm.com>
-In-Reply-To: <4F73568D.7000703@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2012 08:21 PM, Raghavendra K T wrote:
->
->>
->>
->>         Looks like a good baseline on which to build the KVM
->>         implementation.  We
->>         might need some handshake to prevent interference on the host
->>         side with
->>         the PLE code.
->>
->
-> I think I still missed some point in Avi's comment. I agree that PLE
-> may be interfering with above patches (resulting in less performance
-> advantages). but we have not seen performance degradation with the
-> patches in earlier benchmarks. [ theoretically since patch has very
-> slight advantage over PLE that atleast it knows who should run next ].
+This commit fixes the problem for the kernel
+with CONFIG_SPARSEMEM=y and CONFIG_HAVE_ARCH_PFN_VALID=y.
 
-The advantage grows with the vcpu counts and overcommit ratio.  If you
-have N vcpus and M:1 overcommit, PLE has to guess from N/M queued vcpus
-while your patch knows who to wake up.
+VM subsystem insists that memmap entries within the align to MAX_ORDER_NR_PAGES
+must exist and be initialized.
 
->
-> So TODO in my list on this is:
-> 1. More analysis of performance on PLE mc.
-> 2. Seeing how to implement handshake to increase performance (if PLE +
-> patch combination have slight negative effect).
+However, in the kernel with CONFIG_SPARSEMEM=y and CONFIG_HAVE_ARCH_PFN_VALID=y,
+the kernel only initializes the entries corresponding to the memory regions
+specified by "mem=" options. This causes "kernel BUG at mm/page_alloc.c:777!"
+This BUG message comes from the following BUG_ON() line in move_freepages().
 
-I can think of two options:
-- from the PLE handler, don't wake up a vcpu that is sleeping because it
-is waiting for a kick
-- look at other sources of pause loops (I guess smp_call_function() is
-the significant source) and adjust them to use the same mechanism, and
-ask the host to disable PLE exiting.
+    BUG_ON(page_zone(start_page) != page_zone(end_page));
 
-This can be done incrementally later.
+Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+---
+ include/linux/mmzone.h |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
->
-> Sorry that, I could not do more analysis on PLE (as promised last time)
-> because of machine availability.
->
-> I 'll do some work on this and comeback. But in the meantime, I do not
-> see it as blocking for next merge window.
-
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index dff7115..1b7538c 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -1088,13 +1088,15 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
+ 	return __nr_to_section(pfn_to_section_nr(pfn));
+ }
+ 
+-#ifndef CONFIG_HAVE_ARCH_PFN_VALID
+-static inline int pfn_valid(unsigned long pfn)
++static inline int sparsemem_pfn_valid(unsigned long pfn)
+ {
+ 	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+ 		return 0;
+ 	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+ }
++
++#ifndef CONFIG_HAVE_ARCH_PFN_VALID
++#define pfn_valid(pfn) sparsemem_pfn_valid(pfn)
+ #endif
+ 
+ static inline int pfn_present(unsigned long pfn)
+@@ -1119,7 +1121,7 @@ static inline int pfn_present(unsigned long pfn)
+ #define pfn_to_nid(pfn)		(0)
+ #endif
+ 
+-#define early_pfn_valid(pfn)	pfn_valid(pfn)
++#define early_pfn_valid(pfn)	sparsemem_pfn_valid(pfn)
+ void sparse_init(void);
+ #else
+ #define sparse_init()	do {} while (0)
 -- 
-error compiling committee.c: too many arguments to function
+1.7.4.1
+
 
