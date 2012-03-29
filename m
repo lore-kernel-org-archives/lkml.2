@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655Ab2C2RKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 13:10:06 -0400
-Received: from fifo99.com ([67.223.236.141]:47041 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933558Ab2C2RJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 13:09:31 -0400
-Date: Thu, 29 Mar 2012 10:09:30 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@android.com" <kernel-team@android.com>
-Subject: Re: [RFC] Android Logger vs. Shared Memory FIGHT!
-Message-ID: <20120329170930.GD16476@fifo99.com>
-References: <20120328210631.GB2297@fifo99.com>
- <20120329145055.GE13912@fifo99.com>
- <4F748CF6.4010205@am.sony.com>
+	id S1759623Ab2C2RLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 13:11:51 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:35352 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758588Ab2C2RLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 13:11:46 -0400
+Date: Thu, 29 Mar 2012 19:11:40 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: John Kacur <jkacur@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ftrace: Remove a superfluous check
+Message-ID: <20120329171140.GE6409@aftab>
+References: <1333039463-24268-1-git-send-email-bp@amd64.org>
+ <alpine.LFD.2.02.1203291902280.10113@tycho>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F748CF6.4010205@am.sony.com>
+In-Reply-To: <alpine.LFD.2.02.1203291902280.10113@tycho>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 09:25:26AM -0700, Tim Bird wrote:
-> 
-> There is concern about applications leaking sensitive data into the logs,
-> and a desire to possibly (in the future) support per-application logs
-> for some apps.  Having the code in-kernel means that things like the
-> timestamp, tid and pid cannot be forged by the process.  The separation
-> into channels and kernel management of the read/write position provide
-> an impediment to denial of service attacks.
+On Thu, Mar 29, 2012 at 07:03:23PM +0200, John Kacur wrote:
+> If you're going to do this, then you can drop the label too.
 
-it's unclear what problem would be caused by forging a PID, and why any
-app would want to do that. It doesn't look like it would cause any
-problems.
+Jahaa... thanks.
 
-> At the moment, I'm not considering an alternative for logger that runs
-> completely in user-space.  Having said that, this test is certainly interesting,
-> and may provide some performance numbers for logger or alternatives that would
-> be useful to compare.
+Here's an updated patch:
 
-It's certainly up to you what you want to use, but I don't see why any
-other architecture or OS would want to use logger.
+--
+>From 135c25a609739bbdf1c33e62119517b47f0e1d07 Mon Sep 17 00:00:00 2001
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Thu, 29 Mar 2012 18:41:15 +0200
+Subject: [PATCH] ftrace: Remove a superfluous check
+
+register_ftrace_function() checks ftrace_disabled and calls
+__register_ftrace_function which does it again.
+
+Drop the first check and add the unlikely hint to the second one. Also,
+drop the label as John correctly notices.
+
+No functional change.
+
+Cc: John Kacur <jkacur@redhat.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ kernel/trace/ftrace.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 867bd1dd2dd0..0df8f8088ffe 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -311,7 +311,7 @@ static int remove_ftrace_list_ops(struct ftrace_ops **list,
  
-> I like that you've put the gettimeofday() into the shared memory test, to
-> capture the cost of the timestamp operation.  Presumably, the fact that
-> x86 has VDSO and ARM does not is contributing to the performance difference
-> between the two platforms.
-
-John Stultz commented on how gettimeofday() is more accurate that what
-is needed. Logger actually uses a less accurate, and faster, method of timing.
-The time isn't exactly apples to apples, my shared memory example is actually
-using a slower clock compared to logger.
+ static int __register_ftrace_function(struct ftrace_ops *ops)
+ {
+-	if (ftrace_disabled)
++	if (unlikely(ftrace_disabled))
+ 		return -ENODEV;
  
-> 
-> Tests were 60 seconds.  I presume there were multiple runs and these are
-> averages.  Can you provide the number of runs and the standard deviation for
-> each set?
+ 	if (FTRACE_WARN_ON(ops == &global_ops))
+@@ -4304,16 +4304,12 @@ int register_ftrace_function(struct ftrace_ops *ops)
+ 
+ 	mutex_lock(&ftrace_lock);
+ 
+-	if (unlikely(ftrace_disabled))
+-		goto out_unlock;
+-
+ 	ret = __register_ftrace_function(ops);
+ 	if (!ret)
+ 		ret = ftrace_startup(ops, 0);
+ 
+-
+- out_unlock:
+ 	mutex_unlock(&ftrace_lock);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(register_ftrace_function);
+-- 
+1.7.9.3.362.g71319
 
 
-Test cases were 600 seconds (10 minutes) .. There were three runs. 
-Here's the raw data, all in bytes per second:
 
-X86:
-Logger TSC = 70072480.0, 83911562.7, 78610971.8
-Shared Memory TSC = 460262336.0, 454204684.1, 457050682.2
+-- 
+Regards/Gruss,
+Boris.
 
-Logger ACPI_PM = 75523320.0, 81615111.9, 81588600.2
-Shared Memory ACPI_PM = 29688532.0, 28211029.2, 28225661.6
-
-
-ARM:
-Logger = 6985508.0, 5827587.3, 7034293.7
-Shared Memory = 12371886.7, 18362639.9, 15274489.3
-
-You can feel free to compute the standard deviation if you wish.
-
-Daniel
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
