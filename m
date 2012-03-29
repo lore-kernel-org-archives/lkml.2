@@ -1,122 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759831Ab2C2RTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 13:19:47 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:35242 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933175Ab2C2RTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 13:19:30 -0400
-X-IronPort-AV: E=Sophos;i="4.75,338,1330923600"; 
-   d="scan'208";a="23660760"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: konrad.wilk@oracle.com
-CC: Stefano.Stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 2/2] xen-blkfront: set pages are FOREIGN_FRAME when sharing them
-Date: Thu, 29 Mar 2012 18:20:40 +0100
-Message-ID: <1333041640-12419-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1333041640-12419-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <1333041640-12419-1-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S933597Ab2C2RVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 13:21:11 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51548 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759732Ab2C2RVA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 13:21:00 -0400
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Weiping Pan <wpan@redhat.com>
+cc: netdev@vger.kernel.org, andy@greyhouse.net, lwang@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net] bonding: emit event when bonding changes MAC
+In-reply-to: <5e96194e81e0540ebd35cf0bb1b407aa15a20613.1332910907.git.wpan@redhat.com>
+References: <5e96194e81e0540ebd35cf0bb1b407aa15a20613.1332910907.git.wpan@redhat.com>
+Comments: In-reply-to Weiping Pan <wpan@redhat.com>
+   message dated "Wed, 28 Mar 2012 13:18:24 +0800."
+X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
+Date: Thu, 29 Mar 2012 10:19:44 -0700
+Message-ID: <15892.1333041584@death.nxdomain>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12032917-6148-0000-0000-000004A51347
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set pages as FOREIGN_FRAME whenever blkfront shares them with another
-domain. Then when blkfront un-share them, also removes the
-FOREIGN_FRAME_BIT from the p2m.
+Weiping Pan <wpan@redhat.com> wrote:
 
-We do it so that when the source and the destination domain are the same
-(blkfront connected to blkback in the same domain) we can more easily
-recognize which ones are the source pfns and which ones are the
-destination pfns (both are going to be pointing to the same mfns).
+>When a bonding device is configured with fail_over_mac=active,
+>we expect to see the MAC address of the new active slave as the source MAC
+>address after failover. But we see that the source MAC address is the MAC
+>address of previous active slave.
+>
+>Emit NETDEV_CHANGEADDR event when bonding changes its MAC address, in order
+>to let arp_netdev_event flush neighbour cache and route cache.
+>
+>How to reproduce this bug ?
+>
+>                       -----------hostB----------------
+>hostA ----- switch ---|-- eth0--bond0(192.168.100.2/24)|
+>(192.168.100.1/24  \--|-- eth1-/                       |
+>                       --------------------------------
+>
+>1 on hostB,
+>modprobe bonding mode=1 miimon=500 fail_over_mac=active downdelay=1000
+>num_grat_arp=1
+>ifconfig bond0 192.168.100.2/24 up
+>ifenslave bond0 eth0
+>ifenslave bond0 eth1
+>
+>then eth0 is the active slave, and MAC of bond0 is MAC of eth0.
+>
+>2 on hostA, ping 192.168.100.2
+>
+>3 on hostB,
+>tcpdump -i bond0 -p icmp -XXX
+>you will see bond0 uses MAC of eth0 as source MAC in icmp reply.
+>
+>4 on hostB,
+>ifconfig eth0 down
+>tcpdump -i bond0 -p icmp -XXX (just keep it running in step 3)
+>you will see first bond0 uses MAC of eth1 as source MAC in icmp
+>reply, then it will use MAC of eth0 as source MAC.
+>
+>Signed-off-by: Weiping Pan <wpan@redhat.com>
 
-Without this patch enstablishing a connection between blkfront and QEMU
-qdisk in the same domain causes QEMU to hang and never return.
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/block/xen-blkfront.c |   30 +++++++++++++++++++++++++-----
- 1 files changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index d5e1ab9..76d3dfd 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -262,7 +262,7 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
- static int blkif_queue_request(struct request *req)
- {
- 	struct blkfront_info *info = req->rq_disk->private_data;
--	unsigned long buffer_mfn;
-+	unsigned long buffer_mfn, buffer_pfn;
- 	struct blkif_request *ring_req;
- 	unsigned long id;
- 	unsigned int fsect, lsect;
-@@ -321,7 +321,8 @@ static int blkif_queue_request(struct request *req)
- 		       BLKIF_MAX_SEGMENTS_PER_REQUEST);
- 
- 		for_each_sg(info->sg, sg, ring_req->u.rw.nr_segments, i) {
--			buffer_mfn = pfn_to_mfn(page_to_pfn(sg_page(sg)));
-+			buffer_pfn = page_to_pfn(sg_page(sg));
-+			buffer_mfn = pfn_to_mfn(buffer_pfn);
- 			fsect = sg->offset >> 9;
- 			lsect = fsect + (sg->length >> 9) - 1;
- 			/* install a grant reference. */
-@@ -340,6 +341,16 @@ static int blkif_queue_request(struct request *req)
- 						.gref       = ref,
- 						.first_sect = fsect,
- 						.last_sect  = lsect };
-+			/* 
-+			 * Set the page as foreign, considering that we are giving
-+			 * it to a foreign domain.
-+			 * This is important in case the destination domain is
-+			 * ourselves, so that we can more easily recognize the
-+			 * source pfn from destination pfn, both mapping to the same
-+			 * mfn.
-+			 */
-+			set_phys_to_machine(buffer_pfn,
-+					FOREIGN_FRAME(buffer_mfn));
- 		}
- 	}
- 
-@@ -715,8 +726,11 @@ static void blkif_completion(struct blk_shadow *s)
- 	int i;
- 	/* Do not let BLKIF_OP_DISCARD as nr_segment is in the same place
- 	 * flag. */
--	for (i = 0; i < s->req.u.rw.nr_segments; i++)
-+	for (i = 0; i < s->req.u.rw.nr_segments; i++) {
- 		gnttab_end_foreign_access(s->req.u.rw.seg[i].gref, 0, 0UL);
-+		set_phys_to_machine(s->frame[i],
-+				get_phys_to_machine(s->frame[i]) & ~FOREIGN_FRAME_BIT);
-+	}
- }
- 
- static irqreturn_t blkif_interrupt(int irq, void *dev_id)
-@@ -1051,13 +1065,19 @@ static int blkif_recover(struct blkfront_info *info)
- 		memcpy(&info->shadow[req->u.rw.id], &copy[i], sizeof(copy[i]));
- 
- 		if (req->operation != BLKIF_OP_DISCARD) {
-+			unsigned long buffer_pfn;
-+			unsigned long buffer_mfn;
- 		/* Rewrite any grant references invalidated by susp/resume. */
--			for (j = 0; j < req->u.rw.nr_segments; j++)
-+			for (j = 0; j < req->u.rw.nr_segments; j++) {
-+				buffer_pfn = info->shadow[req->u.rw.id].frame[j];
-+				buffer_mfn = pfn_to_mfn(buffer_pfn);
- 				gnttab_grant_foreign_access_ref(
- 					req->u.rw.seg[j].gref,
- 					info->xbdev->otherend_id,
--					pfn_to_mfn(info->shadow[req->u.rw.id].frame[j]),
-+					buffer_mfn,
- 					rq_data_dir(info->shadow[req->u.rw.id].request));
-+				set_phys_to_machine(buffer_pfn, FOREIGN_FRAME(buffer_mfn));
-+			}
- 		}
- 		info->shadow[req->u.rw.id].req = *req;
- 
--- 
-1.7.2.5
+>---
+> drivers/net/bonding/bond_main.c |    8 +++++++-
+> 1 files changed, 7 insertions(+), 1 deletions(-)
+>
+>diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>index b920d82..a20b585 100644
+>--- a/drivers/net/bonding/bond_main.c
+>+++ b/drivers/net/bonding/bond_main.c
+>@@ -892,9 +892,15 @@ static void bond_do_fail_over_mac(struct bonding *bond,
+>
+> 	switch (bond->params.fail_over_mac) {
+> 	case BOND_FOM_ACTIVE:
+>-		if (new_active)
+>+		if (new_active) {
+> 			memcpy(bond->dev->dev_addr,  new_active->dev->dev_addr,
+> 			       new_active->dev->addr_len);
+>+			write_unlock_bh(&bond->curr_slave_lock);
+>+			read_unlock(&bond->lock);
+>+			call_netdevice_notifiers(NETDEV_CHANGEADDR, bond->dev);
+>+			read_lock(&bond->lock);
+>+			write_lock_bh(&bond->curr_slave_lock);
+>+		}
+> 		break;
+> 	case BOND_FOM_FOLLOW:
+> 		/*
+>-- 
+>1.7.4
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe netdev" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
