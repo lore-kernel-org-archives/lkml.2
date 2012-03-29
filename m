@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934973Ab2C3W4D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:56:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934934Ab2C3VFx (ORCPT
+	id S936652Ab2C3W4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:56:33 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934930Ab2C3VFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 17:05:53 -0400
-Message-Id: <20120330195729.135244025@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark D Rustad <mark.d.rustad@intel.com>,
-        Kiran Patil <kiran.patil@intel.com>,
-        Robert Love <robert.w.love@intel.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 049/108] tcm_fc: Fix fc_exch memory leak in ft_send_resp_status
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+Message-Id: <201203302105.q2UL55GH006291@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 29 Mar 2012 15:40:50 -0400
+Subject: [PATCH] arch/tile: don't enable irqs unconditionally in page fault handler
+In-Reply-To: <4F761E1C.80808.com>
+References: <4F761E1C.80808.com>
+To: Chris Metcalf <cmetcalf@tilera.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 21:05:05.0757 (UTC) FILETIME=[C81A98D0:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+If we took a page fault while we had interrupts disabled, we
+shouldn't enable them in the page fault handler.
 
-------------------
-
-From: Nicholas Bellinger <nab@linux-iscsi.org>
-
-commit 031ed4d565b31880a4136bb7366bc89f5b1dba7d upstream.
-
-This patch fixes a bug in tcm_fc where fc_exch memory from fc_exch_mgr->ep_pool
-is currently being leaked by ft_send_resp_status() usage.  Following current
-code in ft_queue_status() response path, using lport->tt.seq_send() needs to be
-followed by a lport->tt.exch_done() in order to release fc_exch memory back into
-libfc_em kmem_cache.
-
-ft_send_resp_status() code is currently used in pre submit se_cmd ft_send_work()
-error exceptions, TM request setup exceptions, and main TM response callback
-path in ft_queue_tm_resp().  This bugfix addresses the leak in these cases.
-
-Cc: Mark D Rustad <mark.d.rustad@intel.com>
-Cc: Kiran Patil <kiran.patil@intel.com>
-Cc: Robert Love <robert.w.love@intel.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/target/tcm_fc/tfc_cmd.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/tile/mm/fault.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/target/tcm_fc/tfc_cmd.c
-+++ b/drivers/target/tcm_fc/tfc_cmd.c
-@@ -371,10 +371,12 @@ static void ft_send_resp_status(struct f
+diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
+index bcba159..5d10a74 100644
+--- a/arch/tile/mm/fault.c
++++ b/arch/tile/mm/fault.c
+@@ -343,9 +343,12 @@ static int handle_page_fault(struct pt_regs *regs,
+ 	/*
+ 	 * If we're trying to touch user-space addresses, we must
+ 	 * be either at PL0, or else with interrupts enabled in the
+-	 * kernel, so either way we can re-enable interrupts here.
++	 * kernel, so either way we can re-enable interrupts here
++	 * unless we are doing atomic access to user space with
++	 * interrupts disabled.
+ 	 */
+-	local_irq_enable();
++	if (!(regs->flags & PT_FLAGS_DISABLE_IRQ))
++		local_irq_enable();
  
- 	fc_fill_reply_hdr(fp, rx_fp, FC_RCTL_DD_CMD_STATUS, 0);
- 	sp = fr_seq(fp);
--	if (sp)
-+	if (sp) {
- 		lport->tt.seq_send(lport, sp, fp);
--	else
-+		lport->tt.exch_done(sp);
-+	} else {
- 		lport->tt.frame_send(lport, fp);
-+	}
- }
+ 	mm = tsk->mm;
  
- /*
-
+-- 
+1.6.5.2
 
