@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933478Ab2C2Qjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:39:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52682 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933379Ab2C2Qjn (ORCPT
+	id S1759573Ab2C2Qoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:44:38 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34821 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758958Ab2C2Qob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 12:39:43 -0400
-From: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] IRQ: introduce irq_do_set_affinity() to reduce duplicated code
-Date: Fri, 30 Mar 2012 00:36:56 +0800
-Message-Id: <1333039018-3845-2-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333039018-3845-1-git-send-email-jiang.liu@huawei.com>
-References: <1333039018-3845-1-git-send-email-jiang.liu@huawei.com>
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 29 Mar 2012 12:44:31 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] ftrace: Remove a superfluous check
+Date: Thu, 29 Mar 2012 18:44:23 +0200
+Message-Id: <1333039463-24268-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce irq_do_set_affinity() to reduce duplicated code.
-This patch also fixes a minor bug in irq_move_masked_irq(),
-which treats return value IRQ_SET_MASK_OK_NOCOPY as error.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+register_ftrace_function() checks ftrace_disabled and calls
+__register_ftrace_function which does it again.
+
+Drop the first check and add the unlikely hint to the second one.
+
+No functional change.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- kernel/irq/internals.h |    3 +++
- kernel/irq/manage.c    |   39 ++++++++++++++++++++++-----------------
- kernel/irq/migration.c |    6 +-----
- 3 files changed, 26 insertions(+), 22 deletions(-)
+ kernel/trace/ftrace.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index 8e5c56b..001fa5b 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -101,6 +101,9 @@ extern int irq_select_affinity_usr(unsigned int irq, struct cpumask *mask);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 867bd1dd2dd0..f9212017406d 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -311,7 +311,7 @@ static int remove_ftrace_list_ops(struct ftrace_ops **list,
  
- extern void irq_set_thread_affinity(struct irq_desc *desc);
- 
-+extern int irq_do_set_affinity(struct irq_data *data,
-+			       const struct cpumask *dest, bool force);
-+
- /* Inline functions for support of irq chips on slow busses */
- static inline void chip_bus_lock(struct irq_desc *desc)
+ static int __register_ftrace_function(struct ftrace_ops *ops)
  {
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index b0ccd1a..d2724a0 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -139,6 +139,25 @@ static inline void
- irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
- #endif
+-	if (ftrace_disabled)
++	if (unlikely(ftrace_disabled))
+ 		return -ENODEV;
  
-+int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
-+			bool force)
-+{
-+	struct irq_desc *desc = irq_data_to_desc(data);
-+	struct irq_chip *chip = irq_data_get_irq_chip(data);
-+	int ret;
-+
-+	ret = chip->irq_set_affinity(data, mask, false);
-+	switch (ret) {
-+	case IRQ_SET_MASK_OK:
-+		cpumask_copy(data->affinity, mask);
-+	case IRQ_SET_MASK_OK_NOCOPY:
-+		irq_set_thread_affinity(desc);
-+		ret = 0;
-+	}
-+
-+	return ret;
-+}
-+
- int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- {
- 	struct irq_chip *chip = irq_data_get_irq_chip(data);
-@@ -149,14 +168,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- 		return -EINVAL;
+ 	if (FTRACE_WARN_ON(ops == &global_ops))
+@@ -4304,14 +4304,10 @@ int register_ftrace_function(struct ftrace_ops *ops)
  
- 	if (irq_can_move_pcntxt(data)) {
--		ret = chip->irq_set_affinity(data, mask, false);
--		switch (ret) {
--		case IRQ_SET_MASK_OK:
--			cpumask_copy(data->affinity, mask);
--		case IRQ_SET_MASK_OK_NOCOPY:
--			irq_set_thread_affinity(desc);
--			ret = 0;
--		}
-+		ret = irq_do_set_affinity(data, mask, false);
- 	} else {
- 		irqd_set_move_pending(data);
- 		irq_copy_pending(desc, mask);
-@@ -280,9 +292,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notifier);
- static int
- setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- {
--	struct irq_chip *chip = irq_desc_get_chip(desc);
- 	struct cpumask *set = irq_default_affinity;
--	int ret;
+ 	mutex_lock(&ftrace_lock);
  
- 	/* Excludes PER_CPU and NO_BALANCE interrupts */
- 	if (!irq_can_set_affinity(irq))
-@@ -301,13 +311,8 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- 	}
+-	if (unlikely(ftrace_disabled))
+-		goto out_unlock;
+-
+ 	ret = __register_ftrace_function(ops);
+ 	if (!ret)
+ 		ret = ftrace_startup(ops, 0);
  
- 	cpumask_and(mask, cpu_online_mask, set);
--	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
--	switch (ret) {
--	case IRQ_SET_MASK_OK:
--		cpumask_copy(desc->irq_data.affinity, mask);
--	case IRQ_SET_MASK_OK_NOCOPY:
--		irq_set_thread_affinity(desc);
--	}
-+	irq_do_set_affinity(&desc->irq_data, mask, false);
-+
- 	return 0;
- }
- #else
-diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
-index 4742090..ef04dab 100644
---- a/kernel/irq/migration.c
-+++ b/kernel/irq/migration.c
-@@ -44,11 +44,7 @@ void irq_move_masked_irq(struct irq_data *idata)
- 	 */
- 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
- 		   < nr_cpu_ids))
--		if (!chip->irq_set_affinity(&desc->irq_data,
--					    desc->pending_mask, false)) {
--			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
--			irq_set_thread_affinity(desc);
--		}
-+		irq_do_set_affinity(&desc->irq_data, desc->pending_mask, false);
- 
- 	cpumask_clear(desc->pending_mask);
- }
+-
+  out_unlock:
+ 	mutex_unlock(&ftrace_lock);
+ 	return ret;
 -- 
-1.7.5.4
+1.7.9.3.362.g71319
 
