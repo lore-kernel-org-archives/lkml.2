@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759651Ab2C2Qrq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 12:47:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16418 "EHLO mx1.redhat.com"
+	id S1759672Ab2C2Qr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 12:47:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759598Ab2C2Qpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759595Ab2C2Qpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Mar 2012 12:45:52 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/13] events/hw_event: Create a Hardware Events Report Mecanism (HERM)
-Date: Thu, 29 Mar 2012 13:45:42 -0300
-Message-Id: <1333039546-5590-10-git-send-email-mchehab@redhat.com>
+Subject: [PATCH 07/13] edac: Cleanup the logs for i7core and sb edac drivers
+Date: Thu, 29 Mar 2012 13:45:40 -0300
+Message-Id: <1333039546-5590-8-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
 References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,220 +20,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a trace class for handle hardware events
-
-Part of the description bellow is shamelessly copied from Tony
-Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-Tony, thanks for your notes and discussions to generate the
-h/w error reporting requirements.
-
-[1] http://lwn.net/Articles/416669/
-
-    We have several subsystems & methods for reporting hardware errors:
-
-    1) EDAC ("Error Detection and Correction").  In its original form
-    this consisted of a platform specific driver that read topology
-    information and error counts from chipset registers and reported
-    the results via a sysfs interface.
-
-    2) mcelog - x86 specific decoding of machine check bank registers
-    reporting in binary form via /dev/mcelog. Recent additions make use
-    of the APEI extensions that were documented in version 4.0a of the
-    ACPI specification to acquire more information about errors without
-    having to rely reading chipset registers directly. A user level
-    programs decodes into somewhat human readable format.
-
-    3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
-    decodes errors reported via machine check bank registers in AMD
-    processors to the console log using printk();
-
-    Each of these mechanisms has a band of followers ... and none
-    of them appear to meet all the needs of all users.
-
-In order to provide a proper hardware event subsystem, let's
-encapsulate the memory error hardware events into a trace facility.
-
-As no agreement was reached so far for the MCA-based trace events, for
-now, let's add events only for memory errors. A latter patch can change
-the tracepoint, for events originated via MCA.
+Remove some information that it is duplicated at the MCE log,
+and don't have much usage for the error. Those data will be
+added again, when creating a trace function that outputs both
+memory errors and MCE fields.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_core.h        |    2 +-
- drivers/edac/edac_mc.c          |   11 ++++-
- include/trace/events/hw_event.h |  107 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 118 insertions(+), 2 deletions(-)
- create mode 100644 include/trace/events/hw_event.h
+ drivers/edac/i7core_edac.c |    9 ++-------
+ drivers/edac/sb_edac.c     |   29 ++++++++++++++---------------
+ 2 files changed, 16 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index 8aadd83..f7c8c8a 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -469,7 +469,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const int layer2,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog);
-+			  const void *arch_log);
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 72553dd..42775c4 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1623,7 +1623,7 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
+ 				    const struct mce *m)
+ {
+ 	struct i7core_pvt *pvt = mci->pvt_info;
+-	char *type, *optype, *err, *msg;
++	char *type, *optype, *err, msg[80];
+ 	enum hw_event_mc_err_type tp_event;
+ 	unsigned long error = m->status & 0x1ff0000l;
+ 	bool uncorrected_error = m->mcgstatus & 1ll << 61;
+@@ -1701,10 +1701,7 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
+ 		err = "unknown";
+ 	}
+ 
+-	msg = kasprintf(GFP_ATOMIC,
+-		"addr=0x%08llx cpu=%d count=%d Err=%08llx:%08llx (%s: %s))\n",
+-		(long long) m->addr, m->cpu, core_err_cnt,
+-		(long long)m->status, (long long)m->misc, optype, err);
++	snprintf(msg, sizeof(msg), "count=%d %s", core_err_cnt, optype);
+ 
+ 	/*
+ 	 * Call the helper to output message
+@@ -1718,8 +1715,6 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
+ 				     syndrome,
+ 				     channel, dimm, -1,
+ 				     err, msg, m);
+-
+-	kfree(msg);
+ }
  
  /*
-  * edac_device APIs
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 138437c..721d5cc 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -33,6 +33,9 @@
- #include "edac_core.h"
- #include "edac_module.h"
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index b253675..ad27e27 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1433,23 +1433,22 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
+ 		recoverable_msg = "";
  
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/hw_event.h>
-+
- /* lock to memory controller's control array */
- static DEFINE_MUTEX(mem_ctls_mutex);
- static LIST_HEAD(mc_devices);
-@@ -381,6 +384,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	 * which will perform kobj unregistration and the actual free
- 	 * will occur during the kobject callback operation
+ 	/*
+-	 * FIXME: What should we do with "channel" information on mcelog?
+-	 * Probably, we can just discard it, as the channel information
+-	 * comes from the get_memory_error_data() address decoding
++	 * FIXME: On some memory configurations (mirror, lockstep), the
++	 * Memory Controller can't point the error to a single DIMM. The
++	 * EDAC core should be handling the channel mask, in order to point
++	 * to the group of dimm's where the error may be happening.
  	 */
-+
-+	trace_hw_event_init("edac", (unsigned)edac_index);
-+
- 	return mci;
- }
- EXPORT_SYMBOL_GPL(edac_mc_alloc);
-@@ -900,7 +906,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const int layer2,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog)
-+			  const void *arch_log)
- {
- 	unsigned long remapped_page;
- 	/* FIXME: too much for stack: move it to some pre-alocated area */
-@@ -1038,6 +1044,9 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			"page 0x%lx offset 0x%lx grain %d",
- 			page_frame_number, offset_in_page, grain);
+ 	snprintf(msg, sizeof(msg),
+-			"%d error(s)%s: %s%s: cpu=%d Err=%04x:%04x addr = 0x%08llx socket=%d Channel=%ld(mask=%ld), rank=%d\n",
+-			core_err_cnt,
+-			overflow ? " OVERFLOW" : "",
+-			area_type,
+-			recoverable_msg,
+-			m->cpu,
+-			mscod, errcode,
+-			(long long) m->addr,
+-			socket,
+-			first_channel,		/* This is the real channel on SB */
+-			channel_mask,
+-			rank);
++		 "%d error(s)%s: %s%s: Err=%04x:%04x socket=%d channel=%ld/mask=%ld rank=%d",
++		 core_err_cnt,
++		 overflow ? " OVERFLOW" : "",
++		 area_type,
++		 recoverable_msg,
++		 mscod, errcode,
++		 socket,
++		 first_channel,
++		 channel_mask,
++		 rank);
  
-+	trace_mc_error(type, mci->mc_idx, msg, label, location,
-+		       detail, other_detail);
-+
- 	if (type == HW_EVENT_ERR_CORRECTED) {
- 		if (edac_mc_get_log_ce())
- 			edac_mc_printk(mci, KERN_WARNING,
-diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
-new file mode 100644
-index 0000000..1fabfe2
---- /dev/null
-+++ b/include/trace/events/hw_event.h
-@@ -0,0 +1,107 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM hw_event
-+
-+#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_HW_EVENT_MC_H
-+
-+#include <linux/tracepoint.h>
-+#include <linux/edac.h>
-+#include <linux/ktime.h>
-+
-+/*
-+ * Hardware Anomaly Report Mecanism (HARM) events
-+ *
-+ * Those events are generated when hardware detected a corrected or
-+ * uncorrected event, and are meant to replace the current API to report
-+ * errors defined on both EDAC and MCE subsystems.
-+ *
-+ * FIXME: Add events for handling memory errors originated from the
-+ *        MCE subsystem.
-+ */
-+
-+DECLARE_EVENT_CLASS(hw_event_class,
-+	TP_PROTO(const char *type, unsigned int instance),
-+	TP_ARGS(type, instance),
-+
-+	TP_STRUCT__entry(
-+		__string(	type,		type			)
-+		__field(	unsigned int,	instance		)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(type, type);
-+		__entry->instance = instance;
-+	),
-+
-+	TP_printk("Initialized %s#%d\n",
-+		__get_str(type),
-+		__entry->instance)
-+);
-+
-+/*
-+ * This event indicates that a hardware collection mechanism is started
-+ */
-+DEFINE_EVENT(hw_event_class, hw_event_init,
-+
-+	TP_PROTO(const char *type, unsigned int instance),
-+
-+	TP_ARGS(type, instance)
-+);
-+
-+
-+/*
-+ * Hardware-independent Memory Controller specific events
-+ */
-+
-+/*
-+ * Default error mechanisms for Memory Controller errors (CE and UE)
-+ */
-+TRACE_EVENT(mc_error,
-+
-+	TP_PROTO(const unsigned int err_type,
-+		 const unsigned int mc_index,
-+		 const char *msg,
-+		 const char *label,
-+		 const char *location,
-+		 const char *detail,
-+		 const char *driver_detail),
-+
-+	TP_ARGS(err_type, mc_index, msg, label, location,
-+		detail, driver_detail),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	err_type		)
-+		__field(	unsigned int,	mc_index		)
-+		__string(	msg,		msg			)
-+		__string(	label,		label			)
-+		__string(	detail,		detail			)
-+		__string(	location,	location		)
-+		__string(	driver_detail,	driver_detail		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->err_type		= err_type;
-+		__entry->mc_index		= mc_index;
-+		__assign_str(msg, msg);
-+		__assign_str(label, label);
-+		__assign_str(location, location);
-+		__assign_str(detail, detail);
-+		__assign_str(driver_detail, driver_detail);
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: %s error %s on label \"%s\" (%s %s %s)",
-+		  __entry->mc_index,
-+		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-+			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-+			"Fatal" : "Uncorrected"),
-+		  __get_str(msg),
-+		  __get_str(label),
-+		  __get_str(location),
-+		  __get_str(detail),
-+		  __get_str(driver_detail))
-+);
-+
-+#endif /* _TRACE_HW_EVENT_MC_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
+ 	debugf0("%s", msg);
+ 
 -- 
 1.7.8
 
