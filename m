@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2C2GKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 02:10:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28780 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557Ab2C2GJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 02:09:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="126409918"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-acpi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/3] PM / Runtime: Add may_power_off flag to subsys data
-Date: Thu, 29 Mar 2012 14:09:40 +0800
-Message-Id: <1333001380-6050-4-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1333001380-6050-1-git-send-email-ming.m.lin@intel.com>
-References: <1333001380-6050-1-git-send-email-ming.m.lin@intel.com>
+	id S1753848Ab2C2GMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 02:12:43 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59371 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab2C2GMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 02:12:37 -0400
+Date: Thu, 29 Mar 2012 08:12:31 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, masami.hiramatsu.pt@hitachi.com,
+        prashanth@linux.vnet.ibm.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, acme@infradead.org, ananth@in.ibm.com,
+        srikar@linux.vnet.ibm.com, rostedt@goodmis.org
+Subject: Re: [PATCH] perf: missing export.h file
+Message-ID: <20120329061231.GA1376@gmail.com>
+References: <4F704A1E.2040401@hitachi.com>
+ <20120328114745.GA17936@gmail.com>
+ <1332939541.2325.7.camel@edumazet-glaptop>
+ <20120328.174419.1377725053855749758.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328.174419.1377725053855749758.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parent device will check child's may_power_off flag to see if child device can
-be powered off.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- include/linux/pm.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+* David Miller <davem@davemloft.net> wrote:
 
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index e4982ac..c9953b4 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -465,6 +465,7 @@ struct pm_subsys_data {
- #ifdef CONFIG_PM_GENERIC_DOMAINS
- 	struct pm_domain_data *domain_data;
- #endif
-+	bool may_power_off;
- };
- 
- struct dev_pm_info {
--- 
-1.7.2.5
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Wed, 28 Mar 2012 14:59:01 +0200
+> 
+> >     CC util/rbtree.o
+> > ../../lib/rbtree.c:24:26: error: linux/export.h: No such file or
+> > directory
+> > cc1: warnings being treated as errors
+> > 
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > ---
+> > I must be missing something, why nobody hits this error ???
+> 
+> Some don't hit it because it's already installed under /usr/include
 
+The other reason is that it's also fixed in linux-next and in 
+-tip, where most of the folks who build perf from scratch are 
+concentrated. Will get tip:perf/urgent to Linus ASAP.
+
+Thanks,
+
+	Ingo
