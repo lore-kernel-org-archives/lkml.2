@@ -1,54 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab2C2PN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 11:13:56 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35334 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491Ab2C2PNr (ORCPT
+	id S933534Ab2C2PTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 11:19:07 -0400
+Received: from smtp-out-seis.uned.es ([62.204.192.120]:51934 "EHLO
+	smtp-out-seis.uned.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933485Ab2C2PTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 11:13:47 -0400
-Date: Thu, 29 Mar 2012 08:13:43 -0700
-From: "'Greg KH'" <gregkh@linuxfoundation.org>
-To: Donald <donald@asix.com.tw>
-Cc: "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
-Message-ID: <20120329151343.GA32474@kroah.com>
-References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>
- <20120313160951.GA18810@kroah.com>
- <005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
+	Thu, 29 Mar 2012 11:19:03 -0400
+Message-ID: <0553b02c9f526ae54f6aa10ff00809a3.squirrel@correo.uned.es>
+Date: Thu, 29 Mar 2012 17:18:59 +0200
+Subject: 
+From: "jin mong" <bmugica@bergara.uned.es>
+Reply-To: jinmong22@yahoo.co.jp
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-In-Reply-To: <005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 09:33:36PM +0800, Donald wrote:
-> Hi Greg,
-> 
-> I am submitting this patch that supports MCS7810 device for the mos7840
-> driver. If you see any problem regarding this patch, please let me know at
-> any time. Thank you for your help.
-> 
-> Regards,
-> Donald
-> 
-> Patch Description:
-> This patch added the support of MCS7810 device for the mos7840 driver. The
-> MCS7810 device supports single USB2.0-to-Serial port with a LED indicator
-> for reflecting transmission or reception activity. Please be noted that part
-> of codes in his patch are relating to the codes in last submitted patch that
-> fixed MCS7820 device attach problem.
+Greetings Partner,
 
-Along with Alan's comments, I need this to be able to be applied, and if
-you include portions of the patch that I have already accepted, I can't
-apply it, right?
+This is my second time of sending you this notice. I have finally found
+you as an approved heir to the inheritance of the deposited funds with
+same surname of the deceased depositor.
 
-Can you redo this patch against 3.4-rc1 when it comes out in a few days?
+Jin Mong
+Email: jinmong22@yahoo.co.jp
 
-thanks,
 
-greg k-h
