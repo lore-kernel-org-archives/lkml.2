@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933935Ab2C2VNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:13:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33771 "EHLO
+	id S933975Ab2C2VNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:13:30 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33747 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933917Ab2C2VM4 (ORCPT
+	with ESMTP id S933906Ab2C2VMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:12:56 -0400
+	Thu, 29 Mar 2012 17:12:54 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH 15/17] mtd: mark const init data with __initconst instead of __initdata
-Date: Thu, 29 Mar 2012 23:12:32 +0200
-Message-Id: <1333055554-31300-15-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: kernel@pengutronix.de, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 07/17] mfd: mark const init data with __initconst instead of __initdata
+Date: Thu, 29 Mar 2012 23:12:24 +0200
+Message-Id: <1333055554-31300-7-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <20120329211131.GA31250@pengutronix.de>
 References: <20120329211131.GA31250@pengutronix.de>
@@ -39,25 +38,24 @@ because a section containing const variables is marked read only and so
 cannot contain non-const variables.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 ---
- drivers/mtd/maps/wr_sbc82xx_flash.c |    2 +-
+ drivers/mfd/ab5500-core.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mtd/maps/wr_sbc82xx_flash.c b/drivers/mtd/maps/wr_sbc82xx_flash.c
-index aa7e0cb..4f6bf60 100644
---- a/drivers/mtd/maps/wr_sbc82xx_flash.c
-+++ b/drivers/mtd/maps/wr_sbc82xx_flash.c
-@@ -59,7 +59,7 @@ static struct mtd_partition bigflash_parts[] = {
- 	}
+diff --git a/drivers/mfd/ab5500-core.c b/drivers/mfd/ab5500-core.c
+index 54d0fe4..3765c76 100644
+--- a/drivers/mfd/ab5500-core.c
++++ b/drivers/mfd/ab5500-core.c
+@@ -1291,7 +1291,7 @@ struct ab_family_id {
+ 	char	*name;
  };
  
--static const char *part_probes[] __initdata = {"cmdlinepart", "RedBoot", NULL};
-+static const char *part_probes[] __initconst = {"cmdlinepart", "RedBoot", NULL};
- 
- #define init_sbc82xx_one_flash(map, br, or)			\
- do {								\
+-static const struct ab_family_id ids[] __initdata = {
++static const struct ab_family_id ids[] __initconst = {
+ 	/* AB5500 */
+ 	{
+ 		.id = AB5500_1_0,
 -- 
 1.7.9.1
 
