@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001Ab2C2Vtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:49:39 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61078 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933924Ab2C2Vtd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:49:33 -0400
+	id S934023Ab2C2VuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:50:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933292Ab2C2VuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 17:50:06 -0400
+Date: Thu, 29 Mar 2012 17:49:59 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: lockups shortly after booting in current git.
+Message-ID: <20120329214959.GA20783@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Ted Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFxOcMt_mcr+ZYwc-SpKbROnh4Gn7jqrFY_SZcBy1Ev7Qw@mail.gmail.com>
+ <20120329182632.GA6891@redhat.com>
+ <CA+55aFx-nzGm1ZZD5bNxmPF2orkXc1_4nCE0jdtznz+AqhBx3A@mail.gmail.com>
+ <20120329195354.GA11790@redhat.com>
+ <CA+55aFxyutCDZhVa8HCu=hpn0454sfoM27Jwh2heCN0cqg5pjA@mail.gmail.com>
+ <20120329202619.GA14001@redhat.com>
+ <20120329203926.GA13970@thunk.org>
+ <CA+55aFwJkN2BmZJmWfB6FU0TuVKfmh4um8pMKYVUk3aG7JkNwQ@mail.gmail.com>
+ <20120329211244.GA18684@redhat.com>
+ <20120329214510.GD13970@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20120329135956.7034cd9d.akpm@linux-foundation.org>
-References: <1332857861-11562-1-git-send-email-mjg@redhat.com>
- <20120329163206.GA3480@burratino> <20120329134614.438e8aaf.akpm@linux-foundation.org>
- <20120329205635.GA2072@srcf.ucam.org> <20120329135956.7034cd9d.akpm@linux-foundation.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 29 Mar 2012 15:49:12 -0600
-Message-ID: <CAErSpo5yuOkPNjc+OXwjNtO1eJU3OVc9rStjoNZK+5vL_0VjOQ@mail.gmail.com>
-Subject: Re: [PATCH resend] ASPM: Fix pcie devices with non-pcie children
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, stable@vger.kernel.org,
-        Romain Francoise <romain@orebokech.com>,
-        Chris Holland <bandidoirlandes@gmail.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Hatem Masmoudi <hatem.masmoudi@gmail.com>, janek <jan0x6c@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120329214510.GD13970@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 2:59 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 29 Mar 2012 21:56:35 +0100
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
->> On Thu, Mar 29, 2012 at 01:46:14PM -0700, Andrew Morton wrote:
->>
->> > Just about the only person who wasn't copied on this email is, umm, the
->> > PCI maintainer!
->>
->> Jesse just handed that off to Bjorn…
->
-> Oh.  So he did.   My search of MAINTAINERS turned up the probably wrong
->
-> T:      git git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci.git
+On Thu, Mar 29, 2012 at 02:45:10PM -0700, Ted Ts'o wrote:
 
-Yep, I'll update MAINTAINERS as soon as I set up a kernel.org tree.
+ > > I'll try a build with just that reverted, given the bisect build is taking a while.
 
-The patch itself looks fine to me, so in case anybody wants to pick it
-up earlier:
+up 30 minutes with that reverted, no problems so far..
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+ > But actually, normally when it's a PageWriteback stall, usually you
+ > get a soft lockup warning, assuming that was compiled into the system.
+ > And I didn't see that in your trace, which is surprising given the
+ > symptoms you described.  Was it perhaps not included in your log file
+ > snippet?  Or was soft lockup detection not enabled?
 
-I do think that ASPM path is disappointingly hard to follow, which
-likely contributed to the bug in the first place.
-pcie_aspm_sanity_check() is a terrible name for something that returns
-0/errno (which is treated as a bool meaning something like "do ASPM on
-this device").  And the idea that we save this blacklist information
-in the form of "link->aspm_enabled = ASPM_STATE_ALL" is weird.
+Enabled, didn't trigger.
 
-But obviously, I'm ignorant of ASPM in general.
+	Dave
 
-Bjorn
