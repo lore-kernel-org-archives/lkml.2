@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417Ab2C2Ijm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:39:42 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56264 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410Ab2C2Ijh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:39:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332960542_131144@CP5-2952>
-References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
- <1332959199-32161-5-git-send-email-djkurtz@chromium.org> <1332960542_131144@CP5-2952>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Thu, 29 Mar 2012 16:39:16 +0800
-X-Google-Sender-Auth: aP-rYw67uVbimnTlY81yURzAStw
-Message-ID: <CAGS+omDFwaNB6TpTsCyBa1g0LrB+VpxeD5vgSz0huUW9f6GYHw@mail.gmail.com>
-Subject: Re: [PATCH 4/7 v6] drm/i915/intel_i2c: use WAIT cycle, not STOP
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1758515Ab2C2Ik3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 04:40:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6346 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758054Ab2C2IkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 04:40:21 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        stable@vger.kernel.org
+Subject: [PATCH] pagemap: remove remaining unneeded spin_lock()
+Date: Thu, 29 Mar 2012 04:39:39 -0400
+Message-Id: <1333010379-31126-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 2:48 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Thu, 29 Mar 2012 02:26:36 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
->> The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
->> transaction) during a DATA or WAIT phase.  In other words, the
->> controller rejects a STOP requested as part of the first transaction in a
->> sequence.
->
-> The original docs have "this can only cause a STOP to be generated if a
-> GMBUS cycle is generated, the GMBUS is currently in a data phase, or it
-> is in a WAIT phase."
->
-> So from that it seems STOP | INDEX? | WAIT is always a valid
-> combination and is explicitly listed in the register set.
->
-> I defer to actual testing though ;)
+commit: 025c5b2451e4 "thp: optimize away unnecessary page table locking"
+moves spin_lock() into pmd_trans_huge_lock() in order to avoid locking
+unless pmd is for thp. So this spin_lock() is a bug.
 
-Unfortunately, STOP on first transaction didn't work for me :(.
-Perhaps the docs are missing a "when":
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: stable@vger.kernel.org
+---
+ fs/proc/task_mmu.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-"this can only cause a STOP to be generated if a GMBUS cycle is
-generated *when* the GMBUS is currently in a data phase, or it is in a
-WAIT phase."
+diff --git linux-3.3.0-6658a6991ce.orig/fs/proc/task_mmu.c linux-3.3.0-6658a6991ce/fs/proc/task_mmu.c
+index 9694cc2..06d2b70 100644
+--- linux-3.3.0-6658a6991ce.orig/fs/proc/task_mmu.c
++++ linux-3.3.0-6658a6991ce/fs/proc/task_mmu.c
+@@ -786,7 +786,6 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+-	spin_lock(&walk->mm->page_table_lock);
+ 	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		for (; addr != end; addr += PAGE_SIZE) {
+ 			unsigned long offset;
+-- 
+1.7.7.6
 
-
-
-> -Chris
->
-> --
-> Chris Wilson, Intel Open Source Technology Centre
