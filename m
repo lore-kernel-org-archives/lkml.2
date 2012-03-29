@@ -1,60 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab2C2FYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 01:24:44 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48431 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab2C2FXr (ORCPT
+	id S1753310Ab2C2FYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 01:24:55 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:40306 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab2C2FYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 01:23:47 -0400
-Message-ID: <4F73F1E0.7080803@gmail.com>
-Date: Thu, 29 Mar 2012 08:23:44 +0300
-From: roma1390 <roma1390@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	Thu, 29 Mar 2012 01:24:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=MBOWfnaO+SV3Yk0OTJGjXhWRa
+	Qobhpn8tQ1GIpE7fu31jMPPaxWFCav4Tq93MzQuC32ASQv0fHCrvZin5MCpn0qKR
+	R0pk3SSgoSS4MKk0OVp2UyqE43FmIHMAKxWv40B7Y2/P2JI+aEtRo6jFEhpLrU7b
+	TeLYHdnCrkaCmoNaV4=
+Date: Wed, 28 Mar 2012 22:23:56 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        Trond.Myklebust@netapp.com, sfrench@samba.org, ericvh@gmail.com,
+        mszeredi@suse.cz
+Subject: Re: [PATCH 13/16] ceph: implement i_op->atomic_open() and
+ i_op->atomic_create()
+In-Reply-To: <1332966285-30358-14-git-send-email-miklos@szeredi.hu>
+Message-ID: <Pine.LNX.4.64.1203282211360.9468@cobra.newdream.net>
+References: <1332966285-30358-1-git-send-email-miklos@szeredi.hu>
+ <1332966285-30358-14-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Douglas W Jones <jones@cs.uiowa.edu>,
-        Michal Nazarewicz <mnazarewicz@google.com>
-Subject: Re: [PATCH 0/1] vsprintf: optimize decimal conversion (again)
-References: <201203262047.17865.vda.linux@googlemail.com> <201203281213.07856.vda.linux@googlemail.com> <4F72E893.9070502@gmail.com> <201203281323.18194.vda.linux@googlemail.com>
-In-Reply-To: <201203281323.18194.vda.linux@googlemail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.03.28 14:23, Denys Vlasenko wrote:
-> It looks ok - it is a bit faster that original code;
-> but I expect algorithm #2 will do better.
->
-> BTW, please always run test of original code too when you measure speed,
-> and post both results.
+Hi Miklos,
 
-And the test results are:
+I was pleasantly surprised to find that this works as-is.  I simplified 
+this to call ceph_lookup_open for the atomic O_CREAT case as well, and it 
+passes my basic battery of tests.  An incremental patch is below.
 
-./test_new-org-with-noinline_for_stack
-Conversions per second: 8:5188000 123:4340000 123456:3536000 12345678:3164000 
-123456789:2036000 2^32:2032000 2^64:1544000
-Conversions per second: 8:5016000 123:4320000 123456:3536000 12345678:3272000 
-123456789:2032000 2^32:1964000 2^64:1540000
-Conversions per second: 8:5192000 123:4336000 123456:3420000 12345678:3268000 
-123456789:2036000 2^32:2032000 2^64:1544000
-Conversions per second: 8:5164000 123:4336000 123456:3536000 12345678:3272000 
-123456789:1968000 2^32:2032000 2^64:1544000
-Tested 524288                               ^C
+I haven't looked closely at the vfs bits, but from an fs perspective this 
+series looks good to me!
 
-# ./test_new-org-with-noinline_for_stack_if-LONG_MAX_header_arm
-Conversions per second: 8:5020000 123:4332000 123456:3536000 12345678:3272000 
-123456789:2828000 2^32:2260000 2^64:1536000
-Conversions per second: 8:5192000 123:4332000 123456:3416000 12345678:3252000 
-123456789:2828000 2^32:2336000 2^64:1540000
-Conversions per second: 8:5172000 123:4336000 123456:3540000 12345678:3272000 
-123456789:2736000 2^32:2336000 2^64:1536000
-Conversions per second: 8:5192000 123:4192000 123456:3520000 12345678:3276000 
-123456789:2828000 2^32:2340000 2^64:1484000
-Tested 524288                               ^C
+Thanks-
+sage
 
 
-roma1390
+
+
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index 75df600..9d679dd 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -642,37 +642,17 @@ struct file *ceph_atomic_open(struct inode *dir, struct dentry *dentry,
+        struct dentry *res = NULL;
+        struct file *filp;
+ 
+-       if (!(flags & O_CREAT)) {
+-               if (dentry->d_name.len > NAME_MAX)
+-                       return ERR_PTR(-ENAMETOOLONG);
+-
+-               err = ceph_init_dentry(dentry);
+-               if (err < 0)
+-                       return ERR_PTR(err);
+-
+-               return ceph_lookup_open(dir, dentry, od, flags, mode);
+-       }
+-
+-       if (d_unhashed(dentry)) {
+-               res = ceph_lookup(dir, dentry, NULL);
+-               if (IS_ERR(res))
+-                       return ERR_CAST(res);
+-
+-               if (res)
+-                       dentry = res;
+-       }
++       dout("atomic_open %p dentry %p '%.*s'\n",
++            dir, dentry, dentry->d_name.len, dentry->d_name.name);
+ 
+-       /* We don't deal with positive dentries here */
+-       if (dentry->d_inode) {
+-               finish_no_open(od, res);
+-               return NULL;
+-       }
++       if (dentry->d_name.len > NAME_MAX)
++               return ERR_PTR(-ENAMETOOLONG);
+ 
+-       *created = true;
+-       filp = ceph_lookup_open(dir, dentry, od, flags, mode);
+-       dput(res);
++       err = ceph_init_dentry(dentry);
++       if (err < 0)
++               return ERR_PTR(err);
+ 
+-       return filp;
++       return ceph_lookup_open(dir, dentry, od, flags, mode);
+ }
+ 
+ /*
