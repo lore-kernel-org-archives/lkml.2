@@ -1,36 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab2C2DuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 23:50:19 -0400
-Received: from home.keithp.com ([63.227.221.253]:60690 "EHLO keithp.com"
+	id S1750798Ab2C2EB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 00:01:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47490 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab2C2Dtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 23:49:51 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: Re: [PATCH] Revert "Bluetooth: Always enable management interface"
-In-Reply-To: <20120329022839.GA26111@joana>
-References: <1332983958-2734-1-git-send-email-keithp@keithp.com> <20120329022839.GA26111@joana>
-User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 28 Mar 2012 20:48:21 -0700
-Message-ID: <86d37w9iey.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1750712Ab2C2EBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 00:01:48 -0400
+Message-ID: <1332993706.3010.3.camel@pasglop>
+Subject: Re: [PATCH] mm/memblock.c: Correctly check whether to trim a block
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: linux-mm@kvack.org, yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Date: Thu, 29 Mar 2012 15:01:46 +1100
+In-Reply-To: <1332987958-10766-1-git-send-email-lauraa@codeaurora.org>
+References: <1332987958-10766-1-git-send-email-lauraa@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<#part sign=pgpmime>
-On Wed, 28 Mar 2012 23:28:39 -0300, Gustavo Padovan <gustavo@padovan.org> wrote:
-
-> $ bluetoothd -P mgmtops
+On Wed, 2012-03-28 at 19:25 -0700, Laura Abbott wrote:
+> Currently in __memblock_remove, the check to trim the top of
+> a block off only checks if the requested base is less than the
+> memblock end. If the end of the requested region is equal to
+> the start of a memblock, this will incorrectly try to remove
+> the block, possibly causing an integer underflow:
 > 
-> Then your bluetooth will be back.
+>    ---------------------------------------
+>    |                    |                |
+>    |                    |                |
+>   base              end = rgn->base    rend
+> 
+> An additional check is needed to see if the end of the requested
+> region is greater than the memblock region:
 
-Indeed. Please fix the kernel so that existing user space works again.
+__memblock_remove() open coded logic is gone now, re-implemented
+in term of memblock_isolate_range()... though I suppose your
+patch might have value in -stable...
 
--- 
-keith.packard@intel.com
+Cheers,
+Ben.
+
+
+>    ----------------------
+>    |                     |
+>    |                     |
+>   rgn->base    base     rend      end
+>                 |                  |
+>                 |                  |
+>                 --------------------
+> 
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> ---
+>  mm/memblock.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 5338237..e174ee0 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -459,7 +459,7 @@ static long __init_memblock __memblock_remove(struct memblock_type *type,
+>  		}
+>  
+>  		/* And check if we need to trim the top of a block */
+> -		if (base < rend)
+> +		if (base < rend && end > rend)
+>  			rgn->size -= rend - base;
+>  
+>  	}
+
+
