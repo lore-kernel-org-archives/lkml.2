@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610Ab2C2Pxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 11:53:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1441 "EHLO mx1.redhat.com"
+	id S1759524Ab2C2Pzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 11:55:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61634 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932608Ab2C2Pxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 11:53:30 -0400
-Date: Thu, 29 Mar 2012 11:53:24 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
-Message-ID: <20120329155323.GB2424@redhat.com>
-References: <1332943060-18374-1-git-send-email-hagen@jauu.net>
- <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
- <20120328162108.GB2381@redhat.com>
- <20120328195848.GA5331@hell>
- <20120329141653.GA2424@redhat.com>
- <20120329150541.GB3173@hell>
+	id S1759504Ab2C2Pzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 11:55:45 -0400
+Date: Thu, 29 Mar 2012 11:55:42 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: lockups shortly after booting in current git.
+Message-ID: <20120329155542.GA31285@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120329150541.GB3173@hell>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 05:05:41PM +0200, Hagen Paul Pfeifer wrote:
-> * Jason Baron | 2012-03-29 10:16:53 [-0400]:
-> 
-> >Right, for level triggered events, they all wait up. However, if you use
-> >edge triggered, ie add 'EPOLLET', then the event gets 'consumed' by the
-> >first thread that wakes up, and the subseqent waiters wouldn't get woken
-> >up. IE you'll get one wakeup.
-> 
-> I addressed level triggered, right - it match the model. But I don't wanted to
-> wake up every every thread anyway. I don't want to abandon level triggered
-> functioning.
-> 
-> Any objective against this flag?
-> 
+In v3.3-8839-gb5174fa I see some behaviour on my laptop
+that I haven't noticed on other machines.
+It boots up, I can log in, and start up a terminal, firefox, banshee
+and use the system, and all is good. Then if I lock the screen,
+walk away for a while and come back to it, the loadavg has sky-rocketed,
+and every process is hung. Trying to run any commands that perform disk io
+hang immediately.
 
-I was trying to better understand the use-case, since at least for the
-test case you posted, 'EPOLLET', already does what you want.
+There's a (truncated) sysrq-t output at http://codemonkey.org.uk/junk/process-trace.txt
 
-Also, the 'EPOLLEXCLUSIVE' flag in your patch addresses multiple threads
-blocking on *different* epoll fds. However, if multiple threads are
-blocked on a single epoll fd, they will all be woken even if 'EPOLLEXCLUSIVE'
-is set. Shouldn't 'EPOLLEXCLUSIVE' affect that case too?
+Top showed kworker was going nuts. Trying to run perf resulted in a black screen.
 
-Thanks,
+anyone have any ideas ?
 
--Jason
+	Dave
+
