@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759324Ab2C2NkC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 09:40:02 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:32217 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758421Ab2C2Nj4 (ORCPT
+	id S1759251Ab2C2NtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 09:49:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36062 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab2C2NtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 09:39:56 -0400
-Message-ID: <4F74662A.7040704@tilera.com>
-Date: Thu, 29 Mar 2012 09:39:54 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Thu, 29 Mar 2012 09:49:08 -0400
+Date: Thu, 29 Mar 2012 06:48:53 -0700
+From: "tip-bot for Liu, Chuansheng" <chuansheng.liu@intel.com>
+Message-ID: <tip-99dd5497e5be4fe4194cad181d45fd6569a930db@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yanmin_zhang@linux.intel.com, tglx@linutronix.de,
+        chuansheng.liu@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yanmin_zhang@linux.intel.com, tglx@linutronix.de,
+        chuansheng.liu@intel.com
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A05DFB3@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A05DFB3@SHSMSX101.ccr.corp.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86:
+  Preserve lazy irq disable semantics in fixup_irqs()
+Git-Commit-ID: 99dd5497e5be4fe4194cad181d45fd6569a930db
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: <mingo@kernel.org>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <satyam@infradead.org>, <peterz@infradead.org>, <cmetcalf@tilera.com>,
-        <tglx@linutronix.de>, <sboyd@codeaurora.org>
-CC: <linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/urgent] sched: Fix __schedule_bug() output when called
- from an interrupt
-References: <1332979847-27102-1-git-send-email-sboyd@codeaurora.org> <tip-6135fc1eb4b1c9ae5f535507ed59591bab51e630@git.kernel.org>
-In-Reply-To: <tip-6135fc1eb4b1c9ae5f535507ed59591bab51e630@git.kernel.org>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Mar 2012 06:48:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/29/2012 3:16 AM, tip-bot for Stephen Boyd wrote:
-> Commit-ID:  6135fc1eb4b1c9ae5f535507ed59591bab51e630
-> Gitweb:     http://git.kernel.org/tip/6135fc1eb4b1c9ae5f535507ed59591bab51e630
-> Author:     Stephen Boyd <sboyd@codeaurora.org>
-> AuthorDate: Wed, 28 Mar 2012 17:10:47 -0700
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 29 Mar 2012 08:34:45 +0200
->
-> sched: Fix __schedule_bug() output when called from an interrupt
->
-> If schedule is called from an interrupt handler __schedule_bug()
-> will call show_regs() with the registers saved during the
-> interrupt handling done in do_IRQ(). This means we'll see the
-> registers and the backtrace for the process that was interrupted
-> and not the full backtrace explaining who called schedule().
->
-> This is due to 838225b ("sched: use show_regs() to improve
-> __schedule_bug() output", 2007-10-24) which improperly assumed
-> that get_irq_regs() would return the registers for the current
-> stack because it is being called from within an interrupt
-> handler. Simply remove the show_reg() code so that we dump a
-> backtrace for the interrupt handler that called schedule().
->
-> [ I ran across this when I was presented with a scheduling while
->   atomic log with a stacktrace pointing at spin_unlock_irqrestore().
->   It made no sense and I had to guess what interrupt handler could
->   be called and poke around for someone calling schedule() in an
->   interrupt handler. A simple test of putting an msleep() in
->   an interrupt handler works better with this patch because you
->   can actually see the msleep() call in the backtrace. ]
->
-> Also-reported-by: Chris Metcalf <cmetcalf@tilera.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Satyam Sharma <satyam@infradead.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/1332979847-27102-1-git-send-email-sboyd@codeaurora.org
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Commit-ID:  99dd5497e5be4fe4194cad181d45fd6569a930db
+Gitweb:     http://git.kernel.org/tip/99dd5497e5be4fe4194cad181d45fd6569a930db
+Author:     Liu, Chuansheng <chuansheng.liu@intel.com>
+AuthorDate: Mon, 26 Mar 2012 07:11:50 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 29 Mar 2012 15:28:47 +0200
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+x86: Preserve lazy irq disable semantics in fixup_irqs()
 
-We have been using this same exact patch internally for a while now, and by
-a curious fluke of timing, I sent email to Ingo and to Satyam Sharma
-pointing out that we really should re-look at the original change just
-yesterday :-)
+The default irq_disable() sematics are to mark the interrupt disabled,
+but keep it unmasked. If the interrupt is delivered while marked
+disabled, the low level interrupt handler masks it and marks it
+pending. This is important for detecting wakeup interrupts during
+suspend and for edge type interrupts to avoid losing interrupts.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+fixup_irqs() moves the interrupts away from an offlined cpu. For
+certain interrupt types it needs to mask the interrupt line before
+changing the affinity. After affinity has changed the interrupt line
+is unmasked again, but only if it is not marked disabled.
 
+This breaks the lazy irq disable semantics and causes problems in
+suspend as the interrupt can be lost or wakeup functionality is
+broken.
+
+Check irqd_irq_masked() instead of irqd_irq_disabled() because
+irqd_irq_masked() is only set, when the core code actually masked the
+interrupt line. If it's not set, we unmask the interrupt and let the
+lazy irq disable logic deal with an eventually incoming interrupt.
+
+[ tglx: Massaged changelog and added a comment ]
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Link: http://lkml.kernel.org/r/27240C0AC20F114CBF8149A2696CBE4A05DFB3@SHSMSX101.ccr.corp.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/irq.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 7943e0c..3dafc60 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -282,8 +282,13 @@ void fixup_irqs(void)
+ 		else if (!(warned++))
+ 			set_affinity = 0;
+ 
++		/*
++		 * We unmask if the irq was not marked masked by the
++		 * core code. That respects the lazy irq disable
++		 * behaviour.
++		 */
+ 		if (!irqd_can_move_in_process_context(data) &&
+-		    !irqd_irq_disabled(data) && chip->irq_unmask)
++		    !irqd_irq_masked(data) && chip->irq_unmask)
+ 			chip->irq_unmask(data);
+ 
+ 		raw_spin_unlock(&desc->lock);
