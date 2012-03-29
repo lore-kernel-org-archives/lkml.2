@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759752Ab2C2SAu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 14:00:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab2C2SAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 14:00:43 -0400
-Message-ID: <4F74A344.7070805@redhat.com>
-Date: Thu, 29 Mar 2012 14:00:36 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
+	id S933650Ab2C2SEr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 14:04:47 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41443 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933228Ab2C2SEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 14:04:37 -0400
+Message-ID: <4F74A405.2040609@linux.vnet.ibm.com>
+Date: Thu, 29 Mar 2012 23:33:49 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
-Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if
- task is already on a correct node
-References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home> <4F6B7854.1040203@redhat.com> <alpine.DEB.2.00.1203221421570.25011@router.home>
-In-Reply-To: <alpine.DEB.2.00.1203221421570.25011@router.home>
-Content-Type: multipart/mixed;
- boundary="------------000106060008000500010905"
+To: Avi Kivity <avi@redhat.com>
+CC: Alan Meadows <alan.meadows@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com> <4F73568D.7000703@linux.vnet.ibm.com> <4F743247.5080407@redhat.com>
+In-Reply-To: <4F743247.5080407@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12032918-2000-0000-0000-000006F5F531
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000106060008000500010905
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-On 03/22/2012 03:30 PM, Christoph Lameter wrote:
-> On Thu, 22 Mar 2012, Larry Woodman wrote:
+On 03/29/2012 03:28 PM, Avi Kivity wrote:
+> On 03/28/2012 08:21 PM, Raghavendra K T wrote:
+>>
+>>>
+>>>
+>>>          Looks like a good baseline on which to build the KVM
+>>>          implementation.  We
+>>>          might need some handshake to prevent interference on the host
+>>>          side with
+>>>          the PLE code.
+>>>
+>>
+>> I think I still missed some point in Avi's comment. I agree that PLE
+>> may be interfering with above patches (resulting in less performance
+>> advantages). but we have not seen performance degradation with the
+>> patches in earlier benchmarks. [ theoretically since patch has very
+>> slight advantage over PLE that atleast it knows who should run next ].
 >
->>> Application may manage their locality given a range of nodes and each of
->>> the x .. x+n nodes has their particular purpose.
->> So to be clear on this, in that case the intention would be move 3 to 4, 4 to
->> 5 and 5 to 6
->> to keep the node ordering the same?
-> Yup. Have a look at do_migrate_pages and the descrition in the comment by
-> there by Paul Jackson.
+> The advantage grows with the vcpu counts and overcommit ratio.  If you
+> have N vcpus and M:1 overcommit, PLE has to guess from N/M queued vcpus
+> while your patch knows who to wake up.
 >
+
+Yes. I agree.
+
+>>
+>> So TODO in my list on this is:
+>> 1. More analysis of performance on PLE mc.
+>> 2. Seeing how to implement handshake to increase performance (if PLE +
+>> patch combination have slight negative effect).
 >
-Christoph and others what do you think about this???
+> I can think of two options:
 
+I really like below ideas. Thanks for that!.
 
+> - from the PLE handler, don't wake up a vcpu that is sleeping because it
+> is waiting for a kick
 
---------------000106060008000500010905
-Content-Type: text/plain;
- name="upstream-do_migrate_pages.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="upstream-do_migrate_pages.patch"
+How about, adding another pass in the beginning of  kvm_vcpu_on_spin()
+to check if any vcpu is already kicked. This would almost result in 
+yield_to(kicked_vcpu). IMO this is also worth trying.
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 47296fe..6c189fa 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1012,6 +1012,16 @@ int do_migrate_pages(struct mm_struct *mm,
- 		int dest = 0;
- 
- 		for_each_node_mask(s, tmp) {
-+
-+			/* IFF there is an equal number of source and
-+			 * destination nodes, maintain relative node distance
-+			 * even when source and destination nodes overlap.
-+			 * However, when the node weight is unequal, never move
-+			 * memory out of any destination nodes */
-+			if ((nodes_weight(*from_nodes) != nodes_weight(*to_nodes)) && 
-+						(node_isset(s, *to_nodes)))
-+				continue;
-+
- 			d = node_remap(s, *from_nodes, *to_nodes);
- 			if (s == d)
- 				continue;
+will try above ideas soon.
 
---------------000106060008000500010905--
+> - look at other sources of pause loops (I guess smp_call_function() is
+> the significant source) and adjust them to use the same mechanism, and
+> ask the host to disable PLE exiting.
+>
+> This can be done incrementally later.
+>
+
+Yes.. this can wait a bit.
+
