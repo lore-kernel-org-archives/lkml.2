@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934023Ab2C2VuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:50:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11534 "EHLO mx1.redhat.com"
+	id S1760133Ab2C2VxD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:53:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933292Ab2C2VuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:50:06 -0400
-Date: Thu, 29 Mar 2012 17:49:59 -0400
+	id S1759397Ab2C2Vw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 17:52:59 -0400
+Date: Thu, 29 Mar 2012 17:52:54 -0400
 From: Dave Jones <davej@redhat.com>
 To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
         Wu Fengguang <fengguang.wu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: lockups shortly after booting in current git.
-Message-ID: <20120329214959.GA20783@redhat.com>
+Message-ID: <20120329215254.GB20783@redhat.com>
 Mail-Followup-To: Dave Jones <davej@redhat.com>, Ted Ts'o <tytso@mit.edu>,
 	Linus Torvalds <torvalds@linux-foundation.org>,
 	Wu Fengguang <fengguang.wu@intel.com>,
@@ -37,18 +37,13 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Mar 29, 2012 at 02:45:10PM -0700, Ted Ts'o wrote:
-
+ > On Thu, Mar 29, 2012 at 05:12:44PM -0400, Dave Jones wrote:
+ > > 
  > > I'll try a build with just that reverted, given the bisect build is taking a while.
+ > > 
 
-up 30 minutes with that reverted, no problems so far..
-
- > But actually, normally when it's a PageWriteback stall, usually you
- > get a soft lockup warning, assuming that was compiled into the system.
- > And I didn't see that in your trace, which is surprising given the
- > symptoms you described.  Was it perhaps not included in your log file
- > snippet?  Or was soft lockup detection not enabled?
-
-Enabled, didn't trigger.
+Just in case it gives additional clues.. The partition I'm doing builds on
+which suffers the hangs is on a luks backed device.
 
 	Dave
 
