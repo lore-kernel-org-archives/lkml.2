@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab2C2VPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:15:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33815 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933930Ab2C2VNA (ORCPT
+	id S933972Ab2C2VPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:15:36 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44641 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933934Ab2C2VPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:13:00 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
-Subject: [PATCH 06/17] hwmon: mark const init data with __initconst instead of __initdata
-Date: Thu, 29 Mar 2012 23:12:23 +0200
-Message-Id: <1333055554-31300-6-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <20120329211131.GA31250@pengutronix.de>
-References: <20120329211131.GA31250@pengutronix.de>
+	Thu, 29 Mar 2012 17:15:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1333008684.3010.9.camel@pasglop>
+References: <5599.1332958811@redhat.com> <30702.1332989444@neuling.org>
+ <20120329135555.06593144b65bf81cc9191f8a@canb.auug.org.au>
+ <20120329151544.ef2117821dfb459e8b52af48@canb.auug.org.au>
+ <CA+55aFzn=bsH76hPDUgS-FBP=RVu51gwmRdqjkw5RJO=Q_cRfA@mail.gmail.com>
+ <20120329154238.1ce219f7c998da45452af4b2@canb.auug.org.au>
+ <CA+55aFzjQ7qb=bPAj_gGoGLPXOGweTaqtmOBZH4mUt8E_KQwsg@mail.gmail.com> <1333008684.3010.9.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 29 Mar 2012 15:14:42 -0600
+X-Google-Sender-Auth: dC0FB3gzPRll2vlIixvziIzfaUI
+Message-ID: <CACxGe6v+nMMuEM+bBMdYf_OeuaXb+NsS0qz-+puRtdzHLPH2hA@mail.gmail.com>
+Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-arch@vger.kernel.org,
+        Michael Neuling <mikey@neuling.org>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        paul.gortmaker@windriver.com, hpa@zytor.com, akpm@linux-foundation.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As long as there is no other non-const variable marked __initdata in the
-same compilation unit it doesn't hurt. If there were one however
-compilation would fail with
+On Thu, Mar 29, 2012 at 2:11 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Wed, 2012-03-28 at 22:02 -0700, Linus Torvalds wrote:
+>> On Wed, Mar 28, 2012 at 9:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >
+>> > How about this (build tested on powerpc allyesconfig):
+>>
+>> Looks better.
+>>
+>> Grant - what's the plan about that CONFIG_VIRQ_DEBUG thing? In theory
+>> something like it could be useful as a generic thing, but at least
+>> right now it is clearly powerpc-specific (not just that the config
+>> option only exists for powerpc: it has that whole
+>> 'powerpc_debugfs_root' thing in it)?
+>>
+>> Stephen's patch very much looks like the right thing, but if there was
+>> some plan to actually make this generic ...
+>
+> Yes, as I said earlier I think Grant should make it generic, there's
+> no reason to keep that powerpc specific, it's fairly useful and nothing
+> in userspace relies on the existing location of the debugfs file that I
+> know about.
+>
+> Another option is to put the mapping information in /proc/interrupts but
+> worry that changing anything in there (like adding a column) will break
+> countless userspace tools.
 
-	error: $variablename causes a section type conflict
+I posted an RFC patch that does exactly that, but I'm similarly
+nervous for the same reason:
 
-because a section containing const variables is marked read only and so
-cannot contain non-const variables.
+http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg56368.html
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: lm-sensors@lm-sensors.org
----
- drivers/hwmon/w83627ehf.c |   18 +++++++++---------
- drivers/hwmon/w83627hf.c  |    2 +-
- 2 files changed, 10 insertions(+), 10 deletions(-)
+The rightmost fields of /proc/interrupts are a weird set of
+conditional outputs that don't really have any parsable formatting to
+them.  It may be safe to apply my patch because it adds another field
+in the middle of a section of conditional outputs* anyway so tools
+already won't know what those fields mean.  But, regardless, I'm not
+going to take responsibility for applying that patch unless encouraged
+by several other maintainers to do so.
 
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index a25350c..54922ed 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -2619,15 +2619,15 @@ static struct platform_driver w83627ehf_driver = {
- static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 				 struct w83627ehf_sio_data *sio_data)
- {
--	static const char __initdata sio_name_W83627EHF[] = "W83627EHF";
--	static const char __initdata sio_name_W83627EHG[] = "W83627EHG";
--	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
--	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
--	static const char __initdata sio_name_W83627UHG[] = "W83627UHG";
--	static const char __initdata sio_name_W83667HG[] = "W83667HG";
--	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
--	static const char __initdata sio_name_NCT6775[] = "NCT6775F";
--	static const char __initdata sio_name_NCT6776[] = "NCT6776F";
-+	static const char sio_name_W83627EHF[] __initconst = "W83627EHF";
-+	static const char sio_name_W83627EHG[] __initconst = "W83627EHG";
-+	static const char sio_name_W83627DHG[] __initconst = "W83627DHG";
-+	static const char sio_name_W83627DHG_P[] __initconst = "W83627DHG-P";
-+	static const char sio_name_W83627UHG[] __initconst = "W83627UHG";
-+	static const char sio_name_W83667HG[] __initconst = "W83667HG";
-+	static const char sio_name_W83667HG_B[] __initconst = "W83667HG-B";
-+	static const char sio_name_NCT6775[] __initconst = "NCT6775F";
-+	static const char sio_name_NCT6776[] __initconst = "NCT6776F";
- 
- 	u16 val;
- 	const char *sio_name;
-diff --git a/drivers/hwmon/w83627hf.c b/drivers/hwmon/w83627hf.c
-index 5ce54a2..aaf67ff 100644
---- a/drivers/hwmon/w83627hf.c
-+++ b/drivers/hwmon/w83627hf.c
-@@ -1206,7 +1206,7 @@ static int __init w83627hf_find(int sioaddr, unsigned short *addr,
- 	int err = -ENODEV;
- 	u16 val;
- 
--	static const __initdata char *names[] = {
-+	static const char *names[] __initconst = {
- 		"W83627HF",
- 		"W83627THF",
- 		"W83697HF",
--- 
-1.7.9.1
+*It's added to the middle instead of the end purely for aesthetic
+reasons.  The rightmost field is a freeform string without a field
+width, so if put at the end they would never line up.  Suggestions for
+a better layout are welcome.
 
+g.
