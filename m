@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab2C2NCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 09:02:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20658 "EHLO mx1.redhat.com"
+	id S1758465Ab2C2NHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 09:07:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7638 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab2C2NCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 09:02:06 -0400
-Date: Thu, 29 Mar 2012 09:01:55 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: "Andrei E. Warkentin" <andrey.warkentin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        jason.wessel@windriver.com
-Subject: Re: [PATCH] x86 NMI: Be smarter about invoking panic() inside NMI
- handler.
-Message-ID: <20120329130155.GJ18218@redhat.com>
-References: <1330588483-30957-1-git-send-email-andrey.warkentin@gmail.com>
- <CANz0V+5ayWh3-xR1i4nCqTGF+6x+f7mOeokEhCCXhvG3a3pFhw@mail.gmail.com>
- <20120327160601.GA19273@redhat.com>
- <CANz0V+7J=gN1_cH2jCnCSdQ=TnL9=2+S+6orBPPep=-tFN4p0A@mail.gmail.com>
+	id S1751741Ab2C2NHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 09:07:43 -0400
+Message-ID: <4F745E7D.5080102@redhat.com>
+Date: Thu, 29 Mar 2012 15:07:09 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANz0V+7J=gN1_cH2jCnCSdQ=TnL9=2+S+6orBPPep=-tFN4p0A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 04/13] KVM: MMU: introduce FNAME(get_sp_gpa)
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F7429E7.3010801@linux.vnet.ibm.com>
+In-Reply-To: <4F7429E7.3010801@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 03:19:56AM -0400, Andrei E. Warkentin wrote:
-> Hi Don,
-> 
-> Thank you for your feedback!
-> 
-> 2012/3/27 Don Zickus <dzickus@redhat.com>:
-> >
-> > Hmm, if try_panic fails, then the cpu continues on executing code.  This
-> > might further corrupt an already broken system.  So I don't think this
-> > patch will work as is.
-> >
-> 
-> I see what you are saying. I could make the argument that this kind
-> of system corruption could occur anyway even if you did panic inside
-> an IRQ context instead, but I would tend to agree that your proposed
-> solution is much better than adding another panic interface.
-> 
-> > Perhaps instead of panic'ing in the NMI context, we use irq_work and panic
-> > in an interrupt context instead.  We still get the system to stop (though
-> > it might still execute some interrupts) and it will be out of the NMI
-> > context.
-> >
-> > However, you will still run into a similar problem when in the
-> > panic/reboot case we shutdown all the remote cpus and have them sitting in
-> > a similar cpu_relax loop in the NMI context, while the panic'ing cpu
-> > cleans things up.
-> >
-> 
-> Sorry, could you clarify what you mean? How does this affect KDB usage?
+On 03/29/2012 11:22 AM, Xiao Guangrong wrote:
+> It can calculate the base gpa of the specified shadow page on any level,
+> let it instead of FNAME(get_level1_sp_gpa)
+>
+>
+> +static gpa_t FNAME(get_sp_gpa)(struct kvm_mmu_page *sp)
+> +{
 
-I figured it would affect it the same way you described in your panic
-scenario.  The machine panics and you are trying to break in with KDB.
-The above issue just says the other cpus could block KDB from stopping all
-the cpus much like your original issue.
+Maybe worth adding a pte index and calling it get_spte_gpa(), depends on
+the next patches I guess.
 
-But I will admit I didn't fully understand the original problem you were
-trying to solve.
+> +	int offset, shift;
+> +
+> +	shift = PAGE_SHIFT - (PT_LEVEL_BITS - PT64_LEVEL_BITS) * sp->role.level;
+> +	offset = sp->role.quadrant << shift;
 
-Cheers,
-Don
+if you add '& ~PAGE_MASK' the compiler may be smart enough to drop the
+whole thing for 64-bit ptes.
 
-> 
-> A
+> +
+> +	return gfn_to_gpa(sp->gfn) + offset;
+> +}
+> +
+>  /*
+>   * Page fault handler.  There are several causes for a page fault:
+>   *   - there is no shadow pte for the guest pte
+> @@ -659,18 +669,6 @@ out_unlock:
+>  	return 0;
+>
+
+-- 
+error compiling committee.c: too many arguments to function
+
