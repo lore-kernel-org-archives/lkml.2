@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759963Ab2C2S1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 14:27:42 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63699 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759221Ab2C2S1g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 14:27:36 -0400
+	id S1759978Ab2C2S3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 14:29:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38792 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758064Ab2C2S27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 14:28:59 -0400
+Message-ID: <4F74A9D8.1040808@zytor.com>
+Date: Thu, 29 Mar 2012 11:28:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJPx4ROsyn3TDwpjAD0r150rDf54Y5heyVEHjShgXcT9g@mail.gmail.com>
-References: <20120323233212.GA18484@www.outflux.net>
-	<4F6F6839.6020605@schaufler-ca.com>
-	<CAGXu5jJB8nD1LJSJSDx2CF_j_-uLKOmq++2OHBVvXhvao37EeQ@mail.gmail.com>
-	<4F70A067.9070907@schaufler-ca.com>
-	<CAGXu5jJPx4ROsyn3TDwpjAD0r150rDf54Y5heyVEHjShgXcT9g@mail.gmail.com>
-Date: Thu, 29 Mar 2012 11:27:35 -0700
-X-Google-Sender-Auth: psGTXpMGc8cGqGLANSPxuiaKeuA
-Message-ID: <CAGXu5jLv1kRjYt1OuiSo1so2DFchVz++ug-x8mBgVJfcizYcsA@mail.gmail.com>
-Subject: Re: [PATCH] audit: always report seccomp violations
-From: Kees Cook <keescook@chromium.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Borislav Petkov <bp@alien8.de>, Matt Fleming <matt.fleming@intel.com>,
+        Trevor Turner <turn3r.tr3v0r@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: K7/Athlon Optimization Causes Build Fail on Kernel 3.3 i686
+References: <CANYHJ6jjuO7yV_kbPsnJ6X+KXrsz2PRPPXHN4Rkr-vgoSG-E4A@mail.gmail.com> <20120328111957.GA6765@x1.osrc.amd.com> <CANYHJ6j6cxz47TGk8kdU58eau17Fi1K=fH2icmd=v19VjNggKw@mail.gmail.com> <20120328171059.GA7919@x1.osrc.amd.com> <4F7346BB.9020907@xenotime.net> <20120328172759.GC6765@x1.osrc.amd.com> <20120329074802.GA31955@liondog.tnic> <1333008855.4289.3.camel@mfleming-mobl1.ger.corp.intel.com> <20120329104822.GA17233@x1.osrc.amd.com>
+In-Reply-To: <20120329104822.GA17233@x1.osrc.amd.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 10:02 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Mar 26, 2012 at 9:59 AM, Casey Schaufler <casey@schaufler-ca.com> wrote:
->> On 3/26/2012 8:56 AM, Kees Cook wrote:
->>> On Sun, Mar 25, 2012 at 11:47 AM, Casey Schaufler
->>> <casey@schaufler-ca.com> wrote:
->>>> On 3/23/2012 4:32 PM, Kees Cook wrote:
->>>>> When a program violates its own seccomp rules, that is a pretty dire
->>>>> situation, and the audit message should always be reported (not just
->>>>> when there is already a rule active for the process).
->>>> Hmm. If the program is never going to violate its own
->>>> seccomp rules it seems sort of silly to have them in the
->>>> first place, doesn't it? Oh, I know that the expectation
->>>> of seccomp is that the application would only try something
->>>> you've disallowed if it gets compromised. Problem is that
->>> Well, either compromised or doing something new (e.g. a library in the
->>> code has changed).
->>>
->>>> Modern Programmers tend to rely very heavily on the opaque
->>>> behavior of APIs that they don't understand nor particularly
->>>> care if they understand. When assumptions are made about the
->>>> behavior of the API code, and the API code changes, as
->>>> occurs with amazing frequency on today's mobile devices,
->>>> there are going to be surprises. I would wager that the
->>>> modern frequency of API changes will result in this behavior
->>>> being very unpopular.
->>> You seem to be advocating for my patch -- instead of the program
->>> "silently" getting killed, now there will be notification. A seccomp
->>> failure is extremely uncommon; much less common that core dumps. This
->>> is why it should always be reported -- it is uncommon and important to
->>> notice.
->>
->> Silence is golden. The situation that I am concerned with is one where
->> a library changes and a program preforms an action that results in a
->> violation. The application runtime environment notices the applications
->> demise and restarts it, resulting in a repeat of the violation.
->>
->> In a classic computer environment you would want the log filled with
->> notifications so that the user could do something about it. On a
->> phone, settop box, TV set or seatback entertainment system logging is
->> evil. No one who has any business seeing a log message has any desire
->> to see one. It does not matter how important the log message might be.
->>
->> It's getting harder and harder to have rational error handling at the
->> OS level as application environments move to higher levels and greater
->> abstraction. Because seccomp is an OS interface level facility there
->> are going to be many cases where it fails to align with the intent of
->> its highly abstracted users. When it does, the programmers are not
->> going to look at the OS level logs, they are going to look at the API
->> definitions and such.
->>
->> In the end I am opposed to any logging that can't be turned off. There
->> is enough difference in environments and expectations that you can't
->> say that something should always be reported. I am not saying that I
->> approve of this situation, but it is clear that most modern application
->> developers want to hear as little from the OS as possible. Even in
->> cases where they should be paying attention.
->
-> Handling logging output is up to the system owner. Already all
-> segfaults are reported to dmesg. Seccomp violation is a much less
-> common case, so I think the benefit outweighs the potential for
-> "clutter". If a system owner wants to ignore klog, they can go ahead
-> and do so. :)
+On 03/29/2012 03:48 AM, Borislav Petkov wrote:
+> On Thu, Mar 29, 2012 at 09:14:15AM +0100, Matt Fleming wrote:
+>> Hmm... I think what might make more sense is to make EFI (not EFI_STUB)
+>> depend on !MK7, since I doubt people actually need both MK7 and any EFI
+>> firmware support.
+> 
+> ... and EFI_STUB depends on EFI, yeah, true story.
+> 
+> Here's an updated patch, Trevor pls try this one instead, thanks.
+> 
 
-Eric, do you have thoughts on this? I'd really like to see seccomp
-failures regardless of audit daemon state.
+I like this one for urgent as a quick fix, but it doesn't solve the real
+problem which is that boot/compressed shouldn't pick up these macros at all.
 
--Kees
+It should be possible to build with MK7 (which is an optimization
+option) and EFI (a functionality option) since they don't inherently
+conflict.  It just doesn't necessarily have to happen *right now*.
+
+	-hpa
 
 -- 
-Kees Cook
-ChromeOS Security
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
