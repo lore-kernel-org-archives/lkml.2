@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759181Ab2C2Lvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 07:51:38 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47159 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab2C2Lvc (ORCPT
+	id S932690Ab2C2Lxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 07:53:42 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42482 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759078Ab2C2Lxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 07:51:32 -0400
-Message-ID: <4F744CBD.9000703@linux.vnet.ibm.com>
-Date: Thu, 29 Mar 2012 19:51:25 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 29 Mar 2012 07:53:35 -0400
+Message-ID: <4F744D3B.3030605@linaro.org>
+Date: Thu, 29 Mar 2012 12:53:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 02/13] KVM: MMU: abstract spte write-protect
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F742999.9080001@linux.vnet.ibm.com> <4F744350.1060007@redhat.com>
-In-Reply-To: <4F744350.1060007@redhat.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, lrg@ti.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Board breakage due to upstream patch
+References: <4F7430C7.6060505@linaro.org> <20120329110424.GD3668@opensource.wolfsonmicro.com>
+In-Reply-To: <20120329110424.GD3668@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12032901-0260-0000-0000-000000C60AF1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 07:11 PM, Avi Kivity wrote:
-
-
->> +/* Return true if the spte is dropped. */
->> +static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
->> +			       int *flush)
+On 29/03/12 12:04, Mark Brown wrote:
+> On Thu, Mar 29, 2012 at 10:52:07AM +0100, Lee Jones wrote:
 > 
-> bool *flush
+>> Your patch "regulator: Support driver probe deferral" (below) prevents my Snowball Development Board from booting.
 > 
-
-
-Okay, will fix.
-
->> +{
->> +	u64 spte = *sptep;
->> +
->> +	if (!is_writable_pte(spte))
->> +		return false;
->> +
->> +	*flush |= true;
->> +
->> +	if (large) {
->> +		pgprintk("rmap_write_protect(large): spte %p %llx\n",
->> +			 spte, *spte);
->> +		BUG_ON(!is_large_pte(spte));
->> +
->> +		drop_spte(kvm, sptep);
->> +		--kvm->stat.lpages;
->> +		return true;
->> +	}
+>> What's the correct thing to do?
 > 
-> As I mentioned before, write-protecting a large spte is a good idea,
-> since it moves some work from protect-time to fault-time, so it reduces
-> jitter.  This removes the need for the return value.
+> Provide a report with a little more detail on the problem:
 > 
-> It may also be a good idea to populate the lower level instead of
-> dropping the spte.
+>    http://www.chiark.greenend.org.uk/~sgtatham/bugs.html
 > 
-> All outside this patch set of course.  I'd add those ideas to the wiki
-> but it won't let me edit at the moment.
-> 
+> It's possible the patch I posted yesterday which fixes a deadlock in
+> error handling paths might help, though given that all we're doing is
+> changing the error code here I'd say regulator support on your your
+> board was broken anyway.  Given the lack of any detail in your report
+> I'm just guessing completely in the dark here.
 
+I haven't undertaken any debugging of the issue, as I don't have the
+time, nor do I have the knowledge to be able to tell you what might be
+happening as a result of the change.
 
-I saw your idea, i will pick it up after this patch if no one does it
-at that time. :)
+All I can tell you at this stage is that with your patch applied, my
+board doesn't boot past "Uncompressing Linux... done, booting the
+kernel..". Once reverted it boots again.
 
+I'll try to find some time to have a dig around, in order to provide you
+with some more useful information.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
