@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab2C2Ei5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 00:38:57 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:13112 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab2C2Eiw convert rfc822-to-8bit (ORCPT
+	id S1751775Ab2C2EkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 00:40:07 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:34522 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2C2EkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 00:38:52 -0400
-X-IronPort-AV: E=Sophos;i="4.75,335,1330934400"; 
-   d="scan'208";a="637082720"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
-Thread-Topic: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
-Thread-Index: AQHNDU+E6ZdFWqFeI0qI10V6oguVYJaA+9eAgAAAowCAAAM+AIAAAjSAgAANwwCAAAd4AIAABtYAgAADZACAAAUFAA==
-Date: Thu, 29 Mar 2012 04:38:44 +0000
-Message-ID: <3379B519-55A9-41F5-AFDA-EBB5BFF891B7@netapp.com>
-References: <1332986348.19172.43.camel@lade.trondhjem.org>
- <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>
- <1332986928.19172.45.camel@lade.trondhjem.org>
- <CA+55aFyQ0r5mN9=3DUVENCtdj8VMLRjiXTc5Xd4o+F=s9B8xMg@mail.gmail.com>
- <1332988097.19172.51.camel@lade.trondhjem.org>
- <4F73D44C.5090604@panasas.com>
- <CA+55aFyHmQBXw3ik3qv81_3Zp+4r-VUt_TNBs-M19b6Zt7PDeQ@mail.gmail.com>
- <1332994124.30608.5.camel@lade.trondhjem.org>
- <CA+55aFwxkWpH1WyBnE1Lg9eRAfPsfcyoZev7-O9TGrPKTB1pOg@mail.gmail.com>
-In-Reply-To: <CA+55aFwxkWpH1WyBnE1Lg9eRAfPsfcyoZev7-O9TGrPKTB1pOg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <3456F07CBFA3324EB62A2564E1EB7837@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Thu, 29 Mar 2012 00:40:03 -0400
+Date: Thu, 29 Mar 2012 00:39:50 -0400 (EDT)
+Message-Id: <20120329.003950.997517954860580620.davem@davemloft.net>
+To: marcel@holtmann.org
+Cc: keithp@keithp.com, gustavo@padovan.org, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, johan.hedberg@intel.com
+Subject: Re: [PATCH] Revert "Bluetooth: Always enable management interface"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1332992022.1870.183.camel@aeonflux>
+References: <20120329022839.GA26111@joana>
+	<86r4wct9q7.fsf@sumi.keithp.com>
+	<1332992022.1870.183.camel@aeonflux>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 28 Mar 2012 21:39:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Marcel Holtmann <marcel@holtmann.org>
+Date: Thu, 29 Mar 2012 05:33:42 +0200
 
-On Mar 29, 2012, at 12:20 AM, Linus Torvalds wrote:
+> I think we actually have a broken user space in this case. I do have a
+> hunch on what went wrong. It is not the kernel's fault here.
 
-> On Wed, Mar 28, 2012 at 9:08 PM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
->> 
->> Maybe I'm running an older version of git (Fedora 16 latest update), but
->> when I do
-> 
-> Yeah, you need git 1.7.9 to get the tag content support.
-> 
-> With older git versions, spell out "tags/xyz" instead of just "xyz",
-> and it will all work, but it still won't actually show the tag
-> content.
+I call bullshit.
 
-When I do the tags/nfs-for-3.4-1, it still gives me that ..BRANCH.NOT.VERIFIED.. crap in the pull message.
-Furthermore, it fails to actually push the tag to my upstream repository, meaning that I'm still prone to the 'Linus tried to pull, and the commit wasn't there" syndrome.
+It doesn't matter what userspace is doing, "broken" or however you
+want to call it.  The bluez on everyone's computer broke because of
+the kernel change.
 
-Could we perhaps set up a best practices webpage/wiki for this sort of thing with a pointer to that webpage in Documentations/SubmittingPatches? That way maintainers would have a source of information for which versions of 'git' that they need to use in order to provide you with the information that you want.
+Therefore you must revert the kernel change or modify it so that
+existing userland continues to work properly.
 
-Cheers
-  Trond
+There is no other proper course of action.
+
+And to think, I gave you bluetooth guys shit because of coding style
+problems, that appears to have been just the tip of the iceberg.
