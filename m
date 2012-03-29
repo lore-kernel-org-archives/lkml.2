@@ -1,817 +1,1314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936760Ab2C3XB2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:01:28 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
+	id S936724Ab2C3XBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:01:20 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41906 "EHLO
 	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934789Ab2C3VFR (ORCPT
+	with ESMTP id S934853Ab2C3VFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:17 -0400
-Message-Id: <201203302104.q2UL4w63006261@farm-0012.internal.tilera.com>
+	Fri, 30 Mar 2012 17:05:18 -0400
+Message-Id: <201203302104.q2UL4wL6006262@farm-0012.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 29 Mar 2012 13:39:51 -0400
-Subject: [PATCH] arch/tile: optimize get_user/put_user and friends
+Date: Thu, 29 Mar 2012 13:58:43 -0400
+Subject: [PATCH] arch/tile: Allow tilegx to build with either 16K or 64K page size
 In-Reply-To: <4F761E1C.80808.com>
 References: <4F761E1C.80808.com>
 To: Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Joe Perches <joe@perches.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Julia Lawall <julia@diku.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:04:58.0538 (UTC) FILETIME=[C3CD10A0:01CD0EB8]
+X-OriginalArrivalTime: 30 Mar 2012 21:05:03.0444 (UTC) FILETIME=[C6B9A940:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use direct load/store for the get_user/put_user.
+This change introduces new flags for the hv_install_context()
+API that passes a page table pointer to the hypervisor.  Clients
+can explicitly request 4K, 16K, or 64K small pages when they
+install a new context.  In practice, the page size is fixed at
+kernel compile time and the same size is always requested every
+time a new page table is installed.
 
-Previously, we would call out to a helper routine that would do the
-appropriate thing and then return, handling the possible exception
-internally.  Now we inline the load or store, along with a "we succeeded"
-indication in a register; if the load or store faults, we write a
-"we failed" indication into the same register and then return to the
-following instruction.  This is more efficient and gives us more compact
-code, as well as being more in line with what other architectures do.
+The <hv/hypervisor.h> header changes so that it provides more abstract
+macros for managing "page" things like PFNs and page tables.  For
+example there is now a HV_DEFAULT_PAGE_SIZE_SMALL instead of the old
+HV_PAGE_SIZE_SMALL.  The various PFN routines have been eliminated and
+only PA- or PTFN-based ones remain (since PTFNs are always expressed
+in fixed 2KB "page" size).  The page-table management macros are
+renamed with a leading underscore and take page-size arguments with
+the presumption that clients will use those macros in some single
+place to provide the "real" macros they will use themselves.
 
-The special futex assembly source file for TILE-Gx also disappears in
-this change; we just use the same inlining idiom there as well, putting
-the appropriate atomic operations directly into futex_atomic_op_inuser()
-(and thus into the FUTEX_WAIT function).
+I happened to notice the old hv_set_caching() API was totally broken
+(it assumed 4KB pages) so I changed it so it would nominally work
+correctly with other page sizes.
 
-The underlying atomic copy_from_user, copy_to_user functions were
-renamed using the (cryptic) x86 convention as copy_from_user_ll and
-copy_to_user_ll.
+Tag modules with the page size so you can't load a module built with
+a conflicting page size.  (And add a test for SMP while we're at it.)
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/include/asm/atomic_32.h |   10 ++
- arch/tile/include/asm/futex.h     |  143 ++++++++++++++++--------
- arch/tile/include/asm/uaccess.h   |  222 ++++++++++++++++++++++---------------
- arch/tile/kernel/Makefile         |    1 -
- arch/tile/lib/atomic_32.c         |   47 +--------
- arch/tile/lib/exports.c           |    8 --
- arch/tile/lib/usercopy_32.S       |   76 -------------
- arch/tile/lib/usercopy_64.S       |   49 --------
- 8 files changed, 241 insertions(+), 315 deletions(-)
+ arch/tile/Kconfig                    |   25 ++++
+ arch/tile/include/asm/Kbuild         |    1 -
+ arch/tile/include/asm/mmu.h          |    2 +-
+ arch/tile/include/asm/mmu_context.h  |    8 +-
+ arch/tile/include/asm/module.h       |   40 +++++++
+ arch/tile/include/asm/page.h         |   13 ++-
+ arch/tile/include/asm/pgalloc.h      |   92 +++++++++++----
+ arch/tile/include/asm/pgtable.h      |   10 +-
+ arch/tile/include/asm/pgtable_32.h   |   14 ++-
+ arch/tile/include/asm/pgtable_64.h   |   28 +++--
+ arch/tile/include/hv/drv_xgbe_intf.h |    2 +-
+ arch/tile/include/hv/hypervisor.h    |  214 +++++++++++++++++++---------------
+ arch/tile/kernel/head_32.S           |    8 +-
+ arch/tile/kernel/head_64.S           |   22 ++--
+ arch/tile/kernel/machine_kexec.c     |    7 +-
+ arch/tile/kernel/setup.c             |    8 +-
+ arch/tile/kernel/smp.c               |    2 +-
+ arch/tile/kernel/stack.c             |   13 +-
+ arch/tile/lib/memcpy_tile64.c        |    8 +-
+ arch/tile/mm/init.c                  |   11 +--
+ arch/tile/mm/pgtable.c               |   27 ++---
+ 21 files changed, 351 insertions(+), 204 deletions(-)
+ create mode 100644 arch/tile/include/asm/module.h
 
-diff --git a/arch/tile/include/asm/atomic_32.h b/arch/tile/include/asm/atomic_32.h
-index 004d6d9..d2a45e0 100644
---- a/arch/tile/include/asm/atomic_32.h
-+++ b/arch/tile/include/asm/atomic_32.h
-@@ -302,7 +302,14 @@ void __init_atomic_per_cpu(void);
- void __atomic_fault_unlock(int *lock_ptr);
- #endif
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 96033e2..d5f2e57 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -138,6 +138,31 @@ config NR_CPUS
+ 	  smaller kernel memory footprint results from using a smaller
+ 	  value on chips with fewer tiles.
  
-+/* Return a pointer to the lock for the given address. */
-+int *__atomic_hashed_lock(volatile void *v);
++if TILEGX
 +
- /* Private helper routines in lib/atomic_asm_32.S */
-+struct __get_user {
-+	unsigned long val;
-+	int err;
-+};
- extern struct __get_user __atomic_cmpxchg(volatile int *p,
- 					  int *lock, int o, int n);
- extern struct __get_user __atomic_xchg(volatile int *p, int *lock, int n);
-@@ -318,6 +325,9 @@ extern u64 __atomic64_xchg_add(volatile u64 *p, int *lock, u64 n);
- extern u64 __atomic64_xchg_add_unless(volatile u64 *p,
- 				      int *lock, u64 o, u64 n);
++choice
++	prompt "Kernel page size"
++	default PAGE_SIZE_64KB
++	help
++	  This lets you select the page size of the kernel.  For best
++	  performance on memory-intensive applications, a page size of 64KB
++	  is recommended.  For workloads involving many small files, many
++	  connections, etc., it may be better to select 16KB, which uses
++	  memory more efficiently at some cost in TLB performance.
++
++	  Note that this option is TILE-Gx specific; currently
++	  TILEPro page size is set by rebuilding the hypervisor.
++
++config PAGE_SIZE_16KB
++	bool "16KB"
++
++config PAGE_SIZE_64KB
++	bool "64KB"
++
++endchoice
++
++endif
++
+ source "kernel/time/Kconfig"
  
-+/* Return failure from the atomic wrappers. */
-+struct __get_user __atomic_bad_address(int __user *addr);
-+
- #endif /* !__ASSEMBLY__ */
+ source "kernel/Kconfig.hz"
+diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
+index 0bb4264..6b2e681 100644
+--- a/arch/tile/include/asm/Kbuild
++++ b/arch/tile/include/asm/Kbuild
+@@ -21,7 +21,6 @@ generic-y += ipcbuf.h
+ generic-y += irq_regs.h
+ generic-y += kdebug.h
+ generic-y += local.h
+-generic-y += module.h
+ generic-y += msgbuf.h
+ generic-y += mutex.h
+ generic-y += param.h
+diff --git a/arch/tile/include/asm/mmu.h b/arch/tile/include/asm/mmu.h
+index 92f94c7..e2c7890 100644
+--- a/arch/tile/include/asm/mmu.h
++++ b/arch/tile/include/asm/mmu.h
+@@ -21,7 +21,7 @@ struct mm_context {
+ 	 * Written under the mmap_sem semaphore; read without the
+ 	 * semaphore but atomically, but it is conservatively set.
+ 	 */
+-	unsigned int priority_cached;
++	unsigned long priority_cached;
+ };
  
- #endif /* _ASM_TILE_ATOMIC_32_H */
-diff --git a/arch/tile/include/asm/futex.h b/arch/tile/include/asm/futex.h
-index d03ec12..5909ac3 100644
---- a/arch/tile/include/asm/futex.h
-+++ b/arch/tile/include/asm/futex.h
-@@ -28,29 +28,81 @@
- #include <linux/futex.h>
- #include <linux/uaccess.h>
- #include <linux/errno.h>
-+#include <asm/atomic.h>
- 
--extern struct __get_user futex_set(u32 __user *v, int i);
--extern struct __get_user futex_add(u32 __user *v, int n);
--extern struct __get_user futex_or(u32 __user *v, int n);
--extern struct __get_user futex_andn(u32 __user *v, int n);
--extern struct __get_user futex_cmpxchg(u32 __user *v, int o, int n);
-+/*
-+ * Support macros for futex operations.  Do not use these macros directly.
-+ * They assume "ret", "val", "oparg", and "uaddr" in the lexical context.
-+ * __futex_cmpxchg() additionally assumes "oldval".
-+ */
-+
-+#ifdef __tilegx__
-+
-+#define __futex_asm(OP) \
-+	asm("1: {" #OP " %1, %3, %4; movei %0, 0 }\n"		\
-+	    ".pushsection .fixup,\"ax\"\n"			\
-+	    "0: { movei %0, %5; j 9f }\n"			\
-+	    ".section __ex_table,\"a\"\n"			\
-+	    ".quad 1b, 0b\n"					\
-+	    ".popsection\n"					\
-+	    "9:"						\
-+	    : "=r" (ret), "=r" (val), "+m" (*(uaddr))		\
-+	    : "r" (uaddr), "r" (oparg), "i" (-EFAULT))
-+
-+#define __futex_set() __futex_asm(exch4)
-+#define __futex_add() __futex_asm(fetchadd4)
-+#define __futex_or() __futex_asm(fetchor4)
-+#define __futex_andn() ({ oparg = ~oparg; __futex_asm(fetchand4); })
-+#define __futex_cmpxchg() \
-+	({ __insn_mtspr(SPR_CMPEXCH_VALUE, oldval); __futex_asm(cmpexch4); })
-+
-+#define __futex_xor()						\
-+	({							\
-+		u32 oldval, n = oparg;				\
-+		if ((ret = __get_user(oldval, uaddr)) == 0) {	\
-+			do {					\
-+				oparg = oldval ^ n;		\
-+				__futex_cmpxchg();		\
-+			} while (ret == 0 && oldval != val);	\
-+		}						\
-+	})
-+
-+/* No need to prefetch, since the atomic ops go to the home cache anyway. */
-+#define __futex_prolog()
- 
--#ifndef __tilegx__
--extern struct __get_user futex_xor(u32 __user *v, int n);
- #else
--static inline struct __get_user futex_xor(u32 __user *uaddr, int n)
--{
--	struct __get_user asm_ret = __get_user_4(uaddr);
--	if (!asm_ret.err) {
--		int oldval, newval;
--		do {
--			oldval = asm_ret.val;
--			newval = oldval ^ n;
--			asm_ret = futex_cmpxchg(uaddr, oldval, newval);
--		} while (asm_ret.err == 0 && oldval != asm_ret.val);
-+
-+#define __futex_call(FN)						\
-+	{								\
-+		struct __get_user gu = FN((u32 __force *)uaddr, lock, oparg); \
-+		val = gu.val;						\
-+		ret = gu.err;						\
- 	}
--	return asm_ret;
--}
-+
-+#define __futex_set() __futex_call(__atomic_xchg)
-+#define __futex_add() __futex_call(__atomic_xchg_add)
-+#define __futex_or() __futex_call(__atomic_or)
-+#define __futex_andn() __futex_call(__atomic_andn)
-+#define __futex_xor() __futex_call(__atomic_xor)
-+
-+#define __futex_cmpxchg()						\
-+	{								\
-+		struct __get_user gu = __atomic_cmpxchg((u32 __force *)uaddr, \
-+							lock, oldval, oparg); \
-+		val = gu.val;						\
-+		ret = gu.err;						\
-+	}
-+
-+/*
-+ * Find the lock pointer for the atomic calls to use, and issue a
-+ * prefetch to the user address to bring it into cache.  Similar to
-+ * __atomic_setup(), but we can't do a read into the L1 since it might
-+ * fault; instead we do a prefetch into the L2.
-+ */
-+#define __futex_prolog()					\
-+	int *lock;						\
-+	__insn_prefetch(uaddr);					\
-+	lock = __atomic_hashed_lock((int __force *)uaddr)
- #endif
- 
- static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
-@@ -59,8 +111,12 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
- 	int cmp = (encoded_op >> 24) & 15;
- 	int oparg = (encoded_op << 8) >> 20;
- 	int cmparg = (encoded_op << 20) >> 20;
--	int ret;
--	struct __get_user asm_ret;
-+	int uninitialized_var(val), ret;
-+
-+	__futex_prolog();
-+
-+	/* The 32-bit futex code makes this assumption, so validate it here. */
-+	BUILD_BUG_ON(sizeof(atomic_t) != sizeof(int));
- 
- 	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
- 		oparg = 1 << oparg;
-@@ -71,46 +127,45 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
- 	pagefault_disable();
- 	switch (op) {
- 	case FUTEX_OP_SET:
--		asm_ret = futex_set(uaddr, oparg);
-+		__futex_set();
- 		break;
- 	case FUTEX_OP_ADD:
--		asm_ret = futex_add(uaddr, oparg);
-+		__futex_add();
- 		break;
- 	case FUTEX_OP_OR:
--		asm_ret = futex_or(uaddr, oparg);
-+		__futex_or();
- 		break;
- 	case FUTEX_OP_ANDN:
--		asm_ret = futex_andn(uaddr, oparg);
-+		__futex_andn();
- 		break;
- 	case FUTEX_OP_XOR:
--		asm_ret = futex_xor(uaddr, oparg);
-+		__futex_xor();
- 		break;
- 	default:
--		asm_ret.err = -ENOSYS;
-+		ret = -ENOSYS;
-+		break;
- 	}
- 	pagefault_enable();
- 
--	ret = asm_ret.err;
--
- 	if (!ret) {
- 		switch (cmp) {
- 		case FUTEX_OP_CMP_EQ:
--			ret = (asm_ret.val == cmparg);
-+			ret = (val == cmparg);
- 			break;
- 		case FUTEX_OP_CMP_NE:
--			ret = (asm_ret.val != cmparg);
-+			ret = (val != cmparg);
- 			break;
- 		case FUTEX_OP_CMP_LT:
--			ret = (asm_ret.val < cmparg);
-+			ret = (val < cmparg);
- 			break;
- 		case FUTEX_OP_CMP_GE:
--			ret = (asm_ret.val >= cmparg);
-+			ret = (val >= cmparg);
- 			break;
- 		case FUTEX_OP_CMP_LE:
--			ret = (asm_ret.val <= cmparg);
-+			ret = (val <= cmparg);
- 			break;
- 		case FUTEX_OP_CMP_GT:
--			ret = (asm_ret.val > cmparg);
-+			ret = (val > cmparg);
- 			break;
- 		default:
- 			ret = -ENOSYS;
-@@ -120,22 +175,20 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
+ typedef struct mm_context mm_context_t;
+diff --git a/arch/tile/include/asm/mmu_context.h b/arch/tile/include/asm/mmu_context.h
+index 15fb246..37f0b74 100644
+--- a/arch/tile/include/asm/mmu_context.h
++++ b/arch/tile/include/asm/mmu_context.h
+@@ -30,11 +30,15 @@ init_new_context(struct task_struct *tsk, struct mm_struct *mm)
+ 	return 0;
  }
  
- static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
--						u32 oldval, u32 newval)
-+						u32 oldval, u32 oparg)
+-/* Note that arch/tile/kernel/head.S also calls hv_install_context() */
++/*
++ * Note that arch/tile/kernel/head_NN.S and arch/tile/mm/migrate_NN.S
++ * also call hv_install_context().
++ */
+ static inline void __install_page_table(pgd_t *pgdir, int asid, pgprot_t prot)
  {
--	struct __get_user asm_ret;
-+	int ret, val;
-+
-+	__futex_prolog();
- 
- 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
- 		return -EFAULT;
- 
--	asm_ret = futex_cmpxchg(uaddr, oldval, newval);
--	*uval = asm_ret.val;
--	return asm_ret.err;
--}
-+	__futex_cmpxchg();
- 
--#ifndef __tilegx__
--/* Return failure from the atomic wrappers. */
--struct __get_user __atomic_bad_address(int __user *addr);
--#endif
-+	*uval = val;
-+	return ret;
-+}
- 
- #endif /* !__ASSEMBLY__ */
- 
-diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
-index ef34d2c..c3dd275 100644
---- a/arch/tile/include/asm/uaccess.h
-+++ b/arch/tile/include/asm/uaccess.h
-@@ -114,45 +114,75 @@ struct exception_table_entry {
- extern int fixup_exception(struct pt_regs *regs);
- 
- /*
-- * We return the __get_user_N function results in a structure,
-- * thus in r0 and r1.  If "err" is zero, "val" is the result
-- * of the read; otherwise, "err" is -EFAULT.
-- *
-- * We rarely need 8-byte values on a 32-bit architecture, but
-- * we size the structure to accommodate.  In practice, for the
-- * the smaller reads, we can zero the high word for free, and
-- * the caller will ignore it by virtue of casting anyway.
-+ * Support macros for __get_user().
+ 	/* FIXME: DIRECTIO should not always be set. FIXME. */
+-	int rc = hv_install_context(__pa(pgdir), prot, asid, HV_CTX_DIRECTIO);
++	int rc = hv_install_context(__pa(pgdir), prot, asid,
++				    HV_CTX_DIRECTIO | CTX_PAGE_FLAG);
+ 	if (rc < 0)
+ 		panic("hv_install_context failed: %d", rc);
+ }
+diff --git a/arch/tile/include/asm/module.h b/arch/tile/include/asm/module.h
+new file mode 100644
+index 0000000..44ed07c
+--- /dev/null
++++ b/arch/tile/include/asm/module.h
+@@ -0,0 +1,40 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
 + *
-+ * Implementation note: The "case 8" logic of casting to the type of
-+ * the result of subtracting the value from itself is basically a way
-+ * of keeping all integer types the same, but casting any pointers to
-+ * ptrdiff_t, i.e. also an integer type.  This way there are no
-+ * questionable casts seen by the compiler on an ILP32 platform.
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
 + *
-+ * Note that __get_user() and __put_user() assume proper alignment.
-  */
--struct __get_user {
--	unsigned long long val;
--	int err;
--};
- 
--/*
-- * FIXME: we should express these as inline extended assembler, since
-- * they're fundamentally just a variable dereference and some
-- * supporting exception_table gunk.  Note that (a la i386) we can
-- * extend the copy_to_user and copy_from_user routines to call into
-- * such extended assembler routines, though we will have to use a
-- * different return code in that case (1, 2, or 4, rather than -EFAULT).
-- */
--extern struct __get_user __get_user_1(const void __user *);
--extern struct __get_user __get_user_2(const void __user *);
--extern struct __get_user __get_user_4(const void __user *);
--extern struct __get_user __get_user_8(const void __user *);
--extern int __put_user_1(long, void __user *);
--extern int __put_user_2(long, void __user *);
--extern int __put_user_4(long, void __user *);
--extern int __put_user_8(long long, void __user *);
--
--/* Unimplemented routines to cause linker failures */
--extern struct __get_user __get_user_bad(void);
--extern int __put_user_bad(void);
-+#ifdef __LP64__
-+#define _ASM_PTR	".quad"
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#ifndef _ASM_TILE_MODULE_H
++#define _ASM_TILE_MODULE_H
++
++#include <arch/chip.h>
++
++#include <asm-generic/module.h>
++
++/* We can't use modules built with different page sizes. */
++#if defined(CONFIG_PAGE_SIZE_16KB)
++# define MODULE_PGSZ " 16KB"
++#elif defined(CONFIG_PAGE_SIZE_64KB)
++# define MODULE_PGSZ " 64KB"
 +#else
-+#define _ASM_PTR	".long"
++# define MODULE_PGSZ ""
 +#endif
 +
-+#define __get_user_asm(OP, x, ptr, ret)					\
-+	asm volatile("1: {" #OP " %1, %2; movei %0, 0 }\n"		\
-+		     ".pushsection .fixup,\"ax\"\n"			\
-+		     "0: { movei %1, 0; movei %0, %3 }\n"		\
-+		     "j 9f\n"						\
-+		     ".section __ex_table,\"a\"\n"			\
-+		     _ASM_PTR " 1b, 0b\n"				\
-+		     ".popsection\n"					\
-+		     "9:"						\
-+		     : "=r" (ret), "=r" (x)				\
-+		     : "r" (ptr), "i" (-EFAULT))
-+
-+#ifdef __tilegx__
-+#define __get_user_1(x, ptr, ret) __get_user_asm(ld1u, x, ptr, ret)
-+#define __get_user_2(x, ptr, ret) __get_user_asm(ld2u, x, ptr, ret)
-+#define __get_user_4(x, ptr, ret) __get_user_asm(ld4u, x, ptr, ret)
-+#define __get_user_8(x, ptr, ret) __get_user_asm(ld, x, ptr, ret)
++/* We don't really support no-SMP so tag if someone tries. */
++#ifdef CONFIG_SMP
++#define MODULE_NOSMP ""
 +#else
-+#define __get_user_1(x, ptr, ret) __get_user_asm(lb_u, x, ptr, ret)
-+#define __get_user_2(x, ptr, ret) __get_user_asm(lh_u, x, ptr, ret)
-+#define __get_user_4(x, ptr, ret) __get_user_asm(lw, x, ptr, ret)
-+#ifdef __LITTLE_ENDIAN
-+#define __lo32(a, b) a
-+#define __hi32(a, b) b
-+#else
-+#define __lo32(a, b) b
-+#define __hi32(a, b) a
-+#endif
-+#define __get_user_8(x, ptr, ret)					\
-+	({								\
-+		unsigned int __a, __b;					\
-+		asm volatile("1: { lw %1, %3; addi %2, %3, 4 }\n"	\
-+			     "2: { lw %2, %2; movei %0, 0 }\n"		\
-+			     ".pushsection .fixup,\"ax\"\n"		\
-+			     "0: { movei %1, 0; movei %2, 0 }\n"	\
-+			     "{ movei %0, %4; j 9f }\n"			\
-+			     ".section __ex_table,\"a\"\n"		\
-+			     ".word 1b, 0b\n"				\
-+			     ".word 2b, 0b\n"				\
-+			     ".popsection\n"				\
-+			     "9:"					\
-+			     : "=r" (ret), "=r" (__a), "=&r" (__b)	\
-+			     : "r" (ptr), "i" (-EFAULT));		\
-+		(x) = (__typeof(x))(__typeof((x)-(x)))			\
-+			(((u64)__hi32(__a, __b) << 32) |		\
-+			 __lo32(__a, __b));				\
-+	})
++#define MODULE_NOSMP " nosmp"
 +#endif
 +
-+extern int __get_user_bad(void)
-+  __attribute__((warning("sizeof __get_user argument not 1, 2, 4 or 8")));
- 
--/*
-- * Careful: we have to cast the result to the type of the pointer
-- * for sign reasons.
-- */
- /**
-  * __get_user: - Get a simple variable from user space, with less checking.
-  * @x:   Variable to store result.
-@@ -174,30 +204,62 @@ extern int __put_user_bad(void);
-  * function.
-  */
- #define __get_user(x, ptr)						\
--({	struct __get_user __ret;					\
--	__typeof__(*(ptr)) const __user *__gu_addr = (ptr);		\
--	__chk_user_ptr(__gu_addr);					\
--	switch (sizeof(*(__gu_addr))) {					\
--	case 1:								\
--		__ret = __get_user_1(__gu_addr);			\
--		break;							\
--	case 2:								\
--		__ret = __get_user_2(__gu_addr);			\
--		break;							\
--	case 4:								\
--		__ret = __get_user_4(__gu_addr);			\
--		break;							\
--	case 8:								\
--		__ret = __get_user_8(__gu_addr);			\
--		break;							\
--	default:							\
--		__ret = __get_user_bad();				\
--		break;							\
--	}								\
--	(x) = (__typeof__(*__gu_addr)) (__typeof__(*__gu_addr - *__gu_addr)) \
--	  __ret.val;			                                \
--	__ret.err;							\
--})
-+	({								\
-+		int __ret;						\
-+		__chk_user_ptr(ptr);					\
-+		switch (sizeof(*(ptr))) {				\
-+		case 1: __get_user_1(x, ptr, __ret); break;		\
-+		case 2: __get_user_2(x, ptr, __ret); break;		\
-+		case 4: __get_user_4(x, ptr, __ret); break;		\
-+		case 8: __get_user_8(x, ptr, __ret); break;		\
-+		default: __ret = __get_user_bad(); break;		\
-+		}							\
-+		__ret;							\
-+	})
++#define MODULE_ARCH_VERMAGIC CHIP_ARCH_NAME MODULE_PGSZ MODULE_NOSMP
 +
-+/* Support macros for __put_user(). */
-+
-+#define __put_user_asm(OP, x, ptr, ret)			\
-+	asm volatile("1: {" #OP " %1, %2; movei %0, 0 }\n"		\
-+		     ".pushsection .fixup,\"ax\"\n"			\
-+		     "0: { movei %0, %3; j 9f }\n"			\
-+		     ".section __ex_table,\"a\"\n"			\
-+		     _ASM_PTR " 1b, 0b\n"				\
-+		     ".popsection\n"					\
-+		     "9:"						\
-+		     : "=r" (ret)					\
-+		     : "r" (ptr), "r" (x), "i" (-EFAULT))
-+
-+#ifdef __tilegx__
-+#define __put_user_1(x, ptr, ret) __put_user_asm(st1, x, ptr, ret)
-+#define __put_user_2(x, ptr, ret) __put_user_asm(st2, x, ptr, ret)
-+#define __put_user_4(x, ptr, ret) __put_user_asm(st4, x, ptr, ret)
-+#define __put_user_8(x, ptr, ret) __put_user_asm(st, x, ptr, ret)
-+#else
-+#define __put_user_1(x, ptr, ret) __put_user_asm(sb, x, ptr, ret)
-+#define __put_user_2(x, ptr, ret) __put_user_asm(sh, x, ptr, ret)
-+#define __put_user_4(x, ptr, ret) __put_user_asm(sw, x, ptr, ret)
-+#define __put_user_8(x, ptr, ret)					\
-+	({								\
-+		u64 __x = (__typeof((x)-(x)))(x);			\
-+		int __lo = (int) __x, __hi = (int) (__x >> 32);		\
-+		asm volatile("1: { sw %1, %2; addi %0, %1, 4 }\n"	\
-+			     "2: { sw %0, %3; movei %0, 0 }\n"		\
-+			     ".pushsection .fixup,\"ax\"\n"		\
-+			     "0: { movei %0, %4; j 9f }\n"		\
-+			     ".section __ex_table,\"a\"\n"		\
-+			     ".word 1b, 0b\n"				\
-+			     ".word 2b, 0b\n"				\
-+			     ".popsection\n"				\
-+			     "9:"					\
-+			     : "=&r" (ret)				\
-+			     : "r" (ptr), "r" (__lo32(__lo, __hi)),	\
-+			     "r" (__hi32(__lo, __hi)), "i" (-EFAULT));	\
-+	})
-+#endif
-+
-+extern int __put_user_bad(void)
-+  __attribute__((warning("sizeof __put_user argument not 1, 2, 4 or 8")));
- 
- /**
-  * __put_user: - Write a simple value into user space, with less checking.
-@@ -217,39 +279,19 @@ extern int __put_user_bad(void);
-  * function.
-  *
-  * Returns zero on success, or -EFAULT on error.
-- *
-- * Implementation note: The "case 8" logic of casting to the type of
-- * the result of subtracting the value from itself is basically a way
-- * of keeping all integer types the same, but casting any pointers to
-- * ptrdiff_t, i.e. also an integer type.  This way there are no
-- * questionable casts seen by the compiler on an ILP32 platform.
-  */
- #define __put_user(x, ptr)						\
- ({									\
--	int __pu_err = 0;						\
--	__typeof__(*(ptr)) __user *__pu_addr = (ptr);			\
--	typeof(*__pu_addr) __pu_val = (x);				\
--	__chk_user_ptr(__pu_addr);					\
--	switch (sizeof(__pu_val)) {					\
--	case 1:								\
--		__pu_err = __put_user_1((long)__pu_val, __pu_addr);	\
--		break;							\
--	case 2:								\
--		__pu_err = __put_user_2((long)__pu_val, __pu_addr);	\
--		break;							\
--	case 4:								\
--		__pu_err = __put_user_4((long)__pu_val, __pu_addr);	\
--		break;							\
--	case 8:								\
--		__pu_err =						\
--		  __put_user_8((__typeof__(__pu_val - __pu_val))__pu_val,\
--			__pu_addr);					\
--		break;							\
--	default:							\
--		__pu_err = __put_user_bad();				\
--		break;							\
-+	int __ret;							\
-+	__chk_user_ptr(ptr);						\
-+	switch (sizeof(*(ptr))) {					\
-+	case 1: __put_user_1(x, ptr, __ret); break;			\
-+	case 2: __put_user_2(x, ptr, __ret); break;			\
-+	case 4: __put_user_4(x, ptr, __ret); break;			\
-+	case 8: __put_user_8(x, ptr, __ret); break;			\
-+	default: __ret = __put_user_bad(); break;			\
- 	}								\
--	__pu_err;							\
-+	__ret;								\
- })
- 
- /*
-@@ -378,7 +420,7 @@ static inline unsigned long __must_check copy_from_user(void *to,
- /**
-  * __copy_in_user() - copy data within user space, with less checking.
-  * @to:   Destination address, in user space.
-- * @from: Source address, in kernel space.
-+ * @from: Source address, in user space.
-  * @n:    Number of bytes to copy.
-  *
-  * Context: User context only.  This function may sleep.
-diff --git a/arch/tile/kernel/Makefile b/arch/tile/kernel/Makefile
-index b4dbc05..d6261e4 100644
---- a/arch/tile/kernel/Makefile
-+++ b/arch/tile/kernel/Makefile
-@@ -9,7 +9,6 @@ obj-y := backtrace.o entry.o init_task.o irq.o messaging.o \
- 	intvec_$(BITS).o regs_$(BITS).o tile-desc_$(BITS).o
- 
- obj-$(CONFIG_HARDWALL)		+= hardwall.o
--obj-$(CONFIG_TILEGX)		+= futex_64.o
- obj-$(CONFIG_COMPAT)		+= compat.o compat_signal.o
- obj-$(CONFIG_SMP)		+= smpboot.o smp.o tlb.o
- obj-$(CONFIG_MODULES)		+= module.o
-diff --git a/arch/tile/lib/atomic_32.c b/arch/tile/lib/atomic_32.c
-index 771b251..f5cada7 100644
---- a/arch/tile/lib/atomic_32.c
-+++ b/arch/tile/lib/atomic_32.c
-@@ -18,7 +18,6 @@
- #include <linux/module.h>
- #include <linux/mm.h>
- #include <linux/atomic.h>
--#include <asm/futex.h>
++#endif /* _ASM_TILE_MODULE_H */
+diff --git a/arch/tile/include/asm/page.h b/arch/tile/include/asm/page.h
+index db93518..c750943 100644
+--- a/arch/tile/include/asm/page.h
++++ b/arch/tile/include/asm/page.h
+@@ -20,8 +20,17 @@
  #include <arch/chip.h>
  
- /* See <asm/atomic_32.h> */
-@@ -50,7 +49,7 @@ int atomic_locks[PAGE_SIZE / sizeof(int)] __page_aligned_bss;
+ /* PAGE_SHIFT and HPAGE_SHIFT determine the page sizes. */
+-#define PAGE_SHIFT	HV_LOG2_PAGE_SIZE_SMALL
+-#define HPAGE_SHIFT	HV_LOG2_PAGE_SIZE_LARGE
++#if defined(CONFIG_PAGE_SIZE_16KB)
++#define PAGE_SHIFT	14
++#define CTX_PAGE_FLAG	HV_CTX_PG_SM_16K
++#elif defined(CONFIG_PAGE_SIZE_64KB)
++#define PAGE_SHIFT	16
++#define CTX_PAGE_FLAG	HV_CTX_PG_SM_64K
++#else
++#define PAGE_SHIFT	HV_LOG2_DEFAULT_PAGE_SIZE_SMALL
++#define CTX_PAGE_FLAG	0
++#endif
++#define HPAGE_SHIFT	HV_LOG2_DEFAULT_PAGE_SIZE_LARGE
  
- #endif /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
+ #define PAGE_SIZE	(_AC(1, UL) << PAGE_SHIFT)
+ #define HPAGE_SIZE	(_AC(1, UL) << HPAGE_SHIFT)
+diff --git a/arch/tile/include/asm/pgalloc.h b/arch/tile/include/asm/pgalloc.h
+index e919c0b..1b90250 100644
+--- a/arch/tile/include/asm/pgalloc.h
++++ b/arch/tile/include/asm/pgalloc.h
+@@ -19,24 +19,24 @@
+ #include <linux/mm.h>
+ #include <linux/mmzone.h>
+ #include <asm/fixmap.h>
++#include <asm/page.h>
+ #include <hv/hypervisor.h>
  
--static inline int *__atomic_hashed_lock(volatile void *v)
-+int *__atomic_hashed_lock(volatile void *v)
+ /* Bits for the size of the second-level page table. */
+-#define L2_KERNEL_PGTABLE_SHIFT \
+-  (HV_LOG2_PAGE_SIZE_LARGE - HV_LOG2_PAGE_SIZE_SMALL + HV_LOG2_PTE_SIZE)
++#define L2_KERNEL_PGTABLE_SHIFT _HV_LOG2_L2_SIZE(HPAGE_SHIFT, PAGE_SHIFT)
++
++/* How big is a kernel L2 page table? */
++#define L2_KERNEL_PGTABLE_SIZE (1UL << L2_KERNEL_PGTABLE_SHIFT)
+ 
+ /* We currently allocate user L2 page tables by page (unlike kernel L2s). */
+-#if L2_KERNEL_PGTABLE_SHIFT < HV_LOG2_PAGE_SIZE_SMALL
+-#define L2_USER_PGTABLE_SHIFT HV_LOG2_PAGE_SIZE_SMALL
++#if L2_KERNEL_PGTABLE_SHIFT < PAGE_SHIFT
++#define L2_USER_PGTABLE_SHIFT PAGE_SHIFT
+ #else
+ #define L2_USER_PGTABLE_SHIFT L2_KERNEL_PGTABLE_SHIFT
+ #endif
+ 
+ /* How many pages do we need, as an "order", for a user L2 page table? */
+-#define L2_USER_PGTABLE_ORDER (L2_USER_PGTABLE_SHIFT - HV_LOG2_PAGE_SIZE_SMALL)
+-
+-/* How big is a kernel L2 page table? */
+-#define L2_KERNEL_PGTABLE_SIZE (1 << L2_KERNEL_PGTABLE_SHIFT)
++#define L2_USER_PGTABLE_ORDER (L2_USER_PGTABLE_SHIFT - PAGE_SHIFT)
+ 
+ static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
  {
- 	/* NOTE: this code must match "sys_cmpxchg" in kernel/intvec_32.S */
- #if ATOMIC_LOCKS_FOUND_VIA_TABLE()
-@@ -191,47 +190,6 @@ u64 _atomic64_cmpxchg(atomic64_t *v, u64 o, u64 n)
- EXPORT_SYMBOL(_atomic64_cmpxchg);
- 
- 
--static inline int *__futex_setup(int __user *v)
--{
--	/*
--	 * Issue a prefetch to the counter to bring it into cache.
--	 * As for __atomic_setup, but we can't do a read into the L1
--	 * since it might fault; instead we do a prefetch into the L2.
--	 */
--	__insn_prefetch(v);
--	return __atomic_hashed_lock((int __force *)v);
--}
--
--struct __get_user futex_set(u32 __user *v, int i)
--{
--	return __atomic_xchg((int __force *)v, __futex_setup(v), i);
--}
--
--struct __get_user futex_add(u32 __user *v, int n)
--{
--	return __atomic_xchg_add((int __force *)v, __futex_setup(v), n);
--}
--
--struct __get_user futex_or(u32 __user *v, int n)
--{
--	return __atomic_or((int __force *)v, __futex_setup(v), n);
--}
--
--struct __get_user futex_andn(u32 __user *v, int n)
--{
--	return __atomic_andn((int __force *)v, __futex_setup(v), n);
--}
--
--struct __get_user futex_xor(u32 __user *v, int n)
--{
--	return __atomic_xor((int __force *)v, __futex_setup(v), n);
--}
--
--struct __get_user futex_cmpxchg(u32 __user *v, int o, int n)
--{
--	return __atomic_cmpxchg((int __force *)v, __futex_setup(v), o, n);
--}
--
- /*
-  * If any of the atomic or futex routines hit a bad address (not in
-  * the page tables at kernel PL) this routine is called.  The futex
-@@ -323,7 +281,4 @@ void __init __init_atomic_per_cpu(void)
- 	BUILD_BUG_ON((PAGE_SIZE >> 3) > ATOMIC_HASH_SIZE);
- 
- #endif /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
--
--	/* The futex code makes this assumption, so we validate it here. */
--	BUILD_BUG_ON(sizeof(atomic_t) != sizeof(int));
+@@ -50,14 +50,14 @@ static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
+ static inline void pmd_populate_kernel(struct mm_struct *mm,
+ 				       pmd_t *pmd, pte_t *ptep)
+ {
+-	set_pmd(pmd, ptfn_pmd(__pa(ptep) >> HV_LOG2_PAGE_TABLE_ALIGN,
++	set_pmd(pmd, ptfn_pmd(HV_CPA_TO_PTFN(__pa(ptep)),
+ 			      __pgprot(_PAGE_PRESENT)));
  }
-diff --git a/arch/tile/lib/exports.c b/arch/tile/lib/exports.c
-index 2a81d32..dd5f0a3 100644
---- a/arch/tile/lib/exports.c
-+++ b/arch/tile/lib/exports.c
-@@ -18,14 +18,6 @@
  
- /* arch/tile/lib/usercopy.S */
- #include <linux/uaccess.h>
--EXPORT_SYMBOL(__get_user_1);
--EXPORT_SYMBOL(__get_user_2);
--EXPORT_SYMBOL(__get_user_4);
--EXPORT_SYMBOL(__get_user_8);
--EXPORT_SYMBOL(__put_user_1);
--EXPORT_SYMBOL(__put_user_2);
--EXPORT_SYMBOL(__put_user_4);
--EXPORT_SYMBOL(__put_user_8);
- EXPORT_SYMBOL(strnlen_user_asm);
- EXPORT_SYMBOL(strncpy_from_user_asm);
- EXPORT_SYMBOL(clear_user_asm);
-diff --git a/arch/tile/lib/usercopy_32.S b/arch/tile/lib/usercopy_32.S
-index 979f76d..b62d002 100644
---- a/arch/tile/lib/usercopy_32.S
-+++ b/arch/tile/lib/usercopy_32.S
-@@ -19,82 +19,6 @@
+ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
+ 				pgtable_t page)
+ {
+-	set_pmd(pmd, ptfn_pmd(HV_PFN_TO_PTFN(page_to_pfn(page)),
++	set_pmd(pmd, ptfn_pmd(HV_CPA_TO_PTFN(PFN_PHYS(page_to_pfn(page))),
+ 			      __pgprot(_PAGE_PRESENT)));
+ }
  
- /* Access user memory, but use MMU to avoid propagating kernel exceptions. */
+@@ -68,8 +68,20 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
+ extern pgd_t *pgd_alloc(struct mm_struct *mm);
+ extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
  
--	.pushsection .fixup,"ax"
+-extern pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long address);
+-extern void pte_free(struct mm_struct *mm, struct page *pte);
++extern pgtable_t pgtable_alloc_one(struct mm_struct *mm, unsigned long address,
++				   int order);
++extern void pgtable_free(struct mm_struct *mm, struct page *pte, int order);
++
++static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
++				      unsigned long address)
++{
++	return pgtable_alloc_one(mm, address, L2_USER_PGTABLE_ORDER);
++}
++
++static inline void pte_free(struct mm_struct *mm, struct page *pte)
++{
++	pgtable_free(mm, pte, L2_USER_PGTABLE_ORDER);
++}
+ 
+ #define pmd_pgtable(pmd) pmd_page(pmd)
+ 
+@@ -85,8 +97,13 @@ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+ 	pte_free(mm, virt_to_page(pte));
+ }
+ 
+-extern void __pte_free_tlb(struct mmu_gather *tlb, struct page *pte,
+-			   unsigned long address);
++extern void __pgtable_free_tlb(struct mmu_gather *tlb, struct page *pte,
++			       unsigned long address, int order);
++static inline void __pte_free_tlb(struct mmu_gather *tlb, struct page *pte,
++				  unsigned long address)
++{
++	__pgtable_free_tlb(tlb, pte, address, L2_USER_PGTABLE_ORDER);
++}
+ 
+ #define check_pgt_cache()	do { } while (0)
+ 
+@@ -104,19 +121,44 @@ void shatter_pmd(pmd_t *pmd);
+ void shatter_huge_page(unsigned long addr);
+ 
+ #ifdef __tilegx__
+-/* We share a single page allocator for both L1 and L2 page tables. */
+-#if HV_L1_SIZE != HV_L2_SIZE
+-# error Rework assumption that L1 and L2 page tables are same size.
+-#endif
+-#define L1_USER_PGTABLE_ORDER L2_USER_PGTABLE_ORDER
++
+ #define pud_populate(mm, pud, pmd) \
+   pmd_populate_kernel((mm), (pmd_t *)(pud), (pte_t *)(pmd))
+-#define pmd_alloc_one(mm, addr) \
+-  ((pmd_t *)page_to_virt(pte_alloc_one((mm), (addr))))
+-#define pmd_free(mm, pmdp) \
+-  pte_free((mm), virt_to_page(pmdp))
+-#define __pmd_free_tlb(tlb, pmdp, address) \
+-  __pte_free_tlb((tlb), virt_to_page(pmdp), (address))
++
++/* Bits for the size of the L1 (intermediate) page table. */
++#define L1_KERNEL_PGTABLE_SHIFT _HV_LOG2_L1_SIZE(HPAGE_SHIFT)
++
++/* How big is a kernel L2 page table? */
++#define L1_KERNEL_PGTABLE_SIZE (1UL << L1_KERNEL_PGTABLE_SHIFT)
++
++/* We currently allocate L1 page tables by page. */
++#if L1_KERNEL_PGTABLE_SHIFT < PAGE_SHIFT
++#define L1_USER_PGTABLE_SHIFT PAGE_SHIFT
++#else
++#define L1_USER_PGTABLE_SHIFT L1_KERNEL_PGTABLE_SHIFT
+ #endif
+ 
++/* How many pages do we need, as an "order", for an L1 page table? */
++#define L1_USER_PGTABLE_ORDER (L1_USER_PGTABLE_SHIFT - PAGE_SHIFT)
++
++static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long address)
++{
++	struct page *p = pgtable_alloc_one(mm, address, L1_USER_PGTABLE_ORDER);
++	return (pmd_t *)page_to_virt(p);
++}
++
++static inline void pmd_free(struct mm_struct *mm, pmd_t *pmdp)
++{
++	pgtable_free(mm, virt_to_page(pmdp), L1_USER_PGTABLE_ORDER);
++}
++
++static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
++				  unsigned long address)
++{
++	__pgtable_free_tlb(tlb, virt_to_page(pmdp), address,
++			   L1_USER_PGTABLE_ORDER);
++}
++
++#endif /* __tilegx__ */
++
+ #endif /* _ASM_TILE_PGALLOC_H */
+diff --git a/arch/tile/include/asm/pgtable.h b/arch/tile/include/asm/pgtable.h
+index 17ad0ed..ae43301 100644
+--- a/arch/tile/include/asm/pgtable.h
++++ b/arch/tile/include/asm/pgtable.h
+@@ -27,9 +27,11 @@
+ #include <linux/slab.h>
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
++#include <linux/pfn.h>
+ #include <asm/processor.h>
+ #include <asm/fixmap.h>
+ #include <asm/system.h>
++#include <asm/page.h>
+ 
+ struct mm_struct;
+ struct vm_area_struct;
+@@ -163,7 +165,7 @@ extern void set_page_homes(void);
+   (pgprot_t) { ((oldprot).val & ~_PAGE_ALL) | (newprot).val }
+ 
+ /* Just setting the PFN to zero suffices. */
+-#define pte_pgprot(x) hv_pte_set_pfn((x), 0)
++#define pte_pgprot(x) hv_pte_set_pa((x), 0)
+ 
+ /*
+  * For PTEs and PDEs, we must clear the Present bit first when
+@@ -263,7 +265,7 @@ static inline int pte_none(pte_t pte)
+ 
+ static inline unsigned long pte_pfn(pte_t pte)
+ {
+-	return hv_pte_get_pfn(pte);
++	return PFN_DOWN(hv_pte_get_pa(pte));
+ }
+ 
+ /* Set or get the remote cache cpu in a pgprot with remote caching. */
+@@ -272,7 +274,7 @@ extern int get_remote_cache_cpu(pgprot_t prot);
+ 
+ static inline pte_t pfn_pte(unsigned long pfn, pgprot_t prot)
+ {
+-	return hv_pte_set_pfn(prot, pfn);
++	return hv_pte_set_pa(prot, PFN_PHYS(pfn));
+ }
+ 
+ /* Support for priority mappings. */
+@@ -472,7 +474,7 @@ static inline unsigned long pmd_page_vaddr(pmd_t pmd)
+  * OK for pte_lockptr(), since we just end up with potentially one
+  * lock being used for several pte_t arrays.
+  */
+-#define pmd_page(pmd) pfn_to_page(HV_PTFN_TO_PFN(pmd_ptfn(pmd)))
++#define pmd_page(pmd) pfn_to_page(PFN_DOWN(HV_PTFN_TO_CPA(pmd_ptfn(pmd))))
+ 
+ static inline void pmd_clear(pmd_t *pmdp)
+ {
+diff --git a/arch/tile/include/asm/pgtable_32.h b/arch/tile/include/asm/pgtable_32.h
+index 27e20f6..4ce4a7a 100644
+--- a/arch/tile/include/asm/pgtable_32.h
++++ b/arch/tile/include/asm/pgtable_32.h
+@@ -20,11 +20,12 @@
+  * The level-1 index is defined by the huge page size.  A PGD is composed
+  * of PTRS_PER_PGD pgd_t's and is the top level of the page table.
+  */
+-#define PGDIR_SHIFT	HV_LOG2_PAGE_SIZE_LARGE
+-#define PGDIR_SIZE	HV_PAGE_SIZE_LARGE
++#define PGDIR_SHIFT	HPAGE_SHIFT
++#define PGDIR_SIZE	HPAGE_SIZE
+ #define PGDIR_MASK	(~(PGDIR_SIZE-1))
+-#define PTRS_PER_PGD	(1 << (32 - PGDIR_SHIFT))
+-#define SIZEOF_PGD	(PTRS_PER_PGD * sizeof(pgd_t))
++#define PTRS_PER_PGD	_HV_L1_ENTRIES(HPAGE_SHIFT)
++#define PGD_INDEX(va)	_HV_L1_INDEX(va, HPAGE_SHIFT)
++#define SIZEOF_PGD	_HV_L1_SIZE(HPAGE_SHIFT)
+ 
+ /*
+  * The level-2 index is defined by the difference between the huge
+@@ -33,8 +34,9 @@
+  * Note that the hypervisor docs use PTE for what we call pte_t, so
+  * this nomenclature is somewhat confusing.
+  */
+-#define PTRS_PER_PTE (1 << (HV_LOG2_PAGE_SIZE_LARGE - HV_LOG2_PAGE_SIZE_SMALL))
+-#define SIZEOF_PTE	(PTRS_PER_PTE * sizeof(pte_t))
++#define PTRS_PER_PTE	_HV_L2_ENTRIES(HPAGE_SHIFT, PAGE_SHIFT)
++#define PTE_INDEX(va)	_HV_L2_INDEX(va, HPAGE_SHIFT, PAGE_SHIFT)
++#define SIZEOF_PTE	_HV_L2_SIZE(HPAGE_SHIFT, PAGE_SHIFT)
+ 
+ #ifndef __ASSEMBLY__
+ 
+diff --git a/arch/tile/include/asm/pgtable_64.h b/arch/tile/include/asm/pgtable_64.h
+index e105f3a..2492fa5 100644
+--- a/arch/tile/include/asm/pgtable_64.h
++++ b/arch/tile/include/asm/pgtable_64.h
+@@ -21,17 +21,19 @@
+ #define PGDIR_SIZE	HV_L1_SPAN
+ #define PGDIR_MASK	(~(PGDIR_SIZE-1))
+ #define PTRS_PER_PGD	HV_L0_ENTRIES
+-#define SIZEOF_PGD	(PTRS_PER_PGD * sizeof(pgd_t))
++#define PGD_INDEX(va)	HV_L0_INDEX(va)
++#define SIZEOF_PGD	HV_L0_SIZE
+ 
+ /*
+  * The level-1 index is defined by the huge page size.  A PMD is composed
+  * of PTRS_PER_PMD pgd_t's and is the middle level of the page table.
+  */
+-#define PMD_SHIFT	HV_LOG2_PAGE_SIZE_LARGE
+-#define PMD_SIZE	HV_PAGE_SIZE_LARGE
++#define PMD_SHIFT	HPAGE_SHIFT
++#define PMD_SIZE	HPAGE_SIZE
+ #define PMD_MASK	(~(PMD_SIZE-1))
+-#define PTRS_PER_PMD	(1 << (PGDIR_SHIFT - PMD_SHIFT))
+-#define SIZEOF_PMD	(PTRS_PER_PMD * sizeof(pmd_t))
++#define PTRS_PER_PMD	_HV_L1_ENTRIES(HPAGE_SHIFT)
++#define PMD_INDEX(va)	_HV_L1_INDEX(va, HPAGE_SHIFT)
++#define SIZEOF_PMD	_HV_L1_SIZE(HPAGE_SHIFT)
+ 
+ /*
+  * The level-2 index is defined by the difference between the huge
+@@ -40,17 +42,19 @@
+  * Note that the hypervisor docs use PTE for what we call pte_t, so
+  * this nomenclature is somewhat confusing.
+  */
+-#define PTRS_PER_PTE (1 << (HV_LOG2_PAGE_SIZE_LARGE - HV_LOG2_PAGE_SIZE_SMALL))
+-#define SIZEOF_PTE	(PTRS_PER_PTE * sizeof(pte_t))
++#define PTRS_PER_PTE	_HV_L2_ENTRIES(HPAGE_SHIFT, PAGE_SHIFT)
++#define PTE_INDEX(va)	_HV_L2_INDEX(va, HPAGE_SHIFT, PAGE_SHIFT)
++#define SIZEOF_PTE	_HV_L2_SIZE(HPAGE_SHIFT, PAGE_SHIFT)
+ 
+ /*
+- * Align the vmalloc area to an L2 page table, and leave a guard page
+- * at the beginning and end.  The vmalloc code also puts in an internal
++ * Align the vmalloc area to an L2 page table.  Omit guard pages at
++ * the beginning and end for simplicity (particularly in the per-cpu
++ * memory allocation code).  The vmalloc code puts in an internal
+  * guard page between each allocation.
+  */
+ #define _VMALLOC_END	HUGE_VMAP_BASE
+-#define VMALLOC_END	(_VMALLOC_END - PAGE_SIZE)
+-#define VMALLOC_START	(_VMALLOC_START + PAGE_SIZE)
++#define VMALLOC_END	_VMALLOC_END
++#define VMALLOC_START	_VMALLOC_START
+ 
+ #define HUGE_VMAP_END	(HUGE_VMAP_BASE + PGDIR_SIZE)
+ 
+@@ -98,7 +102,7 @@ static inline int pud_bad(pud_t pud)
+  * A pud_t points to a pmd_t array.  Since we can have multiple per
+  * page, we don't have a one-to-one mapping of pud_t's to pages.
+  */
+-#define pud_page(pud) pfn_to_page(HV_PTFN_TO_PFN(pud_ptfn(pud)))
++#define pud_page(pud) pfn_to_page(PFN_DOWN(HV_PTFN_TO_CPA(pud_ptfn(pud))))
+ 
+ static inline unsigned long pud_index(unsigned long address)
+ {
+diff --git a/arch/tile/include/hv/drv_xgbe_intf.h b/arch/tile/include/hv/drv_xgbe_intf.h
+index f13188a..2a20b26 100644
+--- a/arch/tile/include/hv/drv_xgbe_intf.h
++++ b/arch/tile/include/hv/drv_xgbe_intf.h
+@@ -460,7 +460,7 @@ typedef void* lepp_comp_t;
+  *  linux's "MAX_SKB_FRAGS", and presumably over-estimates by one, for
+  *  our page size of exactly 65536.  We add one for a "body" fragment.
+  */
+-#define LEPP_MAX_FRAGS (65536 / HV_PAGE_SIZE_SMALL + 2 + 1)
++#define LEPP_MAX_FRAGS (65536 / HV_DEFAULT_PAGE_SIZE_SMALL + 2 + 1)
+ 
+ /** Total number of bytes needed for an lepp_tso_cmd_t. */
+ #define LEPP_TSO_CMD_SIZE(num_frags, header_size) \
+diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
+index 793123e..16c18e4 100644
+--- a/arch/tile/include/hv/hypervisor.h
++++ b/arch/tile/include/hv/hypervisor.h
+@@ -17,8 +17,8 @@
+  * The hypervisor's public API.
+  */
+ 
+-#ifndef _TILE_HV_H
+-#define _TILE_HV_H
++#ifndef _HV_HV_H
++#define _HV_HV_H
+ 
+ #include <arch/chip.h>
+ 
+@@ -42,25 +42,29 @@
+  */
+ #define HV_L1_SPAN (__HV_SIZE_ONE << HV_LOG2_L1_SPAN)
+ 
+-/** The log2 of the size of small pages, in bytes. This value should
+- * be verified at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_SMALL).
++/** The log2 of the initial size of small pages, in bytes.
++ * See HV_DEFAULT_PAGE_SIZE_SMALL.
+  */
+-#define HV_LOG2_PAGE_SIZE_SMALL 16
++#define HV_LOG2_DEFAULT_PAGE_SIZE_SMALL 16
+ 
+-/** The size of small pages, in bytes. This value should be verified
++/** The initial size of small pages, in bytes. This value should be verified
+  * at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_SMALL).
++ * It may also be modified when installing a new context.
+  */
+-#define HV_PAGE_SIZE_SMALL (__HV_SIZE_ONE << HV_LOG2_PAGE_SIZE_SMALL)
++#define HV_DEFAULT_PAGE_SIZE_SMALL \
++  (__HV_SIZE_ONE << HV_LOG2_DEFAULT_PAGE_SIZE_SMALL)
+ 
+-/** The log2 of the size of large pages, in bytes. This value should be
+- * verified at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_LARGE).
++/** The log2 of the initial size of large pages, in bytes.
++ * See HV_DEFAULT_PAGE_SIZE_LARGE.
+  */
+-#define HV_LOG2_PAGE_SIZE_LARGE 24
++#define HV_LOG2_DEFAULT_PAGE_SIZE_LARGE 24
+ 
+-/** The size of large pages, in bytes. This value should be verified
++/** The initial size of large pages, in bytes. This value should be verified
+  * at runtime by calling hv_sysconf(HV_SYSCONF_PAGE_SIZE_LARGE).
++ * It may also be modified when installing a new context.
+  */
+-#define HV_PAGE_SIZE_LARGE (__HV_SIZE_ONE << HV_LOG2_PAGE_SIZE_LARGE)
++#define HV_DEFAULT_PAGE_SIZE_LARGE \
++  (__HV_SIZE_ONE << HV_LOG2_DEFAULT_PAGE_SIZE_LARGE)
+ 
+ /** The log2 of the granularity at which page tables must be aligned;
+  *  in other words, the CPA for a page table must have this many zero
+@@ -401,7 +405,13 @@ typedef enum {
+    *  that the temperature has hit an upper limit and is no longer being
+    *  accurately tracked.
+    */
+-  HV_SYSCONF_BOARD_TEMP      = 6
++  HV_SYSCONF_BOARD_TEMP      = 6,
++
++  /** Legal page size bitmask for hv_install_context().
++   * For example, if 16KB and 64KB small pages are supported,
++   * it would return "HV_CTX_PG_SM_16K | HV_CTX_PG_SM_64K".
++   */
++  HV_SYSCONF_VALID_PAGE_SIZES = 7,
+ 
+ } HV_SysconfQuery;
+ 
+@@ -649,6 +659,12 @@ void hv_set_rtc(HV_RTCTime time);
+  *  new page table does not need to contain any mapping for the
+  *  hv_install_context address itself.
+  *
++ *  At most one HV_CTX_PG_SM_* flag may be specified in "flags";
++ *  if multiple flags are specified, HV_EINVAL is returned.
++ *  Specifying none of the flags results in using the default page size.
++ *  All cores participating in a given client must request the same
++ *  page size, or the results are undefined.
++ *
+  * @param page_table Root of the page table.
+  * @param access PTE providing info on how to read the page table.  This
+  *   value must be consistent between multiple tiles sharing a page table,
+@@ -667,6 +683,11 @@ int hv_install_context(HV_PhysAddr page_table, HV_PTE access, HV_ASID asid,
+ #define HV_CTX_DIRECTIO     0x1   /**< Direct I/O requests are accepted from
+                                        PL0. */
+ 
++#define HV_CTX_PG_SM_4K     0x10  /**< Use 4K small pages, if available. */
++#define HV_CTX_PG_SM_16K    0x20  /**< Use 16K small pages, if available. */
++#define HV_CTX_PG_SM_64K    0x40  /**< Use 64K small pages, if available. */
++#define HV_CTX_PG_SM_MASK   0xf0  /**< Mask of all possible small pages. */
++
+ #ifndef __ASSEMBLER__
+ 
+ /** Value returned from hv_inquire_context(). */
+@@ -1238,11 +1259,14 @@ HV_Errno hv_set_command_line(HV_VirtAddr buf, int length);
+  * with the existing priority pages) or "red/black" (if they don't).
+  * The bitmask provides information on which parts of the cache
+  * have been used for pinned pages so far on this tile; if (1 << N)
+- * appears in the bitmask, that indicates that a page has been marked
+- * "priority" whose PFN equals N, mod 8.
++ * appears in the bitmask, that indicates that a 4KB region of the
++ * cache starting at (N * 4KB) is in use by a "priority" page.
++ * The portion of cache used by a particular page can be computed
++ * by taking the page's PA, modulo CHIP_L2_CACHE_SIZE(), and setting
++ * all the "4KB" bits corresponding to the actual page size.
+  * @param bitmask A bitmap of priority page set values
+  */
+-void hv_set_caching(unsigned int bitmask);
++void hv_set_caching(unsigned long bitmask);
+ 
+ 
+ /** Zero out a specified number of pages.
+@@ -1868,15 +1892,6 @@ int hv_flush_remote(HV_PhysAddr cache_pa, unsigned long cache_control,
+                                               of word */
+ #define HV_PTE_PTFN_BITS             29  /**< Number of bits in a PTFN */
+ 
+-/** Position of the PFN field within the PTE (subset of the PTFN). */
+-#define HV_PTE_INDEX_PFN (HV_PTE_INDEX_PTFN + (HV_LOG2_PAGE_SIZE_SMALL - \
+-                                               HV_LOG2_PAGE_TABLE_ALIGN))
 -
--get_user_fault:
--	{ move r0, zero; move r1, zero }
--	{ movei r2, -EFAULT; jrp lr }
--	ENDPROC(get_user_fault)
--
--put_user_fault:
--	{ movei r0, -EFAULT; jrp lr }
--	ENDPROC(put_user_fault)
--
--	.popsection
--
--/*
-- * __get_user_N functions take a pointer in r0, and return 0 in r2
-- * on success, with the value in r0; or else -EFAULT in r2.
-- */
--#define __get_user_N(bytes, LOAD) \
--	STD_ENTRY(__get_user_##bytes); \
--1:	{ LOAD r0, r0; move r1, zero; move r2, zero }; \
--	jrp lr; \
--	STD_ENDPROC(__get_user_##bytes); \
--	.pushsection __ex_table,"a"; \
--	.word 1b, get_user_fault; \
--	.popsection
--
--__get_user_N(1, lb_u)
--__get_user_N(2, lh_u)
--__get_user_N(4, lw)
--
--/*
-- * __get_user_8 takes a pointer in r0, and returns 0 in r2
-- * on success, with the value in r0/r1; or else -EFAULT in r2.
-- */
--	STD_ENTRY(__get_user_8);
--1:	{ lw r0, r0; addi r1, r0, 4 };
--2:	{ lw r1, r1; move r2, zero };
--	jrp lr;
--	STD_ENDPROC(__get_user_8);
--	.pushsection __ex_table,"a";
--	.word 1b, get_user_fault;
--	.word 2b, get_user_fault;
--	.popsection
--
--/*
-- * __put_user_N functions take a value in r0 and a pointer in r1,
-- * and return 0 in r0 on success or -EFAULT on failure.
-- */
--#define __put_user_N(bytes, STORE) \
--	STD_ENTRY(__put_user_##bytes); \
--1:	{ STORE r1, r0; move r0, zero }; \
--	jrp lr; \
--	STD_ENDPROC(__put_user_##bytes); \
--	.pushsection __ex_table,"a"; \
--	.word 1b, put_user_fault; \
--	.popsection
--
--__put_user_N(1, sb)
--__put_user_N(2, sh)
--__put_user_N(4, sw)
--
--/*
-- * __put_user_8 takes a value in r0/r1 and a pointer in r2,
-- * and returns 0 in r0 on success or -EFAULT on failure.
-- */
--STD_ENTRY(__put_user_8)
--1:      { sw r2, r0; addi r2, r2, 4 }
--2:      { sw r2, r1; move r0, zero }
--	jrp lr
--	STD_ENDPROC(__put_user_8)
--	.pushsection __ex_table,"a"
--	.word 1b, put_user_fault
--	.word 2b, put_user_fault
--	.popsection
--
+-/** Length of the PFN field within the PTE (subset of the PTFN). */
+-#define HV_PTE_INDEX_PFN_BITS (HV_PTE_INDEX_PTFN_BITS - \
+-                               (HV_LOG2_PAGE_SIZE_SMALL - \
+-                                HV_LOG2_PAGE_TABLE_ALIGN))
 -
  /*
-  * strnlen_user_asm takes the pointer in r0, and the length bound in r1.
-  * It returns the length, including the terminating NUL, or zero on exception.
-diff --git a/arch/tile/lib/usercopy_64.S b/arch/tile/lib/usercopy_64.S
-index 2ff44f8..adb2dbb 100644
---- a/arch/tile/lib/usercopy_64.S
-+++ b/arch/tile/lib/usercopy_64.S
-@@ -19,55 +19,6 @@
- 
- /* Access user memory, but use MMU to avoid propagating kernel exceptions. */
- 
--	.pushsection .fixup,"ax"
--
--get_user_fault:
--	{ movei r1, -EFAULT; move r0, zero }
--	jrp lr
--	ENDPROC(get_user_fault)
--
--put_user_fault:
--	{ movei r0, -EFAULT; jrp lr }
--	ENDPROC(put_user_fault)
--
--	.popsection
--
--/*
-- * __get_user_N functions take a pointer in r0, and return 0 in r1
-- * on success, with the value in r0; or else -EFAULT in r1.
+  * Legal values for the PTE's mode field
+  */
+@@ -2229,40 +2244,11 @@ hv_pte_set_mode(HV_PTE pte, unsigned int val)
+  *
+  * This field contains the upper bits of the CPA (client physical
+  * address) of the target page; the complete CPA is this field with
+- * HV_LOG2_PAGE_SIZE_SMALL zero bits appended to it.
++ * HV_LOG2_PAGE_TABLE_ALIGN zero bits appended to it.
+  *
+- * For PTEs in a level-1 page table where the Page bit is set, the
+- * CPA must be aligned modulo the large page size.
 - */
--#define __get_user_N(bytes, LOAD) \
--	STD_ENTRY(__get_user_##bytes); \
--1:	{ LOAD r0, r0; move r1, zero }; \
--	jrp lr; \
--	STD_ENDPROC(__get_user_##bytes); \
--	.pushsection __ex_table,"a"; \
--	.quad 1b, get_user_fault; \
--	.popsection
+-static __inline unsigned int
+-hv_pte_get_pfn(const HV_PTE pte)
+-{
+-  return pte.val >> HV_PTE_INDEX_PFN;
+-}
 -
--__get_user_N(1, ld1u)
--__get_user_N(2, ld2u)
--__get_user_N(4, ld4u)
--__get_user_N(8, ld)
 -
--/*
-- * __put_user_N functions take a value in r0 and a pointer in r1,
-- * and return 0 in r0 on success or -EFAULT on failure.
-- */
--#define __put_user_N(bytes, STORE) \
--	STD_ENTRY(__put_user_##bytes); \
--1:	{ STORE r1, r0; move r0, zero }; \
--	jrp lr; \
--	STD_ENDPROC(__put_user_##bytes); \
--	.pushsection __ex_table,"a"; \
--	.quad 1b, put_user_fault; \
--	.popsection
+-/** Set the page frame number into a PTE.  See hv_pte_get_pfn. */
+-static __inline HV_PTE
+-hv_pte_set_pfn(HV_PTE pte, unsigned int val)
+-{
+-  /*
+-   * Note that the use of "PTFN" in the next line is intentional; we
+-   * don't want any garbage lower bits left in that field.
+-   */
+-  pte.val &= ~(((1ULL << HV_PTE_PTFN_BITS) - 1) << HV_PTE_INDEX_PTFN);
+-  pte.val |= (__hv64) val << HV_PTE_INDEX_PFN;
+-  return pte;
+-}
 -
--__put_user_N(1, st1)
--__put_user_N(2, st2)
--__put_user_N(4, st4)
--__put_user_N(8, st)
+-/** Get the page table frame number from the PTE.
+- *
+- * This field contains the upper bits of the CPA (client physical
+- * address) of the target page table; the complete CPA is this field with
+- * with HV_PAGE_TABLE_ALIGN zero bits appended to it.
+- *
+- * For PTEs in a level-1 page table when the Page bit is not set, the
+- * CPA must be aligned modulo the sticter of HV_PAGE_TABLE_ALIGN and
+- * the level-2 page table size.
++ * For all PTEs in the lowest-level page table, and for all PTEs with
++ * the Page bit set in all page tables, the CPA must be aligned modulo
++ * the relevant page size.
+  */
+ static __inline unsigned long
+ hv_pte_get_ptfn(const HV_PTE pte)
+@@ -2270,7 +2256,6 @@ hv_pte_get_ptfn(const HV_PTE pte)
+   return pte.val >> HV_PTE_INDEX_PTFN;
+ }
+ 
 -
+ /** Set the page table frame number into a PTE.  See hv_pte_get_ptfn. */
+ static __inline HV_PTE
+ hv_pte_set_ptfn(HV_PTE pte, unsigned long val)
+@@ -2280,6 +2265,20 @@ hv_pte_set_ptfn(HV_PTE pte, unsigned long val)
+   return pte;
+ }
+ 
++/** Get the client physical address from the PTE.  See hv_pte_set_ptfn. */
++static __inline HV_PhysAddr
++hv_pte_get_pa(const HV_PTE pte)
++{
++  return (__hv64) hv_pte_get_ptfn(pte) << HV_LOG2_PAGE_TABLE_ALIGN;
++}
++
++/** Set the client physical address into a PTE.  See hv_pte_get_ptfn. */
++static __inline HV_PTE
++hv_pte_set_pa(HV_PTE pte, HV_PhysAddr pa)
++{
++  return hv_pte_set_ptfn(pte, pa >> HV_LOG2_PAGE_TABLE_ALIGN);
++}
++
+ 
+ /** Get the remote tile caching this page.
+  *
+@@ -2315,28 +2314,20 @@ hv_pte_set_lotar(HV_PTE pte, unsigned int val)
+ 
+ #endif  /* !__ASSEMBLER__ */
+ 
+-/** Converts a client physical address to a pfn. */
+-#define HV_CPA_TO_PFN(p) ((p) >> HV_LOG2_PAGE_SIZE_SMALL)
+-
+-/** Converts a pfn to a client physical address. */
+-#define HV_PFN_TO_CPA(p) (((HV_PhysAddr)(p)) << HV_LOG2_PAGE_SIZE_SMALL)
+-
+ /** Converts a client physical address to a ptfn. */
+ #define HV_CPA_TO_PTFN(p) ((p) >> HV_LOG2_PAGE_TABLE_ALIGN)
+ 
+ /** Converts a ptfn to a client physical address. */
+ #define HV_PTFN_TO_CPA(p) (((HV_PhysAddr)(p)) << HV_LOG2_PAGE_TABLE_ALIGN)
+ 
+-/** Converts a ptfn to a pfn. */
+-#define HV_PTFN_TO_PFN(p) \
+-  ((p) >> (HV_LOG2_PAGE_SIZE_SMALL - HV_LOG2_PAGE_TABLE_ALIGN))
+-
+-/** Converts a pfn to a ptfn. */
+-#define HV_PFN_TO_PTFN(p) \
+-  ((p) << (HV_LOG2_PAGE_SIZE_SMALL - HV_LOG2_PAGE_TABLE_ALIGN))
+-
+ #if CHIP_VA_WIDTH() > 32
+ 
++/*
++ * Note that we currently do not allow customizing the page size
++ * of the L0 pages, but fix them at 4GB, so we do not use the
++ * "_HV_xxx" nomenclature for the L0 macros.
++ */
++
+ /** Log number of HV_PTE entries in L0 page table */
+ #define HV_LOG2_L0_ENTRIES (CHIP_VA_WIDTH() - HV_LOG2_L1_SPAN)
+ 
+@@ -2366,69 +2357,104 @@ hv_pte_set_lotar(HV_PTE pte, unsigned int val)
+ #endif /* CHIP_VA_WIDTH() > 32 */
+ 
+ /** Log number of HV_PTE entries in L1 page table */
+-#define HV_LOG2_L1_ENTRIES (HV_LOG2_L1_SPAN - HV_LOG2_PAGE_SIZE_LARGE)
++#define _HV_LOG2_L1_ENTRIES(log2_page_size_large) \
++  (HV_LOG2_L1_SPAN - log2_page_size_large)
+ 
+ /** Number of HV_PTE entries in L1 page table */
+-#define HV_L1_ENTRIES (1 << HV_LOG2_L1_ENTRIES)
++#define _HV_L1_ENTRIES(log2_page_size_large) \
++  (1 << _HV_LOG2_L1_ENTRIES(log2_page_size_large))
+ 
+ /** Log size of L1 page table in bytes */
+-#define HV_LOG2_L1_SIZE (HV_LOG2_PTE_SIZE + HV_LOG2_L1_ENTRIES)
++#define _HV_LOG2_L1_SIZE(log2_page_size_large) \
++  (HV_LOG2_PTE_SIZE + _HV_LOG2_L1_ENTRIES(log2_page_size_large))
+ 
+ /** Size of L1 page table in bytes */
+-#define HV_L1_SIZE (1 << HV_LOG2_L1_SIZE)
++#define _HV_L1_SIZE(log2_page_size_large) \
++  (1 << _HV_LOG2_L1_SIZE(log2_page_size_large))
+ 
+ /** Log number of HV_PTE entries in level-2 page table */
+-#define HV_LOG2_L2_ENTRIES (HV_LOG2_PAGE_SIZE_LARGE - HV_LOG2_PAGE_SIZE_SMALL)
++#define _HV_LOG2_L2_ENTRIES(log2_page_size_large, log2_page_size_small) \
++  (log2_page_size_large - log2_page_size_small)
+ 
+ /** Number of HV_PTE entries in level-2 page table */
+-#define HV_L2_ENTRIES (1 << HV_LOG2_L2_ENTRIES)
++#define _HV_L2_ENTRIES(log2_page_size_large, log2_page_size_small) \
++  (1 << _HV_LOG2_L2_ENTRIES(log2_page_size_large, log2_page_size_small))
+ 
+ /** Log size of level-2 page table in bytes */
+-#define HV_LOG2_L2_SIZE (HV_LOG2_PTE_SIZE + HV_LOG2_L2_ENTRIES)
++#define _HV_LOG2_L2_SIZE(log2_page_size_large, log2_page_size_small) \
++  (HV_LOG2_PTE_SIZE + \
++   _HV_LOG2_L2_ENTRIES(log2_page_size_large, log2_page_size_small))
+ 
+ /** Size of level-2 page table in bytes */
+-#define HV_L2_SIZE (1 << HV_LOG2_L2_SIZE)
++#define _HV_L2_SIZE(log2_page_size_large, log2_page_size_small) \
++  (1 << _HV_LOG2_L2_SIZE(log2_page_size_large, log2_page_size_small))
+ 
+ #ifdef __ASSEMBLER__
+ 
+ #if CHIP_VA_WIDTH() > 32
+ 
+ /** Index in L1 for a specific VA */
+-#define HV_L1_INDEX(va) \
+-  (((va) >> HV_LOG2_PAGE_SIZE_LARGE) & (HV_L1_ENTRIES - 1))
++#define _HV_L1_INDEX(va, log2_page_size_large) \
++  (((va) >> log2_page_size_large) & (_HV_L1_ENTRIES(log2_page_size_large) - 1))
+ 
+ #else /* CHIP_VA_WIDTH() > 32 */
+ 
+ /** Index in L1 for a specific VA */
+-#define HV_L1_INDEX(va) \
+-  (((va) >> HV_LOG2_PAGE_SIZE_LARGE))
++#define _HV_L1_INDEX(va, log2_page_size_large) \
++  (((va) >> log2_page_size_large))
+ 
+ #endif /* CHIP_VA_WIDTH() > 32 */
+ 
+ /** Index in level-2 page table for a specific VA */
+-#define HV_L2_INDEX(va) \
+-  (((va) >> HV_LOG2_PAGE_SIZE_SMALL) & (HV_L2_ENTRIES - 1))
++#define _HV_L2_INDEX(va, log2_page_size_large, log2_page_size_small) \
++  (((va) >> log2_page_size_small) & \
++   (_HV_L2_ENTRIES(log2_page_size_large, log2_page_size_small) - 1))
+ 
+ #else /* __ASSEMBLER __ */
+ 
+ #if CHIP_VA_WIDTH() > 32
+ 
+ /** Index in L1 for a specific VA */
+-#define HV_L1_INDEX(va) \
+-  (((HV_VirtAddr)(va) >> HV_LOG2_PAGE_SIZE_LARGE) & (HV_L1_ENTRIES - 1))
++#define _HV_L1_INDEX(va, log2_page_size_large) \
++  (((HV_VirtAddr)(va) >> log2_page_size_large) & \
++   (_HV_L1_ENTRIES(log2_page_size_large) - 1))
+ 
+ #else /* CHIP_VA_WIDTH() > 32 */
+ 
+ /** Index in L1 for a specific VA */
+-#define HV_L1_INDEX(va) \
+-  (((HV_VirtAddr)(va) >> HV_LOG2_PAGE_SIZE_LARGE))
++#define _HV_L1_INDEX(va, log2_page_size_large) \
++  (((HV_VirtAddr)(va) >> log2_page_size_large))
+ 
+ #endif /* CHIP_VA_WIDTH() > 32 */
+ 
+ /** Index in level-2 page table for a specific VA */
+-#define HV_L2_INDEX(va) \
+-  (((HV_VirtAddr)(va) >> HV_LOG2_PAGE_SIZE_SMALL) & (HV_L2_ENTRIES - 1))
++#define _HV_L2_INDEX(va, log2_page_size_large, log2_page_size_small) \
++  (((HV_VirtAddr)(va) >> log2_page_size_small) & \
++   (_HV_L2_ENTRIES(log2_page_size_large, log2_page_size_small) - 1))
+ 
+ #endif /* __ASSEMBLER __ */
+ 
+-#endif /* _TILE_HV_H */
++/** Position of the PFN field within the PTE (subset of the PTFN). */
++#define _HV_PTE_INDEX_PFN(log2_page_size) \
++  (HV_PTE_INDEX_PTFN + (log2_page_size - HV_LOG2_PAGE_TABLE_ALIGN))
++
++/** Length of the PFN field within the PTE (subset of the PTFN). */
++#define _HV_PTE_INDEX_PFN_BITS(log2_page_size) \
++  (HV_PTE_INDEX_PTFN_BITS - (log2_page_size - HV_LOG2_PAGE_TABLE_ALIGN))
++
++/** Converts a client physical address to a pfn. */
++#define _HV_CPA_TO_PFN(p, log2_page_size) ((p) >> log2_page_size)
++
++/** Converts a pfn to a client physical address. */
++#define _HV_PFN_TO_CPA(p, log2_page_size) \
++  (((HV_PhysAddr)(p)) << log2_page_size)
++
++/** Converts a ptfn to a pfn. */
++#define _HV_PTFN_TO_PFN(p, log2_page_size) \
++  ((p) >> (log2_page_size - HV_LOG2_PAGE_TABLE_ALIGN))
++
++/** Converts a pfn to a ptfn. */
++#define _HV_PFN_TO_PTFN(p, log2_page_size) \
++  ((p) << (log2_page_size - HV_LOG2_PAGE_TABLE_ALIGN))
++
++#endif /* _HV_HV_H */
+diff --git a/arch/tile/kernel/head_32.S b/arch/tile/kernel/head_32.S
+index 1a39b7c..f71bfee 100644
+--- a/arch/tile/kernel/head_32.S
++++ b/arch/tile/kernel/head_32.S
+@@ -69,7 +69,7 @@ ENTRY(_start)
+ 	}
+ 	{
+ 	  moveli lr, lo16(1f)
+-	  move r5, zero
++	  moveli r5, CTX_PAGE_FLAG
+ 	}
+ 	{
+ 	  auli lr, lr, ha16(1f)
+@@ -141,11 +141,11 @@ ENTRY(empty_zero_page)
+ 
+ 	.macro PTE va, cpa, bits1, no_org=0
+ 	.ifeq \no_org
+-	.org swapper_pg_dir + HV_L1_INDEX(\va) * HV_PTE_SIZE
++	.org swapper_pg_dir + PGD_INDEX(\va) * HV_PTE_SIZE
+ 	.endif
+ 	.word HV_PTE_PAGE | HV_PTE_DIRTY | HV_PTE_PRESENT | HV_PTE_ACCESSED | \
+ 	      (HV_PTE_MODE_CACHE_NO_L3 << HV_PTE_INDEX_MODE)
+-	.word (\bits1) | (HV_CPA_TO_PFN(\cpa) << (HV_PTE_INDEX_PFN - 32))
++	.word (\bits1) | (HV_CPA_TO_PTFN(\cpa) << (HV_PTE_INDEX_PTFN - 32))
+ 	.endm
+ 
+ __PAGE_ALIGNED_DATA
+@@ -166,7 +166,7 @@ ENTRY(swapper_pg_dir)
+ 	/* The true text VAs are mapped as VA = PA + MEM_SV_INTRPT */
+ 	PTE MEM_SV_INTRPT, 0, (1 << (HV_PTE_INDEX_READABLE - 32)) | \
+ 			      (1 << (HV_PTE_INDEX_EXECUTABLE - 32))
+-	.org swapper_pg_dir + HV_L1_SIZE
++	.org swapper_pg_dir + PGDIR_SIZE
+ 	END(swapper_pg_dir)
+ 
+ 	/*
+diff --git a/arch/tile/kernel/head_64.S b/arch/tile/kernel/head_64.S
+index 6bc3a93..f9a2734 100644
+--- a/arch/tile/kernel/head_64.S
++++ b/arch/tile/kernel/head_64.S
+@@ -114,7 +114,7 @@ ENTRY(_start)
+ 	  shl16insli r0, r0, hw0(swapper_pg_dir - PAGE_OFFSET)
+ 	}
+ 	{
+-	  move r3, zero
++	  moveli r3, CTX_PAGE_FLAG
+ 	  j hv_install_context
+ 	}
+ 1:
+@@ -210,19 +210,19 @@ ENTRY(empty_zero_page)
+ 	.macro PTE cpa, bits1
+ 	.quad HV_PTE_PAGE | HV_PTE_DIRTY | HV_PTE_PRESENT | HV_PTE_ACCESSED |\
+ 	      HV_PTE_GLOBAL | (HV_PTE_MODE_CACHE_NO_L3 << HV_PTE_INDEX_MODE) |\
+-	      (\bits1) | (HV_CPA_TO_PFN(\cpa) << HV_PTE_INDEX_PFN)
++	      (\bits1) | (HV_CPA_TO_PTFN(\cpa) << HV_PTE_INDEX_PTFN)
+ 	.endm
+ 
+ __PAGE_ALIGNED_DATA
+ 	.align PAGE_SIZE
+ ENTRY(swapper_pg_dir)
+-	.org swapper_pg_dir + HV_L0_INDEX(PAGE_OFFSET) * HV_PTE_SIZE
++	.org swapper_pg_dir + PGD_INDEX(PAGE_OFFSET) * HV_PTE_SIZE
+ .Lsv_data_pmd:
+ 	.quad 0  /* PTE temp_data_pmd - PAGE_OFFSET, 0 */
+-	.org swapper_pg_dir + HV_L0_INDEX(MEM_SV_START) * HV_PTE_SIZE
++	.org swapper_pg_dir + PGD_INDEX(MEM_SV_START) * HV_PTE_SIZE
+ .Lsv_code_pmd:
+ 	.quad 0  /* PTE temp_code_pmd - PAGE_OFFSET, 0 */
+-	.org swapper_pg_dir + HV_L0_SIZE
++	.org swapper_pg_dir + SIZEOF_PGD
+ 	END(swapper_pg_dir)
+ 
+ 	.align HV_PAGE_TABLE_ALIGN
+@@ -233,11 +233,11 @@ ENTRY(temp_data_pmd)
+ 	 * permissions later.
+ 	 */
+ 	.set addr, 0
+-	.rept HV_L1_ENTRIES
++	.rept PTRS_PER_PMD
+ 	PTE addr, HV_PTE_READABLE | HV_PTE_WRITABLE
+-	.set addr, addr + HV_PAGE_SIZE_LARGE
++	.set addr, addr + HPAGE_SIZE
+ 	.endr
+-	.org temp_data_pmd + HV_L1_SIZE
++	.org temp_data_pmd + SIZEOF_PMD
+ 	END(temp_data_pmd)
+ 
+ 	.align HV_PAGE_TABLE_ALIGN
+@@ -248,11 +248,11 @@ ENTRY(temp_code_pmd)
+ 	 * permissions later.
+ 	 */
+ 	.set addr, 0
+-	.rept HV_L1_ENTRIES
++	.rept PTRS_PER_PMD
+ 	PTE addr, HV_PTE_READABLE | HV_PTE_EXECUTABLE
+-	.set addr, addr + HV_PAGE_SIZE_LARGE
++	.set addr, addr + HPAGE_SIZE
+ 	.endr
+-	.org temp_code_pmd + HV_L1_SIZE
++	.org temp_code_pmd + SIZEOF_PMD
+ 	END(temp_code_pmd)
+ 
+ 	/*
+diff --git a/arch/tile/kernel/machine_kexec.c b/arch/tile/kernel/machine_kexec.c
+index 6255f2e..b0fa37c 100644
+--- a/arch/tile/kernel/machine_kexec.c
++++ b/arch/tile/kernel/machine_kexec.c
+@@ -251,6 +251,7 @@ static void setup_quasi_va_is_pa(void)
+ void machine_kexec(struct kimage *image)
+ {
+ 	void *reboot_code_buffer;
++	pte_t *ptep;
+ 	void (*rnk)(unsigned long, void *, unsigned long)
+ 		__noreturn;
+ 
+@@ -266,8 +267,10 @@ void machine_kexec(struct kimage *image)
+ 	 */
+ 	homecache_change_page_home(image->control_code_page, 0,
+ 				   smp_processor_id());
+-	reboot_code_buffer = vmap(&image->control_code_page, 1, 0,
+-				  __pgprot(_PAGE_KERNEL | _PAGE_EXECUTABLE));
++	reboot_code_buffer = page_address(image->control_code_page);
++	BUG_ON(reboot_code_buffer == NULL);
++	ptep = virt_to_pte(NULL, (unsigned long)reboot_code_buffer);
++	__set_pte(ptep, pte_mkexec(*ptep));
+ 	memcpy(reboot_code_buffer, relocate_new_kernel,
+ 	       relocate_new_kernel_size);
+ 	__flush_icache_range(
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index 5f85d8b..1a7276a 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -1390,13 +1390,13 @@ void __init setup_per_cpu_areas(void)
+ 		for (i = 0; i < size; i += PAGE_SIZE, ++pfn, ++pg) {
+ 
+ 			/* Update the vmalloc mapping and page home. */
+-			pte_t *ptep =
+-				virt_to_pte(NULL, (unsigned long)ptr + i);
++			unsigned long addr = (unsigned long)ptr + i;
++			pte_t *ptep = virt_to_pte(NULL, addr);
+ 			pte_t pte = *ptep;
+ 			BUG_ON(pfn != pte_pfn(pte));
+ 			pte = hv_pte_set_mode(pte, HV_PTE_MODE_CACHE_TILE_L3);
+ 			pte = set_remote_cache_cpu(pte, cpu);
+-			set_pte(ptep, pte);
++			set_pte_at(&init_mm, addr, ptep, pte);
+ 
+ 			/* Update the lowmem mapping for consistency. */
+ 			lowmem_va = (unsigned long)pfn_to_kaddr(pfn);
+@@ -1409,7 +1409,7 @@ void __init setup_per_cpu_areas(void)
+ 				BUG_ON(pte_huge(*ptep));
+ 			}
+ 			BUG_ON(pfn != pte_pfn(*ptep));
+-			set_pte(ptep, pte);
++			set_pte_at(&init_mm, lowmem_va, ptep, pte);
+ 		}
+ 	}
+ 
+diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
+index c52224d..7579607 100644
+--- a/arch/tile/kernel/smp.c
++++ b/arch/tile/kernel/smp.c
+@@ -216,7 +216,7 @@ void __init ipi_init(void)
+ 		if (hv_get_ipi_pte(tile, KERNEL_PL, &pte) != 0)
+ 			panic("Failed to initialize IPI for cpu %d\n", cpu);
+ 
+-		offset = hv_pte_get_pfn(pte) << PAGE_SHIFT;
++		offset = PFN_PHYS(pte_pfn(pte));
+ 		ipi_mappings[cpu] = ioremap_prot(offset, PAGE_SIZE, pte);
+ 	}
+ #endif
+diff --git a/arch/tile/kernel/stack.c b/arch/tile/kernel/stack.c
+index 37ee4d0..9016d1c 100644
+--- a/arch/tile/kernel/stack.c
++++ b/arch/tile/kernel/stack.c
+@@ -56,12 +56,12 @@ static int valid_address(struct KBacktraceIterator *kbt, unsigned long address)
+ 	if (l1_pgtable == NULL)
+ 		return 0;	/* can't read user space in other tasks */
+ 
++	pte = l1_pgtable[PGD_INDEX(address)];
+ #ifdef CONFIG_64BIT
+ 	/* Find the real l1_pgtable by looking in the l0_pgtable. */
+-	pte = l1_pgtable[HV_L0_INDEX(address)];
+ 	if (!hv_pte_get_present(pte))
+ 		return 0;
+-	pfn = hv_pte_get_pfn(pte);
++	pfn = pte_pfn(pte);
+ 	if (pte_huge(pte)) {
+ 		if (!pfn_valid(pfn)) {
+ 			pr_err("L0 huge page has bad pfn %#lx\n", pfn);
+@@ -72,11 +72,11 @@ static int valid_address(struct KBacktraceIterator *kbt, unsigned long address)
+ 	page = pfn_to_page(pfn);
+ 	BUG_ON(PageHighMem(page));  /* No HIGHMEM on 64-bit. */
+ 	l1_pgtable = (HV_PTE *)pfn_to_kaddr(pfn);
++	pte = l1_pgtable[PMD_INDEX(address)];
+ #endif
+-	pte = l1_pgtable[HV_L1_INDEX(address)];
+ 	if (!hv_pte_get_present(pte))
+ 		return 0;
+-	pfn = hv_pte_get_pfn(pte);
++	pfn = pte_pfn(pte);
+ 	if (pte_huge(pte)) {
+ 		if (!pfn_valid(pfn)) {
+ 			pr_err("huge page has bad pfn %#lx\n", pfn);
+@@ -87,12 +87,11 @@ static int valid_address(struct KBacktraceIterator *kbt, unsigned long address)
+ 
+ 	page = pfn_to_page(pfn);
+ 	if (PageHighMem(page)) {
+-		pr_err("L2 page table not in LOWMEM (%#llx)\n",
+-		       HV_PFN_TO_CPA(pfn));
++		pr_err("L2 page table not in LOWMEM (%#llx)\n", PFN_PHYS(pfn));
+ 		return 0;
+ 	}
+ 	l2_pgtable = (HV_PTE *)pfn_to_kaddr(pfn);
+-	pte = l2_pgtable[HV_L2_INDEX(address)];
++	pte = l2_pgtable[PTE_INDEX(address)];
+ 	return hv_pte_get_present(pte) && hv_pte_get_readable(pte);
+ }
+ 
+diff --git a/arch/tile/lib/memcpy_tile64.c b/arch/tile/lib/memcpy_tile64.c
+index b2fe15e..3bc4b4e 100644
+--- a/arch/tile/lib/memcpy_tile64.c
++++ b/arch/tile/lib/memcpy_tile64.c
+@@ -160,7 +160,7 @@ retry_source:
+ 			break;
+ 		if (get_remote_cache_cpu(src_pte) == smp_processor_id())
+ 			break;
+-		src_page = pfn_to_page(hv_pte_get_pfn(src_pte));
++		src_page = pfn_to_page(pte_pfn(src_pte));
+ 		get_page(src_page);
+ 		if (pte_val(src_pte) != pte_val(*src_ptep)) {
+ 			put_page(src_page);
+@@ -168,7 +168,7 @@ retry_source:
+ 		}
+ 		if (pte_huge(src_pte)) {
+ 			/* Adjust the PTE to correspond to a small page */
+-			int pfn = hv_pte_get_pfn(src_pte);
++			int pfn = pte_pfn(src_pte);
+ 			pfn += (((unsigned long)source & (HPAGE_SIZE-1))
+ 				>> PAGE_SHIFT);
+ 			src_pte = pfn_pte(pfn, src_pte);
+@@ -188,7 +188,7 @@ retry_dest:
+ 			put_page(src_page);
+ 			break;
+ 		}
+-		dst_page = pfn_to_page(hv_pte_get_pfn(dst_pte));
++		dst_page = pfn_to_page(pte_pfn(dst_pte));
+ 		if (dst_page == src_page) {
+ 			/*
+ 			 * Source and dest are on the same page; this
+@@ -206,7 +206,7 @@ retry_dest:
+ 		}
+ 		if (pte_huge(dst_pte)) {
+ 			/* Adjust the PTE to correspond to a small page */
+-			int pfn = hv_pte_get_pfn(dst_pte);
++			int pfn = pte_pfn(dst_pte);
+ 			pfn += (((unsigned long)dest & (HPAGE_SIZE-1))
+ 				>> PAGE_SHIFT);
+ 			dst_pte = pfn_pte(pfn, dst_pte);
+diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+index 51c5e51..d1c6391 100644
+--- a/arch/tile/mm/init.c
++++ b/arch/tile/mm/init.c
+@@ -83,7 +83,7 @@ static int num_l2_ptes[MAX_NUMNODES];
+ 
+ static void init_prealloc_ptes(int node, int pages)
+ {
+-	BUG_ON(pages & (HV_L2_ENTRIES-1));
++	BUG_ON(pages & (PTRS_PER_PTE - 1));
+ 	if (pages) {
+ 		num_l2_ptes[node] = pages;
+ 		l2_ptes[node] = __alloc_bootmem(pages * sizeof(pte_t),
+@@ -132,14 +132,9 @@ static void __init assign_pte(pmd_t *pmd, pte_t *page_table)
+ 
+ #ifdef __tilegx__
+ 
+-#if HV_L1_SIZE != HV_L2_SIZE
+-# error Rework assumption that L1 and L2 page tables are same size.
+-#endif
+-
+-/* Since pmd_t arrays and pte_t arrays are the same size, just use casts. */
+ static inline pmd_t *alloc_pmd(void)
+ {
+-	return (pmd_t *)alloc_pte();
++	return __alloc_bootmem(L1_KERNEL_PGTABLE_SIZE, HV_PAGE_TABLE_ALIGN, 0);
+ }
+ 
+ static inline void assign_pmd(pud_t *pud, pmd_t *pmd)
+@@ -808,7 +803,7 @@ void __init paging_init(void)
+ 	 * changing init_mm once we get up and running, and there's no
+ 	 * need for e.g. vmalloc_sync_all().
+ 	 */
+-	BUILD_BUG_ON(pgd_index(VMALLOC_START) != pgd_index(VMALLOC_END));
++	BUILD_BUG_ON(pgd_index(VMALLOC_START) != pgd_index(VMALLOC_END - 1));
+ 	pud = pud_offset(pgd_base + pgd_index(VMALLOC_START), VMALLOC_START);
+ 	assign_pmd(pud, alloc_pmd());
+ #endif
+diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
+index de7d8e2..14e7e9e 100644
+--- a/arch/tile/mm/pgtable.c
++++ b/arch/tile/mm/pgtable.c
+@@ -288,13 +288,12 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ 
+ #define L2_USER_PGTABLE_PAGES (1 << L2_USER_PGTABLE_ORDER)
+ 
+-struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
++struct page *pgtable_alloc_one(struct mm_struct *mm, unsigned long address,
++			       int order)
+ {
+ 	gfp_t flags = GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO;
+ 	struct page *p;
+-#if L2_USER_PGTABLE_ORDER > 0
+ 	int i;
+-#endif
+ 
+ #ifdef CONFIG_HIGHPTE
+ 	flags |= __GFP_HIGHMEM;
+@@ -304,17 +303,15 @@ struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
+ 	if (p == NULL)
+ 		return NULL;
+ 
+-#if L2_USER_PGTABLE_ORDER > 0
+ 	/*
+ 	 * Make every page have a page_count() of one, not just the first.
+ 	 * We don't use __GFP_COMP since it doesn't look like it works
+ 	 * correctly with tlb_remove_page().
+ 	 */
+-	for (i = 1; i < L2_USER_PGTABLE_PAGES; ++i) {
++	for (i = 1; i < order; ++i) {
+ 		init_page_count(p+i);
+ 		inc_zone_page_state(p+i, NR_PAGETABLE);
+ 	}
+-#endif
+ 
+ 	pgtable_page_ctor(p);
+ 	return p;
+@@ -325,28 +322,28 @@ struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
+  * process).  We have to correct whatever pte_alloc_one() did before
+  * returning the pages to the allocator.
+  */
+-void pte_free(struct mm_struct *mm, struct page *p)
++void pgtable_free(struct mm_struct *mm, struct page *p, int order)
+ {
+ 	int i;
+ 
+ 	pgtable_page_dtor(p);
+ 	__free_page(p);
+ 
+-	for (i = 1; i < L2_USER_PGTABLE_PAGES; ++i) {
++	for (i = 1; i < order; ++i) {
+ 		__free_page(p+i);
+ 		dec_zone_page_state(p+i, NR_PAGETABLE);
+ 	}
+ }
+ 
+-void __pte_free_tlb(struct mmu_gather *tlb, struct page *pte,
+-		    unsigned long address)
++void __pgtable_free_tlb(struct mmu_gather *tlb, struct page *pte,
++			unsigned long address, int order)
+ {
+ 	int i;
+ 
+ 	pgtable_page_dtor(pte);
+ 	tlb_remove_page(tlb, pte);
+ 
+-	for (i = 1; i < L2_USER_PGTABLE_PAGES; ++i) {
++	for (i = 1; i < order; ++i) {
+ 		tlb_remove_page(tlb, pte + i);
+ 		dec_zone_page_state(pte + i, NR_PAGETABLE);
+ 	}
+@@ -481,7 +478,7 @@ void set_pte(pte_t *ptep, pte_t pte)
+ /* Can this mm load a PTE with cached_priority set? */
+ static inline int mm_is_priority_cached(struct mm_struct *mm)
+ {
+-	return mm->context.priority_cached;
++	return mm->context.priority_cached != 0;
+ }
+ 
  /*
-  * strnlen_user_asm takes the pointer in r0, and the length bound in r1.
-  * It returns the length, including the terminating NUL, or zero on exception.
+@@ -491,8 +488,8 @@ static inline int mm_is_priority_cached(struct mm_struct *mm)
+ void start_mm_caching(struct mm_struct *mm)
+ {
+ 	if (!mm_is_priority_cached(mm)) {
+-		mm->context.priority_cached = -1U;
+-		hv_set_caching(-1U);
++		mm->context.priority_cached = -1UL;
++		hv_set_caching(-1UL);
+ 	}
+ }
+ 
+@@ -507,7 +504,7 @@ void start_mm_caching(struct mm_struct *mm)
+  * Presumably we'll come back later and have more luck and clear
+  * the value then; for now we'll just keep the cache marked for priority.
+  */
+-static unsigned int update_priority_cached(struct mm_struct *mm)
++static unsigned long update_priority_cached(struct mm_struct *mm)
+ {
+ 	if (mm->context.priority_cached && down_write_trylock(&mm->mmap_sem)) {
+ 		struct vm_area_struct *vm;
 -- 
 1.6.5.2
 
