@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab2C2CIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 22:08:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58039 "EHLO mx1.redhat.com"
+	id S933039Ab2C2CI7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 22:08:59 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:56568 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758641Ab2C2CIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 22:08:31 -0400
-Date: Wed, 28 Mar 2012 22:08:20 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Dave Chinner <david@fromorbit.com>,
-        viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: suppress page allocation failure warnings from sys_listxattr
-Message-ID: <20120329020820.GB22697@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Joe Perches <joe@perches.com>, Dave Chinner <david@fromorbit.com>,
-	viro@zeniv.linux.org.uk,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	David Rientjes <rientjes@google.com>
-References: <20120327155149.d41a235b.akpm@linux-foundation.org>
- <20120328001550.GA3077@redhat.com>
- <20120328043951.GA32741@dastard>
- <20120328164720.d1aea752.akpm@linux-foundation.org>
- <20120329005442.GB16008@redhat.com>
- <20120328181023.274401d1.akpm@linux-foundation.org>
- <1332984523.30775.12.camel@joe2Laptop>
- <20120328184602.e6b11a37.akpm@linux-foundation.org>
- <20120329015059.GA22697@redhat.com>
- <20120328190211.4ac8a653.akpm@linux-foundation.org>
+	id S1758641Ab2C2CIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 22:08:52 -0400
+X-IronPort-AV: E=Sophos;i="4.75,335,1330934400"; 
+   d="scan'208";a="637063897"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        "Linux Kernel mailing list" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
+Thread-Topic: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
+Thread-Index: AQHNDU+E6ZdFWqFeI0qI10V6oguVYJaA+9eAgAAAowA=
+Date: Thu, 29 Mar 2012 02:08:44 +0000
+Message-ID: <1332986928.19172.45.camel@lade.trondhjem.org>
+References: <1332986348.19172.43.camel@lade.trondhjem.org>
+	 <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>
+In-Reply-To: <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <AE1421D6C64F754388B1A0EDF73396B1@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328190211.4ac8a653.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2T292F5002089
 
-On Wed, Mar 28, 2012 at 07:02:11PM -0700, Andrew Morton wrote:
+On Wed, 2012-03-28 at 19:06 -0700, Linus Torvalds wrote:
+> On Wed, Mar 28, 2012 at 6:59 PM, Myklebust, Trond
+> <Trond.Myklebust@netapp.com> wrote:
+> >
+> > Please pull from the signed tag "nfs-for-3.4-2" in the repository at
+> >
+> >   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tag nfs-for-3.4-2
+> 
+> Btw, please change your pull request to say "tag/nfs-for-3.4-2"
+> instead of "tag nfs-for-3.4-2".
+> 
+> Both work, but there's a subtle difference: the "pull tag xyz" is
+> basically asking me to not just pull, but also add the tag to my set
+> of tags, which I'm not interested in. In contrast "pull tag/xyz" asks
+> me to just pull the tag contents.
 
- > > Also, what happens if something allocates
- > > and sits on a bunch of vmalloc'd memory ? would we start seeing oom kills ?
- > 
- > vmalloc() would fail.
+Sure thing... I wasn't aware of that semantic difference, but I'm quite
+happy to add it to my script...
 
-Ok, that's a pretty boring failure mode, so not a big deal probably.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
- > > (thinking of the context of my fuzzing tool where a bunch of instances could
- > >  feasibly call these syscalls and not sit on huge amounts per thread, but
- > >  collectively...  I'm wondering if it could be provoked into killing
- > >  processes I don't own)
- > 
- > umm, if you wanted to deliberately trigger a vmalloc() failure then I
- > guess a good approach would be to locate a vmalloc() site which can
- > persist beyond the syscall (modprobe is a good one!) then exercise it
- > in a way so that there are no N-byte holes left in the arena, then
- > trigger an N-byte vmalloc().
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Well modprobe is root-only, so that's not so bad. But it looks like
-key_add (see other thread from this evening) and probably others can be
-called as a user and gobble up vmalloc space. omnomnom.
-
-	Dave
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
