@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2C2Ib7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:31:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39647 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab2C2Ibx convert rfc822-to-8bit (ORCPT
+	id S1758106Ab2C2IhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 04:37:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44274 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750839Ab2C2IhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:31:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAC83ZvKXMGfbM=ay_cPim1_PQk5nDRuC3+csOVfLzOVr9Qg6rg@mail.gmail.com>
-References: <1332769480-28069-1-git-send-email-shubhrajyoti@ti.com>
-	<1332769480-28069-2-git-send-email-shubhrajyoti@ti.com>
-	<CAC83ZvKXMGfbM=ay_cPim1_PQk5nDRuC3+csOVfLzOVr9Qg6rg@mail.gmail.com>
-Date: Thu, 29 Mar 2012 14:01:52 +0530
-Message-ID: <CAM=Q2csDWfV5wy1LNX2=JP38t7FAtrGxxq9D7v-wX81j0paLSg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] spi/omap: Remove bus_num usage for instance index
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-Cc: Shubhrajyoti D <shubhrajyoti@ti.com>,
-        spi-devel-general@lists.sourceforge.net, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benoit Cousson <b-cousson@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Mar 2012 04:37:05 -0400
+Message-ID: <1333010107.2823.18.camel@dabdike>
+Subject: Re: linux-next: build failure after merge of the scsi tree
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Gerard Snitselaar <dev@snitselaar.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 29 Mar 2012 09:35:07 +0100
+In-Reply-To: <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
+References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
+	 <1332748641.2836.8.camel@dabdike> <20120326140721.GA19827@kroah.com>
+	 <20120327221721.GA3233@p183.telecom.by> <20120327222216.GB469@kroah.com>
+	 <20120327223510.GB3233@p183.telecom.by> <20120328235217.GA17212@kroah.com>
+	 <20120329073240.GA21382@perelman.Home>
+	 <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tarun,
+On Thu, 2012-03-29 at 19:25 +1100, Stephen Rothwell wrote:
+> On Thu, 29 Mar 2012 00:32:40 -0700 Gerard Snitselaar <dev@snitselaar.org> wrote:
+> > On Wed Mar 28 12, Greg KH wrote:
+> > > > > > 
+> > > > > > See commits 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
+> > > > > > Especially the first one.
+> > > 
+> > > I don't know where to find these patches, care to send them to me, or
+> > > point me at a link with them?
+> > > 
+> > 
+> > They are visible in next-20120329
+> 
+> I don't think so.  They were in next-2012032[67], but were removed again.
 
-On Wed, Mar 28, 2012 at 2:15 PM, DebBarma, Tarun Kanti
-<tarun.kanti@ti.com> wrote:
-> On Mon, Mar 26, 2012 at 7:14 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
->> From: Benoit Cousson <b-cousson@ti.com>
->>
->> bus_num was used to reference the mcspi controller instance in a fixed array.
->> Remove this array and store this information directly inside drvdata structure.
->>
->> bus_num is now just set if the pdev->id is present or with -1 for dynamic
->> allocation by SPI core, but the driver does not access it anymore.
->>
->> Clean some bad comments format, and remove un-needed space.
->>
->> Signed-off-by: Benoit Cousson <b-cousson@ti.com>
->> [Cleanup the OMAP2_MCSPI_MAX_CTRL macro as it is not needed anymore]
->> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
->> ---
->>  drivers/spi/spi-omap2-mcspi.c |   75 ++++++++++++++++++----------------------
->>  1 files changed, 34 insertions(+), 41 deletions(-)
->>
->> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
->> index bb9274c..7785091 100644
->> --- a/drivers/spi/spi-omap2-mcspi.c
->> +++ b/drivers/spi/spi-omap2-mcspi.c
->> @@ -45,9 +45,6 @@
->>
-<snip>
->>
->>        tmp = OMAP2_MCSPI_WAKEUPENABLE_WKEN;
->>        mcspi_write_reg(master, OMAP2_MCSPI_WAKEUPENABLE, tmp);
->> -       omap2_mcspi_ctx[master->bus_num - 1].wakeupenable = tmp;
->> +       ctx->wakeupenable = tmp;
-> Can't we get rid of tmp now? For example:
-> ctx->wakeupenable = OMAP2_MCSPI_WAKEUPENABLE_WKEN;
-> mcspi_write_reg(master, OMAP2_MCSPI_WAKEUPENABLE, ctx->wakeupenable);
+The plan is to put them back once we go 3.4-rc1 so we have a whole
+release cycle to fix up any breakage.
 
-Yes the tmp variable could be optimized
-since it is in addition to the $SUBJECT will do it in a separate patch .
-Is that fine?
+James
 
-> --
-> Tarun
->
+
