@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760173Ab2C2W1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 18:27:31 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57170 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759487Ab2C2W1X convert rfc822-to-8bit (ORCPT
+	id S1760186Ab2C2Wbp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 18:31:45 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12812 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760123Ab2C2Wbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 18:27:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120309124119.GV3273@opensource.wolfsonmicro.com>
-References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
- <1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
- <1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com> <20120309124119.GV3273@opensource.wolfsonmicro.com>
-From: Erik Gilling <konkers@google.com>
-Date: Thu, 29 Mar 2012 15:27:01 -0700
-Message-ID: <CACSP8ShU5tu=9N53PtYMLyFVFMS9whNRhMvu7nu8rBoPuVCy+Q@mail.gmail.com>
-Subject: Re: [PATCH v6 1/5] Extcon (external connector): import Android's
- switch class and modify.
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        NeilBrown <neilb@suse.de>, gregkh@linuxfoundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        myungjoo.ham@gmail.com, John Stultz <john.stultz@linaro.org>,
+	Thu, 29 Mar 2012 18:31:38 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6664"; a="177136566"
+Date: Thu, 29 Mar 2012 15:31:36 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        kernel@pengutronix.de, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Lennert Buytenhek <kernel@wantstofly.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>, Barry Song <baohua.song@csr.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         linux-arm-kernel@lists.infradead.org,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mike Lockwood <lockwood@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-samsung-soc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 03/17] ARM: mark const init data with __initconst instead
+ of __initdata
+Message-ID: <20120329223136.GA1930@codeaurora.org>
+References: <20120329211131.GA31250@pengutronix.de>
+ <1333055554-31300-3-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1333055554-31300-3-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 4:41 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Feb 27, 2012 at 09:15:35PM +0900, MyungJoo Ham wrote:
->
->> +#ifdef CONFIG_ANDROID
->> +             extcon_class = class_create(THIS_MODULE, "switch");
->> +#else /* !CONFIG_ANDROID */
->> +             extcon_class = class_create(THIS_MODULE, "extcon");
->> +#endif /* CONFIG_ANDROID */
->
-> This seems somewhat sad - if ANDROID is turned on the standard ABI
-> vanishes.  It'd be much nicer to do this with a symlink (or with
-> symlinks within the android directory if the driver core doesn't support
-> that).  That way userspace code can be written to the new ABI and will
-> work on Android systems without ifdefery.
+On Thu, Mar 29, 2012 at 11:12:20PM +0200, Uwe Kleine-König wrote:
 
-This won't work if userspace code is receiving uevents through netlink
-and comparing based on the device name which it does in android.  Why
-change the name at all?  Extcon is much more specific than "switch."
-A switch can can be used for more than just external connections such
-as availability of HMDI audio (which is only available once a HDMI
-mode is chosen and the interface is enabled.)
+>  arch/arm/mach-msm/board-msm8x60.c             |    2 +-
+>  arch/arm/mach-msm/board-qsd8x50.c             |    4 +-
 
--Erik
+Acked-by: David Brown <davidb@codeaurora.org>
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
