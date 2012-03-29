@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522Ab2C2PFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 11:05:49 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:33491 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759504Ab2C2PFn (ORCPT
+	id S933517Ab2C2PN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 11:13:56 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35334 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932491Ab2C2PNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 11:05:43 -0400
-Date: Thu, 29 Mar 2012 17:05:41 +0200
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Jason Baron <jbaron@redhat.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
-Message-ID: <20120329150541.GB3173@hell>
-References: <1332943060-18374-1-git-send-email-hagen@jauu.net>
- <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
- <20120328162108.GB2381@redhat.com>
- <20120328195848.GA5331@hell>
- <20120329141653.GA2424@redhat.com>
+	Thu, 29 Mar 2012 11:13:47 -0400
+Date: Thu, 29 Mar 2012 08:13:43 -0700
+From: "'Greg KH'" <gregkh@linuxfoundation.org>
+To: Donald <donald@asix.com.tw>
+Cc: "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
+Message-ID: <20120329151343.GA32474@kroah.com>
+References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>
+ <20120313160951.GA18810@kroah.com>
+ <005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
 MIME-Version: 1.0
+In-Reply-To: <005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120329141653.GA2424@redhat.com>
-X-Key-Id: 98350C22
-X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
-X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jason Baron | 2012-03-29 10:16:53 [-0400]:
+On Thu, Mar 29, 2012 at 09:33:36PM +0800, Donald wrote:
+> Hi Greg,
+> 
+> I am submitting this patch that supports MCS7810 device for the mos7840
+> driver. If you see any problem regarding this patch, please let me know at
+> any time. Thank you for your help.
+> 
+> Regards,
+> Donald
+> 
+> Patch Description:
+> This patch added the support of MCS7810 device for the mos7840 driver. The
+> MCS7810 device supports single USB2.0-to-Serial port with a LED indicator
+> for reflecting transmission or reception activity. Please be noted that part
+> of codes in his patch are relating to the codes in last submitted patch that
+> fixed MCS7820 device attach problem.
 
->Right, for level triggered events, they all wait up. However, if you use
->edge triggered, ie add 'EPOLLET', then the event gets 'consumed' by the
->first thread that wakes up, and the subseqent waiters wouldn't get woken
->up. IE you'll get one wakeup.
+Along with Alan's comments, I need this to be able to be applied, and if
+you include portions of the patch that I have already accepted, I can't
+apply it, right?
 
-I addressed level triggered, right - it match the model. But I don't wanted to
-wake up every every thread anyway. I don't want to abandon level triggered
-functioning.
+Can you redo this patch against 3.4-rc1 when it comes out in a few days?
 
-Any objective against this flag?
+thanks,
 
-Hagen
+greg k-h
