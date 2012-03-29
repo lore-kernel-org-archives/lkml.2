@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394Ab2C2EVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 00:21:21 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60323 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2C2EVO (ORCPT
+	id S1751492Ab2C2EVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 00:21:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59836 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab2C2EVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 00:21:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332994124.30608.5.camel@lade.trondhjem.org>
-References: <1332986348.19172.43.camel@lade.trondhjem.org> <CA+55aFwVzhgsw005P3+BkLw_=noJwkQB3G=Q4GqhfLL1WyPHfg@mail.gmail.com>
- <1332986928.19172.45.camel@lade.trondhjem.org> <CA+55aFyQ0r5mN9=3DUVENCtdj8VMLRjiXTc5Xd4o+F=s9B8xMg@mail.gmail.com>
- <1332988097.19172.51.camel@lade.trondhjem.org> <4F73D44C.5090604@panasas.com>
- <CA+55aFyHmQBXw3ik3qv81_3Zp+4r-VUt_TNBs-M19b6Zt7PDeQ@mail.gmail.com> <1332994124.30608.5.camel@lade.trondhjem.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Mar 2012 21:20:52 -0700
-X-Google-Sender-Auth: 5N0lPqNBub0xA8ETGiXW_C__RG4
-Message-ID: <CA+55aFwxkWpH1WyBnE1Lg9eRAfPsfcyoZev7-O9TGrPKTB1pOg@mail.gmail.com>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes for Linux 3.4...
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 Mar 2012 00:21:24 -0400
+Message-ID: <1332994877.4275.1.camel@phoenix>
+Subject: [PATCH] regulator: Fix comments in include/linux/regulator/machine.h
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 29 Mar 2012 12:21:17 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 9:08 PM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
->
-> Maybe I'm running an older version of git (Fedora 16 latest update), but
-> when I do
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ include/linux/regulator/machine.h |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-Yeah, you need git 1.7.9 to get the tag content support.
+diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
+index 7abb160..b021084 100644
+--- a/include/linux/regulator/machine.h
++++ b/include/linux/regulator/machine.h
+@@ -71,7 +71,7 @@ struct regulator_state {
+  * @uV_offset: Offset applied to voltages from consumer to compensate for
+  *             voltage drops.
+  *
+- * @min_uA: Smallest consumers consumers may set.
++ * @min_uA: Smallest current consumers may set.
+  * @max_uA: Largest current consumers may set.
+  *
+  * @valid_modes_mask: Mask of modes which may be configured by consumers.
+@@ -134,10 +134,8 @@ struct regulation_constraints {
+ /**
+  * struct regulator_consumer_supply - supply -> device mapping
+  *
+- * This maps a supply name to a device.  Only one of dev or dev_name
+- * can be specified.  Use of dev_name allows support for buses which
+- * make struct device available late such as I2C and is the preferred
+- * form.
++ * This maps a supply name to a device. Use of dev_name allows support for
++ * buses which make struct device available late such as I2C.
+  *
+  * @dev_name: Result of dev_name() for the consumer.
+  * @supply: Name for the supply.
+-- 
+1.7.5.4
 
-With older git versions, spell out "tags/xyz" instead of just "xyz",
-and it will all work, but it still won't actually show the tag
-content.
 
-                        Linus
+
