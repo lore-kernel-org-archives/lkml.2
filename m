@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab2C2DFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 23:05:05 -0400
-Received: from szxga01-in.huawei.com ([58.251.152.64]:34491 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758049Ab2C2DFB (ORCPT
+	id S1758754Ab2C2DME (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 23:12:04 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:32934 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049Ab2C2DL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 23:05:01 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Mar 2012 23:05:01 EDT
-Date: Thu, 29 Mar 2012 10:57:03 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] cgroup: update MAINTAINERS entry
-X-Originating-IP: [10.166.88.150]
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Message-id: <4F73CF7F.8090309@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=GB2312
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
- Thunderbird/11.0
-X-CFilter-Loop: Reflected
+	Wed, 28 Mar 2012 23:11:57 -0400
+Date: Thu, 29 Mar 2012 11:11:37 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Sven Eckelmann <sven@narfation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, simon.wunderlich@s2003.tu-chemnitz.de,
+        Marek Lindner <lindner_marek@yahoo.de>
+Subject: Re: Using nested locking for spin_lock_bh
+Message-ID: <20120329031136.GA2062@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <2108147.Aqyix6xDmB@bentobox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <2108147.Aqyix6xDmB@bentobox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update my email address.
+On Wed, Mar 28, 2012 at 06:36:39PM +0200, Sven Eckelmann wrote:
+> Hi,
+> 
+> I started to run some experimental batman-adv code inside some virtual 
+> machines with different debugging functions enabled. One of them was lockdep. 
+> There we noticed a false positive for a lock class that is actually used in 
+> two different data structures.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Hmm, I think you can initialize the lock class in the two differnent data
+structures with differnt lock_class_key.
 
---- linux-kernel.orig/MAINTAINERS	2012-03-28 22:52:37.000000000 -0400
-+++ linux-kernel/MAINTAINERS	2012-03-28 22:52:01.000000000 -0400
-@@ -1939,7 +1939,7 @@ F:	drivers/connector/
- 
- CONTROL GROUPS (CGROUPS)
- M:	Tejun Heo <tj@kernel.org>
--M:	Li Zefan <lizf@cn.fujitsu.com>
-+M:	Li Zefan <lizefan@huawei.com>
- L:	containers@lists.linux-foundation.org
- L:	cgroups@vger.kernel.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
+Thanks,
+Yong
+
+> Therefore, lockdep noticed that there could be 
+> a deadlock for this class in a function that locks the two different data 
+> structures.
+> 
+> To resolve this problem, I wanted to define two different subclasses and 
+> replace the spin_lock_bh with its nested version. The only problem now is the 
+> absence of spin_lock_bh_nested. I could only find spin_lock_bh and 
+> spin_lock_irqsave_nested.
+> 
+> Is there another way how this should be done or is there a general problem why 
+> there is no nested support for this incarnation of spin_lock?
+> 
+> Kind regards,
+> 	Sven
+
+
+
+-- 
+Only stand for myself
