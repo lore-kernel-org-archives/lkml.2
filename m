@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab2C2IhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 04:37:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44274 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750839Ab2C2IhF (ORCPT
+	id S1758300Ab2C2Iho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 04:37:44 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59963 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2C2Ihi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 04:37:05 -0400
-Message-ID: <1333010107.2823.18.camel@dabdike>
-Subject: Re: linux-next: build failure after merge of the scsi tree
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Gerard Snitselaar <dev@snitselaar.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 Mar 2012 09:35:07 +0100
-In-Reply-To: <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
-References: <20120326121719.dc4c2b1faca5cf12c8d76d93@canb.auug.org.au>
-	 <1332748641.2836.8.camel@dabdike> <20120326140721.GA19827@kroah.com>
-	 <20120327221721.GA3233@p183.telecom.by> <20120327222216.GB469@kroah.com>
-	 <20120327223510.GB3233@p183.telecom.by> <20120328235217.GA17212@kroah.com>
-	 <20120329073240.GA21382@perelman.Home>
-	 <20120329192507.64c6c57b65cd0568d5e89ccc@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 29 Mar 2012 04:37:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332960747_131180@CP5-2952>
+References: <1332959199-32161-1-git-send-email-djkurtz@chromium.org>
+ <1332959199-32161-6-git-send-email-djkurtz@chromium.org> <1332960747_131180@CP5-2952>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 29 Mar 2012 16:37:18 +0800
+X-Google-Sender-Auth: eGoHokQ6d2j0gMgu6kqxoTsOTPE
+Message-ID: <CAGS+omBWDoc2YiKPmBJ7=iEr+1DFBZp0EDCpPwP9c7FcbC4iew@mail.gmail.com>
+Subject: Re: [PATCH 5/7 v6] drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-29 at 19:25 +1100, Stephen Rothwell wrote:
-> On Thu, 29 Mar 2012 00:32:40 -0700 Gerard Snitselaar <dev@snitselaar.org> wrote:
-> > On Wed Mar 28 12, Greg KH wrote:
-> > > > > > 
-> > > > > > See commits 422f07001d6638fdde28f1909cc9162bc7f571d3..104c4fe25dc9bde823ba4591e910a77071b98ab5
-> > > > > > Especially the first one.
-> > > 
-> > > I don't know where to find these patches, care to send them to me, or
-> > > point me at a link with them?
-> > > 
-> > 
-> > They are visible in next-20120329
-> 
-> I don't think so.  They were in next-2012032[67], but were removed again.
+On Thu, Mar 29, 2012 at 2:52 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Thu, 29 Mar 2012 02:26:37 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+>> It is very common for an i2c device to require a small 1 or 2 byte write
+>> followed by a read.  For example, when reading from an i2c EEPROM it is
+>> common to write and address, offset or index followed by a reading some
+>> values.
+>
+> Hmm, I have
+>
+> "gmbus1, bits 8-15: 8-bit GMBUS slave register
+> This field is redundant and should not be used."
+>
+> Scary. :)
 
-The plan is to put them back once we go 3.4-rc1 so we have a whole
-release cycle to fix up any breakage.
+Perhaps INDEX ops are only available on some chipsets?
+Is this something you can double check?
 
-James
-
-
+>
+> Otherwise, the code itself looks correct and quite neatly done now.
+> -Chris
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
