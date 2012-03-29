@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759082Ab2C2LKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 07:10:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52208 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751479Ab2C2LKc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 07:10:32 -0400
-Date: Thu, 29 Mar 2012 12:10:31 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/2] regulator: Fix setting low power mode for wm831x aldo
-Message-ID: <20120329111030.GI3668@opensource.wolfsonmicro.com>
-References: <1333004575.8548.1.camel@phoenix>
+	id S1759094Ab2C2LLW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 07:11:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab2C2LLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 07:11:16 -0400
+Message-ID: <4F744350.1060007@redhat.com>
+Date: Thu, 29 Mar 2012 13:11:12 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FK65GREB+Evh/hTL"
-Content-Disposition: inline
-In-Reply-To: <1333004575.8548.1.camel@phoenix>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 02/13] KVM: MMU: abstract spte write-protect
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F742999.9080001@linux.vnet.ibm.com>
+In-Reply-To: <4F742999.9080001@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/29/2012 11:21 AM, Xiao Guangrong wrote:
+> Introduce a common function to abstract spte write-protect to cleanup the
+> code
+>
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   57 ++++++++++++++++++++++++++++++---------------------
+>  1 files changed, 33 insertions(+), 24 deletions(-)
+>
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index c759e4f..ad40647 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1015,27 +1015,43 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+>  		rmap_remove(kvm, sptep);
+>  }
+>
+> +/* Return true if the spte is dropped. */
+> +static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+> +			       int *flush)
 
---FK65GREB+Evh/hTL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+bool *flush
 
-On Thu, Mar 29, 2012 at 03:02:55PM +0800, Axel Lin wrote:
-> Set BIT[8] of LDO7 ON Control mode for low power mode.
+> +{
+> +	u64 spte = *sptep;
+> +
+> +	if (!is_writable_pte(spte))
+> +		return false;
+> +
+> +	*flush |= true;
+> +
+> +	if (large) {
+> +		pgprintk("rmap_write_protect(large): spte %p %llx\n",
+> +			 spte, *spte);
+> +		BUG_ON(!is_large_pte(spte));
+> +
+> +		drop_spte(kvm, sptep);
+> +		--kvm->stat.lpages;
+> +		return true;
+> +	}
 
-Applied both, thanks.
+As I mentioned before, write-protecting a large spte is a good idea,
+since it moves some work from protect-time to fault-time, so it reduces
+jitter.  This removes the need for the return value.
 
---FK65GREB+Evh/hTL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+It may also be a good idea to populate the lower level instead of
+dropping the spte.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+All outside this patch set of course.  I'd add those ideas to the wiki
+but it won't let me edit at the moment.
 
-iQIcBAEBAgAGBQJPdEMgAAoJEBus8iNuMP3dKBMP/RlOnEpoG/reBmom0/oMHvhC
-7b+VW8il4+46dmlMlu09ReoRlUcq/X+d2bE8eeeEiB6jIS14H0nO7ZGIqCY0xtZy
-RJQfrB2kMWaF3AYyx54fbDGOmjs6yF51QguzfvYisB+Q+gjdLp6hjbyAKMF0nY5D
-gMTXIx40oLUUQIvqhaqZUluMNKzPhQt0p1H0ifAhcOwYb88JOvgNbu2xoqSK/Al0
-Rd3m4cCBB1UqyYVVtctCsug8oEuBb5dMJURorsqsAr4T7LuRntKM7OgENgiV0wXp
-mzRouU0G1rfVl4COV50+g8lNE9Vsa+WdVGhmsh8qhp8o8GBZ4IeymKSOdy336C3d
-ccEwoHQO0AHbRxk/j24xIfZV1odlTTQeO4aKHM1sE23uemXZp4MoFyNPUiJcdV7a
-AEegJLoY5+nwB9t3CWGCavvdyF3YbZaR5M6gfEXmORPqZjy4jBzhm42Z1k6uizrY
-LkUyPi9uEsSIEME1PLF9ptt26i5W+mbax6buJIv378FQe78bfQQePXAGONfJuLqK
-xv3Lcg8P1s3HnieY7so7bdFn/F5jNKpkwf03Aw5xWGE5FCF925aYG+VPRCMX9JER
-CrRFWo6mW5tKvHfTebdpj+c7ZhjrpDd2WVF5ctFKbHZpsvpHj5AZl4mxLnwvPWhC
-9KanchNdnWUGHlpuBe9K
-=d1h3
------END PGP SIGNATURE-----
+> +
+> +	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
+> +	spte = spte & ~PT_WRITABLE_MASK;
+> +	mmu_spte_update(sptep, spte);
+> +
+> +	return false;
+> +}
+> +
+>
 
---FK65GREB+Evh/hTL--
+
+-- 
+error compiling committee.c: too many arguments to function
+
