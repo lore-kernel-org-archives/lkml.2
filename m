@@ -1,38 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab2C2Cf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 22:35:56 -0400
-Received: from home.keithp.com ([63.227.221.253]:60284 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758705Ab2C2Cfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 22:35:48 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: Re: [PATCH] Revert "Bluetooth: Always enable management interface"
-In-Reply-To: <20120329022839.GA26111@joana>
-References: <1332983958-2734-1-git-send-email-keithp@keithp.com> <20120329022839.GA26111@joana>
-User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 28 Mar 2012 19:35:44 -0700
-Message-ID: <86r4wct9q7.fsf@sumi.keithp.com>
+	id S1758906Ab2C2CkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 22:40:06 -0400
+Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:35944 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758705Ab2C2Cj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 22:39:58 -0400
+From: Jett Zhou <jtzhou@marvell.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Haojian Zhuang <hzhuang1@marvell.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 28 Mar 2012 19:39:50 -0700
+Subject: RE: [PATCH 1/4] regulator: Set list_voltage callback for 88pm8607
+Thread-Topic: [PATCH 1/4] regulator: Set list_voltage callback for 88pm8607
+Thread-Index: Ac0MsRvS8quV1AT+RMGG4pz4QzVewgAo+0Kw
+Message-ID: <78895A20B3CF7D49B5589B604D36692B1A1B21D21A@SC-VEXCH4.marvell.com>
+References: <1332917909.19101.1.camel@phoenix>
+In-Reply-To: <1332917909.19101.1.camel@phoenix>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2T2eB8c002303
 
-<#part sign=pgpmime>
-On Wed, 28 Mar 2012 23:28:39 -0300, Gustavo Padovan <gustavo@padovan.org> wrote:
+Tested these patch by jett zhou, it works ok!
+Thanks
 
-> A consequence is that you'll need to use newer version of bluez, at least 4.99.
-> Or call the bluetooth daemon (from a pre 4.99 version) with a parameter to
-> disable the new interface:
+-----Original Message-----
+From: Axel Lin [mailto:axel.lin@gmail.com] 
+Sent: Wednesday, March 28, 2012 2:58 PM
+To: linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang; Liam Girdwood; Mark Brown; Jett Zhou
+Subject: [PATCH 1/4] regulator: Set list_voltage callback for 88pm8607
 
-That's not OK -- you're breaking user space with this kernel change. I
-know I get bashed every time I suggest that we 'fix' the kernel and
-require new user space X bits...
+Current code implements pm8607_list_voltage but does not set the list_voltage
+callback function in pm8607_regulator_ops. Fix it.
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/88pm8607.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index 28b81ae..981b47a 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -328,6 +328,7 @@ static int pm8607_is_enabled(struct regulator_dev *rdev)
+ }
+ 
+ static struct regulator_ops pm8607_regulator_ops = {
++	.list_voltage	= pm8607_list_voltage,
+ 	.set_voltage	= pm8607_set_voltage,
+ 	.get_voltage	= pm8607_get_voltage,
+ 	.enable		= pm8607_enable,
 -- 
-keith.packard@intel.com
+1.7.5.4
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
