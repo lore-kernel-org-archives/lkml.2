@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab2C2Aqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Mar 2012 20:46:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32349 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab2C2AqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Mar 2012 20:46:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124558937"
-Date: Thu, 29 Mar 2012 08:41:07 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: GIT PULL] ext4 updates for 3.4
-Message-ID: <20120329004107.GA25447@localhost>
-References: <E1SCEK7-0008CY-LJ@tytso-glaptop.cam.corp.google.com>
- <CA+55aFwxWZ9-xLsZoi+iFMjkt-+V64q4jfMz=dampgJrMX5Ncw@mail.gmail.com>
- <CA+55aFy+go3EwPeQcdv+kvy3vQ2Qxcoizoap8MFGKqSC42ajFg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy+go3EwPeQcdv+kvy3vQ2Qxcoizoap8MFGKqSC42ajFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758915Ab2C2Avf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Mar 2012 20:51:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53710 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758210Ab2C2Ava (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Mar 2012 20:51:30 -0400
+Date: Thu, 29 Mar 2012 11:51:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jikos@jikos.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Przemo Firszt <przemo@firszt.eu>
+Subject: linux-next: build warning after merge of the hid tree
+Message-Id: <20120329115117.70e8660dbd0c73354486eba9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 04:45:55PM -0700, Linus Torvalds wrote:
-> On Wed, Mar 28, 2012 at 4:36 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > I have no real data for this, though - just a "mouse pointer
-> > occasionally freezing up". So I'm looking for a potential "hmm, that
-> > makes me wonder if..." kind of reaction.
-> 
-> Heh. It may have been that my wireless mouse was having some issue
-> syncing properly with the receiver. I unplugged and replugged the
-> receiver, and I seem unable to reproduce the problem. So this may have
-> been just an actual hardware latency issue, rather than the kernel
-> having bad latency.
+--Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah my wireless mouse also becomes insensitive nowadays (perhaps
-running low on battery power?)
+Hi Jiri,
 
-> But if it made you go "hmm, I should check xyz", please do go ahead
-> and check it anyway, just in case ;)
+After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
+produced this warning:
 
-I just booted into the new kernel, did some compile testing and it looks good.
+drivers/hid/Kconfig:595:error: recursive dependency detected!
+drivers/hid/Kconfig:595:	symbol HID_WACOM depends on HID_WACOM
 
-Anyway the classical "mouse pointer freezing up" problems are often
-caused by waits in direct page reclaim and can be confirmed with large
+Caused (very obviously) by commit 224b321b312e ("HID: wacom: Remove
+CONFIG_HID_WACOM_POWER_SUPPLY option").
 
-allocstall      # the number of direct reclaims
-nr_vmscan_write # the number of pageout()s
+Please test this stuff.  And don't rush stuff in during the merge window ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-numbers in /proc/vmstat
+--Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-FYI I'm testing desktop responsiveness remotely (as you know it could
-be a painful test). The test scheme is to run
+iQIcBAEBCAAGBQJPc7IFAAoJEECxmPOUX5FE6SwQAKi+SWrXD+14HqmJ7d4ax/Va
+nim6zHdX72LxxKOiJpz85Wb98brDFTPoi9mNLyQ+LZBBUDYOyc2W8dc8vPP76toy
+up8MeZwQq2hY4KeSYuXLyriNRsYhYYDYryRO61fmc2H6/C4kwIdT17dRobf/lLY8
+Rm0ZrFFWfQJULEZXAIbS4n0zIqscJr9yOiEIT/ZFMd6yWWm/j5dD7E4yetLS5lJ7
+cI7wsiWTooWM4zWUykxiwarJrlfGP/IYwkstvKLqi3reUHIzZ2dYmTXFIORya5hX
+bkNjLWOlzYubojsa32Z+0mfyVgT4kgm/tjY4+U9afm+R4q0LaqtdCPpCe8kFMo+4
+3WPK3vOfj0oPqK2VMerTvXAW1tX732Ui+50b+2koLFHjkIc9W0OASH36HiZWqizF
+3a6a9Xw9T6qX8ZepAWWIiG+7CM+K8/31w2WU1zfFmLTXIGu+sZppyKKQZFLLCsa3
+ZiFIbu830uIG/9KP6Gsl/x40+383iLSck8tFMa4GLMh0EZKG7yDgngAyRthLrxoB
+btdyS/0hJ9Z1mX5Xx0GUO3T+yrJOYf/t7tjlMdlyqfu8CMfJbZV0oRBLzc9Z6zTP
+xAweamhn3WKuz8qf0R6E90Phn1YOqz+3Er3ljHaYRQScqicLMy6c3si+jduBzSGa
+/idHLx9Ntct3UkxOcWHb
+=Tp2x
+-----END PGP SIGNATURE-----
 
-        make -j16  (or any other workloads)
-
-as well as a small script to start some X apps and cycle through the
-windows. By checking if there are second(s) long gaps in the below
-progress messages, I confirm that the desktop is running smoothly.
-
- time         window title
-  157.68    A swapping-desktop-test
-  157.73    A *Unsaved Document 1 - gedit
-  157.76    A Restore Session - Iceweasel
-  157.80    A Sudoku
-  157.83    A LibreOffice 3.4
-  157.91    A System Settings
-  158.01    A urxvt
-  158.01    A xeyes
-  158.06    A bay:/home/wfg/swapping-desktop-test - ZSH
-  158.08    A Xpdf: /usr/share/doc/shared-mime-info/shared-mime-info-spec.pdf
-  158.10    A bay:/home/wfg/swapping-desktop-test - ZSH
-  158.17    A OpenOffice.org
-  158.20    A OpenOffice.org
-  158.21    A OpenOffice.org
-  158.22    A OpenOffice.org
-  158.24    A OpenOffice.org
-  158.25    A Dictionary
-  158.27    A bay:/home/wfg/swapping-desktop-test - ZSH
-  158.30    A Tetravex
-  158.34    A Chess
-  158.37    A System Monitor
-  158.41    A Mines
-  158.50    A Robots
-  158.62    A Iagno
-  158.68    A Four-in-a-row
-  158.75    A Five or More
-  158.79    A Klondike
-  158.82    A Klotski
-  158.90    A Mahjongg - Easy
-  158.93    A Tali
-  159.00    A Desktop Help
-  159.08    A Home
-
-Thanks,
-Fengguang
+--Signature=_Thu__29_Mar_2012_11_51_17_+1100_pSTJ.lilrThePGqA--
