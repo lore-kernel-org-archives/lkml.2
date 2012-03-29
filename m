@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab2C2Kl3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 06:41:29 -0400
-Received: from narfation.org ([79.140.41.39]:33870 "EHLO v3-1039.vlinux.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116Ab2C2KlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 06:41:24 -0400
-From: Sven Eckelmann <sven@narfation.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, simon.wunderlich@s2003.tu-chemnitz.de,
-        Marek Lindner <lindner_marek@yahoo.de>
-Subject: Re: Using nested locking for spin_lock_bh
-Date: Thu, 29 Mar 2012 12:41 +0200
-Message-ID: <2191191.ipEiEk2XX9@bentobox>
-User-Agent: KMail/4.7.4 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
-In-Reply-To: <20120329031136.GA2062@zhy>
-References: <2108147.Aqyix6xDmB@bentobox> <20120329031136.GA2062@zhy>
+	id S1758975Ab2C2Kmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 06:42:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51228 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911Ab2C2Km2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 06:42:28 -0400
+Date: Thu, 29 Mar 2012 12:42:22 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Michal Hocko <mhocko@suse.cz>
+cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] fix idle ticks in cpu summary line of /proc/stat
+In-Reply-To: <20120313080748.GA7754@tiehlicka.suse.cz>
+Message-ID: <alpine.LFD.2.02.1203291241360.2542@ionos>
+References: <20120311182621.41674b39@de.ibm.com> <20120312121726.GA23608@tiehlicka.suse.cz> <20120312101739.26eb373e@de.ibm.com> <4F5E0CC1.6010102@linux.vnet.ibm.com> <20120312153906.GE3994@tiehlicka.suse.cz> <20120312164145.5110ed5c@de.ibm.com>
+ <20120313080748.GA7754@tiehlicka.suse.cz>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1925874.T97UG4ExHP"; micalg="pgp-sha512"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 13 Mar 2012, Michal Hocko wrote:
 
---nextPart1925874.T97UG4ExHP
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-On Thursday, March 29, 2012 11:11:37 AM Yong Zhang wrote:
-> On Wed, Mar 28, 2012 at 06:36:39PM +0200, Sven Eckelmann wrote:
-> > Hi,
-> > 
-> > I started to run some experimental batman-adv code inside some virtual
-> > machines with different debugging functions enabled. One of them was
-> > lockdep. There we noticed a false positive for a lock class that is
-> > actually used in two different data structures.
+> OK, so the updated version of the patch looks like this. I am sorry but
+> I had time to only compile test this...
+> ---
+> >From d12247f14c5f8b00ae97a87442f62e49227a759b Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Mon, 12 Mar 2012 13:11:38 +0100
+> Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
 > 
-> Hmm, I think you can initialize the lock class in the two differnent data
-> structures with differnt lock_class_key.
+> Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+> conditional" introduced a bug in regard to cpu hotplug. The effect is
+> that the number of idle ticks in the cpu summary line in /proc/stat is
+> still counting ticks for offline cpus.
+> 
+> Reproduction is easy, just start a workload that keeps all cpus busy,
+> switch off one or more cpus and then watch the idle field in top.
+> On a dual-core with one cpu 100% busy and one offline cpu you will get
+> something like this:
+> 
+> %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+> 
+> The problem is that an offline cpu still has ts->idle_active == 1.
+> To fix this we should make sure that the cpu is online when calling
+> get_cpu_idle_time_us and get_cpu_iowait_time_us.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Thanks. I think I understand the problem now a little bit better and could 
-resolve it using lockdep_set_class.
+Martin, does that solve the problem for you ?
 
-Kind regards,
-	Sven
---nextPart1925874.T97UG4ExHP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCgAGBQJPdDw8AAoJEF2HCgfBJntGTvMP/3NVWjoEJqWsPvo2Xy8O1Nyn
-XipMS2TZEMB84RiNxCre+VCwpPTLJ0BqlFJ+CDj9n/qGj7Qd6R5+Wz0AdJtIZkrQ
-Y7wUuqwIMnauUwpktNlqRl+N0E5jKqldkWV8pCWi2ogEkqcoou2loICsEnKNDxCD
-Qy7R56Q2udQAWlzOQpxlvowu3aHdcjmNEDVhEmynLnZ/Bel2fnGPgwgFw1dQPil4
-xR6jkK8ZO+eQmOMfInWg7chamL2uXWMeD8/v7em+ZPGgIvBsRnV6ARRPqbiFxigC
-GXhq9YImXmAwtwqEpWcWtts8tL1VnXTl7Ojjg84InugT8DMLjmL03dQtWp+B9sST
-ngmn04BTibhUZLZpgCHjeDRr3NitVZ7hmETVK+7wyExn9SMMGv+RHOVjVj407H+K
-uKygOJYAdDC607kQXkgUBbEx/s0z3VbSSy1m40PddsOsM6x984Dkr5bErFSO3XX2
-mvxwn/LLLfa0scMdN3vOADtBglq2fnVc7e5lDYe77fphQ+w6GoC9PcHYtvOLB8HF
-NhNs7IzPXDbVMYGOfwe4woqcfsk4CCq1Z/Rocu5f2uvelL9l4+VCI+BNRW2oOaSg
-+lzz6whplqyeGj6HImY5q0LijzzSsmOJUOHXidRW1iLUAKAuRQa/d6BLuLHQ+pNX
-+QnpeFXe7u3QleuCXBJx
-=oUBS
------END PGP SIGNATURE-----
-
---nextPart1925874.T97UG4ExHP--
-
+	tglx
