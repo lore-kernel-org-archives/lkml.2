@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612Ab2C2Kj2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 06:39:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41330 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab2C2KjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 06:39:21 -0400
-Message-ID: <4F743B8E.6070807@kernel.dk>
-Date: Thu, 29 Mar 2012 12:38:06 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1758169Ab2C2Kl3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 06:41:29 -0400
+Received: from narfation.org ([79.140.41.39]:33870 "EHLO v3-1039.vlinux.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116Ab2C2KlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 06:41:24 -0400
+From: Sven Eckelmann <sven@narfation.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, simon.wunderlich@s2003.tu-chemnitz.de,
+        Marek Lindner <lindner_marek@yahoo.de>
+Subject: Re: Using nested locking for spin_lock_bh
+Date: Thu, 29 Mar 2012 12:41 +0200
+Message-ID: <2191191.ipEiEk2XX9@bentobox>
+User-Agent: KMail/4.7.4 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
+In-Reply-To: <20120329031136.GA2062@zhy>
+References: <2108147.Aqyix6xDmB@bentobox> <20120329031136.GA2062@zhy>
 MIME-Version: 1.0
-To: Tao Ma <tm@tao.ma>
-CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Make cfq_target_latency tunable through sysfs.
-References: <1332836213-5266-1-git-send-email-tm@tao.ma> <20120329003228.GA18424@kroah.com> <4F73AE95.1060402@tao.ma>
-In-Reply-To: <4F73AE95.1060402@tao.ma>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart1925874.T97UG4ExHP"; micalg="pgp-sha512"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 02:36 AM, Tao Ma wrote:
-> On 03/29/2012 08:32 AM, Greg KH wrote:
->> On Tue, Mar 27, 2012 at 04:16:53PM +0800, Tao Ma wrote:
->>> From: Tao Ma <boyu.mt@taobao.com>
->>>
->>> In cfq, when we calculate a time slice for a process(or a cfqq to
->>> be precise), we have to consider the cfq_target_latency so that all the
->>> sync request have an estimated latency(300ms) and it is controlled by
->>> cfq_target_latency. But in some hadoop test, we have found that if
->>> there are many processes doing sequential read(24 for example), the
->>> throughput is bad because every process can only work for about 25ms
->>> and the cfqq is switched. That leads to a higher disk seek. We can
->>> achive the good throughput by setting low_latency=0, but then some
->>> read's latency is too much for the application.
->>>
->>> So this patch makes cfq_target_latency tunable through sysfs so that
->>> we can tune it and find some magic number which is not bad for both
->>> the throughput and the read latency.
->>
->> If you add/modify sysfs files, you HAVE to also have a matching change
->> to Documentation/ABI.
-> OK, I will add it in the next round. Great thanks.
 
-If you do that, we can queue up the patch. I'm also a bit nervous about
-adding new sysfs files, but target latency is generic enough that it
-definitely makes sense to add.
+--nextPart1925874.T97UG4ExHP
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
--- 
-Jens Axboe
+On Thursday, March 29, 2012 11:11:37 AM Yong Zhang wrote:
+> On Wed, Mar 28, 2012 at 06:36:39PM +0200, Sven Eckelmann wrote:
+> > Hi,
+> > 
+> > I started to run some experimental batman-adv code inside some virtual
+> > machines with different debugging functions enabled. One of them was
+> > lockdep. There we noticed a false positive for a lock class that is
+> > actually used in two different data structures.
+> 
+> Hmm, I think you can initialize the lock class in the two differnent data
+> structures with differnt lock_class_key.
+
+Thanks. I think I understand the problem now a little bit better and could 
+resolve it using lockdep_set_class.
+
+Kind regards,
+	Sven
+--nextPart1925874.T97UG4ExHP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCgAGBQJPdDw8AAoJEF2HCgfBJntGTvMP/3NVWjoEJqWsPvo2Xy8O1Nyn
+XipMS2TZEMB84RiNxCre+VCwpPTLJ0BqlFJ+CDj9n/qGj7Qd6R5+Wz0AdJtIZkrQ
+Y7wUuqwIMnauUwpktNlqRl+N0E5jKqldkWV8pCWi2ogEkqcoou2loICsEnKNDxCD
+Qy7R56Q2udQAWlzOQpxlvowu3aHdcjmNEDVhEmynLnZ/Bel2fnGPgwgFw1dQPil4
+xR6jkK8ZO+eQmOMfInWg7chamL2uXWMeD8/v7em+ZPGgIvBsRnV6ARRPqbiFxigC
+GXhq9YImXmAwtwqEpWcWtts8tL1VnXTl7Ojjg84InugT8DMLjmL03dQtWp+B9sST
+ngmn04BTibhUZLZpgCHjeDRr3NitVZ7hmETVK+7wyExn9SMMGv+RHOVjVj407H+K
+uKygOJYAdDC607kQXkgUBbEx/s0z3VbSSy1m40PddsOsM6x984Dkr5bErFSO3XX2
+mvxwn/LLLfa0scMdN3vOADtBglq2fnVc7e5lDYe77fphQ+w6GoC9PcHYtvOLB8HF
+NhNs7IzPXDbVMYGOfwe4woqcfsk4CCq1Z/Rocu5f2uvelL9l4+VCI+BNRW2oOaSg
++lzz6whplqyeGj6HImY5q0LijzzSsmOJUOHXidRW1iLUAKAuRQa/d6BLuLHQ+pNX
++QnpeFXe7u3QleuCXBJx
+=oUBS
+-----END PGP SIGNATURE-----
+
+--nextPart1925874.T97UG4ExHP--
 
