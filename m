@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933466Ab2C2O4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 10:56:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15935 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933179Ab2C2O4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 10:56:12 -0400
-Date: Thu, 29 Mar 2012 10:16:53 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
-Message-ID: <20120329141653.GA2424@redhat.com>
-References: <1332943060-18374-1-git-send-email-hagen@jauu.net>
- <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
- <20120328162108.GB2381@redhat.com>
- <20120328195848.GA5331@hell>
+	id S933480Ab2C2O4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 10:56:33 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:16917 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933463Ab2C2O4T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 10:56:19 -0400
+Message-ID: <4F747811.4060201@tilera.com>
+Date: Thu, 29 Mar 2012 10:56:17 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328195848.GA5331@hell>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/tile (really asm-generic) update for 3.4
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 09:58:48PM +0200, Hagen Paul Pfeifer wrote:
-> 
-> >Hmmm...Looking at ep_poll() it does an '__add_wait_queue_exclusive()'.
-> >So, I *think* epoll_wait() should do what you want, if you are waiting
-> >on the same epfd in all the threads.
-> >
-> >I think the case you are describing is where each thread does its own
-> >ep_create(), and then a subsequent epoll_wait() on the fd from the
-> >create?
-> >
-> >So, I *think* you can get what you want without adding this flag.
-> 
-> ;) sorry:
-> 
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> epoll_wait returned
-> 
-> 
-> minimal example:
-> 
-> >>>>>>>>>>>
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <string.h>
-> #include <unistd.h>
-> #include <pthread.h>
-> #include <sys/epoll.h>
-> 
-> #define	AMAX 16
-> 
-> static void *runner(void *args)
-> {
-> 	int fd = (int) *((int *) args);
-> 	struct epoll_event events[AMAX];
-> 
-> 	epoll_wait(fd, events, AMAX, -1);
-> 	write(1, "epoll_wait returned\n", 20);
-> 
-> 	return NULL;
-> }
-> 
-> int main(int ac, char **av)
-> {
-> 	int i, evfd, pipefd[2];
-> 	pthread_t thread_id[2];
-> 	struct epoll_event epoll_ev;
-> 
-> 	pipe(pipefd);
-> 	evfd = epoll_create(64);
-> 
-> 	memset(&epoll_ev, 0, sizeof(struct epoll_event));
-> 	epoll_ev.events   = EPOLLIN | EPOLLPRI | EPOLLERR | EPOLLHUP;
-> 	epoll_ctl(evfd, EPOLL_CTL_ADD, pipefd[0], &epoll_ev);
-> 
-> 	for (i = 0; i < 10; i++)
-> 		pthread_create(&thread_id[0], NULL, runner, &evfd);
-> 
-> 	sleep(1);
-> 	close(pipefd[1]);
-> 	write(pipefd[0], "x", 1);
-> 	sleep(1);
-> 
-> 	return EXIT_SUCCESS;
-> }
+Linus,
 
-Right, for level triggered events, they all wait up. However, if you use
-edge triggered, ie add 'EPOLLET', then the event gets 'consumed' by the
-first thread that wakes up, and the subseqent waiters wouldn't get woken
-up. IE you'll get one wakeup.
+Please pull the following changes for 3.4 from:
 
-Thanks,
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
 
--Jason
+These are a couple of asm-generic changes that apply to tile.
+
+Chris Metcalf (2):
+      ipc: provide generic compat versions of IPC syscalls
+      compat: use sys_sendfile64() implementation for sendfile syscall
+
+ arch/Kconfig                   |    3 ++
+ arch/mips/Kconfig              |    1 +
+ arch/powerpc/Kconfig           |    1 +
+ arch/s390/Kconfig              |    1 +
+ arch/sparc/Kconfig             |    1 +
+ arch/tile/include/asm/compat.h |   11 ------
+ arch/tile/kernel/compat.c      |   43 ------------------------
+ arch/x86/Kconfig               |    1 +
+ include/asm-generic/unistd.h   |    2 +-
+ include/linux/compat.h         |   12 ++++++-
+ ipc/compat.c                   |   70 ++++++++++++++++++++++++++++++++++++---
+ 11 files changed, 84 insertions(+), 62 deletions(-)
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
