@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760091Ab2C2VRC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 17:17:02 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33727 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933223Ab2C2VMx (ORCPT
+	id S1760108Ab2C2VTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 17:19:14 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:45889 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759474Ab2C2VTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 17:12:53 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, David Howells <dhowells@redhat.com>
-Subject: [PATCH 04/17] FRV: mark const init data with __initconst instead of __initdata
-Date: Thu, 29 Mar 2012 23:12:21 +0200
-Message-Id: <1333055554-31300-4-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <20120329211131.GA31250@pengutronix.de>
-References: <20120329211131.GA31250@pengutronix.de>
+	Thu, 29 Mar 2012 17:19:07 -0400
+Date: Thu, 29 Mar 2012 23:19:02 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: Jason Baron <jbaron@redhat.com>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH Resend] epoll: add EPOLLEXCLUSIVE support
+Message-ID: <20120329211902.GA3024@hell>
+References: <1332943060-18374-1-git-send-email-hagen@jauu.net>
+ <CAFLxGvx0m6iaDPTDkjzw6ohX6Wdmr+DgWEr_fMdyEux50JVFEw@mail.gmail.com>
+ <20120328162108.GB2381@redhat.com>
+ <20120328195848.GA5331@hell>
+ <20120329141653.GA2424@redhat.com>
+ <20120329150541.GB3173@hell>
+ <20120329155323.GB2424@redhat.com>
+ <20120329163222.GA3145@hell>
+ <20120329185416.GC2424@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120329185416.GC2424@redhat.com>
+X-Key-Id: 98350C22
+X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
+X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As long as there is no other non-const variable marked __initdata in the
-same compilation unit it doesn't hurt. If there were one however
-compilation would fail with
+* Jason Baron | 2012-03-29 14:54:17 [-0400]:
 
-	error: $variablename causes a section type conflict
+>But the behavior of the testcase you've supplied is not changed by the
+>'EPOLLEXCLUSIVE' support. So is this not the right testcase?
 
-because a section containing const variables is marked read only and so
-cannot contain non-const variables.
+Hi Jason,
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: David Howells <dhowells@redhat.com>
----
- arch/frv/mb93090-mb00/pci-irq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I am currently abroad, the example yesterday was just a quick hack somewhere
+in between hotel and meeting to demonstrate the behaviour. ;)
 
-diff --git a/arch/frv/mb93090-mb00/pci-irq.c b/arch/frv/mb93090-mb00/pci-irq.c
-index 20f6497..808bcf7 100644
---- a/arch/frv/mb93090-mb00/pci-irq.c
-+++ b/arch/frv/mb93090-mb00/pci-irq.c
-@@ -28,7 +28,7 @@
-  *
-  */
- 
--static const uint8_t __initdata pci_bus0_irq_routing[32][4] = {
-+static const uint8_t pci_bus0_irq_routing[32][4] __initconst = {
- 	[0 ] = { IRQ_FPGA_MB86943_PCI_INTA },
- 	[16] = { IRQ_FPGA_RTL8029_INTA },
- 	[17] = { IRQ_FPGA_PCI_INTC, IRQ_FPGA_PCI_INTD, IRQ_FPGA_PCI_INTA, IRQ_FPGA_PCI_INTB },
--- 
-1.7.9.1
+I travel with a company laptop, my testcode is on another PC, I have access to
+my git tree and just wanted to get this patch merged in this window.
+
+Hagen
 
