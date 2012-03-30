@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935118Ab2C3VGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S935161Ab2C3VHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:07:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935091Ab2C3VGi (ORCPT
+	with ESMTP id S935133Ab2C3VG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:38 -0400
-Message-Id: <20120330195731.937914797@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:06:58 -0400
+Message-Id: <20120330195732.811947768@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:30 -0700
+Date: Fri, 30 Mar 2012 12:58:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Hadig <thomas@intapp.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 068/108] cifs: fix issue mounting of DFS ROOT when redirecting from one domain controller to the next
+        alan@lxorguk.ukuu.org.uk,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 074/108] x86-32: Fix endless loop when processing signals for kernel tasks
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
 
-commit 1daaae8fa4afe3df78ca34e724ed7e8187e4eb32 upstream.
+commit 29a2e2836ff9ea65a603c89df217f4198973a74f upstream.
 
-This patch fixes an issue when cifs_mount receives a
-STATUS_BAD_NETWORK_NAME error during cifs_get_tcon but is able to
-continue after an DFS ROOT referral. In this case, the return code
-variable is not reset prior to trying to mount from the system referred
-to. Thus, is_path_accessible is not executed and the final DFS referral
-is not performed causing a mount error.
+The problem occurs on !CONFIG_VM86 kernels [1] when a kernel-mode task
+returns from a system call with a pending signal.
 
-Use case: In DNS, example.com  resolves to the secondary AD server
-ad2.example.com Our primary domain controller is ad1.example.com and has
-a DFS redirection set up from \\ad1\share\Users to \\files\share\Users.
-Mounting \\example.com\share\Users fails.
+A real-life scenario is a child of 'khelper' returning from a failed
+kernel_execve() in ____call_usermodehelper() [ kernel/kmod.c ].
+kernel_execve() fails due to a pending SIGKILL, which is the result of
+"kill -9 -1" (at least, busybox's init does it upon reboot).
 
-Regression introduced by commit 724d9f1.
+The loop is as follows:
 
-Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru
-Signed-off-by: Thomas Hadig <thomas@intapp.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+* syscall_exit_work:
+ - work_pending:            // start_of_the_loop
+ - work_notify_sig:
+   - do_notify_resume()
+     - do_signal()
+       - if (!user_mode(regs)) return;
+ - resume_userspace         // TIF_SIGPENDING is still set
+ - work_pending             // so we call work_pending => goto
+                            // start_of_the_loop
+
+More information can be found in another LKML thread:
+http://www.serverphorums.com/read.php?12,457826
+
+[1] the problem was also seen on MIPS.
+
+Signed-off-by: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Link: http://lkml.kernel.org/r/1332448765.2299.68.camel@dimm
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/entry_32.S |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -3004,7 +3004,7 @@ cifs_get_volume_info(char *mount_data, c
- int
- cifs_mount(struct cifs_sb_info *cifs_sb, struct smb_vol *volume_info)
- {
--	int rc = 0;
-+	int rc;
- 	int xid;
- 	struct cifs_ses *pSesInfo;
- 	struct cifs_tcon *tcon;
-@@ -3033,6 +3033,7 @@ try_mount_again:
- 		FreeXid(xid);
- 	}
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -98,12 +98,6 @@
  #endif
-+	rc = 0;
- 	tcon = NULL;
- 	pSesInfo = NULL;
- 	srvTcp = NULL;
+ .endm
+ 
+-#ifdef CONFIG_VM86
+-#define resume_userspace_sig	check_userspace
+-#else
+-#define resume_userspace_sig	resume_userspace
+-#endif
+-
+ /*
+  * User gs save/restore
+  *
+@@ -327,10 +321,19 @@ ret_from_exception:
+ 	preempt_stop(CLBR_ANY)
+ ret_from_intr:
+ 	GET_THREAD_INFO(%ebp)
+-check_userspace:
++resume_userspace_sig:
++#ifdef CONFIG_VM86
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
+ 	movb PT_CS(%esp), %al
+ 	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
++#else
++	/*
++	 * We can be coming here from a syscall done in the kernel space,
++	 * e.g. a failed kernel_execve().
++	 */
++	movl PT_CS(%esp), %eax
++	andl $SEGMENT_RPL_MASK, %eax
++#endif
+ 	cmpl $USER_RPL, %eax
+ 	jb resume_kernel		# not returning to v8086 or userspace
+ 
 
 
