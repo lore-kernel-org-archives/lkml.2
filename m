@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760837Ab2C3NKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 09:10:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8661 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760384Ab2C3NKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 09:10:36 -0400
-Date: Fri, 30 Mar 2012 14:44:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Karl Pickett <kjp@ci.uchicago.edu>
-Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Re: Is prctl(PR_SET_CHILD_SUBREAPER) going to break my code which
-	checks getppid == 1?
-Message-ID: <20120330124426.GA13811@redhat.com>
-References: <46799FA3-D575-4A2D-8DEB-CE5149A4110D@ci.uchicago.edu>
+	id S1760853Ab2C3NKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 09:10:50 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:43579 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760839Ab2C3NKo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 09:10:44 -0400
+Date: Fri, 30 Mar 2012 15:10:37 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/13] edac: move dimm properties to struct memset_info
+Message-ID: <20120330131037.GB30876@aftab>
+References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
+ <1333039546-5590-3-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <46799FA3-D575-4A2D-8DEB-CE5149A4110D@ci.uchicago.edu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1333039546-5590-3-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29, Karl Pickett wrote:
->
-> Re: http://thread.gmane.org/gmane.linux.kernel/1236479
->
-> I'm wondering if this is going to break code that checks getppid() == 1?
->
-> I have a TCL/TK GUI app that spawns ssh.  I want the ssh to die
-> immediately if the GUI process crashes, so ssh is launched with a wrapper
-> c program that does:
->
->    prctl(PR_SET_PDEATHSIG, SIGHUP);
->    if (getppid() == 1) /* parent died already? */
->        return 0;
+Please don't call it 'memset_info' - this is misleading beyond belief.
 
-Yes, this won't work if the parent of this app does PR_SET_CHILD_SUBREAPER.
+Hmm, what struct memset_info - where the hell is this? It is nowhere to
+be seen in the patches following that one too, WTF?
 
-> So what is getppid() going to return for some user using this new
-> 'session manager reaper'?
+On Thu, Mar 29, 2012 at 01:45:35PM -0300, Mauro Carvalho Chehab wrote:
+> On systems based on chip select rows, all channels need to use memories
+> with the same properties, otherwise the memories on channels A and B
+> won't be recognized.
+> 
+> However, such assumption is not true for all types of memory
+> controllers.
+> 
+> Controllers for FB-DIMM's don't have such requirements.
+> 
+> Also, modern Intel controllers seem to be capable of handling such
+> differences.
+> 
+> So, we need to get rid of storing the DIMM information into a per-csrow
+> data, storing it, instead at the right place.
+> 
+> The first step is to move grain, mtype, dtype and edac_mode to the
+> per-dimm struct.
 
-The new parent's pid ;)
+-- 
+Regards/Gruss,
+Boris.
 
-Perhaps you can do something like
-
-	ppid_for_child = getpid();
-
-	if (!fork()) {
-		// Child
-		prctl(PR_SET_PDEATHSIG);
-		if (getppid() != ppid_for_child)
-			return;
-		...
-	}
-
-Just in case, I do not know how PR_SET_CHILD_SUBREAPER will be really used.
-I do not know if systemd will run the "normal" user applications under
-PR_SET_CHILD_SUBREAPER. Probably yes, but this is the question to Kay.
-
-Oleg.
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
