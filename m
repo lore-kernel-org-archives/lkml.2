@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934938Ab2C3VFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:05:54 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734Ab2C3VFo (ORCPT
+	id S934958Ab2C3VGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:06:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934914Ab2C3VFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:44 -0400
-Message-Id: <201203302105.q2UL54PJ006287@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 29 Mar 2012 15:29:28 -0400
-Subject: [PATCH] arch/tile: fix a couple of comments that needed updating
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:04.0725 (UTC) FILETIME=[C77D2050:01CD0EB8]
+	Fri, 30 Mar 2012 17:05:42 -0400
+Message-Id: <20120330195729.446369560@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:13 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Ray Morris <support@bettercgi.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 051/108] md/raid1,raid10: avoid deadlock during resync/recovery.
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not associated with any code changes, so I'm just lumping these
-comment changes into a commit by themselves.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: NeilBrown <neilb@suse.de>
+
+commit d6b42dcb995e6acd7cc276774e751ffc9f0ef4bf upstream.
+
+If RAID1 or RAID10 is used under LVM or some other stacking
+block device, it is possible to enter a deadlock during
+resync or recovery.
+This can happen if the upper level block device creates
+two requests to the RAID1 or RAID10.  The first request gets
+processed, blocks recovery and queue requests for underlying
+requests in current->bio_list.  A resync request then starts
+which will wait for those requests and block new IO.
+
+But then the second request to the RAID1/10 will be attempted
+and it cannot progress until the resync request completes,
+which cannot progress until the underlying device requests complete,
+which are on a queue behind that second request.
+
+So allow that second request to proceed even though there is
+a resync request about to start.
+
+This is suitable for any -stable kernel.
+
+Reported-by: Ray Morris <support@bettercgi.com>
+Tested-by: Ray Morris <support@bettercgi.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/kernel/setup.c |   11 +++++++++--
- arch/tile/mm/fault.c     |    2 +-
- 2 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/md/raid1.c  |   17 +++++++++++++++--
+ drivers/md/raid10.c |   17 +++++++++++++++--
+ 2 files changed, 30 insertions(+), 4 deletions(-)
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 1a7276a..62b1903 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -913,6 +913,13 @@ void __cpuinit setup_cpu(int boot)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
-+/*
-+ * Note that the kernel can potentially support other compression
-+ * techniques than gz, though we don't do so by default.  If we ever
-+ * decide to do so we can either look for other filename extensions,
-+ * or just allow a file with this name to be compressed with an
-+ * arbitrary compressor (somewhat counterintuitively).
-+ */
- static int __initdata set_initramfs_file;
- static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
- 
-@@ -928,9 +935,9 @@ static int __init setup_initramfs_file(char *str)
- early_param("initramfs_file", setup_initramfs_file);
- 
- /*
-- * We look for an additional "initramfs.cpio.gz" file in the hvfs.
-+ * We look for an "initramfs.cpio.gz" file in the hvfs.
-  * If there is one, we allocate some memory for it and it will be
-- * unpacked to the initramfs after any built-in initramfs_data.
-+ * unpacked to the initramfs.
-  */
- static void __init load_hv_initrd(void)
- {
-diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
-index c1eaaa1..5f1fdeb 100644
---- a/arch/tile/mm/fault.c
-+++ b/arch/tile/mm/fault.c
-@@ -131,7 +131,7 @@ static inline pmd_t *vmalloc_sync_one(pgd_t *pgd, unsigned long address)
- }
- 
- /*
-- * Handle a fault on the vmalloc or module mapping area
-+ * Handle a fault on the vmalloc area.
-  */
- static inline int vmalloc_fault(pgd_t *pgd, unsigned long address)
- {
--- 
-1.6.5.2
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -614,9 +614,22 @@ static void wait_barrier(conf_t *conf)
+ 	spin_lock_irq(&conf->resync_lock);
+ 	if (conf->barrier) {
+ 		conf->nr_waiting++;
+-		wait_event_lock_irq(conf->wait_barrier, !conf->barrier,
++		/* Wait for the barrier to drop.
++		 * However if there are already pending
++		 * requests (preventing the barrier from
++		 * rising completely), and the
++		 * pre-process bio queue isn't empty,
++		 * then don't wait, as we need to empty
++		 * that queue to get the nr_pending
++		 * count down.
++		 */
++		wait_event_lock_irq(conf->wait_barrier,
++				    !conf->barrier ||
++				    (conf->nr_pending &&
++				     current->bio_list &&
++				     !bio_list_empty(current->bio_list)),
+ 				    conf->resync_lock,
+-				    );
++			);
+ 		conf->nr_waiting--;
+ 	}
+ 	conf->nr_pending++;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -667,9 +667,22 @@ static void wait_barrier(conf_t *conf)
+ 	spin_lock_irq(&conf->resync_lock);
+ 	if (conf->barrier) {
+ 		conf->nr_waiting++;
+-		wait_event_lock_irq(conf->wait_barrier, !conf->barrier,
++		/* Wait for the barrier to drop.
++		 * However if there are already pending
++		 * requests (preventing the barrier from
++		 * rising completely), and the
++		 * pre-process bio queue isn't empty,
++		 * then don't wait, as we need to empty
++		 * that queue to get the nr_pending
++		 * count down.
++		 */
++		wait_event_lock_irq(conf->wait_barrier,
++				    !conf->barrier ||
++				    (conf->nr_pending &&
++				     current->bio_list &&
++				     !bio_list_empty(current->bio_list)),
+ 				    conf->resync_lock,
+-				    );
++			);
+ 		conf->nr_waiting--;
+ 	}
+ 	conf->nr_pending++;
+
 
