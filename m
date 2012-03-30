@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935368Ab2C3WrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:47:25 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48245 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935068Ab2C3VGf (ORCPT
+	id S936602Ab2C3Wrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:47:51 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52476 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935048Ab2C3VG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:35 -0400
-Message-Id: <20120330195731.792791775@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:06:29 -0400
+Message-Id: <20120330195730.613499124@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:29 -0700
+Date: Fri, 30 Mar 2012 12:58:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Ben Myers <bpm@sgi.com>
-Subject: [ 067/108] xfs: fix inode lookup race
+        alan@lxorguk.ukuu.org.uk, Keng-Yu Lin <kengyu@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 059/108] HID: add more hotkeys in Asus AIO keyboards
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,99 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Keng-Yu Lin <kengyu@canonical.com>
 
-commit f30d500f809eca67a21704347ab14bb35877b5ee upstream.
+commit 6c30d5a53229aad22bb675e0bd6eb518ecaa4316 upstream.
 
-When we get concurrent lookups of the same inode that is not in the
-per-AG inode cache, there is a race condition that triggers warnings
-in unlock_new_inode() indicating that we are initialising an inode
-that isn't in a the correct state for a new inode.
+Add support for the camera key. The hotkey for
+Asus S.H.E(Super Hybrid Engine) mode is mapped to KEY_KEY_PROG1
+just for notifying the userspace.
 
-When we do an inode lookup via a file handle or a bulkstat, we don't
-serialise lookups at a higher level through the dentry cache (i.e.
-pathless lookup), and so we can get concurrent lookups of the same
-inode.
-
-The race condition is between the insertion of the inode into the
-cache in the case of a cache miss and a concurrently lookup:
-
-Thread 1			Thread 2
-xfs_iget()
-  xfs_iget_cache_miss()
-    xfs_iread()
-    lock radix tree
-    radix_tree_insert()
-				rcu_read_lock
-				radix_tree_lookup
-				lock inode flags
-				XFS_INEW not set
-				igrab()
-				unlock inode flags
-				rcu_read_unlock
-				use uninitialised inode
-				.....
-    lock inode flags
-    set XFS_INEW
-    unlock inode flags
-    unlock radix tree
-  xfs_setup_inode()
-    inode flags = I_NEW
-    unlock_new_inode()
-      WARNING as inode flags != I_NEW
-
-This can lead to inode corruption, inode list corruption, etc, and
-is generally a bad thing to occur.
-
-Fix this by setting XFS_INEW before inserting the inode into the
-radix tree. This will ensure any concurrent lookup will find the new
-inode with XFS_INEW set and that forces the lookup to wait until the
-XFS_INEW flag is removed before allowing the lookup to succeed.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_iget.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/hid/hid-chicony.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/xfs/xfs_iget.c
-+++ b/fs/xfs/xfs_iget.c
-@@ -356,9 +356,20 @@ xfs_iget_cache_miss(
- 			BUG();
+--- a/drivers/hid/hid-chicony.c
++++ b/drivers/hid/hid-chicony.c
+@@ -49,6 +49,8 @@ static int ch_input_mapping(struct hid_d
+ 	case 0x00f2: ch_map_key_clear(KEY_BRIGHTNESSDOWN);	break;
+ 	case 0x00f3: ch_map_key_clear(KEY_BRIGHTNESSUP);	break;
+ 	case 0x00f4: ch_map_key_clear(KEY_DISPLAY_OFF);	break;
++	case 0x00f7: ch_map_key_clear(KEY_CAMERA);	break;
++	case 0x00f8: ch_map_key_clear(KEY_PROG1);	break;
+ 	default:
+ 		return 0;
  	}
- 
--	spin_lock(&pag->pag_ici_lock);
-+	/*
-+	 * These values must be set before inserting the inode into the radix
-+	 * tree as the moment it is inserted a concurrent lookup (allowed by the
-+	 * RCU locking mechanism) can find it and that lookup must see that this
-+	 * is an inode currently under construction (i.e. that XFS_INEW is set).
-+	 * The ip->i_flags_lock that protects the XFS_INEW flag forms the
-+	 * memory barrier that ensures this detection works correctly at lookup
-+	 * time.
-+	 */
-+	ip->i_udquot = ip->i_gdquot = NULL;
-+	xfs_iflags_set(ip, XFS_INEW);
- 
- 	/* insert the new inode */
-+	spin_lock(&pag->pag_ici_lock);
- 	error = radix_tree_insert(&pag->pag_ici_root, agino, ip);
- 	if (unlikely(error)) {
- 		WARN_ON(error != -EEXIST);
-@@ -366,11 +377,6 @@ xfs_iget_cache_miss(
- 		error = EAGAIN;
- 		goto out_preload_end;
- 	}
--
--	/* These values _must_ be set before releasing the radix tree lock! */
--	ip->i_udquot = ip->i_gdquot = NULL;
--	xfs_iflags_set(ip, XFS_INEW);
--
- 	spin_unlock(&pag->pag_ici_lock);
- 	radix_tree_preload_end();
- 
 
 
