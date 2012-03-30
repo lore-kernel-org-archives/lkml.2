@@ -1,133 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab2C3EPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 00:15:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52707 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab2C3EPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 00:15:07 -0400
+	id S1751353Ab2C3ET4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 00:19:56 -0400
+Received: from ozlabs.org ([203.10.76.45]:56216 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750865Ab2C3ETu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 00:19:50 -0400
+Date: Fri, 30 Mar 2012 15:19:46 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: aik@ozlabs.ru, dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Isolation groups
+Message-ID: <20120330041946.GA21161@truffala.fritz.box>
+Mail-Followup-To: Alex Williamson <alex.williamson@redhat.com>,
+	aik@ozlabs.ru, dwmw2@infradead.org,
+	iommu@lists.linux-foundation.org, benh@kernel.crashing.org,
+	qemu-devel@nongnu.org, joerg.roedel@amd.com, kvm@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20120313143340.GT24916@truffala.fritz.box>
+ <1331657387.2969.79.camel@bling.home>
+ <20120314095808.GX24916@truffala.fritz.box>
+ <1331842501.22038.58.camel@ul30vt>
+ <20120316034527.GJ24916@truffala.fritz.box>
+ <1331926278.13855.57.camel@bling.home>
+ <20120317045734.GL24916@truffala.fritz.box>
+ <1332364378.13855.236.camel@bling.home>
+ <20120327051407.GJ9357@truffala.fritz.box>
+ <1332876883.29722.143.camel@bling.home>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-Date: Thu, 29 Mar 2012 21:15:06 -0700
-Message-ID: <CAOesGMiGrqe6eB_pO_OxKFKprheZaRLsoQCus_CikfoPcs0H9w@mail.gmail.com>
-Subject: [GIT PULL] ARM: arm-soc fixes for 3.4-rc
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332876883.29722.143.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Mar 27, 2012 at 01:34:43PM -0600, Alex Williamson wrote:
+[snip]
+> > > > this case, it gets a bit complex.  When the FooBus isolation provider
+> > > > is active, the FooBus devices would be in their own groups, not the
+> > > > group of the FooBridge and its sibling.  When the FooBus isolation
+> > > > provider is removed, it would have to configure the FooBus IOMMU to a
+> > > > passthrough mode, and revert the FooBus devices to the parent's
+> > > > group.  Hm.  Complicated.
+> > > 
+> > > Yep.  I think we're arriving at the same point.  Groups are
+> > > hierarchical, but ownership via a manager cannot be nested.  So to
+> > > manage a group, we need to walk the entire tree of devices below each
+> > > device checking that none of the groups are managed and all the devices
+> > > are using the right driver, then walk up from the group to verify no
+> > > group of a parent device is managed.  Thanks,
+> > 
+> > Blargh.  I really, really hope we can come up with a simpler model
+> > than that.
+> 
+> Yep, I'm pretty well at the end of this experiment.  Honestly, I think
+> isolation groups are the wrong approach.  We're trying to wrap too many
+> concepts together and it's completely unmanageable.  I cannot see adding
+> the complexity we're talking about here to the core device model for
+> such a niche usage.  I think we're better off going back to the
+> iommu_device_group() and building that out into something more complete,
+> starting with group based iommu ops and a dma quirk infrastructure.
+> >From there we can add some basic facilities to toggle driver autoprobe,
+> maybe setup notifications for the group, and hopefully include a way to
+> share iommu mappings between groups.  Anything much beyond that we
+> should probably leave for something like the vfio driver.  Thanks,
 
+Yes, well, I was hoping for a simpler model that didn't involve simply
+sweeping all the issues under a rug.
 
-The following changes since commit b5174fa3a7f4f8f150bfa3b917c92608953dfa0f:
-
-  Merge tag 'mmc-merge-for-3.4-rc1' of
-git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2012-03-28
-20:59:45 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-tags/fixes-for-linus
-
-for you to fetch changes up to f00e9b11863abdb837e555a2b1e3417e8b5d80dd:
-
-  Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
-(2012-03-29 20:36:18 -0700)
-
-----------------------------------------------------------------
-
-ARM: arm-soc fixes for 3.4-rc
-
-This is a first pass of some of the merge window fallout for ARM platforms.
-
-Nothing controversial:
-
-* A system.h fallout fix for OMAP
-* PXA fixes for breakage caused by the regulator struct changes
-* GPIO fixes for OMAP to properly deal with dynamic IRQ allocation
-* A mismerge in our arm-soc tree of an lpc32xx change for networking
-* A fix for USB setup on tegra
-* An undo of __init annotation of display mux setup on OMAP that's needed
-  at runtime
-
-----------------------------------------------------------------
-Govindraj.R (1):
-      ARM: OMAP: pm: fix compilation break
-
-Haojian Zhuang (2):
-      ARM: pxa: fix build issue on cm-x300
-      ARM: pxa: fix build issue on stargate2
-
-Olof Johansson (3):
-      Merge branch 'for-3.4/fixes-for-rc1-and-v3.3' of
-git://git.kernel.org/.../swarren/linux-tegra into fixes
-      Merge branch 'fixes' of
-git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
-
-Paul Gortmaker (2):
-      ARM: pxa: fix regulator related build fail in magician_defconfig
-      ARM: pxa: fix build failure for regulator consumer in em-x270.c
-
-Roland Stigge (1):
-      ARM: LPC32xx: clock.c: Fix lpc-eth clock reference
-
-Stephen Warren (1):
-      ARM: tegra: Fix device tree AUXDATA for USB/EHCI
-
-Tarun Kanti DebBarma (3):
-      ARM: OMAP: boards: Fix OMAP_GPIO_IRQ usage with gpio_to_irq()
-      drivers: input: Fix OMAP_GPIO_IRQ with gpio_to_irq() in
-ams_delta_serio_exit()
-      ARM: OMAP: Remove OMAP_GPIO_IRQ macro definition
-
-Tomi Valkeinen (1):
-      ARM: OMAP2+: Remove __init from DSI mux functions
-
-Tony Lindgren (2):
-      Merge branch 'fix-dss-mux' into fixes
-      Merge branch 'fixes-gpio-to-irq' into fixes
-
- arch/arm/mach-lpc32xx/clock.c                |    2 +-
- arch/arm/mach-omap1/board-h2.c               |    8 ++++----
- arch/arm/mach-omap1/board-h3.c               |    9 ++++-----
- arch/arm/mach-omap1/board-htcherald.c        |    6 +++---
- arch/arm/mach-omap1/board-innovator.c        |    4 ++--
- arch/arm/mach-omap1/board-nokia770.c         |    2 +-
- arch/arm/mach-omap1/board-osk.c              |   12 ++++++------
- arch/arm/mach-omap1/board-palmte.c           |    2 +-
- arch/arm/mach-omap1/board-palmtt.c           |    2 +-
- arch/arm/mach-omap1/board-palmz71.c          |    2 +-
- arch/arm/mach-omap1/board-voiceblue.c        |   16 +++++++---------
- arch/arm/mach-omap1/pm.c                     |    1 +
- arch/arm/mach-omap2/board-2430sdp.c          |    2 +-
- arch/arm/mach-omap2/board-4430sdp.c          |    2 +-
- arch/arm/mach-omap2/board-apollon.c          |    4 ++--
- arch/arm/mach-omap2/board-devkit8000.c       |    2 +-
- arch/arm/mach-omap2/board-h4.c               |    2 +-
- arch/arm/mach-omap2/board-omap3evm.c         |    2 +-
- arch/arm/mach-omap2/board-omap4panda.c       |    2 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c |    3 ++-
- arch/arm/mach-omap2/board-zoom-debugboard.c  |    3 ++-
- arch/arm/mach-omap2/board-zoom-peripherals.c |    6 ++++--
- arch/arm/mach-omap2/common-board-devices.c   |    2 +-
- arch/arm/mach-omap2/display.c                |    8 ++++----
- arch/arm/mach-omap2/pm.c                     |    2 ++
- arch/arm/mach-pxa/cm-x300.c                  |    1 -
- arch/arm/mach-pxa/em-x270.c                  |   10 +++++-----
- arch/arm/mach-pxa/hx4700.c                   |    2 --
- arch/arm/mach-pxa/magician.c                 |    2 --
- arch/arm/mach-pxa/stargate2.c                |    2 +-
- arch/arm/mach-tegra/board-dt-tegra20.c       |    6 +++---
- arch/arm/mach-tegra/devices.c                |    7 +++----
- arch/arm/mach-tegra/devices.h                |    5 +++++
- arch/arm/plat-omap/include/plat/gpio.h       |    4 ----
- drivers/input/serio/ams_delta_serio.c        |    2 +-
- 35 files changed, 73 insertions(+), 74 deletions(-)
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
