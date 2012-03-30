@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934969Ab2C3W4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:56:53 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41906 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934922Ab2C3VFv (ORCPT
+	id S936668Ab2C3W4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:56:50 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48245 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934923Ab2C3VFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 17:05:51 -0400
-Message-Id: <201203302105.q2UL55q7006290@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 29 Mar 2012 15:36:53 -0400
-Subject: [PATCH] arch/tile: don't set the homecache of a PTE unless appropriate
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:05.0600 (UTC) FILETIME=[C802A400:01CD0EB8]
+Message-Id: <20120330195729.731970057@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 053/108] drm/radeon/kms: fix analog load detection on DVI-I connectors
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We make sure not to try to set the home for an MMIO PTE (on tilegx)
-or a PTE that isn't referencing memory managed by Linux.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: Alex Deucher <alexander.deucher@amd.com>
+
+commit e00e8b5e760cbbe9067daeae5454d67c44c8d035 upstream.
+
+We digital encoders have a detect function as well (for
+DP to VGA bridges), so we make sure we choose the analog
+one here.
+
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=47007
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/mm/pgtable.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
-index 14e7e9e..277645f 100644
---- a/arch/tile/mm/pgtable.c
-+++ b/arch/tile/mm/pgtable.c
-@@ -467,10 +467,18 @@ void __set_pte(pte_t *ptep, pte_t pte)
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -990,6 +990,10 @@ radeon_dvi_detect(struct drm_connector *
  
- void set_pte(pte_t *ptep, pte_t pte)
- {
--	struct page *page = pfn_to_page(pte_pfn(pte));
--
--	/* Update the home of a PTE if necessary */
--	pte = pte_set_home(pte, page_home(page));
-+	if (pte_present(pte) &&
-+	    (!CHIP_HAS_MMIO() || hv_pte_get_mode(pte) != HV_PTE_MODE_MMIO)) {
-+		/* The PTE actually references physical memory. */
-+		unsigned long pfn = pte_pfn(pte);
-+		if (pfn_valid(pfn)) {
-+			/* Update the home of the PTE from the struct page. */
-+			pte = pte_set_home(pte, page_home(pfn_to_page(pfn)));
-+		} else if (hv_pte_get_mode(pte) == 0) {
-+			/* remap_pfn_range(), etc, must supply PTE mode. */
-+			panic("set_pte(): out-of-range PFN and mode 0\n");
-+		}
-+	}
+ 			encoder = obj_to_encoder(obj);
  
- 	__set_pte(ptep, pte);
- }
--- 
-1.6.5.2
++			if (encoder->encoder_type != DRM_MODE_ENCODER_DAC ||
++			    encoder->encoder_type != DRM_MODE_ENCODER_TVDAC)
++				continue;
++
+ 			encoder_funcs = encoder->helper_private;
+ 			if (encoder_funcs->detect) {
+ 				if (ret != connector_status_connected) {
+
 
