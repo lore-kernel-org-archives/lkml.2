@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965644Ab2C3VS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:18:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965609Ab2C3VSQ (ORCPT
+	id S965660Ab2C3VSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:18:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57057 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965593Ab2C3VS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:18:16 -0400
-Message-Id: <20120330194829.642617709@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:18:29 -0400
+Message-Id: <20120330194831.160068489@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:51 -0700
+Date: Fri, 30 Mar 2012 12:49:00 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Orjan Friberg <of@flatfrog.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 026/175] USB: gadget: Make g_hid device class conform to spec.
+        alan@lxorguk.ukuu.org.uk, Peter Chen <peter.chen@freescale.com>,
+        Li Yang <leoli@freescale.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 035/175] usb: fsl_udc_core: Fix scheduling while atomic dump message
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Orjan Friberg <of@flatfrog.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 33d2832ab0149a26418d360af3c444969a63fb28 upstream.
+commit c5cc5ed86667d4ae74fe40ee4ed893f4b46aba05 upstream.
 
-HID devices should specify this in their interface descriptors, not in the
-device descriptor. This fixes a "missing hardware id" bug under Windows 7 with
-a VIA VL800 (3.0) controller.
+When loading g_ether gadget, there is below message:
 
-Signed-off-by: Orjan Friberg <of@flatfrog.com>
-Cc: Felipe Balbi <balbi@ti.com>
+Backtrace:
+[<80012248>] (dump_backtrace+0x0/0x10c) from [<803cb42c>] (dump_stack+0x18/0x1c)
+r7:00000000 r6:80512000 r5:8052bef8 r4:80513f30
+[<803cb414>] (dump_stack+0x0/0x1c) from [<8000feb4>] (show_regs+0x44/0x50)
+[<8000fe70>] (show_regs+0x0/0x50) from [<8004c840>] (__schedule_bug+0x68/0x84)
+r5:8052bef8 r4:80513f30
+[<8004c7d8>] (__schedule_bug+0x0/0x84) from [<803cd0e4>] (__schedule+0x4b0/0x528)
+r5:8052bef8 r4:809aad00
+[<803ccc34>] (__schedule+0x0/0x528) from [<803cd214>] (_cond_resched+0x44/0x58)
+[<803cd1d0>] (_cond_resched+0x0/0x58) from [<800a9488>] (dma_pool_alloc+0x184/0x250)
+ r5:9f9b4000 r4:9fb4fb80
+ [<800a9304>] (dma_pool_alloc+0x0/0x250) from [<802a8ad8>] (fsl_req_to_dtd+0xac/0x180)
+[<802a8a2c>] (fsl_req_to_dtd+0x0/0x180) from [<802a8ce4>] (fsl_ep_queue+0x138/0x274)
+[<802a8bac>] (fsl_ep_queue+0x0/0x274) from [<7f004328>] (composite_setup+0x2d4/0xfac [g_ether])
+[<7f004054>] (composite_setup+0x0/0xfac [g_ether]) from [<802a9bb4>] (fsl_udc_irq+0x8dc/0xd38)
+[<802a92d8>] (fsl_udc_irq+0x0/0xd38) from [<800704f8>] (handle_irq_event_percpu+0x54/0x188)
+[<800704a4>] (handle_irq_event_percpu+0x0/0x188) from [<80070674>] (handle_irq_event+0x48/0x68)
+[<8007062c>] (handle_irq_event+0x0/0x68) from [<800738ec>] (handle_level_irq+0xb4/0x138)
+ r5:80514f94 r4:80514f40
+ [<80073838>] (handle_level_irq+0x0/0x138) from [<8006ffa4>] (generic_handle_irq+0x38/0x44)
+ r7:00000012 r6:80510b1c r5:80529860 r4:80512000
+ [<8006ff6c>] (generic_handle_irq+0x0/0x44) from [<8000f4c4>] (handle_IRQ+0x54/0xb4)
+[<8000f470>] (handle_IRQ+0x0/0xb4) from [<800085b8>] (tzic_handle_irq+0x64/0x94)
+ r9:412fc085 r8:00000000 r7:80513f30 r6:00000001 r5:00000000
+ r4:00000000
+ [<80008554>] (tzic_handle_irq+0x0/0x94) from [<8000e680>] (__irq_svc+0x40/0x60)
+
+The reason of above dump message is calling dma_poll_alloc with can-schedule
+mem_flags at atomic context.
+
+To fix this problem, below changes are made:
+- fsl_req_to_dtd doesn't need to be protected by spin_lock_irqsave,
+as struct usb_request can be access at process context. Move lock
+to beginning of hardware visit (fsl_queue_td).
+- Change the memory flag which using to allocate dTD descriptor buffer,
+the memory flag can be from gadget layer.
+
+It is tested at i.mx51 bbg board with g_mass_storage, g_ether, g_serial.
+
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/hid.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/gadget/fsl_udc_core.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/gadget/hid.c
-+++ b/drivers/usb/gadget/hid.c
-@@ -60,9 +60,9 @@ static struct usb_device_descriptor devi
- 	/* .bDeviceClass =		USB_CLASS_COMM, */
- 	/* .bDeviceSubClass =	0, */
- 	/* .bDeviceProtocol =	0, */
--	.bDeviceClass =		0xEF,
--	.bDeviceSubClass =	2,
--	.bDeviceProtocol =	1,
-+	.bDeviceClass =		USB_CLASS_PER_INTERFACE,
-+	.bDeviceSubClass =	0,
-+	.bDeviceProtocol =	0,
- 	/* .bMaxPacketSize0 = f(hardware) */
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -769,7 +769,7 @@ static void fsl_queue_td(struct fsl_ep *
+  * @is_last: return flag if it is the last dTD of the request
+  * return: pointer to the built dTD */
+ static struct ep_td_struct *fsl_build_dtd(struct fsl_req *req, unsigned *length,
+-		dma_addr_t *dma, int *is_last)
++		dma_addr_t *dma, int *is_last, gfp_t gfp_flags)
+ {
+ 	u32 swap_temp;
+ 	struct ep_td_struct *dtd;
+@@ -778,7 +778,7 @@ static struct ep_td_struct *fsl_build_dt
+ 	*length = min(req->req.length - req->req.actual,
+ 			(unsigned)EP_MAX_LENGTH_TRANSFER);
  
- 	/* Vendor and product id can be overridden by module parameters.  */
+-	dtd = dma_pool_alloc(udc_controller->td_pool, GFP_KERNEL, dma);
++	dtd = dma_pool_alloc(udc_controller->td_pool, gfp_flags, dma);
+ 	if (dtd == NULL)
+ 		return dtd;
+ 
+@@ -828,7 +828,7 @@ static struct ep_td_struct *fsl_build_dt
+ }
+ 
+ /* Generate dtd chain for a request */
+-static int fsl_req_to_dtd(struct fsl_req *req)
++static int fsl_req_to_dtd(struct fsl_req *req, gfp_t gfp_flags)
+ {
+ 	unsigned	count;
+ 	int		is_last;
+@@ -837,7 +837,7 @@ static int fsl_req_to_dtd(struct fsl_req
+ 	dma_addr_t dma;
+ 
+ 	do {
+-		dtd = fsl_build_dtd(req, &count, &dma, &is_last);
++		dtd = fsl_build_dtd(req, &count, &dma, &is_last, gfp_flags);
+ 		if (dtd == NULL)
+ 			return -ENOMEM;
+ 
+@@ -911,13 +911,11 @@ fsl_ep_queue(struct usb_ep *_ep, struct
+ 	req->req.actual = 0;
+ 	req->dtd_count = 0;
+ 
+-	spin_lock_irqsave(&udc->lock, flags);
+-
+ 	/* build dtds and push them to device queue */
+-	if (!fsl_req_to_dtd(req)) {
++	if (!fsl_req_to_dtd(req, gfp_flags)) {
++		spin_lock_irqsave(&udc->lock, flags);
+ 		fsl_queue_td(ep, req);
+ 	} else {
+-		spin_unlock_irqrestore(&udc->lock, flags);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1296,7 +1294,7 @@ static int ep0_prime_status(struct fsl_u
+ 			ep_is_in(ep) ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+ 	req->mapped = 1;
+ 
+-	if (fsl_req_to_dtd(req) == 0)
++	if (fsl_req_to_dtd(req, GFP_ATOMIC) == 0)
+ 		fsl_queue_td(ep, req);
+ 	else
+ 		return -ENOMEM;
+@@ -1380,7 +1378,7 @@ static void ch9getstatus(struct fsl_udc
+ 	req->mapped = 1;
+ 
+ 	/* prime the data phase */
+-	if ((fsl_req_to_dtd(req) == 0))
++	if ((fsl_req_to_dtd(req, GFP_ATOMIC) == 0))
+ 		fsl_queue_td(ep, req);
+ 	else			/* no mem */
+ 		goto stall;
 
 
