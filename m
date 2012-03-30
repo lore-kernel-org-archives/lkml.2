@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935346Ab2C3VIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:08:34 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55486 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935354Ab2C3VI2 (ORCPT
+	id S935384Ab2C3VIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:08:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935372Ab2C3VIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:08:28 -0400
-Message-Id: <20120330195736.195496360@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:08:37 -0400
+Message-Id: <20120330195737.350456989@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:59:00 -0700
+Date: Fri, 30 Mar 2012 12:59:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Greear <greearb@candelatech.com>,
-        Dave Jones <davej@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 098/108] net: fix a potential rcu_read_lock() imbalance in rt6_fill_node()
+        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 106/108] compat: use sys_sendfile64() implementation for sendfile syscall
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 1631fcea8399da5e80a80084b3b8c5bfd99d21e7 upstream.
 
-[ Upstream commit 94f826b8076e2cb92242061e92f21b5baa3eccc2 ]
+<asm-generic/unistd.h> was set up to use sys_sendfile() for the 32-bit
+compat API instead of sys_sendfile64(), but in fact the right thing to
+do is to use sys_sendfile64() in all cases.  The 32-bit sendfile64() API
+in glibc uses the sendfile64 syscall, so it has to be capable of doing
+full 64-bit operations.  But the sys_sendfile() kernel implementation
+has a MAX_NON_LFS test in it which explicitly limits the offset to 2^32.
+So, we need to use the sys_sendfile64() implementation in the kernel
+for this case.
 
-Commit f2c31e32b378 (net: fix NULL dereferences in check_peer_redir() )
-added a regression in rt6_fill_node(), leading to rcu_read_lock()
-imbalance.
-
-Thats because NLA_PUT() can make a jump to nla_put_failure label.
-
-Fix this by using nla_put()
-
-Many thanks to Ben Greear for his help
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2411,8 +2411,12 @@ static int rt6_fill_node(struct net *net
+---
+ include/asm-generic/unistd.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/include/asm-generic/unistd.h
++++ b/include/asm-generic/unistd.h
+@@ -218,7 +218,7 @@ __SC_COMP(__NR_pwritev, sys_pwritev, com
  
- 	rcu_read_lock();
- 	n = dst_get_neighbour(&rt->dst);
--	if (n)
--		NLA_PUT(skb, RTA_GATEWAY, 16, &n->primary_key);
-+	if (n) {
-+		if (nla_put(skb, RTA_GATEWAY, 16, &n->primary_key) < 0) {
-+			rcu_read_unlock();
-+			goto nla_put_failure;
-+		}
-+	}
- 	rcu_read_unlock();
+ /* fs/sendfile.c */
+ #define __NR3264_sendfile 71
+-__SC_3264(__NR3264_sendfile, sys_sendfile64, sys_sendfile)
++__SYSCALL(__NR3264_sendfile, sys_sendfile64)
  
- 	if (rt->dst.dev)
+ /* fs/select.c */
+ #define __NR_pselect6 72
 
 
