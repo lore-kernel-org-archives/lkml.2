@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933934Ab2C3MTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:19:12 -0400
+	id S934278Ab2C3MTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:19:18 -0400
 Received: from vms173011pub.verizon.net ([206.46.173.11]:48688 "EHLO
 	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759799Ab2C3MSc (ORCPT
+	with ESMTP id S1760384Ab2C3MSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:18:32 -0400
+	Fri, 30 Mar 2012 08:18:43 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
         Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 28/76] ACPICA: ACPI 5: Update debug output for new notify values
-Date: Fri, 30 Mar 2012 06:13:31 -0400
-Message-id: <ea143604c5c8426923bbed7cd389fdaed7d58a2e.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 27/76] ACPICA: Expand OSL memory read/write interfaces to 64
+ bits
+Date: Fri, 30 Mar 2012 06:13:30 -0400
+Message-id: <653f4b538f66d37db560e0f56af08117136d29b7.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -27,147 +28,302 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Moore <robert.moore@intel.com>
 
-Add new notify values, add support for "hardware specific" notifies.
+This change expands acpi_os_read_memory and acpi_os_write_memory to a
+full 64 bits. This allows 64 bit transfers via the acpi_read and
+acpi_write interfaces. Note: The internal acpi_hw_read and acpi_hw_write
+interfaces remain at 32 bits, because 64 bits is not needed to
+access the standard ACPI registers.
 
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/evmisc.c   |   23 +++++++++++++----------
- drivers/acpi/acpica/utdecode.c |   34 ++++++++++++++++++----------------
- include/acpi/actypes.h         |    6 ++++--
- 3 files changed, 35 insertions(+), 28 deletions(-)
+ drivers/acpi/acpica/hwregs.c  |    8 +++-
+ drivers/acpi/acpica/hwxface.c |   44 ++++++---------------
+ drivers/acpi/apei/apei-base.c |    4 +-
+ drivers/acpi/osl.c            |   86 +----------------------------------------
+ include/acpi/acpiosxf.h       |    8 +---
+ 5 files changed, 23 insertions(+), 127 deletions(-)
 
-diff --git a/drivers/acpi/acpica/evmisc.c b/drivers/acpi/acpica/evmisc.c
-index 0912f62..51ef9f5 100644
---- a/drivers/acpi/acpica/evmisc.c
-+++ b/drivers/acpi/acpica/evmisc.c
-@@ -108,27 +108,30 @@ acpi_ev_queue_notify_request(struct acpi_namespace_node * node,
- 	ACPI_FUNCTION_NAME(ev_queue_notify_request);
+diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
+index 17a78e5..6b6c83b 100644
+--- a/drivers/acpi/acpica/hwregs.c
++++ b/drivers/acpi/acpica/hwregs.c
+@@ -157,6 +157,7 @@ acpi_hw_validate_register(struct acpi_generic_address *reg,
+ acpi_status acpi_hw_read(u32 *value, struct acpi_generic_address *reg)
+ {
+ 	u64 address;
++	u64 value64;
+ 	acpi_status status;
  
- 	/*
--	 * For value 3 (Ejection Request), some device method may need to be run.
--	 * For value 2 (Device Wake) if _PRW exists, the _PS0 method may need
--	 *   to be run.
-+	 * For value 0x03 (Ejection Request), may need to run a device method.
-+	 * For value 0x02 (Device Wake), if _PRW exists, may need to run
-+	 *   the _PS0 method.
- 	 * For value 0x80 (Status Change) on the power button or sleep button,
--	 *   initiate soft-off or sleep operation?
-+	 *   initiate soft-off or sleep operation.
-+	 *
-+	 * For all cases, simply dispatch the notify to the handler.
+ 	ACPI_FUNCTION_NAME(hw_read);
+@@ -178,7 +179,9 @@ acpi_status acpi_hw_read(u32 *value, struct acpi_generic_address *reg)
  	 */
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--			  "Dispatching Notify on [%4.4s] Node %p Value 0x%2.2X (%s)\n",
--			  acpi_ut_get_node_name(node), node, notify_value,
--			  acpi_ut_get_notify_name(notify_value)));
-+			  "Dispatching Notify on [%4.4s] (%s) Value 0x%2.2X (%s) Node %p\n",
-+			  acpi_ut_get_node_name(node),
-+			  acpi_ut_get_type_name(node->type), notify_value,
-+			  acpi_ut_get_notify_name(notify_value), node));
+ 	if (reg->space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY) {
+ 		status = acpi_os_read_memory((acpi_physical_address)
+-					     address, value, reg->bit_width);
++					     address, &value64, reg->bit_width);
++
++		*value = (u32)value64;
+ 	} else {		/* ACPI_ADR_SPACE_SYSTEM_IO, validated earlier */
  
- 	/* Get the notify object attached to the NS Node */
+ 		status = acpi_hw_read_port((acpi_io_address)
+@@ -228,7 +231,8 @@ acpi_status acpi_hw_write(u32 value, struct acpi_generic_address *reg)
+ 	 */
+ 	if (reg->space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY) {
+ 		status = acpi_os_write_memory((acpi_physical_address)
+-					      address, value, reg->bit_width);
++					      address, (u64)value,
++					      reg->bit_width);
+ 	} else {		/* ACPI_ADR_SPACE_SYSTEM_IO, validated earlier */
  
- 	obj_desc = acpi_ns_get_attached_object(node);
- 	if (obj_desc) {
- 
--		/* We have the notify object, Get the right handler */
-+		/* We have the notify object, Get the correct handler */
- 
- 		switch (node->type) {
- 
--			/* Notify allowed only on these types */
-+			/* Notify is allowed only on these types */
- 
- 		case ACPI_TYPE_DEVICE:
- 		case ACPI_TYPE_THERMAL:
-@@ -152,7 +155,7 @@ acpi_ev_queue_notify_request(struct acpi_namespace_node * node,
+ 		status = acpi_hw_write_port((acpi_io_address)
+diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+index bb8dba6..a716fed 100644
+--- a/drivers/acpi/acpica/hwxface.c
++++ b/drivers/acpi/acpica/hwxface.c
+@@ -138,11 +138,6 @@ acpi_status acpi_read(u64 *return_value, struct acpi_generic_address *reg)
+ 		return (status);
  	}
  
- 	/*
--	 * If there is any handler to run, schedule the dispatcher.
-+	 * If there is a handler to run, schedule the dispatcher.
- 	 * Check for:
- 	 * 1) Global system notify handler
- 	 * 2) Global device notify handler
-diff --git a/drivers/acpi/acpica/utdecode.c b/drivers/acpi/acpica/utdecode.c
-index d42ede52..6848499 100644
---- a/drivers/acpi/acpica/utdecode.c
-+++ b/drivers/acpi/acpica/utdecode.c
-@@ -497,19 +497,20 @@ char *acpi_ut_get_mutex_name(u32 mutex_id)
- 
- /* Names for Notify() values, used for debug output */
- 
--static const char *acpi_gbl_notify_value_names[] = {
--	"Bus Check",
--	"Device Check",
--	"Device Wake",
--	"Eject Request",
--	"Device Check Light",
--	"Frequency Mismatch",
--	"Bus Mode Mismatch",
--	"Power Fault",
--	"Capabilities Check",
--	"Device PLD Check",
--	"Reserved",
--	"System Locality Update"
-+static const char *acpi_gbl_notify_value_names[ACPI_NOTIFY_MAX + 1] = {
-+	/* 00 */ "Bus Check",
-+	/* 01 */ "Device Check",
-+	/* 02 */ "Device Wake",
-+	/* 03 */ "Eject Request",
-+	/* 04 */ "Device Check Light",
-+	/* 05 */ "Frequency Mismatch",
-+	/* 06 */ "Bus Mode Mismatch",
-+	/* 07 */ "Power Fault",
-+	/* 08 */ "Capabilities Check",
-+	/* 09 */ "Device PLD Check",
-+	/* 10 */ "Reserved",
-+	/* 11 */ "System Locality Update",
-+	/* 12 */ "Shutdown Request"
- };
- 
- const char *acpi_ut_get_notify_name(u32 notify_value)
-@@ -519,9 +520,10 @@ const char *acpi_ut_get_notify_name(u32 notify_value)
- 		return (acpi_gbl_notify_value_names[notify_value]);
- 	} else if (notify_value <= ACPI_MAX_SYS_NOTIFY) {
- 		return ("Reserved");
--	} else {		/* Greater or equal to 0x80 */
+-	width = reg->bit_width;
+-	if (width == 64) {
+-		width = 32;	/* Break into two 32-bit transfers */
+-	}
 -
--		return ("**Device Specific**");
-+	} else if (notify_value <= ACPI_MAX_DEVICE_SPECIFIC_NOTIFY) {
-+		return ("Device Specific");
-+	} else {
-+		return ("Hardware Specific");
- 	}
- }
- #endif
-diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-index d5dee7c..48c4d5f 100644
---- a/include/acpi/actypes.h
-+++ b/include/acpi/actypes.h
-@@ -532,8 +532,9 @@ typedef u64 acpi_integer;
- #define ACPI_NOTIFY_DEVICE_PLD_CHECK    (u8) 0x09
- #define ACPI_NOTIFY_RESERVED            (u8) 0x0A
- #define ACPI_NOTIFY_LOCALITY_UPDATE     (u8) 0x0B
-+#define ACPI_NOTIFY_SHUTDOWN_REQUEST    (u8) 0x0C
+ 	/* Initialize entire 64-bit return value to zero */
  
--#define ACPI_NOTIFY_MAX                 0x0B
-+#define ACPI_NOTIFY_MAX                 0x0C
+ 	*return_value = 0;
+@@ -154,24 +149,17 @@ acpi_status acpi_read(u64 *return_value, struct acpi_generic_address *reg)
+ 	 */
+ 	if (reg->space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY) {
+ 		status = acpi_os_read_memory((acpi_physical_address)
+-					     address, &value, width);
++					     address, return_value,
++					     reg->bit_width);
+ 		if (ACPI_FAILURE(status)) {
+ 			return (status);
+ 		}
+-		*return_value = value;
+-
+-		if (reg->bit_width == 64) {
+-
+-			/* Read the top 32 bits */
++	} else {		/* ACPI_ADR_SPACE_SYSTEM_IO, validated earlier */
+ 
+-			status = acpi_os_read_memory((acpi_physical_address)
+-						     (address + 4), &value, 32);
+-			if (ACPI_FAILURE(status)) {
+-				return (status);
+-			}
+-			*return_value |= ((u64)value << 32);
++		width = reg->bit_width;
++		if (width == 64) {
++			width = 32;	/* Break into two 32-bit transfers */
+ 		}
+-	} else {		/* ACPI_ADR_SPACE_SYSTEM_IO, validated earlier */
+ 
+ 		status = acpi_hw_read_port((acpi_io_address)
+ 					   address, &value, width);
+@@ -231,32 +219,22 @@ acpi_status acpi_write(u64 value, struct acpi_generic_address *reg)
+ 		return (status);
+ 	}
+ 
+-	width = reg->bit_width;
+-	if (width == 64) {
+-		width = 32;	/* Break into two 32-bit transfers */
+-	}
+-
+ 	/*
+ 	 * Two address spaces supported: Memory or IO. PCI_Config is
+ 	 * not supported here because the GAS structure is insufficient
+ 	 */
+ 	if (reg->space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY) {
+ 		status = acpi_os_write_memory((acpi_physical_address)
+-					      address, ACPI_LODWORD(value),
+-					      width);
++					      address, value, reg->bit_width);
+ 		if (ACPI_FAILURE(status)) {
+ 			return (status);
+ 		}
++	} else {		/* ACPI_ADR_SPACE_SYSTEM_IO, validated earlier */
+ 
+-		if (reg->bit_width == 64) {
+-			status = acpi_os_write_memory((acpi_physical_address)
+-						      (address + 4),
+-						      ACPI_HIDWORD(value), 32);
+-			if (ACPI_FAILURE(status)) {
+-				return (status);
+-			}
++		width = reg->bit_width;
++		if (width == 64) {
++			width = 32;	/* Break into two 32-bit transfers */
+ 		}
+-	} else {		/* ACPI_ADR_SPACE_SYSTEM_IO, validated earlier */
+ 
+ 		status = acpi_hw_write_port((acpi_io_address)
+ 					    address, ACPI_LODWORD(value),
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index e5d53b7..ca77368 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -605,7 +605,7 @@ int apei_read(u64 *val, struct acpi_generic_address *reg)
+ 	*val = 0;
+ 	switch(reg->space_id) {
+ 	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
+-		status = acpi_os_read_memory64((acpi_physical_address)
++		status = acpi_os_read_memory((acpi_physical_address)
+ 					     address, val, reg->bit_width);
+ 		if (ACPI_FAILURE(status))
+ 			return -EIO;
+@@ -636,7 +636,7 @@ int apei_write(u64 val, struct acpi_generic_address *reg)
+ 
+ 	switch (reg->space_id) {
+ 	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
+-		status = acpi_os_write_memory64((acpi_physical_address)
++		status = acpi_os_write_memory((acpi_physical_address)
+ 					      address, val, reg->bit_width);
+ 		if (ACPI_FAILURE(status))
+ 			return -EIO;
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 412a1e0..1dea025 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -699,49 +699,6 @@ acpi_status acpi_os_write_port(acpi_io_address port, u32 value, u32 width)
+ 
+ EXPORT_SYMBOL(acpi_os_write_port);
+ 
+-acpi_status
+-acpi_os_read_memory(acpi_physical_address phys_addr, u32 * value, u32 width)
+-{
+-	void __iomem *virt_addr;
+-	unsigned int size = width / 8;
+-	bool unmap = false;
+-	u32 dummy;
+-
+-	rcu_read_lock();
+-	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
+-	if (!virt_addr) {
+-		rcu_read_unlock();
+-		virt_addr = acpi_os_ioremap(phys_addr, size);
+-		if (!virt_addr)
+-			return AE_BAD_ADDRESS;
+-		unmap = true;
+-	}
+-
+-	if (!value)
+-		value = &dummy;
+-
+-	switch (width) {
+-	case 8:
+-		*(u8 *) value = readb(virt_addr);
+-		break;
+-	case 16:
+-		*(u16 *) value = readw(virt_addr);
+-		break;
+-	case 32:
+-		*(u32 *) value = readl(virt_addr);
+-		break;
+-	default:
+-		BUG();
+-	}
+-
+-	if (unmap)
+-		iounmap(virt_addr);
+-	else
+-		rcu_read_unlock();
+-
+-	return AE_OK;
+-}
+-
+ #ifdef readq
+ static inline u64 read64(const volatile void __iomem *addr)
+ {
+@@ -758,7 +715,7 @@ static inline u64 read64(const volatile void __iomem *addr)
+ #endif
+ 
+ acpi_status
+-acpi_os_read_memory64(acpi_physical_address phys_addr, u64 *value, u32 width)
++acpi_os_read_memory(acpi_physical_address phys_addr, u64 *value, u32 width)
+ {
+ 	void __iomem *virt_addr;
+ 	unsigned int size = width / 8;
+@@ -803,45 +760,6 @@ acpi_os_read_memory64(acpi_physical_address phys_addr, u64 *value, u32 width)
+ 	return AE_OK;
+ }
+ 
+-acpi_status
+-acpi_os_write_memory(acpi_physical_address phys_addr, u32 value, u32 width)
+-{
+-	void __iomem *virt_addr;
+-	unsigned int size = width / 8;
+-	bool unmap = false;
+-
+-	rcu_read_lock();
+-	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
+-	if (!virt_addr) {
+-		rcu_read_unlock();
+-		virt_addr = acpi_os_ioremap(phys_addr, size);
+-		if (!virt_addr)
+-			return AE_BAD_ADDRESS;
+-		unmap = true;
+-	}
+-
+-	switch (width) {
+-	case 8:
+-		writeb(value, virt_addr);
+-		break;
+-	case 16:
+-		writew(value, virt_addr);
+-		break;
+-	case 32:
+-		writel(value, virt_addr);
+-		break;
+-	default:
+-		BUG();
+-	}
+-
+-	if (unmap)
+-		iounmap(virt_addr);
+-	else
+-		rcu_read_unlock();
+-
+-	return AE_OK;
+-}
+-
+ #ifdef writeq
+ static inline void write64(u64 val, volatile void __iomem *addr)
+ {
+@@ -856,7 +774,7 @@ static inline void write64(u64 val, volatile void __iomem *addr)
+ #endif
+ 
+ acpi_status
+-acpi_os_write_memory64(acpi_physical_address phys_addr, u64 value, u32 width)
++acpi_os_write_memory(acpi_physical_address phys_addr, u64 value, u32 width)
+ {
+ 	void __iomem *virt_addr;
+ 	unsigned int size = width / 8;
+diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
+index 7c9aebe..1cd2204 100644
+--- a/include/acpi/acpiosxf.h
++++ b/include/acpi/acpiosxf.h
+@@ -217,14 +217,10 @@ acpi_status acpi_os_write_port(acpi_io_address address, u32 value, u32 width);
+  * Platform and hardware-independent physical memory interfaces
+  */
+ acpi_status
+-acpi_os_read_memory(acpi_physical_address address, u32 * value, u32 width);
+-acpi_status
+-acpi_os_read_memory64(acpi_physical_address address, u64 *value, u32 width);
++acpi_os_read_memory(acpi_physical_address address, u64 *value, u32 width);
+ 
+ acpi_status
+-acpi_os_write_memory(acpi_physical_address address, u32 value, u32 width);
+-acpi_status
+-acpi_os_write_memory64(acpi_physical_address address, u64 value, u32 width);
++acpi_os_write_memory(acpi_physical_address address, u64 value, u32 width);
  
  /*
-  * Types associated with ACPI names and objects. The first group of
-@@ -698,7 +699,8 @@ typedef u32 acpi_event_status;
- #define ACPI_ALL_NOTIFY                 (ACPI_SYSTEM_NOTIFY | ACPI_DEVICE_NOTIFY)
- #define ACPI_MAX_NOTIFY_HANDLER_TYPE    0x3
- 
--#define ACPI_MAX_SYS_NOTIFY             0x7f
-+#define ACPI_MAX_SYS_NOTIFY             0x7F
-+#define ACPI_MAX_DEVICE_SPECIFIC_NOTIFY 0xBF
- 
- /* Address Space (Operation Region) Types */
- 
+  * Platform and hardware-independent PCI configuration space access
 -- 
 1.7.10.rc2.19.gfae9d
 
