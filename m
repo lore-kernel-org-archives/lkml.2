@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934301Ab2C3L7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:59:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60370 "EHLO
+	id S934321Ab2C3L7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:59:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60395 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934132Ab2C3L7H (ORCPT
+	with ESMTP id S1760302Ab2C3L70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:59:07 -0400
+	Fri, 30 Mar 2012 07:59:26 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: tony@atomide.com, linux@arm.linux.org.uk, rpurdie@rpsys.net,
         manuel.lauss@gmail.com, cjb@laptop.org, cbou@mail.ru,
         dwmw2@infradead.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linus.walleij@linaro.org, akpm@linux-foundation.org
-Subject: [PATCH 01/18] led-triggers: create a trigger for CPU activity
-Date: Fri, 30 Mar 2012 19:58:16 +0800
-Message-Id: <1333108713-12707-2-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 03/18] ARM: mach-realview and mach-versatile: retire custom LED code
+Date: Fri, 30 Mar 2012 19:58:18 +0800
+Message-Id: <1333108713-12707-4-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
 References: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
@@ -23,236 +23,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempting to consolidate the ARM LED code, this removes the
-custom RealView LED trigger code to turn LEDs on and off in
-response to CPU activity and replace it with a standard trigger.
+This replaces the custom LED trigger code in mach-realview with
+some overarching platform code for the plat-versatile family that
+will lock down LEDs 2 thru 5 for CPU activity indication. The
+day we have 8 core ARM systems the plat-versatile code will have
+to become more elaborate.
 
-(bryan.wu@canonical.com:
-It moves arch/arm/kernel/leds.c syscore stubs into this trigger.
-It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
-Although it was inspired by ARM work, it can be used in other arch.)
+Tested on RealView PB11MPCore by invoking four different CPU
+hogs (yes > /dev/null&) and see the LEDs go on one at a time.
+They all go off as the hogs are killed. Tested on the PB1176
+as well - just one activity led (led 2) goes on and off with
+CPU activity.
+
+(bryan.wu@canonical.com: use ledtrig-cpu instead of ledtrig-arm-cpu)
 
 Cc: Richard Purdie <rpurdie@rpsys.net>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
-Tested-by: Jochen Friedrich <jochen@scram.de>
+Acked-by: Pawel Moll <pawel.moll@arm.com>
 ---
- drivers/leds/Kconfig       |   10 +++
- drivers/leds/Makefile      |    1 +
- drivers/leds/ledtrig-cpu.c |  138 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/leds.h       |   23 +++++++
- 4 files changed, 172 insertions(+), 0 deletions(-)
- create mode 100644 drivers/leds/ledtrig-cpu.c
+ arch/arm/mach-realview/core.c            |   39 ------------------------------
+ arch/arm/mach-realview/core.h            |    2 -
+ arch/arm/mach-realview/realview_eb.c     |    5 ----
+ arch/arm/mach-realview/realview_pb1176.c |    5 ----
+ arch/arm/mach-realview/realview_pb11mp.c |    5 ----
+ arch/arm/mach-realview/realview_pba8.c   |    5 ----
+ arch/arm/mach-realview/realview_pbx.c    |    5 ----
+ arch/arm/mach-versatile/core.c           |    5 ----
+ arch/arm/plat-versatile/Kconfig          |    4 ++-
+ arch/arm/plat-versatile/leds.c           |   13 +++++++---
+ 10 files changed, 12 insertions(+), 76 deletions(-)
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index ff4b8cf..cf02fb8 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -448,6 +448,16 @@ config LEDS_TRIGGER_BACKLIGHT
+diff --git a/arch/arm/mach-realview/core.c b/arch/arm/mach-realview/core.c
+index 45868bb..d22dee9 100644
+--- a/arch/arm/mach-realview/core.c
++++ b/arch/arm/mach-realview/core.c
+@@ -35,7 +35,6 @@
  
- 	  If unsure, say N.
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/mach-types.h>
+ #include <asm/hardware/arm_timer.h>
+ #include <asm/hardware/icst.h>
+@@ -436,44 +435,6 @@ struct clcd_board clcd_plat_data = {
+ 	.remove		= versatile_clcd_remove_dma,
+ };
  
-+config LEDS_TRIGGER_CPU
-+	tristate "LED CPU Trigger"
-+	depends on LEDS_TRIGGERS
-+	help
-+	  This allows LEDs to be controlled by active CPUs. This shows
-+	  the active CPUs across an array of LEDs so you can see what
-+	  CPUs are active on the system at any given moment.
-+
-+	  If unsure, say N.
-+
- config LEDS_TRIGGER_GPIO
- 	tristate "LED GPIO Trigger"
- 	depends on LEDS_TRIGGERS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 890481c..0a3d5ad 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -55,4 +55,5 @@ obj-$(CONFIG_LEDS_TRIGGER_IDE_DISK)	+= ledtrig-ide-disk.o
- obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT)	+= ledtrig-heartbeat.o
- obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT)	+= ledtrig-backlight.o
- obj-$(CONFIG_LEDS_TRIGGER_GPIO)		+= ledtrig-gpio.o
-+obj-$(CONFIG_LEDS_TRIGGER_CPU)		+= ledtrig-cpu.o
- obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
-diff --git a/drivers/leds/ledtrig-cpu.c b/drivers/leds/ledtrig-cpu.c
-new file mode 100644
-index 0000000..d48c4b5
---- /dev/null
-+++ b/drivers/leds/ledtrig-cpu.c
-@@ -0,0 +1,138 @@
-+/*
-+ * ledtrig-cpu.c - LED trigger based on CPU activity
-+ *
-+ * This LED trigger will be registered for each possible CPU and named as
-+ * cpu0, cpu1, cpu2, cpu3, etc.
-+ *
-+ * It can be binded with any LEDs as other triggers does, either in board
-+ * file or via sysfs interface.
-+ *
-+ * An API named ledtrig_cpu is exported for any user, who want to add CPU
-+ * activity indication in their code
-+ *
-+ * Copyright 2011 Linus Walleij <linus.walleij@linaro.org>
-+ * Copyright 2011 - 2012 Bryan Wu <bryan.wu@canonical.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/percpu.h>
-+#include <linux/syscore_ops.h>
-+#include "leds.h"
-+
-+#define MAX_NAME_LEN	8
-+
-+static DEFINE_PER_CPU(struct led_trigger *, cpu_trig);
-+static DEFINE_PER_CPU(char [MAX_NAME_LEN], trig_name);
-+
-+void ledtrig_cpu(enum cpu_led_event ledevt)
-+{
-+	struct led_trigger *trig = __get_cpu_var(cpu_trig);
-+
-+	if (!trig)
-+		return;
-+
-+	/* Locate the correct CPU LED */
-+	switch (ledevt) {
-+	case CPU_LED_IDLE_END:
-+	case CPU_LED_START:
-+		/* Will turn the LED on, max brightness */
-+		led_trigger_event(trig, LED_FULL);
-+		break;
-+
-+	case CPU_LED_IDLE_START:
-+	case CPU_LED_STOP:
-+	case CPU_LED_HALTED:
-+		/* Will turn the LED off */
-+		led_trigger_event(trig, LED_OFF);
-+		break;
-+
-+	default:
-+		/* Will leave the LED as it is */
-+		break;
-+	}
-+}
-+EXPORT_SYMBOL(ledtrig_cpu);
-+
-+static int ledtrig_cpu_syscore_suspend(void)
-+{
-+	ledtrig_cpu(CPU_LED_STOP);
-+	return 0;
-+}
-+
-+static void ledtrig_cpu_syscore_resume(void)
-+{
-+	ledtrig_cpu(CPU_LED_START);
-+}
-+
-+static void ledtrig_cpu_syscore_shutdown(void)
-+{
-+	ledtrig_cpu(CPU_LED_HALTED);
-+}
-+
-+static struct syscore_ops ledtrig_cpu_syscore_ops = {
-+	.shutdown	= ledtrig_cpu_syscore_shutdown,
-+	.suspend	= ledtrig_cpu_syscore_suspend,
-+	.resume		= ledtrig_cpu_syscore_resume,
-+};
-+
-+static void __init ledtrig_cpu_register(void)
-+{
-+	int cpuid = smp_processor_id();
-+	struct led_trigger *trig;
-+	char *name = __get_cpu_var(trig_name);
-+
-+	snprintf(name, MAX_NAME_LEN, "cpu%d", cpuid);
-+	led_trigger_register_simple(name, &trig);
-+
-+	pr_info("LED trigger %s indicate activity on CPU %d\n",
-+		trig->name, cpuid);
-+
-+	__get_cpu_var(cpu_trig) = trig;
-+}
-+
-+static void __exit ledtrig_cpu_unregister(void)
-+{
-+	struct led_trigger *trig = __get_cpu_var(cpu_trig);
-+	char *name = __get_cpu_var(trig_name);
-+
-+	led_trigger_unregister_simple(trig);
-+	__get_cpu_var(cpu_trig) = NULL;
-+	memset(name, 0, MAX_NAME_LEN);
-+}
-+
-+static int __init ledtrig_cpu_init(void)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		ledtrig_cpu_register();
-+
-+	register_syscore_ops(&ledtrig_cpu_syscore_ops);
-+
-+	return 0;
-+}
-+module_init(ledtrig_cpu_init);
-+
-+static void __exit ledtrig_cpu_exit(void)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		ledtrig_cpu_unregister();
-+
-+	unregister_syscore_ops(&ledtrig_cpu_syscore_ops);
-+}
-+module_exit(ledtrig_cpu_exit);
-+
-+MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
-+MODULE_AUTHOR("Bryan Wu <bryan.wu@canonical.com>");
-+MODULE_DESCRIPTION("CPU LED trigger");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 5884def..1215b94 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -210,4 +210,27 @@ struct gpio_led_platform_data {
- struct platform_device *gpio_led_register_device(
- 		int id, const struct gpio_led_platform_data *pdata);
+-#ifdef CONFIG_LEDS
+-#define VA_LEDS_BASE (__io_address(REALVIEW_SYS_BASE) + REALVIEW_SYS_LED_OFFSET)
+-
+-void realview_leds_event(led_event_t ledevt)
+-{
+-	unsigned long flags;
+-	u32 val;
+-	u32 led = 1 << smp_processor_id();
+-
+-	local_irq_save(flags);
+-	val = readl(VA_LEDS_BASE);
+-
+-	switch (ledevt) {
+-	case led_idle_start:
+-		val = val & ~led;
+-		break;
+-
+-	case led_idle_end:
+-		val = val | led;
+-		break;
+-
+-	case led_timer:
+-		val = val ^ REALVIEW_SYS_LED7;
+-		break;
+-
+-	case led_halted:
+-		val = 0;
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	writel(val, VA_LEDS_BASE);
+-	local_irq_restore(flags);
+-}
+-#endif	/* CONFIG_LEDS */
+-
+ /*
+  * Where is the timer (VA)?
+  */
+diff --git a/arch/arm/mach-realview/core.h b/arch/arm/mach-realview/core.h
+index f8f2c0a..f2141ae 100644
+--- a/arch/arm/mach-realview/core.h
++++ b/arch/arm/mach-realview/core.h
+@@ -26,7 +26,6 @@
+ #include <linux/io.h>
  
-+enum cpu_led_event {
-+	CPU_LED_IDLE_START,	/* CPU enters idle */
-+	CPU_LED_IDLE_END,	/* CPU idle ends */
-+	CPU_LED_START,		/* Machine starts, especially resume */
-+	CPU_LED_STOP,		/* Machine stops, especially suspend */
-+	CPU_LED_HALTED,		/* Machine shutdown */
-+};
-+#if defined(CONFIG_LEDS_TRIGGER_CPU) || defined(CONFIG_LEDS_TRIGGER_CPU_MODULE)
-+/**
-+ * ledtrig_cpu - emit a CPU event as a trigger
-+ * @evt: CPU event to be emitted
-+ *
-+ * Emit a CPU event on a CPU core, which will trigger a
-+ * binded LED to turn on or turn off.
-+ */
-+extern void ledtrig_cpu(enum cpu_led_event evt);
-+#else
-+static inline void ledtrig_cpu(enum cpu_led_event evt)
-+{
-+	return;
-+}
-+#endif
-+
- #endif		/* __LINUX_LEDS_H_INCLUDED */
+ #include <asm/setup.h>
+-#include <asm/leds.h>
+ 
+ #define APB_DEVICE(name, busid, base, plat)			\
+ static AMBA_APB_DEVICE(name, busid, 0, REALVIEW_##base##_BASE, base##_IRQ, plat)
+@@ -47,7 +46,6 @@ extern void __iomem *timer1_va_base;
+ extern void __iomem *timer2_va_base;
+ extern void __iomem *timer3_va_base;
+ 
+-extern void realview_leds_event(led_event_t ledevt);
+ extern void realview_timer_init(unsigned int timer_irq);
+ extern int realview_flash_register(struct resource *res, u32 num);
+ extern int realview_eth_register(const char *name, struct resource *res);
+diff --git a/arch/arm/mach-realview/realview_eb.c b/arch/arm/mach-realview/realview_eb.c
+index baf382c..21661ad 100644
+--- a/arch/arm/mach-realview/realview_eb.c
++++ b/arch/arm/mach-realview/realview_eb.c
+@@ -30,7 +30,6 @@
+ 
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/mach-types.h>
+ #include <asm/pmu.h>
+ #include <asm/pgtable.h>
+@@ -462,10 +461,6 @@ static void __init realview_eb_init(void)
+ 		struct amba_device *d = amba_devs[i];
+ 		amba_device_register(d, &iomem_resource);
+ 	}
+-
+-#ifdef CONFIG_LEDS
+-	leds_event = realview_leds_event;
+-#endif
+ }
+ 
+ MACHINE_START(REALVIEW_EB, "ARM-RealView EB")
+diff --git a/arch/arm/mach-realview/realview_pb1176.c b/arch/arm/mach-realview/realview_pb1176.c
+index b1d7caf..c0ff882 100644
+--- a/arch/arm/mach-realview/realview_pb1176.c
++++ b/arch/arm/mach-realview/realview_pb1176.c
+@@ -32,7 +32,6 @@
+ 
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/mach-types.h>
+ #include <asm/pmu.h>
+ #include <asm/pgtable.h>
+@@ -375,10 +374,6 @@ static void __init realview_pb1176_init(void)
+ 		struct amba_device *d = amba_devs[i];
+ 		amba_device_register(d, &iomem_resource);
+ 	}
+-
+-#ifdef CONFIG_LEDS
+-	leds_event = realview_leds_event;
+-#endif
+ }
+ 
+ MACHINE_START(REALVIEW_PB1176, "ARM-RealView PB1176")
+diff --git a/arch/arm/mach-realview/realview_pb11mp.c b/arch/arm/mach-realview/realview_pb11mp.c
+index a98c536..30779ae 100644
+--- a/arch/arm/mach-realview/realview_pb11mp.c
++++ b/arch/arm/mach-realview/realview_pb11mp.c
+@@ -30,7 +30,6 @@
+ 
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/mach-types.h>
+ #include <asm/pmu.h>
+ #include <asm/pgtable.h>
+@@ -357,10 +356,6 @@ static void __init realview_pb11mp_init(void)
+ 		struct amba_device *d = amba_devs[i];
+ 		amba_device_register(d, &iomem_resource);
+ 	}
+-
+-#ifdef CONFIG_LEDS
+-	leds_event = realview_leds_event;
+-#endif
+ }
+ 
+ MACHINE_START(REALVIEW_PB11MP, "ARM-RealView PB11MPCore")
+diff --git a/arch/arm/mach-realview/realview_pba8.c b/arch/arm/mach-realview/realview_pba8.c
+index 5965017..081cd72 100644
+--- a/arch/arm/mach-realview/realview_pba8.c
++++ b/arch/arm/mach-realview/realview_pba8.c
+@@ -29,7 +29,6 @@
+ #include <linux/io.h>
+ 
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/mach-types.h>
+ #include <asm/pmu.h>
+ #include <asm/pgtable.h>
+@@ -299,10 +298,6 @@ static void __init realview_pba8_init(void)
+ 		struct amba_device *d = amba_devs[i];
+ 		amba_device_register(d, &iomem_resource);
+ 	}
+-
+-#ifdef CONFIG_LEDS
+-	leds_event = realview_leds_event;
+-#endif
+ }
+ 
+ MACHINE_START(REALVIEW_PBA8, "ARM-RealView PB-A8")
+diff --git a/arch/arm/mach-realview/realview_pbx.c b/arch/arm/mach-realview/realview_pbx.c
+index 3f2f605..1ce62b9 100644
+--- a/arch/arm/mach-realview/realview_pbx.c
++++ b/arch/arm/mach-realview/realview_pbx.c
+@@ -28,7 +28,6 @@
+ #include <linux/io.h>
+ 
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/mach-types.h>
+ #include <asm/pmu.h>
+ #include <asm/smp_twd.h>
+@@ -394,10 +393,6 @@ static void __init realview_pbx_init(void)
+ 		struct amba_device *d = amba_devs[i];
+ 		amba_device_register(d, &iomem_resource);
+ 	}
+-
+-#ifdef CONFIG_LEDS
+-	leds_event = realview_leds_event;
+-#endif
+ }
+ 
+ MACHINE_START(REALVIEW_PBX, "ARM-RealView PBX")
+diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
+index 6bbd74e..762f7c4 100644
+--- a/arch/arm/mach-versatile/core.c
++++ b/arch/arm/mach-versatile/core.c
+@@ -37,7 +37,6 @@
+ #include <linux/mtd/physmap.h>
+ 
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/hardware/arm_timer.h>
+ #include <asm/hardware/icst.h>
+ #include <asm/hardware/vic.h>
+@@ -778,10 +777,6 @@ void __init versatile_init(void)
+ 		struct amba_device *d = amba_devs[i];
+ 		amba_device_register(d, &iomem_resource);
+ 	}
+-
+-#ifdef CONFIG_LEDS
+-	leds_event = versatile_leds_event;
+-#endif
+ }
+ 
+ /*
+diff --git a/arch/arm/plat-versatile/Kconfig b/arch/arm/plat-versatile/Kconfig
+index 043f7b0..b393bb5 100644
+--- a/arch/arm/plat-versatile/Kconfig
++++ b/arch/arm/plat-versatile/Kconfig
+@@ -7,8 +7,10 @@ config PLAT_VERSATILE_FPGA_IRQ
+ 	bool
+ 
+ config PLAT_VERSATILE_LEDS
+-	def_bool y if LEDS_CLASS
++	def_bool y if NEW_LEDS
+ 	depends on ARCH_REALVIEW || ARCH_VERSATILE
++	select LEDS_CLASS
++	select LEDS_TRIGGER
+ 
+ config PLAT_VERSATILE_SCHED_CLOCK
+ 	def_bool y
+diff --git a/arch/arm/plat-versatile/leds.c b/arch/arm/plat-versatile/leds.c
+index 3169fa5..50090c4 100644
+--- a/arch/arm/plat-versatile/leds.c
++++ b/arch/arm/plat-versatile/leds.c
+@@ -37,10 +37,10 @@ static const struct {
+ } versatile_leds[] = {
+ 	{ "versatile:0", "heartbeat", },
+ 	{ "versatile:1", "mmc0", },
+-	{ "versatile:2", },
+-	{ "versatile:3", },
+-	{ "versatile:4", },
+-	{ "versatile:5", },
++	{ "versatile:2", "cpu0" },
++	{ "versatile:3", "cpu1" },
++	{ "versatile:4", "cpu2" },
++	{ "versatile:5", "cpu3" },
+ 	{ "versatile:6", },
+ 	{ "versatile:7", },
+ };
+@@ -85,6 +85,11 @@ static int __init versatile_leds_init(void)
+ 		led->cdev.brightness_set = versatile_led_set;
+ 		led->cdev.brightness_get = versatile_led_get;
+ 		led->cdev.default_trigger = versatile_leds[i].trigger;
++		/* Some trigger data for CPU LEDs */
++		if (i >= 2 && i <= 5) {
++			/* This is the CPU number actually */
++			led->cdev.trigger_data = (void *) i - 2;
++		}
+ 		led->mask = BIT(i);
+ 
+ 		if (led_classdev_register(NULL, &led->cdev) < 0) {
 -- 
 1.7.9.1
 
