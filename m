@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935504Ab2C3VJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:09:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S935543Ab2C3Wd4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:33:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935147Ab2C3VJ1 (ORCPT
+	with ESMTP id S935438Ab2C3VJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:09:27 -0400
-Message-Id: <20120330194836.046999100@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:09:30 -0400
+Message-Id: <20120330194836.228356569@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:47 -0700
+Date: Fri, 30 Mar 2012 12:48:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Alberto Lago Ballesteros <saniukeokusainaya@gmail.com>,
-        Adrian <agib@gmx.de>, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [ 014/149] staging: r8712u: Fix regression introduced by commit a5ee652
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [ 015/149] staging: r8712u: Fix regression in signal level after commit c6dc001
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,48 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9f4bc8cf3fe750ed093856a5f5d41c11cc12ad22 upstream.
+commit da3e6ec2f443ac00aa623c5921e3521f5f38efe4 upstream.
 
-In commit a5ee652 "staging: r8712u: Interface-state not fully tracked",
-the private boolean "bup" was set false when the interface was brought down,
-as that seemed appropriate. This change has not caused any problems when
-using NetworkManager or manual control of the device; however, when wicd
-control is used, there is a locking problem in wpa_supplicant, as shown in
-https://bugzilla.kernel.org/show_bug.cgi?id=42818.
+In commit c6dc001 "staging: r8712u: Merging Realtek's latest (v2.6.6).
+Various fixes", the returned qual.qual member of the iw_statistics
+struct was changed. For strong signals, this change made no difference;
+however for medium and weak signals it results in a low signal that
+shows considerable fluctuation, When using wicd for a medium-strength
+AP, the value reported in the status line is reduced from 100% to 60% by
+this bug.
 
-This fix reverts the only code change in commit a5ee652. My
-analysis is that "bup" is badly named. In its present form, it
-seems to indicate the up/down state of the device, but its usage
-is more consistent with an initialized/uninitialized state. That
-problem will be addressed in a later patch.
+This problem is reported in https://bugzilla.kernel.org/show_bug.cgi?id=42826.
 
-Note: Commit 8c213fa, which introdued asynchronous firmware loading
-for this driver, exposed this bug to a greater extent. That bug
-is addressed in the next patch in this series.
-
-This bug is also responsible for the bug in
-https://bugzilla.kernel.org/show_bug.cgi?id=42815. and this bug is
-also part of the problems discussed at https://bugs.archlinux.org/task/27996#comment89950.
-
-Tested-by: Alberto Lago Ballesteros <saniukeokusainaya@gmail.com>
-Tested-by: Adrian <agib@gmx.de>
+Reported-and-tested-by: Robert Crawford <wrc1944@gmail.com>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/os_intfs.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/drivers/staging/rtl8712/os_intfs.c
-+++ b/drivers/staging/rtl8712/os_intfs.c
-@@ -476,8 +476,6 @@ static int netdev_close(struct net_devic
- 	r8712_free_assoc_resources(padapter);
- 	/*s2-4.*/
- 	r8712_free_network_queue(padapter);
--	/* The interface is no longer Up: */
--	padapter->bup = false;
- 	release_firmware(padapter->fw);
- 	/* never exit with a firmware callback pending */
- 	wait_for_completion(&padapter->rtl8712_fw_ready);
+--- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
++++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+@@ -2380,13 +2380,7 @@ static struct iw_statistics *r871x_get_w
+ 		tmp_qual = padapter->recvpriv.signal;
+ 		tmp_noise = padapter->recvpriv.noise;
+ 		piwstats->qual.level = tmp_level;
+-		/*piwstats->qual.qual = tmp_qual;
+-		 * The NetworkManager of Fedora 10, 13 will use the link
+-		 * quality for its display.
+-		 * So, use the fw_rssi on link quality variable because
+-		 * fw_rssi will be updated per 2 seconds.
+-		 */
+-		piwstats->qual.qual = tmp_level;
++		piwstats->qual.qual = tmp_qual;
+ 		piwstats->qual.noise = tmp_noise;
+ 	}
+ 	piwstats->qual.updated = IW_QUAL_ALL_UPDATED;
 
 
