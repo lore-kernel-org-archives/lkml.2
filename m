@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936529Ab2C3WcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:32:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S936535Ab2C3Wc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:32:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935464Ab2C3VKE (ORCPT
+	with ESMTP id S935509Ab2C3VJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:10:04 -0400
-Message-Id: <20120330194838.654145183@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:09:52 -0400
+Message-Id: <20120330194837.742712078@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:59 -0700
+Date: Fri, 30 Mar 2012 12:48:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Hemminger <shemminger@vyatta.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 026/149] USB: serial: fix console error reporting
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: [ 022/149] futex: Cover all PI opcodes with cmpxchg enabled check
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 548dd4b6da8a8e428453d55f7fa7b8a46498d147 upstream.
+commit 59263b513c11398cd66a52d4c5b2b118ce1e0359 upstream.
 
-Do not report errors in write path if port is used as a console as this
-may trigger the same error (and error report) resulting in a loop.
+Some of the newer futex PI opcodes do not check the cmpxchg enabled
+variable and call unconditionally into the handling functions. Cover
+all PI opcodes in a separate check.
 
-Reported-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/generic.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/futex.c |   19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -215,8 +215,10 @@ retry:
- 	clear_bit(i, &port->write_urbs_free);
- 	result = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (result) {
--		dev_err(&port->dev, "%s - error submitting urb: %d\n",
-+		if (!port->port.console) {
-+			dev_err(&port->dev, "%s - error submitting urb: %d\n",
- 						__func__, result);
-+		}
- 		set_bit(i, &port->write_urbs_free);
- 		spin_lock_irqsave(&port->lock, flags);
- 		port->tx_bytes -= count;
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2641,6 +2641,16 @@ long do_futex(u32 __user *uaddr, int op,
+ 	}
+ 
+ 	switch (cmd) {
++	case FUTEX_LOCK_PI:
++	case FUTEX_UNLOCK_PI:
++	case FUTEX_TRYLOCK_PI:
++	case FUTEX_WAIT_REQUEUE_PI:
++	case FUTEX_CMP_REQUEUE_PI:
++		if (!futex_cmpxchg_enabled)
++			return -ENOSYS;
++	}
++
++	switch (cmd) {
+ 	case FUTEX_WAIT:
+ 		val3 = FUTEX_BITSET_MATCH_ANY;
+ 	case FUTEX_WAIT_BITSET:
+@@ -2661,16 +2671,13 @@ long do_futex(u32 __user *uaddr, int op,
+ 		ret = futex_wake_op(uaddr, flags, uaddr2, val, val2, val3);
+ 		break;
+ 	case FUTEX_LOCK_PI:
+-		if (futex_cmpxchg_enabled)
+-			ret = futex_lock_pi(uaddr, flags, val, timeout, 0);
++		ret = futex_lock_pi(uaddr, flags, val, timeout, 0);
+ 		break;
+ 	case FUTEX_UNLOCK_PI:
+-		if (futex_cmpxchg_enabled)
+-			ret = futex_unlock_pi(uaddr, flags);
++		ret = futex_unlock_pi(uaddr, flags);
+ 		break;
+ 	case FUTEX_TRYLOCK_PI:
+-		if (futex_cmpxchg_enabled)
+-			ret = futex_lock_pi(uaddr, flags, 0, timeout, 1);
++		ret = futex_lock_pi(uaddr, flags, 0, timeout, 1);
+ 		break;
+ 	case FUTEX_WAIT_REQUEUE_PI:
+ 		val3 = FUTEX_BITSET_MATCH_ANY;
 
 
