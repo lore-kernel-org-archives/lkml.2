@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934414Ab2C3MBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:01:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60505 "EHLO
+	id S934426Ab2C3MBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:01:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60527 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933770Ab2C3MB0 (ORCPT
+	with ESMTP id S934380Ab2C3MBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:01:26 -0400
+	Fri, 30 Mar 2012 08:01:41 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: tony@atomide.com, linux@arm.linux.org.uk, rpurdie@rpsys.net,
         manuel.lauss@gmail.com, cjb@laptop.org, cbou@mail.ru,
         dwmw2@infradead.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linus.walleij@linaro.org, akpm@linux-foundation.org
-Subject: [PATCH 12/18] char: nwflash: remove old led event code
-Date: Fri, 30 Mar 2012 19:58:27 +0800
-Message-Id: <1333108713-12707-13-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 14/18] ARM: plat-samsung: remove including old leds event API header file
+Date: Fri, 30 Mar 2012 19:58:29 +0800
+Message-Id: <1333108713-12707-15-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
 References: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
@@ -25,99 +25,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 ---
- drivers/char/nwflash.c |   34 ----------------------------------
- 1 files changed, 0 insertions(+), 34 deletions(-)
+ arch/arm/plat-samsung/time.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/nwflash.c b/drivers/char/nwflash.c
-index d45c334..a0e2f7d 100644
---- a/drivers/char/nwflash.c
-+++ b/drivers/char/nwflash.c
-@@ -30,7 +30,6 @@
+diff --git a/arch/arm/plat-samsung/time.c b/arch/arm/plat-samsung/time.c
+index 4dcb11c..60552e2 100644
+--- a/arch/arm/plat-samsung/time.c
++++ b/arch/arm/plat-samsung/time.c
+@@ -28,7 +28,6 @@
+ #include <linux/io.h>
+ #include <linux/platform_device.h>
  
- #include <asm/hardware/dec21285.h>
- #include <asm/io.h>
 -#include <asm/leds.h>
  #include <asm/mach-types.h>
- #include <asm/uaccess.h>
  
-@@ -179,9 +178,6 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
- 
- 	written = 0;
- 
--	leds_event(led_claim);
--	leds_event(led_green_on);
--
- 	nBlock = (int) p >> 16;	//block # of 64K bytes
- 
- 	/*
-@@ -258,11 +254,6 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
- 			printk(KERN_DEBUG "flash_write: written 0x%X bytes OK.\n", written);
- 	}
- 
--	/*
--	 * restore reg on exit
--	 */
--	leds_event(led_release);
--
- 	mutex_unlock(&nwflash_mutex);
- 
- 	return written;
-@@ -334,11 +325,6 @@ static int erase_block(int nBlock)
- 	int temp, temp1;
- 
- 	/*
--	 * orange LED == erase
--	 */
--	leds_event(led_amber_on);
--
--	/*
- 	 * reset footbridge to the correct offset 0 (...0..3)
- 	 */
- 	*CSR_ROMWRITEREG = 0;
-@@ -446,12 +432,6 @@ static int write_block(unsigned long p, const char __user *buf, int count)
- 	unsigned long timeout;
- 	unsigned long timeout1;
- 
--	/*
--	 * red LED == write
--	 */
--	leds_event(led_amber_off);
--	leds_event(led_red_on);
--
- 	pWritePtr = (unsigned char *) ((unsigned int) (FLASH_BASE + p));
- 
- 	/*
-@@ -558,17 +538,9 @@ static int write_block(unsigned long p, const char __user *buf, int count)
- 					       pWritePtr - FLASH_BASE);
- 
- 				/*
--				 * no LED == waiting
--				 */
--				leds_event(led_amber_off);
--				/*
- 				 * wait couple ms
- 				 */
- 				msleep(10);
--				/*
--				 * red LED == write
--				 */
--				leds_event(led_red_on);
- 
- 				goto WriteRetry;
- 			} else {
-@@ -583,12 +555,6 @@ static int write_block(unsigned long p, const char __user *buf, int count)
- 		}
- 	}
- 
--	/*
--	 * green LED == read/verify
--	 */
--	leds_event(led_amber_off);
--	leds_event(led_green_on);
--
- 	msleep(10);
- 
- 	pWritePtr = (unsigned char *) ((unsigned int) (FLASH_BASE + p));
+ #include <asm/irq.h>
 -- 
 1.7.9.1
 
