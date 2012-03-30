@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965145Ab2C3VOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:14:23 -0400
+	id S965173Ab2C3VOf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:14:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965128Ab2C3VOR (ORCPT
+	with ESMTP id S965154Ab2C3VOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:17 -0400
-Message-Id: <20120330194856.865704732@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:30 -0400
+Message-Id: <20120330194857.626425560@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:18 -0700
+Date: Fri, 30 Mar 2012 12:50:22 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 105/149] hwmon: (fam15h_power) Correct sign extension of running_avg_capture
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 109/149] NFSv4: Rate limit the state manager warning messages
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,33 +24,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit fc0900cbda9243957d812cd6b4cc87965f9fe75f upstream.
+commit 9a3ba432330e504ac61ff0043dbdaba7cea0e35a upstream.
 
-Wrong bit was used for sign extension which caused wrong end results.
-Thanks to Andre for spotting this bug.
+Prevent the state manager from filling up system logs when recovery
+fails on the server.
 
-Reported-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/callback_xdr.c |    4 +++-
+ fs/nfs/nfs4proc.c     |    2 +-
+ fs/nfs/nfs4state.c    |    4 ++--
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -60,7 +60,7 @@ static ssize_t show_power(struct device
- 	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
- 				  REG_TDP_RUNNING_AVERAGE, &val);
- 	running_avg_capture = (val >> 4) & 0x3fffff;
--	running_avg_capture = sign_extend32(running_avg_capture, 22);
-+	running_avg_capture = sign_extend32(running_avg_capture, 21);
- 	running_avg_range = val & 0xf;
- 
- 	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
+--- a/fs/nfs/callback_xdr.c
++++ b/fs/nfs/callback_xdr.c
+@@ -9,6 +9,8 @@
+ #include <linux/sunrpc/svc.h>
+ #include <linux/nfs4.h>
+ #include <linux/nfs_fs.h>
++#include <linux/ratelimit.h>
++#include <linux/printk.h>
+ #include <linux/slab.h>
+ #include <linux/sunrpc/bc_xprt.h>
+ #include "nfs4_fs.h"
+@@ -167,7 +169,7 @@ static __be32 decode_compound_hdr_arg(st
+ 	if (hdr->minorversion <= 1) {
+ 		hdr->cb_ident = ntohl(*p++); /* ignored by v4.1 */
+ 	} else {
+-		printk(KERN_WARNING "%s: NFSv4 server callback with "
++		pr_warn_ratelimited("NFS: %s: NFSv4 server callback with "
+ 			"illegal minor version %u!\n",
+ 			__func__, hdr->minorversion);
+ 		return htonl(NFS4ERR_MINOR_VERS_MISMATCH);
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1838,7 +1838,7 @@ static struct nfs4_state *nfs4_do_open(s
+ 		 * the user though...
+ 		 */
+ 		if (status == -NFS4ERR_BAD_SEQID) {
+-			printk(KERN_WARNING "NFS: v4 server %s "
++			pr_warn_ratelimited("NFS: v4 server %s "
+ 					" returned a bad sequence-id error!\n",
+ 					NFS_SERVER(dir)->nfs_client->cl_hostname);
+ 			exception.retry = 1;
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -935,7 +935,7 @@ static void nfs_increment_seqid(int stat
+ 		case -NFS4ERR_BAD_SEQID:
+ 			if (seqid->sequence->flags & NFS_SEQID_CONFIRMED)
+ 				return;
+-			printk(KERN_WARNING "NFS: v4 server returned a bad"
++			pr_warn_ratelimited("NFS: v4 server returned a bad"
+ 					" sequence-id error on an"
+ 					" unconfirmed sequence %p!\n",
+ 					seqid->sequence);
+@@ -1764,7 +1764,7 @@ static void nfs4_state_manager(struct nf
+ 	} while (atomic_read(&clp->cl_count) > 1);
+ 	return;
+ out_error:
+-	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
++	pr_warn_ratelimited("NFS: state manager failed on NFSv4 server %s"
+ 			" with error %d\n", clp->cl_hostname, -status);
+ 	nfs4_end_drain_session(clp);
+ 	nfs4_clear_state_manager_bit(clp);
 
 
