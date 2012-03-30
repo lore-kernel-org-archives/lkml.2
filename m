@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761241Ab2C3Ra4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:30:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30664 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756560Ab2C3Rav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:30:51 -0400
-Message-ID: <4F75EDC3.7050104@redhat.com>
-Date: Fri, 30 Mar 2012 13:30:43 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2pre Thunderbird/3.1.7
+	id S1761250Ab2C3Rbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:31:44 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39470 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758518Ab2C3Rbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 13:31:36 -0400
+Message-ID: <4F75EDF4.8020900@xenotime.net>
+Date: Fri, 30 Mar 2012 10:31:32 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
-Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if
- task is already on a correct node
-References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home> <4F6B7854.1040203@redhat.com> <alpine.DEB.2.00.1203221421570.25011@router.home> <4F74A344.7070805@redhat.com> <4F74BB67.30703@gmail.com> <alpine.DEB.2.00.1203301113530.22502@router.home>
-In-Reply-To: <alpine.DEB.2.00.1203301113530.22502@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Brian Swetland <swetland@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH -next] staging: fix android persistent_ram printk formats
+References: <20120330144443.4f9c6fdbd7f877e00b79b6da@canb.auug.org.au>
+In-Reply-To: <20120330144443.4f9c6fdbd7f877e00b79b6da@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2012 12:15 PM, Christoph Lameter wrote:
-> On Thu, 29 Mar 2012, KOSAKI Motohiro wrote:
->
->>> 		for_each_node_mask(s, tmp) {
->>> +
->>> +			/* IFF there is an equal number of source and
->>> +			 * destination nodes, maintain relative node distance
->>> +			 * even when source and destination nodes overlap.
->>> +			 * However, when the node weight is unequal, never
->>> move
->>> +			 * memory out of any destination nodes */
->>> +			if ((nodes_weight(*from_nodes) !=
->>> nodes_weight(*to_nodes))&&
->>> +						(node_isset(s, *to_nodes)))
->>> +				continue;
->>> +
->>> 			d = node_remap(s, *from_nodes, *to_nodes);
->>> 			if (s == d)
->>> 				continue;
->> I'm confused. Could you please explain why you choose nodes_weight()? On my
->> first impression,
->> it seems almostly unrelated factor.
-> Isnt this the original code by Paul?
-No, I added the test to see if the source and destination has the same 
-number of nodes.
->   I would think that the 1-1 movement
-> is only useful to do if the number of nodes in both the destination and
-> the source is the same.
-Agreed, thats exactly what this patch does.  are you OK with this change 
-then???
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Larry
+Fix printk format warnings in android/persistent_ram.c:
 
+drivers/staging/android/persistent_ram.c:426:4: warning: format '%ld' expects type 'long int', but argument 2 has type 'size_t'
+drivers/staging/android/persistent_ram.c:426:4: warning: format '%ld' expects type 'long int', but argument 3 has type 'size_t'
+drivers/staging/android/persistent_ram.c:430:4: warning: format '%ld' expects type 'long int', but argument 2 has type 'size_t'
+drivers/staging/android/persistent_ram.c:430:4: warning: format '%ld' expects type 'long int', but argument 3 has type 'size_t'
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Brian Swetland <swetland@google.com>
+---
+ drivers/staging/android/persistent_ram.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- linux-next-20120330.orig/drivers/staging/android/persistent_ram.c
++++ linux-next-20120330/drivers/staging/android/persistent_ram.c
+@@ -424,11 +424,11 @@ struct persistent_ram_zone *__persistent
+ 		if (buffer_size(prz) > prz->buffer_size ||
+ 		    buffer_start(prz) > buffer_size(prz))
+ 			pr_info("persistent_ram: found existing invalid buffer,"
+-				" size %ld, start %ld\n",
++				" size %zu, start %zu\n",
+ 			       buffer_size(prz), buffer_start(prz));
+ 		else {
+ 			pr_info("persistent_ram: found existing buffer,"
+-				" size %ld, start %ld\n",
++				" size %zu, start %zu\n",
+ 			       buffer_size(prz), buffer_start(prz));
+ 			persistent_ram_save_old(prz);
+ 		}
