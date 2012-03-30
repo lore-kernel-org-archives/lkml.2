@@ -1,48 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933984Ab2C3Nqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 09:46:37 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54829 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932832Ab2C3Nqb (ORCPT
+	id S934030Ab2C3NrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 09:47:08 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49259 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932832Ab2C3NrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 09:46:31 -0400
+	Fri, 30 Mar 2012 09:47:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F75A2AA.4010604@hitachi.com>
-References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
- <CABPqkBR7-JreB8c3Y1rNGpqdjeSN71qUkPrMxV-wjOSaTEx+vQ@mail.gmail.com>
- <1333065559.2960.8.camel@laptop> <CABPqkBQfy0CgSiDZ+KXd4fP9XxDxPTipyGbABZdEuTu4LkrsRQ@mail.gmail.com>
- <1333068279.2960.20.camel@laptop> <CABPqkBQbYs7JgGqfZD3ng6QMK0OpiVL=8gfyxn5aRgtYpPVjsw@mail.gmail.com>
- <4F75A2AA.4010604@hitachi.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Fri, 30 Mar 2012 09:46:10 -0400
-Message-ID: <CAOPLpQdgU1BVRrpN33vteyg=vRjMqjBYzCiHG2xx7YVqeWRejQ@mail.gmail.com>
-Subject: Re: [RFC 00/15] perf: Add backtrace post dwarf unwind
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Content-Type: text/plain; charset=UTF-8
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH v2] ARM: dts: imx6q: add anatop regulators
+Date: Fri, 30 Mar 2012 21:46:53 +0800
+Message-Id: <1333115213-28922-1-git-send-email-paul.liu@linaro.org>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 08:10, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> Right, almost all function arguments are passed by register on x86-64.
-> Hmm, this might be useful because it can trace function register-arguments
-> in user-space applications... even though it causes interruption on every
-> sampling calls...
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 
-You only have to do this for the first call frame and only if the
-breakpoint is at the first instruction of the function.
+Add anatop regulators to imx6q.dtsi for all imx6q platforms.
 
-Otherwise the register content can of course already be destroyed.
+Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+---
+ arch/arm/boot/dts/imx6q.dtsi |   86 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 86 insertions(+), 0 deletions(-)
 
-Given this, is it really worth it?  For instance, for any backtrace
-from the breakpoint in kernel there is nothing at all you gain from
-recording the register content.
+diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+index 263e8f3..79f59e7 100644
+--- a/arch/arm/boot/dts/imx6q.dtsi
++++ b/arch/arm/boot/dts/imx6q.dtsi
+@@ -346,6 +346,92 @@
+ 				compatible = "fsl,imx6q-anatop";
+ 				reg = <0x020c8000 0x1000>;
+ 				interrupts = <0 49 0x04 0 54 0x04 0 127 0x04>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				regulator-1p1@110 {
++					compatible = "fsl,anatop-regulator";
++					regulator-name = "vdd1p1";
++					regulator-min-microvolt = <800000>;
++					regulator-max-microvolt = <1375000>;
++					regulator-always-on;
++					anatop-reg-offset = <0x110>;
++					anatop-vol-bit-shift = <8>;
++					anatop-vol-bit-width = <5>;
++					anatop-min-bit-val = <4>;
++					anatop-min-voltage = <800000>;
++					anatop-max-voltage = <1375000>;
++				};
++
++				regulator-3p0@120 {
++					compatible = "fsl,anatop-regulator";
++					regulator-name = "vdd3p0";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <3150000>;
++					regulator-always-on;
++					anatop-reg-offset = <0x120>;
++					anatop-vol-bit-shift = <8>;
++					anatop-vol-bit-width = <5>;
++					anatop-min-bit-val = <0>;
++					anatop-min-voltage = <2625000>;
++					anatop-max-voltage = <3400000>;
++				};
++
++				regulator-2p5@130 {
++					compatible = "fsl,anatop-regulator";
++					regulator-name = "vdd2p5";
++					regulator-min-microvolt = <2000000>;
++					regulator-max-microvolt = <2750000>;
++					regulator-always-on;
++					anatop-reg-offset = <0x130>;
++					anatop-vol-bit-shift = <8>;
++					anatop-vol-bit-width = <5>;
++					anatop-min-bit-val = <0>;
++					anatop-min-voltage = <2000000>;
++					anatop-max-voltage = <2750000>;
++				};
++
++				regulator-vddcore@140 {
++					compatible = "fsl,anatop-regulator";
++					regulator-name = "cpu";
++					regulator-min-microvolt = <725000>;
++					regulator-max-microvolt = <1450000>;
++					regulator-always-on;
++					anatop-reg-offset = <0x140>;
++					anatop-vol-bit-shift = <0>;
++					anatop-vol-bit-width = <5>;
++					anatop-min-bit-val = <1>;
++					anatop-min-voltage = <725000>;
++					anatop-max-voltage = <1450000>;
++				};
++
++				regulator-vddpu@140 {
++					compatible = "fsl,anatop-regulator";
++					regulator-name = "vddpu";
++					regulator-min-microvolt = <725000>;
++					regulator-max-microvolt = <1450000>;
++					regulator-always-on;
++					anatop-reg-offset = <0x140>;
++					anatop-vol-bit-shift = <9>;
++					anatop-vol-bit-width = <5>;
++					anatop-min-bit-val = <1>;
++					anatop-min-voltage = <725000>;
++					anatop-max-voltage = <1450000>;
++				};
++
++				regulator-vddsoc@140 {
++					compatible = "fsl,anatop-regulator";
++					regulator-name = "vddsoc";
++					regulator-min-microvolt = <725000>;
++					regulator-max-microvolt = <1450000>;
++					regulator-always-on;
++					anatop-reg-offset = <0x140>;
++					anatop-vol-bit-shift = <18>;
++					anatop-vol-bit-width = <5>;
++					anatop-min-bit-val = <1>;
++					anatop-min-voltage = <725000>;
++					anatop-max-voltage = <1450000>;
++				};
+ 			};
+ 
+ 			usbphy@020c9000 { /* USBPHY1 */
+-- 
+1.7.9.1
+
