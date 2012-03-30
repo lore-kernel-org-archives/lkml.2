@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966387Ab2C3Vev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:34:51 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38694 "EHLO
+	id S966277Ab2C3Vcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:32:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38311 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966295Ab2C3Vcs (ORCPT
+	by vger.kernel.org with ESMTP id S966149Ab2C3Vcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:48 -0400
-X-Sasl-enc: Pkg7dRYde/oz8gpiBpj/LdxD5/6qXlVx6oL89cXtqTEs 1333143166
-X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:49:01 2012
-Message-Id: <20120330194901.094873801@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:32:36 -0400
+X-Sasl-enc: 7atfmdKkpfI+Etl+mb2+s9nP9MQNd3Ep5rahAi2te6jS 1333143155
+X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:59 2012
+Message-Id: <20120330194858.981028383@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:19 -0700
+Date: Fri, 30 Mar 2012 12:51:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Warren <swarren@wwwdotorg.org>
-Subject: [ 174/175] ARM: tegra: Fix device tree AUXDATA for USB/EHCI
+        alan@lxorguk.ukuu.org.uk, Benjamin LaHaise <bcrl@kvack.org>,
+        James Chapman <jchapman@katalix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 163/175] Fix pppol2tp getsockname()
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,86 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@wwwdotorg.org>
 
-commit 8c3ec84102d171a24f050a086bfc546e9de93f9f upstream.
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-Commit 4a53f4e "USB: ehci-tegra: add probing through device tree" added
-AUXDATA for Tegra's USB/EHCI controller. However, it pointed the platform
-data at a location containing the address of the intended platform data,
-rather than the platform data itself. This change fixes that.
+[ Upstream commit bbdb32cb5b73597386913d052165423b9d736145 ]
 
-Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+While testing L2TP functionality, I came across a bug in getsockname().  The
+IP address returned within the pppol2tp_addr's addr memember was not being
+set to the IP  address in use.  This bug is caused by using inet_sk() on the
+wrong socket (the L2TP socket rather than the underlying UDP socket), and was
+likely introduced during the addition of L2TPv3 support.
+
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: James Chapman <jchapman@katalix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/mach-tegra/board-dt-tegra20.c |    6 +++---
- arch/arm/mach-tegra/devices.c          |    7 +++----
- arch/arm/mach-tegra/devices.h          |    5 +++++
- 3 files changed, 11 insertions(+), 7 deletions(-)
+ net/l2tp/l2tp_ppp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-tegra/board-dt-tegra20.c
-+++ b/arch/arm/mach-tegra/board-dt-tegra20.c
-@@ -68,11 +68,11 @@ struct of_dev_auxdata tegra20_auxdata_lo
- 	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S2_BASE, "tegra-i2s.1", NULL),
- 	OF_DEV_AUXDATA("nvidia,tegra20-das", TEGRA_APB_MISC_DAS_BASE, "tegra-das", NULL),
- 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB_BASE, "tegra-ehci.0",
--		       &tegra_ehci1_device.dev.platform_data),
-+		       &tegra_ehci1_pdata),
- 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB2_BASE, "tegra-ehci.1",
--		       &tegra_ehci2_device.dev.platform_data),
-+		       &tegra_ehci2_pdata),
- 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB3_BASE, "tegra-ehci.2",
--		       &tegra_ehci3_device.dev.platform_data),
-+		       &tegra_ehci3_pdata),
- 	{}
- };
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -915,7 +915,7 @@ static int pppol2tp_getname(struct socke
+ 		goto end_put_sess;
+ 	}
  
---- a/arch/arm/mach-tegra/devices.c
-+++ b/arch/arm/mach-tegra/devices.c
-@@ -23,7 +23,6 @@
- #include <linux/fsl_devices.h>
- #include <linux/serial_8250.h>
- #include <linux/i2c-tegra.h>
--#include <linux/platform_data/tegra_usb.h>
- #include <asm/pmu.h>
- #include <mach/irqs.h>
- #include <mach/iomap.h>
-@@ -446,18 +445,18 @@ static struct tegra_ulpi_config tegra_eh
- 	.clk = "cdev2",
- };
- 
--static struct tegra_ehci_platform_data tegra_ehci1_pdata = {
-+struct tegra_ehci_platform_data tegra_ehci1_pdata = {
- 	.operating_mode = TEGRA_USB_OTG,
- 	.power_down_on_bus_suspend = 1,
- };
- 
--static struct tegra_ehci_platform_data tegra_ehci2_pdata = {
-+struct tegra_ehci_platform_data tegra_ehci2_pdata = {
- 	.phy_config = &tegra_ehci2_ulpi_phy_config,
- 	.operating_mode = TEGRA_USB_HOST,
- 	.power_down_on_bus_suspend = 1,
- };
- 
--static struct tegra_ehci_platform_data tegra_ehci3_pdata = {
-+struct tegra_ehci_platform_data tegra_ehci3_pdata = {
- 	.operating_mode = TEGRA_USB_HOST,
- 	.power_down_on_bus_suspend = 1,
- };
---- a/arch/arm/mach-tegra/devices.h
-+++ b/arch/arm/mach-tegra/devices.h
-@@ -20,6 +20,11 @@
- #define __MACH_TEGRA_DEVICES_H
- 
- #include <linux/platform_device.h>
-+#include <linux/platform_data/tegra_usb.h>
-+
-+extern struct tegra_ehci_platform_data tegra_ehci1_pdata;
-+extern struct tegra_ehci_platform_data tegra_ehci2_pdata;
-+extern struct tegra_ehci_platform_data tegra_ehci3_pdata;
- 
- extern struct platform_device tegra_gpio_device;
- extern struct platform_device tegra_pinmux_device;
+-	inet = inet_sk(sk);
++	inet = inet_sk(tunnel->sock);
+ 	if (tunnel->version == 2) {
+ 		struct sockaddr_pppol2tp sp;
+ 		len = sizeof(sp);
 
 
