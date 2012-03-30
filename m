@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936593Ab2C3Wo7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:44:59 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:38192 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933792Ab2C3Woq convert rfc822-to-8bit (ORCPT
+	id S935071Ab2C3VHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:07:04 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55577 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935121Ab2C3VGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:44:46 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: Satoru Moriya <satoru.moriya@hds.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Fri, 30 Mar 2012 18:44:27 -0400
-Subject: RE: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Topic: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Index: Acz8hm0oQRgcCvB0QPGLerP2npY00AAB+mfQBI4GKcA=
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9C01454D13A6@USINDEVS02.corp.hds.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
- <20120305215602.GA1693@redhat.com> <4F5798B1.5070005@jp.fujitsu.com>
- <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com>
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1203300268
+	Fri, 30 Mar 2012 17:06:51 -0400
+Message-Id: <20120330195732.521933122@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
+        Ming Lei <tom.leiming@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 072/108] usbnet: increase URB reference count before usb_unlink_urb
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kosaki-san,
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-On 03/07/2012 01:18 PM, Satoru Moriya wrote:
-> On 03/07/2012 12:19 PM, KOSAKI Motohiro wrote:
->> Thank you. I brought back to memory it. Unfortunately DB folks are 
->> still mainly using RHEL5 generation distros. At that time, 
->> swapiness=0 doesn't mean disabling swap.
->>
->> They want, "don't swap as far as kernel has any file cache page". but 
->> linux don't have such feature. then they used swappiness for emulate 
->> it. So, I think this patch clearly make userland harm. Because of, we 
->> don't have an alternative way.
+------------------
 
-As I wrote in the previous mail(see below), with this patch
-the kernel begins to swap out when the sum of free pages and
-filebacked pages reduces less than watermark_high.
+From: "tom.leiming@gmail.com" <tom.leiming@gmail.com>
 
-So the kernel reclaims pages like following.
+commit 0956a8c20b23d429e79ff86d4325583fc06f9eb4 upstream.
 
-nr_free + nr_filebacked >= watermark_high: reclaim only filebacked pages
-nr_free + nr_filebacked <  watermark_high: reclaim only anonymous pages
+Commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d(net/usbnet: avoid
+recursive locking in usbnet_stop()) fixes the recursive locking
+problem by releasing the skb queue lock, but it makes usb_unlink_urb
+racing with defer_bh, and the URB to being unlinked may be freed before
+or during calling usb_unlink_urb, so use-after-free problem may be
+triggerd inside usb_unlink_urb.
 
-Do you think this behavior satisfies DB users' requirement?
+The patch fixes the use-after-free problem by increasing URB
+reference count with skb queue lock held before calling
+usb_unlink_urb, so the URB won't be freed until return from
+usb_unlink_urb.
+
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oliver Neukum <oliver@neukum.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/usb/usbnet.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -585,6 +585,14 @@ static int unlink_urbs (struct usbnet *d
+ 		entry = (struct skb_data *) skb->cb;
+ 		urb = entry->urb;
+ 
++		/*
++		 * Get reference count of the URB to avoid it to be
++		 * freed during usb_unlink_urb, which may trigger
++		 * use-after-free problem inside usb_unlink_urb since
++		 * usb_unlink_urb is always racing with .complete
++		 * handler(include defer_bh).
++		 */
++		usb_get_urb(urb);
+ 		spin_unlock_irqrestore(&q->lock, flags);
+ 		// during some PM-driven resume scenarios,
+ 		// these (async) unlinks complete immediately
+@@ -593,6 +601,7 @@ static int unlink_urbs (struct usbnet *d
+ 			netdev_dbg(dev->net, "unlink urb err, %d\n", retval);
+ 		else
+ 			count++;
++		usb_put_urb(urb);
+ 		spin_lock_irqsave(&q->lock, flags);
+ 	}
+ 	spin_unlock_irqrestore (&q->lock, flags);
 
 
-> If they expect the behavior that "don't swap as far as kernel has any 
-> file cache page", this patch definitely helps them because if we set 
-> swappiness==0, kernel does not swap out
-> *until* nr_free + nr_filebacked < high watermark in the zone.
-> It means kernel begins to swap out when nr_free + nr_filebacked 
-> becomes less than high watermark.
-> 
-> But, yes, this patch actually changes the behavior with swappiness==0 
-> and so it may make userland harm.
-> 
-> How about introducing new value e.g -1 to avoid swap and maintain 
-> compatibility?
-
-Regards,
-Satoru
