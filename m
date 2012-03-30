@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933929Ab2C3KVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:21:32 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60609 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933809Ab2C3KUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:20:38 -0400
+	id S933694Ab2C3KWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:22:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38500 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933790Ab2C3KUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 06:20:35 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <spi-devel-general@lists.sourceforge.net>
 CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv3 6/6] spi: omap2-mcspi: Trivial optimisation
-Date: Fri, 30 Mar 2012 15:50:22 +0530
-Message-ID: <1333102822-17171-7-git-send-email-shubhrajyoti@ti.com>
+        Felipe Balbi <balbi@ti.com>, Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCHv3 2/6] spi: omap2-mcspi: make it behave as a module
+Date: Fri, 30 Mar 2012 15:50:18 +0530
+Message-ID: <1333102822-17171-3-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1333102822-17171-1-git-send-email-shubhrajyoti@ti.com>
 References: <1333102822-17171-1-git-send-email-shubhrajyoti@ti.com>
@@ -23,39 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial optimisation of tmp variable by directly writing the value
-to the register.
+From: Felipe Balbi <balbi@ti.com>
 
-Cc :  Tarun Kanti DebBarma <tarun.kanti@ti.com>
+move probe away from __init section and use
+platform_driver_register() instead of
+platform_driver_probe().
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/spi/spi-omap2-mcspi.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/spi/spi-omap2-mcspi.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 0b0da2f..f374eee 100644
+index 7785091..26dd79f 100644
 --- a/drivers/spi/spi-omap2-mcspi.c
 +++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -1050,16 +1050,15 @@ static int __init omap2_mcspi_master_setup(struct omap2_mcspi *mcspi)
+@@ -1098,7 +1098,7 @@ static const struct of_device_id omap_mcspi_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, omap_mcspi_of_match);
+ 
+-static int __init omap2_mcspi_probe(struct platform_device *pdev)
++static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
  {
- 	struct spi_master	*master = mcspi->master;
- 	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
--	u32			tmp;
- 	int			ret = 0;
+ 	struct spi_master	*master;
+ 	struct omap2_mcspi_platform_config *pdata;
+@@ -1245,7 +1245,7 @@ free_master:
+ 	return status;
+ }
  
- 	ret = omap2_mcspi_enable_clocks(mcspi);
- 	if (ret < 0)
- 		return ret;
+-static int __exit omap2_mcspi_remove(struct platform_device *pdev)
++static int __devexit omap2_mcspi_remove(struct platform_device *pdev)
+ {
+ 	struct spi_master	*master;
+ 	struct omap2_mcspi	*mcspi;
+@@ -1320,13 +1320,14 @@ static struct platform_driver omap2_mcspi_driver = {
+ 		.pm =		&omap2_mcspi_pm_ops,
+ 		.of_match_table = omap_mcspi_of_match,
+ 	},
+-	.remove =	__exit_p(omap2_mcspi_remove),
++	.probe =	omap2_mcspi_probe,
++	.remove =	__devexit_p(omap2_mcspi_remove),
+ };
  
--	tmp = OMAP2_MCSPI_WAKEUPENABLE_WKEN;
--	mcspi_write_reg(master, OMAP2_MCSPI_WAKEUPENABLE, tmp);
--	ctx->wakeupenable = tmp;
-+	mcspi_write_reg(master, OMAP2_MCSPI_WAKEUPENABLE,
-+				OMAP2_MCSPI_WAKEUPENABLE_WKEN);
-+	ctx->wakeupenable = OMAP2_MCSPI_WAKEUPENABLE_WKEN;
  
- 	omap2_mcspi_set_master_mode(master);
- 	omap2_mcspi_disable_clocks(mcspi);
+ static int __init omap2_mcspi_init(void)
+ {
+-	return platform_driver_probe(&omap2_mcspi_driver, omap2_mcspi_probe);
++	return platform_driver_register(&omap2_mcspi_driver);
+ }
+ subsys_initcall(omap2_mcspi_init);
+ 
 -- 
 1.7.1
 
