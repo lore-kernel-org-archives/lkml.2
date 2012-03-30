@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934049Ab2C3AeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 20:34:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43801 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574Ab2C3AeF (ORCPT
+	id S934025Ab2C3AhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 20:37:15 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:37615 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758527Ab2C3AhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 20:34:05 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CAOesGMgaQ7mjV-1Q5uPthw8PAtU+BUfDgOqor=3jtvkL30L1ZA@mail.gmail.com>
-References: <1332918842-13521-1-git-send-email-olof@lixom.net>
-	<1332918842-13521-2-git-send-email-olof@lixom.net>
-	<20120328082501.GA22414@n2100.arm.linux.org.uk>
-	<CAOesGMjwZOON9kFNvaEq8QhSvjAgsJT_J1Ysb9-AbePd6g+-rQ@mail.gmail.com>
-	<20120328192816.GD22414@n2100.arm.linux.org.uk>
-	<CA+55aFyJH8yO7=AzuddsQZouHqRDtmeh-vbd8Y5VQLQx-6ZV-Q@mail.gmail.com>
-	<CAOesGMgaQ7mjV-1Q5uPthw8PAtU+BUfDgOqor=3jtvkL30L1ZA@mail.gmail.com>
-Date: Thu, 29 Mar 2012 17:34:04 -0700
-Message-ID: <CAOesGMj4Osx0KBCxM4_N09PMTkpTdhhQRvEcwEeY8PFKanT_-w@mail.gmail.com>
-Subject: Re: [GIT PULL 1/5] ARM: cleanups of io includes
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 Mar 2012 20:37:11 -0400
+Date: Fri, 30 Mar 2012 08:37:05 +0800
+From: Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH for-3.4-fixes] cgroup: cgroup_attach_task() could return
+ -errno after success
+In-reply-to: <20120329162620.GD28941@google.com>
+X-Originating-IP: [10.166.88.150]
+To: Tejun Heo <tj@kernel.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Mandeep Singh Baines <msb@chromium.org>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>
+Message-id: <4F750031.3090903@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
+ Thunderbird/11.0
+X-CFilter-Loop: Reflected
+References: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
+ <20120329160433.GC28941@google.com> <20120329162620.GD28941@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 5:27 PM, Olof Johansson <olof@lixom.net> wrote:
+Tejun Heo wrote:
 
-> It hasn't grown any new merge conflicts
-> since before as of now, so see the original pull request for those.
+> 61d1d219c4 "cgroup: remove extra calls to find_existing_css_set" made
+> cgroup_task_migrate() return void.  An unfortunate side effect was
+> that cgroup_attach_task() was depending on that function's return
+> value to clear its @retval on the success path.  On cgroup mounts
+> without any subsystem with ->can_attach() callback,
+> cgroup_attach_task() ended up returning @retval without initializing
+> it on success.
+> 
+> For some reason, gcc failed to warn about it and it didn't cause
+> cgroup_attach_task() to return non-zero value in many cases, probably
+> due to difference in register allocation.  When the problem
+> materializes, systemd fails to populate /systemd cgroup mount and
+> fails to boot.
+> 
+> Fix it by initializing @retval to zero on declaration.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Jiri Kosina <jkosina@suse.cz>
+> LKML-Reference: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
 
-D'oh, I did a git remote update but didn't checkout the new head for
-your tree when I verified the merge conflict situation. It does have a
-couple of new trivial ones:
 
-* arch/arm/mach-tegra/Makefile: keep reset.o, remove localtimer.o
-* arch/arm/mach-vexpress/include/mach/io.h: line remove vs file remove
-conflict: file is gone, but a patch in rmk's tree had removed a line
-from it. It's safe to still remove the file.
-
-+ the previous ones from original pull request:
-
-arch/arm/Kconfig: New selects added for ARCH_S3C24X. Include both
-sides of the merge.
-
-arch/arm/mach-shmobile/smp-sh73a0.c: A readl vs readw fix collided
-with the io accessor cleanup. Ditch the __io() use but keep readl.
-
-arch/arm/mach-tegra/include/mach/debug-macro.S: include of mach/io.h
-is going away, iomap.h is kept.
-
--Olof
+Acked-by: Li Zefan <lizefan@huawei.com>
