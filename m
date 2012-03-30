@@ -1,149 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935526Ab2C3WhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:37:20 -0400
+	id S936572Ab2C3Whm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:37:42 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935363Ab2C3VIy (ORCPT
+	with ESMTP id S935371Ab2C3VIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:08:54 -0400
-From: Josenivaldo Benito Junior <jrbenito@benito.qsl.br>
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: "Josenivaldo Benito Junior" <jrbenito@benito.qsl.br>,
-        Franco Catrin <fcatrin@gmail.com>
-Subject: [PATCH] Aureal Remote Control Device Driver
-Date: Fri, 30 Mar 2012 18:08:27 -0300
-Message-Id: <1333141707-16069-1-git-send-email-jrbenito@benito.qsl.br>
-X-Mailer: git-send-email 1.7.5.4
+	Fri, 30 Mar 2012 17:08:50 -0400
+Message-Id: <20120330194833.443422211@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:48:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Meng Zhang <meng.zhang@mediatek.com>,
+        Matthias Urlichs <matthias@urlichs.de>
+Subject: [ 001/149] USB: option: Add MediaTek MT6276M modem&app interfaces
+In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Josenivaldo Benito Junior" <jrbenito@benito.qsl.br>
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Devices like Aureal Cy se W-01RN USB_V3.1 and some derived hardware
-have a bogus HID Report Descriptor. According to that report descriptor,
-the maximum logical value for key events is 1 and not 101 (101 keys).
+------------------
 
-This quirk fixes this wrong Report Descriptor and is basically the same found
-in hid-elecom.c.
+From: Meng Zhang <meng.zhang@mediatek.com>
 
-Original driver can be found at: https://gitorious.org/hid-aureal-kernel-module
+commit 0d8520a1d7f43328bc7085d4244d93c595064157 upstream.
 
-Signed-off-by: Josenivaldo Benito Junior <jrbenito@benito.qsl.br>
-Signed-off-by: Franco Catrin <fcatrin@gmail.com>
+Add MEDIATEK products to Option driver
+
+Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
+Signed-off-by: Matthias Urlichs <matthias@urlichs.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/hid/Kconfig      |    6 +++++
- drivers/hid/Makefile     |    1 +
- drivers/hid/hid-aureal.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/hid/hid-ids.h    |    3 ++
- 4 files changed, 64 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hid/hid-aureal.c
+ drivers/usb/serial/option.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 4ecc256..03e2281 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -92,6 +92,12 @@ config HID_APPLE
- 	Say Y here if you want support for keyboards of	Apple iBooks, PowerBooks,
- 	MacBooks, MacBook Pros and Apple Aluminum.
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -484,6 +484,9 @@ static void option_instat_callback(struc
+ #define LG_VENDOR_ID				0x1004
+ #define LG_PRODUCT_L02C				0x618f
  
-+config HID_AUREAL
-+	tristate "Aureal"
-+	depends on USB_HID
-+	---help---
-+	Support for Aureal Cy se W-01RN Remote Controller and other Aureal derived remotes.
++/* MediaTek products */
++#define MEDIATEK_VENDOR_ID			0x0e8d
 +
- config HID_BELKIN
- 	tristate "Belkin Flip KVM and Wireless keyboard" if EXPERT
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 22f1d16..5363f17 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -36,6 +36,7 @@ endif
- obj-$(CONFIG_HID_A4TECH)	+= hid-a4tech.o
- obj-$(CONFIG_HID_ACRUX)		+= hid-axff.o
- obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
-+obj-$(CONFIG_HID_AUREAL)        += hid-aureal.o
- obj-$(CONFIG_HID_BELKIN)	+= hid-belkin.o
- obj-$(CONFIG_HID_CHERRY)	+= hid-cherry.o
- obj-$(CONFIG_HID_CHICONY)	+= hid-chicony.o
-diff --git a/drivers/hid/hid-aureal.c b/drivers/hid/hid-aureal.c
-new file mode 100644
-index 0000000..9fb676b
---- /dev/null
-+++ b/drivers/hid/hid-aureal.c
-@@ -0,0 +1,54 @@
-+/*
-+ *  HID driver for Aureal Cy se W-01RN USB_V3.1 devices
-+ *
-+ *  Copyright (c) 2010 Franco Catrin <fcatrin@gmail.com>
-+ *  Copyright (c) 2010 Ben Cropley <bcropley@internode.on.net>
-+ *
-+ *  Based on HID sunplus driver by
-+ *  Copyright (c) 1999 Andreas Gal
-+ *  Copyright (c) 2000-2005 Vojtech Pavlik <vojtech@suse.cz>
-+ *  Copyright (c) 2005 Michael Haboustak <mike-@cinci.rr.com> for Concept2, Inc
-+ *  Copyright (c) 2006-2007 Jiri Kosina
-+ *  Copyright (c) 2007 Paul Walmsley
-+ *  Copyright (c) 2008 Jiri Slaby
-+ */
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/module.h>
-+
-+#include "hid-ids.h"
-+
-+static __u8 *aureal_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-+		unsigned int *rsize)
-+{
-+	if (*rsize >= 54 && rdesc[52] == 0x25 && rdesc[53] == 0x01) {
-+		dev_info(&hdev->dev, "fixing Aureal Cy se W-01RN USB_V3.1 report descriptor. Keyboard Logical Maximum = 101\n");
-+		rdesc[53] = 0x65;
-+	} return rdesc;
-+}
-+
-+static const struct hid_device_id aureal_devices[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_AUREAL, USB_DEVICE_ID_AUREAL_W01RN) },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(hid, aureal_devices);
-+
-+static struct hid_driver aureal_driver = {
-+	.name = "aureal",
-+	.id_table = aureal_devices,
-+	.report_fixup = aureal_report_fixup,
-+};
-+
-+static int __init aureal_init(void)
-+{
-+	return hid_register_driver(&aureal_driver);
-+}
-+
-+static void __exit aureal_exit(void)
-+{
-+	hid_unregister_driver(&aureal_driver);
-+}
-+
-+module_init(aureal_init);
-+module_exit(aureal_exit);
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 2b67e84..720c9e7 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -154,6 +154,9 @@
- #define USB_DEVICE_ID_ATMEL_MULTITOUCH	0x211c
- #define USB_DEVICE_ID_ATMEL_MXT_DIGITIZER	0x2118
- 
-+#define USB_VENDOR_ID_AUREAL		0x0755
-+#define USB_DEVICE_ID_AUREAL_W01RN	0x2626
-+
- #define USB_VENDOR_ID_AVERMEDIA		0x07ca
- #define USB_DEVICE_ID_AVER_FM_MR800	0xb800
- 
--- 
-1.7.5.4
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1198,6 +1201,10 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo L-02C modem */
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
+
 
