@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965025Ab2C3VNv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:13:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S965095Ab2C3WQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:16:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964993Ab2C3VNq (ORCPT
+	with ESMTP id S964993Ab2C3VNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:46 -0400
-Message-Id: <20120330194854.953912829@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:52 -0400
+Message-Id: <20120330194855.302504528@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:08 -0700
+Date: Fri, 30 Mar 2012 12:50:10 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 095/149] UBI: fix error handling in ubi_scan()
+        alan@lxorguk.ukuu.org.uk, Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 097/149] SUNRPC: We must not use list_for_each_entry_safe() in rpc_wake_up()
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit a29852be492d61001d86c6ebf5fff9b93d7b4be9 upstream.
+commit 540a0f7584169651f485e8ab67461fcb06934e38 upstream.
 
-Two bad things can happen in ubi_scan():
-1. If kmem_cache_create() fails we jump to out_si and call
-   ubi_scan_destroy_si() which calls kmem_cache_destroy().
-   But si->scan_leb_slab is NULL.
-2. If process_eb() fails we jump to out_vidh, call
-   kmem_cache_destroy() and ubi_scan_destroy_si() which calls
-   again kmem_cache_destroy().
+The problem is that for the case of priority queues, we
+have to assume that __rpc_remove_wait_queue_priority will move new
+elements from the tk_wait.links lists into the queue->tasks[] list.
+We therefore cannot use list_for_each_entry_safe() on queue->tasks[],
+since that will skip these new tasks that __rpc_remove_wait_queue_priority
+is adding.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Without this fix, rpc_wake_up and rpc_wake_up_status will both fail
+to wake up all functions on priority wait queues, which can result
+in some nasty hangs.
+
+Reported-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/scan.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/sunrpc/sched.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/mtd/ubi/scan.c
-+++ b/drivers/mtd/ubi/scan.c
-@@ -1174,7 +1174,7 @@ struct ubi_scan_info *ubi_scan(struct ub
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -500,14 +500,18 @@ EXPORT_SYMBOL_GPL(rpc_wake_up_next);
+  */
+ void rpc_wake_up(struct rpc_wait_queue *queue)
+ {
+-	struct rpc_task *task, *next;
+ 	struct list_head *head;
  
- 	ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
- 	if (!ech)
--		goto out_slab;
-+		goto out_si;
+ 	spin_lock_bh(&queue->lock);
+ 	head = &queue->tasks[queue->maxpriority];
+ 	for (;;) {
+-		list_for_each_entry_safe(task, next, head, u.tk_wait.list)
++		while (!list_empty(head)) {
++			struct rpc_task *task;
++			task = list_first_entry(head,
++					struct rpc_task,
++					u.tk_wait.list);
+ 			rpc_wake_up_task_queue_locked(queue, task);
++		}
+ 		if (head == &queue->tasks[0])
+ 			break;
+ 		head--;
+@@ -525,13 +529,16 @@ EXPORT_SYMBOL_GPL(rpc_wake_up);
+  */
+ void rpc_wake_up_status(struct rpc_wait_queue *queue, int status)
+ {
+-	struct rpc_task *task, *next;
+ 	struct list_head *head;
  
- 	vidh = ubi_zalloc_vid_hdr(ubi, GFP_KERNEL);
- 	if (!vidh)
-@@ -1235,8 +1235,6 @@ out_vidh:
- 	ubi_free_vid_hdr(ubi, vidh);
- out_ech:
- 	kfree(ech);
--out_slab:
--	kmem_cache_destroy(si->scan_leb_slab);
- out_si:
- 	ubi_scan_destroy_si(si);
- 	return ERR_PTR(err);
-@@ -1325,7 +1323,9 @@ void ubi_scan_destroy_si(struct ubi_scan
+ 	spin_lock_bh(&queue->lock);
+ 	head = &queue->tasks[queue->maxpriority];
+ 	for (;;) {
+-		list_for_each_entry_safe(task, next, head, u.tk_wait.list) {
++		while (!list_empty(head)) {
++			struct rpc_task *task;
++			task = list_first_entry(head,
++					struct rpc_task,
++					u.tk_wait.list);
+ 			task->tk_status = status;
+ 			rpc_wake_up_task_queue_locked(queue, task);
  		}
- 	}
- 
--	kmem_cache_destroy(si->scan_leb_slab);
-+	if (si->scan_leb_slab)
-+		kmem_cache_destroy(si->scan_leb_slab);
-+
- 	kfree(si);
- }
- 
 
 
