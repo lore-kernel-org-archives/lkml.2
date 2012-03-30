@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935058Ab2C3Wuu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:50:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51821 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934129Ab2C3Wup (ORCPT
+	id S935068Ab2C3WvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:51:09 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934877Ab2C3VGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:50:45 -0400
-Message-ID: <4F7638C3.4060301@samsung.com>
-Date: Fri, 30 Mar 2012 15:50:43 -0700
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: viro@zeniv.linux.org.uk,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: error: 'SEGMENT_SIZE' undeclared with arm-eabi-gcc toolchain
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Mar 2012 17:06:13 -0400
+Message-Id: <201203302105.q2UL58uK006307@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Mar 2012 15:47:38 -0400
+Subject: [PATCH] arch/tile: fix finv_buffer_remote() for tilegx
+In-Reply-To: <4F761E1C.80808.com>
+References: <4F761E1C.80808.com>
+To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 21:05:08.0913 (UTC) FILETIME=[C9FC2A10:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+There were some correctness issues with this code that are now fixed
+with this change.  The change is likely less performant than it could
+be, but it should no longer be vulnerable to any races with memory
+operations on the memory network while invalidating a range of memory.
+This code is run infrequently so performance isn't critical, but
+correctness definitely is.
 
-Occurs following error with arm-eabi-gcc toolchain (gcc version 4.4.3 -
-GCC). But there is no error with arm-none-linux-gnueabi-gcc toolchain
-(gcc version 4.4.1 - Sourcery G++ Lite 2009q3)...
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/lib/cacheflush.c |   28 ++++++++++++++++++++++++++--
+ 1 files changed, 26 insertions(+), 2 deletions(-)
 
-fs/binfmt_aout.c: In function 'load_aout_binary':
-fs/binfmt_aout.c:255: error: 'SEGMENT_SIZE' undeclared (first use in
-this function)
-fs/binfmt_aout.c:255: error: (Each undeclared identifier is reported
-only once
-fs/binfmt_aout.c:255: error: for each function it appears in.)
-make[2]: *** [fs/binfmt_aout.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-make[1]: *** [fs] Error 2
+diff --git a/arch/tile/lib/cacheflush.c b/arch/tile/lib/cacheflush.c
+index 6af2b97..db4fb89 100644
+--- a/arch/tile/lib/cacheflush.c
++++ b/arch/tile/lib/cacheflush.c
+@@ -39,7 +39,21 @@ void finv_buffer_remote(void *buffer, size_t size, int hfh)
+ {
+ 	char *p, *base;
+ 	size_t step_size, load_count;
++
++	/*
++	 * On TILEPro the striping granularity is a fixed 8KB; on
++	 * TILE-Gx it is configurable, and we rely on the fact that
++	 * the hypervisor always configures maximum striping, so that
++	 * bits 9 and 10 of the PA are part of the stripe function, so
++	 * every 512 bytes we hit a striping boundary.
++	 *
++	 */
++#ifdef __tilegx__
++	const unsigned long STRIPE_WIDTH = 512;
++#else
+ 	const unsigned long STRIPE_WIDTH = 8192;
++#endif
++
+ #ifdef __tilegx__
+ 	/*
+ 	 * On TILE-Gx, we must disable the dstream prefetcher before doing
+@@ -74,7 +88,7 @@ void finv_buffer_remote(void *buffer, size_t size, int hfh)
+ 	 * memory, that one load would be sufficient, but since we may
+ 	 * be, we also need to back up to the last load issued to
+ 	 * another memory controller, which would be the point where
+-	 * we crossed an 8KB boundary (the granularity of striping
++	 * we crossed a "striping" boundary (the granularity of striping
+ 	 * across memory controllers).  Keep backing up and doing this
+ 	 * until we are before the beginning of the buffer, or have
+ 	 * hit all the controllers.
+@@ -88,12 +102,22 @@ void finv_buffer_remote(void *buffer, size_t size, int hfh)
+ 	 * every cache line on a full memory stripe on each
+ 	 * controller" that we simply do that, to simplify the logic.
+ 	 *
+-	 * FIXME: See bug 9535 for some issues with this code.
++	 * On TILE-Gx the hash-for-home function is much more complex,
++	 * with the upshot being we can't readily guarantee we have
++	 * hit both entries in the 128-entry AMT that were hit by any
++	 * load in the entire range, so we just re-load them all.
++	 * With larger buffers, we may want to consider using a hypervisor
++	 * trap to issue loads directly to each hash-for-home tile for
++	 * each controller (doing it from Linux would trash the TLB).
+ 	 */
+ 	if (hfh) {
+ 		step_size = L2_CACHE_BYTES;
++#ifdef __tilegx__
++		load_count = (size + L2_CACHE_BYTES - 1) / L2_CACHE_BYTES;
++#else
+ 		load_count = (STRIPE_WIDTH / L2_CACHE_BYTES) *
+ 			      (1 << CHIP_LOG_NUM_MSHIMS());
++#endif
+ 	} else {
+ 		step_size = STRIPE_WIDTH;
+ 		load_count = (1 << CHIP_LOG_NUM_MSHIMS());
+-- 
+1.6.5.2
 
-Any idea?
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
