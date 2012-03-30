@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936315Ab2C3VrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:47:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S936330Ab2C3Vrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:47:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935254Ab2C3VUy (ORCPT
+	with ESMTP id S965957Ab2C3VUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:20:54 -0400
-Message-Id: <20120330194839.471870913@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:20:42 -0400
+Message-Id: <20120330194839.939657249@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:41 -0700
+Date: Fri, 30 Mar 2012 12:49:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bernie Thompson <bernie@plugable.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 076/175] udlfb: remove sysfs framebuffer device with USB .disconnect()
+        alan@lxorguk.ukuu.org.uk, Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 078/175] ib_srpt: Fix srpt_handle_cmd send_ioctx->ioctx_kref leak on exception
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,113 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kay Sievers <kay.sievers@vrfy.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit ce880cb860f36694d2cdebfac9e6ae18176fe4c4 upstream.
+commit 187e70a554e0f0717a65998bc9199945cbbd4692 upstream.
 
-The USB graphics card driver delays the unregistering of the framebuffer
-device to a workqueue, which breaks the userspace visible remove uevent
-sequence. Recent userspace tools started to support USB graphics card
-hotplug out-of-the-box and rely on proper events sent by the kernel.
+This patch addresses a bug in srpt_handle_cmd() failure handling where
+send_ioctx->kref is being leaked with the local extra reference after init,
+causing the expected kref_put() in srpt_handle_send_comp() to not be the final
+call to invoke srpt_put_send_ioctx_kref() -> transport_generic_free_cmd() and
+perform se_cmd descriptor memory release.
 
-The framebuffer device is a direct child of the USB interface which is
-removed immediately after the USB .disconnect() callback. But the fb device
-in /sys stays around until its final cleanup, at a time where all the parent
-devices have been removed already.
+It also fixes a SCF_SCSI_RESERVATION_CONFLICT handling bug where this code
+is incorrectly falling through to transport_handle_cdb_direct() after
+invoking srpt_queue_status() to send SAM_STAT_RESERVATION_CONFLICT status.
 
-To work around that, we remove the sysfs fb device directly in the USB
-.disconnect() callback and leave only the cleanup of the internal fb
-data to the delayed work.
+Note this patch is for >= v3.3 mainline code, and current lio-core.git
+code has already been converted to target_submit_cmd() + se_cmd->cmd_kref usage,
+and internal ioctx->kref usage has been removed.  I'm including this patch
+now into target-pending/for-next with a CC' for v3.3 stable.
 
-Before:
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb0 (graphics)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
- remove   /2-1.2:1.0/graphics/fb0 (graphics)
-
-After:
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb1 (graphics)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb1 (graphics)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
- remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
-
-Tested-by: Bernie Thompson <bernie@plugable.com>
-Acked-by: Bernie Thompson <bernie@plugable.com>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Bart Van Assche <bvanassche@acm.org>
+Cc: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/fbmem.c |   18 +++++++++++++++++-
- drivers/video/udlfb.c |    2 +-
- include/linux/fb.h    |    1 +
- 3 files changed, 19 insertions(+), 2 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1665,6 +1665,7 @@ static int do_unregister_framebuffer(str
- 	if (ret)
- 		return -EINVAL;
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1750,6 +1750,7 @@ static int srpt_handle_cmd(struct srpt_r
+ 		       srp_cmd->tag);
+ 		cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
+ 		cmd->scsi_sense_reason = TCM_INVALID_CDB_FIELD;
++		kref_put(&send_ioctx->kref, srpt_put_send_ioctx_kref);
+ 		goto send_sense;
+ 	}
  
-+	unlink_framebuffer(fb_info);
- 	if (fb_info->pixmap.addr &&
- 	    (fb_info->pixmap.flags & FB_PIXMAP_DEFAULT))
- 		kfree(fb_info->pixmap.addr);
-@@ -1672,7 +1673,6 @@ static int do_unregister_framebuffer(str
- 	registered_fb[i] = NULL;
- 	num_registered_fb--;
- 	fb_cleanup_device(fb_info);
--	device_destroy(fb_class, MKDEV(FB_MAJOR, i));
- 	event.info = fb_info;
- 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
- 
-@@ -1681,6 +1681,22 @@ static int do_unregister_framebuffer(str
- 	return 0;
- }
- 
-+int unlink_framebuffer(struct fb_info *fb_info)
-+{
-+	int i;
-+
-+	i = fb_info->node;
-+	if (i < 0 || i >= FB_MAX || registered_fb[i] != fb_info)
-+		return -EINVAL;
-+
-+	if (fb_info->dev) {
-+		device_destroy(fb_class, MKDEV(FB_MAJOR, i));
-+		fb_info->dev = NULL;
+@@ -1757,15 +1758,19 @@ static int srpt_handle_cmd(struct srpt_r
+ 	cmd->data_direction = dir;
+ 	unpacked_lun = srpt_unpack_lun((uint8_t *)&srp_cmd->lun,
+ 				       sizeof(srp_cmd->lun));
+-	if (transport_lookup_cmd_lun(cmd, unpacked_lun) < 0)
++	if (transport_lookup_cmd_lun(cmd, unpacked_lun) < 0) {
++		kref_put(&send_ioctx->kref, srpt_put_send_ioctx_kref);
+ 		goto send_sense;
 +	}
-+	return 0;
-+}
-+EXPORT_SYMBOL(unlink_framebuffer);
-+
- void remove_conflicting_framebuffers(struct apertures_struct *a,
- 				     const char *name, bool primary)
- {
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -1739,7 +1739,7 @@ static void dlfb_usb_disconnect(struct u
- 	for (i = 0; i < ARRAY_SIZE(fb_device_attrs); i++)
- 		device_remove_file(info->dev, &fb_device_attrs[i]);
- 	device_remove_bin_file(info->dev, &edid_attr);
--
-+	unlink_framebuffer(info);
- 	usb_set_intfdata(interface, NULL);
+ 	ret = transport_generic_allocate_tasks(cmd, srp_cmd->cdb);
+-	if (cmd->se_cmd_flags & SCF_SCSI_RESERVATION_CONFLICT)
+-		srpt_queue_status(cmd);
+-	else if (cmd->se_cmd_flags & SCF_SCSI_CDB_EXCEPTION)
+-		goto send_sense;
+-	else
+-		WARN_ON_ONCE(ret);
++	if (ret < 0) {
++		kref_put(&send_ioctx->kref, srpt_put_send_ioctx_kref);
++		if (cmd->se_cmd_flags & SCF_SCSI_RESERVATION_CONFLICT) {
++			srpt_queue_status(cmd);
++			return 0;
++		} else
++			goto send_sense;
++	}
  
- 	/* if clients still have us open, will be freed on last close */
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -1003,6 +1003,7 @@ extern ssize_t fb_sys_write(struct fb_in
- /* drivers/video/fbmem.c */
- extern int register_framebuffer(struct fb_info *fb_info);
- extern int unregister_framebuffer(struct fb_info *fb_info);
-+extern int unlink_framebuffer(struct fb_info *fb_info);
- extern void remove_conflicting_framebuffers(struct apertures_struct *a,
- 				const char *name, bool primary);
- extern int fb_prepare_logo(struct fb_info *fb_info, int rotate);
+ 	transport_handle_cdb_direct(cmd);
+ 	return 0;
 
 
