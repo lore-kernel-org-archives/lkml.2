@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965792Ab2C3VT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:19:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S1761671Ab2C3VyF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:54:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965737Ab2C3VTH (ORCPT
+	with ESMTP id S965671Ab2C3VT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:19:07 -0400
-Message-Id: <20120330194833.213927995@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:19:26 -0400
+Message-Id: <20120330194834.569873117@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:12 -0700
+Date: Fri, 30 Mar 2012 12:49:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Chanho Min <chanho0207@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jong-Sung Kim <neidhard.kim@lge.com>
-Subject: [ 047/175] serial: PL011: clear pending interrupts
+        alan@lxorguk.ukuu.org.uk, Alexander Gordeev <agordeev@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 054/175] genirq: Fix incorrect check for forced IRQ thread handler
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,80 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Alexander Gordeev <agordeev@redhat.com>
 
-commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
+commit 540b60e24f3f4781d80e47122f0c4486a03375b8 upstream.
 
-Chanho Min reported that when the boot loader transfers
-control to the kernel, there may be pending interrupts
-causing the UART to lock up in an eternal loop trying to
-pick tokens from the FIFO (since the RX interrupt flag
-indicates there are tokens) while in practice there are
-no tokens - in fact there is only a pending IRQ flag.
+We do not want a bitwise AND between boolean operands
 
-This patch address the issue with a combination of two
-patches suggested by Russell King that clears and mask
-all interrupts at probe() and clears any pending error
-and RX interrupts at port startup time.
-
-We suspect the spurious interrupts are a side-effect of
-switching the UART from FIFO to non-FIFO mode.
-
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Reported-by: Chanho Min <chanho0207@gmail.com>
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20120309135912.GA2114@dhcp-26-207.brq.redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ kernel/irq/manage.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1381,6 +1381,10 @@ static int pl011_startup(struct uart_por
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -773,7 +773,7 @@ static int irq_thread(void *data)
+ 			struct irqaction *action);
+ 	int wake;
  
- 	uap->port.uartclk = clk_get_rate(uap->clk);
- 
-+	/* Clear pending error and receive interrupts */
-+	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
-+	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
-+
- 	/*
- 	 * Allocate the IRQ
- 	 */
-@@ -1417,10 +1421,6 @@ static int pl011_startup(struct uart_por
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
--	/* Clear pending error interrupts */
--	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
--	       uap->port.membase + UART011_ICR);
--
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1435,6 +1435,9 @@ static int pl011_startup(struct uart_por
- 	 * as well.
- 	 */
- 	spin_lock_irq(&uap->port.lock);
-+	/* Clear out any spuriously appearing RX interrupts */
-+	 writew(UART011_RTIS | UART011_RXIS,
-+		uap->port.membase + UART011_ICR);
- 	uap->im = UART011_RTIM;
- 	if (!pl011_dma_rx_running(uap))
- 		uap->im |= UART011_RXIM;
-@@ -1927,6 +1930,10 @@ static int pl011_probe(struct amba_devic
- 		goto unmap;
- 	}
- 
-+	/* Ensure interrupts from this UART are masked and cleared */
-+	writew(0, uap->port.membase + UART011_IMSC);
-+	writew(0xffff, uap->port.membase + UART011_ICR);
-+
- 	uap->vendor = vendor;
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
+-	if (force_irqthreads & test_bit(IRQTF_FORCED_THREAD,
++	if (force_irqthreads && test_bit(IRQTF_FORCED_THREAD,
+ 					&action->thread_flags))
+ 		handler_fn = irq_forced_thread_fn;
+ 	else
 
 
