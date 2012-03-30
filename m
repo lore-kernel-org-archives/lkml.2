@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934443Ab2C3MVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:21:49 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:48670 "EHLO
+	id S1760748Ab2C3MWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:22:11 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:48615 "EHLO
 	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760346Ab2C3MS1 (ORCPT
+	with ESMTP id S1760644Ab2C3MSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:18:27 -0400
+	Fri, 30 Mar 2012 08:18:25 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 14/76] thermal_sys: remove unnecessary line continuations
-Date: Fri, 30 Mar 2012 06:13:17 -0400
-Message-id: <886ee5463530036f6171e1376118e7014cf33f7f.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 46/76] ACPI: Introduce ACPI D3_COLD state support
+Date: Fri, 30 Mar 2012 06:13:49 -0400
+Message-id: <3ebc81b8937d2bc1d0d0064bed29434dfce490aa.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -26,56 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-Line continations are not necessary in function calls or statements.
-Remove them.
+If a device has _PR3, it means the device supports D3_COLD.
+Add the ability to validate and enter D3_COLD state in ACPI.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
-Cc: Len Brown <lenb@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/thermal/thermal_sys.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/acpi/power.c |    4 ++--
+ drivers/acpi/scan.c  |    7 +++++++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 859b80b..71802ca 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -281,8 +281,7 @@ passive_show(struct device *dev, struct device_attribute *attr,
- static DEVICE_ATTR(type, 0444, type_show, NULL);
- static DEVICE_ATTR(temp, 0444, temp_show, NULL);
- static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
--static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, \
--		   passive_store);
-+static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, passive_store);
+diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+index 9ac2a9f..0d681fb 100644
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
+ {
+ 	int result;
  
- static struct device_attribute trip_point_attrs[] = {
- 	__ATTR(trip_point_0_type, 0444, trip_point_type_show, NULL),
-@@ -1313,8 +1312,8 @@ int thermal_generate_netlink_event(u32 orig, enum events event)
- 	static unsigned int thermal_event_seqnum;
+-	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
++	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+ 		return -EINVAL;
  
- 	/* allocate memory */
--	size = nla_total_size(sizeof(struct thermal_genl_event)) + \
--				nla_total_size(0);
-+	size = nla_total_size(sizeof(struct thermal_genl_event)) +
-+	       nla_total_size(0);
+ 	if (device->power.state == state)
+ 		return 0;
  
- 	skb = genlmsg_new(size, GFP_ATOMIC);
- 	if (!skb)
-@@ -1330,8 +1329,8 @@ int thermal_generate_netlink_event(u32 orig, enum events event)
- 	}
+ 	if ((device->power.state < ACPI_STATE_D0)
+-	    || (device->power.state > ACPI_STATE_D3))
++	    || (device->power.state > ACPI_STATE_D3_COLD))
+ 		return -ENODEV;
  
- 	/* fill the data */
--	attr = nla_reserve(skb, THERMAL_GENL_ATTR_EVENT, \
--			sizeof(struct thermal_genl_event));
-+	attr = nla_reserve(skb, THERMAL_GENL_ATTR_EVENT,
-+			   sizeof(struct thermal_genl_event));
+ 	/* TBD: Resources must be ordered. */
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 8ab80ba..571396c 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -885,6 +885,13 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+ 				acpi_bus_add_power_resource(ps->resources.handles[j]);
+ 		}
  
- 	if (!attr) {
- 		nlmsg_free(skb);
++		/* The exist of _PR3 indicates D3Cold support */
++		if (i == ACPI_STATE_D3) {
++			status = acpi_get_handle(device->handle, object_name, &handle);
++			if (ACPI_SUCCESS(status))
++				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
++		}
++
+ 		/* Evaluate "_PSx" to see if we can do explicit sets */
+ 		object_name[2] = 'S';
+ 		status = acpi_get_handle(device->handle, object_name, &handle);
 -- 
 1.7.10.rc2.19.gfae9d
 
