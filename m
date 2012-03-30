@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761586Ab2C3XND (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:13:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S1761528Ab2C3XNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:13:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761441Ab2C3VDO (ORCPT
+	with ESMTP id S1761414Ab2C3VDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:03:14 -0400
-Message-Id: <20120330195722.859680579@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:03:08 -0400
+Message-Id: <20120330195722.570223929@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:27 -0700
+Date: Fri, 30 Mar 2012 12:57:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>
-Subject: [ 005/108] USB: ftdi_sio: fix problem when the manufacture is a NULL string
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 003/108] USB: option: make interface blacklist work again
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 656d2b3964a9d0f9864d472f8dfa2dd7dd42e6c0 upstream.
+commit 963940cf472d76eca2d36296e461202cc6997352 upstream.
 
-On some misconfigured ftdi_sio devices, if the manufacturer string is
-NULL, the kernel will oops when the device is plugged in.  This patch
-fixes the problem.
+commit 0d905fd "USB: option: convert Huawei K3765, K4505, K4605
+reservered interface to blacklist" accidentally ANDed two
+blacklist tests by leaving out a return.  This was not noticed
+because the two consecutive bracketless if statements made it
+syntactically correct.
 
-Reported-by: Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>
-Tested-by: Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1755,7 +1755,8 @@ static int ftdi_8u2232c_probe(struct usb
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1373,6 +1373,7 @@ static int option_probe(struct usb_seria
+ 		serial->interface->cur_altsetting->desc.bInterfaceNumber,
+ 		OPTION_BLACKLIST_RESERVED_IF,
+ 		(const struct option_blacklist_info *) id->driver_info))
++		return -ENODEV;
  
- 	dbg("%s", __func__);
- 
--	if (strcmp(udev->manufacturer, "CALAO Systems") == 0)
-+	if ((udev->manufacturer) &&
-+	    (strcmp(udev->manufacturer, "CALAO Systems") == 0))
- 		return ftdi_jtag_probe(serial);
- 
- 	return 0;
+ 	/* Don't bind network interface on Samsung GT-B3730, it is handled by a separate module */
+ 	if (serial->dev->descriptor.idVendor == SAMSUNG_VENDOR_ID &&
 
 
