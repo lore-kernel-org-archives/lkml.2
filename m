@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934870Ab2C3XG7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:06:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	id S934807Ab2C3XHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:07:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934762Ab2C3VEq (ORCPT
+	with ESMTP id S934749Ab2C3VEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:46 -0400
-Message-Id: <20120330195726.845212875@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:04:40 -0400
+Message-Id: <20120330195726.557356340@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:55 -0700
+Date: Fri, 30 Mar 2012 12:57:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Chanho Min <chanho0207@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jong-Sung Kim <neidhard.kim@lge.com>
-Subject: [ 033/108] serial: PL011: clear pending interrupts
+        alan@lxorguk.ukuu.org.uk, Ronald Wahl <ronald.wahl@raritan.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 031/108] rtlwifi: rtl8192c: Prevent sleeping from invalid context in rtl8192cu
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,80 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
+commit ebecdcc12fed5d3c81853dea61a0a78a5aefab52 upstream.
 
-Chanho Min reported that when the boot loader transfers
-control to the kernel, there may be pending interrupts
-causing the UART to lock up in an eternal loop trying to
-pick tokens from the FIFO (since the RX interrupt flag
-indicates there are tokens) while in practice there are
-no tokens - in fact there is only a pending IRQ flag.
+When driver rtl8192cu is used with the debug level set to 3 or greater,
+the result is "sleeping function called from invalid context" due to
+an rcu_read_lock() call in the DM refresh routine in driver rtl8192c.
+This lock is not necessary as the USB driver does not use the struct
+being protected, thus the lock is set only when a PCI interface is
+active.
 
-This patch address the issue with a combination of two
-patches suggested by Russell King that clears and mask
-all interrupts at probe() and clears any pending error
-and RX interrupts at port startup time.
+This bug is reported in https://bugzilla.kernel.org/show_bug.cgi?id=42775.
 
-We suspect the spurious interrupts are a side-effect of
-switching the UART from FIFO to non-FIFO mode.
-
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Reported-by: Chanho Min <chanho0207@gmail.com>
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
+Reported-by: Ronald Wahl <ronald.wahl@raritan.com>
+Tested-by: Ronald Wahl <ronald.wahl@raritan.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Ronald Wahl <ronald.wahl@raritan.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1376,6 +1376,10 @@ static int pl011_startup(struct uart_por
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+@@ -1218,13 +1218,18 @@ static void rtl92c_dm_refresh_rate_adapt
+ 				 ("PreState = %d, CurState = %d\n",
+ 				  p_ra->pre_ratr_state, p_ra->ratr_state));
  
- 	uap->port.uartclk = clk_get_rate(uap->clk);
+-			rcu_read_lock();
+-			sta = ieee80211_find_sta(mac->vif, mac->bssid);
++			/* Only the PCI card uses sta in the update rate table
++			 * callback routine */
++			if (rtlhal->interface == INTF_PCI) {
++				rcu_read_lock();
++				sta = ieee80211_find_sta(mac->vif, mac->bssid);
++			}
+ 			rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
+ 					p_ra->ratr_state);
  
-+	/* Clear pending error and receive interrupts */
-+	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
-+	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
-+
- 	/*
- 	 * Allocate the IRQ
- 	 */
-@@ -1410,10 +1414,6 @@ static int pl011_startup(struct uart_por
- 	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
--	/* Clear pending error interrupts */
--	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
--	       uap->port.membase + UART011_ICR);
--
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1428,6 +1428,9 @@ static int pl011_startup(struct uart_por
- 	 * as well.
- 	 */
- 	spin_lock_irq(&uap->port.lock);
-+	/* Clear out any spuriously appearing RX interrupts */
-+	 writew(UART011_RTIS | UART011_RXIS,
-+		uap->port.membase + UART011_ICR);
- 	uap->im = UART011_RTIM;
- 	if (!pl011_dma_rx_running(uap))
- 		uap->im |= UART011_RXIM;
-@@ -1904,6 +1907,10 @@ static int pl011_probe(struct amba_devic
- 		goto unmap;
+ 			p_ra->pre_ratr_state = p_ra->ratr_state;
+-			rcu_read_unlock();
++			if (rtlhal->interface == INTF_PCI)
++				rcu_read_unlock();
+ 		}
  	}
- 
-+	/* Ensure interrupts from this UART are masked and cleared */
-+	writew(0, uap->port.membase + UART011_IMSC);
-+	writew(0xffff, uap->port.membase + UART011_ICR);
-+
- 	uap->vendor = vendor;
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
+ }
 
 
