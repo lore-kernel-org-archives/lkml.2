@@ -1,54 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935063Ab2C3VGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:30 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41969 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935011Ab2C3VG1 (ORCPT
+	id S935134Ab2C3VG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:06:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55577 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935116Ab2C3VGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:27 -0400
-Message-Id: <201203302105.q2UL5AJZ006313@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 30 Mar 2012 16:27:20 -0400
-Subject: [PATCH] arch/tile: remove bogus performance optimization
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Julia Lawall <julia@diku.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:10.0866 (UTC) FILETIME=[CB262B20:01CD0EB8]
+	Fri, 30 Mar 2012 17:06:48 -0400
+Message-Id: <20120330195731.492312639@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:27 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 065/108] NFS: Properly handle the case where the delegation is revoked
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We were re-homing the initial task's kernel stack on the boot cpu,
-but in fact it's better to let it stay globally homed, since that
-task isn't bound to the boot cpu anyway.  This is more of a general
-cleanup than an actual performance optimization, but it removes
-code, which is a good thing. :-)
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit a1d0b5eebc4fd6e0edb02688b35f17f67f42aea5 upstream.
+
+If we know that the delegation stateid is bad or revoked, we need to
+remove that delegation as soon as possible, and then mark all the
+stateids that relied on that delegation for recovery. We cannot use
+the delegation as part of the recovery process.
+
+Also note that NFSv4.1 uses a different error code (NFS4ERR_DELEG_REVOKED)
+to indicate that the delegation was revoked.
+
+Finally, ensure that setlk() and setattr() can both recover safely from
+a revoked delegation.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/mm/init.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ fs/nfs/delegation.c |   11 +++++++++++
+ fs/nfs/delegation.h |    1 +
+ fs/nfs/nfs4_fs.h    |    2 ++
+ fs/nfs/nfs4proc.c   |   18 ++++++++++++++++--
+ fs/nfs/nfs4state.c  |   29 +++++++++++++++++++++++++++--
+ 5 files changed, 57 insertions(+), 4 deletions(-)
 
-diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
-index 5276f05..0138e8c 100644
---- a/arch/tile/mm/init.c
-+++ b/arch/tile/mm/init.c
-@@ -250,11 +250,6 @@ static pgprot_t __init init_pgprot(ulong address)
- 		return construct_pgprot(PAGE_KERNEL_RO, PAGE_HOME_IMMUTABLE);
- 	}
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -466,6 +466,17 @@ static void nfs_delegation_run_state_man
+ 		nfs4_schedule_state_manager(clp);
+ }
  
--	/* As a performance optimization, keep the boot init stack here. */
--	if (address >= (ulong)&init_thread_union &&
--	    address < (ulong)&init_thread_union + THREAD_SIZE)
--		return construct_pgprot(PAGE_KERNEL, smp_processor_id());
--
- #ifndef __tilegx__
- #if !ATOMIC_LOCKS_FOUND_VIA_TABLE()
- 	/* Force the atomic_locks[] array page to be hash-for-home. */
--- 
-1.6.5.2
++void nfs_remove_bad_delegation(struct inode *inode)
++{
++	struct nfs_delegation *delegation;
++
++	delegation = nfs_detach_delegation(NFS_I(inode), NFS_SERVER(inode));
++	if (delegation) {
++		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
++		nfs_free_delegation(delegation);
++	}
++}
++
+ /**
+  * nfs_expire_all_delegation_types
+  * @clp: client to process
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -45,6 +45,7 @@ void nfs_expire_unreferenced_delegations
+ void nfs_handle_cb_pathdown(struct nfs_client *clp);
+ int nfs_client_return_marked_delegations(struct nfs_client *clp);
+ int nfs_delegations_present(struct nfs_client *clp);
++void nfs_remove_bad_delegation(struct inode *inode);
+ 
+ void nfs_delegation_mark_reclaim(struct nfs_client *clp);
+ void nfs_delegation_reap_unclaimed(struct nfs_client *clp);
+--- a/fs/nfs/nfs4_fs.h
++++ b/fs/nfs/nfs4_fs.h
+@@ -344,6 +344,8 @@ extern void nfs4_put_open_state(struct n
+ extern void nfs4_close_state(struct path *, struct nfs4_state *, fmode_t);
+ extern void nfs4_close_sync(struct path *, struct nfs4_state *, fmode_t);
+ extern void nfs4_state_set_mode_locked(struct nfs4_state *, fmode_t);
++extern void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid);
+ extern void nfs4_schedule_lease_recovery(struct nfs_client *);
+ extern void nfs4_schedule_state_manager(struct nfs_client *);
+ extern void nfs4_schedule_stateid_recovery(const struct nfs_server *, struct nfs4_state *);
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -260,8 +260,11 @@ static int nfs4_handle_exception(struct
+ 	switch(errorcode) {
+ 		case 0:
+ 			return 0;
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -1305,8 +1308,11 @@ int nfs4_open_delegation_recall(struct n
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
++				nfs_inode_find_state_and_recover(state->inode,
++						stateid);
+ 				nfs4_schedule_stateid_recovery(server, state);
+ 			case -EKEYEXPIRED:
+ 				/*
+@@ -1862,7 +1868,9 @@ static int nfs4_do_setattr(struct inode
+ 			   struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(inode);
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 	do {
+ 		err = nfs4_handle_exception(server,
+@@ -3678,8 +3686,11 @@ nfs4_async_handle_error(struct rpc_task
+ 	if (task->tk_status >= 0)
+ 		return 0;
+ 	switch(task->tk_status) {
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -4484,7 +4495,9 @@ out:
+ 
+ static int nfs4_proc_setlk(struct nfs4_state *state, int cmd, struct file_lock *request)
+ {
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 
+ 	do {
+@@ -4577,6 +4590,7 @@ int nfs4_lock_delegation_recall(struct n
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
+ 			case -NFS4ERR_OPENMODE:
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1065,12 +1065,37 @@ void nfs4_schedule_stateid_recovery(cons
+ {
+ 	struct nfs_client *clp = server->nfs_client;
+ 
+-	if (test_and_clear_bit(NFS_DELEGATED_STATE, &state->flags))
+-		nfs_async_inode_return_delegation(state->inode, &state->stateid);
+ 	nfs4_state_mark_reclaim_nograce(clp, state);
+ 	nfs4_schedule_state_manager(clp);
+ }
+ 
++void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid)
++{
++	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
++	struct nfs_inode *nfsi = NFS_I(inode);
++	struct nfs_open_context *ctx;
++	struct nfs4_state *state;
++	bool found = false;
++
++	spin_lock(&inode->i_lock);
++	list_for_each_entry(ctx, &nfsi->open_files, list) {
++		state = ctx->state;
++		if (state == NULL)
++			continue;
++		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
++			continue;
++		if (memcmp(state->stateid.data, stateid->data, sizeof(state->stateid.data)) != 0)
++			continue;
++		nfs4_state_mark_reclaim_nograce(clp, state);
++		found = true;
++	}
++	spin_unlock(&inode->i_lock);
++	if (found)
++		nfs4_schedule_state_manager(clp);
++}
++
++
+ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_recovery_ops *ops)
+ {
+ 	struct inode *inode = state->inode;
+
 
