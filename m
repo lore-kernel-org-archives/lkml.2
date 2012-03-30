@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935134Ab2C3VG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55577 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935116Ab2C3VGs (ORCPT
+	id S935118Ab2C3VGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:06:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935091Ab2C3VGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:48 -0400
-Message-Id: <20120330195731.492312639@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:06:38 -0400
+Message-Id: <20120330195731.937914797@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:27 -0700
+Date: Fri, 30 Mar 2012 12:58:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 065/108] NFS: Properly handle the case where the delegation is revoked
+        alan@lxorguk.ukuu.org.uk, Thomas Hadig <thomas@intapp.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [ 068/108] cifs: fix issue mounting of DFS ROOT when redirecting from one domain controller to the next
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,182 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit a1d0b5eebc4fd6e0edb02688b35f17f67f42aea5 upstream.
+commit 1daaae8fa4afe3df78ca34e724ed7e8187e4eb32 upstream.
 
-If we know that the delegation stateid is bad or revoked, we need to
-remove that delegation as soon as possible, and then mark all the
-stateids that relied on that delegation for recovery. We cannot use
-the delegation as part of the recovery process.
+This patch fixes an issue when cifs_mount receives a
+STATUS_BAD_NETWORK_NAME error during cifs_get_tcon but is able to
+continue after an DFS ROOT referral. In this case, the return code
+variable is not reset prior to trying to mount from the system referred
+to. Thus, is_path_accessible is not executed and the final DFS referral
+is not performed causing a mount error.
 
-Also note that NFSv4.1 uses a different error code (NFS4ERR_DELEG_REVOKED)
-to indicate that the delegation was revoked.
+Use case: In DNS, example.com  resolves to the secondary AD server
+ad2.example.com Our primary domain controller is ad1.example.com and has
+a DFS redirection set up from \\ad1\share\Users to \\files\share\Users.
+Mounting \\example.com\share\Users fails.
 
-Finally, ensure that setlk() and setattr() can both recover safely from
-a revoked delegation.
+Regression introduced by commit 724d9f1.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru
+Signed-off-by: Thomas Hadig <thomas@intapp.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/delegation.c |   11 +++++++++++
- fs/nfs/delegation.h |    1 +
- fs/nfs/nfs4_fs.h    |    2 ++
- fs/nfs/nfs4proc.c   |   18 ++++++++++++++++--
- fs/nfs/nfs4state.c  |   29 +++++++++++++++++++++++++++--
- 5 files changed, 57 insertions(+), 4 deletions(-)
+ fs/cifs/connect.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -466,6 +466,17 @@ static void nfs_delegation_run_state_man
- 		nfs4_schedule_state_manager(clp);
- }
- 
-+void nfs_remove_bad_delegation(struct inode *inode)
-+{
-+	struct nfs_delegation *delegation;
-+
-+	delegation = nfs_detach_delegation(NFS_I(inode), NFS_SERVER(inode));
-+	if (delegation) {
-+		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
-+		nfs_free_delegation(delegation);
-+	}
-+}
-+
- /**
-  * nfs_expire_all_delegation_types
-  * @clp: client to process
---- a/fs/nfs/delegation.h
-+++ b/fs/nfs/delegation.h
-@@ -45,6 +45,7 @@ void nfs_expire_unreferenced_delegations
- void nfs_handle_cb_pathdown(struct nfs_client *clp);
- int nfs_client_return_marked_delegations(struct nfs_client *clp);
- int nfs_delegations_present(struct nfs_client *clp);
-+void nfs_remove_bad_delegation(struct inode *inode);
- 
- void nfs_delegation_mark_reclaim(struct nfs_client *clp);
- void nfs_delegation_reap_unclaimed(struct nfs_client *clp);
---- a/fs/nfs/nfs4_fs.h
-+++ b/fs/nfs/nfs4_fs.h
-@@ -344,6 +344,8 @@ extern void nfs4_put_open_state(struct n
- extern void nfs4_close_state(struct path *, struct nfs4_state *, fmode_t);
- extern void nfs4_close_sync(struct path *, struct nfs4_state *, fmode_t);
- extern void nfs4_state_set_mode_locked(struct nfs4_state *, fmode_t);
-+extern void nfs_inode_find_state_and_recover(struct inode *inode,
-+		const nfs4_stateid *stateid);
- extern void nfs4_schedule_lease_recovery(struct nfs_client *);
- extern void nfs4_schedule_state_manager(struct nfs_client *);
- extern void nfs4_schedule_stateid_recovery(const struct nfs_server *, struct nfs4_state *);
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -260,8 +260,11 @@ static int nfs4_handle_exception(struct
- 	switch(errorcode) {
- 		case 0:
- 			return 0;
-+		case -NFS4ERR_DELEG_REVOKED:
- 		case -NFS4ERR_ADMIN_REVOKED:
- 		case -NFS4ERR_BAD_STATEID:
-+			if (state != NULL)
-+				nfs_remove_bad_delegation(state->inode);
- 		case -NFS4ERR_OPENMODE:
- 			if (state == NULL)
- 				break;
-@@ -1305,8 +1308,11 @@ int nfs4_open_delegation_recall(struct n
- 				 * The show must go on: exit, but mark the
- 				 * stateid as needing recovery.
- 				 */
-+			case -NFS4ERR_DELEG_REVOKED:
- 			case -NFS4ERR_ADMIN_REVOKED:
- 			case -NFS4ERR_BAD_STATEID:
-+				nfs_inode_find_state_and_recover(state->inode,
-+						stateid);
- 				nfs4_schedule_stateid_recovery(server, state);
- 			case -EKEYEXPIRED:
- 				/*
-@@ -1862,7 +1868,9 @@ static int nfs4_do_setattr(struct inode
- 			   struct nfs4_state *state)
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -3004,7 +3004,7 @@ cifs_get_volume_info(char *mount_data, c
+ int
+ cifs_mount(struct cifs_sb_info *cifs_sb, struct smb_vol *volume_info)
  {
- 	struct nfs_server *server = NFS_SERVER(inode);
--	struct nfs4_exception exception = { };
-+	struct nfs4_exception exception = {
-+		.state = state,
-+	};
- 	int err;
- 	do {
- 		err = nfs4_handle_exception(server,
-@@ -3678,8 +3686,11 @@ nfs4_async_handle_error(struct rpc_task
- 	if (task->tk_status >= 0)
- 		return 0;
- 	switch(task->tk_status) {
-+		case -NFS4ERR_DELEG_REVOKED:
- 		case -NFS4ERR_ADMIN_REVOKED:
- 		case -NFS4ERR_BAD_STATEID:
-+			if (state != NULL)
-+				nfs_remove_bad_delegation(state->inode);
- 		case -NFS4ERR_OPENMODE:
- 			if (state == NULL)
- 				break;
-@@ -4484,7 +4495,9 @@ out:
- 
- static int nfs4_proc_setlk(struct nfs4_state *state, int cmd, struct file_lock *request)
- {
--	struct nfs4_exception exception = { };
-+	struct nfs4_exception exception = {
-+		.state = state,
-+	};
- 	int err;
- 
- 	do {
-@@ -4577,6 +4590,7 @@ int nfs4_lock_delegation_recall(struct n
- 				 * The show must go on: exit, but mark the
- 				 * stateid as needing recovery.
- 				 */
-+			case -NFS4ERR_DELEG_REVOKED:
- 			case -NFS4ERR_ADMIN_REVOKED:
- 			case -NFS4ERR_BAD_STATEID:
- 			case -NFS4ERR_OPENMODE:
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1065,12 +1065,37 @@ void nfs4_schedule_stateid_recovery(cons
- {
- 	struct nfs_client *clp = server->nfs_client;
- 
--	if (test_and_clear_bit(NFS_DELEGATED_STATE, &state->flags))
--		nfs_async_inode_return_delegation(state->inode, &state->stateid);
- 	nfs4_state_mark_reclaim_nograce(clp, state);
- 	nfs4_schedule_state_manager(clp);
- }
- 
-+void nfs_inode_find_state_and_recover(struct inode *inode,
-+		const nfs4_stateid *stateid)
-+{
-+	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
-+	struct nfs_inode *nfsi = NFS_I(inode);
-+	struct nfs_open_context *ctx;
-+	struct nfs4_state *state;
-+	bool found = false;
-+
-+	spin_lock(&inode->i_lock);
-+	list_for_each_entry(ctx, &nfsi->open_files, list) {
-+		state = ctx->state;
-+		if (state == NULL)
-+			continue;
-+		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
-+			continue;
-+		if (memcmp(state->stateid.data, stateid->data, sizeof(state->stateid.data)) != 0)
-+			continue;
-+		nfs4_state_mark_reclaim_nograce(clp, state);
-+		found = true;
-+	}
-+	spin_unlock(&inode->i_lock);
-+	if (found)
-+		nfs4_schedule_state_manager(clp);
-+}
-+
-+
- static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_recovery_ops *ops)
- {
- 	struct inode *inode = state->inode;
+-	int rc = 0;
++	int rc;
+ 	int xid;
+ 	struct cifs_ses *pSesInfo;
+ 	struct cifs_tcon *tcon;
+@@ -3033,6 +3033,7 @@ try_mount_again:
+ 		FreeXid(xid);
+ 	}
+ #endif
++	rc = 0;
+ 	tcon = NULL;
+ 	pSesInfo = NULL;
+ 	srvTcp = NULL;
 
 
