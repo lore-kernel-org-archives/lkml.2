@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab2C3MsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:48:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60345 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759484Ab2C3MsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:48:05 -0400
-Date: Fri, 30 Mar 2012 14:48:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Rupesh Gujare <rgujare@ozmodevices.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] Fix USB Kconfig
-Message-ID: <20120330124811.GA27330@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Rupesh Gujare <rgujare@ozmodevices.com>,
-	linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-	linux-usb@vger.kernel.org
-References: <20120330100056.GA27427@x1.osrc.amd.com>
- <1333105532-7668-1-git-send-email-rgujare@ozmodevices.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1333105532-7668-1-git-send-email-rgujare@ozmodevices.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760790Ab2C3Mtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:49:49 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:31562 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760237Ab2C3Mtm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 08:49:42 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 0/8 v7] fix gmbus writes and related issues
+To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+In-Reply-To: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
+References: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
+Date: Fri, 30 Mar 2012 13:49:17 +0100
+X-Originating-IP: 78.156.66.37
+Message-ID: <1333111775_156407@CP5-2952>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 12:05:32PM +0100, Rupesh Gujare wrote:
-> Fix menuconfig option for USB. 
+On Fri, 30 Mar 2012 19:46:35 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> This patchset addresses a couple of issues with the i915 gmbus
+> implementation.
 > 
-> Signed-off-by: Rupesh Gujare <rgujare@ozmodevices.com>
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> ---
->  drivers/usb/Kconfig |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
+> v7 adds a final patch to switch to using DRM_ERROR for reporting timeouts.
 > 
-> diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-> index cbd8f5f..884f3fa 100644
-> --- a/drivers/usb/Kconfig
-> +++ b/drivers/usb/Kconfig
-> @@ -10,6 +10,13 @@ menuconfig USB_SUPPORT
->  	  This option adds core support for Universal Serial Bus (USB).
->  	  You will also need drivers from the following menu to make use of it.
->  
-> +if USB_SUPPORT
-> +
-> +config USB_COMMON
-> +	tristate
-> +	default y
-> +	depends on USB || USB_GADGET
-> +
->  # many non-PCI SOC chips embed OHCI
->  config USB_ARCH_HAS_OHCI
->  	boolean
-> @@ -63,13 +70,6 @@ config USB_ARCH_HAS_XHCI
->  	boolean
->  	default PCI
->  
-> -if USB_SUPPORT
-> -
-> -config USB_COMMON
-> -	tristate
-> -	default y
-> -	depends on USB || USB_GADGET
-> -
->  # Host-side USB depends on having a host controller
->  # NOTE:  dummy_hcd is always an option, but it's ignored here ...
->  # NOTE:  SL-811 option should be board-specific ...
+> Daniel Kurtz (8):
+>   drm/i915/intel_i2c: handle zero-length writes
+>   drm/i915/intel_i2c: use double-buffered writes
+>   drm/i915/intel_i2c: always wait for IDLE before clearing NAK
+>   drm/i915/intel_i2c: use WAIT cycle, not STOP
+>   drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
+>   drm/i915/intel_i2c: reuse GMBUS2 value read in polling loop
+>   drm/i915/intel_i2c: remove POSTING_READ() from gmbus transfers
+>   drm/i915/intel_i2c: use DRM_ERROR on timeouts
 
-Reportedly, there's a fix for this already, see thread at
-http://marc.info/?l=linux-usb&m=133310173203793&w=2
+The only two I am still dubious about is 4/8: use WAIT cycle, not STOP,
+and 8/8: use DRM_ERROR on timeouts, the rest are
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 
-Thanks.
+The last is a little debatable, as i2c can be called from userspace (and
+other modules) and we have not verified that the adapters we set up
+correspond to devices conditions. So I think it is still possible under
+normal conditions to hit the error path, so would prefer to keep the log
+level as INFO.
+-Chris
 
 -- 
-Regards/Gruss,
-Boris.
+Chris Wilson, Intel Open Source Technology Centre
