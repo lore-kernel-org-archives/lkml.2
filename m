@@ -1,155 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935094Ab2C3VGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:38 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41969 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935005Ab2C3VG2 (ORCPT
+	id S935079Ab2C3VGg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:06:36 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48245 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935042Ab2C3VGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:28 -0400
-Message-Id: <201203302105.q2UL5AuV006314@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 30 Mar 2012 16:29:06 -0400
-Subject: [PATCH] arch/tile: avoid accidentally unmasking NMI-type interrupt accidentally
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:11.0038 (UTC) FILETIME=[CB4069E0:01CD0EB8]
+	Fri, 30 Mar 2012 17:06:25 -0400
+Message-Id: <20120330195731.343638170@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [ 064/108] KVM: x86: fix missing checks in syscall emulation
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return path as we reload registers and core state requires that r30
-hold a boolean indicating whether we are returning from an NMI, but in a
-couple of cases we weren't setting this properly, with the result that we
-could accidentally unmask the NMI interrupt(s), which could cause confusion.
-Now we set r30 in every place where we jump into the interrupt return path.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: =?UTF-8?q?Stephan=20B=C3=A4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
+
+commit c2226fc9e87ba3da060e47333657cd6616652b84 upstream.
+
+On hosts without this patch, 32bit guests will crash (and 64bit guests
+may behave in a wrong way) for example by simply executing following
+nasm-demo-application:
+
+    [bits 32]
+    global _start
+    SECTION .text
+    _start: syscall
+
+(I tested it with winxp and linux - both always crashed)
+
+    Disassembly of section .text:
+
+    00000000 <_start>:
+       0:   0f 05                   syscall
+
+The reason seems a missing "invalid opcode"-trap (int6) for the
+syscall opcode "0f05", which is not available on Intel CPUs
+within non-longmodes, as also on some AMD CPUs within legacy-mode.
+(depending on CPU vendor, MSR_EFER and cpuid)
+
+Because previous mentioned OSs may not engage corresponding
+syscall target-registers (STAR, LSTAR, CSTAR), they remain
+NULL and (non trapping) syscalls are leading to multiple
+faults and finally crashs.
+
+Depending on the architecture (AMD or Intel) pretended by
+guests, various checks according to vendor's documentation
+are implemented to overcome the current issue and behave
+like the CPUs physical counterparts.
+
+[mtosatti: cleanup/beautify code]
+
+Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/kernel/intvec_32.S |   24 ++++++++++++++++++++----
- arch/tile/kernel/intvec_64.S |   19 ++++++++++++++++---
- 2 files changed, 36 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |   13 +++++++++
+ arch/x86/kvm/emulate.c             |   51 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
 
-diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
-index aecc8ed..5d56a1e 100644
---- a/arch/tile/kernel/intvec_32.S
-+++ b/arch/tile/kernel/intvec_32.S
-@@ -799,6 +799,10 @@ handle_interrupt:
-  * This routine takes a boolean in r30 indicating if this is an NMI.
-  * If so, we also expect a boolean in r31 indicating whether to
-  * re-enable the oprofile interrupts.
-+ *
-+ * Note that .Lresume_userspace is jumped to directly in several
-+ * places, and we need to make sure r30 is set correctly in those
-+ * callers as well.
-  */
- STD_ENTRY(interrupt_return)
- 	/* If we're resuming to kernel space, don't check thread flags. */
-@@ -1237,7 +1241,10 @@ handle_syscall:
- 	bzt     r30, 1f
- 	jal	do_syscall_trace
- 	FEEDBACK_REENTER(handle_syscall)
--1:	j       .Lresume_userspace   /* jump into middle of interrupt_return */
-+1:	{
-+	 movei  r30, 0               /* not an NMI */
-+	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -301,6 +301,19 @@ struct x86_emulate_ctxt {
+ #define X86EMUL_MODE_PROT     (X86EMUL_MODE_PROT16|X86EMUL_MODE_PROT32| \
+ 			       X86EMUL_MODE_PROT64)
+ 
++/* CPUID vendors */
++#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx 0x68747541
++#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx 0x444d4163
++#define X86EMUL_CPUID_VENDOR_AuthenticAMD_edx 0x69746e65
++
++#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx 0x69444d41
++#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx 0x21726574
++#define X86EMUL_CPUID_VENDOR_AMDisbetterI_edx 0x74656273
++
++#define X86EMUL_CPUID_VENDOR_GenuineIntel_ebx 0x756e6547
++#define X86EMUL_CPUID_VENDOR_GenuineIntel_ecx 0x6c65746e
++#define X86EMUL_CPUID_VENDOR_GenuineIntel_edx 0x49656e69
++
+ enum x86_intercept_stage {
+ 	X86_ICTP_NONE = 0,   /* Allow zero-init to not match anything */
+ 	X86_ICPT_PRE_EXCEPT,
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1901,6 +1901,51 @@ setup_syscalls_segments(struct x86_emula
+ 	ss->p = 1;
+ }
+ 
++static bool em_syscall_is_enabled(struct x86_emulate_ctxt *ctxt)
++{
++	struct x86_emulate_ops *ops = ctxt->ops;
++	u32 eax, ebx, ecx, edx;
++
++	/*
++	 * syscall should always be enabled in longmode - so only become
++	 * vendor specific (cpuid) if other modes are active...
++	 */
++	if (ctxt->mode == X86EMUL_MODE_PROT64)
++		return true;
++
++	eax = 0x00000000;
++	ecx = 0x00000000;
++	if (ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx)) {
++		/*
++		 * Intel ("GenuineIntel")
++		 * remark: Intel CPUs only support "syscall" in 64bit
++		 * longmode. Also an 64bit guest with a
++		 * 32bit compat-app running will #UD !! While this
++		 * behaviour can be fixed (by emulating) into AMD
++		 * response - CPUs of AMD can't behave like Intel.
++		 */
++		if (ebx == X86EMUL_CPUID_VENDOR_GenuineIntel_ebx &&
++		    ecx == X86EMUL_CPUID_VENDOR_GenuineIntel_ecx &&
++		    edx == X86EMUL_CPUID_VENDOR_GenuineIntel_edx)
++			return false;
++
++		/* AMD ("AuthenticAMD") */
++		if (ebx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx &&
++		    ecx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx &&
++		    edx == X86EMUL_CPUID_VENDOR_AuthenticAMD_edx)
++			return true;
++
++		/* AMD ("AMDisbetter!") */
++		if (ebx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx &&
++		    ecx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx &&
++		    edx == X86EMUL_CPUID_VENDOR_AMDisbetterI_edx)
++			return true;
 +	}
++
++	/* default: (not Intel, not AMD), apply Intel's stricter rules... */
++	return false;
++}
++
+ static int
+ emulate_syscall(struct x86_emulate_ctxt *ctxt, struct x86_emulate_ops *ops)
+ {
+@@ -1915,9 +1960,15 @@ emulate_syscall(struct x86_emulate_ctxt
+ 	    ctxt->mode == X86EMUL_MODE_VM86)
+ 		return emulate_ud(ctxt);
  
- .Linvalid_syscall:
- 	/* Report an invalid syscall back to the user program */
-@@ -1246,7 +1253,10 @@ handle_syscall:
- 	 movei  r28, -ENOSYS
- 	}
- 	sw      r29, r28
--	j       .Lresume_userspace   /* jump into middle of interrupt_return */
-+	{
-+	 movei  r30, 0               /* not an NMI */
-+	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
-+	}
- 	STD_ENDPROC(handle_syscall)
++	if (!(em_syscall_is_enabled(ctxt)))
++		return emulate_ud(ctxt);
++
+ 	ops->get_msr(ctxt, MSR_EFER, &efer);
+ 	setup_syscalls_segments(ctxt, ops, &cs, &ss);
  
- 	/* Return the address for oprofile to suppress in backtraces. */
-@@ -1262,7 +1272,10 @@ STD_ENTRY(ret_from_fork)
- 	jal     sim_notify_fork
- 	jal     schedule_tail
- 	FEEDBACK_REENTER(ret_from_fork)
--	j       .Lresume_userspace   /* jump into middle of interrupt_return */
-+	{
-+	 movei  r30, 0               /* not an NMI */
-+	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
-+	}
- 	STD_ENDPROC(ret_from_fork)
- 
- 	/*
-@@ -1376,7 +1389,10 @@ handle_ill:
- 
- 	jal     send_sigtrap    /* issue a SIGTRAP */
- 	FEEDBACK_REENTER(handle_ill)
--	j       .Lresume_userspace   /* jump into middle of interrupt_return */
-+	{
-+	 movei  r30, 0               /* not an NMI */
-+	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
-+	}
- 
- .Ldispatch_normal_ill:
- 	{
-diff --git a/arch/tile/kernel/intvec_64.S b/arch/tile/kernel/intvec_64.S
-index 7fa656a..8b5daed 100644
---- a/arch/tile/kernel/intvec_64.S
-+++ b/arch/tile/kernel/intvec_64.S
-@@ -614,6 +614,10 @@ handle_interrupt:
-  * This routine takes a boolean in r30 indicating if this is an NMI.
-  * If so, we also expect a boolean in r31 indicating whether to
-  * re-enable the oprofile interrupts.
-+ *
-+ * Note that .Lresume_userspace is jumped to directly in several
-+ * places, and we need to make sure r30 is set correctly in those
-+ * callers as well.
-  */
- STD_ENTRY(interrupt_return)
- 	/* If we're resuming to kernel space, don't check thread flags. */
-@@ -1066,7 +1070,10 @@ handle_syscall:
- 	}
- 	FEEDBACK_REENTER(handle_syscall)
- 
--2:	j       .Lresume_userspace   /* jump into middle of interrupt_return */
-+2:	{
-+	 movei  r30, 0               /* not an NMI */
-+	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
-+	}
- 
- .Lcompat_syscall:
- 	/*
-@@ -1100,7 +1107,10 @@ handle_syscall:
- 	 movei  r28, -ENOSYS
- 	}
- 	st      r29, r28
--	j       .Lresume_userspace   /* jump into middle of interrupt_return */
-+	{
-+	 movei  r30, 0               /* not an NMI */
-+	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
-+	}
- 	STD_ENDPROC(handle_syscall)
- 
- 	/* Return the address for oprofile to suppress in backtraces. */
-@@ -1116,7 +1126,10 @@ STD_ENTRY(ret_from_fork)
- 	jal     sim_notify_fork
- 	jal     schedule_tail
- 	FEEDBACK_REENTER(ret_from_fork)
--	j       .Lresume_userspace
-+	{
-+	 movei  r30, 0               /* not an NMI */
-+	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
-+	}
- 	STD_ENDPROC(ret_from_fork)
- 
- /* Various stub interrupt handlers and syscall handlers */
--- 
-1.6.5.2
++	if (!(efer & EFER_SCE))
++		return emulate_ud(ctxt);
++
+ 	ops->get_msr(ctxt, MSR_STAR, &msr_data);
+ 	msr_data >>= 32;
+ 	cs_sel = (u16)(msr_data & 0xfffc);
+
 
