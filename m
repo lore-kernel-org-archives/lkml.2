@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934670Ab2C3UFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:05:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53461 "EHLO
+	id S934502Ab2C3UFm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:05:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53443 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934628Ab2C3UFf (ORCPT
+	with ESMTP id S934280Ab2C3UFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:05:35 -0400
+	Fri, 30 Mar 2012 16:05:33 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH v2 11/15] gpio/samsung: mark const init data with __initconst instead of __initdata
-Date: Fri, 30 Mar 2012 22:05:01 +0200
-Message-Id: <1333137905-13809-11-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: kernel@pengutronix.de, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v2 06/15] mfd: mark const init data with __initconst instead of __initdata
+Date: Fri, 30 Mar 2012 22:04:56 +0200
+Message-Id: <1333137905-13809-6-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <20120330200358.GV15647@pengutronix.de>
 References: <20120330200358.GV15647@pengutronix.de>
@@ -39,27 +38,26 @@ because a section containing const variables is marked read only and so
 cannot contain non-const variables.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 ---
 no changes since (implicit) v1
 
- drivers/gpio/gpio-samsung.c |    2 +-
+ drivers/mfd/ab5500-core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index 4627787..fee2e85 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -2681,7 +2681,7 @@ static int exynos_gpio_xlate(struct gpio_chip *gc,
- 	return gpiospec->args[0];
- }
- 
--static const struct of_device_id exynos_gpio_dt_match[] __initdata = {
-+static const struct of_device_id exynos_gpio_dt_match[] __initconst = {
- 	{ .compatible = "samsung,exynos4-gpio", },
- 	{}
+diff --git a/drivers/mfd/ab5500-core.c b/drivers/mfd/ab5500-core.c
+index 54d0fe4..3765c76 100644
+--- a/drivers/mfd/ab5500-core.c
++++ b/drivers/mfd/ab5500-core.c
+@@ -1291,7 +1291,7 @@ struct ab_family_id {
+ 	char	*name;
  };
+ 
+-static const struct ab_family_id ids[] __initdata = {
++static const struct ab_family_id ids[] __initconst = {
+ 	/* AB5500 */
+ 	{
+ 		.id = AB5500_1_0,
 -- 
 1.7.9.5
 
