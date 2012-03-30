@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935001Ab2C3Wyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:54:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49761 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934947Ab2C3VF5 (ORCPT
+	id S935086Ab2C3Wyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:54:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934942Ab2C3VF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
-Date: Fri, 30 Mar 2012 21:05:52 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>, viro@zeniv.linux.org.uk,
-        davej@redhat.com, linux-kernel@vger.kernel.org
-References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com> <20120330204235.GA883@kroah.com> <alpine.LFD.2.02.1203302247130.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1203302247130.2542@ionos>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203302105.52987.arnd@arndb.de>
-X-Provags-ID: V02:K0:Now03PC6g1oYdvxvwnGUuPOkmsIN6TzsiPaJVLv0aHN
- pI8OSF/EasQ67i16GrfF8bXcqGxS+VwlzOt/ZGe3+iu7hStwNq
- AqAzqdNWHzOQuZrygElTNhFVq7TZvlLLA2aGH8/4MUziJP7YNu
- HWIz+rxR90ICwOzpGrZkzoifkTeOiTbXJ1PSwKkpw6ZfoxQvzX
- 0xl7p7JLNflGmJ9RfL4oXJSsDChEoCmf0bdOlfPiug3W2+EFL4
- ozVEQ8CYFc7Fz9gSZoEQyohGfXsXvMaXQP9wMK1agE2DJ5u2Va
- fwlUBNoxh25rO45msgpwOJPA5iJzHPIhGVOs1O+h/RsrtHD8xA
- Ps+VvdL7kVk1gBWZPFqw=
+	Fri, 30 Mar 2012 17:05:56 -0400
+Message-Id: <20120330195730.015258773@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:17 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 055/108] target: Dont set WBUS16 or SYNC bits in INQUIRY response
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 30 March 2012, Thomas Gleixner wrote:
-> I think so. This is an interface to inject stuff into dmesg. Limiting
-> that to a reasonable size makes sense. We can probably limit it to
-> something small like 1024, but I don't know about the "ideas" of those
-> folks who think that it's a great idea to do it at all.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-I guess a page would be a reasonable size, similar to what we do for
-sysfs. 
+------------------
 
-	Arnd
+From: Roland Dreier <roland@purestorage.com>
+
+commit effc6cc8828257c32c37635e737f14fd6e19ecd7 upstream.
+
+SPC-4 says about the WBUS16 and SYNC bits:
+
+    The meanings of these fields are specific to SPI-5 (see 6.4.3).
+    For SCSI transport protocols other than the SCSI Parallel
+    Interface, these fields are reserved.
+
+We don't have a SPI fabric module, so we should never set these bits.
+(The comment was misleading, since it only mentioned Sync but the
+actual code set WBUS16 too).
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/target/target_core_cdb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -106,7 +106,7 @@ target_emulate_inquiry_std(struct se_cmd
+ 		return 0;
+ 	}
+ 
+-	buf[7] = 0x32; /* Sync=1 and CmdQue=1 */
++	buf[7] = 0x2; /* CmdQue=1 */
+ 
+ 	/*
+ 	 * Do not include vendor, product, reversion info in INQUIRY
+
+
