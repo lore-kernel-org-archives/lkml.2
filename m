@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964845Ab2C3VLc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:11:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55848 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935659Ab2C3VLZ (ORCPT
+	id S935720Ab2C3WZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:25:34 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57831 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935667Ab2C3VLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:25 -0400
-Message-Id: <20120330194845.147982410@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:11:22 -0400
+Message-Id: <20120330194844.884522310@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:25 -0700
+Date: Fri, 30 Mar 2012 12:49:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 052/149] IB/iser: Post initial receive buffers before sending the final login request
+        alan@lxorguk.ukuu.org.uk, Greg Rose <gregory.v.rose@intel.com>,
+        Sibai Li <sibai.li@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 051/149] rtnetlink: Fix VF IFLA policy
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,136 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: Greg Rose <gregory.v.rose@intel.com>
 
-commit 89e984e2c2cd14f77ccb26c47726ac7f13b70ae8 upstream.
+commit 48752f6513012a1b078da08b145d5c40a644f058 upstream.
 
-An iser target may send iscsi NO-OP PDUs as soon as it marks the iSER
-iSCSI session as fully operative.  This means that there is window
-where there are no posted receive buffers on the initiator side, so
-it's possible for the iSER RC connection to break because of RNR NAK /
-retry errors.  To fix this, rely on the flags bits in the login
-request to have FFP (0x3) in the lower nibble as a marker for the
-final login request, and post an initial chunk of receive buffers
-before sending that login request instead of after getting the login
-response.
+Add VF spoof check to IFLA policy.  The original patch I submitted to
+add the spoof checking feature to rtnl failed to add the proper policy
+rule that identifies the data type and len.  This patch corrects that
+oversight.  No bugs have been reported against this but it may cause
+some problem for the netlink message parsing that uses the policy
+table.
 
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Greg Rose <gregory.v.rose@intel.com>
+Tested-by: Sibai Li <sibai.li@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/iser/iscsi_iser.c     |   18 +++-------------
- drivers/infiniband/ulp/iser/iscsi_iser.h     |    1 
- drivers/infiniband/ulp/iser/iser_initiator.c |   30 +++++++++++++++------------
- 3 files changed, 22 insertions(+), 27 deletions(-)
+ net/core/rtnetlink.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/infiniband/ulp/iser/iscsi_iser.c
-+++ b/drivers/infiniband/ulp/iser/iscsi_iser.c
-@@ -364,6 +364,9 @@ iscsi_iser_conn_bind(struct iscsi_cls_se
- 	}
- 	ib_conn = ep->dd_data;
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1116,6 +1116,8 @@ static const struct nla_policy ifla_vf_p
+ 				    .len = sizeof(struct ifla_vf_vlan) },
+ 	[IFLA_VF_TX_RATE]	= { .type = NLA_BINARY,
+ 				    .len = sizeof(struct ifla_vf_tx_rate) },
++	[IFLA_VF_SPOOFCHK]	= { .type = NLA_BINARY,
++				    .len = sizeof(struct ifla_vf_spoofchk) },
+ };
  
-+	if (iser_alloc_rx_descriptors(ib_conn))
-+		return -ENOMEM;
-+
- 	/* binds the iSER connection retrieved from the previously
- 	 * connected ep_handle to the iSCSI layer connection. exchanges
- 	 * connection pointers */
-@@ -398,19 +401,6 @@ iscsi_iser_conn_stop(struct iscsi_cls_co
- 	iser_conn->ib_conn = NULL;
- }
- 
--static int
--iscsi_iser_conn_start(struct iscsi_cls_conn *cls_conn)
--{
--	struct iscsi_conn *conn = cls_conn->dd_data;
--	int err;
--
--	err = iser_conn_set_full_featured_mode(conn);
--	if (err)
--		return err;
--
--	return iscsi_conn_start(cls_conn);
--}
--
- static void iscsi_iser_session_destroy(struct iscsi_cls_session *cls_session)
- {
- 	struct Scsi_Host *shost = iscsi_session_to_shost(cls_session);
-@@ -724,7 +714,7 @@ static struct iscsi_transport iscsi_iser
- 	.get_conn_param		= iscsi_conn_get_param,
- 	.get_ep_param		= iscsi_iser_get_ep_param,
- 	.get_session_param	= iscsi_session_get_param,
--	.start_conn             = iscsi_iser_conn_start,
-+	.start_conn             = iscsi_conn_start,
- 	.stop_conn              = iscsi_iser_conn_stop,
- 	/* iscsi host params */
- 	.get_host_param		= iscsi_host_get_param,
---- a/drivers/infiniband/ulp/iser/iscsi_iser.h
-+++ b/drivers/infiniband/ulp/iser/iscsi_iser.h
-@@ -366,4 +366,5 @@ int iser_dma_map_task_data(struct iscsi_
- void iser_dma_unmap_task_data(struct iscsi_iser_task *iser_task);
- int  iser_initialize_task_headers(struct iscsi_task *task,
- 			struct iser_tx_desc *tx_desc);
-+int iser_alloc_rx_descriptors(struct iser_conn *ib_conn);
- #endif
---- a/drivers/infiniband/ulp/iser/iser_initiator.c
-+++ b/drivers/infiniband/ulp/iser/iser_initiator.c
-@@ -170,7 +170,7 @@ static void iser_create_send_desc(struct
- }
- 
- 
--static int iser_alloc_rx_descriptors(struct iser_conn *ib_conn)
-+int iser_alloc_rx_descriptors(struct iser_conn *ib_conn)
- {
- 	int i, j;
- 	u64 dma_addr;
-@@ -242,23 +242,24 @@ void iser_free_rx_descriptors(struct ise
- 	kfree(ib_conn->rx_descs);
- }
- 
--/**
-- *  iser_conn_set_full_featured_mode - (iSER API)
-- */
--int iser_conn_set_full_featured_mode(struct iscsi_conn *conn)
-+static int iser_post_rx_bufs(struct iscsi_conn *conn, struct iscsi_hdr *req)
- {
- 	struct iscsi_iser_conn *iser_conn = conn->dd_data;
- 
--	iser_dbg("Initially post: %d\n", ISER_MIN_POSTED_RX);
-+	iser_dbg("req op %x flags %x\n", req->opcode, req->flags);
-+	/* check if this is the last login - going to full feature phase */
-+	if ((req->flags & ISCSI_FULL_FEATURE_PHASE) != ISCSI_FULL_FEATURE_PHASE)
-+		return 0;
- 
--	/* Check that there is no posted recv or send buffers left - */
--	/* they must be consumed during the login phase */
--	BUG_ON(iser_conn->ib_conn->post_recv_buf_count != 0);
--	BUG_ON(atomic_read(&iser_conn->ib_conn->post_send_buf_count) != 0);
--
--	if (iser_alloc_rx_descriptors(iser_conn->ib_conn))
--		return -ENOMEM;
-+	/*
-+	 * Check that there is one posted recv buffer (for the last login
-+	 * response) and no posted send buffers left - they must have been
-+	 * consumed during previous login phases.
-+	 */
-+	WARN_ON(iser_conn->ib_conn->post_recv_buf_count != 1);
-+	WARN_ON(atomic_read(&iser_conn->ib_conn->post_send_buf_count) != 0);
- 
-+	iser_dbg("Initially post: %d\n", ISER_MIN_POSTED_RX);
- 	/* Initial post receive buffers */
- 	if (iser_post_recvm(iser_conn->ib_conn, ISER_MIN_POSTED_RX))
- 		return -ENOMEM;
-@@ -438,6 +439,9 @@ int iser_send_control(struct iscsi_conn
- 		err = iser_post_recvl(iser_conn->ib_conn);
- 		if (err)
- 			goto send_control_error;
-+		err = iser_post_rx_bufs(conn, task->hdr);
-+		if (err)
-+			goto send_control_error;
- 	}
- 
- 	err = iser_post_send(iser_conn->ib_conn, mdesc);
+ static const struct nla_policy ifla_port_policy[IFLA_PORT_MAX+1] = {
 
 
