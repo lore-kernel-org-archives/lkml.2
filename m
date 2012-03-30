@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965668Ab2C3VTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:19:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965792Ab2C3VT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:19:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965758Ab2C3VTL (ORCPT
+	with ESMTP id S965737Ab2C3VTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:19:11 -0400
-Message-Id: <20120330194832.154072106@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:19:07 -0400
+Message-Id: <20120330194833.213927995@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:06 -0700
+Date: Fri, 30 Mar 2012 12:49:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Donald Lee <donald@asix.com.tw>
-Subject: [ 041/175] USB: serial: mos7840: Fixed MCS7820 device attach problem
+        alan@lxorguk.ukuu.org.uk,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Chanho Min <chanho0207@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jong-Sung Kim <neidhard.kim@lge.com>
+Subject: [ 047/175] serial: PL011: clear pending interrupts
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,144 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Donald Lee <donald@asix.com.tw>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 093ea2d3a766cb8a4c4de57efec6c0a127a58792 upstream.
+commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
 
-A MCS7820 device supports two serial ports and a MCS7840 device supports
-four serial ports. Both devices use the same driver, but the attach function
-in driver was unable to correctly handle the port numbers for MCS7820
-device. This problem has been fixed in this patch and this fix has been
-verified on x86 Linux kernel 3.2.9 with both MCS7820 and MCS7840 devices.
+Chanho Min reported that when the boot loader transfers
+control to the kernel, there may be pending interrupts
+causing the UART to lock up in an eternal loop trying to
+pick tokens from the FIFO (since the RX interrupt flag
+indicates there are tokens) while in practice there are
+no tokens - in fact there is only a pending IRQ flag.
 
-Signed-off-by: Donald Lee <donald@asix.com.tw>
+This patch address the issue with a combination of two
+patches suggested by Russell King that clears and mask
+all interrupts at probe() and clears any pending error
+and RX interrupts at port startup time.
+
+We suspect the spurious interrupts are a side-effect of
+switching the UART from FIFO to non-FIFO mode.
+
+Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Reported-by: Chanho Min <chanho0207@gmail.com>
+Suggested-by: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   81 +++++++++++++++++++++++++++++--------------
- 1 file changed, 56 insertions(+), 25 deletions(-)
+ drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -174,6 +174,7 @@
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1381,6 +1381,10 @@ static int pl011_startup(struct uart_por
  
- #define CLK_MULTI_REGISTER         ((__u16)(0x02))
- #define CLK_START_VALUE_REGISTER   ((__u16)(0x03))
-+#define GPIO_REGISTER              ((__u16)(0x07))
+ 	uap->port.uartclk = clk_get_rate(uap->clk);
  
- #define SERIAL_LCR_DLAB            ((__u16)(0x0080))
++	/* Clear pending error and receive interrupts */
++	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
++	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
++
+ 	/*
+ 	 * Allocate the IRQ
+ 	 */
+@@ -1417,10 +1421,6 @@ static int pl011_startup(struct uart_por
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
  
-@@ -1101,14 +1102,25 @@ static int mos7840_open(struct tty_struc
- 	mos7840_port->read_urb = port->read_urb;
- 
- 	/* set up our bulk in urb */
+-	/* Clear pending error interrupts */
+-	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
+-	       uap->port.membase + UART011_ICR);
 -
--	usb_fill_bulk_urb(mos7840_port->read_urb,
--			  serial->dev,
--			  usb_rcvbulkpipe(serial->dev,
--					  port->bulk_in_endpointAddress),
--			  port->bulk_in_buffer,
--			  mos7840_port->read_urb->transfer_buffer_length,
--			  mos7840_bulk_in_callback, mos7840_port);
-+	if ((serial->num_ports == 2)
-+		&& ((((__u16)port->number -
-+			(__u16)(port->serial->minor)) % 2) != 0)) {
-+		usb_fill_bulk_urb(mos7840_port->read_urb,
-+			serial->dev,
-+			usb_rcvbulkpipe(serial->dev,
-+				(port->bulk_in_endpointAddress) + 2),
-+			port->bulk_in_buffer,
-+			mos7840_port->read_urb->transfer_buffer_length,
-+			mos7840_bulk_in_callback, mos7840_port);
-+	} else {
-+		usb_fill_bulk_urb(mos7840_port->read_urb,
-+			serial->dev,
-+			usb_rcvbulkpipe(serial->dev,
-+				port->bulk_in_endpointAddress),
-+			port->bulk_in_buffer,
-+			mos7840_port->read_urb->transfer_buffer_length,
-+			mos7840_bulk_in_callback, mos7840_port);
-+	}
- 
- 	dbg("mos7840_open: bulkin endpoint is %d",
- 	    port->bulk_in_endpointAddress);
-@@ -1519,13 +1531,25 @@ static int mos7840_write(struct tty_stru
- 	memcpy(urb->transfer_buffer, current_position, transfer_size);
- 
- 	/* fill urb with data and submit  */
--	usb_fill_bulk_urb(urb,
--			  serial->dev,
--			  usb_sndbulkpipe(serial->dev,
--					  port->bulk_out_endpointAddress),
--			  urb->transfer_buffer,
--			  transfer_size,
--			  mos7840_bulk_out_data_callback, mos7840_port);
-+	if ((serial->num_ports == 2)
-+		&& ((((__u16)port->number -
-+			(__u16)(port->serial->minor)) % 2) != 0)) {
-+		usb_fill_bulk_urb(urb,
-+			serial->dev,
-+			usb_sndbulkpipe(serial->dev,
-+				(port->bulk_out_endpointAddress) + 2),
-+			urb->transfer_buffer,
-+			transfer_size,
-+			mos7840_bulk_out_data_callback, mos7840_port);
-+	} else {
-+		usb_fill_bulk_urb(urb,
-+			serial->dev,
-+			usb_sndbulkpipe(serial->dev,
-+				port->bulk_out_endpointAddress),
-+			urb->transfer_buffer,
-+			transfer_size,
-+			mos7840_bulk_out_data_callback, mos7840_port);
-+	}
- 
- 	data1 = urb->transfer_buffer;
- 	dbg("bulkout endpoint is %d", port->bulk_out_endpointAddress);
-@@ -1838,7 +1862,7 @@ static int mos7840_send_cmd_write_baud_r
- 
- 	} else {
- #ifdef HW_flow_control
--		/ *setting h/w flow control bit to 0 */
-+		/* setting h/w flow control bit to 0 */
- 		Data = 0xb;
- 		mos7840_port->shadowMCR = Data;
- 		status = mos7840_set_uart_reg(port, MODEM_CONTROL_REGISTER,
-@@ -2305,19 +2329,26 @@ static int mos7840_ioctl(struct tty_stru
- 
- static int mos7840_calc_num_ports(struct usb_serial *serial)
- {
--	int mos7840_num_ports = 0;
-+	__u16 Data = 0x00;
-+	int ret = 0;
-+	int mos7840_num_ports;
- 
--	dbg("numberofendpoints: cur %d, alt %d",
--	    (int)serial->interface->cur_altsetting->desc.bNumEndpoints,
--	    (int)serial->interface->altsetting->desc.bNumEndpoints);
--	if (serial->interface->cur_altsetting->desc.bNumEndpoints == 5) {
--		mos7840_num_ports = serial->num_ports = 2;
--	} else if (serial->interface->cur_altsetting->desc.bNumEndpoints == 9) {
-+	ret = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &Data,
-+		VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
-+
-+	if ((Data & 0x01) == 0) {
-+		mos7840_num_ports = 2;
-+		serial->num_bulk_in = 2;
-+		serial->num_bulk_out = 2;
-+		serial->num_ports = 2;
-+	} else {
-+		mos7840_num_ports = 4;
- 		serial->num_bulk_in = 4;
- 		serial->num_bulk_out = 4;
--		mos7840_num_ports = serial->num_ports = 4;
-+		serial->num_ports = 4;
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1435,6 +1435,9 @@ static int pl011_startup(struct uart_por
+ 	 * as well.
+ 	 */
+ 	spin_lock_irq(&uap->port.lock);
++	/* Clear out any spuriously appearing RX interrupts */
++	 writew(UART011_RTIS | UART011_RXIS,
++		uap->port.membase + UART011_ICR);
+ 	uap->im = UART011_RTIM;
+ 	if (!pl011_dma_rx_running(uap))
+ 		uap->im |= UART011_RXIM;
+@@ -1927,6 +1930,10 @@ static int pl011_probe(struct amba_devic
+ 		goto unmap;
  	}
--	dbg ("mos7840_num_ports = %d", mos7840_num_ports);
-+
- 	return mos7840_num_ports;
- }
  
++	/* Ensure interrupts from this UART are masked and cleared */
++	writew(0, uap->port.membase + UART011_IMSC);
++	writew(0xffff, uap->port.membase + UART011_ICR);
++
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
 
 
