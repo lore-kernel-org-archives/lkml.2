@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760011Ab2C3Idv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 04:33:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39592 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759908Ab2C3Idp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 04:33:45 -0400
+	id S1760055Ab2C3IiL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 04:38:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36615 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759930Ab2C3IiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 04:38:04 -0400
+Date: Fri, 30 Mar 2012 10:38:01 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, lizefan@huawei.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH for-3.4-fixes] cgroup: cgroup_attach_task() could return
+ -errno after success
+In-Reply-To: <20120329162620.GD28941@google.com>
+Message-ID: <alpine.LNX.2.00.1203301037380.25526@pobox.suse.cz>
+References: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz> <20120329160433.GC28941@google.com> <20120329162620.GD28941@google.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <4F74E435.9030101@codeaurora.org>
-References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
-	<1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
-	<1330344939-18394-3-git-send-email-myungjoo.ham@samsung.com>
-	<4F74E435.9030101@codeaurora.org>
-Date: Fri, 30 Mar 2012 17:33:44 +0900
-X-Google-Sender-Auth: Qy8BoVtNSHUEdEwG1VzGK2TSs5w
-Message-ID: <CAJ0PZbR3TLoa+UDM7mZLugjfMR_R-j7dKr7dTk0QFy9WM5etMQ@mail.gmail.com>
-Subject: Re: [PATCH v6 2/5] Extcon: support generic GPIO extcon driver
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, NeilBrown <neilb@suse.de>,
-        gregkh@linuxfoundation.org, Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        John Stultz <john.stultz@linaro.org>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mike Lockwood <lockwood@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 7:37 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 02/27/12 04:15, MyungJoo Ham wrote
->> +static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
->> +{
->> +     struct gpio_extcon_data *extcon_data =
->> +         (struct gpio_extcon_data *)dev_id;
->
-> Casting from void is unnecessary.
->
->> +
->> +static int gpio_extcon_probe(struct platform_device *pdev)
->
-> __devinit?
->
->> +{
->> +     struct gpio_extcon_platform_data *pdata = pdev->dev.platform_data;
->> +     struct gpio_extcon_data *extcon_data;
->> +     int ret = 0;
-> [snip]
->> +     return ret;
->> +}
->> +
->> +static int gpio_extcon_remove(struct platform_device *pdev)
->
-> __devexit?
->> +{
->> +     struct gpio_extcon_data *extcon_data = platform_get_drvdata(pdev);
-> [snip]
->> +static struct platform_driver gpio_extcon = {
->> +     .probe          = gpio_extcon_probe,
->> +     .remove         = gpio_extcon_remove,
->
-> __devexit_p()?
->> +     .driver         = {
->> +             .name   = "extcon-gpio",
->> +             .owner  = THIS_MODULE,
->> +     },
->> +};
->> +
->> +module_platform_driver(gpio_extcon);
->> +
->> +MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");
->> +MODULE_DESCRIPTION("GPIO extcon driver");
->> +MODULE_LICENSE("GPL");
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
+On Thu, 29 Mar 2012, Tejun Heo wrote:
 
-Thank you for the comments.
+> 61d1d219c4 "cgroup: remove extra calls to find_existing_css_set" made
+> cgroup_task_migrate() return void.  An unfortunate side effect was
+> that cgroup_attach_task() was depending on that function's return
+> value to clear its @retval on the success path.  On cgroup mounts
+> without any subsystem with ->can_attach() callback,
+> cgroup_attach_task() ended up returning @retval without initializing
+> it on success.
+> 
+> For some reason, gcc failed to warn about it and it didn't cause
+> cgroup_attach_task() to return non-zero value in many cases, probably
+> due to difference in register allocation.  When the problem
+> materializes, systemd fails to populate /systemd cgroup mount and
+> fails to boot.
+> 
+> Fix it by initializing @retval to zero on declaration.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Jiri Kosina <jkosina@suse.cz>
+> LKML-Reference: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
+> ---
+> Jiri, can you please confirm the fix?
 
-I'll apply it and test on patchset v8.
+Thanks Tejun, it works here.
 
-
-
-Cheers!
-MyungJoo.
+Tested-by: Jiri Kosina <jkosina@suse.cz>
 
 -- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+Jiri Kosina
+SUSE Labs
