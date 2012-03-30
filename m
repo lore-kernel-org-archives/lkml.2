@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760878Ab2C3OI1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 10:08:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33390 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759401Ab2C3OIU (ORCPT
+	id S1760849Ab2C3OKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 10:10:52 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35470 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759385Ab2C3OKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 10:08:20 -0400
-Subject: Re: [REGRESSION][PATCH] bpf_jit drops the ball on indirect
- negative mem references
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jan Seiffert <kaffeemonster@googlemail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, Matt Evans <matt@ozlabs.org>
-In-Reply-To: <4F75B828.3090705@googlemail.com>
-References: <CAPwCz79wO=5zTZmCG+ePfRuEu-p_Vosi18bYZ-MVNZGOdbE3aQ@mail.gmail.com>
-	 <1332965129.2325.12.camel@edumazet-glaptop>
-	 <CAPwCz7_tnjq32duJSDj21LpRe5TFvGGszH4joQr1DGTjNd7GcA@mail.gmail.com>
-	 <1332967172.2325.22.camel@edumazet-glaptop>
-	 <4F744D58.3070009@googlemail.com>
-	 <1333098711.19659.9.camel@edumazet-laptop>
-	 <4F75B828.3090705@googlemail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Mar 2012 16:08:13 +0200
-Message-ID: <1333116493.2325.2125.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Mar 2012 10:10:45 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Geoff Levand <geoff@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Ingo Molnar <mingo@kernel.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Max Krasnyansky <maxk@qualcomm.com>, Zen Lin <zen@openhuawei.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
+Organization: Texas Instruments, Inc.
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+	<87r4wbhqqd.fsf@ti.com> <20120330004527.GB2571@somewhere.redhat.com>
+	<1333073233.4912.44.camel@smoke>
+Date: Fri, 30 Mar 2012 07:10:43 -0700
+In-Reply-To: <1333073233.4912.44.camel@smoke> (Geoff Levand's message of "Thu,
+	29 Mar 2012 19:07:13 -0700")
+Message-ID: <87k422gows.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-30 at 15:42 +0200, Jan Seiffert wrote:
+Geoff Levand <geoff@infradead.org> writes:
 
-> Do you know where i can ping the powerpc guys a little bit harder?
+> Hi All,
+>
+> On Fri, 2012-03-30 at 02:45 +0200, Frederic Weisbecker wrote:
+>> On Thu, Mar 29, 2012 at 05:33:46PM -0700, Kevin Hilman wrote:
+>> > For anyone interested in collaborating on ARM support, my
+>> > work-in-progress branch is below[1] based on Frederic's cpuset-v2
+>> > branch.  Patches and testing welcome.
+>> > 
+>> > [1] git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux.git wip/arm-nohz-cpusets
+>> 
+>> Nice! Thanks for working on this. You may want to work with Geoff Levand who's working
+>> on the ARM port too.
+>
+> You can see my work here:
+>
+>   http://git.kernel.org/?p=linux/kernel/git/geoff/nohz.git
 
-maybe using CC linux-arch@vger.kernel.org
+Great! Will have a closer look.
 
-One way to handle that would be to split this patch in 3 parts, so that
-I can Ack the non ppc part.
+A quick look suggests we've done almost exactly the same thing.  Guess
+that's a good sign. :) 
 
-[1] introduce bpf_internal_load_pointer_neg_helper()
-	[BTW no need to EXPORT_SYMBOL it, since jit is not a module ]
+> I also put a simple test I got from Frederic here:
+>
+>   http://git.kernel.org/?p=linux/kernel/git/geoff/nohz-tests.git
 
-[2] x86_bpf_iit: handle negative offsets in loads
+Great, having a common test to compare results was going to be my next
+question.  I'll start playing with these next week.   Thanks.
 
-[3] ppc_bpf_jit: handle negative offsets in loads
+> Feel free to expand on either!
 
+> Kevin, I'll take a look at your work, I guess it has the same things as
+> mine.  
 
+Yeah, we've done basically the same thing.  I see though that you've
+also already handled some RCU idle cases that I hadn't.
 
+Since you're a little further than me, I'll switch you yours and 
+start using that as the base
+
+> Will you be at the Collaboration Summit next week?
+
+Unfortunately, no.
+
+Kevin
