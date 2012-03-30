@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934020Ab2C3ArE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 20:47:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41151 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab2C3Aq5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 20:46:57 -0400
-Date: Fri, 30 Mar 2012 11:46:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Linus <torvalds@linux-foundation.org>, Robert Lee <rob.lee@linaro.org>
-Subject: linux-next: manual merge of the acpi tree with Linus' tree
-Message-Id: <20120330114646.36f43b519577e22227039987@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__30_Mar_2012_11_46_46_+1100_aSZN0TA86Zj0Y8Fq"
+	id S1759521Ab2C3Aw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 20:52:58 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40130 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751903Ab2C3Aww convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 20:52:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1333068279.2960.20.camel@laptop>
+References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
+	<CABPqkBR7-JreB8c3Y1rNGpqdjeSN71qUkPrMxV-wjOSaTEx+vQ@mail.gmail.com>
+	<1333065559.2960.8.camel@laptop>
+	<CABPqkBQfy0CgSiDZ+KXd4fP9XxDxPTipyGbABZdEuTu4LkrsRQ@mail.gmail.com>
+	<1333068279.2960.20.camel@laptop>
+Date: Thu, 29 Mar 2012 17:52:50 -0700
+Message-ID: <CABPqkBQbYs7JgGqfZD3ng6QMK0OpiVL=8gfyxn5aRgtYpPVjsw@mail.gmail.com>
+Subject: Re: [RFC 00/15] perf: Add backtrace post dwarf unwind
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        rostedt@goodmis.org, robert.richter@amd.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__30_Mar_2012_11_46_46_+1100_aSZN0TA86Zj0Y8Fq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 29, 2012 at 5:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2012-03-29 at 17:38 -0700, Stephane Eranian wrote:
+>> What I'd like to have is something similar to:
+>>     attr->sample_type |= PERF_SAMPLE_REGS
+>>     attr->sample_regs = EAX | EBX | EDI | ESI |.....
+>>     attr->sample_reg_mode = { INTR, PRECISE, USER }
+>>
+>> Then in each sample for the event you dump the u64 values
+>> of the requested registers.  The order is that of the enum
+>> enum regs {}. That enum is arch specific.
+>>
+>> When you are in precise mode on Intel, you extract the regs
+>> from PEBS. You already know the registers supported by PEBS
+>> so you can reject any request for  unsupported regs.
+>>
+>> When you are in intr they you get the regs from pt_regs.
+>> The user mode case is taken care of by the this patch series
+>> already.
+>>
+>> I am not sure the sample_reg_mode needs to be a bitmask, i.e.,
+>> do we need the reg state for INTR+PRECISE or USER+INTR?
+>> But if so, then we would need attr->sample_regs[3] as not all
+>> registers may be available in each mode.
+>
+> I'm really having trouble seeing how useful this is. You mentioned
+> sampling function arguments, but most samples would be in the middle of
+> functions where the regs are completely unrelated to arguments. Also
+> isn't the 'normal' C ABI passing args on stack rather than registers?
+>
+If you look at the SNB events, you'll see that br_inst_retired:near_call
+supports PEBS. The sample is taken at retirement of the call, i.e., the
+first instruction of the function, exactly where you want it to be.
 
-Hi Len,
-
-Today's linux-next merge of the acpi tree got a conflict in
-arch/arm/mach-shmobile/cpuidle.c between commit 9f97da78bf01
-("Disintegrate asm/system.h for ARM") from Linus' tree and commit
-ee807dd89c00 ("ARM: shmobile: Consolidate time keeping and irq enable")
-from the acpi tree.
-
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-shmobile/cpuidle.c
-index 21b09b6,ca23b20..0000000
---- a/arch/arm/mach-shmobile/cpuidle.c
-+++ b/arch/arm/mach-shmobile/cpuidle.c
-@@@ -13,6 -13,8 +13,7 @@@
-  #include <linux/suspend.h>
-  #include <linux/module.h>
-  #include <linux/err.h>
- -#include <asm/system.h>
-+ #include <asm/cpuidle.h>
-  #include <asm/io.h>
- =20
-  static void shmobile_enter_wfi(void)
-
---Signature=_Fri__30_Mar_2012_11_46_46_+1100_aSZN0TA86Zj0Y8Fq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPdQJ2AAoJEECxmPOUX5FEx3cQAJtaOp2M44N0S6PBV4BkU8lL
-s6urTkkGqbdeuHUqiiRAr11gL81tRHYBdSzMbJJiJ6CKVDntU2budYcV/JAynNG2
-8987uB81d9IgfamCAyvy3YymZIt3xIs88/tz2rz9pG4oI9E7d2A8KDYoZLCMV6U0
-3LI/Hk/irUOecIOgU/1RxKIKUqRdZbetEKA04AJ+0zBgOBM/uvW9Ntou5MqlRdw/
-xAlPVO0gTnJIIxEki+tvyHxAIfN15j7bSQqK1yViEvMgDhsR8Jjad+j/6lttCHSy
-xhf0fQUXrmglhcuM1Bjgw2AQMQnbwpWRT05P0p24jmbYHXS9+R0nCfDcZwo4xw+X
-owUp56XZSIX//6IanzqFJFA5I67p604mhP14nwgJNoLYawL+o/jO5M57i96UVvUh
-PIxrgQyn0n877nLq0t/X6W+KHQ0Icm0g/39orLCzeLb0qTPUyEX8+zkUIe6cENF1
-wcMFoG4PEoVvhM3nTtv94SVWTHiXj6hYNs2yDcqeFcDu4gxRVlPRYVtyzozNMqZa
-CfRCFZ5uF71ZzmdLyTZZ4PK7gIAsxp5eATCCq+EC4bI8VMhgtPDL8aZ50S41Nu6F
-/8DnD3SGL/fXV/j5co3B204T5Je8DpgrNXRDJCRU7Ez8SlnGLzCBNi+5kiWDhFii
-kikHDcrsIGtSIXyhXQ3o
-=FVEp
------END PGP SIGNATURE-----
-
---Signature=_Fri__30_Mar_2012_11_46_46_+1100_aSZN0TA86Zj0Y8Fq--
+Unless I am mistaken, the x86_64 calling convention passes the first 6
+integer arguments in registers.
