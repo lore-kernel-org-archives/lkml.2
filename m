@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934259Ab2C3Lqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:46:47 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:55939 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab2C3Lqk (ORCPT
+	id S934277Ab2C3Lq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:46:58 -0400
+Received: from mail-bk0-f74.google.com ([209.85.214.74]:57090 "EHLO
+	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934261Ab2C3Lqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:46:40 -0400
-Date: Fri, 30 Mar 2012 12:46:33 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/5] ACPI: Do cpufreq clamping for throttling per
- package v2
-Message-ID: <20120330114633.GA16502@srcf.ucam.org>
-References: <1328545032-21373-1-git-send-email-andi@firstfloor.org>
- <1328545032-21373-5-git-send-email-andi@firstfloor.org>
- <4F758569.9080608@kernel.org>
+	Fri, 30 Mar 2012 07:46:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F758569.9080608@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 0/8 v7] fix gmbus writes and related issues
+Date: Fri, 30 Mar 2012 19:46:35 +0800
+Message-Id: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 06:05:29AM -0400, Len Brown wrote:
-> Andi,
-> Can you re-base this on top of my release tree?
-> 
-> Your fix is important, but conflicted with mjg's
-> more invasive percentage -> frequency change.
+This patchset addresses a couple of issues with the i915 gmbus
+implementation.
 
-Sorry, I think it's probably better not to take my patch here - the spec 
-uses percentages rather than frequencies. I'm not convinced that that 
-makes sense, but there's some chance that some behaviour may end up 
-depending on that.
+v7 adds a final patch to switch to using DRM_ERROR for reporting timeouts.
+
+Daniel Kurtz (8):
+  drm/i915/intel_i2c: handle zero-length writes
+  drm/i915/intel_i2c: use double-buffered writes
+  drm/i915/intel_i2c: always wait for IDLE before clearing NAK
+  drm/i915/intel_i2c: use WAIT cycle, not STOP
+  drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
+  drm/i915/intel_i2c: reuse GMBUS2 value read in polling loop
+  drm/i915/intel_i2c: remove POSTING_READ() from gmbus transfers
+  drm/i915/intel_i2c: use DRM_ERROR on timeouts
+
+ drivers/gpu/drm/i915/intel_i2c.c |  163 +++++++++++++++++++++++++++----------
+ 1 files changed, 119 insertions(+), 44 deletions(-)
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.7.3
+
