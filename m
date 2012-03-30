@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933959Ab2C3A15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 20:27:57 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44213 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933039Ab2C3A1v (ORCPT
+	id S934035Ab2C3Ady (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 20:33:54 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:34782 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933574Ab2C3Adt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 20:27:51 -0400
+	Thu, 29 Mar 2012 20:33:49 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Geoff Levand <geoff@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Ingo Molnar <mingo@kernel.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Max Krasnyansky <maxk@qualcomm.com>, Zen Lin <zen@openhuawei.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
+Organization: Texas Instruments, Inc.
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+Date: Thu, 29 Mar 2012 17:33:46 -0700
+Message-ID: <87r4wbhqqd.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CA+55aFyJH8yO7=AzuddsQZouHqRDtmeh-vbd8Y5VQLQx-6ZV-Q@mail.gmail.com>
-References: <1332918842-13521-1-git-send-email-olof@lixom.net>
-	<1332918842-13521-2-git-send-email-olof@lixom.net>
-	<20120328082501.GA22414@n2100.arm.linux.org.uk>
-	<CAOesGMjwZOON9kFNvaEq8QhSvjAgsJT_J1Ysb9-AbePd6g+-rQ@mail.gmail.com>
-	<20120328192816.GD22414@n2100.arm.linux.org.uk>
-	<CA+55aFyJH8yO7=AzuddsQZouHqRDtmeh-vbd8Y5VQLQx-6ZV-Q@mail.gmail.com>
-Date: Thu, 29 Mar 2012 17:27:50 -0700
-Message-ID: <CAOesGMgaQ7mjV-1Q5uPthw8PAtU+BUfDgOqor=3jtvkL30L1ZA@mail.gmail.com>
-Subject: Re: [GIT PULL 1/5] ARM: cleanups of io includes
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 5:09 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Mar 28, 2012 at 12:28 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->>
->> Right, having merged the latest arm-soc tree this evening into the build
->> tree and forced a rebuild, the errors induced by Rob's patches are now
->> gone, so I'm fine with this going in now.
+Frederic Weisbecker <fweisbec@gmail.com> writes:
+
+> There are still a lot of things to handle. Especially about
+> what is done by scheduler_tick() but we also need to:
 >
-> Ok, I'm getting back to this pull request, and apparently everything
-> is ok with it.
->
-> Holler if not, because it's not back on my queue of trees to merge
-> (but I haven't actually gotten to it yet - this is just a heads-up
-> that I will get to it later today).
+> - completely handle cputime accounting (need to find every "reader"
+> of cputime and flush cputimes for all of them).
+> -handle  perf
+> - handle irqtime finegrained accounting
+> - handle ilb load balancing
+> - etc...
 
-I was going to send a fresh pull request for it and include some of
-the other PXA breakage fixes with it, but I haven't received those
-from the PXA maintainer yet. I'll send a separate pull request for a
-fixes branch when I get it instead (this pull request does not add any
-new breakage).
+  - add more arch support :)
 
-So please, go ahead and pull. It hasn't grown any new merge conflicts
-since before as of now, so see the original pull request for those.
+For ARM, I've started hacking things into place and have some
+preliminary patches to add ARM support for the new IPI, syscall support,
+exception hooks, etc.[1]
 
+This is enough to get some basic things running and test the nohz
+cpusets functionality on ARM, and for others to start trying it out.
 
-Thanks!
+For anyone interested in collaborating on ARM support, my
+work-in-progress branch is below[1] based on Frederic's cpuset-v2
+branch.  Patches and testing welcome.
 
--Olof
+Kevin
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux.git wip/arm-nohz-cpusets
