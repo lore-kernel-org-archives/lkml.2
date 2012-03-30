@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966173Ab2C3VjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:39:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43949 "EHLO
+	id S936250Ab2C3Vjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:39:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42145 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936213Ab2C3VcI (ORCPT
+	by vger.kernel.org with ESMTP id S936203Ab2C3VcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:08 -0400
-X-Sasl-enc: IdSJlhmQh+EIeKuo2bDMui7nA6pl/RYumrmUwo1i3EYo 1333143127
-X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:57 2012
-Message-Id: <20120330194856.957378841@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:32:04 -0400
+X-Sasl-enc: 3vogfC6LoXGNMFyL+CEykF9Qvp+PrsRD38C2ELgVreca 1333143123
+X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:56 2012
+Message-Id: <20120330194856.611952768@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:58 -0700
+Date: Fri, 30 Mar 2012 12:50:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Masanari Iida <standby24x7@gmail.com>
-Subject: [ 153/175] backlight: fix typo in tosa_lcd.c
+        alan@lxorguk.ukuu.org.uk, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 151/175] dm persistent data: fix btree rebalancing after remove
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +27,269 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masanari Iida <standby24x7@gmail.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 8da00edc1069f01c34510fa405dc15d96c090a3f upstream.
+commit b0988900bae9ecf968a8a8d086a9eec671a9517a upstream.
 
-Fix typo in drivers/video/backlight/tosa_lcd.c
-"tosa_lcd_reume" should be "tosa_lcd_resume".
+When we remove an entry from a node we sometimes rebalance with it's
+two neighbours.  This wasn't being done correctly; in some cases
+entries have to move all the way from the right neighbour to the left
+neighbour, or vice versa.  This patch pretty much re-writes the
+balancing code to fix it.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This code is barely used currently; only when you delete a thin
+device, and then only if you have hundreds of them in the same pool.
+Once we have discard support, which removes mappings, this will be used
+much more heavily.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/backlight/tosa_lcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/persistent-data/dm-btree-remove.c |  174 +++++++++++++++------------
+ 1 file changed, 99 insertions(+), 75 deletions(-)
 
---- a/drivers/video/backlight/tosa_lcd.c
-+++ b/drivers/video/backlight/tosa_lcd.c
-@@ -271,7 +271,7 @@ static int tosa_lcd_resume(struct spi_de
+--- a/drivers/md/persistent-data/dm-btree-remove.c
++++ b/drivers/md/persistent-data/dm-btree-remove.c
+@@ -128,18 +128,9 @@ static void delete_at(struct node *n, un
+ 	n->header.nr_entries = cpu_to_le32(nr_entries - 1);
  }
- #else
- #define tosa_lcd_suspend	NULL
--#define tosa_lcd_reume NULL
-+#define tosa_lcd_resume NULL
- #endif
  
- static struct spi_driver tosa_lcd_driver = {
+-static unsigned del_threshold(struct node *n)
+-{
+-	return le32_to_cpu(n->header.max_entries) / 3;
+-}
+-
+ static unsigned merge_threshold(struct node *n)
+ {
+-	/*
+-	 * The extra one is because we know we're potentially going to
+-	 * delete an entry.
+-	 */
+-	return 2 * (le32_to_cpu(n->header.max_entries) / 3) + 1;
++	return le32_to_cpu(n->header.max_entries) / 3;
+ }
+ 
+ struct child {
+@@ -188,6 +179,15 @@ static int exit_child(struct dm_btree_in
+ 
+ static void shift(struct node *left, struct node *right, int count)
+ {
++	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
++	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
++	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
++	uint32_t r_max_entries = le32_to_cpu(right->header.max_entries);
++
++	BUG_ON(max_entries != r_max_entries);
++	BUG_ON(nr_left - count > max_entries);
++	BUG_ON(nr_right + count > max_entries);
++
+ 	if (!count)
+ 		return;
+ 
+@@ -199,13 +199,8 @@ static void shift(struct node *left, str
+ 		node_shift(right, count);
+ 	}
+ 
+-	left->header.nr_entries =
+-		cpu_to_le32(le32_to_cpu(left->header.nr_entries) - count);
+-	BUG_ON(le32_to_cpu(left->header.nr_entries) > le32_to_cpu(left->header.max_entries));
+-
+-	right->header.nr_entries =
+-		cpu_to_le32(le32_to_cpu(right->header.nr_entries) + count);
+-	BUG_ON(le32_to_cpu(right->header.nr_entries) > le32_to_cpu(right->header.max_entries));
++	left->header.nr_entries = cpu_to_le32(nr_left - count);
++	right->header.nr_entries = cpu_to_le32(nr_right + count);
+ }
+ 
+ static void __rebalance2(struct dm_btree_info *info, struct node *parent,
+@@ -215,8 +210,9 @@ static void __rebalance2(struct dm_btree
+ 	struct node *right = r->n;
+ 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
+ 	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
++	unsigned threshold = 2 * merge_threshold(left) + 1;
+ 
+-	if (nr_left + nr_right <= merge_threshold(left)) {
++	if (nr_left + nr_right < threshold) {
+ 		/*
+ 		 * Merge
+ 		 */
+@@ -234,9 +230,6 @@ static void __rebalance2(struct dm_btree
+ 		 * Rebalance.
+ 		 */
+ 		unsigned target_left = (nr_left + nr_right) / 2;
+-		unsigned shift_ = nr_left - target_left;
+-		BUG_ON(le32_to_cpu(left->header.max_entries) <= nr_left - shift_);
+-		BUG_ON(le32_to_cpu(right->header.max_entries) <= nr_right + shift_);
+ 		shift(left, right, nr_left - target_left);
+ 		*key_ptr(parent, r->index) = right->keys[0];
+ 	}
+@@ -272,6 +265,84 @@ static int rebalance2(struct shadow_spin
+ 	return exit_child(info, &right);
+ }
+ 
++/*
++ * We dump as many entries from center as possible into left, then the rest
++ * in right, then rebalance2.  This wastes some cpu, but I want something
++ * simple atm.
++ */
++static void delete_center_node(struct dm_btree_info *info, struct node *parent,
++			       struct child *l, struct child *c, struct child *r,
++			       struct node *left, struct node *center, struct node *right,
++			       uint32_t nr_left, uint32_t nr_center, uint32_t nr_right)
++{
++	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
++	unsigned shift = min(max_entries - nr_left, nr_center);
++
++	BUG_ON(nr_left + shift > max_entries);
++	node_copy(left, center, -shift);
++	left->header.nr_entries = cpu_to_le32(nr_left + shift);
++
++	if (shift != nr_center) {
++		shift = nr_center - shift;
++		BUG_ON((nr_right + shift) > max_entries);
++		node_shift(right, shift);
++		node_copy(center, right, shift);
++		right->header.nr_entries = cpu_to_le32(nr_right + shift);
++	}
++	*key_ptr(parent, r->index) = right->keys[0];
++
++	delete_at(parent, c->index);
++	r->index--;
++
++	dm_tm_dec(info->tm, dm_block_location(c->block));
++	__rebalance2(info, parent, l, r);
++}
++
++/*
++ * Redistributes entries among 3 sibling nodes.
++ */
++static void redistribute3(struct dm_btree_info *info, struct node *parent,
++			  struct child *l, struct child *c, struct child *r,
++			  struct node *left, struct node *center, struct node *right,
++			  uint32_t nr_left, uint32_t nr_center, uint32_t nr_right)
++{
++	int s;
++	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
++	unsigned target = (nr_left + nr_center + nr_right) / 3;
++	BUG_ON(target > max_entries);
++
++	if (nr_left < nr_right) {
++		s = nr_left - target;
++
++		if (s < 0 && nr_center < -s) {
++			/* not enough in central node */
++			shift(left, center, nr_center);
++			s = nr_center - target;
++			shift(left, right, s);
++			nr_right += s;
++		} else
++			shift(left, center, s);
++
++		shift(center, right, target - nr_right);
++
++	} else {
++		s = target - nr_right;
++		if (s > 0 && nr_center < s) {
++			/* not enough in central node */
++			shift(center, right, nr_center);
++			s = target - nr_center;
++			shift(left, right, s);
++			nr_left -= s;
++		} else
++			shift(center, right, s);
++
++		shift(left, center, nr_left - target);
++	}
++
++	*key_ptr(parent, c->index) = center->keys[0];
++	*key_ptr(parent, r->index) = right->keys[0];
++}
++
+ static void __rebalance3(struct dm_btree_info *info, struct node *parent,
+ 			 struct child *l, struct child *c, struct child *r)
+ {
+@@ -282,62 +353,18 @@ static void __rebalance3(struct dm_btree
+ 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
+ 	uint32_t nr_center = le32_to_cpu(center->header.nr_entries);
+ 	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
+-	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
+ 
+-	unsigned target;
++	unsigned threshold = merge_threshold(left) * 4 + 1;
+ 
+ 	BUG_ON(left->header.max_entries != center->header.max_entries);
+ 	BUG_ON(center->header.max_entries != right->header.max_entries);
+ 
+-	if (((nr_left + nr_center + nr_right) / 2) < merge_threshold(center)) {
+-		/*
+-		 * Delete center node:
+-		 *
+-		 * We dump as many entries from center as possible into
+-		 * left, then the rest in right, then rebalance2.  This
+-		 * wastes some cpu, but I want something simple atm.
+-		 */
+-		unsigned shift = min(max_entries - nr_left, nr_center);
+-
+-		BUG_ON(nr_left + shift > max_entries);
+-		node_copy(left, center, -shift);
+-		left->header.nr_entries = cpu_to_le32(nr_left + shift);
+-
+-		if (shift != nr_center) {
+-			shift = nr_center - shift;
+-			BUG_ON((nr_right + shift) >= max_entries);
+-			node_shift(right, shift);
+-			node_copy(center, right, shift);
+-			right->header.nr_entries = cpu_to_le32(nr_right + shift);
+-		}
+-		*key_ptr(parent, r->index) = right->keys[0];
+-
+-		delete_at(parent, c->index);
+-		r->index--;
+-
+-		dm_tm_dec(info->tm, dm_block_location(c->block));
+-		__rebalance2(info, parent, l, r);
+-
+-		return;
+-	}
+-
+-	/*
+-	 * Rebalance
+-	 */
+-	target = (nr_left + nr_center + nr_right) / 3;
+-	BUG_ON(target > max_entries);
+-
+-	/*
+-	 * Adjust the left node
+-	 */
+-	shift(left, center, nr_left - target);
+-
+-	/*
+-	 * Adjust the right node
+-	 */
+-	shift(center, right, target - nr_right);
+-	*key_ptr(parent, c->index) = center->keys[0];
+-	*key_ptr(parent, r->index) = right->keys[0];
++	if ((nr_left + nr_center + nr_right) < threshold)
++		delete_center_node(info, parent, l, c, r, left, center, right,
++				   nr_left, nr_center, nr_right);
++	else
++		redistribute3(info, parent, l, c, r, left, center, right,
++			      nr_left, nr_center, nr_right);
+ }
+ 
+ static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
+@@ -441,9 +468,6 @@ static int rebalance_children(struct sha
+ 	if (r)
+ 		return r;
+ 
+-	if (child_entries > del_threshold(n))
+-		return 0;
+-
+ 	has_left_sibling = i > 0;
+ 	has_right_sibling = i < (le32_to_cpu(n->header.nr_entries) - 1);
+ 
 
 
