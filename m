@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760532Ab2C3JMB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 05:12:01 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41296 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759788Ab2C3JLy (ORCPT
+	id S1760554Ab2C3JMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 05:12:44 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36012 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759799Ab2C3JLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 05:11:54 -0400
-Date: Fri, 30 Mar 2012 11:11:46 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Greg K H <gregkh@linuxfoundation.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/14] edac: rewrite the sysfs code to use struct device
-Message-ID: <20120330091146.GB29854@aftab>
-References: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
- <1333040821-6253-2-git-send-email-mchehab@redhat.com>
- <20120329220300.GA16491@kroah.com>
- <4F74EDEC.5020804@redhat.com>
- <20120329234037.GA16094@kroah.com>
- <4F7516B3.8070505@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7516B3.8070505@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Mar 2012 05:11:55 -0400
+Message-ID: <1333098711.19659.9.camel@edumazet-laptop>
+Subject: Re: [REGRESSION][PATCH] bpf_jit drops the ball on indirect negative
+ mem references
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Seiffert <kaffeemonster@googlemail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, Matt Evans <matt@ozlabs.org>
+Date: Fri, 30 Mar 2012 11:11:51 +0200
+In-Reply-To: <4F744D58.3070009@googlemail.com>
+References: <CAPwCz79wO=5zTZmCG+ePfRuEu-p_Vosi18bYZ-MVNZGOdbE3aQ@mail.gmail.com>
+	  <1332965129.2325.12.camel@edumazet-glaptop>
+	  <CAPwCz7_tnjq32duJSDj21LpRe5TFvGGszH4joQr1DGTjNd7GcA@mail.gmail.com>
+	 <1332967172.2325.22.camel@edumazet-glaptop>
+	 <4F744D58.3070009@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 11:13:07PM -0300, Mauro Carvalho Chehab wrote:
-> However, every time this patch series is submitted, someone come up with a 
-> bright idea to ask me to add more work to the scope, delaying its addition 
-> forever.
+Le jeudi 29 mars 2012 à 13:54 +0200, Jan Seiffert a écrit :
+
 > 
-> While I'm not convinced that moving from a single memory allocation into a 
-> series of k*alloc is a good thing for a subsystem that is there to detect
-> memory errors (as having everything altogether into a single page can
-> reduce the chances of errors at the EDAC data), I can work latter on a 
-> patchset to fix this issue for EDAC MC, but I'll do it only after merging 
-> this series, as it is counter-productive to do it otherwise, having to 
-> repeat the same set of tests on 10 machines (and compile the entire series 
-> of patches on 8 different archs/sub-archs).
-> 
-> So, I really want to move this ahead. So, please, first things first: let's
-> first fix the more serious bug. Then, we can fix the other minor stuff
-> that aren't so far causing any noticeable harm.
+> +	.p2align 1
+>  bpf_slow_path_word:
+>  	bpf_slow_path_common(4)
+>  	js	bpf_error
+> @@ -115,6 +116,7 @@ bpf_slow_path_word:
+>  	bswap	%eax
+>  	ret
+>  
+> +	.p2align 1
+>  bpf_slow_path_half:
+>  	bpf_slow_path_common(2)
+>  	js	bpf_error
+> @@ -123,12 +125,14 @@ bpf_slow_path_half:
+>  	movzwl	%ax,%eax
+>  	ret
 
-Dude, stop complaining - this is the kernel not some pet project of
-yours. You either do things right or you don't do them at all. Others
-have to do the same iterations with patches and intergrate maintainer
-change requests until everything is done properly.
+All these ".p2align 1" are noise for this patch.
 
-Btw, this patch is
+This should be done as separate patch, explaining the rationale.
 
- 5 files changed, 432 insertions(+), 717 deletions(-)
+...
 
-It is 1500+ lines and huuuuge! How do you think anyone can review this?
+>  			case BPF_S_LD_W_IND:
+> -				func = sk_load_word_ind;
+> +				func = sk_load_word;
+>  common_load_ind:		seen |= SEEN_DATAREF | SEEN_XREG;
+>  				t_offset = func - (image + addrs[i]);
+> -				EMIT1_off32(0xbe, K);	/* mov imm32,%esi   */
+> +				if (K) {
+> +					EMIT2(0x8d, 0xb3); /* lea imm32(%rbx),%esi */
+> +					EMIT(K, 4);
+> +				} else {
+> +					EMIT2(0x89,0xde); /* mov %ebx,%esi */
+> +				}
+>  				EMIT1_off32(0xe8, t_offset);	/* call sk_load_xxx_ind */
+>  				break;
 
-Also, I told already: if you wanna fix one thing, then fix it with a
-smaller patchset which easier to review by people instead of throwing at
-them humongous patch bombs which are supposed to fix _everything_ and
-expecting everyone to understand immediately what you mean. And don't
-tell me these huge patches cannot be split, I'm not buying it.
 
--- 
-Regards/Gruss,
-Boris.
+Please add the code for imm8 offsets as well ?
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+if (is_imm8(K))
+	EMIT3(0x8d, 0x73, K); /* lea imm8(%rbx),%esi */
+else
+	EMIT2_off32(0x8d, 0xb3, K); /* lea imm32(%rbx),%esi */
+
+Thanks
+
+
+
