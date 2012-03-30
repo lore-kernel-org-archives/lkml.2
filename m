@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935192Ab2C3VHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:07:24 -0400
+	id S935240Ab2C3VHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:07:41 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935162Ab2C3VHT (ORCPT
+	with ESMTP id S935162Ab2C3VHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:07:19 -0400
-Message-Id: <20120330195733.225401892@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:32 -0400
+Message-Id: <20120330195734.352859498@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:39 -0700
+Date: Fri, 30 Mar 2012 12:58:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 077/108] [media] lgdt330x: fix signedness error in i2c_read_demod_bytes()
+        alan@lxorguk.ukuu.org.uk, Michel Lespinasse <walken@google.com>
+Subject: [ 085/108] vfs: fix d_ancestor() case in d_materialize_unique
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +24,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Michel Lespinasse <walken@google.com>
 
-commit 34817174fca0c5512c2d5b6ea0fc37a0337ce1d8 upstream.
+commit b18dafc86bb879d2f38a1743985d7ceb283c2f4d upstream.
 
-The error handling in lgdt3303_read_status() and lgdt330x_read_ucblocks()
-doesn't work, because i2c_read_demod_bytes() returns a u8 and (err < 0)
-is always false.
+In d_materialise_unique() there are 3 subcases to the 'aliased dentry'
+case; in two subcases the inode i_lock is properly released but this
+does not occur in the -ELOOP subcase.
 
-        err = i2c_read_demod_bytes(state, 0x58, buf, 1);
-        if (err < 0)
-                return err;
+This seems to have been introduced by commit 1836750115f2 ("fix loop
+checks in d_materialise_unique()").
 
-Change the return type of i2c_read_demod_bytes() to int.  Also change
-the return value on error to -EIO to make (err < 0) work.
+Signed-off-by: Michel Lespinasse <walken@google.com>
+[ Added a comment, and moved the unlock to where we generate the -ELOOP,
+  which seems to be more natural.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+  You probably can't actually trigger this without a buggy network file
+  server - d_materialize_unique() is for finding aliases on non-local
+  filesystems, and the d_ancestor() case is for a hardlinked directory
+  loop.
+
+  But we should be robust in the case of such buggy servers anyway. ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb/frontends/lgdt330x.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/dcache.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/media/dvb/frontends/lgdt330x.c
-+++ b/drivers/media/dvb/frontends/lgdt330x.c
-@@ -104,8 +104,8 @@ static int i2c_write_demod_bytes (struct
-  * then reads the data returned for (len) bytes.
-  */
- 
--static u8 i2c_read_demod_bytes (struct lgdt330x_state* state,
--			       enum I2C_REG reg, u8* buf, int len)
-+static int i2c_read_demod_bytes(struct lgdt330x_state *state,
-+				enum I2C_REG reg, u8 *buf, int len)
- {
- 	u8 wr [] = { reg };
- 	struct i2c_msg msg [] = {
-@@ -118,6 +118,8 @@ static u8 i2c_read_demod_bytes (struct l
- 	ret = i2c_transfer(state->i2c, msg, 2);
- 	if (ret != 2) {
- 		printk(KERN_WARNING "lgdt330x: %s: addr 0x%02x select 0x%02x error (ret == %i)\n", __func__, state->config->demod_address, reg, ret);
-+		if (ret >= 0)
-+			ret = -EIO;
- 	} else {
- 		ret = 0;
- 	}
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2433,6 +2433,7 @@ struct dentry *d_materialise_unique(stru
+ 			if (d_ancestor(alias, dentry)) {
+ 				/* Check for loops */
+ 				actual = ERR_PTR(-ELOOP);
++				spin_unlock(&inode->i_lock);
+ 			} else if (IS_ROOT(alias)) {
+ 				/* Is this an anonymous mountpoint that we
+ 				 * could splice into our tree? */
+@@ -2442,7 +2443,7 @@ struct dentry *d_materialise_unique(stru
+ 				goto found;
+ 			} else {
+ 				/* Nope, but we must(!) avoid directory
+-				 * aliasing */
++				 * aliasing. This drops inode->i_lock */
+ 				actual = __d_unalias(inode, dentry, alias);
+ 			}
+ 			write_sequnlock(&rename_lock);
 
 
