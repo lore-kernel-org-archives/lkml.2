@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab2C3F4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 01:56:04 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:43758 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab2C3Fz5 (ORCPT
+	id S1753272Ab2C3GAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 02:00:33 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:14787 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2C3GA0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 01:55:57 -0400
-X-AuditID: cbfee61b-b7baeae000004fa7-24-4f754aeb3435
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: "'Liam Girdwood'" <lrg@ti.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-References: <1332130930.26765.2.camel@phoenix>
-In-reply-to: <1332130930.26765.2.camel@phoenix>
-Subject: RE: [PATCH RESEND 1/4] regulator: Fix setting new voltage in
- s5m8767_set_voltage
-Date: Fri, 30 Mar 2012 14:56:10 +0900
-Message-id: <03f801cd0e39$cec0d0c0$6c427240$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0Fh/Ok60trTR7hTEahgDgzKLfbcgIqchgw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Fri, 30 Mar 2012 02:00:26 -0400
+From: <gerg@uclinux.org>
+To: <dhowells@redhat.com>
+CC: linux-m68k@vger.kernel.org, uclinux-dev@uclinux.org, geert@linux-m68k.org,
+        linux-kernel@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>
+Subject: [PATCH] m68k: include asm/cmpxchg.h in our m68k atomic.h
+Date: Fri, 30 Mar 2012 15:52:09 +1000
+Message-ID: <1333086729-14263-1-git-send-email-gerg@uclinux.org>
+X-Mailer: git-send-email 1.5.5.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 1:22 AM, Axel Lin wrote:
-> Current code does not really update the register with new value, fix it.
-> I rename the variable i to sel for better readability.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+From: Greg Ungerer <gerg@uclinux.org>
 
-Acked-by: Sangbeom Kim <sbkim73@samsung.com>
+After commit 9ffc93f203c18a70623f21950f1dd473c9ec48cd ("Remove all
 
-Thanks for your fixing patch.
-Sangbeom.
+  CC      init/main.o
+In file included from include/linux/mm.h:15:0,
+                 from include/linux/ring_buffer.h:5,
+                 from include/linux/ftrace_event.h:4,
+                 from include/trace/syscall.h:6,
+                 from include/linux/syscalls.h:78,
+                 from init/main.c:16:
+include/linux/debug_locks.h: In function ‘__debug_locks_off’:
+include/linux/debug_locks.h:16:2: error: implicit declaration of function ‘xchg’
+
+There is no indirect inclusions of the new asm/cmpxchg.h for m68k here.
+Looking at most other architectures they include asm/cmpxchg.h in their
+asm/atomic.h. M68k currently does not do this. Including this in atomic.h
+fixes all m68k build problems.
+
+Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+---
+ arch/m68k/include/asm/atomic.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/m68k/include/asm/atomic.h b/arch/m68k/include/asm/atomic.h
+index 336e617..f4e32de 100644
+--- a/arch/m68k/include/asm/atomic.h
++++ b/arch/m68k/include/asm/atomic.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/irqflags.h>
++#include <asm/cmpxchg.h>
+ 
+ /*
+  * Atomic operations that C can't guarantee us.  Useful for
+-- 
+1.7.0.4
 
