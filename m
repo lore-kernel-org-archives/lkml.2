@@ -1,71 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933895Ab2C3KWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:22:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58966 "EHLO bear.ext.ti.com"
+	id S933681Ab2C3KWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:22:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58957 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933381Ab2C3KUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:20:33 -0400
+	id S933768Ab2C3KUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 06:20:25 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <spi-devel-general@lists.sourceforge.net>
 CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <b-cousson@ti.com>,
         Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv3 5/6] spi: omap2-mcspi: add support for pm_runtime autosuspend
-Date: Fri, 30 Mar 2012 15:50:21 +0530
-Message-ID: <1333102822-17171-6-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv3 1/6] spi/omap: Remove bus_num usage for instance index
+Date: Fri, 30 Mar 2012 15:50:03 +0530
+Message-ID: <1333102808-17127-2-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1333102822-17171-1-git-send-email-shubhrajyoti@ti.com>
-References: <1333102822-17171-1-git-send-email-shubhrajyoti@ti.com>
+In-Reply-To: <1333102808-17127-1-git-send-email-shubhrajyoti@ti.com>
+References: <1333102808-17127-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for configuring the omap2-mcspi driver use autosuspend for
-runtime power management. This can reduce the latency in starting an
-spi transfer by not suspending the device immediately following
-completion of a transfer. If another transfer then takes place before
-the autosuspend timeout (2 secs), the call to resume the device can
-return immediately saving some save/ restore cycles.
+From: Benoit Cousson <b-cousson@ti.com>
 
-Acked-by: Govindraj.R <govindraj.raja@ti.com>
+bus_num was used to reference the mcspi controller instance in a fixed array.
+Remove this array and store this information directly inside drvdata structure.
+
+bus_num is now just set if the pdev->id is present or with -1 for dynamic
+allocation by SPI core, but the driver does not access it anymore.
+
+Clean some bad comments format, and remove un-needed space.
+
+Signed-off-by: Benoit Cousson <b-cousson@ti.com>
+[Cleanup the OMAP2_MCSPI_MAX_CTRL macro as it is not needed anymore]
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/spi/spi-omap2-mcspi.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/spi/spi-omap2-mcspi.c |   75 ++++++++++++++++++----------------------
+ 1 files changed, 34 insertions(+), 41 deletions(-)
 
 diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 1907ed2..0b0da2f 100644
+index bb9274c..7785091 100644
 --- a/drivers/spi/spi-omap2-mcspi.c
 +++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -44,6 +44,7 @@
- #include <plat/mcspi.h>
+@@ -45,9 +45,6 @@
  
  #define OMAP2_MCSPI_MAX_FREQ		48000000
-+#define SPI_AUTOSUSPEND_TIMEOUT		2000
  
+-/* OMAP2 has 3 SPI controllers, while OMAP3 has 4 */
+-#define OMAP2_MCSPI_MAX_CTRL 		4
+-
  #define OMAP2_MCSPI_REVISION		0x00
  #define OMAP2_MCSPI_SYSSTATUS		0x14
-@@ -265,7 +266,8 @@ static void omap2_mcspi_restore_ctx(struct omap2_mcspi *mcspi)
+ #define OMAP2_MCSPI_IRQSTATUS		0x18
+@@ -111,6 +108,16 @@ struct omap2_mcspi_dma {
+ #define DMA_MIN_BYTES			160
+ 
+ 
++/*
++ * Used for context save and restore, structure members to be updated whenever
++ * corresponding registers are modified.
++ */
++struct omap2_mcspi_regs {
++	u32 modulctrl;
++	u32 wakeupenable;
++	struct list_head cs;
++};
++
+ struct omap2_mcspi {
+ 	struct work_struct	work;
+ 	/* lock protects queue and registers */
+@@ -122,8 +129,9 @@ struct omap2_mcspi {
+ 	unsigned long		phys;
+ 	/* SPI1 has 4 channels, while SPI2 has 2 */
+ 	struct omap2_mcspi_dma	*dma_channels;
+-	struct  device		*dev;
++	struct device		*dev;
+ 	struct workqueue_struct *wq;
++	struct omap2_mcspi_regs ctx;
+ };
+ 
+ struct omap2_mcspi_cs {
+@@ -135,17 +143,6 @@ struct omap2_mcspi_cs {
+ 	u32			chconf0;
+ };
+ 
+-/* used for context save and restore, structure members to be updated whenever
+- * corresponding registers are modified.
+- */
+-struct omap2_mcspi_regs {
+-	u32 modulctrl;
+-	u32 wakeupenable;
+-	struct list_head cs;
+-};
+-
+-static struct omap2_mcspi_regs omap2_mcspi_ctx[OMAP2_MCSPI_MAX_CTRL];
+-
+ #define MOD_REG_BIT(val, mask, set) do { \
+ 	if (set) \
+ 		val |= mask; \
+@@ -236,9 +233,12 @@ static void omap2_mcspi_force_cs(struct spi_device *spi, int cs_active)
+ 
+ static void omap2_mcspi_set_master_mode(struct spi_master *master)
+ {
++	struct omap2_mcspi	*mcspi = spi_master_get_devdata(master);
++	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
+ 	u32 l;
+ 
+-	/* setup when switching from (reset default) slave mode
++	/*
++	 * Setup when switching from (reset default) slave mode
+ 	 * to single-channel master mode
+ 	 */
+ 	l = mcspi_read_reg(master, OMAP2_MCSPI_MODULCTRL);
+@@ -247,24 +247,20 @@ static void omap2_mcspi_set_master_mode(struct spi_master *master)
+ 	MOD_REG_BIT(l, OMAP2_MCSPI_MODULCTRL_SINGLE, 1);
+ 	mcspi_write_reg(master, OMAP2_MCSPI_MODULCTRL, l);
+ 
+-	omap2_mcspi_ctx[master->bus_num - 1].modulctrl = l;
++	ctx->modulctrl = l;
+ }
+ 
+ static void omap2_mcspi_restore_ctx(struct omap2_mcspi *mcspi)
+ {
+-	struct spi_master *spi_cntrl;
+-	struct omap2_mcspi_cs *cs;
+-	spi_cntrl = mcspi->master;
++	struct spi_master	*spi_cntrl = mcspi->master;
++	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
++	struct omap2_mcspi_cs	*cs;
+ 
+ 	/* McSPI: context restore */
+-	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_MODULCTRL,
+-			omap2_mcspi_ctx[spi_cntrl->bus_num - 1].modulctrl);
++	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_MODULCTRL, ctx->modulctrl);
++	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_WAKEUPENABLE, ctx->wakeupenable);
+ 
+-	mcspi_write_reg(spi_cntrl, OMAP2_MCSPI_WAKEUPENABLE,
+-			omap2_mcspi_ctx[spi_cntrl->bus_num - 1].wakeupenable);
+-
+-	list_for_each_entry(cs, &omap2_mcspi_ctx[spi_cntrl->bus_num - 1].cs,
+-			node)
++	list_for_each_entry(cs, &ctx->cs, node)
+ 		__raw_writel(cs->chconf0, cs->base + OMAP2_MCSPI_CHCONF0);
  }
  static void omap2_mcspi_disable_clocks(struct omap2_mcspi *mcspi)
+@@ -777,7 +773,8 @@ static int omap2_mcspi_request_dma(struct spi_device *spi)
+ static int omap2_mcspi_setup(struct spi_device *spi)
  {
--	pm_runtime_put_sync(mcspi->dev);
-+	pm_runtime_mark_last_busy(mcspi->dev);
-+	pm_runtime_put_autosuspend(mcspi->dev);
- }
+ 	int			ret;
+-	struct omap2_mcspi	*mcspi;
++	struct omap2_mcspi	*mcspi = spi_master_get_devdata(spi->master);
++	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
+ 	struct omap2_mcspi_dma	*mcspi_dma;
+ 	struct omap2_mcspi_cs	*cs = spi->controller_state;
  
- static int omap2_mcspi_enable_clocks(struct omap2_mcspi *mcspi)
-@@ -1212,6 +1214,8 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
- 	if (status < 0)
- 		goto dma_chnl_free;
+@@ -787,7 +784,6 @@ static int omap2_mcspi_setup(struct spi_device *spi)
+ 		return -EINVAL;
+ 	}
  
-+	pm_runtime_use_autosuspend(&pdev->dev);
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
- 	pm_runtime_enable(&pdev->dev);
+-	mcspi = spi_master_get_devdata(spi->master);
+ 	mcspi_dma = &mcspi->dma_channels[spi->chip_select];
  
- 	if (status || omap2_mcspi_master_setup(mcspi) < 0)
+ 	if (!cs) {
+@@ -799,8 +795,7 @@ static int omap2_mcspi_setup(struct spi_device *spi)
+ 		cs->chconf0 = 0;
+ 		spi->controller_state = cs;
+ 		/* Link this to context save list */
+-		list_add_tail(&cs->node,
+-			&omap2_mcspi_ctx[mcspi->master->bus_num - 1].cs);
++		list_add_tail(&cs->node, &ctx->cs);
+ 	}
+ 
+ 	if (mcspi_dma->dma_rx_channel == -1
+@@ -1053,8 +1048,9 @@ static int omap2_mcspi_transfer(struct spi_device *spi, struct spi_message *m)
+ static int __init omap2_mcspi_master_setup(struct omap2_mcspi *mcspi)
+ {
+ 	struct spi_master	*master = mcspi->master;
++	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
+ 	u32			tmp;
+-	int ret = 0;
++	int			ret = 0;
+ 
+ 	ret = omap2_mcspi_enable_clocks(mcspi);
+ 	if (ret < 0)
+@@ -1062,7 +1058,7 @@ static int __init omap2_mcspi_master_setup(struct omap2_mcspi *mcspi)
+ 
+ 	tmp = OMAP2_MCSPI_WAKEUPENABLE_WKEN;
+ 	mcspi_write_reg(master, OMAP2_MCSPI_WAKEUPENABLE, tmp);
+-	omap2_mcspi_ctx[master->bus_num - 1].wakeupenable = tmp;
++	ctx->wakeupenable = tmp;
+ 
+ 	omap2_mcspi_set_master_mode(master);
+ 	omap2_mcspi_disable_clocks(mcspi);
+@@ -1109,7 +1105,6 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+ 	struct omap2_mcspi	*mcspi;
+ 	struct resource		*r;
+ 	int			status = 0, i;
+-	char			wq_name[20];
+ 	u32			regs_offset = 0;
+ 	static int		bus_num = 1;
+ 	struct device_node	*node = pdev->dev.of_node;
+@@ -1150,8 +1145,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+ 	mcspi = spi_master_get_devdata(master);
+ 	mcspi->master = master;
+ 
+-	sprintf(wq_name, "omap2_mcspi/%d", master->bus_num);
+-	mcspi->wq = alloc_workqueue(wq_name, WQ_MEM_RECLAIM, 1);
++	mcspi->wq = alloc_workqueue(dev_name(&pdev->dev), WQ_MEM_RECLAIM, 1);
+ 	if (mcspi->wq == NULL) {
+ 		status = -ENOMEM;
+ 		goto free_master;
+@@ -1184,7 +1178,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&mcspi->lock);
+ 	INIT_LIST_HEAD(&mcspi->msg_queue);
+-	INIT_LIST_HEAD(&omap2_mcspi_ctx[master->bus_num - 1].cs);
++	INIT_LIST_HEAD(&mcspi->ctx.cs);
+ 
+ 	mcspi->dma_channels = kcalloc(master->num_chipselect,
+ 			sizeof(struct omap2_mcspi_dma),
+@@ -1291,13 +1285,12 @@ static int omap2_mcspi_resume(struct device *dev)
+ {
+ 	struct spi_master	*master = dev_get_drvdata(dev);
+ 	struct omap2_mcspi	*mcspi = spi_master_get_devdata(master);
+-	struct omap2_mcspi_cs *cs;
++	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
++	struct omap2_mcspi_cs	*cs;
+ 
+ 	omap2_mcspi_enable_clocks(mcspi);
+-	list_for_each_entry(cs, &omap2_mcspi_ctx[master->bus_num - 1].cs,
+-			    node) {
++	list_for_each_entry(cs, &ctx->cs, node) {
+ 		if ((cs->chconf0 & OMAP2_MCSPI_CHCONF_FORCE) == 0) {
+-
+ 			/*
+ 			 * We need to toggle CS state for OMAP take this
+ 			 * change in account.
 -- 
 1.7.1
 
