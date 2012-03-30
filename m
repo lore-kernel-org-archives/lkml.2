@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934087Ab2C3LSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:18:50 -0400
+	id S934132Ab2C3LTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:19:00 -0400
 Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
 	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760210Ab2C3LSc (ORCPT
+	with ESMTP id S933701Ab2C3LSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:18:32 -0400
+	Fri, 30 Mar 2012 07:18:34 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Corentin Chary <corentincj@iksaif.net>,
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 57/76] ACPI / Video: blacklist some samsung laptops
-Date: Fri, 30 Mar 2012 06:14:00 -0400
-Message-id: <0e569b120d19c35dcc4f5549956cd884c3241270.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 54/76] ACPI: Ensure thermal limits match CPU frequencies
+Date: Fri, 30 Mar 2012 06:13:57 -0400
+Message-id: <c68da7bebfc2dffc2684a62c3e8d055fd54a90ad.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,88 +25,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corentin Chary <corentincj@iksaif.net>
+From: Matthew Garrett <mjg@redhat.com>
 
-On these laptops, the ACPI video is not functional, and very unlikely
-to be fixed by the vendor. Note that intel_backlight works for some
-of these laptops, and the backlight from samsung-laptop always work.
+The ACPI thermal management code supports slowing down a CPU when it's
+overheating. Right now that's done by choosing to run it at 100%, 75%, 50%
+or 25% of full speed. However, most CPUs do not allow an arbitrary
+frequency to be set and so will run at the first frequency below that value.
+This doesn't match the intent of the specification, which is to drop the
+frequency state by state until the temperature stabalises. Fix this up
+so it uses actual frequencies rather than percentages.
 
-The good news is that newer laptops have functional ACPI video device
-and won't end up growing this list.
-
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+Reported by: Gene Snider <snider6982@comcast.net>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
+ drivers/acpi/processor_thermal.c |   45 +++++++++++++++++++++-----------------
+ 1 file changed, 25 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index f3f0fe7..b6f6979 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
+diff --git a/drivers/acpi/processor_thermal.c b/drivers/acpi/processor_thermal.c
+index 3b599ab..1fbf539 100644
+--- a/drivers/acpi/processor_thermal.c
++++ b/drivers/acpi/processor_thermal.c
+@@ -51,10 +51,8 @@ ACPI_MODULE_NAME("processor_thermal");
+  * _any_ cpufreq driver and not only the acpi-cpufreq driver.
+  */
+ 
+-#define CPUFREQ_THERMAL_MIN_STEP 0
+-#define CPUFREQ_THERMAL_MAX_STEP 3
+ 
+-static DEFINE_PER_CPU(unsigned int, cpufreq_thermal_reduction_pctg);
++static DEFINE_PER_CPU(unsigned int, cpufreq_thermal_limit_state);
+ static unsigned int acpi_thermal_cpufreq_is_init = 0;
+ 
+ static int cpu_has_cpufreq(unsigned int cpu)
+@@ -69,19 +67,19 @@ static int acpi_thermal_cpufreq_notifier(struct notifier_block *nb,
+ 					 unsigned long event, void *data)
+ {
+ 	struct cpufreq_policy *policy = data;
+-	unsigned long max_freq = 0;
++	int state = per_cpu(cpufreq_thermal_limit_state, policy->cpu);
++	struct cpufreq_frequency_table *table;
+ 
+ 	if (event != CPUFREQ_ADJUST)
+-		goto out;
++		return 0;
++
++	table = cpufreq_frequency_get_table(policy->cpu);
+ 
+-	max_freq = (
+-	    policy->cpuinfo.max_freq *
+-	    (100 - per_cpu(cpufreq_thermal_reduction_pctg, policy->cpu) * 20)
+-	) / 100;
++	if (!table)
++		return 0;
+ 
+-	cpufreq_verify_within_limits(policy, 0, max_freq);
++	cpufreq_verify_within_limits(policy, 0, table[state].frequency);
+ 
+-      out:
+ 	return 0;
  }
  
-+/* Force to use vendor driver when the ACPI device is known to be
-+ * buggy */
-+static int video_detect_force_vendor(const struct dmi_system_id *d)
-+{
-+	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
-+	return 0;
-+}
+@@ -91,10 +89,21 @@ static struct notifier_block acpi_thermal_cpufreq_notifier_block = {
+ 
+ static int cpufreq_get_max_state(unsigned int cpu)
+ {
++	int count = 0;
++	struct cpufreq_frequency_table *table;
 +
-+static struct dmi_system_id video_detect_dmi_table[] = {
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N145P/N250P/N260P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150/N210/N220",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "NF110/NF210/NF310",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
-+		DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
-+		},
-+	},
-+};
+ 	if (!cpu_has_cpufreq(cpu))
+ 		return 0;
+ 
+-	return CPUFREQ_THERMAL_MAX_STEP;
++	table = cpufreq_frequency_get_table(cpu);
 +
- /*
-  * Returns the video capabilities of a specific ACPI graphics device
-  *
-@@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
- 		 *		ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
- 		 *}
- 		 */
++	if (!table)
++		return 0;
 +
-+		dmi_check_system(video_detect_dmi_table);
- 	} else {
- 		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
- 		if (ACPI_FAILURE(status)) {
++	while (table[count].frequency != CPUFREQ_TABLE_END)
++		count++;
++
++	return count;
+ }
+ 
+ static int cpufreq_get_cur_state(unsigned int cpu)
+@@ -102,7 +111,7 @@ static int cpufreq_get_cur_state(unsigned int cpu)
+ 	if (!cpu_has_cpufreq(cpu))
+ 		return 0;
+ 
+-	return per_cpu(cpufreq_thermal_reduction_pctg, cpu);
++	return per_cpu(cpufreq_thermal_limit_state, cpu);
+ }
+ 
+ static int cpufreq_set_cur_state(unsigned int cpu, int state)
+@@ -110,7 +119,7 @@ static int cpufreq_set_cur_state(unsigned int cpu, int state)
+ 	if (!cpu_has_cpufreq(cpu))
+ 		return 0;
+ 
+-	per_cpu(cpufreq_thermal_reduction_pctg, cpu) = state;
++	per_cpu(cpufreq_thermal_limit_state, cpu) = state;
+ 	cpufreq_update_policy(cpu);
+ 	return 0;
+ }
+@@ -121,7 +130,7 @@ void acpi_thermal_cpufreq_init(void)
+ 
+ 	for (i = 0; i < nr_cpu_ids; i++)
+ 		if (cpu_present(i))
+-			per_cpu(cpufreq_thermal_reduction_pctg, i) = 0;
++			per_cpu(cpufreq_thermal_limit_state, i) = 0;
+ 
+ 	i = cpufreq_register_notifier(&acpi_thermal_cpufreq_notifier_block,
+ 				      CPUFREQ_POLICY_NOTIFIER);
+@@ -169,15 +178,11 @@ int acpi_processor_get_limit_info(struct acpi_processor *pr)
+ 	return 0;
+ }
+ 
+-/* thermal coolign device callbacks */
++/* thermal cooling device callbacks */
+ static int acpi_processor_max_state(struct acpi_processor *pr)
+ {
+ 	int max_state = 0;
+ 
+-	/*
+-	 * There exists four states according to
+-	 * cpufreq_thermal_reduction_ptg. 0, 1, 2, 3
+-	 */
+ 	max_state += cpufreq_get_max_state(pr->id);
+ 	if (pr->flags.throttling)
+ 		max_state += (pr->throttling.state_count -1);
 -- 
 1.7.10.rc2.19.gfae9d
 
