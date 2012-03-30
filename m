@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936575Ab2C3WiD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:38:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935388Ab2C3VIn (ORCPT
+	id S936582Ab2C3WiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:38:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52476 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935313Ab2C3VIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:08:43 -0400
-Message-Id: <20120330195737.650177116@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:08:41 -0400
+Message-Id: <20120330195737.492447288@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:59:10 -0700
+Date: Fri, 30 Mar 2012 12:59:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Takashi Yoshii <takashi.yoshii.zj@renesas.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [ 108/108] serial: sh-sci: fix a race of DMA submit_tx on transfer
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 107/108] nfsd: dont allow zero length strings in cache_parse()
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,88 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yoshii Takashi <takashi.yoshii.zj@renesas.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 49d4bcaddca977fffdea8b0b71f6e5da96dac78e upstream.
+commit 6d8d17499810479eabd10731179c04b2ca22152f upstream.
 
-When DMA is enabled, sh-sci transfer begins with
- uart_start()
-  sci_start_tx()
-    if (cookie_tx < 0) schedule_work()
-Then, starts DMA when wq scheduled, -- (A)
- process_one_work()
-  work_fn_rx()
-   cookie_tx = desc->submit_tx()
-And finishes when DMA transfer ends, -- (B)
- sci_dma_tx_complete()
-  async_tx_ack()
-  cookie_tx = -EINVAL
-  (possible another schedule_work())
+There is no point in passing a zero length string here and quite a
+few of that cache_parse() implementations will Oops if count is
+zero.
 
-This A to B sequence is not reentrant, since controlling variables
-(for example, cookie_tx above) are not queues nor lists. So, they
-must be invoked as A B A B..., otherwise results in kernel crash.
-
-To ensure the sequence, sci_start_tx() seems to test if cookie_tx < 0
-(represents "not used") to call schedule_work().
-But cookie_tx will not be set (to a cookie, also means "used") until
-in the middle of work queue scheduled function work_fn_tx().
-
-This gap between the test and set allows the breakage of the sequence
-under the very frequently call of uart_start().
-Another gap between async_tx_ack() and another schedule_work() results
-in the same issue, too.
-
-This patch introduces a new condition "cookie_tx == 0" just to mark
-it is "busy" and assign it within spin-locked region to fill the gaps.
-
-Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
-Reviewed-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/sh-sci.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ net/sunrpc/cache.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/tty/serial/sh-sci.c
-+++ b/drivers/tty/serial/sh-sci.c
-@@ -953,17 +953,20 @@ static void sci_dma_tx_complete(void *ar
- 	port->icount.tx += sg_dma_len(&s->sg_tx);
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -828,6 +828,8 @@ static ssize_t cache_do_downcall(char *k
+ {
+ 	ssize_t ret;
  
- 	async_tx_ack(s->desc_tx);
--	s->cookie_tx = -EINVAL;
- 	s->desc_tx = NULL;
- 
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(port);
- 
- 	if (!uart_circ_empty(xmit)) {
-+		s->cookie_tx = 0;
- 		schedule_work(&s->work_tx);
--	} else if (port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
--		u16 ctrl = sci_in(port, SCSCR);
--		sci_out(port, SCSCR, ctrl & ~SCSCR_TIE);
-+	} else {
-+		s->cookie_tx = -EINVAL;
-+		if (port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
-+			u16 ctrl = sci_in(port, SCSCR);
-+			sci_out(port, SCSCR, ctrl & ~SCSCR_TIE);
-+		}
- 	}
- 
- 	spin_unlock_irqrestore(&port->lock, flags);
-@@ -1225,8 +1228,10 @@ static void sci_start_tx(struct uart_por
- 	}
- 
- 	if (s->chan_tx && !uart_circ_empty(&s->port.state->xmit) &&
--	    s->cookie_tx < 0)
-+	    s->cookie_tx < 0) {
-+		s->cookie_tx = 0;
- 		schedule_work(&s->work_tx);
-+	}
- #endif
- 
- 	if (!s->chan_tx || port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
++	if (count == 0)
++		return -EINVAL;
+ 	if (copy_from_user(kaddr, buf, count))
+ 		return -EFAULT;
+ 	kaddr[count] = '\0';
 
 
