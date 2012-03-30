@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab2C3Pm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:42:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59083 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab2C3Pmu (ORCPT
+	id S1760987Ab2C3PoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:44:23 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43689 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab2C3PoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:42:50 -0400
-Date: Fri, 30 Mar 2012 08:42:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com
-Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
-Message-ID: <20120330154246.GE28934@google.com>
-References: <1332368265-21586-1-git-send-email-tj@kernel.org>
- <4F75AA1F.9020007@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F75AA1F.9020007@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 30 Mar 2012 11:44:17 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [RFC PATCH v2 00/21] loop: Issue O_DIRECT aio using bio_vec
+Date: Fri, 30 Mar 2012 10:43:27 -0500
+Message-Id: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F75D4D0.00C8,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Li.
+I apologize for sending this out so close to the start of the LSF-MM
+Summit. I've been trying to get some performance numbers worthy of
+sharing, but other work has been getting in the way. Those will follow,
+but I wanted everyone to get a chance to see the current state of the
+patchset.
 
-On Fri, Mar 30, 2012 at 08:42:07PM +0800, Li Zefan wrote:
-> > This patch replaces cgroup file interface with cftype based one which
-> > allows dynamic additions and removals of cftype arrays whether the
-> > target subsystem is attached or not.  This can be used to make subsys
-> > rebinding via remount work properly but I intentionally avoided doing
-> > that at the moment.
-> 
-> What's the problem with remount?
+This patchset was begun by Zach Brown and was originally submitted for
+review in October, 2009. Feedback was positive, and I have picked up
+where he left off, porting his patches to 3.3 and adding support more
+file systems.
 
-Subsys can't be changed if any non-root cgroup exists.
+http://www.spinics.net/lists/linux-fsdevel/msg27514.html
 
-> and is it important enough that it should be fixed even the feature
-> is marked as deprecated?
+This patch series adds a kernel interface to fs/aio.c so that kernel code can
+issue concurrent asynchronous IO to file systems.  It adds an aio command and
+file system methods which specify io memory with pages instead of userspace
+addresses.
 
-I'm not sure.  We *might* need it during multi-mount -> single-mount
-transition depending on how that's implemented, so the "at the moment"
-qualifier.  It probably won't be fixed but I'm not fully sure.
+This series was written to reduce the current overhead loop imposes by
+performing synchronus buffered file system IO from a kernel thread.  These
+patches turn loop into a light weight layer that translates bios into iocbs.
 
-> > This makes cgroup population simpler for controllers and will be used
-> > to allow controllers to be more dynamic.  e.g. blkio subsys has
-> > sub-policies which may come and go while blkio subsys is attached and
-> > it currently uses fixed set of files which stays blank if not in use.
-> 
-> Dynamic cgroup files was mentioned before. The scenario in mind was blkio
-> control files can be added/removed automatically as devices come and ago.
-> 
-> So this time blkio subsystem is really going to be made more dynamic
-> soon?
+The downside of this is that in its current implementation, performance takes
+a big hit for non-synchonous I/O, since the underlying page cache is bypassed.
+The tradeoff is that all writes to the loop device make it to the underlying
+media, making loop-mounted file systems recoverable.
 
-Patchset already posted.
+Changes since version 1:
 
-  http://thread.gmane.org/gmane.linux.kernel.cgroups/1376
+The biggest change since my first posting is that I took Christoph Hellwig's
+advice and changed the direct_IO interface to use struct iov_iter, instead
+of duplicating code to handle both struct iovec and struct biovec separately.
+This really simplified the patchset, and made support for more filesystems
+trivial.
 
-Thanks.
+I also reworked the nfs patch to coalesce the bvec pages into larger I/Os,
+and fixed a major oversight in btrfs.
+
+
+Dave Kleikamp (7):
+  fuse: convert fuse to use iov_iter_copy_[to|from]_user
+  dio: Convert direct_IO to use iov_iter
+  dio: add bio_vec support to __blockdev_direct_IO()
+  ext4: add support for read_iter and write_iter
+  nfs: add support for read_iter, write_iter
+  btrfs: add support for read_iter and write_iter
+  fs: add read_iter and write_iter to more file systems
+
+Zach Brown (14):
+  iov_iter: move into its own file
+  iov_iter: add copy_to_user support
+  iov_iter: hide iovec details behind ops function pointers
+  iov_iter: add bvec support
+  iov_iter: add a shorten call
+  iov_iter: let callers extract iovecs and bio_vecs
+  dio: create a dio_aligned() helper function
+  fs: pull iov_iter use higher up the stack
+  aio: add aio_kernel_() interface
+  aio: add aio support for iov_iter arguments
+  bio: add bvec_length(), like iov_length()
+  loop: use aio to perform io on the underlying file
+  ext3: add support for .read_iter and .write_iter
+  ocfs2: add support for read_iter, write_iter, and direct_IO_bvec
+
+ Documentation/filesystems/Locking |    4 +-
+ Documentation/filesystems/vfs.txt |    4 +-
+ drivers/block/loop.c              |   55 ++++-
+ fs/9p/vfs_addr.c                  |    8 +-
+ fs/9p/vfs_file.c                  |    4 +
+ fs/aio.c                          |  156 +++++++++++++
+ fs/block_dev.c                    |    8 +-
+ fs/btrfs/file.c                   |   55 +++--
+ fs/btrfs/inode.c                  |   70 +++---
+ fs/ceph/addr.c                    |    3 +-
+ fs/direct-io.c                    |  253 ++++++++++++++-------
+ fs/ext2/file.c                    |    2 +
+ fs/ext2/inode.c                   |    8 +-
+ fs/ext3/file.c                    |    2 +
+ fs/ext3/inode.c                   |   15 +-
+ fs/ext4/ext4.h                    |    3 +-
+ fs/ext4/file.c                    |    2 +
+ fs/ext4/indirect.c                |   16 +-
+ fs/ext4/inode.c                   |   23 +-
+ fs/fat/file.c                     |    2 +
+ fs/fat/inode.c                    |   10 +-
+ fs/fuse/file.c                    |   29 +--
+ fs/gfs2/aops.c                    |    7 +-
+ fs/hfs/inode.c                    |    9 +-
+ fs/hfsplus/inode.c                |    8 +-
+ fs/jfs/file.c                     |    2 +
+ fs/jfs/inode.c                    |    7 +-
+ fs/nfs/direct.c                   |  454 +++++++++++++++++++++++++++----------
+ fs/nfs/file.c                     |   51 +++--
+ fs/nilfs2/file.c                  |    2 +
+ fs/nilfs2/inode.c                 |    8 +-
+ fs/ocfs2/aops.c                   |    8 +-
+ fs/ocfs2/file.c                   |   82 +++++--
+ fs/ocfs2/ocfs2_trace.h            |    6 +-
+ fs/reiserfs/file.c                |    2 +
+ fs/reiserfs/inode.c               |    7 +-
+ fs/xfs/xfs_aops.c                 |   11 +-
+ include/linux/aio.h               |   14 ++
+ include/linux/aio_abi.h           |    2 +
+ include/linux/bio.h               |    8 +
+ include/linux/fs.h                |  131 +++++++++--
+ include/linux/loop.h              |    1 +
+ include/linux/nfs_fs.h            |    9 +-
+ mm/Makefile                       |    2 +-
+ mm/filemap.c                      |  388 +++++++++++++------------------
+ mm/iov-iter.c                     |  377 ++++++++++++++++++++++++++++++
+ 46 files changed, 1677 insertions(+), 651 deletions(-)
+ create mode 100644 mm/iov-iter.c
 
 -- 
-tejun
+1.7.9.5
+
