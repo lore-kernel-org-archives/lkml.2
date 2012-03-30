@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761399Ab2C3Ufx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:35:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40921 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756964Ab2C3Ufw (ORCPT
+	id S1761450Ab2C3UhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:37:12 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:39658 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761432Ab2C3UhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:35:52 -0400
-Date: Fri, 30 Mar 2012 22:35:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: Sasha Levin <levinsasha928@gmail.com>, arnd@arndb.de,
-        viro@zeniv.linux.org.uk, davej@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
-In-Reply-To: <20120330164913.GA19946@kroah.com>
-Message-ID: <alpine.LFD.2.02.1203302225420.2542@ionos>
-References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com> <20120330153013.GC18488@kroah.com> <CA+1xoqdZnxcWNpL-03xsR+RDcz3=aRbx2LbR6mTJ_gCmwp-0Rw@mail.gmail.com> <20120330164913.GA19946@kroah.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 30 Mar 2012 16:37:09 -0400
+Message-ID: <4F761972.9050404@xenotime.net>
+Date: Fri, 30 Mar 2012 13:37:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1171010687-1333139747=:2542"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        KYiatof }elechovski <giecrilj@stegny.2a.pl>
+Subject: [PATCH 3/8] Documentation: sysrq: Crutcher Dunnavant is unavailable
+References: <4F761580.3020807@xenotime.net>
+In-Reply-To: <4F761580.3020807@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
---8323328-1171010687-1333139747=:2542
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+sysrq.txt: Crutcher Dunnavant is unavailable
 
-On Fri, 30 Mar 2012, Greg KH wrote:
-> On Fri, Mar 30, 2012 at 07:37:37PM +0300, Sasha Levin wrote:
-> > On Fri, Mar 30, 2012 at 6:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > On Fri, Mar 30, 2012 at 01:04:27PM -0400, Sasha Levin wrote:
-> > >> There are no size checks in kmsg_write(), and we try allocating enough
-> > >> memory to store everything userspace gave us, which may be too much for
-> > >> kmalloc to allocate.
-> > >
-> > > Really?  Have you seen this fail?  As only root can do this, is this
-> > > really a problem?
-> > 
-> > Only root, and a whole bunch of management software that dumps data
-> > into /dev/kmsg (systemd and friends).
-> 
-> Running as root, do any of these cause problems by asking for too much
-> memory here? 
+Reported-by: KÂ¿iÂ¿tof Â¿elechovski <giecrilj@stegny.2a.pl>
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ Documentation/sysrq.txt |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Running as root is not a guarantee for correctness. So the syscall
-should cope with bogus requests from user space and not rely on the
-sanity of anything. Looking at the main users which polute dmesg I'm
-inclined to assume insanity in the first place.
-
-As Sasha pointed out there is either the variant to use vmalloc and
-grant any write size or limit the size to something sensible. Though
-given the users of this, coming up with something sensible might be a
-problem.
-
-> Is this something that needs to be addressed now, and in
-> stable kernels, or can it wait for 3.5?
-
-Yes, it want's to be addressed now and it want's to be in stable as
-well. syscalls which have no bound checking are evil, no matter what.
+--- lnx-33.orig/Documentation/sysrq.txt
++++ lnx-33/Documentation/sysrq.txt
+@@ -241,9 +241,8 @@ command you are interested in.
  
-Thanks,
-
-	tglx
---8323328-1171010687-1333139747=:2542--
+ *  I have more questions, who can I ask?
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-And I'll answer any questions about the registration system you got, also
+-responding as soon as possible.
+- -Crutcher
++Just ask them on the linux-kernel mailing list:
++	linux-kernel@vger.kernel.org
+ 
+ *  Credits
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
