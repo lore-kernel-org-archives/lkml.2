@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935470Ab2C3Wlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:41:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935263Ab2C3VHy (ORCPT
+	id S935473Ab2C3WmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:42:04 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49634 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935222Ab2C3VHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:07:54 -0400
-Message-Id: <20120330195735.334705775@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:51 -0400
+Message-Id: <20120330195735.193500018@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:54 -0700
+Date: Fri, 30 Mar 2012 12:58:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [ 092/108] slub: Do not hold slub_lock when calling sysfs_slab_add()
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
+        Dave Chinner <dchinner@redhat.com>, Ben Myers <bpm@sgi.com>
+Subject: [ 091/108] xfs: Fix oops on IO error during xlog_recover_process_iunlinks()
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Lameter <cl@linux.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 66c4c35c6bc5a1a452b024cf0364635b28fd94e4 upstream.
+commit d97d32edcd732110758799ae60af725e5110b3dc upstream.
 
-sysfs_slab_add() calls various sysfs functions that actually may
-end up in userspace doing all sorts of things.
+When an IO error happens during inode deletion run from
+xlog_recover_process_iunlinks() filesystem gets shutdown. Thus any subsequent
+attempt to read buffers fails. Code in xlog_recover_process_iunlinks() does not
+count with the fact that read of a buffer which was read a while ago can
+really fail which results in the oops on
+  agi = XFS_BUF_TO_AGI(agibp);
 
-Release the slub_lock after adding the kmem_cache structure to the list.
-At that point the address of the kmem_cache is not known so we are
-guaranteed exlusive access to the following modifications to the
-kmem_cache structure.
+Fix the problem by cleaning up the buffer handling in
+xlog_recover_process_iunlinks() as suggested by Dave Chinner. We release buffer
+lock but keep buffer reference to AG buffer. That is enough for buffer to stay
+pinned in memory and we don't have to call xfs_read_agi() all the time.
 
-If the sysfs_slab_add fails then reacquire the slub_lock to
-remove the kmem_cache structure from the list.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slub.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/xfs/xfs_log_recover.c |   33 +++++++++++----------------------
+ 1 file changed, 11 insertions(+), 22 deletions(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3439,13 +3439,14 @@ struct kmem_cache *kmem_cache_create(con
- 		if (kmem_cache_open(s, n,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
-+			up_write(&slub_lock);
- 			if (sysfs_slab_add(s)) {
-+				down_write(&slub_lock);
- 				list_del(&s->list);
- 				kfree(n);
- 				kfree(s);
- 				goto err;
- 			}
--			up_write(&slub_lock);
- 			return s;
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -3159,37 +3159,26 @@ xlog_recover_process_iunlinks(
+ 			 */
+ 			continue;
  		}
- 		kfree(n);
++		/*
++		 * Unlock the buffer so that it can be acquired in the normal
++		 * course of the transaction to truncate and free each inode.
++		 * Because we are not racing with anyone else here for the AGI
++		 * buffer, we don't even need to hold it locked to read the
++		 * initial unlinked bucket entries out of the buffer. We keep
++		 * buffer reference though, so that it stays pinned in memory
++		 * while we need the buffer.
++		 */
+ 		agi = XFS_BUF_TO_AGI(agibp);
++		xfs_buf_unlock(agibp);
+ 
+ 		for (bucket = 0; bucket < XFS_AGI_UNLINKED_BUCKETS; bucket++) {
+ 			agino = be32_to_cpu(agi->agi_unlinked[bucket]);
+ 			while (agino != NULLAGINO) {
+-				/*
+-				 * Release the agi buffer so that it can
+-				 * be acquired in the normal course of the
+-				 * transaction to truncate and free the inode.
+-				 */
+-				xfs_buf_relse(agibp);
+-
+ 				agino = xlog_recover_process_one_iunlink(mp,
+ 							agno, agino, bucket);
+-
+-				/*
+-				 * Reacquire the agibuffer and continue around
+-				 * the loop. This should never fail as we know
+-				 * the buffer was good earlier on.
+-				 */
+-				error = xfs_read_agi(mp, NULL, agno, &agibp);
+-				ASSERT(error == 0);
+-				agi = XFS_BUF_TO_AGI(agibp);
+ 			}
+ 		}
+-
+-		/*
+-		 * Release the buffer for the current agi so we can
+-		 * go on to the next one.
+-		 */
+-		xfs_buf_relse(agibp);
++		xfs_buf_rele(agibp);
+ 	}
+ 
+ 	mp->m_dmevmask = mp_dmevmask;
 
 
