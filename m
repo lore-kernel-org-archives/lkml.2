@@ -1,199 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761632Ab2C3XZx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:25:53 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:42878 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760278Ab2C3XZu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 19:25:50 -0400
-Message-Id: <201203302325.q2UNPm8j012403@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 30 Mar 2012 19:23:35 -0400
-Subject: [PATCH] tilepro ethernet driver: fix a few minor issues
-To: Chris Metcalf <cmetcalf@tilera.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 23:25:49.0011 (UTC) FILETIME=[70ACEA30:01CD0ECC]
+	id S1761751Ab2C3X04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:26:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29388 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760278Ab2C3X0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 19:26:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="123816027"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, tim.c.chen@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>, aarcange@redhat.com
+Subject: [PATCH] huge-memory: Use fast mm counters for transparent huge pages
+Date: Fri, 30 Mar 2012 16:26:21 -0700
+Message-Id: <1333149981-16195-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit fixes a number of issues seen with the driver:
+From: Andi Kleen <ak@linux.intel.com>
 
-- Improve handling of return credits to the hardware shim
-- Use skb_frag_size() appropriately
-- Add netpoll support to run console over UDP
+We found that the mm struct anon page counter cache line is much hotter
+with transparent huge pages compared to small pages.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Small pages use a special fast counter mechanism in task_struct, but huge pages
+didn't.  The huge pages are larger than the normal 64 entry threshold for the
+fast counter, so it cannot be directly used. Use a new special counter for huge
+pages to handle them efficiently.
+
+Any users just calculate the correct total.
+
+The only special case is transferring the large page count to small pages
+when splitting. I put it somewhat arbitarily into the tricky split
+sequence. Some review on this part is appreciated.
+
+[An alternative would be to not do that, but that could lead to
+negative counters. These should still give the correct result]
+
+Contains a fix for a problem found by Andrea in review.
+
+Cc: aarcange@redhat.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/net/ethernet/tile/tilepro.c |   75 +++++++++++++++++++++++------------
- 1 files changed, 50 insertions(+), 25 deletions(-)
+ fs/proc/task_mmu.c       |    3 ++-
+ include/linux/mm.h       |    3 ++-
+ include/linux/mm_types.h |    1 +
+ mm/huge_memory.c         |   16 ++++++++++++----
+ mm/oom_kill.c            |    3 ++-
+ 5 files changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
-index d9951af..eb4ea08 100644
---- a/drivers/net/ethernet/tile/tilepro.c
-+++ b/drivers/net/ethernet/tile/tilepro.c
-@@ -342,6 +342,21 @@ inline int __netio_fastio1(u32 fastio_index, u32 arg0)
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 7dcd2a2..0c261e9 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -78,7 +78,8 @@ unsigned long task_statm(struct mm_struct *mm,
+ 	*text = (PAGE_ALIGN(mm->end_code) - (mm->start_code & PAGE_MASK))
+ 								>> PAGE_SHIFT;
+ 	*data = mm->total_vm - mm->shared_vm;
+-	*resident = *shared + get_mm_counter(mm, MM_ANONPAGES);
++	*resident = *shared + get_mm_counter(mm, MM_ANONPAGES) + 
++		get_mm_counter(mm, MM_ANONPAGES_HUGE) * HPAGE_PMD_NR;
+ 	return mm->total_vm;
  }
  
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index ad8d314..26b281b 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1100,7 +1100,8 @@ static inline void dec_mm_counter(struct mm_struct *mm, int member)
+ static inline unsigned long get_mm_rss(struct mm_struct *mm)
+ {
+ 	return get_mm_counter(mm, MM_FILEPAGES) +
+-		get_mm_counter(mm, MM_ANONPAGES);
++		get_mm_counter(mm, MM_ANONPAGES) +
++		get_mm_counter(mm, MM_ANONPAGES_HUGE) * HPAGE_PMD_NR;
+ }
  
-+static void tile_net_return_credit(struct tile_net_cpu *info)
-+{
-+	struct tile_netio_queue *queue = &info->queue;
-+	netio_queue_user_impl_t *qup = &queue->__user_part;
-+
-+	/* Return four credits after every fourth packet. */
-+	if (--qup->__receive_credit_remaining == 0) {
-+		u32 interval = qup->__receive_credit_interval;
-+		qup->__receive_credit_remaining = interval;
-+		__netio_fastio_return_credits(qup->__fastio_index, interval);
-+	}
-+}
-+
-+
-+
- /*
-  * Provide a linux buffer to LIPP.
-  */
-@@ -864,19 +879,11 @@ static bool tile_net_poll_aux(struct tile_net_cpu *info, int index)
- 
- 		stats->rx_packets++;
- 		stats->rx_bytes += len;
--
--		if (small)
--			info->num_needed_small_buffers++;
--		else
--			info->num_needed_large_buffers++;
+ static inline unsigned long get_mm_hiwater_rss(struct mm_struct *mm)
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 3cc3062..4078b31 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -268,6 +268,7 @@ struct core_state {
+ enum {
+ 	MM_FILEPAGES,
+ 	MM_ANONPAGES,
++	MM_ANONPAGES_HUGE,
+ 	MM_SWAPENTS,
+ 	NR_MM_COUNTERS
+ };
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 91d3efb..b02abee 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -670,7 +670,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 		page_add_new_anon_rmap(page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		prepare_pmd_huge_pte(pgtable, mm);
+-		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
++		inc_mm_counter_fast(mm, MM_ANONPAGES_HUGE);
+ 		spin_unlock(&mm->page_table_lock);
  	}
  
--	/* Return four credits after every fourth packet. */
--	if (--qup->__receive_credit_remaining == 0) {
--		u32 interval = qup->__receive_credit_interval;
--		qup->__receive_credit_remaining = interval;
--		__netio_fastio_return_credits(qup->__fastio_index, interval);
--	}
-+	/* ISSUE: It would be nice to defer this until the packet has */
-+	/* actually been processed. */
-+	tile_net_return_credit(info);
+@@ -783,7 +783,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 	VM_BUG_ON(!PageHead(src_page));
+ 	get_page(src_page);
+ 	page_dup_rmap(src_page);
+-	add_mm_counter(dst_mm, MM_ANONPAGES, HPAGE_PMD_NR);
++	inc_mm_counter_fast(dst_mm, MM_ANONPAGES_HUGE);
  
- 	/* Consume this packet. */
- 	qup->__packet_receive_read = index2;
-@@ -1543,7 +1550,7 @@ static int tile_net_drain_lipp_buffers(struct tile_net_priv *priv)
+ 	pmdp_set_wrprotect(src_mm, addr, src_pmd);
+ 	pmd = pmd_mkold(pmd_wrprotect(pmd));
+@@ -1045,7 +1045,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+ 			page_remove_rmap(page);
+ 			VM_BUG_ON(page_mapcount(page) < 0);
+-			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
++			dec_mm_counter_fast(tlb->mm, MM_ANONPAGES_HUGE);
+ 			VM_BUG_ON(!PageHead(page));
+ 			spin_unlock(&tlb->mm->page_table_lock);
+ 			tlb_remove_page(tlb, page);
+@@ -1410,6 +1410,13 @@ static int __split_huge_page_map(struct page *page,
+ 	}
+ 	spin_unlock(&mm->page_table_lock);
  
- 	/* Drain all the LIPP buffers. */
- 	while (true) {
--		int buffer;
-+		unsigned int buffer;
- 
- 		/* NOTE: This should never fail. */
- 		if (hv_dev_pread(priv->hv_devhdl, 0, (HV_VirtAddr)&buffer,
-@@ -1707,7 +1714,7 @@ static unsigned int tile_net_tx_frags(lepp_frag_t *frags,
- 		if (!hash_default) {
- 			void *va = pfn_to_kaddr(pfn) + f->page_offset;
- 			BUG_ON(PageHighMem(skb_frag_page(f)));
--			finv_buffer_remote(va, f->size, 0);
-+			finv_buffer_remote(va, skb_frag_size(f), 0);
- 		}
- 
- 		cpa = ((phys_addr_t)pfn << PAGE_SHIFT) + f->page_offset;
-@@ -1735,8 +1742,8 @@ static unsigned int tile_net_tx_frags(lepp_frag_t *frags,
-  * Sometimes, if "sendfile()" requires copying, we will be called with
-  * "data" containing the header and payload, with "frags" being empty.
-  *
-- * In theory, "sh->nr_frags" could be 3, but in practice, it seems
-- * that this will never actually happen.
-+ * Sometimes, for example when using NFS over TCP, a single segment can
-+ * span 3 fragments, which must be handled carefully in LEPP.
-  *
-  * See "emulate_large_send_offload()" for some reference code, which
-  * does not handle checksumming.
-@@ -1844,10 +1851,8 @@ static int tile_net_tx_tso(struct sk_buff *skb, struct net_device *dev)
- 
- 	spin_lock_irqsave(&priv->eq_lock, irqflags);
- 
--	/*
--	 * Handle completions if needed to make room.
--	 * HACK: Spin until there is sufficient room.
--	 */
-+	/* Handle completions if needed to make room. */
-+	/* NOTE: Return NETDEV_TX_BUSY if there is still no room. */
- 	if (lepp_num_free_comp_slots(eq) == 0) {
- 		nolds = tile_net_lepp_grab_comps(eq, olds, wanted, 0);
- 		if (nolds == 0) {
-@@ -1861,6 +1866,7 @@ busy:
- 	cmd_tail = eq->cmd_tail;
- 
- 	/* Prepare to advance, detecting full queue. */
-+	/* NOTE: Return NETDEV_TX_BUSY if the queue is full. */
- 	cmd_next = cmd_tail + cmd_size;
- 	if (cmd_tail < cmd_head && cmd_next >= cmd_head)
- 		goto busy;
-@@ -2023,10 +2029,8 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- 
- 	spin_lock_irqsave(&priv->eq_lock, irqflags);
- 
--	/*
--	 * Handle completions if needed to make room.
--	 * HACK: Spin until there is sufficient room.
--	 */
-+	/* Handle completions if needed to make room. */
-+	/* NOTE: Return NETDEV_TX_BUSY if there is still no room. */
- 	if (lepp_num_free_comp_slots(eq) == 0) {
- 		nolds = tile_net_lepp_grab_comps(eq, olds, wanted, 0);
- 		if (nolds == 0) {
-@@ -2040,6 +2044,7 @@ busy:
- 	cmd_tail = eq->cmd_tail;
- 
- 	/* Copy the commands, or fail. */
-+	/* NOTE: Return NETDEV_TX_BUSY if the queue is full. */
- 	for (i = 0; i < num_frags; i++) {
- 
- 		/* Prepare to advance, detecting full queue. */
-@@ -2260,6 +2265,23 @@ static int tile_net_get_mac(struct net_device *dev)
- 	return 0;
++	/* 
++	 * Update per mm counters. This is slightly non atomic, but shouldn't
++	 * be a problem.
++	 */ 
++	dec_mm_counter_fast(mm, MM_ANONPAGES_HUGE);
++	add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
++
+ 	return ret;
  }
  
-+
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+/*
-+ * Polling 'interrupt' - used by things like netconsole to send skbs
-+ * without having to re-enable interrupts. It's not called while
-+ * the interrupt routine is executing.
-+ */
-+static void tile_net_netpoll(struct net_device *dev)
-+{
-+	struct tile_net_priv *priv = netdev_priv(dev);
-+	disable_percpu_irq(priv->intr_id);
-+	tile_net_handle_ingress_interrupt(priv->intr_id, dev);
-+	enable_percpu_irq(priv->intr_id, 0);
-+}
-+#endif
-+
-+
- static const struct net_device_ops tile_net_ops = {
- 	.ndo_open = tile_net_open,
- 	.ndo_stop = tile_net_stop,
-@@ -2268,7 +2290,10 @@ static const struct net_device_ops tile_net_ops = {
- 	.ndo_get_stats = tile_net_get_stats,
- 	.ndo_change_mtu = tile_net_change_mtu,
- 	.ndo_tx_timeout = tile_net_tx_timeout,
--	.ndo_set_mac_address = tile_net_set_mac_address
-+	.ndo_set_mac_address = tile_net_set_mac_address,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_poll_controller = tile_net_netpoll,
-+#endif
- };
+@@ -1803,13 +1810,13 @@ static void __collapse_huge_page_copy(pte_t *pte, struct page *page,
  
+ 		if (pte_none(pteval)) {
+ 			clear_user_highpage(page, address);
+-			add_mm_counter(vma->vm_mm, MM_ANONPAGES, 1);
+ 		} else {
+ 			src_page = pte_page(pteval);
+ 			copy_user_highpage(page, src_page, address, vma);
+ 			VM_BUG_ON(page_mapcount(src_page) != 1);
+ 			VM_BUG_ON(page_count(src_page) != 2);
+ 			release_pte_page(src_page);
++			dec_mm_counter_fast(vma->vm_mm, MM_ANONPAGES);
+ 			/*
+ 			 * ptl mostly unnecessary, but preempt has to
+ 			 * be disabled to update the per-cpu stats
+@@ -1829,6 +1836,7 @@ static void __collapse_huge_page_copy(pte_t *pte, struct page *page,
+ 		address += PAGE_SIZE;
+ 		page++;
+ 	}
++	add_mm_counter_fast(vma->vm_mm, MM_ANONPAGES_HUGE);
+ }
  
-@@ -2408,7 +2433,7 @@ static void tile_net_cleanup(void)
-  */
- static int tile_net_init_module(void)
- {
--	pr_info("Tilera IPP Net Driver\n");
-+	pr_info("Tilera Network Driver\n");
+ static void collapse_huge_page(struct mm_struct *mm,
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 2958fd8..343a48d 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -448,7 +448,8 @@ static int oom_kill_task(struct task_struct *p)
  
- 	tile_net_devs[0] = tile_net_dev_init("xgbe0");
- 	tile_net_devs[1] = tile_net_dev_init("xgbe1");
+ 	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
+ 		task_pid_nr(p), p->comm, K(p->mm->total_vm),
+-		K(get_mm_counter(p->mm, MM_ANONPAGES)),
++	       K(get_mm_counter(p->mm, MM_ANONPAGES) + 
++		 get_mm_counter(p->mm, MM_ANONPAGES_HUGE) * HPAGE_PMD_NR),
+ 		K(get_mm_counter(p->mm, MM_FILEPAGES)));
+ 	task_unlock(p);
+ 
 -- 
-1.6.5.2
+1.7.7.6
 
