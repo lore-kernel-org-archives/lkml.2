@@ -1,108 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936519Ab2C3WPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:15:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965065Ab2C3VOE (ORCPT
+	id S964832Ab2C3WPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:15:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41573 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936522Ab2C3WPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:04 -0400
-Message-Id: <20120330194856.095916061@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 101/149] x86-32: Fix endless loop when processing signals for kernel tasks
-In-Reply-To: <20120330195823.GA31857@kroah.com>
+	Fri, 30 Mar 2012 18:15:14 -0400
+Date: Sat, 31 Mar 2012 00:15:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [GIT pull] Core locking updates for 3.4
+Message-ID: <alpine.LFD.2.02.1203310013330.2542@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Linus,
 
-------------------
+please pull the latest core-locking-for-linus git tree from:
 
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
 
-commit 29a2e2836ff9ea65a603c89df217f4198973a74f upstream.
+Thanks,
 
-The problem occurs on !CONFIG_VM86 kernels [1] when a kernel-mode task
-returns from a system call with a pending signal.
+	tglx
 
-A real-life scenario is a child of 'khelper' returning from a failed
-kernel_execve() in ____call_usermodehelper() [ kernel/kmod.c ].
-kernel_execve() fails due to a pending SIGKILL, which is the result of
-"kill -9 -1" (at least, busybox's init does it upon reboot).
+------------------>
+Kees Cook (2):
+      futex: Do not leak robust list to unprivileged process
+      futex: Mark get_robust_list as deprecated
 
-The loop is as follows:
 
-* syscall_exit_work:
- - work_pending:            // start_of_the_loop
- - work_notify_sig:
-   - do_notify_resume()
-     - do_signal()
-       - if (!user_mode(regs)) return;
- - resume_userspace         // TIF_SIGPENDING is still set
- - work_pending             // so we call work_pending => goto
-                            // start_of_the_loop
+ Documentation/feature-removal-schedule.txt |   10 +++++++
+ kernel/futex.c                             |   38 +++++++++++-----------------
+ kernel/futex_compat.c                      |   38 +++++++++++-----------------
+ 3 files changed, 40 insertions(+), 46 deletions(-)
 
-More information can be found in another LKML thread:
-http://www.serverphorums.com/read.php?12,457826
-
-[1] the problem was also seen on MIPS.
-
-Signed-off-by: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Link: http://lkml.kernel.org/r/1332448765.2299.68.camel@dimm
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kernel/entry_32.S |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
-
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -99,12 +99,6 @@
- #endif
- .endm
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 0cad480..c1be806 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -529,3 +529,13 @@ When:	3.5
+ Why:	The old kmap_atomic() with two arguments is deprecated, we only
+ 	keep it for backward compatibility for few cycles and then drop it.
+ Who:	Cong Wang <amwang@redhat.com>
++
++----------------------------
++
++What:	get_robust_list syscall
++When:	2013
++Why:	There appear to be no production users of the get_robust_list syscall,
++	and it runs the risk of leaking address locations, allowing the bypass
++	of ASLR. It was only ever intended for debugging, so it should be
++	removed.
++Who:	Kees Cook <keescook@chromium.org>
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 72efa1e..e2b0fb9 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -59,6 +59,7 @@
+ #include <linux/magic.h>
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
++#include <linux/ptrace.h>
  
--#ifdef CONFIG_VM86
--#define resume_userspace_sig	check_userspace
--#else
--#define resume_userspace_sig	resume_userspace
--#endif
+ #include <asm/futex.h>
+ 
+@@ -2443,40 +2444,31 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+ {
+ 	struct robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
+ 
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
++	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
++
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
 -
- /*
-  * User gs save/restore
-  *
-@@ -328,10 +322,19 @@ ret_from_exception:
- 	preempt_stop(CLBR_ANY)
- ret_from_intr:
- 	GET_THREAD_INFO(%ebp)
--check_userspace:
-+resume_userspace_sig:
-+#ifdef CONFIG_VM86
- 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
- 	movb PT_CS(%esp), %al
- 	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
-+#else
-+	/*
-+	 * We can be coming here from a syscall done in the kernel space,
-+	 * e.g. a failed kernel_execve().
-+	 */
-+	movl PT_CS(%esp), %eax
-+	andl $SEGMENT_RPL_MASK, %eax
-+#endif
- 	cmpl $USER_RPL, %eax
- 	jb resume_kernel		# not returning to v8086 or userspace
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->robust_list;
+-		rcu_read_unlock();
+ 	}
  
-
-
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(head, head_ptr);
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index 5f9e689..83e368b 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -10,6 +10,7 @@
+ #include <linux/compat.h>
+ #include <linux/nsproxy.h>
+ #include <linux/futex.h>
++#include <linux/ptrace.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -136,40 +137,31 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+ {
+ 	struct compat_robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
+ 
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
++	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
++
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->compat_robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
+-
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->compat_robust_list;
+-		rcu_read_unlock();
+ 	}
+ 
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->compat_robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(ptr_to_compat(head), head_ptr);
