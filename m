@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760883Ab2C3NXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 09:23:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	id S1760799Ab2C3N0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 09:26:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54149 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758908Ab2C3NXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 09:23:15 -0400
-Message-ID: <4F75B3B2.7030901@redhat.com>
-Date: Fri, 30 Mar 2012 10:22:58 -0300
+	id S1760037Ab2C3N0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 09:26:23 -0400
+Message-ID: <4F75B475.7060608@redhat.com>
+Date: Fri, 30 Mar 2012 10:26:13 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
 To: Borislav Petkov <bp@amd64.org>
 CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/13] edac: move dimm properties to struct memset_info
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com> <1333039546-5590-3-git-send-email-mchehab@redhat.com> <20120330131037.GB30876@aftab>
-In-Reply-To: <20120330131037.GB30876@aftab>
+Subject: Re: [PATCH 01/13] edac: Create a dimm struct and move the labels
+ into it
+References: <1333039546-5590-1-git-send-email-mchehab@redhat.com> <1333039546-5590-2-git-send-email-mchehab@redhat.com> <20120330105048.GA30876@aftab>
+In-Reply-To: <20120330105048.GA30876@aftab>
 X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -24,34 +25,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 30-03-2012 10:10, Borislav Petkov escreveu:
-> Please don't call it 'memset_info' - this is misleading beyond belief.
+Em 30-03-2012 07:50, Borislav Petkov escreveu:
+> On Thu, Mar 29, 2012 at 01:45:34PM -0300, Mauro Carvalho Chehab wrote:
+>> The way a DIMM is currently represented implies that they're
+>> linked into a per-csrow struct. However, some drivers don't see
+>> csrows, as they're ridden behind some chip like the AMB's
+>> on FBDIMM's, for example.
+>>
+>> This forced drivers to fake a csrow struct, and to create
+>> a mess under csrow/channel original's concept.
+>>
+>> Move the DIMM labels into a per-DIMM struct, and add there
+>> the real location of the socket, in terms of csrow/channel.
+>> Latter patches will modify the location to properly represent the
+>> memory architecture.
+>>
+>> All other drivers will use a per-csrow type of location.
+>> Some of those drivers will require a latter conversion, as
+>> they also fake the csrows internally.
+>>
+>> TODO: While this patch doesn't change the existing behavior, on
+>> csrows-based memory controllers, a csrow/channel pair points to a memory
+>> rank. There's a known bug at the EDAC core that allows having different
+>> labels for the same DIMM, if it has more than one rank. A latter patch
+>> is need to merge the several ranks for a DIMM into the same dimm_info
+>> struct, in order to avoid having different labels for the same DIMM.
+>>
+>> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> ---
+>>  drivers/edac/edac_mc.c       |   50 +++++++++++++++++++++++++++++++----------
+>>  drivers/edac/edac_mc_sysfs.c |   11 ++++-----
+>>  drivers/edac/i5100_edac.c    |    8 +++---
+>>  drivers/edac/i7core_edac.c   |    4 +-
+>>  drivers/edac/i82975x_edac.c  |    2 +-
+>>  drivers/edac/sb_edac.c       |    4 +-
+>>  include/linux/edac.h         |   28 +++++++++++++++++++----
+>>  7 files changed, 75 insertions(+), 32 deletions(-)
+>>
+>> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+>> index 690cbf1..c03bfe7 100644
+>> --- a/drivers/edac/edac_mc.c
+>> +++ b/drivers/edac/edac_mc.c
+>> @@ -44,7 +44,7 @@ static void edac_mc_dump_channel(struct rank_info *chan)
+>>  	debugf4("\tchannel = %p\n", chan);
+>>  	debugf4("\tchannel->chan_idx = %d\n", chan->chan_idx);
+>>  	debugf4("\tchannel->ce_count = %d\n", chan->ce_count);
+>> -	debugf4("\tchannel->label = '%s'\n", chan->label);
+>> +	debugf4("\tchannel->label = '%s'\n", chan->dimm->label);
+>>  	debugf4("\tchannel->csrow = %p\n\n", chan->csrow);
+>>  }
+>>  
+>> @@ -157,6 +157,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  	struct mem_ctl_info *mci;
+>>  	struct csrow_info *csi, *csrow;
+>>  	struct rank_info *chi, *chp, *chan;
+>> +	struct dimm_info *dimm;
+>>  	void *pvt;
+>>  	unsigned size;
+>>  	int row, chn;
+>> @@ -170,7 +171,8 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  	mci = (struct mem_ctl_info *)0;
+>>  	csi = edac_align_ptr(&mci[1], sizeof(*csi));
+>>  	chi = edac_align_ptr(&csi[nr_csrows], sizeof(*chi));
+>> -	pvt = edac_align_ptr(&chi[nr_chans * nr_csrows], sz_pvt);
+>> +	dimm = edac_align_ptr(&chi[nr_chans * nr_csrows], sizeof(*dimm));
+>> +	pvt = edac_align_ptr(&dimm[nr_chans * nr_csrows], sz_pvt);
+>>  	size = ((unsigned long)pvt) + sz_pvt;
+>>  
+>>  	mci = kzalloc(size, GFP_KERNEL);
+>> @@ -182,11 +184,13 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  	 */
+>>  	csi = (struct csrow_info *)(((char *)mci) + ((unsigned long)csi));
+>>  	chi = (struct rank_info *)(((char *)mci) + ((unsigned long)chi));
+>> +	dimm = (struct dimm_info *)(((char *)mci) + ((unsigned long)dimm));
+>>  	pvt = sz_pvt ? (((char *)mci) + ((unsigned long)pvt)) : NULL;
+>>  
+>>  	/* setup index and various internal pointers */
+>>  	mci->mc_idx = edac_index;
+>>  	mci->csrows = csi;
+>> +	mci->dimms  = dimm;
+>>  	mci->pvt_info = pvt;
+>>  	mci->nr_csrows = nr_csrows;
+>>  
+>> @@ -205,6 +209,21 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  		}
+>>  	}
+>>  
+>> +	/*
+>> +	 * By default, assumes that a per-csrow arrangement will be used,
+>> +	 * as most drivers are based on such assumption.
+>> +	 */
+>> +	dimm = mci->dimms;
+>> +	for (row = 0; row < mci->nr_csrows; row++) {
+>> +		for (chn = 0; chn < mci->csrows[row].nr_channels; chn++) {
+>> +			mci->csrows[row].channels[chn].dimm = dimm;
+>> +			dimm->csrow = row;
+>> +			dimm->csrow_channel = chn;
+>> +			dimm++;
+>> +			mci->nr_dimms++;
+>> +		}
+>> +	}
 > 
-> Hmm, what struct memset_info - where the hell is this? It is nowhere to
-> be seen in the patches following that one too, WTF?
-
-s/memset_info/dimm_info/
-
-Sorry, I forgot to rename the patch name on the rebase I've renamed
-this field (rebase 8?).
-
-> On Thu, Mar 29, 2012 at 01:45:35PM -0300, Mauro Carvalho Chehab wrote:
->> On systems based on chip select rows, all channels need to use memories
->> with the same properties, otherwise the memories on channels A and B
->> won't be recognized.
->>
->> However, such assumption is not true for all types of memory
->> controllers.
->>
->> Controllers for FB-DIMM's don't have such requirements.
->>
->> Also, modern Intel controllers seem to be capable of handling such
->> differences.
->>
->> So, we need to get rid of storing the DIMM information into a per-csrow
->> data, storing it, instead at the right place.
->>
->> The first step is to move grain, mtype, dtype and edac_mode to the
->> per-dimm struct.
+> There's a double loop above this one which iterates over the same
+> things: rows and then channels in each row. So merge that loop with the
+> one above instead of repeating it here.
 > 
+
+The first loop will disappear on the patch I'm writing right now with the 
+edac_mc_alloc() changes to per-csrow/per-dimm/per-channel kzalloc().
+
+Regards,
+Mauro
+
 
