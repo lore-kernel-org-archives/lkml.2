@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935752Ab2C3VMI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:12:08 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36500 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935735Ab2C3VL5 (ORCPT
+	id S935789Ab2C3WWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:22:41 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64808 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935736Ab2C3VMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:57 -0400
-Message-Id: <20120330194847.482290493@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:12:07 -0400
+Message-Id: <20120330194848.132680943@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:35 -0700
+Date: Fri, 30 Mar 2012 12:49:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 062/149] tcm_loop: Set residual field for SCSI commands
+        alan@lxorguk.ukuu.org.uk, Anssi Hannula <anssi.hannula@iki.fi>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 065/149] ALSA: hda - fix printing of high HDMI sample rates
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 6cf3fa6918baab0c447f1206f1cef9166ad04864 upstream.
+commit 25dc16f69892182192b1234594fd3cf342ad4195 upstream.
 
-If the target core signals an over- or under-run, tcm_loop should call
-scsi_set_resid() to tell the SCSI midlayer about the residual data length.
+A previous commit af65cbf296 (ALSA: hdmi: fix printout of SAD sampling
+rates) fixed the sample rates shown in /proc/asound/cardX/eldY and
+kernel log to not be entirely wrong. However, a missing rate from the
+array added in the patch causes HDMI rates 88.2 kHz, 96 kHz, 176.4 kHz,
+and 192 kHz to be shown as 96 kHz, 176.4 kHz, 192 kHz, and 384 kHz,
+respectively.
 
-The difference can be seen by doing something like
+Fix the reporting by adding the ALSA rate 64 kHz into the conversion
+array between 48 kHz and 88.2 kHz.
 
-    strace -eioctl sg_raw -r 1024 /dev/sda 8 0 0 0 1 0 > /dev/null
-
-and looking at the "resid=" part of the SG_IO ioctl -- after this patch,
-the field is correctly reported as 512.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/loopback/tcm_loop.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ sound/pci/hda/hda_eld.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -866,6 +866,9 @@ static int tcm_loop_queue_data_in(struct
+--- a/sound/pci/hda/hda_eld.c
++++ b/sound/pci/hda/hda_eld.c
+@@ -385,8 +385,8 @@ error:
+ static void hdmi_print_pcm_rates(int pcm, char *buf, int buflen)
+ {
+ 	static unsigned int alsa_rates[] = {
+-		5512, 8000, 11025, 16000, 22050, 32000, 44100, 48000, 88200,
+-		96000, 176400, 192000, 384000
++		5512, 8000, 11025, 16000, 22050, 32000, 44100, 48000, 64000,
++		88200, 96000, 176400, 192000, 384000
+ 	};
+ 	int i, j;
  
- 	sc->result = SAM_STAT_GOOD;
- 	set_host_byte(sc, DID_OK);
-+	if ((se_cmd->se_cmd_flags & SCF_OVERFLOW_BIT) ||
-+	    (se_cmd->se_cmd_flags & SCF_UNDERFLOW_BIT))
-+		scsi_set_resid(sc, se_cmd->residual_count);
- 	sc->scsi_done(sc);
- 	return 0;
- }
-@@ -891,6 +894,9 @@ static int tcm_loop_queue_status(struct
- 		sc->result = se_cmd->scsi_status;
- 
- 	set_host_byte(sc, DID_OK);
-+	if ((se_cmd->se_cmd_flags & SCF_OVERFLOW_BIT) ||
-+	    (se_cmd->se_cmd_flags & SCF_UNDERFLOW_BIT))
-+		scsi_set_resid(sc, se_cmd->residual_count);
- 	sc->scsi_done(sc);
- 	return 0;
- }
 
 
