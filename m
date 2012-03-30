@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964984Ab2C3VNl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:13:41 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47677 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935867Ab2C3VNd (ORCPT
+	id S935867Ab2C3VNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:13:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964992Ab2C3VNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:33 -0400
-Message-Id: <20120330194854.184685521@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:49 -0400
+Message-Id: <20120330194855.123803257@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:04 -0700
+Date: Fri, 30 Mar 2012 12:50:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Ben Myers <bpm@sgi.com>
-Subject: [ 091/149] xfs: fix inode lookup race
+        alan@lxorguk.ukuu.org.uk, Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 096/149] UBI: fix eraseblock picking criteria
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,99 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit f30d500f809eca67a21704347ab14bb35877b5ee upstream.
+commit 7eb3aa65853e1b223bfc786b023b702018cb76c0 upstream.
 
-When we get concurrent lookups of the same inode that is not in the
-per-AG inode cache, there is a race condition that triggers warnings
-in unlock_new_inode() indicating that we are initialising an inode
-that isn't in a the correct state for a new inode.
+The 'find_wl_entry()' function expects the maximum difference as the second
+argument, not the maximum absolute value. So the "unknown" eraseblock picking
+was incorrect, as Shmulik Ladkani spotted. This patch fixes the issue.
 
-When we do an inode lookup via a file handle or a bulkstat, we don't
-serialise lookups at a higher level through the dentry cache (i.e.
-pathless lookup), and so we can get concurrent lookups of the same
-inode.
-
-The race condition is between the insertion of the inode into the
-cache in the case of a cache miss and a concurrently lookup:
-
-Thread 1			Thread 2
-xfs_iget()
-  xfs_iget_cache_miss()
-    xfs_iread()
-    lock radix tree
-    radix_tree_insert()
-				rcu_read_lock
-				radix_tree_lookup
-				lock inode flags
-				XFS_INEW not set
-				igrab()
-				unlock inode flags
-				rcu_read_unlock
-				use uninitialised inode
-				.....
-    lock inode flags
-    set XFS_INEW
-    unlock inode flags
-    unlock radix tree
-  xfs_setup_inode()
-    inode flags = I_NEW
-    unlock_new_inode()
-      WARNING as inode flags != I_NEW
-
-This can lead to inode corruption, inode list corruption, etc, and
-is generally a bad thing to occur.
-
-Fix this by setting XFS_INEW before inserting the inode into the
-radix tree. This will ensure any concurrent lookup will find the new
-inode with XFS_INEW set and that forces the lookup to wait until the
-XFS_INEW flag is removed before allowing the lookup to succeed.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Reported-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reviewed-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_iget.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/mtd/ubi/wl.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/fs/xfs/xfs_iget.c
-+++ b/fs/xfs/xfs_iget.c
-@@ -353,9 +353,20 @@ xfs_iget_cache_miss(
- 			BUG();
- 	}
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -389,7 +389,7 @@ static struct ubi_wl_entry *find_wl_entr
+  */
+ int ubi_wl_get_peb(struct ubi_device *ubi, int dtype)
+ {
+-	int err, medium_ec;
++	int err;
+ 	struct ubi_wl_entry *e, *first, *last;
  
--	spin_lock(&pag->pag_ici_lock);
-+	/*
-+	 * These values must be set before inserting the inode into the radix
-+	 * tree as the moment it is inserted a concurrent lookup (allowed by the
-+	 * RCU locking mechanism) can find it and that lookup must see that this
-+	 * is an inode currently under construction (i.e. that XFS_INEW is set).
-+	 * The ip->i_flags_lock that protects the XFS_INEW flag forms the
-+	 * memory barrier that ensures this detection works correctly at lookup
-+	 * time.
-+	 */
-+	ip->i_udquot = ip->i_gdquot = NULL;
-+	xfs_iflags_set(ip, XFS_INEW);
- 
- 	/* insert the new inode */
-+	spin_lock(&pag->pag_ici_lock);
- 	error = radix_tree_insert(&pag->pag_ici_root, agino, ip);
- 	if (unlikely(error)) {
- 		WARN_ON(error != -EEXIST);
-@@ -363,11 +374,6 @@ xfs_iget_cache_miss(
- 		error = EAGAIN;
- 		goto out_preload_end;
- 	}
--
--	/* These values _must_ be set before releasing the radix tree lock! */
--	ip->i_udquot = ip->i_gdquot = NULL;
--	xfs_iflags_set(ip, XFS_INEW);
--
- 	spin_unlock(&pag->pag_ici_lock);
- 	radix_tree_preload_end();
- 
+ 	ubi_assert(dtype == UBI_LONGTERM || dtype == UBI_SHORTTERM ||
+@@ -427,7 +427,7 @@ retry:
+ 		 * For unknown data we pick a physical eraseblock with medium
+ 		 * erase counter. But we by no means can pick a physical
+ 		 * eraseblock with erase counter greater or equivalent than the
+-		 * lowest erase counter plus %WL_FREE_MAX_DIFF.
++		 * lowest erase counter plus %WL_FREE_MAX_DIFF/2.
+ 		 */
+ 		first = rb_entry(rb_first(&ubi->free), struct ubi_wl_entry,
+ 					u.rb);
+@@ -436,10 +436,8 @@ retry:
+ 		if (last->ec - first->ec < WL_FREE_MAX_DIFF)
+ 			e = rb_entry(ubi->free.rb_node,
+ 					struct ubi_wl_entry, u.rb);
+-		else {
+-			medium_ec = (first->ec + WL_FREE_MAX_DIFF)/2;
+-			e = find_wl_entry(&ubi->free, medium_ec);
+-		}
++		else
++			e = find_wl_entry(&ubi->free, WL_FREE_MAX_DIFF/2);
+ 		break;
+ 	case UBI_SHORTTERM:
+ 		/*
 
 
