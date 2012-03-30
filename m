@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965004Ab2C3WUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:20:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S935810Ab2C3VMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:12:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935820Ab2C3VMk (ORCPT
+	with ESMTP id S935690Ab2C3VM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:12:40 -0400
-Message-Id: <20120330194850.693556670@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:12:28 -0400
+Message-Id: <20120330194849.785993937@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:49 -0700
+Date: Fri, 30 Mar 2012 12:49:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 076/149] drm/radeon/kms: add connector quirk for Fujitsu D3003-S2 board
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Subject: [ 072/149] md: fix clearing of the changed flags for the bad blocks list.
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +24,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 4c1b2d2da3451f5c8dd59bd7e05bd9729d2aee05 upstream.
+commit d0962936bff659d20522555b517582a2715fd23f upstream.
 
-vbios lists DVI-I port as VGA and DVI-D.
+In super_1_sync (the first hunk) we need to clear 'changed' before
+checking read_seqretry(), otherwise we might race with other code
+adding a bad block and so won't retry later.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=47007
+In md_update_sb (the second hunk), in the case where there is no
+metadata (neither persistent nor external), we treat any bad blocks as
+an error.  However we need to clear the 'changed' flag before calling
+md_ack_all_badblocks, else it won't do anything.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch is suitable for -stable release 3.0 and later.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/md/md.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -442,6 +442,20 @@ static bool radeon_atom_apply_quirks(str
- 		struct radeon_device *rdev = dev->dev_private;
- 		*i2c_bus = radeon_lookup_i2c_gpio(rdev, 0x93);
- 	}
-+
-+	/* Fujitsu D3003-S2 board lists DVI-I as DVI-D and VGA */
-+	if ((dev->pdev->device == 0x9802) &&
-+	    (dev->pdev->subsystem_vendor == 0x1734) &&
-+	    (dev->pdev->subsystem_device == 0x11bd)) {
-+		if (*connector_type == DRM_MODE_CONNECTOR_VGA) {
-+			*connector_type = DRM_MODE_CONNECTOR_DVII;
-+			*line_mux = 0x3103;
-+		} else if (*connector_type == DRM_MODE_CONNECTOR_DVID) {
-+			*connector_type = DRM_MODE_CONNECTOR_DVII;
-+		}
-+	}
-+
-+
- 	return true;
- }
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1801,13 +1801,13 @@ retry:
+ 						| BB_LEN(internal_bb));
+ 				*bbp++ = cpu_to_le64(store_bb);
+ 			}
++			bb->changed = 0;
+ 			if (read_seqretry(&bb->lock, seq))
+ 				goto retry;
  
+ 			bb->sector = (rdev->sb_start +
+ 				      (int)le32_to_cpu(sb->bblog_offset));
+ 			bb->size = le16_to_cpu(sb->bblog_size);
+-			bb->changed = 0;
+ 		}
+ 	}
+ 
+@@ -2362,6 +2362,7 @@ repeat:
+ 			clear_bit(MD_CHANGE_PENDING, &mddev->flags);
+ 			list_for_each_entry(rdev, &mddev->disks, same_set) {
+ 				if (rdev->badblocks.changed) {
++					rdev->badblocks.changed = 0;
+ 					md_ack_all_badblocks(&rdev->badblocks);
+ 					md_error(mddev, rdev);
+ 				}
 
 
