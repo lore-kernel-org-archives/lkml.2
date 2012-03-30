@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936476Ab2C3WG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:06:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S936490Ab2C3WH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:07:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965342Ab2C3VQF (ORCPT
+	with ESMTP id S965392Ab2C3VPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:16:05 -0400
-Message-Id: <20120330194903.023849109@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:15:51 -0400
+Message-Id: <20120330194902.442439052@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:52 -0700
+Date: Fri, 30 Mar 2012 12:50:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+        alan@lxorguk.ukuu.org.uk, Benjamin LaHaise <bcrl@kvack.org>,
+        James Chapman <jchapman@katalix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 139/149] net: fix napi_reuse_skb() skb reserve
+Subject: [ 135/149] Fix pppol2tp getsockname()
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,36 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-[ Upstream commit 2a2a459eeeff48640dc557548ce576d666ab06ed ]
+[ Upstream commit bbdb32cb5b73597386913d052165423b9d736145 ]
 
-napi->skb is allocated in napi_get_frags() using
-netdev_alloc_skb_ip_align(), with a reserve of NET_SKB_PAD +
-NET_IP_ALIGN bytes.
+While testing L2TP functionality, I came across a bug in getsockname().  The
+IP address returned within the pppol2tp_addr's addr memember was not being
+set to the IP  address in use.  This bug is caused by using inet_sk() on the
+wrong socket (the L2TP socket rather than the underlying UDP socket), and was
+likely introduced during the addition of L2TPv3 support.
 
-However, when such skb is recycled in napi_reuse_skb(), it ends with a
-reserve of NET_IP_ALIGN which is suboptimal.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: James Chapman <jchapman@katalix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/l2tp/l2tp_ppp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3634,7 +3634,8 @@ EXPORT_SYMBOL(napi_gro_receive);
- static void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
- {
- 	__skb_pull(skb, skb_headlen(skb));
--	skb_reserve(skb, NET_IP_ALIGN - skb_headroom(skb));
-+	/* restore the reserve we had after netdev_alloc_skb_ip_align() */
-+	skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN - skb_headroom(skb));
- 	skb->vlan_tci = 0;
- 	skb->dev = napi->dev;
- 	skb->skb_iif = 0;
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -915,7 +915,7 @@ static int pppol2tp_getname(struct socke
+ 		goto end_put_sess;
+ 	}
+ 
+-	inet = inet_sk(sk);
++	inet = inet_sk(tunnel->sock);
+ 	if (tunnel->version == 2) {
+ 		struct sockaddr_pppol2tp sp;
+ 		len = sizeof(sp);
 
 
