@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935321Ab2C3Wn5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:43:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55577 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935169Ab2C3VHQ (ORCPT
+	id S935262Ab2C3Wny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:43:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935180Ab2C3VHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:07:16 -0400
-Message-Id: <20120330195733.653280263@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:22 -0400
+Message-Id: <20120330195733.932352188@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:42 -0700
+Date: Fri, 30 Mar 2012 12:58:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 080/108] PM / Hibernate: Enable usermodehelpers in hibernate() error path
+        alan@lxorguk.ukuu.org.uk, Eric Sandeen <sandeen@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 082/108] jbd2: clear BH_Delay & BH_Unwritten in journal_unmap_buffer
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 05b4877f6a4f1ba4952d1222213d262bf8c132b7 upstream.
+commit 15291164b22a357cb211b618adfef4fa82fc0de3 upstream.
 
-If create_basic_memory_bitmaps() fails, usermodehelpers are not re-enabled
-before returning. Fix this. And while at it, reword the goto labels so that
-they look more meaningful.
+journal_unmap_buffer()'s zap_buffer: code clears a lot of buffer head
+state ala discard_buffer(), but does not touch _Delay or _Unwritten as
+discard_buffer() does.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+This can be problematic in some areas of the ext4 code which assume
+that if they have found a buffer marked unwritten or delay, then it's
+a live one.  Perhaps those spots should check whether it is mapped
+as well, but if jbd2 is going to tear down a buffer, let's really
+tear it down completely.
+
+Without this I get some fsx failures on sub-page-block filesystems
+up until v3.2, at which point 4e96b2dbbf1d7e81f22047a50f862555a6cb87cb
+and 189e868fa8fdca702eb9db9d8afc46b5cb9144c9 make the failures go
+away, because buried within that large change is some more flag
+clearing.  I still think it's worth doing in jbd2, since
+->invalidatepage leads here directly, and it's the right place
+to clear away these flags.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/hibernate.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ fs/jbd2/transaction.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -623,7 +623,7 @@ int hibernate(void)
- 	/* Allocate memory management structures */
- 	error = create_basic_memory_bitmaps();
- 	if (error)
--		goto Exit;
-+		goto Enable_umh;
- 
- 	printk(KERN_INFO "PM: Syncing filesystems ... ");
- 	sys_sync();
-@@ -631,7 +631,7 @@ int hibernate(void)
- 
- 	error = prepare_processes();
- 	if (error)
--		goto Finish;
-+		goto Free_bitmaps;
- 
- 	if (hibernation_test(TEST_FREEZER))
- 		goto Thaw;
-@@ -663,8 +663,9 @@ int hibernate(void)
- 
-  Thaw:
- 	thaw_processes();
-- Finish:
-+ Free_bitmaps:
- 	free_basic_memory_bitmaps();
-+ Enable_umh:
- 	usermodehelper_enable();
-  Exit:
- 	pm_notifier_call_chain(PM_POST_HIBERNATION);
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1902,6 +1902,8 @@ zap_buffer_unlocked:
+ 	clear_buffer_mapped(bh);
+ 	clear_buffer_req(bh);
+ 	clear_buffer_new(bh);
++	clear_buffer_delay(bh);
++	clear_buffer_unwritten(bh);
+ 	bh->b_bdev = NULL;
+ 	return may_free;
+ }
 
 
