@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966230Ab2C3VWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:22:36 -0400
+	id S966248Ab2C3VWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:22:43 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966199Ab2C3VW2 (ORCPT
+	with ESMTP id S966190Ab2C3VWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:22:28 -0400
-Message-Id: <20120330194848.173958573@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:22:37 -0400
+Message-Id: <20120330194848.784153548@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:17 -0700
+Date: Fri, 30 Mar 2012 12:50:20 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Ming Lei <tom.leiming@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 112/175] usbnet: dont clear urb->dev in tx_complete
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Justin Pettit <jpettit@nicira.com>,
+        Pravin B Shelar <pshelar@nicira.com>, Jesse Gross <jesse@nicira.com>,
+        David Miller <davem@davemloft.net>
+Subject: [ 115/175] proc-ns: use d_set_d_op() API to set dentry ops in proc_ns_instantiate().
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "tom.leiming@gmail.com" <tom.leiming@gmail.com>
+From: Pravin B Shelar <pshelar@nicira.com>
 
-commit 5d5440a835710d09f0ef18da5000541ec98b537a upstream.
+commit 1b26c9b334044cff6d1d2698f2be41bc7d9a0864 upstream.
 
-URB unlinking is always racing with its completion and tx_complete
-may be called before or during running usb_unlink_urb, so tx_complete
-must not clear urb->dev since it will be used in unlink path,
-otherwise invalid memory accesses or usb device leak may be caused
-inside usb_unlink_urb.
+The namespace cleanup path leaks a dentry which holds a reference count
+on a network namespace.  Keeping that network namespace from being freed
+when the last user goes away.  Leaving things like vlan devices in the
+leaked network namespace.
 
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+If you use ip netns add for much real work this problem becomes apparent
+pretty quickly.  It light testing the problem hides because frequently
+you simply don't notice the leak.
+
+Use d_set_d_op() so that DCACHE_OP_* flags are set correctly.
+
+This issue exists back to 3.0.
+
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Reported-by: Justin Pettit <jpettit@nicira.com>
+Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Jesse Gross <jesse@nicira.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/usbnet.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/proc/namespaces.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1037,7 +1037,6 @@ static void tx_complete (struct urb *urb
- 	}
+--- a/fs/proc/namespaces.c
++++ b/fs/proc/namespaces.c
+@@ -53,7 +53,7 @@ static struct dentry *proc_ns_instantiat
+ 	ei->ns_ops    = ns_ops;
+ 	ei->ns	      = ns;
  
- 	usb_autopm_put_interface_async(dev->intf);
--	urb->dev = NULL;
- 	entry->state = tx_done;
- 	defer_bh(dev, skb, &dev->txq);
- }
+-	dentry->d_op = &pid_dentry_operations;
++	d_set_d_op(dentry, &pid_dentry_operations);
+ 	d_add(dentry, inode);
+ 	/* Close the race of the process dying before we return the dentry */
+ 	if (pid_revalidate(dentry, NULL))
 
 
