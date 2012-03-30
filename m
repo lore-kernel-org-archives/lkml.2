@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964961Ab2C3VNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:13:32 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58272 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935867Ab2C3VN0 (ORCPT
+	id S964984Ab2C3VNl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:13:41 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47677 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935867Ab2C3VNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:26 -0400
-Message-Id: <20120330194853.795258629@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:33 -0400
+Message-Id: <20120330194854.184685521@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:02 -0700
+Date: Fri, 30 Mar 2012 12:50:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 089/149] NFS: Properly handle the case where the delegation is revoked
+        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Ben Myers <bpm@sgi.com>
+Subject: [ 091/149] xfs: fix inode lookup race
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,182 +25,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit a1d0b5eebc4fd6e0edb02688b35f17f67f42aea5 upstream.
+commit f30d500f809eca67a21704347ab14bb35877b5ee upstream.
 
-If we know that the delegation stateid is bad or revoked, we need to
-remove that delegation as soon as possible, and then mark all the
-stateids that relied on that delegation for recovery. We cannot use
-the delegation as part of the recovery process.
+When we get concurrent lookups of the same inode that is not in the
+per-AG inode cache, there is a race condition that triggers warnings
+in unlock_new_inode() indicating that we are initialising an inode
+that isn't in a the correct state for a new inode.
 
-Also note that NFSv4.1 uses a different error code (NFS4ERR_DELEG_REVOKED)
-to indicate that the delegation was revoked.
+When we do an inode lookup via a file handle or a bulkstat, we don't
+serialise lookups at a higher level through the dentry cache (i.e.
+pathless lookup), and so we can get concurrent lookups of the same
+inode.
 
-Finally, ensure that setlk() and setattr() can both recover safely from
-a revoked delegation.
+The race condition is between the insertion of the inode into the
+cache in the case of a cache miss and a concurrently lookup:
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Thread 1			Thread 2
+xfs_iget()
+  xfs_iget_cache_miss()
+    xfs_iread()
+    lock radix tree
+    radix_tree_insert()
+				rcu_read_lock
+				radix_tree_lookup
+				lock inode flags
+				XFS_INEW not set
+				igrab()
+				unlock inode flags
+				rcu_read_unlock
+				use uninitialised inode
+				.....
+    lock inode flags
+    set XFS_INEW
+    unlock inode flags
+    unlock radix tree
+  xfs_setup_inode()
+    inode flags = I_NEW
+    unlock_new_inode()
+      WARNING as inode flags != I_NEW
+
+This can lead to inode corruption, inode list corruption, etc, and
+is generally a bad thing to occur.
+
+Fix this by setting XFS_INEW before inserting the inode into the
+radix tree. This will ensure any concurrent lookup will find the new
+inode with XFS_INEW set and that forces the lookup to wait until the
+XFS_INEW flag is removed before allowing the lookup to succeed.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/delegation.c |   11 +++++++++++
- fs/nfs/delegation.h |    1 +
- fs/nfs/nfs4_fs.h    |    2 ++
- fs/nfs/nfs4proc.c   |   18 ++++++++++++++++--
- fs/nfs/nfs4state.c  |   29 +++++++++++++++++++++++++++--
- 5 files changed, 57 insertions(+), 4 deletions(-)
+ fs/xfs/xfs_iget.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -466,6 +466,17 @@ static void nfs_delegation_run_state_man
- 		nfs4_schedule_state_manager(clp);
- }
+--- a/fs/xfs/xfs_iget.c
++++ b/fs/xfs/xfs_iget.c
+@@ -353,9 +353,20 @@ xfs_iget_cache_miss(
+ 			BUG();
+ 	}
  
-+void nfs_remove_bad_delegation(struct inode *inode)
-+{
-+	struct nfs_delegation *delegation;
-+
-+	delegation = nfs_detach_delegation(NFS_I(inode), NFS_SERVER(inode));
-+	if (delegation) {
-+		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
-+		nfs_free_delegation(delegation);
-+	}
-+}
-+
- /**
-  * nfs_expire_all_delegation_types
-  * @clp: client to process
---- a/fs/nfs/delegation.h
-+++ b/fs/nfs/delegation.h
-@@ -45,6 +45,7 @@ void nfs_expire_unreferenced_delegations
- void nfs_handle_cb_pathdown(struct nfs_client *clp);
- int nfs_client_return_marked_delegations(struct nfs_client *clp);
- int nfs_delegations_present(struct nfs_client *clp);
-+void nfs_remove_bad_delegation(struct inode *inode);
+-	spin_lock(&pag->pag_ici_lock);
++	/*
++	 * These values must be set before inserting the inode into the radix
++	 * tree as the moment it is inserted a concurrent lookup (allowed by the
++	 * RCU locking mechanism) can find it and that lookup must see that this
++	 * is an inode currently under construction (i.e. that XFS_INEW is set).
++	 * The ip->i_flags_lock that protects the XFS_INEW flag forms the
++	 * memory barrier that ensures this detection works correctly at lookup
++	 * time.
++	 */
++	ip->i_udquot = ip->i_gdquot = NULL;
++	xfs_iflags_set(ip, XFS_INEW);
  
- void nfs_delegation_mark_reclaim(struct nfs_client *clp);
- void nfs_delegation_reap_unclaimed(struct nfs_client *clp);
---- a/fs/nfs/nfs4_fs.h
-+++ b/fs/nfs/nfs4_fs.h
-@@ -324,6 +324,8 @@ extern void nfs4_put_open_state(struct n
- extern void nfs4_close_state(struct nfs4_state *, fmode_t);
- extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
- extern void nfs4_state_set_mode_locked(struct nfs4_state *, fmode_t);
-+extern void nfs_inode_find_state_and_recover(struct inode *inode,
-+		const nfs4_stateid *stateid);
- extern void nfs4_schedule_lease_recovery(struct nfs_client *);
- extern void nfs4_schedule_state_manager(struct nfs_client *);
- extern void nfs4_schedule_path_down_recovery(struct nfs_client *clp);
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -263,8 +263,11 @@ static int nfs4_handle_exception(struct
- 	switch(errorcode) {
- 		case 0:
- 			return 0;
-+		case -NFS4ERR_DELEG_REVOKED:
- 		case -NFS4ERR_ADMIN_REVOKED:
- 		case -NFS4ERR_BAD_STATEID:
-+			if (state != NULL)
-+				nfs_remove_bad_delegation(state->inode);
- 		case -NFS4ERR_OPENMODE:
- 			if (state == NULL)
- 				break;
-@@ -1316,8 +1319,11 @@ int nfs4_open_delegation_recall(struct n
- 				 * The show must go on: exit, but mark the
- 				 * stateid as needing recovery.
- 				 */
-+			case -NFS4ERR_DELEG_REVOKED:
- 			case -NFS4ERR_ADMIN_REVOKED:
- 			case -NFS4ERR_BAD_STATEID:
-+				nfs_inode_find_state_and_recover(state->inode,
-+						stateid);
- 				nfs4_schedule_stateid_recovery(server, state);
- 			case -EKEYEXPIRED:
- 				/*
-@@ -1893,7 +1899,9 @@ static int nfs4_do_setattr(struct inode
- 			   struct nfs4_state *state)
- {
- 	struct nfs_server *server = NFS_SERVER(inode);
--	struct nfs4_exception exception = { };
-+	struct nfs4_exception exception = {
-+		.state = state,
-+	};
- 	int err;
- 	do {
- 		err = nfs4_handle_exception(server,
-@@ -3707,8 +3715,11 @@ nfs4_async_handle_error(struct rpc_task
- 	if (task->tk_status >= 0)
- 		return 0;
- 	switch(task->tk_status) {
-+		case -NFS4ERR_DELEG_REVOKED:
- 		case -NFS4ERR_ADMIN_REVOKED:
- 		case -NFS4ERR_BAD_STATEID:
-+			if (state != NULL)
-+				nfs_remove_bad_delegation(state->inode);
- 		case -NFS4ERR_OPENMODE:
- 			if (state == NULL)
- 				break;
-@@ -4526,7 +4537,9 @@ out:
+ 	/* insert the new inode */
++	spin_lock(&pag->pag_ici_lock);
+ 	error = radix_tree_insert(&pag->pag_ici_root, agino, ip);
+ 	if (unlikely(error)) {
+ 		WARN_ON(error != -EEXIST);
+@@ -363,11 +374,6 @@ xfs_iget_cache_miss(
+ 		error = EAGAIN;
+ 		goto out_preload_end;
+ 	}
+-
+-	/* These values _must_ be set before releasing the radix tree lock! */
+-	ip->i_udquot = ip->i_gdquot = NULL;
+-	xfs_iflags_set(ip, XFS_INEW);
+-
+ 	spin_unlock(&pag->pag_ici_lock);
+ 	radix_tree_preload_end();
  
- static int nfs4_proc_setlk(struct nfs4_state *state, int cmd, struct file_lock *request)
- {
--	struct nfs4_exception exception = { };
-+	struct nfs4_exception exception = {
-+		.state = state,
-+	};
- 	int err;
- 
- 	do {
-@@ -4619,6 +4632,7 @@ int nfs4_lock_delegation_recall(struct n
- 				 * The show must go on: exit, but mark the
- 				 * stateid as needing recovery.
- 				 */
-+			case -NFS4ERR_DELEG_REVOKED:
- 			case -NFS4ERR_ADMIN_REVOKED:
- 			case -NFS4ERR_BAD_STATEID:
- 			case -NFS4ERR_OPENMODE:
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1071,12 +1071,37 @@ void nfs4_schedule_stateid_recovery(cons
- {
- 	struct nfs_client *clp = server->nfs_client;
- 
--	if (test_and_clear_bit(NFS_DELEGATED_STATE, &state->flags))
--		nfs_async_inode_return_delegation(state->inode, &state->stateid);
- 	nfs4_state_mark_reclaim_nograce(clp, state);
- 	nfs4_schedule_state_manager(clp);
- }
- 
-+void nfs_inode_find_state_and_recover(struct inode *inode,
-+		const nfs4_stateid *stateid)
-+{
-+	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
-+	struct nfs_inode *nfsi = NFS_I(inode);
-+	struct nfs_open_context *ctx;
-+	struct nfs4_state *state;
-+	bool found = false;
-+
-+	spin_lock(&inode->i_lock);
-+	list_for_each_entry(ctx, &nfsi->open_files, list) {
-+		state = ctx->state;
-+		if (state == NULL)
-+			continue;
-+		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
-+			continue;
-+		if (memcmp(state->stateid.data, stateid->data, sizeof(state->stateid.data)) != 0)
-+			continue;
-+		nfs4_state_mark_reclaim_nograce(clp, state);
-+		found = true;
-+	}
-+	spin_unlock(&inode->i_lock);
-+	if (found)
-+		nfs4_schedule_state_manager(clp);
-+}
-+
-+
- static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_recovery_ops *ops)
- {
- 	struct inode *inode = state->inode;
 
 
