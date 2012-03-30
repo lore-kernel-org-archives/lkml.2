@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965173Ab2C3VOf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:14:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965153Ab2C3VO3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:14:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965154Ab2C3VOa (ORCPT
+	with ESMTP id S965128Ab2C3VOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:30 -0400
-Message-Id: <20120330194857.626425560@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:23 -0400
+Message-Id: <20120330194857.235867140@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:22 -0700
+Date: Fri, 30 Mar 2012 12:50:20 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 109/149] NFSv4: Rate limit the state manager warning messages
+        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
+        Mike Isely <isely@pobox.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 107/149] [media] pvrusb2: fix 7MHz & 8MHz DVB-T tuner support for HVR1900 rev D1F5
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,72 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Michael Krufky <mkrufky@linuxtv.org>
 
-commit 9a3ba432330e504ac61ff0043dbdaba7cea0e35a upstream.
+commit 9ab2393fc3e460cd2040de1483918eb17abb822f upstream.
 
-Prevent the state manager from filling up system logs when recovery
-fails on the server.
+The D1F5 revision of the WinTV HVR-1900 uses a tda18271c2 tuner
+instead of a tda18271c1 tuner as used in revision D1E9. To
+account for this, we must hardcode the frontend configuration
+to use the same IF frequency configuration for both revisions
+of the device.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+6MHz DVB-T is unaffected by this issue, as the recommended
+IF Frequency configuration for 6MHz DVB-T is the same on both
+c1 and c2 revisions of the tda18271 tuner.
+
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Cc: Mike Isely <isely@pobox.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/callback_xdr.c |    4 +++-
- fs/nfs/nfs4proc.c     |    2 +-
- fs/nfs/nfs4state.c    |    4 ++--
- 3 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/media/video/pvrusb2/pvrusb2-devattr.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/fs/nfs/callback_xdr.c
-+++ b/fs/nfs/callback_xdr.c
-@@ -9,6 +9,8 @@
- #include <linux/sunrpc/svc.h>
- #include <linux/nfs4.h>
- #include <linux/nfs_fs.h>
-+#include <linux/ratelimit.h>
-+#include <linux/printk.h>
- #include <linux/slab.h>
- #include <linux/sunrpc/bc_xprt.h>
- #include "nfs4_fs.h"
-@@ -167,7 +169,7 @@ static __be32 decode_compound_hdr_arg(st
- 	if (hdr->minorversion <= 1) {
- 		hdr->cb_ident = ntohl(*p++); /* ignored by v4.1 */
- 	} else {
--		printk(KERN_WARNING "%s: NFSv4 server callback with "
-+		pr_warn_ratelimited("NFS: %s: NFSv4 server callback with "
- 			"illegal minor version %u!\n",
- 			__func__, hdr->minorversion);
- 		return htonl(NFS4ERR_MINOR_VERS_MISMATCH);
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1838,7 +1838,7 @@ static struct nfs4_state *nfs4_do_open(s
- 		 * the user though...
- 		 */
- 		if (status == -NFS4ERR_BAD_SEQID) {
--			printk(KERN_WARNING "NFS: v4 server %s "
-+			pr_warn_ratelimited("NFS: v4 server %s "
- 					" returned a bad sequence-id error!\n",
- 					NFS_SERVER(dir)->nfs_client->cl_hostname);
- 			exception.retry = 1;
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -935,7 +935,7 @@ static void nfs_increment_seqid(int stat
- 		case -NFS4ERR_BAD_SEQID:
- 			if (seqid->sequence->flags & NFS_SEQID_CONFIRMED)
- 				return;
--			printk(KERN_WARNING "NFS: v4 server returned a bad"
-+			pr_warn_ratelimited("NFS: v4 server returned a bad"
- 					" sequence-id error on an"
- 					" unconfirmed sequence %p!\n",
- 					seqid->sequence);
-@@ -1764,7 +1764,7 @@ static void nfs4_state_manager(struct nf
- 	} while (atomic_read(&clp->cl_count) > 1);
- 	return;
- out_error:
--	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
-+	pr_warn_ratelimited("NFS: state manager failed on NFSv4 server %s"
- 			" with error %d\n", clp->cl_hostname, -status);
- 	nfs4_end_drain_session(clp);
- 	nfs4_clear_state_manager_bit(clp);
+--- a/drivers/media/video/pvrusb2/pvrusb2-devattr.c
++++ b/drivers/media/video/pvrusb2/pvrusb2-devattr.c
+@@ -320,7 +320,17 @@ static struct tda829x_config tda829x_no_
+ 	.probe_tuner = TDA829X_DONT_PROBE,
+ };
+ 
++static struct tda18271_std_map hauppauge_tda18271_dvbt_std_map = {
++        .dvbt_6   = { .if_freq = 3300, .agc_mode = 3, .std = 4,
++                      .if_lvl = 1, .rfagc_top = 0x37, },
++        .dvbt_7   = { .if_freq = 3800, .agc_mode = 3, .std = 5,
++                      .if_lvl = 1, .rfagc_top = 0x37, },
++        .dvbt_8   = { .if_freq = 4300, .agc_mode = 3, .std = 6,
++                      .if_lvl = 1, .rfagc_top = 0x37, },
++};
++
+ static struct tda18271_config hauppauge_tda18271_dvb_config = {
++	.std_map = &hauppauge_tda18271_dvbt_std_map,
+ 	.gate    = TDA18271_GATE_ANALOG,
+ 	.output_opt = TDA18271_OUTPUT_LT_OFF,
+ };
 
 
