@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936123Ab2C3Vb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:31:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966025Ab2C3VVd (ORCPT
+	id S936167Ab2C3VoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:44:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55265 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934792Ab2C3VbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:21:33 -0400
-Message-Id: <20120330194843.823582880@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:31:25 -0400
+X-Sasl-enc: AzT/A8ZTj05V/Z5tet/TES63PAeX3D9jKxSj7fyAv/I7 1333143083
+X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:51 2012
+Message-Id: <20120330194851.386330482@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:59 -0700
+Date: Fri, 30 Mar 2012 12:50:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Keng-Yu Lin <kengyu@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 094/175] HID: add extra hotkeys in Asus AIO keyboards
+        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 126/175] PM / Domains: Fix hibernation restore of devices, v2
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +26,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keng-Yu Lin <kengyu@canonical.com>
 
-commit 3596bb929f2abd3433c2eaa5755fad48ac207af1 upstream.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The Asus All-In-One PC has a wireless keyboard with wifi toggle,
-brightness up, brightness down and display off hotkeys.
+This is a backport of mainline commit
+65533bbf63b4f37723fdfedc73d0653958973323.
 
-This patch adds suppoort for these hotkeys.
+During resume from hibernation pm_genpd_restore_noirq() should only
+power off domains whose suspend_power_off flags are set once and
+not every time it is called for a device in the given domain.
+Moreover, it shouldn't decrement genpd->suspended_count, because
+that field is not touched during device freezing and therefore it is
+always equal to 0 when pm_genpd_restore_noirq() runs for the first
+device in the given domain.
 
-Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This means pm_genpd_restore_noirq() may use genpd->suspended_count
+to determine whether or not it it has been called for the domain in
+question already in this cycle (it only needs to increment that
+field every time it runs for this purpose) and whether or not it
+should check if the domain needs to be powered off.  For that to
+work, though, pm_genpd_prepare() has to clear genpd->suspended_count
+when it runs for the first device in the given domain (in which case
+that flag need not be cleared during domain initialization).
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-chicony.c |    5 +++++
- drivers/hid/hid-core.c    |    1 +
- drivers/hid/hid-ids.h     |    1 +
- 3 files changed, 7 insertions(+)
+ drivers/base/power/domain.c |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
---- a/drivers/hid/hid-chicony.c
-+++ b/drivers/hid/hid-chicony.c
-@@ -45,6 +45,10 @@ static int ch_input_mapping(struct hid_d
- 	case 0xff09: ch_map_key_clear(BTN_9);	break;
- 	case 0xff0a: ch_map_key_clear(BTN_A);	break;
- 	case 0xff0b: ch_map_key_clear(BTN_B);	break;
-+	case 0x00f1: ch_map_key_clear(KEY_WLAN);	break;
-+	case 0x00f2: ch_map_key_clear(KEY_BRIGHTNESSDOWN);	break;
-+	case 0x00f3: ch_map_key_clear(KEY_BRIGHTNESSUP);	break;
-+	case 0x00f4: ch_map_key_clear(KEY_DISPLAY_OFF);	break;
- 	default:
- 		return 0;
+--- a/drivers/base/power/domain.c
++++ b/drivers/base/power/domain.c
+@@ -764,8 +764,10 @@ static int pm_genpd_prepare(struct devic
+ 
+ 	genpd_acquire_lock(genpd);
+ 
+-	if (genpd->prepared_count++ == 0)
++	if (genpd->prepared_count++ == 0) {
++		genpd->suspended_count = 0;
+ 		genpd->suspend_power_off = genpd->status == GPD_STATE_POWER_OFF;
++	}
+ 
+ 	genpd_release_lock(genpd);
+ 
+@@ -1041,20 +1043,28 @@ static int pm_genpd_restore_noirq(struct
+ 	 * Since all of the "noirq" callbacks are executed sequentially, it is
+ 	 * guaranteed that this function will never run twice in parallel for
+ 	 * the same PM domain, so it is not necessary to use locking here.
++	 *
++	 * At this point suspended_count == 0 means we are being run for the
++	 * first time for the given domain in the present cycle.
+ 	 */
+-	genpd->status = GPD_STATE_POWER_OFF;
+-	if (genpd->suspend_power_off) {
++	if (genpd->suspended_count++ == 0) {
+ 		/*
+-		 * The boot kernel might put the domain into the power on state,
+-		 * so make sure it really is powered off.
++		 * The boot kernel might put the domain into arbitrary state,
++		 * so make it appear as powered off to pm_genpd_poweron(), so
++		 * that it tries to power it on in case it was really off.
+ 		 */
+-		if (genpd->power_off)
+-			genpd->power_off(genpd);
+-		return 0;
++		genpd->status = GPD_STATE_POWER_OFF;
++		if (genpd->suspend_power_off) {
++			/*
++			 * If the domain was off before the hibernation, make
++			 * sure it will be off going forward.
++			 */
++			if (genpd->power_off)
++				genpd->power_off(genpd);
++		}
  	}
-@@ -53,6 +57,7 @@ static int ch_input_mapping(struct hid_d
  
- static const struct hid_device_id ch_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, ch_devices);
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1396,6 +1396,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHERRY, USB_DEVICE_ID_CHERRY_CYMOTION_SOLAR) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT, USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CVTOUCH, USB_DEVICE_ID_CVTOUCH_SCREEN) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -193,6 +193,7 @@
- #define USB_DEVICE_ID_CHICONY_TACTICAL_PAD	0x0418
- #define USB_DEVICE_ID_CHICONY_MULTI_TOUCH	0xb19d
- #define USB_DEVICE_ID_CHICONY_WIRELESS	0x0618
-+#define USB_DEVICE_ID_CHICONY_WIRELESS2	0x1123
+ 	pm_genpd_poweron(genpd);
+-	genpd->suspended_count--;
+ 	genpd_start_dev(genpd, dev);
  
- #define USB_VENDOR_ID_CHUNGHWAT		0x2247
- #define USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH	0x0001
+ 	return genpd_resume_early(genpd, dev);
+@@ -1558,7 +1568,6 @@ void pm_genpd_init(struct generic_pm_dom
+ 	genpd->poweroff_task = NULL;
+ 	genpd->resume_count = 0;
+ 	genpd->device_count = 0;
+-	genpd->suspended_count = 0;
+ 	genpd->max_off_time_ns = -1;
+ 	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
+ 	genpd->domain.ops.runtime_resume = pm_genpd_runtime_resume;
 
 
