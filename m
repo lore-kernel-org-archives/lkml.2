@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693Ab2C3KgS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:36:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38853 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756201Ab2C3KgM (ORCPT
+	id S933877Ab2C3Kiu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:38:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54782 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932604Ab2C3Kio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:36:12 -0400
-Date: Fri, 30 Mar 2012 11:36:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Michael Bohan <mbohan@codeaurora.org>
-Cc: rnayak@ti.com, lrg@ti.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: Regulator supplies when using Device Tree
-Message-ID: <20120330103602.GE21950@opensource.wolfsonmicro.com>
-References: <4F6BCF47.4090200@codeaurora.org>
- <20120326130005.GQ3098@opensource.wolfsonmicro.com>
- <4F726B96.8070508@codeaurora.org>
- <20120328100957.GD3232@opensource.wolfsonmicro.com>
- <4F736451.8020900@codeaurora.org>
- <20120328193341.GD3232@opensource.wolfsonmicro.com>
- <4F73A798.6030607@codeaurora.org>
- <20120329111159.GJ3668@opensource.wolfsonmicro.com>
- <4F7509F4.6010303@codeaurora.org>
+	Fri, 30 Mar 2012 06:38:44 -0400
+Date: Fri, 30 Mar 2012 11:38:28 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+	__dma_request_channel()
+Message-ID: <20120330103828.GC22981@n2100.arm.linux.org.uk>
+References: <Pine.LNX.4.64.1203091022200.7852@axis700.grange> <1331285959.4657.76.camel@vkoul-udesk3> <Pine.LNX.4.64.1203091049060.7852@axis700.grange> <1331520476.4657.79.camel@vkoul-udesk3> <Pine.LNX.4.64.1203161029490.13465@axis700.grange> <CACRpkdYiuERV08=UhBRnj2AjC_RxF+EY+zHAtEp6KYf2W10C_Q@mail.gmail.com> <Pine.LNX.4.64.1203161128120.13465@axis700.grange> <CACRpkdY7ApBc-gbSdf+=7PLtKSMvzYuBi7RNnVgi=vjcd-KvhQ@mail.gmail.com> <Pine.LNX.4.64.1203161522570.13465@axis700.grange> <CACRpkdbp3EfF-4z2uuy+gLdXvHqUqj+Zmp-GZxhaHv_RxxRKHQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M/SuVGWktc5uNpra"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F7509F4.6010303@codeaurora.org>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdbp3EfF-4z2uuy+gLdXvHqUqj+Zmp-GZxhaHv_RxxRKHQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 30, 2012 at 07:44:09AM +0200, Linus Walleij wrote:
+> However you're right (in some later mail) that we need to distinguish
+> between RX/TX channels at this point, so I can agree we need some
+> additional parameter, but that should be very abstract, not containing
+> any custom stuff or any void * or something like that.
 
---M/SuVGWktc5uNpra
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No you don't.  DMA engines can generally deal with transfers operating in
+either direction on a single channel.
 
-On Thu, Mar 29, 2012 at 06:18:44PM -0700, Michael Bohan wrote:
-> On 3/29/2012 4:11 AM, Mark Brown wrote:
-> >On Wed, Mar 28, 2012 at 05:06:48PM -0700, Michael Bohan wrote:
+Where many of the restrictions come from is the way virtual channels are
+bound to request signals.
 
-> >>Are you aware of any other examples of submitted drivers with Device
-> >>Tree support that implement regulator devices that optionally have
-> >>an upstream supply? I looked at your tree recently and couldn't see
-> >>any such cases.
+Take for instance MMC, where that is strictly half-duplex.  You're either
+transferring data to the card, or from the card.  Why would you want to
+claim two channels _if_ there was some way to properly configure the DMA
+engine between those two modes?
 
-> >No, pretty much any drivers which optionally have an upstream supply
-> >would be buggy and should therefore run into trouble during review.
+That's something which is lacking in the current DMA engine API, and the
+reason is that the data required to do that is somewhat platform specific
+and therefore nebulous.  Eg, it could require a different DMA handshake
+signal, different external MUX selection, or something like that.
 
-> Can you please elaborate on why this is a bad design? We have always
-> used this model in the past, and the regulator framework is happy to
-> support it.
+As I'm looking at converting OMAP to DMA engine, if we persist with our
+current approach, I need 128 virtual DMA channels, one per request
+signal.  It would be better to either create these on the fly or sort
+out some way that channels can be _properly_ reconfigured between
+different handshake lines.
 
-The support for regulator-regulator supplies has always been problematic
-and infrequently used -
-
-> We have identical hardware blocks that can be positioned to take a
-> supply or not. So are you proposing we copy / paste our driver so
-> that in one case rdesc->supply_name is NULL and the other case a
-> valid supply name? I'm guessing you aren't implying this, but what
-> alternatives do you suggest to support such a model?
-
-Please be more specific about what you're actually trying to physically
-accomplish here.  It would be *extremely* unusual to see a regulator
-which was able to do something useful without any input power and if you
-genuinely have this need whatever you're doing probably needs the
-framework to actually be aware of what's going on.  However...
-
-> I was hoping that we could continue to treat regulator supplies as
-> normal supplies, but somehow allow the framework to determine
-> whether a regulator supply exists or not in the Device Tree
-> configuration so the driver doesn't have to.
-
-...this doesn't really make any sense - the new scheme makes regulator
-supplies *more* like normal supplies, not less, since they're now
-specified in exactly the same way as other supplies and are just assumed
-to be provided by the leaf driver.
-
---M/SuVGWktc5uNpra
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPdYwqAAoJEBus8iNuMP3d0lgP/R2UJVyTEy0TAcSAo8tJTYa/
-pYO4h1ObVEDhidKyXtkdZFaJcGb1X/R2vvLdmkUAQLThFXCnd2Hem5IzP0mIGcNB
-harVUTVJBWvqrpJXG1x+u4ZZqPhBHpEnKJ38GspbVkSeiTntxaXACy2qvIgVkMms
-CmK4/IaK+X5hvlfvcoe1/QDnZ5j+eo79JX85ZCo1lLaghTP1SqnU/0dmLeDPK/Df
-TmMr+eeTC43qnjuVm36+DI/5YDXWs071Q39Zi+/4S2PX0TlfjiAHpPc2ICGUrA7i
-npzrJ3R7fEmn20FjSHoL9WGJwZYv8ugWt5jSwxisX6dOjDeaN2mA/fDgQhuqscqX
-nofGiGDZhqgqSaLLjdWKdU3OgkhUvluYya38RJCnz6lsP4dAeebthDGa4Shzn5Bh
-pf4INRm2UDPMLRgpJffra30DLumVqzX/1/p5D6n4fbLe6fp3todz8KWpEwunGFtw
-JBuxEgGYYO5vWDOeFPw1Fq2IuEEG9xBZXFRqIchHKAAISiaC/w119GUvIoZfnnDX
-07QW2qo6Y9W0/BR2QhHv9VygZeTQvQFQhlOF9//k0Yf/mD7zUgeygelntFL2OCos
-YYmWscxC36cByARYhQZ+Rc4CL5lJNSmNQ7ntuTcs9Zwjw65tWTYUQuDOY15LHbJd
-j3Ljyz5mIK7IN02D3ZJE
-=8hY8
------END PGP SIGNATURE-----
-
---M/SuVGWktc5uNpra--
+Actually, I think that's the key thing: the handshake lines should be
+the data involved in channel selection and nothing else - though as I've
+pointed out already, there's the complication for external MUXing between
+the DMA engine and the peripheral which makes that non-trivial.
