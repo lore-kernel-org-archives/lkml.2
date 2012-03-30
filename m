@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934814Ab2C3VFH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:05:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934790Ab2C3VE4 (ORCPT
+	id S964918Ab2C3XE1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:04:27 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:42730 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934819Ab2C3XET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:56 -0400
-Message-Id: <20120330195727.259385218@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrew Vagin <avagin@openvz.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: [ 036/108] uevent: send events in correct order according to seqnum (v3)
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+	Fri, 30 Mar 2012 19:04:19 -0400
+Message-Id: <201203302304.q2UN4IJr011509@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Mar 2012 19:03:04 -0400
+Subject: [PATCH] tile-srom.c driver: minor code cleanup
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 23:04:19.0004 (UTC) FILETIME=[6FC577C0:01CD0EC9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This doesn't fix any bugs, but it makes the code a little cleaner.
 
-------------------
-
-From: Andrew Vagin <avagin@openvz.org>
-
-commit 7b60a18da393ed70db043a777fd9e6d5363077c4 upstream.
-
-The queue handling in the udev daemon assumes that the events are
-ordered.
-
-Before this patch uevent_seqnum is incremented under sequence_lock,
-than an event is send uner uevent_sock_mutex. I want to say that code
-contained a window between incrementing seqnum and sending an event.
-
-This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
-
-v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
-v3: unlock the mutex before the goto exit
-
-Thanks for Kay for the comments.
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
-Tested-By: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- lib/kobject_uevent.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/char/tile-srom.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -29,16 +29,17 @@
+diff --git a/drivers/char/tile-srom.c b/drivers/char/tile-srom.c
+index 4dc0194..3b22a60 100644
+--- a/drivers/char/tile-srom.c
++++ b/drivers/char/tile-srom.c
+@@ -194,17 +194,17 @@ static ssize_t srom_read(struct file *filp, char __user *buf,
  
- u64 uevent_seqnum;
- char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
--static DEFINE_SPINLOCK(sequence_lock);
- #ifdef CONFIG_NET
- struct uevent_sock {
- 	struct list_head list;
- 	struct sock *sk;
- };
- static LIST_HEAD(uevent_sock_list);
--static DEFINE_MUTEX(uevent_sock_mutex);
- #endif
+ 		hv_retval = _srom_read(srom->hv_devhdl, kernbuf,
+ 				       *f_pos, bytes_this_pass);
+-		if (hv_retval > 0) {
+-			if (copy_to_user(buf, kernbuf, hv_retval) != 0) {
+-				retval = -EFAULT;
+-				break;
+-			}
+-		} else if (hv_retval <= 0) {
++		if (hv_retval <= 0) {
+ 			if (retval == 0)
+ 				retval = hv_retval;
+ 			break;
+ 		}
  
-+/* This lock protects uevent_seqnum and uevent_sock_list */
-+static DEFINE_MUTEX(uevent_sock_mutex);
++		if (copy_to_user(buf, kernbuf, hv_retval) != 0) {
++			retval = -EFAULT;
++			break;
++		}
 +
- /* the strings here must match the enum in include/linux/kobject.h */
- static const char *kobject_actions[] = {
- 	[KOBJ_ADD] =		"add",
-@@ -136,7 +137,6 @@ int kobject_uevent_env(struct kobject *k
- 	struct kobject *top_kobj;
- 	struct kset *kset;
- 	const struct kset_uevent_ops *uevent_ops;
--	u64 seq;
- 	int i = 0;
- 	int retval = 0;
- #ifdef CONFIG_NET
-@@ -243,17 +243,16 @@ int kobject_uevent_env(struct kobject *k
- 	else if (action == KOBJ_REMOVE)
- 		kobj->state_remove_uevent_sent = 1;
- 
-+	mutex_lock(&uevent_sock_mutex);
- 	/* we will send an event, so request a new sequence number */
--	spin_lock(&sequence_lock);
--	seq = ++uevent_seqnum;
--	spin_unlock(&sequence_lock);
--	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
--	if (retval)
-+	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)++uevent_seqnum);
-+	if (retval) {
-+		mutex_unlock(&uevent_sock_mutex);
- 		goto exit;
-+	}
- 
- #if defined(CONFIG_NET)
- 	/* send netlink message */
--	mutex_lock(&uevent_sock_mutex);
- 	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
- 		struct sock *uevent_sock = ue_sk->sk;
- 		struct sk_buff *skb;
-@@ -287,8 +286,8 @@ int kobject_uevent_env(struct kobject *k
- 		} else
- 			retval = -ENOMEM;
- 	}
--	mutex_unlock(&uevent_sock_mutex);
- #endif
-+	mutex_unlock(&uevent_sock_mutex);
- 
- 	/* call uevent_helper, usually only enabled during early boot */
- 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
-
+ 		retval += hv_retval;
+ 		*f_pos += hv_retval;
+ 		buf += hv_retval;
+-- 
+1.6.5.2
 
