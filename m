@@ -1,278 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab2C3Gni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 02:43:38 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:40960 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755060Ab2C3Gnd (ORCPT
+	id S1755723Ab2C3GzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 02:55:09 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39631 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab2C3GzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 02:43:33 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2U6hQt3008308, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v3 5/5] r8169: support RTL8411
-Date: Fri, 30 Mar 2012 14:48:06 +0800
-Message-ID: <1333090086-1815-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1333089184-1773-5-git-send-email-hayeswang@realtek.com>
-References: <1333089184-1773-5-git-send-email-hayeswang@realtek.com>
+	Fri, 30 Mar 2012 02:55:04 -0400
+Date: Fri, 30 Mar 2012 03:54:56 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: Re: [PATCH] Revert "Bluetooth: Always enable management interface"
+Message-ID: <20120330065456.GA9173@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@intel.com>
+References: <1332983958-2734-1-git-send-email-keithp@keithp.com>
+ <20120329022839.GA26111@joana>
+ <86r4wct9q7.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86r4wct9q7.fsf@sumi.keithp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support the new chip RTL8411.
+Hi Keith,
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |  140 +++++++++++++++++++++++++++++++++-
- 1 files changed, 138 insertions(+), 2 deletions(-)
+* Keith Packard <keithp@keithp.com> [2012-03-28 19:35:44 -0700]:
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 3ba49dc..dcc1ec5 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -46,6 +46,7 @@
- #define FIRMWARE_8168F_2	"rtl_nic/rtl8168f-2.fw"
- #define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
- #define FIRMWARE_8402_1		"rtl_nic/rtl8402-1.fw"
-+#define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
- 
- #ifdef RTL8169_DEBUG
- #define assert(expr) \
-@@ -136,6 +137,7 @@ enum mac_version {
- 	RTL_GIGA_MAC_VER_35,
- 	RTL_GIGA_MAC_VER_36,
- 	RTL_GIGA_MAC_VER_37,
-+	RTL_GIGA_MAC_VER_38,
- 	RTL_GIGA_MAC_NONE   = 0xff,
- };
- 
-@@ -251,6 +253,9 @@ static const struct {
- 	[RTL_GIGA_MAC_VER_37] =
- 		_R("RTL8402",		RTL_TD_1, FIRMWARE_8402_1,
- 							JUMBO_1K, true),
-+	[RTL_GIGA_MAC_VER_38] =
-+		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_1,
-+							JUMBO_9K, false),
- };
- #undef _R
- 
-@@ -783,6 +788,7 @@ MODULE_FIRMWARE(FIRMWARE_8105E_1);
- MODULE_FIRMWARE(FIRMWARE_8168F_1);
- MODULE_FIRMWARE(FIRMWARE_8168F_2);
- MODULE_FIRMWARE(FIRMWARE_8402_1);
-+MODULE_FIRMWARE(FIRMWARE_8411_1);
- 
- static void rtl_lock_work(struct rtl8169_private *tp)
- {
-@@ -1262,7 +1268,8 @@ static void rtl_link_chg_patch(struct rtl8169_private *tp)
- 	if (!netif_running(dev))
- 		return;
- 
--	if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
-+	if (tp->mac_version == RTL_GIGA_MAC_VER_34 ||
-+	    tp->mac_version == RTL_GIGA_MAC_VER_38) {
- 		if (RTL_R8(PHYstatus) & _1000bpsF) {
- 			rtl_eri_write(ioaddr, 0x1bc, ERIAR_MASK_1111,
- 				      0x00000011, ERIAR_EXGMAC);
-@@ -1867,6 +1874,7 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
- 		int mac_version;
- 	} mac_info[] = {
- 		/* 8168F family. */
-+		{ 0x7c800000, 0x48800000,	RTL_GIGA_MAC_VER_38 },
- 		{ 0x7cf00000, 0x48100000,	RTL_GIGA_MAC_VER_36 },
- 		{ 0x7cf00000, 0x48000000,	RTL_GIGA_MAC_VER_35 },
- 
-@@ -3084,6 +3092,104 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl8168f_hw_phy_config(tp);
- }
- 
-+static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	static const struct phy_reg phy_reg_init[] = {
-+		/* Channel estimation fine tune */
-+		{ 0x1f, 0x0003 },
-+		{ 0x09, 0xa20f },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Modify green table for giga & fnet */
-+		{ 0x1f, 0x0005 },
-+		{ 0x05, 0x8b55 },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b5e },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b67 },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b70 },
-+		{ 0x06, 0x0000 },
-+		{ 0x1f, 0x0000 },
-+		{ 0x1f, 0x0007 },
-+		{ 0x1e, 0x0078 },
-+		{ 0x17, 0x0000 },
-+		{ 0x19, 0x00aa },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Modify green table for 10M */
-+		{ 0x1f, 0x0005 },
-+		{ 0x05, 0x8b79 },
-+		{ 0x06, 0xaa00 },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Disable hiimpedance detection (RTCT) */
-+		{ 0x1f, 0x0003 },
-+		{ 0x01, 0x328a },
-+		{ 0x1f, 0x0000 }
-+	};
-+
-+
-+	rtl_apply_firmware(tp);
-+
-+	rtl8168f_hw_phy_config(tp);
-+
-+	/* Improve 2-pair detection performance */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b85);
-+	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
-+
-+	/* Modify green table for giga */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b54);
-+	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0800);
-+	rtl_writephy(tp, 0x05, 0x8b5d);
-+	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0800);
-+	rtl_writephy(tp, 0x05, 0x8a7c);
-+	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_writephy(tp, 0x05, 0x8a7f);
-+	rtl_w1w0_phy(tp, 0x06, 0x0100, 0x0000);
-+	rtl_writephy(tp, 0x05, 0x8a82);
-+	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_writephy(tp, 0x05, 0x8a85);
-+	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_writephy(tp, 0x05, 0x8a88);
-+	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* uc same-seed solution */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b85);
-+	rtl_w1w0_phy(tp, 0x06, 0x8000, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* eee setting */
-+	rtl_w1w0_eri(ioaddr, 0x1b0, ERIAR_MASK_0001, 0x00, 0x03, ERIAR_EXGMAC);
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b85);
-+	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x2000);
-+	rtl_writephy(tp, 0x1f, 0x0004);
-+	rtl_writephy(tp, 0x1f, 0x0007);
-+	rtl_writephy(tp, 0x1e, 0x0020);
-+	rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0100);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_writephy(tp, 0x0d, 0x0007);
-+	rtl_writephy(tp, 0x0e, 0x003c);
-+	rtl_writephy(tp, 0x0d, 0x4007);
-+	rtl_writephy(tp, 0x0e, 0x0000);
-+	rtl_writephy(tp, 0x0d, 0x0000);
-+
-+	/* Green feature */
-+	rtl_writephy(tp, 0x1f, 0x0003);
-+	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
-+	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+}
-+
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -3238,6 +3344,10 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 		rtl8402_hw_phy_config(tp);
- 		break;
- 
-+	case RTL_GIGA_MAC_VER_38:
-+		rtl8411_hw_phy_config(tp);
-+		break;
-+
- 	default:
- 		break;
- 	}
-@@ -3476,6 +3586,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_33:
- 	case RTL_GIGA_MAC_VER_34:
- 	case RTL_GIGA_MAC_VER_37:
-+	case RTL_GIGA_MAC_VER_38:
- 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
- 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
- 		break;
-@@ -3722,6 +3833,7 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_34:
- 	case RTL_GIGA_MAC_VER_35:
- 	case RTL_GIGA_MAC_VER_36:
-+	case RTL_GIGA_MAC_VER_38:
- 		ops->down	= r8168_pll_power_down;
- 		ops->up		= r8168_pll_power_up;
- 		break;
-@@ -4008,7 +4120,8 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
- 	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_35 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_36 ||
--	           tp->mac_version == RTL_GIGA_MAC_VER_37) {
-+	           tp->mac_version == RTL_GIGA_MAC_VER_37 ||
-+	           tp->mac_version == RTL_GIGA_MAC_VER_38) {
- 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
- 		while (!(RTL_R32(TxConfig) & TXCFG_EMPTY))
- 			udelay(100);
-@@ -4339,6 +4452,7 @@ static void __devinit rtl_init_csi_ops(struct rtl8169_private *tp)
- 		break;
- 
- 	case RTL_GIGA_MAC_VER_37:
-+	case RTL_GIGA_MAC_VER_38:
- 		ops->write	= r8402_csi_write;
- 		ops->read	= r8402_csi_read;
- 		break;
-@@ -4727,6 +4841,24 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
- 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
- }
- 
-+static void rtl_hw_start_8411(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	static const struct ephy_info e_info_8168f_1[] = {
-+		{ 0x06, 0x00c0,	0x0020 },
-+		{ 0x0f, 0xffff,	0x5200 },
-+		{ 0x1e, 0x0000,	0x4000 },
-+		{ 0x19, 0x0000,	0x0224 }
-+	};
-+
-+	rtl_hw_start_8168f(tp);
-+
-+	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
-+
-+	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0x0000,
-+		     ERIAR_EXGMAC);
-+}
-+
- static void rtl_hw_start_8168(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -4824,6 +4956,10 @@ static void rtl_hw_start_8168(struct net_device *dev)
- 		rtl_hw_start_8168f_1(tp);
- 		break;
- 
-+	case RTL_GIGA_MAC_VER_38:
-+		rtl_hw_start_8411(tp);
-+		break;
-+
- 	default:
- 		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
- 			dev->name, tp->mac_version);
--- 
-1.7.7.6
+> <#part sign=pgpmime>
+> On Wed, 28 Mar 2012 23:28:39 -0300, Gustavo Padovan <gustavo@padovan.org> wrote:
+> 
+> > A consequence is that you'll need to use newer version of bluez, at least 4.99.
+> > Or call the bluetooth daemon (from a pre 4.99 version) with a parameter to
+> > disable the new interface:
+> 
+> That's not OK -- you're breaking user space with this kernel change. I
+> know I get bashed every time I suggest that we 'fix' the kernel and
+> require new user space X bits...
 
+Can you try the following patch? It should fix the compatibility problem you had.
+
+	Gustavo
+--
+
+commit d21c1177b9cf067809ccee2746633cfea3a8b062
+Author: Gustavo Padovan <gustavo@padovan.org>
+Date:   Thu Mar 29 09:47:53 2012 -0300
+
+    Bluetooth: Fix userspace compatibility issue with mgmt interface
+    
+    To ensure that old user space versions do not accidentally pick up and
+    try to use the management channel, use a different channel number.
+    
+    Reported-by: Keith Packard <keithp@keithp.com>
+    Acked-by: Johan Hedberg <johan.hedberg@intel.com>
+    Acked-by: Marcel Holtmann <marcel@holtmann.org>
+    Signed-off-by: Gustavo Padovan <gustavo@padovan.org>
+
+diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
+index 344b0f9..ba7f148 100644
+--- a/include/net/bluetooth/hci.h
++++ b/include/net/bluetooth/hci.h
+@@ -1327,8 +1327,8 @@ struct sockaddr_hci {
+ #define HCI_DEV_NONE   0xffff
+ 
+ #define HCI_CHANNEL_RAW                0
+-#define HCI_CHANNEL_CONTROL    1
+ #define HCI_CHANNEL_MONITOR    2
++#define HCI_CHANNEL_CONTROL    3
+ 
+ struct hci_filter {
+        unsigned long type_mask;
