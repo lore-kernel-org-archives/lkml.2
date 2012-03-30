@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760059Ab2C3Sio (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 14:38:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17540 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755411Ab2C3Sil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 14:38:41 -0400
-Date: Fri, 30 Mar 2012 20:31:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@redhat.com>, Jason Baron <jbaron@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: syscall_regfunc() && TIF_SYSCALL_TRACEPOINT
-Message-ID: <20120330183104.GA12927@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1760148Ab2C3Skj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 14:40:39 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51056 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758565Ab2C3Skf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 14:40:35 -0400
+From: Igor Murzov <intergalactic.anonymous@gmail.com>
+To: Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Sergey V." <sftp.mtuci@gmail.com>, Igor Murzov <e-mail@date.by>
+Subject: [PATCH] MAINTAINERS: Update git url for ACPI
+Date: Fri, 30 Mar 2012 22:40:12 +0400
+Message-Id: <1333132812-20100-1-git-send-email-e-mail@date.by>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Signed-off-by: Igor Murzov <e-mail@date.by>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I've looked at syscall_regfunc/unregfunc by accident, and I am
-a bit confused...
-
-	void syscall_regfunc(void)
-	{
-		unsigned long flags;
-		struct task_struct *g, *t;
-
-		if (!sys_tracepoint_refcount) {
-			read_lock_irqsave(&tasklist_lock, flags);
-
-Why _irqsave? write_lock(tasklist) needs to disable irqs, but read_
-doesn't. Any subtle reason I missed?
-
-			do_each_thread(g, t) {
-				/* Skip kernel threads. */
-				if (t->mm)
-
-We should check PF_KTHREAD, not ->mm.
-
-					set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-
-But the main question is, can't we race with clone() and miss the
-new child? The new task is not "visible" to do_each_thread() until
-copy_process()->list_add_tail_rcu(thread_group/init_task.tasks).
-
-Don't we need something like the patch below?
-
-Oleg.
-
-
---- x/kernel/fork.c
-+++ x/kernel/fork.c
-@@ -1446,7 +1446,12 @@ static struct task_struct *copy_process(
- 
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+#ifdef CONFIG_TRACEPOINTS
-+	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+#endif
- 	write_unlock_irq(&tasklist_lock);
-+
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	if (clone_flags & CLONE_THREAD)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index eecf344..c159e2f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -228,7 +228,7 @@ M:	Len Brown <lenb@kernel.org>
+ L:	linux-acpi@vger.kernel.org
+ W:	http://www.lesswatts.org/projects/acpi/
+ Q:	http://patchwork.kernel.org/project/linux-acpi/list/
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux
+ S:	Supported
+ F:	drivers/acpi/
+ F:	drivers/pnp/pnpacpi/
+-- 
+1.7.5.1
 
