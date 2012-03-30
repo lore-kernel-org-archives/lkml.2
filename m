@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966220Ab2C3Vhp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:37:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41961 "EHLO
+	id S936299Ab2C3ViW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:38:22 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33600 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966112Ab2C3VcV (ORCPT
+	by vger.kernel.org with ESMTP id S966072Ab2C3VcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:21 -0400
-X-Sasl-enc: SZ4Y1FQHa2By5u5ymP8wJ4cRdV02k9S+ifNUi6AVtqwr 1333143140
-X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:58 2012
-Message-Id: <20120330194858.415834241@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:32:17 -0400
+X-Sasl-enc: fPPDsfddGEG4v55NTS7WnmcU06dxzuv5FdHL7I5Cx+qh 1333143136
+X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:56 2012
+Message-Id: <20120330194856.784259750@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:05 -0700
+Date: Fri, 30 Mar 2012 12:50:57 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Evans <matt@ozlabs.org>,
-        Indan Zupancic <indan@nul.nu>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 160/175] net: bpf_jit: fix BPF_S_LDX_B_MSH compilation
+        alan@lxorguk.ukuu.org.uk, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 152/175] dm thin: fix stacked bi_next usage
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,60 +27,231 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Joe Thornber <ejt@redhat.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 6f94a4c45a6f744383f9f695dde019998db3df55 upstream.
 
-[ Upstream commit dc72d99dabb870ca5bd6d9fff674be853bb4a88d ]
+Avoid using the bi_next field for the holder of a cell when deferring
+bios because a stacked device below might change it.  Store the
+holder in a new field in struct cell instead.
 
-Matt Evans spotted that x86 bpf_jit was incorrectly handling negative
-constant offsets in BPF_S_LDX_B_MSH instruction.
+When a cell is created, the bio that triggered creation (the holder) was
+added to the same bio list as subsequent bios.  In some cases we pass
+this holder bio directly to devices underneath.  If those devices use
+the bi_next field there will be trouble...
 
-We need to abort JIT compilation like we do in common_load so that
-filter uses the interpreter code and can call __load_pointer()
+This also simplifies some code that had to work out which bio was the
+holder.
 
-Reference: http://lists.openwall.net/netdev/2011/07/19/11
-
-Thanks to Indan Zupancic to bring back this issue.
-
-Reported-by: Matt Evans <matt@ozlabs.org>
-Reported-by: Indan Zupancic <indan@nul.nu>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/x86/net/bpf_jit_comp.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -475,8 +475,10 @@ void bpf_jit_compile(struct sk_filter *f
- 			case BPF_S_LD_W_ABS:
- 				func = sk_load_word;
- common_load:			seen |= SEEN_DATAREF;
--				if ((int)K < 0)
-+				if ((int)K < 0) {
-+					/* Abort the JIT because __load_pointer() is needed. */
- 					goto out;
-+				}
- 				t_offset = func - (image + addrs[i]);
- 				EMIT1_off32(0xbe, K); /* mov imm32,%esi */
- 				EMIT1_off32(0xe8, t_offset); /* call */
-@@ -489,14 +491,8 @@ common_load:			seen |= SEEN_DATAREF;
- 				goto common_load;
- 			case BPF_S_LDX_B_MSH:
- 				if ((int)K < 0) {
--					if (pc_ret0 > 0) {
--						/* addrs[pc_ret0 - 1] is the start address */
--						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
--						break;
--					}
--					CLEAR_A();
--					EMIT_JMP(cleanup_addr - addrs[i]);
--					break;
-+					/* Abort the JIT because __load_pointer() is needed. */
-+					goto out;
- 				}
- 				seen |= SEEN_DATAREF | SEEN_XREG;
- 				t_offset = sk_load_byte_msh - (image + addrs[i]);
+---
+ drivers/md/dm-thin.c |  126 +++++++++++++++++++++++++++++----------------------
+ 1 file changed, 74 insertions(+), 52 deletions(-)
+
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -124,7 +124,7 @@ struct cell {
+ 	struct hlist_node list;
+ 	struct bio_prison *prison;
+ 	struct cell_key key;
+-	unsigned count;
++	struct bio *holder;
+ 	struct bio_list bios;
+ };
+ 
+@@ -220,54 +220,59 @@ static struct cell *__search_bucket(stru
+  * This may block if a new cell needs allocating.  You must ensure that
+  * cells will be unlocked even if the calling thread is blocked.
+  *
+- * Returns the number of entries in the cell prior to the new addition
+- * or < 0 on failure.
++ * Returns 1 if the cell was already held, 0 if @inmate is the new holder.
+  */
+ static int bio_detain(struct bio_prison *prison, struct cell_key *key,
+ 		      struct bio *inmate, struct cell **ref)
+ {
+-	int r;
++	int r = 1;
+ 	unsigned long flags;
+ 	uint32_t hash = hash_key(prison, key);
+-	struct cell *uninitialized_var(cell), *cell2 = NULL;
++	struct cell *cell, *cell2;
+ 
+ 	BUG_ON(hash > prison->nr_buckets);
+ 
+ 	spin_lock_irqsave(&prison->lock, flags);
+-	cell = __search_bucket(prison->cells + hash, key);
+ 
+-	if (!cell) {
+-		/*
+-		 * Allocate a new cell
+-		 */
+-		spin_unlock_irqrestore(&prison->lock, flags);
+-		cell2 = mempool_alloc(prison->cell_pool, GFP_NOIO);
+-		spin_lock_irqsave(&prison->lock, flags);
+-
+-		/*
+-		 * We've been unlocked, so we have to double check that
+-		 * nobody else has inserted this cell in the meantime.
+-		 */
+-		cell = __search_bucket(prison->cells + hash, key);
+-
+-		if (!cell) {
+-			cell = cell2;
+-			cell2 = NULL;
+-
+-			cell->prison = prison;
+-			memcpy(&cell->key, key, sizeof(cell->key));
+-			cell->count = 0;
+-			bio_list_init(&cell->bios);
+-			hlist_add_head(&cell->list, prison->cells + hash);
+-		}
++	cell = __search_bucket(prison->cells + hash, key);
++	if (cell) {
++		bio_list_add(&cell->bios, inmate);
++		goto out;
+ 	}
+ 
+-	r = cell->count++;
+-	bio_list_add(&cell->bios, inmate);
++	/*
++	 * Allocate a new cell
++	 */
+ 	spin_unlock_irqrestore(&prison->lock, flags);
++	cell2 = mempool_alloc(prison->cell_pool, GFP_NOIO);
++	spin_lock_irqsave(&prison->lock, flags);
+ 
+-	if (cell2)
++	/*
++	 * We've been unlocked, so we have to double check that
++	 * nobody else has inserted this cell in the meantime.
++	 */
++	cell = __search_bucket(prison->cells + hash, key);
++	if (cell) {
+ 		mempool_free(cell2, prison->cell_pool);
++		bio_list_add(&cell->bios, inmate);
++		goto out;
++	}
++
++	/*
++	 * Use new cell.
++	 */
++	cell = cell2;
++
++	cell->prison = prison;
++	memcpy(&cell->key, key, sizeof(cell->key));
++	cell->holder = inmate;
++	bio_list_init(&cell->bios);
++	hlist_add_head(&cell->list, prison->cells + hash);
++
++	r = 0;
++
++out:
++	spin_unlock_irqrestore(&prison->lock, flags);
+ 
+ 	*ref = cell;
+ 
+@@ -283,8 +288,8 @@ static void __cell_release(struct cell *
+ 
+ 	hlist_del(&cell->list);
+ 
+-	if (inmates)
+-		bio_list_merge(inmates, &cell->bios);
++	bio_list_add(inmates, cell->holder);
++	bio_list_merge(inmates, &cell->bios);
+ 
+ 	mempool_free(cell, prison->cell_pool);
+ }
+@@ -305,22 +310,44 @@ static void cell_release(struct cell *ce
+  * bio may be in the cell.  This function releases the cell, and also does
+  * a sanity check.
+  */
++static void __cell_release_singleton(struct cell *cell, struct bio *bio)
++{
++	hlist_del(&cell->list);
++	BUG_ON(cell->holder != bio);
++	BUG_ON(!bio_list_empty(&cell->bios));
++}
++
+ static void cell_release_singleton(struct cell *cell, struct bio *bio)
+ {
+-	struct bio_prison *prison = cell->prison;
+-	struct bio_list bios;
+-	struct bio *b;
+ 	unsigned long flags;
+-
+-	bio_list_init(&bios);
++	struct bio_prison *prison = cell->prison;
+ 
+ 	spin_lock_irqsave(&prison->lock, flags);
+-	__cell_release(cell, &bios);
++	__cell_release_singleton(cell, bio);
+ 	spin_unlock_irqrestore(&prison->lock, flags);
++}
++
++/*
++ * Sometimes we don't want the holder, just the additional bios.
++ */
++static void __cell_release_no_holder(struct cell *cell, struct bio_list *inmates)
++{
++	struct bio_prison *prison = cell->prison;
++
++	hlist_del(&cell->list);
++	bio_list_merge(inmates, &cell->bios);
++
++	mempool_free(cell, prison->cell_pool);
++}
++
++static void cell_release_no_holder(struct cell *cell, struct bio_list *inmates)
++{
++	unsigned long flags;
++	struct bio_prison *prison = cell->prison;
+ 
+-	b = bio_list_pop(&bios);
+-	BUG_ON(b != bio);
+-	BUG_ON(!bio_list_empty(&bios));
++	spin_lock_irqsave(&prison->lock, flags);
++	__cell_release_no_holder(cell, inmates);
++	spin_unlock_irqrestore(&prison->lock, flags);
+ }
+ 
+ static void cell_error(struct cell *cell)
+@@ -800,21 +827,16 @@ static void cell_defer(struct thin_c *tc
+  * Same as cell_defer above, except it omits one particular detainee,
+  * a write bio that covers the block and has already been processed.
+  */
+-static void cell_defer_except(struct thin_c *tc, struct cell *cell,
+-			      struct bio *exception)
++static void cell_defer_except(struct thin_c *tc, struct cell *cell)
+ {
+ 	struct bio_list bios;
+-	struct bio *bio;
+ 	struct pool *pool = tc->pool;
+ 	unsigned long flags;
+ 
+ 	bio_list_init(&bios);
+-	cell_release(cell, &bios);
+ 
+ 	spin_lock_irqsave(&pool->lock, flags);
+-	while ((bio = bio_list_pop(&bios)))
+-		if (bio != exception)
+-			bio_list_add(&pool->deferred_bios, bio);
++	cell_release_no_holder(cell, &pool->deferred_bios);
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+ 	wake_worker(pool);
+@@ -854,7 +876,7 @@ static void process_prepared_mapping(str
+ 	 * the bios in the cell.
+ 	 */
+ 	if (bio) {
+-		cell_defer_except(tc, m->cell, bio);
++		cell_defer_except(tc, m->cell);
+ 		bio_endio(bio, 0);
+ 	} else
+ 		cell_defer(tc, m->cell, m->data_block);
 
 
