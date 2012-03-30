@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965153Ab2C3VO3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:14:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S965190Ab2C3VOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:14:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965128Ab2C3VOX (ORCPT
+	with ESMTP id S965165Ab2C3VOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:23 -0400
-Message-Id: <20120330194857.235867140@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:35 -0400
+Message-Id: <20120330194857.057229934@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:20 -0700
+Date: Fri, 30 Mar 2012 12:50:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
-        Mike Isely <isely@pobox.com>,
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 107/149] [media] pvrusb2: fix 7MHz & 8MHz DVB-T tuner support for HVR1900 rev D1F5
+Subject: [ 106/149] [media] lgdt330x: fix signedness error in i2c_read_demod_bytes()
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Krufky <mkrufky@linuxtv.org>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 9ab2393fc3e460cd2040de1483918eb17abb822f upstream.
+commit 34817174fca0c5512c2d5b6ea0fc37a0337ce1d8 upstream.
 
-The D1F5 revision of the WinTV HVR-1900 uses a tda18271c2 tuner
-instead of a tda18271c1 tuner as used in revision D1E9. To
-account for this, we must hardcode the frontend configuration
-to use the same IF frequency configuration for both revisions
-of the device.
+The error handling in lgdt3303_read_status() and lgdt330x_read_ucblocks()
+doesn't work, because i2c_read_demod_bytes() returns a u8 and (err < 0)
+is always false.
 
-6MHz DVB-T is unaffected by this issue, as the recommended
-IF Frequency configuration for 6MHz DVB-T is the same on both
-c1 and c2 revisions of the tda18271 tuner.
+        err = i2c_read_demod_bytes(state, 0x58, buf, 1);
+        if (err < 0)
+                return err;
 
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Cc: Mike Isely <isely@pobox.com>
+Change the return type of i2c_read_demod_bytes() to int.  Also change
+the return value on error to -EIO to make (err < 0) work.
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/pvrusb2/pvrusb2-devattr.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/media/dvb/frontends/lgdt330x.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/media/video/pvrusb2/pvrusb2-devattr.c
-+++ b/drivers/media/video/pvrusb2/pvrusb2-devattr.c
-@@ -320,7 +320,17 @@ static struct tda829x_config tda829x_no_
- 	.probe_tuner = TDA829X_DONT_PROBE,
- };
+--- a/drivers/media/dvb/frontends/lgdt330x.c
++++ b/drivers/media/dvb/frontends/lgdt330x.c
+@@ -104,8 +104,8 @@ static int i2c_write_demod_bytes (struct
+  * then reads the data returned for (len) bytes.
+  */
  
-+static struct tda18271_std_map hauppauge_tda18271_dvbt_std_map = {
-+        .dvbt_6   = { .if_freq = 3300, .agc_mode = 3, .std = 4,
-+                      .if_lvl = 1, .rfagc_top = 0x37, },
-+        .dvbt_7   = { .if_freq = 3800, .agc_mode = 3, .std = 5,
-+                      .if_lvl = 1, .rfagc_top = 0x37, },
-+        .dvbt_8   = { .if_freq = 4300, .agc_mode = 3, .std = 6,
-+                      .if_lvl = 1, .rfagc_top = 0x37, },
-+};
-+
- static struct tda18271_config hauppauge_tda18271_dvb_config = {
-+	.std_map = &hauppauge_tda18271_dvbt_std_map,
- 	.gate    = TDA18271_GATE_ANALOG,
- 	.output_opt = TDA18271_OUTPUT_LT_OFF,
- };
+-static u8 i2c_read_demod_bytes (struct lgdt330x_state* state,
+-			       enum I2C_REG reg, u8* buf, int len)
++static int i2c_read_demod_bytes(struct lgdt330x_state *state,
++				enum I2C_REG reg, u8 *buf, int len)
+ {
+ 	u8 wr [] = { reg };
+ 	struct i2c_msg msg [] = {
+@@ -118,6 +118,8 @@ static u8 i2c_read_demod_bytes (struct l
+ 	ret = i2c_transfer(state->i2c, msg, 2);
+ 	if (ret != 2) {
+ 		printk(KERN_WARNING "lgdt330x: %s: addr 0x%02x select 0x%02x error (ret == %i)\n", __func__, state->config->demod_address, reg, ret);
++		if (ret >= 0)
++			ret = -EIO;
+ 	} else {
+ 		ret = 0;
+ 	}
 
 
