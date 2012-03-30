@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935998Ab2C3VR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:17:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965546Ab2C3VRn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:17:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935955Ab2C3VRQ (ORCPT
+	with ESMTP id S935981Ab2C3VRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:17:16 -0400
-Message-Id: <20120330194827.623010202@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:17:25 -0400
+Message-Id: <20120330194827.188543977@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:38 -0700
+Date: Fri, 30 Mar 2012 12:48:35 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Micha=C5=82=20Wr=C3=B3bel?= <michal.wrobel@flytronic.pl>
-Subject: [ 013/175] USB: ftdi_sio: new PID: LUMEL PD12
+        alan@lxorguk.ukuu.org.uk, Bruno Thomsen <bruno.thomsen@gmail.com>
+Subject: [ 010/175] USB: Microchip VID mislabeled as Hornby VID in ftdi_sio.
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +24,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michał Wróbel <michal.wrobel@flytronic.pl>
+From: Bruno Thomsen <bruno.thomsen@gmail.com>
 
-commit 57e596f3af88ef52dea9640ed5e34ecd38893a02 upstream.
+commit c1cee1d84001815a1b4321c49b995254c0df3100 upstream.
 
-Signed-off-by: Michał Wróbel <michal.wrobel@flytronic.pl>
+Microchip VID (0x04d8) was mislabeled as Hornby VID according to USB-IDs.
+
+A Full Speed USB Demo Board PID (0x000a) was mislabeled as
+Hornby Elite (an Digital Command Controller Console for model railways).
+
+Most likely the Hornby based their design on
+PIC18F87J50 Full Speed USB Demo Board.
+
+Signed-off-by: Bruno Thomsen <bruno.thomsen@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 +-
+ drivers/usb/serial/ftdi_sio_ids.h |   10 +++++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -849,6 +849,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+@@ -797,7 +797,7 @@ static struct usb_device_id id_table_com
  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
+ 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+-	{ USB_DEVICE(HORNBY_VID, HORNBY_ELITE_PID) },
++	{ USB_DEVICE(MICROCHIP_VID, MICROCHIP_USB_BOARD_PID) },
+ 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
+ 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
 --- a/drivers/usb/serial/ftdi_sio_ids.h
 +++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -30,6 +30,8 @@
+@@ -532,10 +532,14 @@
+ #define ADI_GNICEPLUS_PID	0xF001
  
- /*** third-party PIDs (using FTDI_VID) ***/
- 
-+#define FTDI_LUMEL_PD12_PID	0x6002
-+
  /*
-  * Marvell OpenRD Base, Client
-  * http://www.open-rd.org
+- * Hornby Elite
++ * Microchip Technology, Inc.
++ *
++ * MICROCHIP_VID (0x04D8) and MICROCHIP_USB_BOARD_PID (0x000A) are also used by:
++ * Hornby Elite - Digital Command Control Console
++ * http://www.hornby.com/hornby-dcc/controllers/
+  */
+-#define HORNBY_VID		0x04D8
+-#define HORNBY_ELITE_PID	0x000A
++#define MICROCHIP_VID		0x04D8
++#define MICROCHIP_USB_BOARD_PID	0x000A /* CDC RS-232 Emulation Demo */
+ 
+ /*
+  * RATOC REX-USB60F
 
 
