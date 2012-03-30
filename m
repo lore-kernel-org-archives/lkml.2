@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329Ab2C3MG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:06:57 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17759 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933847Ab2C3MGu (ORCPT
+	id S934372Ab2C3MHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:07:12 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:39088 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933847Ab2C3MHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:06:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 30 Mar 2012 05:06:50 -0700
-From: Alok Chauhan <alokc@nvidia.com>
-To: <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
-        <swarren@nvidia.com>, <olof@lixom.net>, <bones@secretlab.ca>,
-        <omaplinuxkernel@gmail.com>, <ccross@android.com>,
-        <ldewangan@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, <dgreid@chromium.org>
-CC: <alokc@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] i2c: tegra: Add delay before reset the controller
-Date: Fri, 30 Mar 2012 17:36:19 +0530
-Message-ID: <1333109179-12445-1-git-send-email-alokc@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-X-NVConfidentiality: public
+	Fri, 30 Mar 2012 08:07:05 -0400
+Date: Fri, 30 Mar 2012 14:06:59 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Sharp <dhsharp@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Justin Teravest <teravest@google.com>,
+        Laurent Chavey <chavey@google.com>, Michael Davidson <md@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace
+ handler
+Message-ID: <20120330120657.GC13022@somewhere.redhat.com>
+References: <4F714982.6020208@zytor.com>
+ <CAL26m8Jfb8bgfDLKZtn2LkYHD6uCccD3UcsSMbHtpnUKR5_mxw@mail.gmail.com>
+ <4F73CC3A.2080901@zytor.com>
+ <CAL26m8+zbbqngfK0fYb+A2UBQ1fZ9Uxrf4VLWqU1VuMzkcF4xw@mail.gmail.com>
+ <20120329062031.GB1376@gmail.com>
+ <CAL26m8+BmN=DxR7LbukM7S4w9XcURjfDFizUNpEcZA_8g4JNVg@mail.gmail.com>
+ <4F74B42F.3050100@zytor.com>
+ <CAL26m8JA4HJQayJW2nYbVpHD7mgd0Bz6rFMipq2Nf6OECiyk1Q@mail.gmail.com>
+ <4F74C0B2.1010100@zytor.com>
+ <CAJL_ekvU8sjt0wi6GjrMiqy03kBZ6YzQkz9TO+MQzQAr_-2VnQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJL_ekvU8sjt0wi6GjrMiqy03kBZ6YzQkz9TO+MQzQAr_-2VnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In NACK error condition, I2C controller violates
-clock-to-data setup time before stop. In Software,
-because of this reset of controller is happening
-before I2C controller could complete STOP condition.
+On Thu, Mar 29, 2012 at 03:40:17PM -0700, David Sharp wrote:
+> On Thu, Mar 29, 2012 at 1:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > I had a long discussion with Frederic over IRC earlier today.  We came
+> > up with the following strawman:
+> >
+> > 1. A system call thunk (which could be enabled/disabled by patching the
+> > syscall table.)  This provides an entry and exit hook, and also sets a
+> > per-thread flag to capture userspace traffic.
+> 
+> Our goal is for syscall traces to be as fast as regular tracepoints.
+> iirc, What we've found is that much of the extra overhead of syscall
+> tracepoints as compared to regular tracepoints is due to that the code
+> path for syscall tracing is bundled with checks for ptrace and other
+> stuff (Vaibhav did all this characterization, he can jump in with
+> details if wanted). How much work would this "thunk" have to do that
+> is not either recording the trace or calling the syscall?
+> 
+> >
+> > 2. Instrumenting get_user/put_user/copy_from_user/copy_to_user to
+> > capture traffic to userspace.  This captures the *full* set of system
+> > call arguments, including things addressed via pointers.  Furthermore,
+> > it captures the exact versions fed to or returned from the kernel, and
+> > deals with data-dependent collection like ioctl().
+> 
+> Do I understand correctly that you are thinking to copy tho contents
+> of those buffers into the ring buffer? This sounds useful. However I
+> think it should be optional and the number of bytes copied should be
+> limited (tunable). On highly utilized systems, we don't always have a
+> lot of memory to dedicate to the ring bufffer, so filling it with the
+> contents of, eg, the payload of "read" or "write" would not be
+> acceptable under those circumstances. And since events in the ring
+> buffer can't cross page boundaries, at some threshold this will cause
+> an unacceptable level of unutilized space in the ring buffer.
+> 
+> (For context, this is coming from the folks that added "tiny" versions
+> of syscall tracepoints that only put 16 bits of arg0 into the ring
+> buffer so we can get longer trace durations.)
 
-Added delay of 2 clock period before reset the
-controller in case of NACK error.
+BTW, since tracing overhead (in terms of volume and throughput) is
+important for you guys, have you considered adding some option to ftrace
+to ignore the "common" fields on the trace record:
 
-Signed-off-by: Alok Chauhan <alokc@nvidia.com>
----
-delay will be calculated based on clock frequency of the bus.
- drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+        field:unsigned short common_type;       offset:0;       size:2; signed:0;
+        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+        field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
+        field:int common_pid;   offset:4;       size:4; signed:1;
+        field:int common_padding;       offset:8;       size:4; signed:1;
 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index e978635..344282e 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -516,6 +516,14 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
- 	if (likely(i2c_dev->msg_err == I2C_ERR_NONE))
- 		return 0;
- 
-+	/*
-+	 * In NACK error condition resetting of I2C controller happens
-+	 * before STOP condition is properly completed by I2C controller,
-+	 * so wait for 2 clock cycle to complete STOP condition.
-+	 */
-+	if (i2c_dev->msg_err == I2C_ERR_NO_ACK)
-+		udelay(DIV_ROUND_UP(2 * 1000000, i2c_dev->bus_clk_rate));
-+
- 	tegra_i2c_init(i2c_dev);
- 	if (i2c_dev->msg_err == I2C_ERR_NO_ACK) {
- 		if (msg->flags & I2C_M_IGNORE_NAK)
--- 
-1.7.4.1
+I think you talked about that on the last kernel summit. This would be
+interesting for everyone.
 
+You can find out the pid on top of sched switch events. The rest is probably useless
+most of the time.
