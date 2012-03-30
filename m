@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965751Ab2C3VTF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:19:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965737Ab2C3VS6 (ORCPT
+	id S965842Ab2C3VTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:19:44 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46401 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965765Ab2C3VTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:18:58 -0400
-Message-Id: <20120330194832.827875658@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:19:17 -0400
+Message-Id: <20120330194833.995913606@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:10 -0700
+Date: Fri, 30 Mar 2012 12:49:16 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ronald Wahl <ronald.wahl@raritan.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 045/175] rtlwifi: rtl8192c: Prevent sleeping from invalid context in rtl8192cu
+        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 051/175] ntp: Fix integer overflow when setting time
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit ebecdcc12fed5d3c81853dea61a0a78a5aefab52 upstream.
+commit a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33 upstream.
 
-When driver rtl8192cu is used with the debug level set to 3 or greater,
-the result is "sleeping function called from invalid context" due to
-an rcu_read_lock() call in the DM refresh routine in driver rtl8192c.
-This lock is not necessary as the USB driver does not use the struct
-being protected, thus the lock is set only when a PCI interface is
-active.
+'long secs' is passed as divisor to div_s64, which accepts a 32bit
+divisor. On 64bit machines that value is trimmed back from 8 bytes
+back to 4, causing a divide by zero when the number is bigger than
+(1 << 32) - 1 and all 32 lower bits are 0.
 
-This bug is reported in https://bugzilla.kernel.org/show_bug.cgi?id=42775.
+Use div64_long() instead.
 
-Reported-by: Ronald Wahl <ronald.wahl@raritan.com>
-Tested-by: Ronald Wahl <ronald.wahl@raritan.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Ronald Wahl <ronald.wahl@raritan.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: johnstul@us.ibm.com
+Link: http://lkml.kernel.org/r/1331829374-31543-2-git-send-email-levinsasha928@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ kernel/time/ntp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-@@ -1219,13 +1219,18 @@ static void rtl92c_dm_refresh_rate_adapt
- 				 ("PreState = %d, CurState = %d\n",
- 				  p_ra->pre_ratr_state, p_ra->ratr_state));
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -275,7 +275,7 @@ static inline s64 ntp_update_offset_fll(
  
--			rcu_read_lock();
--			sta = ieee80211_find_sta(mac->vif, mac->bssid);
-+			/* Only the PCI card uses sta in the update rate table
-+			 * callback routine */
-+			if (rtlhal->interface == INTF_PCI) {
-+				rcu_read_lock();
-+				sta = ieee80211_find_sta(mac->vif, mac->bssid);
-+			}
- 			rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
- 					p_ra->ratr_state);
+ 	time_status |= STA_MODE;
  
- 			p_ra->pre_ratr_state = p_ra->ratr_state;
--			rcu_read_unlock();
-+			if (rtlhal->interface == INTF_PCI)
-+				rcu_read_unlock();
- 		}
- 	}
+-	return div_s64(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
++	return div64_long(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
  }
+ 
+ static void ntp_update_offset(long offset)
 
 
