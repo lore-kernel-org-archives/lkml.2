@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965243Ab2C3WMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:12:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965135Ab2C3VOo (ORCPT
+	id S965257Ab2C3WMs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:12:48 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56556 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965090Ab2C3VOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:44 -0400
-Message-Id: <20120330194858.698135769@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:39 -0400
+Message-Id: <20120330194858.313865044@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:27 -0700
+Date: Fri, 30 Mar 2012 12:50:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Moyer <jmoyer@redhat.com>,
+        alan@lxorguk.ukuu.org.uk, Lukas Czerner <lczerner@redhat.com>,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [ 114/149] ext4: fix race between sync and completed io work
+Subject: [ 112/149] ext4: ignore EXT4_INODE_JOURNAL_DATA flag with delalloc
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,113 +25,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 491caa43639abcffaa645fbab372a7ef4ce2975c upstream.
+commit 3d2b158262826e8b75bbbfb7b97010838dd92ac7 upstream.
 
-The following command line will leave the aio-stress process unkillable
-on an ext4 file system (in my case, mounted on /mnt/test):
+Ext4 does not support data journalling with delayed allocation enabled.
+We even do not allow to mount the file system with delayed allocation
+and data journalling enabled, however it can be set via FS_IOC_SETFLAGS
+so we can hit the inode with EXT4_INODE_JOURNAL_DATA set even on file
+system mounted with delayed allocation (default) and that's where
+problem arises. The easies way to reproduce this problem is with the
+following set of commands:
 
-aio-stress -t 20 -s 10 -O -S -o 2 -I 1000 /mnt/test/aiostress.3561.4 /mnt/test/aiostress.3561.4.20 /mnt/test/aiostress.3561.4.19 /mnt/test/aiostress.3561.4.18 /mnt/test/aiostress.3561.4.17 /mnt/test/aiostress.3561.4.16 /mnt/test/aiostress.3561.4.15 /mnt/test/aiostress.3561.4.14 /mnt/test/aiostress.3561.4.13 /mnt/test/aiostress.3561.4.12 /mnt/test/aiostress.3561.4.11 /mnt/test/aiostress.3561.4.10 /mnt/test/aiostress.3561.4.9 /mnt/test/aiostress.3561.4.8 /mnt/test/aiostress.3561.4.7 /mnt/test/aiostress.3561.4.6 /mnt/test/aiostress.3561.4.5 /mnt/test/aiostress.3561.4.4 /mnt/test/aiostress.3561.4.3 /mnt/test/aiostress.3561.4.2
+ mkfs.ext4 /dev/sdd
+ mount /dev/sdd /mnt/test1
+ dd if=/dev/zero of=/mnt/test1/file bs=1M count=4
+ chattr +j /mnt/test1/file
+ dd if=/dev/zero of=/mnt/test1/file bs=1M count=4 conv=notrunc
+ chattr -j /mnt/test1/file
 
-This is using the aio-stress program from the xfstests test suite.
-That particular command line tells aio-stress to do random writes to
-20 files from 20 threads (one thread per file).  The files are NOT
-preallocated, so you will get writes to random offsets within the
-file, thus creating holes and extending i_size.  It also opens the
-file with O_DIRECT and O_SYNC.
+Additionally it can be reproduced quite reliably with xfstests 272 and
+269. In fact the above reproducer is a part of test 272.
 
-On to the problem.  When an I/O requires unwritten extent conversion,
-it is queued onto the completed_io_list for the ext4 inode.  Two code
-paths will pull work items from this list.  The first is the
-ext4_end_io_work routine, and the second is ext4_flush_completed_IO,
-which is called via the fsync path (and O_SYNC handling, as well).
-There are two issues I've found in these code paths.  First, if the
-fsync path beats the work routine to a particular I/O, the work
-routine will free the io_end structure!  It does not take into account
-the fact that the io_end may still be in use by the fsync path.  I've
-fixed this issue by adding yet another IO_END flag, indicating that
-the io_end is being processed by the fsync path.
+To fix this we should ignore the EXT4_INODE_JOURNAL_DATA inode flag if
+the file system is mounted with delayed allocation. This can be easily
+done by fixing ext4_should_*_data() functions do ignore data journal
+flag when delalloc is set (suggested by Ted). We also have to set the
+appropriate address space operations for the inode (again, ignoring data
+journal flag if delalloc enabled).
 
-The second problem is that the work routine will make an assignment to
-io->flag outside of the lock.  I have witnessed this result in a hang
-at umount.  Moving the flag setting inside the lock resolved that
-problem.
+Additionally this commit introduces ext4_inode_journal_mode() function
+because ext4_should_*_data() has already had a lot of common code and
+this change is putting it all into one function so it is easier to
+read.
 
-The problem was introduced by commit b82e384c7b ("ext4: optimize
-locking for end_io extent conversion"), which first appeared in 3.2.
-As such, the fix should be backported to that release (probably along
-with the unwritten extent conversion race fix).
+Successfully tested with xfstests in following configurations:
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+delalloc + data=ordered
+delalloc + data=writeback
+data=journal
+nodelalloc + data=ordered
+nodelalloc + data=writeback
+nodelalloc + data=journal
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h    |    1 +
- fs/ext4/fsync.c   |    2 ++
- fs/ext4/page-io.c |    9 +++++++--
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ fs/ext4/ext4_jbd2.h |   56 ++++++++++++++++++++++++++--------------------------
+ fs/ext4/inode.c     |   36 ++++++++++++++++++++-------------
+ 2 files changed, 51 insertions(+), 41 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -185,6 +185,7 @@ struct mpage_da_data {
- #define EXT4_IO_END_ERROR	0x0002
- #define EXT4_IO_END_QUEUED	0x0004
- #define EXT4_IO_END_DIRECT	0x0008
-+#define EXT4_IO_END_IN_FSYNC	0x0010
+--- a/fs/ext4/ext4_jbd2.h
++++ b/fs/ext4/ext4_jbd2.h
+@@ -261,43 +261,45 @@ static inline void ext4_update_inode_fsy
+ /* super.c */
+ int ext4_force_commit(struct super_block *sb);
  
- struct ext4_io_page {
- 	struct page	*p_page;
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -89,6 +89,7 @@ int ext4_flush_completed_IO(struct inode
- 		io = list_entry(ei->i_completed_io_list.next,
- 				ext4_io_end_t, list);
- 		list_del_init(&io->list);
-+		io->flag |= EXT4_IO_END_IN_FSYNC;
- 		/*
- 		 * Calling ext4_end_io_nolock() to convert completed
- 		 * IO to written.
-@@ -108,6 +109,7 @@ int ext4_flush_completed_IO(struct inode
- 		if (ret < 0)
- 			ret2 = ret;
- 		spin_lock_irqsave(&ei->i_completed_io_lock, flags);
-+		io->flag &= ~EXT4_IO_END_IN_FSYNC;
- 	}
- 	spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
- 	return (ret2 < 0) ? ret2 : 0;
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -130,12 +130,18 @@ static void ext4_end_io_work(struct work
- 	unsigned long		flags;
+-static inline int ext4_should_journal_data(struct inode *inode)
++/*
++ * Ext4 inode journal modes
++ */
++#define EXT4_INODE_JOURNAL_DATA_MODE	0x01 /* journal data mode */
++#define EXT4_INODE_ORDERED_DATA_MODE	0x02 /* ordered data mode */
++#define EXT4_INODE_WRITEBACK_DATA_MODE	0x04 /* writeback data mode */
++
++static inline int ext4_inode_journal_mode(struct inode *inode)
+ {
+ 	if (EXT4_JOURNAL(inode) == NULL)
+-		return 0;
+-	if (!S_ISREG(inode->i_mode))
+-		return 1;
+-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA)
+-		return 1;
+-	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
+-		return 1;
+-	return 0;
++		return EXT4_INODE_WRITEBACK_DATA_MODE;	/* writeback */
++	/* We do not support data journalling with delayed allocation */
++	if (!S_ISREG(inode->i_mode) ||
++	    test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA)
++		return EXT4_INODE_JOURNAL_DATA_MODE;	/* journal data */
++	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA) &&
++	    !test_opt(inode->i_sb, DELALLOC))
++		return EXT4_INODE_JOURNAL_DATA_MODE;	/* journal data */
++	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_ORDERED_DATA)
++		return EXT4_INODE_ORDERED_DATA_MODE;	/* ordered */
++	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)
++		return EXT4_INODE_WRITEBACK_DATA_MODE;	/* writeback */
++	else
++		BUG();
++}
++
++static inline int ext4_should_journal_data(struct inode *inode)
++{
++	return ext4_inode_journal_mode(inode) & EXT4_INODE_JOURNAL_DATA_MODE;
+ }
  
- 	spin_lock_irqsave(&ei->i_completed_io_lock, flags);
-+	if (io->flag & EXT4_IO_END_IN_FSYNC)
-+		goto requeue;
- 	if (list_empty(&io->list)) {
- 		spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
- 		goto free;
- 	}
+ static inline int ext4_should_order_data(struct inode *inode)
+ {
+-	if (EXT4_JOURNAL(inode) == NULL)
+-		return 0;
+-	if (!S_ISREG(inode->i_mode))
+-		return 0;
+-	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
+-		return 0;
+-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_ORDERED_DATA)
+-		return 1;
+-	return 0;
++	return ext4_inode_journal_mode(inode) & EXT4_INODE_ORDERED_DATA_MODE;
+ }
  
- 	if (!mutex_trylock(&inode->i_mutex)) {
-+		bool was_queued;
-+requeue:
-+		was_queued = !!(io->flag & EXT4_IO_END_QUEUED);
-+		io->flag |= EXT4_IO_END_QUEUED;
- 		spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
- 		/*
- 		 * Requeue the work instead of waiting so that the work
-@@ -148,9 +154,8 @@ static void ext4_end_io_work(struct work
- 		 * yield the cpu if it sees an end_io request that has already
- 		 * been requeued.
- 		 */
--		if (io->flag & EXT4_IO_END_QUEUED)
-+		if (was_queued)
- 			yield();
--		io->flag |= EXT4_IO_END_QUEUED;
- 		return;
+ static inline int ext4_should_writeback_data(struct inode *inode)
+ {
+-	if (EXT4_JOURNAL(inode) == NULL)
+-		return 1;
+-	if (!S_ISREG(inode->i_mode))
+-		return 0;
+-	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
+-		return 0;
+-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)
+-		return 1;
+-	return 0;
++	return ext4_inode_journal_mode(inode) & EXT4_INODE_WRITEBACK_DATA_MODE;
+ }
+ 
+ /*
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2480,13 +2480,14 @@ static int ext4_da_write_end(struct file
+ 	int write_mode = (int)(unsigned long)fsdata;
+ 
+ 	if (write_mode == FALL_BACK_TO_NONDELALLOC) {
+-		if (ext4_should_order_data(inode)) {
++		switch (ext4_inode_journal_mode(inode)) {
++		case EXT4_INODE_ORDERED_DATA_MODE:
+ 			return ext4_ordered_write_end(file, mapping, pos,
+ 					len, copied, page, fsdata);
+-		} else if (ext4_should_writeback_data(inode)) {
++		case EXT4_INODE_WRITEBACK_DATA_MODE:
+ 			return ext4_writeback_write_end(file, mapping, pos,
+ 					len, copied, page, fsdata);
+-		} else {
++		default:
+ 			BUG();
+ 		}
  	}
- 	list_del_init(&io->list);
+@@ -3084,18 +3085,25 @@ static const struct address_space_operat
+ 
+ void ext4_set_aops(struct inode *inode)
+ {
+-	if (ext4_should_order_data(inode) &&
+-		test_opt(inode->i_sb, DELALLOC))
+-		inode->i_mapping->a_ops = &ext4_da_aops;
+-	else if (ext4_should_order_data(inode))
+-		inode->i_mapping->a_ops = &ext4_ordered_aops;
+-	else if (ext4_should_writeback_data(inode) &&
+-		 test_opt(inode->i_sb, DELALLOC))
+-		inode->i_mapping->a_ops = &ext4_da_aops;
+-	else if (ext4_should_writeback_data(inode))
+-		inode->i_mapping->a_ops = &ext4_writeback_aops;
+-	else
++	switch (ext4_inode_journal_mode(inode)) {
++	case EXT4_INODE_ORDERED_DATA_MODE:
++		if (test_opt(inode->i_sb, DELALLOC))
++			inode->i_mapping->a_ops = &ext4_da_aops;
++		else
++			inode->i_mapping->a_ops = &ext4_ordered_aops;
++		break;
++	case EXT4_INODE_WRITEBACK_DATA_MODE:
++		if (test_opt(inode->i_sb, DELALLOC))
++			inode->i_mapping->a_ops = &ext4_da_aops;
++		else
++			inode->i_mapping->a_ops = &ext4_writeback_aops;
++		break;
++	case EXT4_INODE_JOURNAL_DATA_MODE:
+ 		inode->i_mapping->a_ops = &ext4_journalled_aops;
++		break;
++	default:
++		BUG();
++	}
+ }
+ 
+ 
 
 
