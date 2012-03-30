@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935901Ab2C3VQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:16:53 -0400
+	id S935912Ab2C3VRC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:17:02 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965492Ab2C3VQl (ORCPT
+	with ESMTP id S935902Ab2C3VQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:16:41 -0400
-Message-Id: <20120330194826.009573305@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:16:53 -0400
+Message-Id: <20120330194826.611380821@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:27 -0700
+Date: Fri, 30 Mar 2012 12:48:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniele Palmas <dnlplm@gmail.com>
-Subject: [ 002/175] USB: option driver: adding support for Telit CC864-SINGLE, CC864-DUAL and DE910-DUAL modems
+        alan@lxorguk.ukuu.org.uk, Andrea Righi <andrea@betterlinux.com>
+Subject: [ 006/175] staging: zcache: avoid AB-BA deadlock condition
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,41 +24,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Palmas <dnlplm@gmail.com>
+From: Andrea Righi <andrea@betterlinux.com>
 
-commit 7204cf584836c24b4b06e4ad4a8e6bb8ea84908e upstream.
+commit cfbc6a92212e74b07aa76c9e2f20c542e36077fb upstream.
 
-Adding PID for Telit CC864-SINGLE, CC864-DUAL and DE910-DUAL
-modems
+Commit 9256a47 fixed a deadlock condition, being sure that the buddy
+list spinlock is always taken before the page spinlock.
 
-Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+However in zbud_free_and_delist() locking order is the opposite
+(page lock -> list lock).
+
+Possible unsafe locking scenario (reported by lockdep):
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(&(&zbpg->lock)->rlock);
+                                lock(zbud_budlists_spinlock);
+                                lock(&(&zbpg->lock)->rlock);
+   lock(zbud_budlists_spinlock);
+
+Fix by grabbing the locks in opposite order in zbud_free_and_delist().
+
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/staging/zcache/zcache-main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -307,6 +307,9 @@ static void option_instat_callback(struc
- #define TELIT_VENDOR_ID				0x1bc7
- #define TELIT_PRODUCT_UC864E			0x1003
- #define TELIT_PRODUCT_UC864G			0x1004
-+#define TELIT_PRODUCT_CC864_DUAL		0x1005
-+#define TELIT_PRODUCT_CC864_SINGLE		0x1006
-+#define TELIT_PRODUCT_DE910_DUAL		0x1010
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -299,10 +299,12 @@ static void zbud_free_and_delist(struct
+ 	struct zbud_page *zbpg =
+ 		container_of(zh, struct zbud_page, buddy[budnum]);
  
- /* ZTE PRODUCTS */
- #define ZTE_VENDOR_ID				0x19d2
-@@ -771,6 +774,9 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
-+	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
-+	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
-+	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
++	spin_lock(&zbud_budlists_spinlock);
+ 	spin_lock(&zbpg->lock);
+ 	if (list_empty(&zbpg->bud_list)) {
+ 		/* ignore zombie page... see zbud_evict_pages() */
+ 		spin_unlock(&zbpg->lock);
++		spin_unlock(&zbud_budlists_spinlock);
+ 		return;
+ 	}
+ 	size = zbud_free(zh);
+@@ -310,7 +312,6 @@ static void zbud_free_and_delist(struct
+ 	zh_other = &zbpg->buddy[(budnum == 0) ? 1 : 0];
+ 	if (zh_other->size == 0) { /* was unbuddied: unlist and free */
+ 		chunks = zbud_size_to_chunks(size) ;
+-		spin_lock(&zbud_budlists_spinlock);
+ 		BUG_ON(list_empty(&zbud_unbuddied[chunks].list));
+ 		list_del_init(&zbpg->bud_list);
+ 		zbud_unbuddied[chunks].count--;
+@@ -318,7 +319,6 @@ static void zbud_free_and_delist(struct
+ 		zbud_free_raw_page(zbpg);
+ 	} else { /* was buddied: move remaining buddy to unbuddied list */
+ 		chunks = zbud_size_to_chunks(zh_other->size) ;
+-		spin_lock(&zbud_budlists_spinlock);
+ 		list_del_init(&zbpg->bud_list);
+ 		zcache_zbud_buddied_count--;
+ 		list_add_tail(&zbpg->bud_list, &zbud_unbuddied[chunks].list);
 
 
