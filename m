@@ -1,170 +1,489 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936714Ab2C3W56 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:57:58 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41906 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934893Ab2C3VFh (ORCPT
+	id S936727Ab2C3W6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:58:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934889Ab2C3VFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:37 -0400
-Message-Id: <201203302105.q2UL54oT006286@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 29 Mar 2012 15:25:59 -0400
-Subject: [PATCH] arch/tile: support <asm/cachectl.h> header for cacheflush() syscall
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:04.0522 (UTC) FILETIME=[C75E26A0:01CD0EB8]
+	Fri, 30 Mar 2012 17:05:36 -0400
+Message-Id: <20120330195728.249396310@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Ulrich Obergfell <uobergfe@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mark Salter <msalter@redhat.com>
+Subject: [ 043/108] mm: thp: fix pmd_bad() triggering in code paths holding mmap_sem read mode
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already had a syscall that did some dcache flushing, but it was
-not used in practice.  Make it MIPS compatible instead so it can
-do both the DCACHE and ICACHE actions.  We have code that wants to
-be able to use the ICACHE flush mode from userspace so this change
-enables that.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+commit 1a5a9906d4e8d1976b701f889d8f35d54b928f25 upstream.
+
+In some cases it may happen that pmd_none_or_clear_bad() is called with
+the mmap_sem hold in read mode.  In those cases the huge page faults can
+allocate hugepmds under pmd_none_or_clear_bad() and that can trigger a
+false positive from pmd_bad() that will not like to see a pmd
+materializing as trans huge.
+
+It's not khugepaged causing the problem, khugepaged holds the mmap_sem
+in write mode (and all those sites must hold the mmap_sem in read mode
+to prevent pagetables to go away from under them, during code review it
+seems vm86 mode on 32bit kernels requires that too unless it's
+restricted to 1 thread per process or UP builds).  The race is only with
+the huge pagefaults that can convert a pmd_none() into a
+pmd_trans_huge().
+
+Effectively all these pmd_none_or_clear_bad() sites running with
+mmap_sem in read mode are somewhat speculative with the page faults, and
+the result is always undefined when they run simultaneously.  This is
+probably why it wasn't common to run into this.  For example if the
+madvise(MADV_DONTNEED) runs zap_page_range() shortly before the page
+fault, the hugepage will not be zapped, if the page fault runs first it
+will be zapped.
+
+Altering pmd_bad() not to error out if it finds hugepmds won't be enough
+to fix this, because zap_pmd_range would then proceed to call
+zap_pte_range (which would be incorrect if the pmd become a
+pmd_trans_huge()).
+
+The simplest way to fix this is to read the pmd in the local stack
+(regardless of what we read, no need of actual CPU barriers, only
+compiler barrier needed), and be sure it is not changing under the code
+that computes its value.  Even if the real pmd is changing under the
+value we hold on the stack, we don't care.  If we actually end up in
+zap_pte_range it means the pmd was not none already and it was not huge,
+and it can't become huge from under us (khugepaged locking explained
+above).
+
+All we need is to enforce that there is no way anymore that in a code
+path like below, pmd_trans_huge can be false, but pmd_none_or_clear_bad
+can run into a hugepmd.  The overhead of a barrier() is just a compiler
+tweak and should not be measurable (I only added it for THP builds).  I
+don't exclude different compiler versions may have prevented the race
+too by caching the value of *pmd on the stack (that hasn't been
+verified, but it wouldn't be impossible considering
+pmd_none_or_clear_bad, pmd_bad, pmd_trans_huge, pmd_none are all inlines
+and there's no external function called in between pmd_trans_huge and
+pmd_none_or_clear_bad).
+
+		if (pmd_trans_huge(*pmd)) {
+			if (next-addr != HPAGE_PMD_SIZE) {
+				VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
+				split_huge_page_pmd(vma->vm_mm, pmd);
+			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
+				continue;
+			/* fall through */
+		}
+		if (pmd_none_or_clear_bad(pmd))
+
+Because this race condition could be exercised without special
+privileges this was reported in CVE-2012-1179.
+
+The race was identified and fully explained by Ulrich who debugged it.
+I'm quoting his accurate explanation below, for reference.
+
+====== start quote =======
+      mapcount 0 page_mapcount 1
+      kernel BUG at mm/huge_memory.c:1384!
+
+    At some point prior to the panic, a "bad pmd ..." message similar to the
+    following is logged on the console:
+
+      mm/memory.c:145: bad pmd ffff8800376e1f98(80000000314000e7).
+
+    The "bad pmd ..." message is logged by pmd_clear_bad() before it clears
+    the page's PMD table entry.
+
+        143 void pmd_clear_bad(pmd_t *pmd)
+        144 {
+    ->  145         pmd_ERROR(*pmd);
+        146         pmd_clear(pmd);
+        147 }
+
+    After the PMD table entry has been cleared, there is an inconsistency
+    between the actual number of PMD table entries that are mapping the page
+    and the page's map count (_mapcount field in struct page). When the page
+    is subsequently reclaimed, __split_huge_page() detects this inconsistency.
+
+       1381         if (mapcount != page_mapcount(page))
+       1382                 printk(KERN_ERR "mapcount %d page_mapcount %d\n",
+       1383                        mapcount, page_mapcount(page));
+    -> 1384         BUG_ON(mapcount != page_mapcount(page));
+
+    The root cause of the problem is a race of two threads in a multithreaded
+    process. Thread B incurs a page fault on a virtual address that has never
+    been accessed (PMD entry is zero) while Thread A is executing an madvise()
+    system call on a virtual address within the same 2 MB (huge page) range.
+
+               virtual address space
+              .---------------------.
+              |                     |
+              |                     |
+            .-|---------------------|
+            | |                     |
+            | |                     |<-- B(fault)
+            | |                     |
+      2 MB  | |/////////////////////|-.
+      huge <  |/////////////////////|  > A(range)
+      page  | |/////////////////////|-'
+            | |                     |
+            | |                     |
+            '-|---------------------|
+              |                     |
+              |                     |
+              '---------------------'
+
+    - Thread A is executing an madvise(..., MADV_DONTNEED) system call
+      on the virtual address range "A(range)" shown in the picture.
+
+    sys_madvise
+      // Acquire the semaphore in shared mode.
+      down_read(&current->mm->mmap_sem)
+      ...
+      madvise_vma
+        switch (behavior)
+        case MADV_DONTNEED:
+             madvise_dontneed
+               zap_page_range
+                 unmap_vmas
+                   unmap_page_range
+                     zap_pud_range
+                       zap_pmd_range
+                         //
+                         // Assume that this huge page has never been accessed.
+                         // I.e. content of the PMD entry is zero (not mapped).
+                         //
+                         if (pmd_trans_huge(*pmd)) {
+                             // We don't get here due to the above assumption.
+                         }
+                         //
+                         // Assume that Thread B incurred a page fault and
+             .---------> // sneaks in here as shown below.
+             |           //
+             |           if (pmd_none_or_clear_bad(pmd))
+             |               {
+             |                 if (unlikely(pmd_bad(*pmd)))
+             |                     pmd_clear_bad
+             |                     {
+             |                       pmd_ERROR
+             |                         // Log "bad pmd ..." message here.
+             |                       pmd_clear
+             |                         // Clear the page's PMD entry.
+             |                         // Thread B incremented the map count
+             |                         // in page_add_new_anon_rmap(), but
+             |                         // now the page is no longer mapped
+             |                         // by a PMD entry (-> inconsistency).
+             |                     }
+             |               }
+             |
+             v
+    - Thread B is handling a page fault on virtual address "B(fault)" shown
+      in the picture.
+
+    ...
+    do_page_fault
+      __do_page_fault
+        // Acquire the semaphore in shared mode.
+        down_read_trylock(&mm->mmap_sem)
+        ...
+        handle_mm_fault
+          if (pmd_none(*pmd) && transparent_hugepage_enabled(vma))
+              // We get here due to the above assumption (PMD entry is zero).
+              do_huge_pmd_anonymous_page
+                alloc_hugepage_vma
+                  // Allocate a new transparent huge page here.
+                ...
+                __do_huge_pmd_anonymous_page
+                  ...
+                  spin_lock(&mm->page_table_lock)
+                  ...
+                  page_add_new_anon_rmap
+                    // Here we increment the page's map count (starts at -1).
+                    atomic_set(&page->_mapcount, 0)
+                  set_pmd_at
+                    // Here we set the page's PMD entry which will be cleared
+                    // when Thread A calls pmd_clear_bad().
+                  ...
+                  spin_unlock(&mm->page_table_lock)
+
+    The mmap_sem does not prevent the race because both threads are acquiring
+    it in shared mode (down_read).  Thread B holds the page_table_lock while
+    the page's map count and PMD table entry are updated.  However, Thread A
+    does not synchronize on that lock.
+
+====== end quote =======
+
+[akpm@linux-foundation.org: checkpatch fixes]
+Reported-by: Ulrich Obergfell <uobergfe@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Acked-by: Larry Woodman <lwoodman@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/include/asm/Kbuild     |    1 +
- arch/tile/include/asm/cachectl.h |   42 ++++++++++++++++++++++++++++++++++++++
- arch/tile/include/asm/compat.h   |    3 --
- arch/tile/include/asm/syscalls.h |    3 +-
- arch/tile/include/asm/unistd.h   |    4 +-
- arch/tile/kernel/sys.c           |   10 +++++++-
- 6 files changed, 55 insertions(+), 8 deletions(-)
- create mode 100644 arch/tile/include/asm/cachectl.h
+ arch/x86/kernel/vm86_32.c     |    2 +
+ fs/proc/task_mmu.c            |    9 ++++++
+ include/asm-generic/pgtable.h |   61 ++++++++++++++++++++++++++++++++++++++++++
+ mm/memcontrol.c               |    4 ++
+ mm/memory.c                   |   16 ++++++++---
+ mm/mempolicy.c                |    2 -
+ mm/mincore.c                  |    2 -
+ mm/pagewalk.c                 |    2 -
+ mm/swapfile.c                 |    4 --
+ 9 files changed, 92 insertions(+), 10 deletions(-)
 
-diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
-index 6b2e681..143473e 100644
---- a/arch/tile/include/asm/Kbuild
-+++ b/arch/tile/include/asm/Kbuild
-@@ -2,6 +2,7 @@ include include/asm-generic/Kbuild.asm
+--- a/arch/x86/kernel/vm86_32.c
++++ b/arch/x86/kernel/vm86_32.c
+@@ -172,6 +172,7 @@ static void mark_screen_rdonly(struct mm
+ 	spinlock_t *ptl;
+ 	int i;
  
- header-y += ../arch/
- 
-+header-y += cachectl.h
- header-y += ucontext.h
- header-y += hardwall.h
- 
-diff --git a/arch/tile/include/asm/cachectl.h b/arch/tile/include/asm/cachectl.h
-new file mode 100644
-index 0000000..af4c9f9
---- /dev/null
-+++ b/arch/tile/include/asm/cachectl.h
-@@ -0,0 +1,42 @@
-+/*
-+ * Copyright 2011 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+#ifndef _ASM_TILE_CACHECTL_H
-+#define _ASM_TILE_CACHECTL_H
-+
-+/*
-+ * Options for cacheflush system call.
-+ *
-+ * The ICACHE flush is performed on all cores currently running the
-+ * current process's address space.  The intent is for user
-+ * applications to be able to modify code, invoke the system call,
-+ * then allow arbitrary other threads in the same address space to see
-+ * the newly-modified code.  Passing a length of CHIP_L1I_CACHE_SIZE()
-+ * or more invalidates the entire icache on all cores in the address
-+ * spaces.  (Note: currently this option invalidates the entire icache
-+ * regardless of the requested address and length, but we may choose
-+ * to honor the arguments at some point.)
-+ *
-+ * Flush and invalidation of memory can normally be performed with the
-+ * __insn_flush(), __insn_inv(), and __insn_finv() instructions from
-+ * userspace.  The DCACHE option to the system call allows userspace
-+ * to flush the entire L1+L2 data cache from the core.  In this case,
-+ * the address and length arguments are not used.  The DCACHE flush is
-+ * restricted to the current core, not all cores in the address space.
-+ */
-+#define	ICACHE	(1<<0)		/* invalidate L1 instruction cache */
-+#define	DCACHE	(1<<1)		/* flush and invalidate data cache */
-+#define	BCACHE	(ICACHE|DCACHE)	/* flush both caches               */
-+
-+#endif	/* _ASM_TILE_CACHECTL_H */
-diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
-index 4b4b289..69adc08 100644
---- a/arch/tile/include/asm/compat.h
-+++ b/arch/tile/include/asm/compat.h
-@@ -242,9 +242,6 @@ long compat_sys_fallocate(int fd, int mode,
- long compat_sys_sched_rr_get_interval(compat_pid_t pid,
- 				      struct compat_timespec __user *interval);
- 
--/* Tilera Linux syscalls that don't have "compat" versions. */
--#define compat_sys_flush_cache sys_flush_cache
--
- /* These are the intvec_64.S trampolines. */
- long _compat_sys_execve(const char __user *path,
- 			const compat_uptr_t __user *argv,
-diff --git a/arch/tile/include/asm/syscalls.h b/arch/tile/include/asm/syscalls.h
-index 3b5507c..06f0464 100644
---- a/arch/tile/include/asm/syscalls.h
-+++ b/arch/tile/include/asm/syscalls.h
-@@ -43,7 +43,8 @@ long sys32_fadvise64(int fd, u32 offset_lo, u32 offset_hi,
- 		     u32 len, int advice);
- int sys32_fadvise64_64(int fd, u32 offset_lo, u32 offset_hi,
- 		       u32 len_lo, u32 len_hi, int advice);
--long sys_flush_cache(void);
-+long sys_cacheflush(unsigned long addr, unsigned long len,
-+		    unsigned long flags);
- #ifndef __tilegx__  /* No mmap() in the 32-bit kernel. */
- #define sys_mmap sys_mmap
- #endif
-diff --git a/arch/tile/include/asm/unistd.h b/arch/tile/include/asm/unistd.h
-index f70bf1c..a017246 100644
---- a/arch/tile/include/asm/unistd.h
-+++ b/arch/tile/include/asm/unistd.h
-@@ -24,8 +24,8 @@
- #include <asm-generic/unistd.h>
- 
- /* Additional Tilera-specific syscalls. */
--#define __NR_flush_cache	(__NR_arch_specific_syscall + 1)
--__SYSCALL(__NR_flush_cache, sys_flush_cache)
-+#define __NR_cacheflush	(__NR_arch_specific_syscall + 1)
-+__SYSCALL(__NR_cacheflush, sys_cacheflush)
- 
- #ifndef __tilegx__
- /* "Fast" syscalls provide atomic support for 32-bit chips. */
-diff --git a/arch/tile/kernel/sys.c b/arch/tile/kernel/sys.c
-index cb44ba7..b08095b 100644
---- a/arch/tile/kernel/sys.c
-+++ b/arch/tile/kernel/sys.c
-@@ -32,11 +32,17 @@
- #include <asm/syscalls.h>
- #include <asm/pgtable.h>
- #include <asm/homecache.h>
-+#include <asm/cachectl.h>
- #include <arch/chip.h>
- 
--SYSCALL_DEFINE0(flush_cache)
-+SYSCALL_DEFINE3(cacheflush, unsigned long, addr, unsigned long, len,
-+		unsigned long, flags)
- {
--	homecache_evict(cpumask_of(smp_processor_id()));
-+	if (flags & DCACHE)
-+		homecache_evict(cpumask_of(smp_processor_id()));
-+	if (flags & ICACHE)
-+		flush_remote(0, HV_FLUSH_EVICT_L1I, mm_cpumask(current->mm),
-+			     0, 0, 0, NULL, NULL, 0);
- 	return 0;
++	down_write(&mm->mmap_sem);
+ 	pgd = pgd_offset(mm, 0xA0000);
+ 	if (pgd_none_or_clear_bad(pgd))
+ 		goto out;
+@@ -190,6 +191,7 @@ static void mark_screen_rdonly(struct mm
+ 	}
+ 	pte_unmap_unlock(pte, ptl);
+ out:
++	up_write(&mm->mmap_sem);
+ 	flush_tlb();
  }
  
--- 
-1.6.5.2
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -407,6 +407,9 @@ static int smaps_pte_range(pmd_t *pmd, u
+ 	} else {
+ 		spin_unlock(&walk->mm->page_table_lock);
+ 	}
++
++	if (pmd_trans_unstable(pmd))
++		return 0;
+ 	/*
+ 	 * The mmap_sem held all the way back in m_start() is what
+ 	 * keeps khugepaged out of here and from collapsing things
+@@ -505,6 +508,8 @@ static int clear_refs_pte_range(pmd_t *p
+ 	struct page *page;
+ 
+ 	split_huge_page_pmd(walk->mm, pmd);
++	if (pmd_trans_unstable(pmd))
++		return 0;
+ 
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; pte++, addr += PAGE_SIZE) {
+@@ -668,6 +673,8 @@ static int pagemap_pte_range(pmd_t *pmd,
+ 	int err = 0;
+ 
+ 	split_huge_page_pmd(walk->mm, pmd);
++	if (pmd_trans_unstable(pmd))
++		return 0;
+ 
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+@@ -959,6 +966,8 @@ static int gather_pte_stats(pmd_t *pmd,
+ 		spin_unlock(&walk->mm->page_table_lock);
+ 	}
+ 
++	if (pmd_trans_unstable(pmd))
++		return 0;
+ 	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+ 	do {
+ 		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -425,6 +425,8 @@ extern void untrack_pfn_vma(struct vm_ar
+ 				unsigned long size);
+ #endif
+ 
++#ifdef CONFIG_MMU
++
+ #ifndef CONFIG_TRANSPARENT_HUGEPAGE
+ static inline int pmd_trans_huge(pmd_t pmd)
+ {
+@@ -441,7 +443,66 @@ static inline int pmd_write(pmd_t pmd)
+ 	return 0;
+ }
+ #endif /* __HAVE_ARCH_PMD_WRITE */
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++
++/*
++ * This function is meant to be used by sites walking pagetables with
++ * the mmap_sem hold in read mode to protect against MADV_DONTNEED and
++ * transhuge page faults. MADV_DONTNEED can convert a transhuge pmd
++ * into a null pmd and the transhuge page fault can convert a null pmd
++ * into an hugepmd or into a regular pmd (if the hugepage allocation
++ * fails). While holding the mmap_sem in read mode the pmd becomes
++ * stable and stops changing under us only if it's not null and not a
++ * transhuge pmd. When those races occurs and this function makes a
++ * difference vs the standard pmd_none_or_clear_bad, the result is
++ * undefined so behaving like if the pmd was none is safe (because it
++ * can return none anyway). The compiler level barrier() is critically
++ * important to compute the two checks atomically on the same pmdval.
++ */
++static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
++{
++	/* depend on compiler for an atomic pmd read */
++	pmd_t pmdval = *pmd;
++	/*
++	 * The barrier will stabilize the pmdval in a register or on
++	 * the stack so that it will stop changing under the code.
++	 */
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	barrier();
+ #endif
++	if (pmd_none(pmdval))
++		return 1;
++	if (unlikely(pmd_bad(pmdval))) {
++		if (!pmd_trans_huge(pmdval))
++			pmd_clear_bad(pmd);
++		return 1;
++	}
++	return 0;
++}
++
++/*
++ * This is a noop if Transparent Hugepage Support is not built into
++ * the kernel. Otherwise it is equivalent to
++ * pmd_none_or_trans_huge_or_clear_bad(), and shall only be called in
++ * places that already verified the pmd is not none and they want to
++ * walk ptes while holding the mmap sem in read mode (write mode don't
++ * need this). If THP is not enabled, the pmd can't go away under the
++ * code even if MADV_DONTNEED runs, but if THP is enabled we need to
++ * run a pmd_trans_unstable before walking the ptes after
++ * split_huge_page_pmd returns (because it may have run when the pmd
++ * become null, but then a page fault can map in a THP and not a
++ * regular page).
++ */
++static inline int pmd_trans_unstable(pmd_t *pmd)
++{
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	return pmd_none_or_trans_huge_or_clear_bad(pmd);
++#else
++	return 0;
++#endif
++}
++
++#endif /* CONFIG_MMU */
+ 
+ #endif /* !__ASSEMBLY__ */
+ 
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5290,6 +5290,8 @@ static int mem_cgroup_count_precharge_pt
+ 	spinlock_t *ptl;
+ 
+ 	split_huge_page_pmd(walk->mm, pmd);
++	if (pmd_trans_unstable(pmd))
++		return 0;
+ 
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; pte++, addr += PAGE_SIZE)
+@@ -5451,6 +5453,8 @@ static int mem_cgroup_move_charge_pte_ra
+ 	spinlock_t *ptl;
+ 
+ 	split_huge_page_pmd(walk->mm, pmd);
++	if (pmd_trans_unstable(pmd))
++		return 0;
+ retry:
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; addr += PAGE_SIZE) {
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1228,16 +1228,24 @@ static inline unsigned long zap_pmd_rang
+ 	do {
+ 		next = pmd_addr_end(addr, end);
+ 		if (pmd_trans_huge(*pmd)) {
+-			if (next-addr != HPAGE_PMD_SIZE) {
++			if (next - addr != HPAGE_PMD_SIZE) {
+ 				VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
+ 				split_huge_page_pmd(vma->vm_mm, pmd);
+ 			} else if (zap_huge_pmd(tlb, vma, pmd))
+-				continue;
++				goto next;
+ 			/* fall through */
+ 		}
+-		if (pmd_none_or_clear_bad(pmd))
+-			continue;
++		/*
++		 * Here there can be other concurrent MADV_DONTNEED or
++		 * trans huge page faults running, and if the pmd is
++		 * none or trans huge it can change under us. This is
++		 * because MADV_DONTNEED holds the mmap_sem in read
++		 * mode.
++		 */
++		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
++			goto next;
+ 		next = zap_pte_range(tlb, vma, pmd, addr, next, details);
++next:
+ 		cond_resched();
+ 	} while (pmd++, addr = next, addr != end);
+ 
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -511,7 +511,7 @@ static inline int check_pmd_range(struct
+ 	do {
+ 		next = pmd_addr_end(addr, end);
+ 		split_huge_page_pmd(vma->vm_mm, pmd);
+-		if (pmd_none_or_clear_bad(pmd))
++		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+ 			continue;
+ 		if (check_pte_range(vma, pmd, addr, next, nodes,
+ 				    flags, private))
+--- a/mm/mincore.c
++++ b/mm/mincore.c
+@@ -161,7 +161,7 @@ static void mincore_pmd_range(struct vm_
+ 			}
+ 			/* fall through */
+ 		}
+-		if (pmd_none_or_clear_bad(pmd))
++		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+ 			mincore_unmapped_range(vma, addr, next, vec);
+ 		else
+ 			mincore_pte_range(vma, pmd, addr, next, vec);
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -59,7 +59,7 @@ again:
+ 			continue;
+ 
+ 		split_huge_page_pmd(walk->mm, pmd);
+-		if (pmd_none_or_clear_bad(pmd))
++		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+ 			goto again;
+ 		err = walk_pte_range(pmd, addr, next, walk);
+ 		if (err)
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -932,9 +932,7 @@ static inline int unuse_pmd_range(struct
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
+ 		next = pmd_addr_end(addr, end);
+-		if (unlikely(pmd_trans_huge(*pmd)))
+-			continue;
+-		if (pmd_none_or_clear_bad(pmd))
++		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+ 			continue;
+ 		ret = unuse_pte_range(vma, pmd, addr, next, entry, page);
+ 		if (ret)
+
 
