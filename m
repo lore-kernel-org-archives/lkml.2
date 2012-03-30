@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab2C3XoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:44:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56056 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750943Ab2C3XoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 19:44:04 -0400
-X-Sasl-enc: akiaHe8QuMUtF6fQ709d3x96XMbXakAiSIgD005xmE/7 1333151042
-Date: Fri, 30 Mar 2012 16:43:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        viro@zeniv.linux.org.uk, davej@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
-Message-ID: <20120330234306.GC21328@kroah.com>
-References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com>
- <20120330204235.GA883@kroah.com>
- <alpine.LFD.2.02.1203302247130.2542@ionos>
- <201203302105.52987.arnd@arndb.de>
- <20120330211744.GA16314@kroah.com>
- <CA+1xoqeWLrU46gBJVY1j1S2_wNkvCvG-CdK0DKx5dgWR=EmU+Q@mail.gmail.com>
+	id S1754815Ab2C3XvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:51:13 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751977Ab2C3XvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 19:51:08 -0400
+Message-ID: <4F7646DC.8090802@nod.at>
+Date: Sat, 31 Mar 2012 01:50:52 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+1xoqeWLrU46gBJVY1j1S2_wNkvCvG-CdK0DKx5dgWR=EmU+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Phillip Lougher <plougher@redhat.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, Eugene Teo <eteo@redhat.com>,
+        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] sysctl: fix restrict write access to dmesg_restrict
+References: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
+In-Reply-To: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigDBBF6865E0044E09D25B1AB5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 12:02:39AM +0200, Sasha Levin wrote:
-> On Fri, Mar 30, 2012 at 11:17 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, Mar 30, 2012 at 09:05:52PM +0000, Arnd Bergmann wrote:
-> >> On Friday 30 March 2012, Thomas Gleixner wrote:
-> >> > I think so. This is an interface to inject stuff into dmesg. Limiting
-> >> > that to a reasonable size makes sense. We can probably limit it to
-> >> > something small like 1024, but I don't know about the "ideas" of those
-> >> > folks who think that it's a great idea to do it at all.
-> >>
-> >> I guess a page would be a reasonable size, similar to what we do for
-> >> sysfs.
-> >
-> > Ok. Sasha, as you seem to have noticed this, care to dig in syslog and
-> > systemd to get an idea of the buffer sizes they are expecting to pass
-> > into kmsg, and if they can handle a short write properly?  If so,
-> > restricting it to a page is fine with me, otherwise we might want to
-> > make it a bit bigger.
-> 
-> systemd seems to use posix LINE_MAX sized buffers, syslog-ng uses
-> dynamic strings, but it chews them one line at the time.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigDBBF6865E0044E09D25B1AB5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ok, care to update this patch with a max size?
+Am 31.03.2012 01:43, schrieb Phillip Lougher:
+> Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
+> however, it incorrectly alters kptr_restrict rather than
+> dmesg_restrict.
+>=20
+> The original patch from Richard Weinberger
+> (https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
+> expected, and so the patch seems to have been misapplied.
+>=20
 
-And again, does systemd and syslog-ng handle short writes properly?
+Hmm, indeed.
+Any idea how this could happen, Andrew?
 
-thanks,
+Thanks,
+//richard
 
-greg k-h
+
+--------------enigDBBF6865E0044E09D25B1AB5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPdkbjAAoJEN9758yqZn9ezX0IAJz0XUMJOJqt3nE704iwkBqD
+4WJeDik9qoeoU1mKMYt+Mv6jiA3z6Mf8g6hUs9TZwTU2/ezMB+SB6aDntW64vQg8
+JRSLYs9qf0TUKJ8kAba4gElM5Gz82sk+/6kc1QpTgGxSimudPmpGv22uZ5taypMg
+fbq+MuBzJrnlZrFEoCUL3erp5ogiGoEQrd3MT4gMGzgx1OkTD+1Uyz3FHbLA+c8D
+cP/QcVgJw+nx0n5VX0U5MAMesgRobQ7Fh2RcEjYNJ8bvA67Z2QwdM8DqNTnPHrIF
+qxDvwvd71Q2z+TGhtZ+k5mhZjiyGbDJLVkseQHmZFfCfxV4w4YwJlBfpZHGZCvc=
+=Ch/Q
+-----END PGP SIGNATURE-----
+
+--------------enigDBBF6865E0044E09D25B1AB5--
