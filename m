@@ -1,90 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936619Ab2C3Wsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:48:51 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41906 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935027Ab2C3VGV (ORCPT
+	id S935142Ab2C3WtX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:49:23 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48245 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935018Ab2C3VGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:21 -0400
-Message-Id: <201203302105.q2UL59oM006311@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 30 Mar 2012 16:21:17 -0400
-Subject: [PATCH] arch/tile: allow querying cpu module information from the hypervisor
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:10.0491 (UTC) FILETIME=[CAECF2B0:01CD0EB8]
+	Fri, 30 Mar 2012 17:06:19 -0400
+Message-Id: <20120330195731.038243184@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:24 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Wang YanQing <udknight@gmail.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [ 062/108] video:uvesafb: Fix oops that uvesafb try to execute NX-protected page
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This just adds a few more attributes to the information Linux
-can query from the hypervisor for the /sys/hypervisor/board/ directory,
-providing part, serial#, revision#, and description for cpu modules
-(as opposed to the board itself, or any mezzanine boards).
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: Wang YanQing <udknight@gmail.com>
+
+commit ec0d22e4d563e7cce9f6678e2000900755c2989d upstream.
+
+This patch fixes the oops below
+
+[   81.560602] uvesafb: NVIDIA Corporation, GT216 Board - 0696a290, Chip Rev   , OEM: NVIDIA, VBE v3.0
+[   81.609384] uvesafb: protected mode interface info at c000:d350
+[   81.609388] uvesafb: pmi: set display start = c00cd3b3, set palette = c00cd40e
+[   81.609390] uvesafb: pmi: ports = 3b4 3b5 3ba 3c0 3c1 3c4 3c5 3c6 3c7 3c8 3c9 3cc 3ce 3cf 3d0 3d1 3d2 3d3 3d4 3d5 3da
+[   81.614558] uvesafb: VBIOS/hardware doesn't support DDC transfers
+[   81.614562] uvesafb: no monitor limits have been set, default refresh rate will be used
+[   81.614994] uvesafb: scrolling: ypan using protected mode interface, yres_virtual=4915
+[   81.744147] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+[   81.744153] BUG: unable to handle kernel paging request at c00cd3b3
+[   81.744159] IP: [<c00cd3b3>] 0xc00cd3b2
+[   81.744167] *pdpt = 00000000016d6001 *pde = 0000000001c7b067 *pte = 80000000000cd163
+[   81.744171] Oops: 0011 [#1] SMP
+[   81.744174] Modules linked in: uvesafb(+) cfbcopyarea cfbimgblt cfbfillrect
+[   81.744178]
+[   81.744181] Pid: 3497, comm: modprobe Not tainted 3.3.0-rc4NX+ #71 Acer            Aspire 4741                    /Aspire 4741
+[   81.744185] EIP: 0060:[<c00cd3b3>] EFLAGS: 00010246 CPU: 0
+[   81.744187] EIP is at 0xc00cd3b3
+[   81.744189] EAX: 00004f07 EBX: 00000000 ECX: 00000000 EDX: 00000000
+[   81.744191] ESI: f763f000 EDI: f763f6e8 EBP: f57f3a0c ESP: f57f3a00
+[   81.744192]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[   81.744195] Process modprobe (pid: 3497, ti=f57f2000 task=f748c600 task.ti=f57f2000)
+[   81.744196] Stack:
+[   81.744197]  f82512c5 f759341c 00000000 f57f3a30 c124a9bc 00000001 00000001 000001e0
+[   81.744202]  f8251280 f763f000 f7593400 00000000 f57f3a40 c12598dd f5c0c000 00000000
+[   81.744206]  f57f3b10 c1255efe c125a21a 00000006 f763f09c 00000000 c1c6cb60 f7593400
+[   81.744210] Call Trace:
+[   81.744215]  [<f82512c5>] ? uvesafb_pan_display+0x45/0x60 [uvesafb]
+[   81.744222]  [<c124a9bc>] fb_pan_display+0x10c/0x160
+[   81.744226]  [<f8251280>] ? uvesafb_vbe_find_mode+0x180/0x180 [uvesafb]
+[   81.744230]  [<c12598dd>] bit_update_start+0x1d/0x50
+[   81.744232]  [<c1255efe>] fbcon_switch+0x39e/0x550
+[   81.744235]  [<c125a21a>] ? bit_cursor+0x4ea/0x560
+[   81.744240]  [<c129b6cb>] redraw_screen+0x12b/0x220
+[   81.744245]  [<c128843b>] ? tty_do_resize+0x3b/0xc0
+[   81.744247]  [<c129ef42>] vc_do_resize+0x3d2/0x3e0
+[   81.744250]  [<c129efb4>] vc_resize+0x14/0x20
+[   81.744253]  [<c12586bd>] fbcon_init+0x29d/0x500
+[   81.744255]  [<c12984c4>] ? set_inverse_trans_unicode+0xe4/0x110
+[   81.744258]  [<c129b378>] visual_init+0xb8/0x150
+[   81.744261]  [<c129c16c>] bind_con_driver+0x16c/0x360
+[   81.744264]  [<c129b47e>] ? register_con_driver+0x6e/0x190
+[   81.744267]  [<c129c3a1>] take_over_console+0x41/0x50
+[   81.744269]  [<c1257b7a>] fbcon_takeover+0x6a/0xd0
+[   81.744272]  [<c12594b8>] fbcon_event_notify+0x758/0x790
+[   81.744277]  [<c10929e2>] notifier_call_chain+0x42/0xb0
+[   81.744280]  [<c1092d30>] __blocking_notifier_call_chain+0x60/0x90
+[   81.744283]  [<c1092d7a>] blocking_notifier_call_chain+0x1a/0x20
+[   81.744285]  [<c124a5a1>] fb_notifier_call_chain+0x11/0x20
+[   81.744288]  [<c124b759>] register_framebuffer+0x1d9/0x2b0
+[   81.744293]  [<c1061c73>] ? ioremap_wc+0x33/0x40
+[   81.744298]  [<f82537c6>] uvesafb_probe+0xaba/0xc40 [uvesafb]
+[   81.744302]  [<c12bb81f>] platform_drv_probe+0xf/0x20
+[   81.744306]  [<c12ba558>] driver_probe_device+0x68/0x170
+[   81.744309]  [<c12ba731>] __device_attach+0x41/0x50
+[   81.744313]  [<c12b9088>] bus_for_each_drv+0x48/0x70
+[   81.744316]  [<c12ba7f3>] device_attach+0x83/0xa0
+[   81.744319]  [<c12ba6f0>] ? __driver_attach+0x90/0x90
+[   81.744321]  [<c12b991f>] bus_probe_device+0x6f/0x90
+[   81.744324]  [<c12b8a45>] device_add+0x5e5/0x680
+[   81.744329]  [<c122a1a3>] ? kvasprintf+0x43/0x60
+[   81.744332]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
+[   81.744335]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
+[   81.744339]  [<c12bbe9f>] platform_device_add+0xff/0x1b0
+[   81.744343]  [<f8252906>] uvesafb_init+0x50/0x9b [uvesafb]
+[   81.744346]  [<c100111f>] do_one_initcall+0x2f/0x170
+[   81.744350]  [<f82528b6>] ? uvesafb_is_valid_mode+0x66/0x66 [uvesafb]
+[   81.744355]  [<c10c6994>] sys_init_module+0xf4/0x1410
+[   81.744359]  [<c1157fc0>] ? vfsmount_lock_local_unlock_cpu+0x30/0x30
+[   81.744363]  [<c144cb10>] sysenter_do_call+0x12/0x36
+[   81.744365] Code: f5 00 00 00 32 f6 66 8b da 66 d1 e3 66 ba d4 03 8a e3 b0 1c 66 ef b0 1e 66 ef 8a e7 b0 1d 66 ef b0 1f 66 ef e8 fa 00 00 00 61 c3 <60> e8 c8 00 00 00 66 8b f3 66 8b da 66 ba d4 03 b0 0c 8a e5 66
+[   81.744388] EIP: [<c00cd3b3>] 0xc00cd3b3 SS:ESP 0068:f57f3a00
+[   81.744391] CR2: 00000000c00cd3b3
+[   81.744393] ---[ end trace 18b2c87c925b54d6 ]---
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/include/hv/hypervisor.h |   14 +++++++++++++-
- arch/tile/kernel/sysfs.c          |    8 ++++++++
- 2 files changed, 21 insertions(+), 1 deletions(-)
+ drivers/video/uvesafb.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
-index 3bc4045..5ae7faa 100644
---- a/arch/tile/include/hv/hypervisor.h
-+++ b/arch/tile/include/hv/hypervisor.h
-@@ -508,7 +508,19 @@ typedef enum {
-   HV_CONFSTR_SWITCH_CONTROL  = 14,
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -23,6 +23,7 @@
+ #include <video/uvesafb.h>
+ #ifdef CONFIG_X86
+ #include <video/vga.h>
++#include <linux/pci.h>
+ #endif
+ #ifdef CONFIG_MTRR
+ #include <asm/mtrr.h>
+@@ -815,8 +816,15 @@ static int __devinit uvesafb_vbe_init(st
+ 	par->pmi_setpal = pmi_setpal;
+ 	par->ypan = ypan;
  
-   /** Chip revision level. */
--  HV_CONFSTR_CHIP_REV        = 15
-+  HV_CONFSTR_CHIP_REV        = 15,
-+
-+  /** CPU module part number. */
-+  HV_CONFSTR_CPUMOD_PART_NUM = 16,
-+
-+  /** CPU module serial number. */
-+  HV_CONFSTR_CPUMOD_SERIAL_NUM = 17,
-+
-+  /** CPU module revision level. */
-+  HV_CONFSTR_CPUMOD_REV      = 18,
-+
-+  /** Human-readable CPU module description. */
-+  HV_CONFSTR_CPUMOD_DESC     = 19
- 
- } HV_ConfstrQuery;
- 
-diff --git a/arch/tile/kernel/sysfs.c b/arch/tile/kernel/sysfs.c
-index 71ae728..e25b0a8 100644
---- a/arch/tile/kernel/sysfs.c
-+++ b/arch/tile/kernel/sysfs.c
-@@ -93,6 +93,10 @@ HV_CONF_ATTR(mezz_part,		HV_CONFSTR_MEZZ_PART_NUM)
- HV_CONF_ATTR(mezz_serial,	HV_CONFSTR_MEZZ_SERIAL_NUM)
- HV_CONF_ATTR(mezz_revision,	HV_CONFSTR_MEZZ_REV)
- HV_CONF_ATTR(mezz_description,	HV_CONFSTR_MEZZ_DESC)
-+HV_CONF_ATTR(cpumod_part,	HV_CONFSTR_CPUMOD_PART_NUM)
-+HV_CONF_ATTR(cpumod_serial,	HV_CONFSTR_CPUMOD_SERIAL_NUM)
-+HV_CONF_ATTR(cpumod_revision,	HV_CONFSTR_CPUMOD_REV)
-+HV_CONF_ATTR(cpumod_description,HV_CONFSTR_CPUMOD_DESC)
- HV_CONF_ATTR(switch_control,	HV_CONFSTR_SWITCH_CONTROL)
- 
- static struct attribute *board_attrs[] = {
-@@ -104,6 +108,10 @@ static struct attribute *board_attrs[] = {
- 	&dev_attr_mezz_serial.attr,
- 	&dev_attr_mezz_revision.attr,
- 	&dev_attr_mezz_description.attr,
-+	&dev_attr_cpumod_part.attr,
-+	&dev_attr_cpumod_serial.attr,
-+	&dev_attr_cpumod_revision.attr,
-+	&dev_attr_cpumod_description.attr,
- 	&dev_attr_switch_control.attr,
- 	NULL
- };
--- 
-1.6.5.2
+-	if (par->pmi_setpal || par->ypan)
+-		uvesafb_vbe_getpmi(task, par);
++	if (par->pmi_setpal || par->ypan) {
++		if (pcibios_enabled) {
++			uvesafb_vbe_getpmi(task, par);
++		} else {
++			par->pmi_setpal = par->ypan = 0;
++			printk(KERN_WARNING "uvesafb: PCI BIOS area is NX."
++				"Can't use protected mode interface\n");
++		}
++	}
+ #else
+ 	/* The protected mode interface is not available on non-x86. */
+ 	par->pmi_setpal = par->ypan = 0;
+
 
