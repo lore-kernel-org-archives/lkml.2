@@ -1,215 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934526Ab2C3Ptd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:49:33 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46931 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761001Ab2C3Po3 (ORCPT
+	id S934529Ab2C3Pu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:50:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54443 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934311Ab2C3PuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:44:29 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [RFC PATCH v2 05/21] iov_iter: add bvec support
-Date: Fri, 30 Mar 2012 10:43:32 -0500
-Message-Id: <1333122228-13633-6-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090205.4F75D4DC.00E8,ss=1,re=0.000,fgs=0
+	Fri, 30 Mar 2012 11:50:17 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <linux-i2c@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCHv3 01/16] I2C : OMAP : make omap_i2c_unidle/idle functions depend on CONFIG_PM_RUNTIME
+Date: Fri, 30 Mar 2012 21:19:56 +0530
+Message-ID: <1333122611-29953-2-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1333122611-29953-1-git-send-email-shubhrajyoti@ti.com>
+References: <1333122611-29953-1-git-send-email-shubhrajyoti@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+The functions omap_i2c_unidle/idle are called from omap_i2c_runtime_resume
+and omap_i2c_runtime_suspend which is compiled for CONFIG_PM_RUNTIME.
+This patch removes the omap_i2c_unidle/idle functions and folds them
+into the runtime callbacks.
 
-This adds a set of iov_iter_ops calls which work with memory which is
-specified by an array of bio_vec structs instead of an array of iovec
-structs.
+This fixes the below warn when CONFIG_PM_RUNTIME is not defined
 
-The big difference is that the pages referenced by the bio_vec elements
-are pinned.  They don't need to be faulted in and we can always use
-kmap_atomic() to map them one at a time.
+ CC      arch/arm/mach-omap2/board-ti8168evm.o
+drivers/i2c/busses/i2c-omap.c:272: warning: 'omap_i2c_unidle' defined but not used
+drivers/i2c/busses/i2c-omap.c:293: warning: 'omap_i2c_idle' defined but not used
+  CC      net/ipv4/ip_forward.o
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- include/linux/fs.h |   17 +++++++
- mm/iov-iter.c      |  124 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 141 insertions(+)
+ drivers/i2c/busses/i2c-omap.c |   75 +++++++++++++++++-----------------------
+ 1 files changed, 32 insertions(+), 43 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 963d3fe..48de8ab 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -583,6 +583,23 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
- 	return i->ops->ii_single_seg_count(i);
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index 801df60..4f4188d 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -269,47 +269,6 @@ static inline u16 omap_i2c_read_reg(struct omap_i2c_dev *i2c_dev, int reg)
+ 				(i2c_dev->regs[reg] << i2c_dev->reg_shift));
  }
  
-+extern struct iov_iter_ops ii_bvec_ops;
+-static void omap_i2c_unidle(struct omap_i2c_dev *dev)
+-{
+-	if (dev->flags & OMAP_I2C_FLAG_RESET_REGS_POSTIDLE) {
+-		omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, 0);
+-		omap_i2c_write_reg(dev, OMAP_I2C_PSC_REG, dev->pscstate);
+-		omap_i2c_write_reg(dev, OMAP_I2C_SCLL_REG, dev->scllstate);
+-		omap_i2c_write_reg(dev, OMAP_I2C_SCLH_REG, dev->sclhstate);
+-		omap_i2c_write_reg(dev, OMAP_I2C_BUF_REG, dev->bufstate);
+-		omap_i2c_write_reg(dev, OMAP_I2C_SYSC_REG, dev->syscstate);
+-		omap_i2c_write_reg(dev, OMAP_I2C_WE_REG, dev->westate);
+-		omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, OMAP_I2C_CON_EN);
+-	}
+-
+-	/*
+-	 * Don't write to this register if the IE state is 0 as it can
+-	 * cause deadlock.
+-	 */
+-	if (dev->iestate)
+-		omap_i2c_write_reg(dev, OMAP_I2C_IE_REG, dev->iestate);
+-}
+-
+-static void omap_i2c_idle(struct omap_i2c_dev *dev)
+-{
+-	u16 iv;
+-
+-	dev->iestate = omap_i2c_read_reg(dev, OMAP_I2C_IE_REG);
+-	if (dev->dtrev == OMAP_I2C_IP_VERSION_2)
+-		omap_i2c_write_reg(dev, OMAP_I2C_IP_V2_IRQENABLE_CLR, 1);
+-	else
+-		omap_i2c_write_reg(dev, OMAP_I2C_IE_REG, 0);
+-
+-	if (dev->rev < OMAP_I2C_OMAP1_REV_2) {
+-		iv = omap_i2c_read_reg(dev, OMAP_I2C_IV_REG); /* Read clears */
+-	} else {
+-		omap_i2c_write_reg(dev, OMAP_I2C_STAT_REG, dev->iestate);
+-
+-		/* Flush posted write */
+-		omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
+-	}
+-}
+-
+ static int omap_i2c_init(struct omap_i2c_dev *dev)
+ {
+ 	u16 psc = 0, scll = 0, sclh = 0, buf = 0;
+@@ -1163,8 +1122,22 @@ static int omap_i2c_runtime_suspend(struct device *dev)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_i2c_dev *_dev = platform_get_drvdata(pdev);
++	u16 iv;
 +
-+struct bio_vec;
-+static inline void iov_iter_init_bvec(struct iov_iter *i,
-+				      struct bio_vec *bvec,
-+				      unsigned long nr_segs,
-+				      size_t count, size_t written)
-+{
-+	i->ops = &ii_bvec_ops;
-+	i->data = (unsigned long)bvec;
-+	i->nr_segs = nr_segs;
-+	i->iov_offset = 0;
-+	i->count = count + written;
-+
-+	iov_iter_advance(i, written);
-+}
-+
- extern struct iov_iter_ops ii_iovec_ops;
- 
- static inline void iov_iter_init(struct iov_iter *i,
-diff --git a/mm/iov-iter.c b/mm/iov-iter.c
-index 83f0db7..5b35f23 100644
---- a/mm/iov-iter.c
-+++ b/mm/iov-iter.c
-@@ -5,6 +5,7 @@
- #include <linux/hardirq.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-+#include <linux/bio.h>
- 
- static size_t __iovec_copy_to_user_inatomic(char *vaddr,
- 			const struct iovec *iov, size_t base, size_t bytes)
-@@ -83,6 +84,129 @@ size_t ii_iovec_copy_to_user(struct page *page,
- 	return copied;
- }
- 
-+/*
-+ * As an easily verifiable first pass, we implement all the methods that
-+ * copy data to and from bvec pages with one function.  We implement it
-+ * all with kmap_atomic().
-+ */
-+static size_t bvec_copy_tofrom_page(struct iov_iter *iter, struct page *page,
-+				    unsigned long page_offset, size_t bytes,
-+				    int topage)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)iter->data;
-+	size_t bvec_offset = iter->iov_offset;
-+	size_t remaining = bytes;
-+	void *bvec_map;
-+	void *page_map;
-+	size_t copy;
-+
-+	page_map = kmap_atomic(page, KM_USER0);
-+
-+	BUG_ON(bytes > iter->count);
-+	while (remaining) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec_offset >= bvec->bv_len);
-+		copy = min(remaining, bvec->bv_len - bvec_offset);
-+		bvec_map = kmap_atomic(bvec->bv_page, KM_USER1);
-+		if (topage)
-+			memcpy(page_map + page_offset,
-+			       bvec_map + bvec->bv_offset + bvec_offset,
-+			       copy);
-+		else
-+			memcpy(bvec_map + bvec->bv_offset + bvec_offset,
-+			       page_map + page_offset,
-+			       copy);
-+		kunmap_atomic(bvec_map, KM_USER1);
-+		remaining -= copy;
-+		bvec_offset += copy;
-+		page_offset += copy;
-+		if (bvec_offset == bvec->bv_len) {
-+			bvec_offset = 0;
-+			bvec++;
-+		}
-+	}
-+
-+	kunmap_atomic(page_map, KM_USER0);
-+
-+	return bytes;
-+}
-+
-+size_t ii_bvec_copy_to_user_atomic(struct page *page, struct iov_iter *i,
-+				   unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+size_t ii_bvec_copy_to_user(struct page *page, struct iov_iter *i,
-+				   unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+size_t ii_bvec_copy_from_user_atomic(struct page *page, struct iov_iter *i,
-+				     unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+size_t ii_bvec_copy_from_user(struct page *page, struct iov_iter *i,
-+			      unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+
-+/*
-+ * bio_vecs have a stricter structure than iovecs that might have
-+ * come from userspace.  There are no zero length bio_vec elements.
-+ */
-+void ii_bvec_advance(struct iov_iter *i, size_t bytes)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	size_t offset = i->iov_offset;
-+	size_t delta;
-+
-+	BUG_ON(i->count < bytes);
-+	while (bytes) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec->bv_len <= offset);
-+		delta = min(bytes, bvec->bv_len - offset);
-+		offset += delta;
-+		i->count -= delta;
-+		bytes -= delta;
-+		if (offset == bvec->bv_len) {
-+			bvec++;
-+			offset = 0;
-+		}
-+	}
-+
-+	i->data = (unsigned long)bvec;
-+	i->iov_offset = offset;
-+}
-+
-+/*
-+ * pages pointed to by bio_vecs are always pinned.
-+ */
-+int ii_bvec_fault_in_readable(struct iov_iter *i, size_t bytes)
-+{
-+	return 0;
-+}
-+
-+size_t ii_bvec_single_seg_count(struct iov_iter *i)
-+{
-+	const struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	if (i->nr_segs == 1)
-+		return i->count;
++	_dev->iestate = omap_i2c_read_reg(_dev, OMAP_I2C_IE_REG);
++	if (_dev->dtrev == OMAP_I2C_IP_VERSION_2)
++		omap_i2c_write_reg(_dev, OMAP_I2C_IP_V2_IRQENABLE_CLR, 1);
 +	else
-+		return min(i->count, bvec->bv_len - i->iov_offset);
-+}
++		omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, 0);
 +
-+struct iov_iter_ops ii_bvec_ops = {
-+	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
-+	.ii_copy_to_user = ii_bvec_copy_to_user,
-+	.ii_copy_from_user_atomic = ii_bvec_copy_from_user_atomic,
-+	.ii_copy_from_user = ii_bvec_copy_from_user,
-+	.ii_advance = ii_bvec_advance,
-+	.ii_fault_in_readable = ii_bvec_fault_in_readable,
-+	.ii_single_seg_count = ii_bvec_single_seg_count,
-+};
-+EXPORT_SYMBOL(ii_bvec_ops);
++	if (_dev->rev < OMAP_I2C_OMAP1_REV_2) {
++		iv = omap_i2c_read_reg(_dev, OMAP_I2C_IV_REG); /* Read clears */
++	} else {
++		omap_i2c_write_reg(_dev, OMAP_I2C_STAT_REG, _dev->iestate);
  
- static size_t __iovec_copy_from_user_inatomic(char *vaddr,
- 			const struct iovec *iov, size_t base, size_t bytes)
+-	omap_i2c_idle(_dev);
++		/* Flush posted write */
++		omap_i2c_read_reg(_dev, OMAP_I2C_STAT_REG);
++	}
+ 
+ 	return 0;
+ }
+@@ -1174,7 +1147,23 @@ static int omap_i2c_runtime_resume(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_i2c_dev *_dev = platform_get_drvdata(pdev);
+ 
+-	omap_i2c_unidle(_dev);
++	if (_dev->flags & OMAP_I2C_FLAG_RESET_REGS_POSTIDLE) {
++		omap_i2c_write_reg(_dev, OMAP_I2C_CON_REG, 0);
++		omap_i2c_write_reg(_dev, OMAP_I2C_PSC_REG, _dev->pscstate);
++		omap_i2c_write_reg(_dev, OMAP_I2C_SCLL_REG, _dev->scllstate);
++		omap_i2c_write_reg(_dev, OMAP_I2C_SCLH_REG, _dev->sclhstate);
++		omap_i2c_write_reg(_dev, OMAP_I2C_BUF_REG, _dev->bufstate);
++		omap_i2c_write_reg(_dev, OMAP_I2C_SYSC_REG, _dev->syscstate);
++		omap_i2c_write_reg(_dev, OMAP_I2C_WE_REG, _dev->westate);
++		omap_i2c_write_reg(_dev, OMAP_I2C_CON_REG, OMAP_I2C_CON_EN);
++	}
++
++	/*
++	 * Don't write to this register if the IE state is 0 as it can
++	 * cause deadlock.
++	 */
++	if (_dev->iestate)
++		omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, _dev->iestate);
+ 
+ 	return 0;
+ }
 -- 
-1.7.9.5
+1.7.1
 
