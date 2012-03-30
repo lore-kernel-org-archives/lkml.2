@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2C3Ftc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 01:49:32 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43501 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab2C3Ft0 (ORCPT
+	id S1753348Ab2C3F4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 01:56:04 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:43758 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab2C3Fz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 01:49:26 -0400
-Message-ID: <4F754963.4080104@kernel.org>
-Date: Fri, 30 Mar 2012 01:49:23 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] PM / Runtime: Add may_power_off flag to subsys
- data
-References: <1333001380-6050-1-git-send-email-ming.m.lin@intel.com> <1333001380-6050-4-git-send-email-ming.m.lin@intel.com>
-In-Reply-To: <1333001380-6050-4-git-send-email-ming.m.lin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Mar 2012 01:55:57 -0400
+X-AuditID: cbfee61b-b7baeae000004fa7-24-4f754aeb3435
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: "'Liam Girdwood'" <lrg@ti.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+References: <1332130930.26765.2.camel@phoenix>
+In-reply-to: <1332130930.26765.2.camel@phoenix>
+Subject: RE: [PATCH RESEND 1/4] regulator: Fix setting new voltage in
+ s5m8767_set_voltage
+Date: Fri, 30 Mar 2012 14:56:10 +0900
+Message-id: <03f801cd0e39$cec0d0c0$6c427240$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac0Fh/Ok60trTR7hTEahgDgzKLfbcgIqchgw
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why?
-
--Len
-
-On 03/29/2012 02:09 AM, Lin Ming wrote:
-
-> Parent device will check child's may_power_off flag to see if child device can
-> be powered off.
+On Mon, Mar 19, 2012 at 1:22 AM, Axel Lin wrote:
+> Current code does not really update the register with new value, fix it.
+> I rename the variable i to sel for better readability.
 > 
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  include/linux/pm.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> index e4982ac..c9953b4 100644
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -465,6 +465,7 @@ struct pm_subsys_data {
->  #ifdef CONFIG_PM_GENERIC_DOMAINS
->  	struct pm_domain_data *domain_data;
->  #endif
-> +	bool may_power_off;
->  };
->  
->  struct dev_pm_info {
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
+Acked-by: Sangbeom Kim <sbkim73@samsung.com>
+
+Thanks for your fixing patch.
+Sangbeom.
 
