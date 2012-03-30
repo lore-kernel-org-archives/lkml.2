@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934721Ab2C3UHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:07:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53485 "EHLO
+	id S934663Ab2C3UHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:07:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53486 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934637Ab2C3UFl (ORCPT
+	with ESMTP id S934640Ab2C3UFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 16:05:41 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
-Subject: [PATCH v2 05/15] hwmon: mark const init data with __initconst instead of __initdata
-Date: Fri, 30 Mar 2012 22:04:55 +0200
-Message-Id: <1333137905-13809-5-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: kernel@pengutronix.de, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [PATCH v2 07/15] mips: mark const init data with __initconst instead of __initdata
+Date: Fri, 30 Mar 2012 22:04:57 +0200
+Message-Id: <1333137905-13809-7-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <20120330200358.GV15647@pengutronix.de>
 References: <20120330200358.GV15647@pengutronix.de>
@@ -39,45 +39,124 @@ because a section containing const variables is marked read only and so
 cannot contain non-const variables.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: lm-sensors@lm-sensors.org
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
 ---
 changes since (implicit) v1:
- - drop wrong changes to drivers/hwmon/w83627hf.c
+ - drop wrong changes to arch/mips/bcm63xx/boards/board_bcm963xx.c
 
- drivers/hwmon/w83627ehf.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ arch/mips/bcm63xx/dev-pcmcia.c         |    4 ++--
+ arch/mips/mti-malta/malta-setup.c      |    2 +-
+ arch/mips/pci/fixup-mpc30x.c           |    4 ++--
+ arch/mips/powertv/asic/asic-calliope.c |    2 +-
+ arch/mips/powertv/asic/asic-cronus.c   |    2 +-
+ arch/mips/powertv/asic/asic-gaia.c     |    2 +-
+ arch/mips/powertv/asic/asic-zeus.c     |    2 +-
+ 7 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index a25350c..54922ed 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -2619,15 +2619,15 @@ static struct platform_driver w83627ehf_driver = {
- static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 				 struct w83627ehf_sio_data *sio_data)
- {
--	static const char __initdata sio_name_W83627EHF[] = "W83627EHF";
--	static const char __initdata sio_name_W83627EHG[] = "W83627EHG";
--	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
--	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
--	static const char __initdata sio_name_W83627UHG[] = "W83627UHG";
--	static const char __initdata sio_name_W83667HG[] = "W83667HG";
--	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
--	static const char __initdata sio_name_NCT6775[] = "NCT6775F";
--	static const char __initdata sio_name_NCT6776[] = "NCT6776F";
-+	static const char sio_name_W83627EHF[] __initconst = "W83627EHF";
-+	static const char sio_name_W83627EHG[] __initconst = "W83627EHG";
-+	static const char sio_name_W83627DHG[] __initconst = "W83627DHG";
-+	static const char sio_name_W83627DHG_P[] __initconst = "W83627DHG-P";
-+	static const char sio_name_W83627UHG[] __initconst = "W83627UHG";
-+	static const char sio_name_W83667HG[] __initconst = "W83667HG";
-+	static const char sio_name_W83667HG_B[] __initconst = "W83667HG-B";
-+	static const char sio_name_NCT6775[] __initconst = "NCT6775F";
-+	static const char sio_name_NCT6776[] __initconst = "NCT6776F";
+diff --git a/arch/mips/bcm63xx/dev-pcmcia.c b/arch/mips/bcm63xx/dev-pcmcia.c
+index de4d917..a551bab 100644
+--- a/arch/mips/bcm63xx/dev-pcmcia.c
++++ b/arch/mips/bcm63xx/dev-pcmcia.c
+@@ -79,11 +79,11 @@ static int __init config_pcmcia_cs(unsigned int cs,
+ 	return ret;
+ }
  
- 	u16 val;
- 	const char *sio_name;
+-static const __initdata struct {
++static const struct {
+ 	unsigned int	cs;
+ 	unsigned int	base;
+ 	unsigned int	size;
+-} pcmcia_cs[3] = {
++} pcmcia_cs[3] __initconst = {
+ 	{
+ 		.cs	= MPI_CS_PCMCIA_COMMON,
+ 		.base	= BCM_PCMCIA_COMMON_BASE_PA,
+diff --git a/arch/mips/mti-malta/malta-setup.c b/arch/mips/mti-malta/malta-setup.c
+index b7f37d4..2e28f65 100644
+--- a/arch/mips/mti-malta/malta-setup.c
++++ b/arch/mips/mti-malta/malta-setup.c
+@@ -111,7 +111,7 @@ static void __init pci_clock_check(void)
+ 	unsigned int __iomem *jmpr_p =
+ 		(unsigned int *) ioremap(MALTA_JMPRS_REG, sizeof(unsigned int));
+ 	int jmpr = (__raw_readl(jmpr_p) >> 2) & 0x07;
+-	static const int pciclocks[] __initdata = {
++	static const int pciclocks[] __initconst = {
+ 		33, 20, 25, 30, 12, 16, 37, 10
+ 	};
+ 	int pciclock = pciclocks[jmpr];
+diff --git a/arch/mips/pci/fixup-mpc30x.c b/arch/mips/pci/fixup-mpc30x.c
+index e08f49c..8e4f828 100644
+--- a/arch/mips/pci/fixup-mpc30x.c
++++ b/arch/mips/pci/fixup-mpc30x.c
+@@ -22,13 +22,13 @@
+ 
+ #include <asm/vr41xx/mpc30x.h>
+ 
+-static const int internal_func_irqs[] __initdata = {
++static const int internal_func_irqs[] __initconst = {
+ 	VRC4173_CASCADE_IRQ,
+ 	VRC4173_AC97_IRQ,
+ 	VRC4173_USB_IRQ,
+ };
+ 
+-static const int irq_tab_mpc30x[] __initdata = {
++static const int irq_tab_mpc30x[] __initconst = {
+  [12] = VRC4173_PCMCIA1_IRQ,
+  [13] = VRC4173_PCMCIA2_IRQ,
+  [29] = MQ200_IRQ,
+diff --git a/arch/mips/powertv/asic/asic-calliope.c b/arch/mips/powertv/asic/asic-calliope.c
+index 0a170e0..7773f3d 100644
+--- a/arch/mips/powertv/asic/asic-calliope.c
++++ b/arch/mips/powertv/asic/asic-calliope.c
+@@ -28,7 +28,7 @@
+ 
+ #define CALLIOPE_ADDR(x)	(CALLIOPE_IO_BASE + (x))
+ 
+-const struct register_map calliope_register_map __initdata = {
++const struct register_map calliope_register_map __initconst = {
+ 	.eic_slow0_strt_add = {.phys = CALLIOPE_ADDR(0x800000)},
+ 	.eic_cfg_bits = {.phys = CALLIOPE_ADDR(0x800038)},
+ 	.eic_ready_status = {.phys = CALLIOPE_ADDR(0x80004c)},
+diff --git a/arch/mips/powertv/asic/asic-cronus.c b/arch/mips/powertv/asic/asic-cronus.c
+index bbc0c12..da076db 100644
+--- a/arch/mips/powertv/asic/asic-cronus.c
++++ b/arch/mips/powertv/asic/asic-cronus.c
+@@ -28,7 +28,7 @@
+ 
+ #define CRONUS_ADDR(x)	(CRONUS_IO_BASE + (x))
+ 
+-const struct register_map cronus_register_map __initdata = {
++const struct register_map cronus_register_map __initconst = {
+ 	.eic_slow0_strt_add = {.phys = CRONUS_ADDR(0x000000)},
+ 	.eic_cfg_bits = {.phys = CRONUS_ADDR(0x000038)},
+ 	.eic_ready_status = {.phys = CRONUS_ADDR(0x00004C)},
+diff --git a/arch/mips/powertv/asic/asic-gaia.c b/arch/mips/powertv/asic/asic-gaia.c
+index 91dda68..47683b3 100644
+--- a/arch/mips/powertv/asic/asic-gaia.c
++++ b/arch/mips/powertv/asic/asic-gaia.c
+@@ -23,7 +23,7 @@
+ #include <linux/init.h>
+ #include <asm/mach-powertv/asic.h>
+ 
+-const struct register_map gaia_register_map __initdata = {
++const struct register_map gaia_register_map __initconst = {
+ 	.eic_slow0_strt_add = {.phys = GAIA_IO_BASE + 0x000000},
+ 	.eic_cfg_bits = {.phys = GAIA_IO_BASE + 0x000038},
+ 	.eic_ready_status = {.phys = GAIA_IO_BASE + 0x00004C},
+diff --git a/arch/mips/powertv/asic/asic-zeus.c b/arch/mips/powertv/asic/asic-zeus.c
+index 4a05bb0..6ff4b10 100644
+--- a/arch/mips/powertv/asic/asic-zeus.c
++++ b/arch/mips/powertv/asic/asic-zeus.c
+@@ -28,7 +28,7 @@
+ 
+ #define ZEUS_ADDR(x)	(ZEUS_IO_BASE + (x))
+ 
+-const struct register_map zeus_register_map __initdata = {
++const struct register_map zeus_register_map __initconst = {
+ 	.eic_slow0_strt_add = {.phys = ZEUS_ADDR(0x000000)},
+ 	.eic_cfg_bits = {.phys = ZEUS_ADDR(0x000038)},
+ 	.eic_ready_status = {.phys = ZEUS_ADDR(0x00004c)},
 -- 
 1.7.9.5
 
