@@ -1,44 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab2D3X4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 19:56:45 -0400
-Received: from nm7-vm4.bullet.mail.sg3.yahoo.com ([106.10.148.179]:27335 "HELO
-	nm7-vm4.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757532Ab2D3X4k (ORCPT
+	id S1753136Ab2DAR7J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 13:59:09 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:1906 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab2DAR7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 19:56:40 -0400
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Apr 2012 19:56:40 EDT
-X-Yahoo-Newman-Id: 677655.14902.bm@smtp145.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JCj6TaAVM1kUGvsVSCYMan6qCX0AGNdUMDpuzIrxLro2Kur
- ceu.Lg6f32OrV4_2VykZTt_r9akdLn9lxobuyZvNRmMd29LkOG2PesJDRUSk
- j03yxaLx6c0PpRKfmRHNo21XUWbYPSDDkh_xfdCttUqfcUHwl.t2CIhjrrEi
- Pui2sar6NfOspHh1AXJxpAwZkYxRlghaWAwXZiUZpAqgYqfM9h5jrX2I0wje
- HbpiFTWR7Av8u_LUmSpce_fhLpBbYXuGHGgsvqA3J_j.qAMh0GRZyoE.gHyj
- _3bRwmANtS18fkvnvBn7etVYVmDCcNXIv9gQ7UytCwMDksvAiOS6el.RRJDq
- WJbCIl3GCDFwd4cKf5_WnvoXoDVNoUhkV
-X-Yahoo-SMTP: 3dWs4myswBCRsiriam7PxG.dqSrtP4ZVQ3xChQ--
-Message-ID: <53AF166A93A1C8F3AC65FE01BF83F9CE@Nmo.mliuoxr>
-From: "yg" <minorfccwarford@yahoo.com>
-To: <han369369@163.com>
-Subject: =?utf-8?B?6JCl5pWR5rG25bed?=
-Date: Wed, 4 Jan 2012 20:21:16 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
+	Sun, 1 Apr 2012 13:59:08 -0400
+Message-Id: <201204011759.q31Hx5ej030121@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Mar 2012 16:07:12 -0400
+Subject: [PATCH v3] hugetlb: fix race condition in hugetlb_fault()
+In-Reply-To: <4F7887A5.3060700@tilera.com>
+References: <4F7887A5.3060700@tilera.com> <201203302018.q2UKIFH5020745@farm-0012.internal.tilera.com> <CAJd=RBCoLNB+iRX1shKGAwSbE8PsZXyk9e3inPTREcm2kk3nXA@mail.gmail.com> <201203311339.q2VDdJMD006254@farm-0012.internal.tilera.com> <CAJd=RBBWx7uZcw=_oA06RVunPAGeFcJ7LY=RwFCyB_BreJb_kg@mail.gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+X-OriginalArrivalTime: 01 Apr 2012 17:59:06.0828 (UTC) FILETIME=[21B0A8C0:01CD1031]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3UNusS1010770
 
-æ„Ÿè°¢ã€‚ä¸­åŽäººæ°‘å…±å’Œå›½ï¼Œæ‹¯æ•‘æ±¶å·å¤§åœ°éœ‡ï¼Œæˆ‘çŽ°åœ¨å‘ä¸­åŽè§£æ”¾å†›è‡´æ•¬ï¼Œå‘æ±¶å·é»˜å“€ã€‚
-æ„Ÿè°¢ã€‚ä¸­åŽäººæ°‘å…±å’Œå›½ï¼Œæ‹¯æ•‘æ±¶å·å¤§åœ°éœ‡ï¼Œæˆ‘çŽ°åœ¨å‘ä¸­åŽè§£æ”¾å†›è‡´æ•¬ï¼Œå‘æ±¶å·é»˜å“€ã€‚
+The race is as follows.
 
-   éœ€è¦é†±...,>å˜Œ<æ‰¾åˆ›æ–°è¾¾  æˆ‘ä»¬æ›´ä¸“ä¸š   æ›´ä¼˜æƒ 
- é™ˆå…ˆç”ŸTEL..136ã€‚ã€‚ã€‚9222.........8962
-è…¾è®¯ä¼é¹….9799....67580ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Suppose a multi-threaded task forks a new process (on cpu A), thus
+bumping up the ref count on all the pages.  While the fork is occurring
+(and thus we have marked all the PTEs as read-only), another thread in
+the original process (on cpu B) tries to write to a huge page, taking
+an access violation from the write-protect and calling hugetlb_cow().
+Now, suppose the fork() fails.  It will undo the COW and decrement the
+ref count on the pages, so the ref count on the huge page drops back
+to 1.  Meanwhile hugetlb_cow() also decrements the ref count by one on
+the original page, since the original address space doesn't need it any
+more, having copied a new page to replace the original page.  This leaves
+the ref count at zero, and when we call unlock_page(), we panic.
+
+	fork on CPU A				fault on CPU B
+	=============				==============
+	...
+	down_write(&parent->mmap_sem);
+	down_write_nested(&child->mmap_sem);
+	...
+	while duplicating vmas
+		if error
+			break;
+	...
+	up_write(&child->mmap_sem);
+	up_write(&parent->mmap_sem);		...
+						down_read(&parent->mmap_sem);
+						...
+						lock_page(page);
+						handle COW
+						page_mapcount(old_page) == 2
+						alloc and prepare new_page
+	...
+	handle error
+	page_remove_rmap(page);
+	put_page(page);
+	...
+						fold new_page into pte
+						page_remove_rmap(page);
+						put_page(page);
+						...
+				oops ==>	unlock_page(page);
+						up_read(&parent->mmap_sem);
+
+The solution is to take an extra reference to the page while we are
+holding the lock on it.
+
+Reviewed-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ mm/hugetlb.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 1871753..2a04cfd 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2701,6 +2701,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * so no worry about deadlock.
+ 	 */
+ 	page = pte_page(entry);
++	get_page(page);
+ 	if (page != pagecache_page)
+ 		lock_page(page);
+ 
+@@ -2732,6 +2733,7 @@ out_page_table_lock:
+ 	}
+ 	if (page != pagecache_page)
+ 		unlock_page(page);
++	put_page(page);
+ 
+ out_mutex:
+ 	mutex_unlock(&hugetlb_instantiation_mutex);
+-- 
+1.6.5.2
+
