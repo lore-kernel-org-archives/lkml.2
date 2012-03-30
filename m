@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204Ab2C3LT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:19:58 -0400
+	id S934214Ab2C3LUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:20:05 -0400
 Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
 	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933819Ab2C3LSw (ORCPT
+	with ESMTP id S934095Ab2C3LSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:18:52 -0400
+	Fri, 30 Mar 2012 07:18:51 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Myron Stowe <mstowe@redhat.com>,
-        Myron Stowe <myron.stowe@redhat.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 72/76] ACPI: Fix logic for removing mappings in 'acpi_unmap'
-Date: Fri, 30 Mar 2012 06:14:15 -0400
-Message-id: <8cdde126aa60ced0d63ff137378e09dd01dfadda.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@suse.com>,
+        Jan Beulich <jbeulich@suse.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 68/76] ACPI: consistently use should_use_kmap()
+Date: Fri, 30 Mar 2012 06:14:11 -0400
+Message-id: <e252675fb722d4a307cc380a06a905f03cf9951c.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,12 +25,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Myron Stowe <mstowe@redhat.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-Make sure the removal of mappings uses the same logic that put the
-mappings in place.
+... so that acpi_unmap()'s behavior gets in sync with acpi_map()'s.
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
  drivers/acpi/osl.c |    2 +-
