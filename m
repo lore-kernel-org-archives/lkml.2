@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966380Ab2C3Veb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:34:31 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43653 "EHLO
+	id S966387Ab2C3Vev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:34:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38694 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966322Ab2C3Vcu (ORCPT
+	by vger.kernel.org with ESMTP id S966295Ab2C3Vcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:50 -0400
-X-Sasl-enc: 5ZQkPWkdeMDHECxBeh0j5HFQDaduKpiFn3hC6/FM8wvF 1333143169
+	Fri, 30 Mar 2012 17:32:48 -0400
+X-Sasl-enc: Pkg7dRYde/oz8gpiBpj/LdxD5/6qXlVx6oL89cXtqTEs 1333143166
 X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:49:01 2012
-Message-Id: <20120330194901.294070743@linuxfoundation.org>
+Message-Id: <20120330194901.094873801@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:20 -0700
+Date: Fri, 30 Mar 2012 12:51:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Takashi Yoshii <takashi.yoshii.zj@renesas.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [ 175/175] serial: sh-sci: fix a race of DMA submit_tx on transfer
+        alan@lxorguk.ukuu.org.uk, Stephen Warren <swarren@wwwdotorg.org>
+Subject: [ 174/175] ARM: tegra: Fix device tree AUXDATA for USB/EHCI
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,88 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yoshii Takashi <takashi.yoshii.zj@renesas.com>
+From: Stephen Warren <swarren@wwwdotorg.org>
 
-commit 49d4bcaddca977fffdea8b0b71f6e5da96dac78e upstream.
+commit 8c3ec84102d171a24f050a086bfc546e9de93f9f upstream.
 
-When DMA is enabled, sh-sci transfer begins with
- uart_start()
-  sci_start_tx()
-    if (cookie_tx < 0) schedule_work()
-Then, starts DMA when wq scheduled, -- (A)
- process_one_work()
-  work_fn_rx()
-   cookie_tx = desc->submit_tx()
-And finishes when DMA transfer ends, -- (B)
- sci_dma_tx_complete()
-  async_tx_ack()
-  cookie_tx = -EINVAL
-  (possible another schedule_work())
+Commit 4a53f4e "USB: ehci-tegra: add probing through device tree" added
+AUXDATA for Tegra's USB/EHCI controller. However, it pointed the platform
+data at a location containing the address of the intended platform data,
+rather than the platform data itself. This change fixes that.
 
-This A to B sequence is not reentrant, since controlling variables
-(for example, cookie_tx above) are not queues nor lists. So, they
-must be invoked as A B A B..., otherwise results in kernel crash.
-
-To ensure the sequence, sci_start_tx() seems to test if cookie_tx < 0
-(represents "not used") to call schedule_work().
-But cookie_tx will not be set (to a cookie, also means "used") until
-in the middle of work queue scheduled function work_fn_tx().
-
-This gap between the test and set allows the breakage of the sequence
-under the very frequently call of uart_start().
-Another gap between async_tx_ack() and another schedule_work() results
-in the same issue, too.
-
-This patch introduces a new condition "cookie_tx == 0" just to mark
-it is "busy" and assign it within spin-locked region to fill the gaps.
-
-Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
-Reviewed-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/sh-sci.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ arch/arm/mach-tegra/board-dt-tegra20.c |    6 +++---
+ arch/arm/mach-tegra/devices.c          |    7 +++----
+ arch/arm/mach-tegra/devices.h          |    5 +++++
+ 3 files changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/tty/serial/sh-sci.c
-+++ b/drivers/tty/serial/sh-sci.c
-@@ -1229,17 +1229,20 @@ static void sci_dma_tx_complete(void *ar
- 	port->icount.tx += sg_dma_len(&s->sg_tx);
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -68,11 +68,11 @@ struct of_dev_auxdata tegra20_auxdata_lo
+ 	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S2_BASE, "tegra-i2s.1", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-das", TEGRA_APB_MISC_DAS_BASE, "tegra-das", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB_BASE, "tegra-ehci.0",
+-		       &tegra_ehci1_device.dev.platform_data),
++		       &tegra_ehci1_pdata),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB2_BASE, "tegra-ehci.1",
+-		       &tegra_ehci2_device.dev.platform_data),
++		       &tegra_ehci2_pdata),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB3_BASE, "tegra-ehci.2",
+-		       &tegra_ehci3_device.dev.platform_data),
++		       &tegra_ehci3_pdata),
+ 	{}
+ };
  
- 	async_tx_ack(s->desc_tx);
--	s->cookie_tx = -EINVAL;
- 	s->desc_tx = NULL;
+--- a/arch/arm/mach-tegra/devices.c
++++ b/arch/arm/mach-tegra/devices.c
+@@ -23,7 +23,6 @@
+ #include <linux/fsl_devices.h>
+ #include <linux/serial_8250.h>
+ #include <linux/i2c-tegra.h>
+-#include <linux/platform_data/tegra_usb.h>
+ #include <asm/pmu.h>
+ #include <mach/irqs.h>
+ #include <mach/iomap.h>
+@@ -446,18 +445,18 @@ static struct tegra_ulpi_config tegra_eh
+ 	.clk = "cdev2",
+ };
  
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(port);
+-static struct tegra_ehci_platform_data tegra_ehci1_pdata = {
++struct tegra_ehci_platform_data tegra_ehci1_pdata = {
+ 	.operating_mode = TEGRA_USB_OTG,
+ 	.power_down_on_bus_suspend = 1,
+ };
  
- 	if (!uart_circ_empty(xmit)) {
-+		s->cookie_tx = 0;
- 		schedule_work(&s->work_tx);
--	} else if (port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
--		u16 ctrl = sci_in(port, SCSCR);
--		sci_out(port, SCSCR, ctrl & ~SCSCR_TIE);
-+	} else {
-+		s->cookie_tx = -EINVAL;
-+		if (port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
-+			u16 ctrl = sci_in(port, SCSCR);
-+			sci_out(port, SCSCR, ctrl & ~SCSCR_TIE);
-+		}
- 	}
+-static struct tegra_ehci_platform_data tegra_ehci2_pdata = {
++struct tegra_ehci_platform_data tegra_ehci2_pdata = {
+ 	.phy_config = &tegra_ehci2_ulpi_phy_config,
+ 	.operating_mode = TEGRA_USB_HOST,
+ 	.power_down_on_bus_suspend = 1,
+ };
  
- 	spin_unlock_irqrestore(&port->lock, flags);
-@@ -1501,8 +1504,10 @@ static void sci_start_tx(struct uart_por
- 	}
+-static struct tegra_ehci_platform_data tegra_ehci3_pdata = {
++struct tegra_ehci_platform_data tegra_ehci3_pdata = {
+ 	.operating_mode = TEGRA_USB_HOST,
+ 	.power_down_on_bus_suspend = 1,
+ };
+--- a/arch/arm/mach-tegra/devices.h
++++ b/arch/arm/mach-tegra/devices.h
+@@ -20,6 +20,11 @@
+ #define __MACH_TEGRA_DEVICES_H
  
- 	if (s->chan_tx && !uart_circ_empty(&s->port.state->xmit) &&
--	    s->cookie_tx < 0)
-+	    s->cookie_tx < 0) {
-+		s->cookie_tx = 0;
- 		schedule_work(&s->work_tx);
-+	}
- #endif
+ #include <linux/platform_device.h>
++#include <linux/platform_data/tegra_usb.h>
++
++extern struct tegra_ehci_platform_data tegra_ehci1_pdata;
++extern struct tegra_ehci_platform_data tegra_ehci2_pdata;
++extern struct tegra_ehci_platform_data tegra_ehci3_pdata;
  
- 	if (!s->chan_tx || port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
+ extern struct platform_device tegra_gpio_device;
+ extern struct platform_device tegra_pinmux_device;
 
 
