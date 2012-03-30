@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936720Ab2C3XDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:03:54 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934818Ab2C3VFJ (ORCPT
+	id S934814Ab2C3VFH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:05:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934790Ab2C3VE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:09 -0400
-Message-Id: <201203302104.q2UL4t9E006257@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 27 Mar 2012 14:17:05 -0400
-Subject: [PATCH] arch/tile: fix gcc 4.6 warnings in <asm/bitops_64.h>
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:04:55.0241 (UTC) FILETIME=[C1D5FB90:01CD0EB8]
+	Fri, 30 Mar 2012 17:04:56 -0400
+Message-Id: <20120330195727.259385218@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:57:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Andrew Vagin <avagin@openvz.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: [ 036/108] uevent: send events in correct order according to seqnum (v3)
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix some signedness and variable usage warnings in change_bit()
-and test_and_change_bit().
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: Andrew Vagin <avagin@openvz.org>
+
+commit 7b60a18da393ed70db043a777fd9e6d5363077c4 upstream.
+
+The queue handling in the udev daemon assumes that the events are
+ordered.
+
+Before this patch uevent_seqnum is incremented under sequence_lock,
+than an event is send uner uevent_sock_mutex. I want to say that code
+contained a window between incrementing seqnum and sending an event.
+
+This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
+
+v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
+v3: unlock the mutex before the goto exit
+
+Thanks for Kay for the comments.
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Tested-By: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/include/asm/bitops_64.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ lib/kobject_uevent.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/arch/tile/include/asm/bitops_64.h b/arch/tile/include/asm/bitops_64.h
-index e9c8e38..161a381 100644
---- a/arch/tile/include/asm/bitops_64.h
-+++ b/arch/tile/include/asm/bitops_64.h
-@@ -39,10 +39,10 @@ static inline void clear_bit(unsigned nr, volatile unsigned long *addr)
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -29,16 +29,17 @@
  
- static inline void change_bit(unsigned nr, volatile unsigned long *addr)
- {
--	unsigned long old, mask = (1UL << (nr % BITS_PER_LONG));
--	long guess, oldval;
-+	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
-+	unsigned long guess, oldval;
- 	addr += nr / BITS_PER_LONG;
--	old = *addr;
-+	oldval = *addr;
- 	do {
- 		guess = oldval;
- 		oldval = atomic64_cmpxchg((atomic64_t *)addr,
-@@ -86,7 +86,7 @@ static inline int test_and_change_bit(unsigned nr,
- 				      volatile unsigned long *addr)
- {
- 	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
--	long guess, oldval = *addr;
-+	unsigned long guess, oldval;
- 	addr += nr / BITS_PER_LONG;
- 	oldval = *addr;
- 	do {
--- 
-1.6.5.2
+ u64 uevent_seqnum;
+ char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
+-static DEFINE_SPINLOCK(sequence_lock);
+ #ifdef CONFIG_NET
+ struct uevent_sock {
+ 	struct list_head list;
+ 	struct sock *sk;
+ };
+ static LIST_HEAD(uevent_sock_list);
+-static DEFINE_MUTEX(uevent_sock_mutex);
+ #endif
+ 
++/* This lock protects uevent_seqnum and uevent_sock_list */
++static DEFINE_MUTEX(uevent_sock_mutex);
++
+ /* the strings here must match the enum in include/linux/kobject.h */
+ static const char *kobject_actions[] = {
+ 	[KOBJ_ADD] =		"add",
+@@ -136,7 +137,6 @@ int kobject_uevent_env(struct kobject *k
+ 	struct kobject *top_kobj;
+ 	struct kset *kset;
+ 	const struct kset_uevent_ops *uevent_ops;
+-	u64 seq;
+ 	int i = 0;
+ 	int retval = 0;
+ #ifdef CONFIG_NET
+@@ -243,17 +243,16 @@ int kobject_uevent_env(struct kobject *k
+ 	else if (action == KOBJ_REMOVE)
+ 		kobj->state_remove_uevent_sent = 1;
+ 
++	mutex_lock(&uevent_sock_mutex);
+ 	/* we will send an event, so request a new sequence number */
+-	spin_lock(&sequence_lock);
+-	seq = ++uevent_seqnum;
+-	spin_unlock(&sequence_lock);
+-	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
+-	if (retval)
++	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)++uevent_seqnum);
++	if (retval) {
++		mutex_unlock(&uevent_sock_mutex);
+ 		goto exit;
++	}
+ 
+ #if defined(CONFIG_NET)
+ 	/* send netlink message */
+-	mutex_lock(&uevent_sock_mutex);
+ 	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
+ 		struct sock *uevent_sock = ue_sk->sk;
+ 		struct sk_buff *skb;
+@@ -287,8 +286,8 @@ int kobject_uevent_env(struct kobject *k
+ 		} else
+ 			retval = -ENOMEM;
+ 	}
+-	mutex_unlock(&uevent_sock_mutex);
+ #endif
++	mutex_unlock(&uevent_sock_mutex);
+ 
+ 	/* call uevent_helper, usually only enabled during early boot */
+ 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
+
 
