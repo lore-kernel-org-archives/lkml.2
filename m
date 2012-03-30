@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936365Ab2C3VuS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:50:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965745Ab2C3Vu6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:50:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965742Ab2C3VUC (ORCPT
+	with ESMTP id S965758Ab2C3VT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:20:02 -0400
-Message-Id: <20120330194836.802943528@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:19:56 -0400
+Message-Id: <20120330194836.387542945@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:30 -0700
+Date: Fri, 30 Mar 2012 12:49:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nishanth Aravamudan <nacc@us.ibm.com>,
-        Dave Hansen <haveblue@us.ibm.com>, Anton Blanchard <anton@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
-Subject: [ 065/175] bootmem/sparsemem: remove limit constraint in alloc_bootmem_section
+        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: [ 063/175] TPM: Zero buffer whole after copying to userspace
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,142 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+From: Tim Gardner <tim.gardner@canonical.com>
 
-commit f5bf18fa22f8c41a13eb8762c7373eb3a93a7333 upstream.
+commit 3ab1aff89477dafb1aaeafe8c8669114a02b7226 upstream.
 
-While testing AMS (Active Memory Sharing) / CMO (Cooperative Memory
-Overcommit) on powerpc, we tripped the following:
+Commit 3321c07ae5068568cd61ac9f4ba749006a7185c9 correctly clears the TPM
+buffer if the user specified read length is >= the TPM buffer length. However,
+if the user specified read length is < the TPM buffer length, then part of the
+TPM buffer is left uncleared.
 
-  kernel BUG at mm/bootmem.c:483!
-  cpu 0x0: Vector: 700 (Program Check) at [c000000000c03940]
-      pc: c000000000a62bd8: .alloc_bootmem_core+0x90/0x39c
-      lr: c000000000a64bcc: .sparse_early_usemaps_alloc_node+0x84/0x29c
-      sp: c000000000c03bc0
-     msr: 8000000000021032
-    current = 0xc000000000b0cce0
-    paca    = 0xc000000001d80000
-      pid   = 0, comm = swapper
-  kernel BUG at mm/bootmem.c:483!
-  enter ? for help
-  [c000000000c03c80] c000000000a64bcc
-  .sparse_early_usemaps_alloc_node+0x84/0x29c
-  [c000000000c03d50] c000000000a64f10 .sparse_init+0x12c/0x28c
-  [c000000000c03e20] c000000000a474f4 .setup_arch+0x20c/0x294
-  [c000000000c03ee0] c000000000a4079c .start_kernel+0xb4/0x460
-  [c000000000c03f90] c000000000009670 .start_here_common+0x1c/0x2c
-
-This is
-
-        BUG_ON(limit && goal + size > limit);
-
-and after some debugging, it seems that
-
-	goal = 0x7ffff000000
-	limit = 0x80000000000
-
-and sparse_early_usemaps_alloc_node ->
-sparse_early_usemaps_alloc_pgdat_section calls
-
-	return alloc_bootmem_section(usemap_size() * count, section_nr);
-
-This is on a system with 8TB available via the AMS pool, and as a quirk
-of AMS in firmware, all of that memory shows up in node 0.  So, we end
-up with an allocation that will fail the goal/limit constraints.
-
-In theory, we could "fall-back" to alloc_bootmem_node() in
-sparse_early_usemaps_alloc_node(), but since we actually have HOTREMOVE
-defined, we'll BUG_ON() instead.  A simple solution appears to be to
-unconditionally remove the limit condition in alloc_bootmem_section,
-meaning allocations are allowed to cross section boundaries (necessary
-for systems of this size).
-
-Johannes Weiner pointed out that if alloc_bootmem_section() no longer
-guarantees section-locality, we need check_usemap_section_nr() to print
-possible cross-dependencies between node descriptors and the usemaps
-allocated through it.  That makes the two loops in
-sparse_early_usemaps_alloc_node() identical, so re-factor the code a
-bit.
-
-[akpm@linux-foundation.org: code simplification]
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Cc: Dave Hansen <haveblue@us.ibm.com>
-Cc: Anton Blanchard <anton@au1.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-Cc: Robert Jennings <rcj@linux.vnet.ibm.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Seth Forshee <seth.forshee@canonical.com>
+Cc: Debora Velarde <debora@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: Marcel Selhorst <m.selhorst@sirrix.com>
+Cc: tpmdd-devel@lists.sourceforge.net
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/bootmem.c |    5 ++---
- mm/sparse.c  |   30 +++++++++++-------------------
- 2 files changed, 13 insertions(+), 22 deletions(-)
+ drivers/char/tpm/tpm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -766,14 +766,13 @@ void * __init alloc_bootmem_section(unsi
- 				    unsigned long section_nr)
- {
- 	bootmem_data_t *bdata;
--	unsigned long pfn, goal, limit;
-+	unsigned long pfn, goal;
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1221,12 +1221,13 @@ ssize_t tpm_read(struct file *file, char
+ 	ret_size = atomic_read(&chip->data_pending);
+ 	atomic_set(&chip->data_pending, 0);
+ 	if (ret_size > 0) {	/* relay data */
++		ssize_t orig_ret_size = ret_size;
+ 		if (size < ret_size)
+ 			ret_size = size;
  
- 	pfn = section_nr_to_pfn(section_nr);
- 	goal = pfn << PAGE_SHIFT;
--	limit = section_nr_to_pfn(section_nr + 1) << PAGE_SHIFT;
- 	bdata = &bootmem_node_data[early_pfn_to_nid(pfn)];
+ 		mutex_lock(&chip->buffer_mutex);
+ 		rc = copy_to_user(buf, chip->data_buffer, ret_size);
+-		memset(chip->data_buffer, 0, ret_size);
++		memset(chip->data_buffer, 0, orig_ret_size);
+ 		if (rc)
+ 			ret_size = -EFAULT;
  
--	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, limit);
-+	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, 0);
- }
- #endif
- 
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -353,29 +353,21 @@ static void __init sparse_early_usemaps_
- 
- 	usemap = sparse_early_usemaps_alloc_pgdat_section(NODE_DATA(nodeid),
- 								 usemap_count);
--	if (usemap) {
--		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
--			if (!present_section_nr(pnum))
--				continue;
--			usemap_map[pnum] = usemap;
--			usemap += size;
-+	if (!usemap) {
-+		usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
-+		if (!usemap) {
-+			printk(KERN_WARNING "%s: allocation failed\n", __func__);
-+			return;
- 		}
--		return;
- 	}
- 
--	usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
--	if (usemap) {
--		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
--			if (!present_section_nr(pnum))
--				continue;
--			usemap_map[pnum] = usemap;
--			usemap += size;
--			check_usemap_section_nr(nodeid, usemap_map[pnum]);
--		}
--		return;
-+	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
-+		if (!present_section_nr(pnum))
-+			continue;
-+		usemap_map[pnum] = usemap;
-+		usemap += size;
-+		check_usemap_section_nr(nodeid, usemap_map[pnum]);
- 	}
--
--	printk(KERN_WARNING "%s: allocation failed\n", __func__);
- }
- 
- #ifndef CONFIG_SPARSEMEM_VMEMMAP
 
 
