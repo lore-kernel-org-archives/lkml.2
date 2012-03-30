@@ -1,80 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760633Ab2C3KOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:14:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40470 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759310Ab2C3KOS (ORCPT
+	id S1760664Ab2C3KOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:14:40 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:34627 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760636Ab2C3KOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:14:18 -0400
-Date: Fri, 30 Mar 2012 11:14:15 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Cc: Erik Gilling <konkers@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        NeilBrown <neilb@suse.de>, gregkh@linuxfoundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mike Lockwood <lockwood@android.com>
-Subject: Re: [PATCH v6 1/5] Extcon (external connector): import Android's
- switch class and modify.
-Message-ID: <20120330101414.GC21950@opensource.wolfsonmicro.com>
-References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
- <1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
- <1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com>
- <20120309124119.GV3273@opensource.wolfsonmicro.com>
- <CACSP8ShU5tu=9N53PtYMLyFVFMS9whNRhMvu7nu8rBoPuVCy+Q@mail.gmail.com>
- <CAJ0PZbT728rhQ5esf0arRw-TtgBGMCgAvZhW9-AejmbT9WOahw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+xNpyl7Qekk2NvDX"
-Content-Disposition: inline
-In-Reply-To: <CAJ0PZbT728rhQ5esf0arRw-TtgBGMCgAvZhW9-AejmbT9WOahw@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Mar 2012 06:14:25 -0400
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Tang Liang <liang.tang@oracle.com>,
+        Len Brown <len.brown@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 01/76] x86, acpi, tboot: Have a ACPI os prepare sleep instead
+ of calling tboot_sleep.
+Date: Fri, 30 Mar 2012 06:13:04 -0400
+Message-id: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
+In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tang Liang <liang.tang@oracle.com>
 
---+xNpyl7Qekk2NvDX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The ACPI suspend path makes a call to tboot_sleep right before
+it writes the PM1A, PM1B values. We replace the direct call to
+tboot via an registration callback similar to __acpi_register_gsi.
 
-On Fri, Mar 30, 2012 at 05:56:01PM +0900, MyungJoo Ham wrote:
+CC: Len Brown <len.brown@intel.com>
+Acked-by: Joseph Cihula <joseph.cihula@intel.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+[v1: Added __attribute__ ((unused))]
+[v2: Introduced a wrapper instead of changing tboot_sleep return values]
+[v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
+Signed-off-by: Tang Liang <liang.tang@oracle.com>
+[v1: Fix compile issues on IA64 and PPC64]
+[v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep properly]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/kernel/tboot.c       |    8 ++++++++
+ drivers/acpi/acpica/hwsleep.c |   10 +++++++---
+ drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
+ include/acpi/acexcep.h        |    1 +
+ include/linux/acpi.h          |   10 ++++++++++
+ include/linux/tboot.h         |    1 -
+ 6 files changed, 50 insertions(+), 4 deletions(-)
 
-> With class_compat as in patchset v7, (this thread is w/ v6) does the
-> issue (missing link from device name directory) still exist? (I don't
-> think so)
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index e2410e2..1a4ab7d 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -297,6 +297,12 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+ 
+ 	tboot_shutdown(acpi_shutdown_map[sleep_state]);
+ }
++static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
++			       u32 pm1b_control)
++{
++	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
++	return 0;
++}
+ 
+ static atomic_t ap_wfs_count;
+ 
+@@ -345,6 +351,8 @@ static __init int tboot_late_init(void)
+ 
+ 	atomic_set(&ap_wfs_count, 0);
+ 	register_hotcpu_notifier(&tboot_cpu_notifier);
++
++	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+index d52da30..992359a 100644
+--- a/drivers/acpi/acpica/hwsleep.c
++++ b/drivers/acpi/acpica/hwsleep.c
+@@ -43,9 +43,9 @@
+  */
+ 
+ #include <acpi/acpi.h>
++#include <linux/acpi.h>
+ #include "accommon.h"
+ #include "actables.h"
+-#include <linux/tboot.h>
+ #include <linux/module.h>
+ 
+ #define _COMPONENT          ACPI_HARDWARE
+@@ -344,8 +344,12 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
+ 
+ 	ACPI_FLUSH_CPU_CACHE();
+ 
+-	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+-
++	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
++				       pm1b_control);
++	if (ACPI_SKIP(status))
++		return_ACPI_STATUS(AE_OK);
++	if (ACPI_FAILURE(status))
++		return_ACPI_STATUS(status);
+ 	/* Write #2: Write both SLP_TYP + SLP_EN */
+ 
+ 	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index f31c5c5..f3aae4b 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -76,6 +76,9 @@ EXPORT_SYMBOL(acpi_in_debugger);
+ extern char line_buf[80];
+ #endif				/*ENABLE_DEBUGGER */
+ 
++static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
++				      u32 pm1b_ctrl);
++
+ static acpi_osd_handler acpi_irq_handler;
+ static void *acpi_irq_context;
+ static struct workqueue_struct *kacpid_wq;
+@@ -1659,3 +1662,24 @@ acpi_status acpi_os_terminate(void)
+ 
+ 	return AE_OK;
+ }
++
++acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
++				  u32 pm1b_control)
++{
++	int rc = 0;
++	if (__acpi_os_prepare_sleep)
++		rc = __acpi_os_prepare_sleep(sleep_state,
++					     pm1a_control, pm1b_control);
++	if (rc < 0)
++		return AE_ERROR;
++	else if (rc > 0)
++		return AE_CTRL_SKIP;
++
++	return AE_OK;
++}
++
++void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
++			       u32 pm1a_ctrl, u32 pm1b_ctrl))
++{
++	__acpi_os_prepare_sleep = func;
++}
+diff --git a/include/acpi/acexcep.h b/include/acpi/acexcep.h
+index 5b6c391..fa0d22c 100644
+--- a/include/acpi/acexcep.h
++++ b/include/acpi/acexcep.h
+@@ -57,6 +57,7 @@
+ #define ACPI_SUCCESS(a)                 (!(a))
+ #define ACPI_FAILURE(a)                 (a)
+ 
++#define ACPI_SKIP(a)                    (a == AE_CTRL_SKIP)
+ #define AE_OK                           (acpi_status) 0x0000
+ 
+ /*
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 6001b4da..fccd017 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -359,4 +359,14 @@ static inline int suspend_nvs_register(unsigned long a, unsigned long b)
+ }
+ #endif
+ 
++#ifdef CONFIG_ACPI
++void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
++			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
++
++acpi_status acpi_os_prepare_sleep(u8 sleep_state,
++				  u32 pm1a_control, u32 pm1b_control);
++#else
++#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
++#endif
++
+ #endif	/*_LINUX_ACPI_H*/
+diff --git a/include/linux/tboot.h b/include/linux/tboot.h
+index 1dba6ee..c75128b 100644
+--- a/include/linux/tboot.h
++++ b/include/linux/tboot.h
+@@ -143,7 +143,6 @@ static inline int tboot_enabled(void)
+ 
+ extern void tboot_probe(void);
+ extern void tboot_shutdown(u32 shutdown_type);
+-extern void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control);
+ extern struct acpi_table_header *tboot_get_dmar_table(
+ 				      struct acpi_table_header *dmar_tbl);
+ extern int tboot_force_iommu(void);
+-- 
+1.7.10.rc2.19.gfae9d
 
-Not unless the uevents are issued with both names.
-
---+xNpyl7Qekk2NvDX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPdYdsAAoJEBus8iNuMP3d08AQAIrlh8CHoFB/67nOMO2x3ipY
-XeLTGF/NfXqT1gofhL7j73hbUzYfy76TGqXpZMmBKocyyzZqSs2Ey5L2mP8JC5KJ
-AOwkM2OhwaL1QL5TqO0NHmNn1pJcsvOa3xBccjRqZy8rVodQQjTewb54lJaXeDCv
-oZh8bbQH3javfnc8hzCGA7dNMETkyqFQ0Cl/+vhEoa5IeevdIHD/0WRSxEIqmYO0
-LNgan0479QeBfJuPYu9HVUtXnil7vq/7/bolTJQ0J3vRQ4lMreVQcPpjkCYiAxWu
-pTnRKSKcvPmPsUu+o0HzU1lFxqL9shFOf7qp2XUyDD9bh2VzoJwO586M1/lPG3oM
-o2CLTrkZEvd1d7dH4LtIEb53bNJuz7YavSJEdMmcnbIHUpguE+BsNBNp2iaWS20E
-K5Oi9xFItFLLSjg8DR2fSXvVFeXVKVSWNIX5IDlZseDYXGrMeREgRyota8bTd8pT
-cXKHQghoHWvT3ds/7MhV2n0LW+kPCcHrUvXl4gGUb7QrwPdydb9IENcQt7I/mwM1
-JSBh7vKQBhFqPP8QwhX/nYDl5D9wDPEEtYzXYcX2vOTjBCrHpHhl+gMVp3pVDEvD
-xvqh4JM4hoCLWGTnVsf+u9bPS0dGvePNaNlULbCKrkgqVagIEOmIfelcH/04G0ab
-MuzxxV+wZkkVEUMisB6p
-=nOQi
------END PGP SIGNATURE-----
-
---+xNpyl7Qekk2NvDX--
