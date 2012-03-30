@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934743Ab2C3VEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:04:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S934757Ab2C3VEm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:04:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934543Ab2C3VEQ (ORCPT
+	with ESMTP id S934543Ab2C3VEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:16 -0400
-Message-Id: <20120330195725.561573050@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:04:37 -0400
+Message-Id: <20120330195726.408252441@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:46 -0700
+Date: Fri, 30 Mar 2012 12:57:52 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Tuttle <ttuttle@chromium.org>
-Subject: [ 024/108] USB: qcserial: add several new serial devices
+        alan@lxorguk.ukuu.org.uk,
+        Simon Graham <simon.graham@virtualcomputer.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 030/108] rtlwifi: Handle previous allocation failures when freeing device memory
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,47 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Tuttle <ttuttle@chromium.org>
+From: Simon Graham <simon.graham@virtualcomputer.com>
 
-commit 2db4d87070e87d198ab630e66a898b45eff316d9 upstream.
+commit 7f66c2f93e5779625c10d262c84537427a2673ca upstream.
 
-Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Handle previous allocation failures when freeing device memory
+
+Signed-off-by: Simon Graham <simon.graham@virtualcomputer.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcserial.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/wireless/rtlwifi/pci.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -35,6 +35,11 @@ static const struct usb_device_id id_tab
- 	{USB_DEVICE(0x413c, 0x8171)},	/* Dell Gobi QDL device */
- 	{USB_DEVICE(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
- 	{USB_DEVICE(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
-+	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi QDL device */
-+	{USB_DEVICE(0x1410, 0xa011)},	/* Novatel Gobi QDL device */
-+	{USB_DEVICE(0x1410, 0xa012)},	/* Novatel Gobi QDL device */
-+	{USB_DEVICE(0x1410, 0xa013)},	/* Novatel Gobi QDL device */
-+	{USB_DEVICE(0x1410, 0xa014)},	/* Novatel Gobi QDL device */
- 	{USB_DEVICE(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
- 	{USB_DEVICE(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
- 	{USB_DEVICE(0x19d2, 0xfff3)},	/* ONDA Gobi Modem device */
-@@ -85,7 +90,16 @@ static const struct usb_device_id id_tab
- 	{USB_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
- 	{USB_DEVICE(0x05c6, 0x9204)},	/* Gobi 2000 QDL device */
- 	{USB_DEVICE(0x05c6, 0x9205)},	/* Gobi 2000 Modem device */
-+
-+	{USB_DEVICE(0x05c6, 0x920c)},	/* Gobi 3000 QDL */
-+	{USB_DEVICE(0x05c6, 0x920d)},	/* Gobi 3000 Composite */
-+	{USB_DEVICE(0x1410, 0xa020)},   /* Novatel Gobi 3000 QDL */
-+	{USB_DEVICE(0x1410, 0xa021)},	/* Novatel Gobi 3000 Composite */
-+	{USB_DEVICE(0x413c, 0x8193)},	/* Dell Gobi 3000 QDL */
-+	{USB_DEVICE(0x413c, 0x8194)},	/* Dell Gobi 3000 Composite */
- 	{USB_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
-+	{USB_DEVICE(0x12D1, 0x14F0)},	/* Sony Gobi 3000 QDL */
-+	{USB_DEVICE(0x12D1, 0x14F1)},	/* Sony Gobi 3000 Composite */
- 	{ }				/* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1180,10 +1180,12 @@ static void _rtl_pci_free_tx_ring(struct
+ 		ring->idx = (ring->idx + 1) % ring->entries;
+ 	}
+ 
+-	pci_free_consistent(rtlpci->pdev,
+-			    sizeof(*ring->desc) * ring->entries,
+-			    ring->desc, ring->dma);
+-	ring->desc = NULL;
++	if (ring->desc) {
++		pci_free_consistent(rtlpci->pdev,
++				    sizeof(*ring->desc) * ring->entries,
++				    ring->desc, ring->dma);
++		ring->desc = NULL;
++	}
+ }
+ 
+ static void _rtl_pci_free_rx_ring(struct rtl_pci *rtlpci)
+@@ -1207,12 +1209,14 @@ static void _rtl_pci_free_rx_ring(struct
+ 			kfree_skb(skb);
+ 		}
+ 
+-		pci_free_consistent(rtlpci->pdev,
++		if (rtlpci->rx_ring[rx_queue_idx].desc) {
++			pci_free_consistent(rtlpci->pdev,
+ 				    sizeof(*rtlpci->rx_ring[rx_queue_idx].
+ 					   desc) * rtlpci->rxringcount,
+ 				    rtlpci->rx_ring[rx_queue_idx].desc,
+ 				    rtlpci->rx_ring[rx_queue_idx].dma);
+-		rtlpci->rx_ring[rx_queue_idx].desc = NULL;
++			rtlpci->rx_ring[rx_queue_idx].desc = NULL;
++		}
+ 	}
+ }
+ 
 
 
