@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965287Ab2C3VPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:15:15 -0400
+	id S965309Ab2C3WKr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:10:47 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965216Ab2C3VPI (ORCPT
+	with ESMTP id S965223Ab2C3VPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:15:08 -0400
-Message-Id: <20120330194859.077145738@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:15:16 -0400
+Message-Id: <20120330194900.601009004@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:29 -0700
+Date: Fri, 30 Mar 2012 12:50:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michel Lespinasse <walken@google.com>
-Subject: [ 116/149] vfs: fix d_ancestor() case in d_materialize_unique
+        alan@lxorguk.ukuu.org.uk,
+        Andrei Warkentin <andrey.warkentin@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 124/149] dm exception store: fix init error path
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,52 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michel Lespinasse <walken@google.com>
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
 
-commit b18dafc86bb879d2f38a1743985d7ceb283c2f4d upstream.
+commit aadbe266f2f89ccc68b52f4effc7b3a8b29521ef upstream.
 
-In d_materialise_unique() there are 3 subcases to the 'aliased dentry'
-case; in two subcases the inode i_lock is properly released but this
-does not occur in the -ELOOP subcase.
+Call the correct exit function on failure in dm_exception_store_init.
 
-This seems to have been introduced by commit 1836750115f2 ("fix loop
-checks in d_materialise_unique()").
-
-Signed-off-by: Michel Lespinasse <walken@google.com>
-[ Added a comment, and moved the unlock to where we generate the -ELOOP,
-  which seems to be more natural.
-
-  You probably can't actually trigger this without a buggy network file
-  server - d_materialize_unique() is for finding aliases on non-local
-  filesystems, and the d_ancestor() case is for a hardlinked directory
-  loop.
-
-  But we should be robust in the case of such buggy servers anyway. ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/dm-exception-store.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2357,6 +2357,7 @@ struct dentry *d_materialise_unique(stru
- 			if (d_ancestor(alias, dentry)) {
- 				/* Check for loops */
- 				actual = ERR_PTR(-ELOOP);
-+				spin_unlock(&inode->i_lock);
- 			} else if (IS_ROOT(alias)) {
- 				/* Is this an anonymous mountpoint that we
- 				 * could splice into our tree? */
-@@ -2366,7 +2367,7 @@ struct dentry *d_materialise_unique(stru
- 				goto found;
- 			} else {
- 				/* Nope, but we must(!) avoid directory
--				 * aliasing */
-+				 * aliasing. This drops inode->i_lock */
- 				actual = __d_unalias(inode, dentry, alias);
- 			}
- 			write_sequnlock(&rename_lock);
+--- a/drivers/md/dm-exception-store.c
++++ b/drivers/md/dm-exception-store.c
+@@ -283,7 +283,7 @@ int dm_exception_store_init(void)
+ 	return 0;
+ 
+ persistent_fail:
+-	dm_persistent_snapshot_exit();
++	dm_transient_snapshot_exit();
+ transient_fail:
+ 	return r;
+ }
 
 
