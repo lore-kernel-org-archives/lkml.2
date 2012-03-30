@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761244Ab2C3R3E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:29:04 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:42213 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758518Ab2C3R25 (ORCPT
+	id S1761256Ab2C3R34 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:29:56 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65310 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758413Ab2C3R3s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:28:57 -0400
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX18rOww9Ytor04bEz/WCvLzwiEwFtDbJUqOT9ZiJoo
-	DZCmUqYu9hdNB4
-Date: Fri, 30 Mar 2012 19:28:59 +0200
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: shemminger@vyatta.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sky2: dont overwrite settings for PHY Quick link
-Message-ID: <20120330172859.GB2703@Neptun>
+	Fri, 30 Mar 2012 13:29:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20120330100742.GB21950@opensource.wolfsonmicro.com>
+References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+ <1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
+ <1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com>
+ <20120309124119.GV3273@opensource.wolfsonmicro.com> <CACSP8ShU5tu=9N53PtYMLyFVFMS9whNRhMvu7nu8rBoPuVCy+Q@mail.gmail.com>
+ <20120330100742.GB21950@opensource.wolfsonmicro.com>
+From: Erik Gilling <konkers@google.com>
+Date: Fri, 30 Mar 2012 10:29:27 -0700
+Message-ID: <CACSP8SjhOZcXZa2hCNsH8zS+hm8X-i9uNm50UH=_VwOV=BJGmA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/5] Extcon (external connector): import Android's
+ switch class and modify.
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        NeilBrown <neilb@suse.de>, gregkh@linuxfoundation.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        myungjoo.ham@gmail.com, John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mike Lockwood <lockwood@android.com>, Dima Zavin <dmitriyz@google.com>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects a bug in function sky2_open() of the Marvell Yukon 2 driver
-in which the settings for PHY quick link are overwritten.
+On Fri, Mar 30, 2012 at 3:07 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Mar 29, 2012 at 03:27:01PM -0700, Erik Gilling wrote:
+>> On Fri, Mar 9, 2012 at 4:41 AM, Mark Brown
+>
+>> > This seems somewhat sad - if ANDROID is turned on the standard ABI
+>> > vanishes.  It'd be much nicer to do this with a symlink (or with
+>> > symlinks within the android directory if the driver core doesn't support
+>> > that).  That way userspace code can be written to the new ABI and will
+>> > work on Android systems without ifdefery.
+>
+>> This won't work if userspace code is receiving uevents through netlink
+>> and comparing based on the device name which it does in android.  Why
+>
+> That's not really the point here - the point is that the new ABI
+> vanishes as soon as you turn on the legacy Android ABI.  You're right
+> that the particular fix I suggested has issues but the overall problem
+> exists and should be dealt with more sensibly.
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
----
- This applies against 3.3
+I'm also not in favor of having functionality conditionally compiled
+based on CONFIG_ANDROID.  If fact, going through the patch stack
+there's much more that changes the ABI from the switch driver than
+just the name.  Android asumes that there is a single "switch" for
+each logical entity (called cable types in extcon) each with a binary
+state (0,1).  Here things have changed to have a single extcon
+instance that can have a bitmask of states which are sent as strings
+in the uevent.
 
- drivers/net/ethernet/marvell/sky2.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+As it stands, this patch does not solve the cases where we use switch
+today and we'll probably continue to carry the switch driver in the
+common android tree.  If, instead, we got rid of the idea of multiple
+states and mutual exclusivity and relied on the driver that uses
+extcon to have multiple instances for each logical entity and deal
+with mutual exclusion itself, we'd have a driver that would be pretty
+easy to support in android.
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index 760c2b1..d0132d8 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -1756,13 +1756,14 @@ static int sky2_open(struct net_device *dev)
- 
- 	sky2_hw_up(sky2);
- 
-+	/* Enable interrupts from phy/mac for port */
-+	imask = sky2_read32(hw, B0_IMSK);
-+
- 	if (hw->chip_id == CHIP_ID_YUKON_OPT ||
- 	    hw->chip_id == CHIP_ID_YUKON_PRM ||
- 	    hw->chip_id == CHIP_ID_YUKON_OP_2)
- 		imask |= Y2_IS_PHY_QLNK;	/* enable PHY Quick Link */
- 
--	/* Enable interrupts from phy/mac for port */
--	imask = sky2_read32(hw, B0_IMSK);
- 	imask |= portirq_msk[port];
- 	sky2_write32(hw, B0_IMSK, imask);
- 	sky2_read32(hw, B0_IMSK);
--- 
-1.5.6.5
-
+-Erik
