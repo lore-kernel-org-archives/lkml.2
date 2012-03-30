@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935912Ab2C3VRC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:17:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S935950Ab2C3VRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:17:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935902Ab2C3VQx (ORCPT
+	with ESMTP id S935911Ab2C3VRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:16:53 -0400
-Message-Id: <20120330194826.611380821@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:17:00 -0400
+Message-Id: <20120330194826.918615373@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:31 -0700
+Date: Fri, 30 Mar 2012 12:48:33 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Righi <andrea@betterlinux.com>
-Subject: [ 006/175] staging: zcache: avoid AB-BA deadlock condition
+        alan@lxorguk.ukuu.org.uk,
+        Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>
+Subject: [ 008/175] USB: ftdi_sio: fix problem when the manufacture is a NULL string
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,64 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Righi <andrea@betterlinux.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit cfbc6a92212e74b07aa76c9e2f20c542e36077fb upstream.
+commit 656d2b3964a9d0f9864d472f8dfa2dd7dd42e6c0 upstream.
 
-Commit 9256a47 fixed a deadlock condition, being sure that the buddy
-list spinlock is always taken before the page spinlock.
+On some misconfigured ftdi_sio devices, if the manufacturer string is
+NULL, the kernel will oops when the device is plugged in.  This patch
+fixes the problem.
 
-However in zbud_free_and_delist() locking order is the opposite
-(page lock -> list lock).
-
-Possible unsafe locking scenario (reported by lockdep):
-
-        CPU0                    CPU1
-        ----                    ----
-   lock(&(&zbpg->lock)->rlock);
-                                lock(zbud_budlists_spinlock);
-                                lock(&(&zbpg->lock)->rlock);
-   lock(zbud_budlists_spinlock);
-
-Fix by grabbing the locks in opposite order in zbud_free_and_delist().
-
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Reported-by: Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>
+Tested-by: Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zcache/zcache-main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -299,10 +299,12 @@ static void zbud_free_and_delist(struct
- 	struct zbud_page *zbpg =
- 		container_of(zh, struct zbud_page, buddy[budnum]);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1763,7 +1763,8 @@ static int ftdi_8u2232c_probe(struct usb
  
-+	spin_lock(&zbud_budlists_spinlock);
- 	spin_lock(&zbpg->lock);
- 	if (list_empty(&zbpg->bud_list)) {
- 		/* ignore zombie page... see zbud_evict_pages() */
- 		spin_unlock(&zbpg->lock);
-+		spin_unlock(&zbud_budlists_spinlock);
- 		return;
- 	}
- 	size = zbud_free(zh);
-@@ -310,7 +312,6 @@ static void zbud_free_and_delist(struct
- 	zh_other = &zbpg->buddy[(budnum == 0) ? 1 : 0];
- 	if (zh_other->size == 0) { /* was unbuddied: unlist and free */
- 		chunks = zbud_size_to_chunks(size) ;
--		spin_lock(&zbud_budlists_spinlock);
- 		BUG_ON(list_empty(&zbud_unbuddied[chunks].list));
- 		list_del_init(&zbpg->bud_list);
- 		zbud_unbuddied[chunks].count--;
-@@ -318,7 +319,6 @@ static void zbud_free_and_delist(struct
- 		zbud_free_raw_page(zbpg);
- 	} else { /* was buddied: move remaining buddy to unbuddied list */
- 		chunks = zbud_size_to_chunks(zh_other->size) ;
--		spin_lock(&zbud_budlists_spinlock);
- 		list_del_init(&zbpg->bud_list);
- 		zcache_zbud_buddied_count--;
- 		list_add_tail(&zbpg->bud_list, &zbud_unbuddied[chunks].list);
+ 	dbg("%s", __func__);
+ 
+-	if (strcmp(udev->manufacturer, "CALAO Systems") == 0)
++	if ((udev->manufacturer) &&
++	    (strcmp(udev->manufacturer, "CALAO Systems") == 0))
+ 		return ftdi_jtag_probe(serial);
+ 
+ 	return 0;
 
 
