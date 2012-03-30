@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936670Ab2C3Wxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:53:54 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934951Ab2C3VF6 (ORCPT
+	id S936645Ab2C3Wxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:53:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36741 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934960Ab2C3VGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:58 -0400
-Message-Id: <201203302105.q2UL57Gj006299@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 29 Mar 2012 15:56:18 -0400
-Subject: [PATCH] arch/tile: use memparse() for "maxmem" and "maxnodemem" options
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:07.0210 (UTC) FILETIME=[C8F84EA0:01CD0EB8]
+	Fri, 30 Mar 2012 17:06:00 -0400
+Message-Id: <20120330195730.152111916@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 056/108] target: Fix 16-bit target ports for SET TARGET PORT GROUPS emulation
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is more standard and avoids having to remember what units
-the options actually take.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: Roland Dreier <roland@purestorage.com>
+
+commit 33395fb8a13731c7ef7b175dbf5a4d8a6738fe6c upstream.
+
+The old code did (MSB << 8) & 0xff, which always evaluates to 0.  Just use
+get_unaligned_be16() so we don't have to worry about whether our open-coded
+version is correct or not.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/kernel/setup.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+ drivers/target/target_core_alua.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 62b1903..90251dc 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -103,13 +103,11 @@ unsigned long __initdata pci_reserve_end_pfn = -1U;
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -30,6 +30,7 @@
+ #include <linux/configfs.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
++#include <asm/unaligned.h>
  
- static int __init setup_maxmem(char *str)
- {
--	long maxmem_mb;
--	if (str == NULL || strict_strtol(str, 0, &maxmem_mb) != 0 ||
--	    maxmem_mb == 0)
-+	unsigned long long maxmem;
-+	if (str == NULL || (maxmem = memparse(str, NULL)) == 0)
- 		return -EINVAL;
- 
--	maxmem_pfn = (maxmem_mb >> (HPAGE_SHIFT - 20)) <<
--		(HPAGE_SHIFT - PAGE_SHIFT);
-+	maxmem_pfn = (maxmem >> HPAGE_SHIFT) << (HPAGE_SHIFT - PAGE_SHIFT);
- 	pr_info("Forcing RAM used to no more than %dMB\n",
- 	       maxmem_pfn >> (20 - PAGE_SHIFT));
- 	return 0;
-@@ -119,14 +117,15 @@ early_param("maxmem", setup_maxmem);
- static int __init setup_maxnodemem(char *str)
- {
- 	char *endp;
--	long maxnodemem_mb, node;
-+	unsigned long long maxnodemem;
-+	long node;
- 
- 	node = str ? simple_strtoul(str, &endp, 0) : INT_MAX;
--	if (node >= MAX_NUMNODES || *endp != ':' ||
--	    strict_strtol(endp+1, 0, &maxnodemem_mb) != 0)
-+	if (node >= MAX_NUMNODES || *endp != ':')
- 		return -EINVAL;
- 
--	maxnodemem_pfn[node] = (maxnodemem_mb >> (HPAGE_SHIFT - 20)) <<
-+	maxnodemem = memparse(endp+1, NULL);
-+	maxnodemem_pfn[node] = (maxnodemem >> HPAGE_SHIFT) <<
- 		(HPAGE_SHIFT - PAGE_SHIFT);
- 	pr_info("Forcing RAM used on node %ld to no more than %dMB\n",
- 	       node, maxnodemem_pfn[node] >> (20 - PAGE_SHIFT));
--- 
-1.6.5.2
+ #include <target/target_core_base.h>
+ #include <target/target_core_device.h>
+@@ -238,8 +239,7 @@ int core_emulate_set_target_port_groups(
+ 		 * changed.
+ 		 */
+ 		if (primary) {
+-			tg_pt_id = ((ptr[2] << 8) & 0xff);
+-			tg_pt_id |= (ptr[3] & 0xff);
++			tg_pt_id = get_unaligned_be16(ptr + 2);
+ 			/*
+ 			 * Locate the matching target port group ID from
+ 			 * the global tg_pt_gp list
+@@ -280,8 +280,7 @@ int core_emulate_set_target_port_groups(
+ 			 * the Target Port in question for the the incoming
+ 			 * SET_TARGET_PORT_GROUPS op.
+ 			 */
+-			rtpi = ((ptr[2] << 8) & 0xff);
+-			rtpi |= (ptr[3] & 0xff);
++			rtpi = get_unaligned_be16(ptr + 2);
+ 			/*
+ 			 * Locate the matching relative target port identifer
+ 			 * for the struct se_device storage object.
+
 
