@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936468Ab2C3WGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:06:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965385Ab2C3VQG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:16:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965425Ab2C3VQI (ORCPT
+	with ESMTP id S965279Ab2C3VP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:16:08 -0400
-Message-Id: <20120330194903.179117300@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:15:59 -0400
+Message-Id: <20120330194902.722912295@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:53 -0700
+Date: Fri, 30 Mar 2012 12:50:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>,
+        alan@lxorguk.ukuu.org.uk, Matt Evans <matt@ozlabs.org>,
+        Indan Zupancic <indan@nul.nu>, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 140/149] Remove printk from rds_sendmsg
+Subject: [ 137/149] net: bpf_jit: fix BPF_S_LDX_B_MSH compilation
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,28 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Dave Jones <davej@redhat.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit a6506e1486181975d318344143aca722b2b91621 ]
+[ Upstream commit dc72d99dabb870ca5bd6d9fff674be853bb4a88d ]
 
-no socket layer outputs a message for this error and neither should rds.
+Matt Evans spotted that x86 bpf_jit was incorrectly handling negative
+constant offsets in BPF_S_LDX_B_MSH instruction.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+We need to abort JIT compilation like we do in common_load so that
+filter uses the interpreter code and can call __load_pointer()
+
+Reference: http://lists.openwall.net/netdev/2011/07/19/11
+
+Thanks to Indan Zupancic to bring back this issue.
+
+Reported-by: Matt Evans <matt@ozlabs.org>
+Reported-by: Indan Zupancic <indan@nul.nu>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/send.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/net/bpf_jit_comp.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
---- a/net/rds/send.c
-+++ b/net/rds/send.c
-@@ -935,7 +935,6 @@ int rds_sendmsg(struct kiocb *iocb, stru
- 	/* Mirror Linux UDP mirror of BSD error message compatibility */
- 	/* XXX: Perhaps MSG_MORE someday */
- 	if (msg->msg_flags & ~(MSG_DONTWAIT | MSG_CMSG_COMPAT)) {
--		printk(KERN_INFO "msg_flags 0x%08X\n", msg->msg_flags);
- 		ret = -EOPNOTSUPP;
- 		goto out;
- 	}
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -475,8 +475,10 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_LD_W_ABS:
+ 				func = sk_load_word;
+ common_load:			seen |= SEEN_DATAREF;
+-				if ((int)K < 0)
++				if ((int)K < 0) {
++					/* Abort the JIT because __load_pointer() is needed. */
+ 					goto out;
++				}
+ 				t_offset = func - (image + addrs[i]);
+ 				EMIT1_off32(0xbe, K); /* mov imm32,%esi */
+ 				EMIT1_off32(0xe8, t_offset); /* call */
+@@ -489,14 +491,8 @@ common_load:			seen |= SEEN_DATAREF;
+ 				goto common_load;
+ 			case BPF_S_LDX_B_MSH:
+ 				if ((int)K < 0) {
+-					if (pc_ret0 > 0) {
+-						/* addrs[pc_ret0 - 1] is the start address */
+-						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
+-						break;
+-					}
+-					CLEAR_A();
+-					EMIT_JMP(cleanup_addr - addrs[i]);
+-					break;
++					/* Abort the JIT because __load_pointer() is needed. */
++					goto out;
+ 				}
+ 				seen |= SEEN_DATAREF | SEEN_XREG;
+ 				t_offset = sk_load_byte_msh - (image + addrs[i]);
 
 
