@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935176Ab2C3VHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:07:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935162Ab2C3VHK (ORCPT
+	id S935207Ab2C3VH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:07:28 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58159 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935162Ab2C3VHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:07:10 -0400
-Message-Id: <20120330195733.371972421@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:25 -0400
+Message-Id: <20120330195734.074302640@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:40 -0700
+Date: Fri, 30 Mar 2012 12:58:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
-        Mike Isely <isely@pobox.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 078/108] [media] pvrusb2: fix 7MHz & 8MHz DVB-T tuner support for HVR1900 rev D1F5
+        alan@lxorguk.ukuu.org.uk, Lukas Czerner <lczerner@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 083/108] ext4: ignore EXT4_INODE_JOURNAL_DATA flag with delalloc
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Krufky <mkrufky@linuxtv.org>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 9ab2393fc3e460cd2040de1483918eb17abb822f upstream.
+commit 3d2b158262826e8b75bbbfb7b97010838dd92ac7 upstream.
 
-The D1F5 revision of the WinTV HVR-1900 uses a tda18271c2 tuner
-instead of a tda18271c1 tuner as used in revision D1E9. To
-account for this, we must hardcode the frontend configuration
-to use the same IF frequency configuration for both revisions
-of the device.
+Ext4 does not support data journalling with delayed allocation enabled.
+We even do not allow to mount the file system with delayed allocation
+and data journalling enabled, however it can be set via FS_IOC_SETFLAGS
+so we can hit the inode with EXT4_INODE_JOURNAL_DATA set even on file
+system mounted with delayed allocation (default) and that's where
+problem arises. The easies way to reproduce this problem is with the
+following set of commands:
 
-6MHz DVB-T is unaffected by this issue, as the recommended
-IF Frequency configuration for 6MHz DVB-T is the same on both
-c1 and c2 revisions of the tda18271 tuner.
+ mkfs.ext4 /dev/sdd
+ mount /dev/sdd /mnt/test1
+ dd if=/dev/zero of=/mnt/test1/file bs=1M count=4
+ chattr +j /mnt/test1/file
+ dd if=/dev/zero of=/mnt/test1/file bs=1M count=4 conv=notrunc
+ chattr -j /mnt/test1/file
 
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Cc: Mike Isely <isely@pobox.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Additionally it can be reproduced quite reliably with xfstests 272 and
+269. In fact the above reproducer is a part of test 272.
+
+To fix this we should ignore the EXT4_INODE_JOURNAL_DATA inode flag if
+the file system is mounted with delayed allocation. This can be easily
+done by fixing ext4_should_*_data() functions do ignore data journal
+flag when delalloc is set (suggested by Ted). We also have to set the
+appropriate address space operations for the inode (again, ignoring data
+journal flag if delalloc enabled).
+
+Additionally this commit introduces ext4_inode_journal_mode() function
+because ext4_should_*_data() has already had a lot of common code and
+this change is putting it all into one function so it is easier to
+read.
+
+Successfully tested with xfstests in following configurations:
+
+delalloc + data=ordered
+delalloc + data=writeback
+data=journal
+nodelalloc + data=ordered
+nodelalloc + data=writeback
+nodelalloc + data=journal
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/pvrusb2/pvrusb2-devattr.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/ext4/ext4_jbd2.h |   56 ++++++++++++++++++++++++++--------------------------
+ fs/ext4/inode.c     |   36 ++++++++++++++++++++-------------
+ 2 files changed, 51 insertions(+), 41 deletions(-)
 
---- a/drivers/media/video/pvrusb2/pvrusb2-devattr.c
-+++ b/drivers/media/video/pvrusb2/pvrusb2-devattr.c
-@@ -319,7 +319,17 @@ static struct tda829x_config tda829x_no_
- 	.probe_tuner = TDA829X_DONT_PROBE,
- };
+--- a/fs/ext4/ext4_jbd2.h
++++ b/fs/ext4/ext4_jbd2.h
+@@ -261,43 +261,45 @@ static inline void ext4_update_inode_fsy
+ /* super.c */
+ int ext4_force_commit(struct super_block *sb);
  
-+static struct tda18271_std_map hauppauge_tda18271_dvbt_std_map = {
-+        .dvbt_6   = { .if_freq = 3300, .agc_mode = 3, .std = 4,
-+                      .if_lvl = 1, .rfagc_top = 0x37, },
-+        .dvbt_7   = { .if_freq = 3800, .agc_mode = 3, .std = 5,
-+                      .if_lvl = 1, .rfagc_top = 0x37, },
-+        .dvbt_8   = { .if_freq = 4300, .agc_mode = 3, .std = 6,
-+                      .if_lvl = 1, .rfagc_top = 0x37, },
-+};
+-static inline int ext4_should_journal_data(struct inode *inode)
++/*
++ * Ext4 inode journal modes
++ */
++#define EXT4_INODE_JOURNAL_DATA_MODE	0x01 /* journal data mode */
++#define EXT4_INODE_ORDERED_DATA_MODE	0x02 /* ordered data mode */
++#define EXT4_INODE_WRITEBACK_DATA_MODE	0x04 /* writeback data mode */
 +
- static struct tda18271_config hauppauge_tda18271_dvb_config = {
-+	.std_map = &hauppauge_tda18271_dvbt_std_map,
- 	.gate    = TDA18271_GATE_ANALOG,
- 	.output_opt = TDA18271_OUTPUT_LT_OFF,
- };
++static inline int ext4_inode_journal_mode(struct inode *inode)
+ {
+ 	if (EXT4_JOURNAL(inode) == NULL)
+-		return 0;
+-	if (!S_ISREG(inode->i_mode))
+-		return 1;
+-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA)
+-		return 1;
+-	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
+-		return 1;
+-	return 0;
++		return EXT4_INODE_WRITEBACK_DATA_MODE;	/* writeback */
++	/* We do not support data journalling with delayed allocation */
++	if (!S_ISREG(inode->i_mode) ||
++	    test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA)
++		return EXT4_INODE_JOURNAL_DATA_MODE;	/* journal data */
++	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA) &&
++	    !test_opt(inode->i_sb, DELALLOC))
++		return EXT4_INODE_JOURNAL_DATA_MODE;	/* journal data */
++	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_ORDERED_DATA)
++		return EXT4_INODE_ORDERED_DATA_MODE;	/* ordered */
++	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)
++		return EXT4_INODE_WRITEBACK_DATA_MODE;	/* writeback */
++	else
++		BUG();
++}
++
++static inline int ext4_should_journal_data(struct inode *inode)
++{
++	return ext4_inode_journal_mode(inode) & EXT4_INODE_JOURNAL_DATA_MODE;
+ }
+ 
+ static inline int ext4_should_order_data(struct inode *inode)
+ {
+-	if (EXT4_JOURNAL(inode) == NULL)
+-		return 0;
+-	if (!S_ISREG(inode->i_mode))
+-		return 0;
+-	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
+-		return 0;
+-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_ORDERED_DATA)
+-		return 1;
+-	return 0;
++	return ext4_inode_journal_mode(inode) & EXT4_INODE_ORDERED_DATA_MODE;
+ }
+ 
+ static inline int ext4_should_writeback_data(struct inode *inode)
+ {
+-	if (EXT4_JOURNAL(inode) == NULL)
+-		return 1;
+-	if (!S_ISREG(inode->i_mode))
+-		return 0;
+-	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
+-		return 0;
+-	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)
+-		return 1;
+-	return 0;
++	return ext4_inode_journal_mode(inode) & EXT4_INODE_WRITEBACK_DATA_MODE;
+ }
+ 
+ /*
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3212,13 +3212,14 @@ static int ext4_da_write_end(struct file
+ 	int write_mode = (int)(unsigned long)fsdata;
+ 
+ 	if (write_mode == FALL_BACK_TO_NONDELALLOC) {
+-		if (ext4_should_order_data(inode)) {
++		switch (ext4_inode_journal_mode(inode)) {
++		case EXT4_INODE_ORDERED_DATA_MODE:
+ 			return ext4_ordered_write_end(file, mapping, pos,
+ 					len, copied, page, fsdata);
+-		} else if (ext4_should_writeback_data(inode)) {
++		case EXT4_INODE_WRITEBACK_DATA_MODE:
+ 			return ext4_writeback_write_end(file, mapping, pos,
+ 					len, copied, page, fsdata);
+-		} else {
++		default:
+ 			BUG();
+ 		}
+ 	}
+@@ -3918,18 +3919,25 @@ static const struct address_space_operat
+ 
+ void ext4_set_aops(struct inode *inode)
+ {
+-	if (ext4_should_order_data(inode) &&
+-		test_opt(inode->i_sb, DELALLOC))
+-		inode->i_mapping->a_ops = &ext4_da_aops;
+-	else if (ext4_should_order_data(inode))
+-		inode->i_mapping->a_ops = &ext4_ordered_aops;
+-	else if (ext4_should_writeback_data(inode) &&
+-		 test_opt(inode->i_sb, DELALLOC))
+-		inode->i_mapping->a_ops = &ext4_da_aops;
+-	else if (ext4_should_writeback_data(inode))
+-		inode->i_mapping->a_ops = &ext4_writeback_aops;
+-	else
++	switch (ext4_inode_journal_mode(inode)) {
++	case EXT4_INODE_ORDERED_DATA_MODE:
++		if (test_opt(inode->i_sb, DELALLOC))
++			inode->i_mapping->a_ops = &ext4_da_aops;
++		else
++			inode->i_mapping->a_ops = &ext4_ordered_aops;
++		break;
++	case EXT4_INODE_WRITEBACK_DATA_MODE:
++		if (test_opt(inode->i_sb, DELALLOC))
++			inode->i_mapping->a_ops = &ext4_da_aops;
++		else
++			inode->i_mapping->a_ops = &ext4_writeback_aops;
++		break;
++	case EXT4_INODE_JOURNAL_DATA_MODE:
+ 		inode->i_mapping->a_ops = &ext4_journalled_aops;
++		break;
++	default:
++		BUG();
++	}
+ }
+ 
+ /*
 
 
