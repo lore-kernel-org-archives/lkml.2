@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965101Ab2C3VOM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:14:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S965125Ab2C3VOQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:14:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965062Ab2C3VOB (ORCPT
+	with ESMTP id S965086Ab2C3VOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:01 -0400
-Message-Id: <20120330194855.919240459@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:08 -0400
+Message-Id: <20120330194856.297863830@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:13 -0700
+Date: Fri, 30 Mar 2012 12:50:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Flavio Leitner <fbl@redhat.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 100/149] e1000e: Avoid wrong check on TX hang
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Justin Pettit <jpettit@nicira.com>,
+        Pravin B Shelar <pshelar@nicira.com>, Jesse Gross <jesse@nicira.com>,
+        David Miller <davem@davemloft.net>
+Subject: [ 102/149] proc-ns: use d_set_d_op() API to set dentry ops in proc_ns_instantiate().
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,94 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+From: Pravin B Shelar <pshelar@nicira.com>
 
-commit 09357b00255c233705b1cf6d76a8d147340545b8 upstream.
+commit 1b26c9b334044cff6d1d2698f2be41bc7d9a0864 upstream.
 
-Based on the original patch submitted my Michael Wang
-<wangyun@linux.vnet.ibm.com>.
-Descriptors may not be write-back while checking TX hang with flag
-FLAG2_DMA_BURST on.
-So when we detect hang, we just flush the descriptor and detect
-again for once.
+The namespace cleanup path leaks a dentry which holds a reference count
+on a network namespace.  Keeping that network namespace from being freed
+when the last user goes away.  Leaving things like vlan devices in the
+leaked network namespace.
 
--v2 change 1 to true and 0 to false and remove extra ()
+If you use ip netns add for much real work this problem becomes apparent
+pretty quickly.  It light testing the problem hides because frequently
+you simply don't notice the leak.
 
-CC: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: Flavio Leitner <fbl@redhat.com>
-Acked-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Use d_set_d_op() so that DCACHE_OP_* flags are set correctly.
+
+This issue exists back to 3.0.
+
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Reported-by: Justin Pettit <jpettit@nicira.com>
+Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Jesse Gross <jesse@nicira.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/e1000.h  |    1 +
- drivers/net/ethernet/intel/e1000e/netdev.c |   23 ++++++++++++++++++++---
- 2 files changed, 21 insertions(+), 3 deletions(-)
+ fs/proc/namespaces.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/intel/e1000e/e1000.h
-+++ b/drivers/net/ethernet/intel/e1000e/e1000.h
-@@ -309,6 +309,7 @@ struct e1000_adapter {
- 	u32 txd_cmd;
+--- a/fs/proc/namespaces.c
++++ b/fs/proc/namespaces.c
+@@ -54,7 +54,7 @@ static struct dentry *proc_ns_instantiat
+ 	ei->ns_ops    = ns_ops;
+ 	ei->ns	      = ns;
  
- 	bool detect_tx_hung;
-+	bool tx_hang_recheck;
- 	u8 tx_timeout_factor;
- 
- 	u32 tx_int_delay;
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -1030,6 +1030,7 @@ static void e1000_print_hw_hang(struct w
- 	struct e1000_adapter *adapter = container_of(work,
- 	                                             struct e1000_adapter,
- 	                                             print_hang_task);
-+	struct net_device *netdev = adapter->netdev;
- 	struct e1000_ring *tx_ring = adapter->tx_ring;
- 	unsigned int i = tx_ring->next_to_clean;
- 	unsigned int eop = tx_ring->buffer_info[i].next_to_watch;
-@@ -1041,6 +1042,21 @@ static void e1000_print_hw_hang(struct w
- 	if (test_bit(__E1000_DOWN, &adapter->state))
- 		return;
- 
-+	if (!adapter->tx_hang_recheck &&
-+	    (adapter->flags2 & FLAG2_DMA_BURST)) {
-+		/* May be block on write-back, flush and detect again
-+		 * flush pending descriptor writebacks to memory
-+		 */
-+		ew32(TIDV, adapter->tx_int_delay | E1000_TIDV_FPD);
-+		/* execute the writes immediately */
-+		e1e_flush();
-+		adapter->tx_hang_recheck = true;
-+		return;
-+	}
-+	/* Real hang detected */
-+	adapter->tx_hang_recheck = false;
-+	netif_stop_queue(netdev);
-+
- 	e1e_rphy(hw, PHY_STATUS, &phy_status);
- 	e1e_rphy(hw, PHY_1000T_STATUS, &phy_1000t_status);
- 	e1e_rphy(hw, PHY_EXT_STATUS, &phy_ext_status);
-@@ -1154,10 +1170,10 @@ static bool e1000_clean_tx_irq(struct e1
- 		if (tx_ring->buffer_info[i].time_stamp &&
- 		    time_after(jiffies, tx_ring->buffer_info[i].time_stamp
- 			       + (adapter->tx_timeout_factor * HZ)) &&
--		    !(er32(STATUS) & E1000_STATUS_TXOFF)) {
-+		    !(er32(STATUS) & E1000_STATUS_TXOFF))
- 			schedule_work(&adapter->print_hang_task);
--			netif_stop_queue(netdev);
--		}
-+		else
-+			adapter->tx_hang_recheck = false;
- 	}
- 	adapter->total_tx_bytes += total_tx_bytes;
- 	adapter->total_tx_packets += total_tx_packets;
-@@ -3782,6 +3798,7 @@ static int e1000_open(struct net_device
- 
- 	e1000_irq_enable(adapter);
- 
-+	adapter->tx_hang_recheck = false;
- 	netif_start_queue(netdev);
- 
- 	adapter->idle_check = true;
+-	dentry->d_op = &pid_dentry_operations;
++	d_set_d_op(dentry, &pid_dentry_operations);
+ 	d_add(dentry, inode);
+ 	/* Close the race of the process dying before we return the dentry */
+ 	if (pid_revalidate(dentry, NULL))
 
 
