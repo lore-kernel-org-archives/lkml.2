@@ -1,125 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759895Ab2C3RyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:54:13 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55103 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756677Ab2C3RyL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:54:11 -0400
+	id S1753749Ab2C3R6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:58:47 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:59784 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab2C3R6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 13:58:45 -0400
+Date: Fri, 30 Mar 2012 13:55:34 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2012-03-30
+Message-ID: <20120330175533.GC8273@tuxdriver.com>
 MIME-Version: 1.0
-In-Reply-To: <4F75A2AA.4010604@hitachi.com>
-References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
-	<CABPqkBR7-JreB8c3Y1rNGpqdjeSN71qUkPrMxV-wjOSaTEx+vQ@mail.gmail.com>
-	<1333065559.2960.8.camel@laptop>
-	<CABPqkBQfy0CgSiDZ+KXd4fP9XxDxPTipyGbABZdEuTu4LkrsRQ@mail.gmail.com>
-	<1333068279.2960.20.camel@laptop>
-	<CABPqkBQbYs7JgGqfZD3ng6QMK0OpiVL=8gfyxn5aRgtYpPVjsw@mail.gmail.com>
-	<4F75A2AA.4010604@hitachi.com>
-Date: Fri, 30 Mar 2012 10:54:09 -0700
-Message-ID: <CABPqkBRQthysw8V7oq9c9JJg7mtrMLWCxhi77iv6EryGXVGNqw@mail.gmail.com>
-Subject: Re: [RFC 00/15] perf: Add backtrace post dwarf unwind
-From: Stephane Eranian <eranian@google.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 5:10 AM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2012/03/30 9:52), Stephane Eranian wrote:
->> On Thu, Mar 29, 2012 at 5:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->>> On Thu, 2012-03-29 at 17:38 -0700, Stephane Eranian wrote:
->>>> What I'd like to have is something similar to:
->>>>     attr->sample_type |= PERF_SAMPLE_REGS
->>>>     attr->sample_regs = EAX | EBX | EDI | ESI |.....
->>>>     attr->sample_reg_mode = { INTR, PRECISE, USER }
->>>>
->>>> Then in each sample for the event you dump the u64 values
->>>> of the requested registers.  The order is that of the enum
->>>> enum regs {}. That enum is arch specific.
->>>>
->>>> When you are in precise mode on Intel, you extract the regs
->>>> from PEBS. You already know the registers supported by PEBS
->>>> so you can reject any request for  unsupported regs.
->>>>
->>>> When you are in intr they you get the regs from pt_regs.
->>>> The user mode case is taken care of by the this patch series
->>>> already.
->>>>
->>>> I am not sure the sample_reg_mode needs to be a bitmask, i.e.,
->>>> do we need the reg state for INTR+PRECISE or USER+INTR?
->>>> But if so, then we would need attr->sample_regs[3] as not all
->>>> registers may be available in each mode.
->
-> Would you have any good reason why we use INTR? Without PEBS,
-> it may mislead users because the register value can be changed
-> before interrupted. Personally, I would not like to use such
-> values for debugging use :)
 
-By INTR I meant PMU interrupt. That gives you the machine
-state at the interrupted IP. That is interesting in the case of
-stalls (sampling on cycles for instance). You may be able
-to backtrack to the cause of the stalls. Take the following
-simple example:
+--jRHKVT23PllUwdXP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-     0x1000: ld r1=[r32] <--- long latency miss
-     ....
-     0x100a: add r2=r1,1 <--- use point
+commit de312db345f9770b64ff39ef5a7f86f6358e93cc
 
-Suppose you get a long latency miss of the load @ 0x1000,
-you stall at the use point (not the load), here the add instruction
-@ 0x100a. If you sample on cycles, you'll get an IP=0x100a.
-No skid on stalls because you have nothing else to execute.
+Dave,
 
-Let's assume r32 is not modified between 0x1000 and
-0x100a, then you can figure out the miss address just
-by looking at the machine state at 0x100a. You need
-some static analysis of the code but this can be done.
+I have a few more small fixes, hopefully still in time for 3.4-rc1...
 
-In fact, I know that for sure because some tools did that
-years ago:
-http://www.supercomp.org/sc2003/paperpdfs/pap182.pdf
-Section 2.2.3 for instance.
+Rajkukmar provides us with a one-line timestamp correction related to
+scanning in mac80211.  Sujith gives us a small fixup for a regression
+in the handling of HT capability bits for ath9k.  Stanislav Yakovlev
+is stepping-up as maintainer for the ipw2x00 drivers, so we'll add
+him to MAINTAINERS.  Stanislav also gives us a fix for a thinko
+that registers the wrong band information for ipw2200 and 802.11a.
+Finally, Santosh Nayak adds some simple error checking to orinoco to
+avoid some potential NULL pointer dereferences.
 
-> So, I think this regs options may be good for the option of
-> PEBS events.
->
-Yes, that one is more obvious and requires no static analysis
-of the code in most cases.
+Please let me know if there are problems!
 
->>> I'm really having trouble seeing how useful this is. You mentioned
->>> sampling function arguments, but most samples would be in the middle of
->>> functions where the regs are completely unrelated to arguments. Also
->>> isn't the 'normal' C ABI passing args on stack rather than registers?
->>>
->> If you look at the SNB events, you'll see that br_inst_retired:near_call
->> supports PEBS. The sample is taken at retirement of the call, i.e., the
->> first instruction of the function, exactly where you want it to be.
->>
->> Unless I am mistaken, the x86_64 calling convention passes the first 6
->> integer arguments in registers.
->
-> Right, almost all function arguments are passed by register on x86-64.
+Thanks,
 
-Including some of the FP registers but that's not captured by PEBS,
-unfortunately.
+John
 
-> Hmm, this might be useful because it can trace function register-arguments
-> in user-space applications... even though it causes interruption on every
-> sampling calls...
->
-It's not on every call to a function. This is statistical sampling not tracing.
+---
 
-Also I am not necessarily interested in using the machine state to unwind
-the call stack. In the example above it's to support a local static
-code analysis
+The following changes since commit 643c61e119459e9d750087b7b34be94491efebf9:
+
+  rtlwifi: rtl8192ce: rtl8192cu: rtl8192de: Fix low-gain setting when scann=
+ing (2012-03-26 15:07:30 -0400)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git master
+
+Rajkumar Manoharan (1):
+      mac80211: fix oper channel timestamp updation
+
+Santosh Nayak (1):
+      net: orinoco: add error handling for failed kmalloc().
+
+Stanislav Yakovlev (2):
+      net/wireless: ipw2x00: fix a typo in wiphy struct initilization
+      MAINTAINERS: adding maintainer for ipw2x00
+
+Sujith Manoharan (1):
+      ath9k: Use HW HT capabilites properly
+
+ MAINTAINERS                            |   12 ++++--------
+ drivers/net/wireless/ath/ath9k/main.c  |    4 ++--
+ drivers/net/wireless/ipw2x00/ipw2200.c |    4 ++--
+ drivers/net/wireless/orinoco/main.c    |    8 ++++++++
+ net/mac80211/scan.c                    |    2 +-
+ 5 files changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0ddc77fe..09a79f9 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3519,17 +3519,13 @@ L:	linux-pm@vger.kernel.org
+ S:	Supported
+ F:	arch/x86/platform/mrst/pmu.*
+=20
+-INTEL PRO/WIRELESS 2100 NETWORK CONNECTION SUPPORT
++INTEL PRO/WIRELESS 2100, 2200BG, 2915ABG NETWORK CONNECTION SUPPORT
++M:	Stanislav Yakovlev <stas.yakovlev@gmail.com>
+ L:	linux-wireless@vger.kernel.org
+-S:	Orphan
++S:	Maintained
+ F:	Documentation/networking/README.ipw2100
+-F:	drivers/net/wireless/ipw2x00/ipw2100.*
+-
+-INTEL PRO/WIRELESS 2915ABG NETWORK CONNECTION SUPPORT
+-L:	linux-wireless@vger.kernel.org
+-S:	Orphan
+ F:	Documentation/networking/README.ipw2200
+-F:	drivers/net/wireless/ipw2x00/ipw2200.*
++F:	drivers/net/wireless/ipw2x00/
+=20
+ INTEL(R) TRUSTED EXECUTION TECHNOLOGY (TXT)
+ M:	Joseph Cihula <joseph.cihula@intel.com>
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/a=
+th/ath9k/main.c
+index 3879485..215eb25 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -640,7 +640,7 @@ static void ath_node_attach(struct ath_softc *sc, struc=
+t ieee80211_sta *sta,
+ 	an->sta =3D sta;
+ 	an->vif =3D vif;
+=20
+-	if (sta->ht_cap.ht_supported) {
++	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
+ 		ath_tx_node_init(sc, an);
+ 		an->maxampdu =3D 1 << (IEEE80211_HT_MAX_AMPDU_FACTOR +
+ 				     sta->ht_cap.ampdu_factor);
+@@ -659,7 +659,7 @@ static void ath_node_detach(struct ath_softc *sc, struc=
+t ieee80211_sta *sta)
+ 	an->sta =3D NULL;
+ #endif
+=20
+-	if (sta->ht_cap.ht_supported)
++	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT)
+ 		ath_tx_node_cleanup(sc, an);
+ }
+=20
+diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/=
+ipw2x00/ipw2200.c
+index 4fcdac6..2b02257 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -11507,9 +11507,9 @@ static int ipw_wdev_init(struct net_device *dev)
+ 			rc =3D -ENOMEM;
+ 			goto out;
+ 		}
+-		/* translate geo->bg to a_band.channels */
++		/* translate geo->a to a_band.channels */
+ 		for (i =3D 0; i < geo->a_channels; i++) {
+-			a_band->channels[i].band =3D IEEE80211_BAND_2GHZ;
++			a_band->channels[i].band =3D IEEE80211_BAND_5GHZ;
+ 			a_band->channels[i].center_freq =3D geo->a[i].freq;
+ 			a_band->channels[i].hw_value =3D geo->a[i].channel;
+ 			a_band->channels[i].max_power =3D geo->a[i].max_power;
+diff --git a/drivers/net/wireless/orinoco/main.c b/drivers/net/wireless/ori=
+noco/main.c
+index dd6c64a..88e3ad2 100644
+--- a/drivers/net/wireless/orinoco/main.c
++++ b/drivers/net/wireless/orinoco/main.c
+@@ -1336,6 +1336,10 @@ static void qbuf_scan(struct orinoco_private *priv, =
+void *buf,
+ 	unsigned long flags;
+=20
+ 	sd =3D kmalloc(sizeof(*sd), GFP_ATOMIC);
++	if (!sd) {
++		printk(KERN_ERR "%s: failed to alloc memory\n", __func__);
++		return;
++	}
+ 	sd->buf =3D buf;
+ 	sd->len =3D len;
+ 	sd->type =3D type;
+@@ -1353,6 +1357,10 @@ static void qabort_scan(struct orinoco_private *priv)
+ 	unsigned long flags;
+=20
+ 	sd =3D kmalloc(sizeof(*sd), GFP_ATOMIC);
++	if (!sd) {
++		printk(KERN_ERR "%s: failed to alloc memory\n", __func__);
++		return;
++	}
+ 	sd->len =3D -1; /* Abort */
+=20
+ 	spin_lock_irqsave(&priv->scan_lock, flags);
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index 33cd169..c70e176 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -370,7 +370,7 @@ static int ieee80211_start_sw_scan(struct ieee80211_loc=
+al *local)
+ 	 */
+ 	drv_sw_scan_start(local);
+=20
+-	local->leave_oper_channel_time =3D 0;
++	local->leave_oper_channel_time =3D jiffies;
+ 	local->next_scan_state =3D SCAN_DECISION;
+ 	local->scan_channel_idx =3D 0;
+=20
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--jRHKVT23PllUwdXP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPdfOVAAoJEJctW/TcYTgGHDgP/1ZPkQaqCVKPqT1T+kwKdzVu
+mJ8JcgWLhuRZfcuemF4d+xzsE06CFsPRG7ats3AJnjMgdVoa9UP7oQTonKBp+jhF
+pROeOwDv2dv9omFWvuJqDZc0l+n1VOIZRaVEjwakXcecHB89I/kTK12vdtI6ncat
+O8/C9MCI0Zm7+DQUxVeKsJUw/xKe74IPV3+sd1HK/LsWt7geWGUKeoCYhXjttY39
+t8PSoefrf/oeX2EX45jG1JG6s7zGoWYnJOCww2jS8VHB9Y0PADseRNTBASx3kPKX
+VGhfqRGZdIGxavQYiOieS+6bUPMC1pzLLzX8BQmayQKE5b4iyZqrQGKzzmWoAI6k
+TgqjtOWy+QZh1RjqqCNQP2O6UaKS1LCgYPwzgv8LzbUviQzNQFVUBetDuZGC4pdq
+NdIN+DWZesiLpYlwRTu2PKto2Wyme+iZmqnSVuL+1N+6+wygk5mYSMwbSO0vnfh7
+OjCY215WhY1Tl9G+BZxaDCXgbEGHfQ24x/itjukjE1ldfCyAu4+lPJjDEsSE3OCt
+GNh1Bx14jlKD9ICZSl71jBqmeo5NXgNASxOYiK/5XCrQUMOOorg6D9qM/104FVXM
+JoMzoH73MXYAxld2mq2CGv4EIfp40rsT4O0e7zqSIw9Evs43PU5NUOpentpzCZxd
+GkTU9JtyFRBTsqnY58G0
+=pBlb
+-----END PGP SIGNATURE-----
+
+--jRHKVT23PllUwdXP--
