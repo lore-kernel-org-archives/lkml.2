@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936809Ab2C3XGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:06:42 -0400
+	id S934870Ab2C3XG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:06:59 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934778Ab2C3VEw (ORCPT
+	with ESMTP id S934762Ab2C3VEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:52 -0400
-Message-Id: <20120330195727.119307050@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:04:46 -0400
+Message-Id: <20120330195726.845212875@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:57 -0700
+Date: Fri, 30 Mar 2012 12:57:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 035/108] ntp: Fix integer overflow when setting time
+        alan@lxorguk.ukuu.org.uk,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Chanho Min <chanho0207@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jong-Sung Kim <neidhard.kim@lge.com>
+Subject: [ 033/108] serial: PL011: clear pending interrupts
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33 upstream.
+commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
 
-'long secs' is passed as divisor to div_s64, which accepts a 32bit
-divisor. On 64bit machines that value is trimmed back from 8 bytes
-back to 4, causing a divide by zero when the number is bigger than
-(1 << 32) - 1 and all 32 lower bits are 0.
+Chanho Min reported that when the boot loader transfers
+control to the kernel, there may be pending interrupts
+causing the UART to lock up in an eternal loop trying to
+pick tokens from the FIFO (since the RX interrupt flag
+indicates there are tokens) while in practice there are
+no tokens - in fact there is only a pending IRQ flag.
 
-Use div64_long() instead.
+This patch address the issue with a combination of two
+patches suggested by Russell King that clears and mask
+all interrupts at probe() and clears any pending error
+and RX interrupts at port startup time.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Cc: johnstul@us.ibm.com
-Link: http://lkml.kernel.org/r/1331829374-31543-2-git-send-email-levinsasha928@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+We suspect the spurious interrupts are a side-effect of
+switching the UART from FIFO to non-FIFO mode.
+
+Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Reported-by: Chanho Min <chanho0207@gmail.com>
+Suggested-by: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/ntp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -275,7 +275,7 @@ static inline s64 ntp_update_offset_fll(
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1376,6 +1376,10 @@ static int pl011_startup(struct uart_por
  
- 	time_status |= STA_MODE;
+ 	uap->port.uartclk = clk_get_rate(uap->clk);
  
--	return div_s64(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
-+	return div64_long(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
- }
++	/* Clear pending error and receive interrupts */
++	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
++	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
++
+ 	/*
+ 	 * Allocate the IRQ
+ 	 */
+@@ -1410,10 +1414,6 @@ static int pl011_startup(struct uart_por
+ 	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
  
- static void ntp_update_offset(long offset)
+-	/* Clear pending error interrupts */
+-	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
+-	       uap->port.membase + UART011_ICR);
+-
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1428,6 +1428,9 @@ static int pl011_startup(struct uart_por
+ 	 * as well.
+ 	 */
+ 	spin_lock_irq(&uap->port.lock);
++	/* Clear out any spuriously appearing RX interrupts */
++	 writew(UART011_RTIS | UART011_RXIS,
++		uap->port.membase + UART011_ICR);
+ 	uap->im = UART011_RTIM;
+ 	if (!pl011_dma_rx_running(uap))
+ 		uap->im |= UART011_RXIM;
+@@ -1904,6 +1907,10 @@ static int pl011_probe(struct amba_devic
+ 		goto unmap;
+ 	}
+ 
++	/* Ensure interrupts from this UART are masked and cleared */
++	writew(0, uap->port.membase + UART011_IMSC);
++	writew(0xffff, uap->port.membase + UART011_ICR);
++
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
 
 
