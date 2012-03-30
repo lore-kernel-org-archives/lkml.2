@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965294Ab2C3WXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:23:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S935700Ab2C3VLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:11:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935724Ab2C3VLy (ORCPT
+	with ESMTP id S935636Ab2C3VLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:54 -0400
-Message-Id: <20120330194847.223320722@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:11:38 -0400
+Message-Id: <20120330194846.015068418@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:34 -0700
+Date: Fri, 30 Mar 2012 12:49:29 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Mack <zonque@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 061/149] ASoC: pxa-ssp: atomically set stream active masks
+        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: [ 056/149] TPM: Zero buffer whole after copying to userspace
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,120 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Tim Gardner <tim.gardner@canonical.com>
 
-commit 273b72c8ce6b28df6b49423d775c3e59072c73c5 upstream.
+commit 3ab1aff89477dafb1aaeafe8c8669114a02b7226 upstream.
 
-PXA's SSP engine fails to take its current channel phase into account
-when enabling a stream while the engine is already running. This
-results in randomly swapped left/right channels on either the record
-or the playback side, depending on which one was enabled first.
+Commit 3321c07ae5068568cd61ac9f4ba749006a7185c9 correctly clears the TPM
+buffer if the user specified read length is >= the TPM buffer length. However,
+if the user specified read length is < the TPM buffer length, then part of the
+TPM buffer is left uncleared.
 
-The following patch fixes this by factoring out the bit field
-modifications in question to a separate function that pauses the
-engine temporarily, modifies the bits and kicks it off again
-afterwards. Appearantly, a transition of SSCR0_SSE syncs both
-directions properly.
-
-The patch has been rolled out to quite a number of devices over the
-last weeks and seems to fix the issue reliably.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Sven Neumann <s.neumann@raumfeld.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reported-by: Seth Forshee <seth.forshee@canonical.com>
+Cc: Debora Velarde <debora@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: Marcel Selhorst <m.selhorst@sirrix.com>
+Cc: tpmdd-devel@lists.sourceforge.net
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/pxa/pxa-ssp.c |   61 ++++++++++++++++++++++++++++--------------------
- 1 file changed, 36 insertions(+), 25 deletions(-)
+ drivers/char/tpm/tpm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/soc/pxa/pxa-ssp.c
-+++ b/sound/soc/pxa/pxa-ssp.c
-@@ -668,6 +668,38 @@ static int pxa_ssp_hw_params(struct snd_
- 	return 0;
- }
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1115,12 +1115,13 @@ ssize_t tpm_read(struct file *file, char
+ 	ret_size = atomic_read(&chip->data_pending);
+ 	atomic_set(&chip->data_pending, 0);
+ 	if (ret_size > 0) {	/* relay data */
++		ssize_t orig_ret_size = ret_size;
+ 		if (size < ret_size)
+ 			ret_size = size;
  
-+static void pxa_ssp_set_running_bit(struct snd_pcm_substream *substream,
-+				    struct ssp_device *ssp, int value)
-+{
-+	uint32_t sscr0 = pxa_ssp_read_reg(ssp, SSCR0);
-+	uint32_t sscr1 = pxa_ssp_read_reg(ssp, SSCR1);
-+	uint32_t sspsp = pxa_ssp_read_reg(ssp, SSPSP);
-+	uint32_t sssr = pxa_ssp_read_reg(ssp, SSSR);
-+
-+	if (value && (sscr0 & SSCR0_SSE))
-+		pxa_ssp_write_reg(ssp, SSCR0, sscr0 & ~SSCR0_SSE);
-+
-+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-+		if (value)
-+			sscr1 |= SSCR1_TSRE;
-+		else
-+			sscr1 &= ~SSCR1_TSRE;
-+	} else {
-+		if (value)
-+			sscr1 |= SSCR1_RSRE;
-+		else
-+			sscr1 &= ~SSCR1_RSRE;
-+	}
-+
-+	pxa_ssp_write_reg(ssp, SSCR1, sscr1);
-+
-+	if (value) {
-+		pxa_ssp_write_reg(ssp, SSSR, sssr);
-+		pxa_ssp_write_reg(ssp, SSPSP, sspsp);
-+		pxa_ssp_write_reg(ssp, SSCR0, sscr0 | SSCR0_SSE);
-+	}
-+}
-+
- static int pxa_ssp_trigger(struct snd_pcm_substream *substream, int cmd,
- 			   struct snd_soc_dai *cpu_dai)
- {
-@@ -681,42 +713,21 @@ static int pxa_ssp_trigger(struct snd_pc
- 		pxa_ssp_enable(ssp);
- 		break;
- 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
--		val = pxa_ssp_read_reg(ssp, SSCR1);
--		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
--			val |= SSCR1_TSRE;
--		else
--			val |= SSCR1_RSRE;
--		pxa_ssp_write_reg(ssp, SSCR1, val);
-+		pxa_ssp_set_running_bit(substream, ssp, 1);
- 		val = pxa_ssp_read_reg(ssp, SSSR);
- 		pxa_ssp_write_reg(ssp, SSSR, val);
- 		break;
- 	case SNDRV_PCM_TRIGGER_START:
--		val = pxa_ssp_read_reg(ssp, SSCR1);
--		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
--			val |= SSCR1_TSRE;
--		else
--			val |= SSCR1_RSRE;
--		pxa_ssp_write_reg(ssp, SSCR1, val);
--		pxa_ssp_enable(ssp);
-+		pxa_ssp_set_running_bit(substream, ssp, 1);
- 		break;
- 	case SNDRV_PCM_TRIGGER_STOP:
--		val = pxa_ssp_read_reg(ssp, SSCR1);
--		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
--			val &= ~SSCR1_TSRE;
--		else
--			val &= ~SSCR1_RSRE;
--		pxa_ssp_write_reg(ssp, SSCR1, val);
-+		pxa_ssp_set_running_bit(substream, ssp, 0);
- 		break;
- 	case SNDRV_PCM_TRIGGER_SUSPEND:
- 		pxa_ssp_disable(ssp);
- 		break;
- 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
--		val = pxa_ssp_read_reg(ssp, SSCR1);
--		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
--			val &= ~SSCR1_TSRE;
--		else
--			val &= ~SSCR1_RSRE;
--		pxa_ssp_write_reg(ssp, SSCR1, val);
-+		pxa_ssp_set_running_bit(substream, ssp, 0);
- 		break;
+ 		mutex_lock(&chip->buffer_mutex);
+ 		rc = copy_to_user(buf, chip->data_buffer, ret_size);
+-		memset(chip->data_buffer, 0, ret_size);
++		memset(chip->data_buffer, 0, orig_ret_size);
+ 		if (rc)
+ 			ret_size = -EFAULT;
  
- 	default:
 
 
