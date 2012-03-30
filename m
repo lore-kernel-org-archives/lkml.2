@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934521Ab2C3UFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:05:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53359 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934128Ab2C3UFR (ORCPT
+	id S934543Ab2C3USU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:18:20 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41488 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759210Ab2C3USR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:05:17 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, David Howells <dhowells@redhat.com>
-Subject: [PATCH v2 03/15] FRV: mark const init data with __initconst instead of __initdata
-Date: Fri, 30 Mar 2012 22:04:53 +0200
-Message-Id: <1333137905-13809-3-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20120330200358.GV15647@pengutronix.de>
-References: <20120330200358.GV15647@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 30 Mar 2012 16:18:17 -0400
+Message-Id: <201203302018.q2UKIFH5020745@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Mar 2012 16:07:12 -0400
+Subject: [PATCH] hugetlb: fix race condition in hugetlb_fault()
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+X-OriginalArrivalTime: 30 Mar 2012 20:18:16.0271 (UTC) FILETIME=[3D850DF0:01CD0EB2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As long as there is no other non-const variable marked __initdata in the
-same compilation unit it doesn't hurt. If there were one however
-compilation would fail with
+The race is as follows.  Suppose a multi-threaded task forks a new
+process, thus bumping up the ref count on all the pages.  While the fork
+is occurring (and thus we have marked all the PTEs as read-only), another
+thread in the original process tries to write to a huge page, taking an
+access violation from the write-protect and calling hugetlb_cow().  Now,
+suppose the fork() fails.  It will undo the COW and decrement the ref
+count on the pages, so the ref count on the huge page drops back to 1.
+Meanwhile hugetlb_cow() also decrements the ref count by one on the
+original page, since the original address space doesn't need it any more,
+having copied a new page to replace the original page.  This leaves the
+ref count at zero, and when we call unlock_page(), we panic.
 
-	error: $variablename causes a section type conflict
+The solution is to take an extra reference to the page while we are
+holding the lock on it.
 
-because a section containing const variables is marked read only and so
-cannot contain non-const variables.
-
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: David Howells <dhowells@redhat.com>
+Cc: stable@kernel.org
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
-no changes since (implicit) v1
+ mm/hugetlb.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
- arch/frv/mb93090-mb00/pci-irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/frv/mb93090-mb00/pci-irq.c b/arch/frv/mb93090-mb00/pci-irq.c
-index 20f6497..808bcf7 100644
---- a/arch/frv/mb93090-mb00/pci-irq.c
-+++ b/arch/frv/mb93090-mb00/pci-irq.c
-@@ -28,7 +28,7 @@
-  *
-  */
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 4531be2..ab674fc 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2703,8 +2703,10 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * so no worry about deadlock.
+ 	 */
+ 	page = pte_page(entry);
+-	if (page != pagecache_page)
++	if (page != pagecache_page) {
++		get_page(page);
+ 		lock_page(page);
++	}
  
--static const uint8_t __initdata pci_bus0_irq_routing[32][4] = {
-+static const uint8_t pci_bus0_irq_routing[32][4] __initconst = {
- 	[0 ] = { IRQ_FPGA_MB86943_PCI_INTA },
- 	[16] = { IRQ_FPGA_RTL8029_INTA },
- 	[17] = { IRQ_FPGA_PCI_INTC, IRQ_FPGA_PCI_INTD, IRQ_FPGA_PCI_INTA, IRQ_FPGA_PCI_INTB },
+ 	spin_lock(&mm->page_table_lock);
+ 	/* Check for a racing update before calling hugetlb_cow */
+@@ -2732,8 +2734,10 @@ out_page_table_lock:
+ 		unlock_page(pagecache_page);
+ 		put_page(pagecache_page);
+ 	}
+-	if (page != pagecache_page)
++	if (page != pagecache_page) {
+ 		unlock_page(page);
++		put_page(page);
++	}
+ 
+ out_mutex:
+ 	mutex_unlock(&hugetlb_instantiation_mutex);
 -- 
-1.7.9.5
+1.6.5.2
 
