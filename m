@@ -1,199 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832Ab2C3WPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:15:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41573 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936522Ab2C3WPO (ORCPT
+	id S965025Ab2C3VNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:13:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964993Ab2C3VNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:15:14 -0400
-Date: Sat, 31 Mar 2012 00:15:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [GIT pull] Core locking updates for 3.4
-Message-ID: <alpine.LFD.2.02.1203310013330.2542@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 30 Mar 2012 17:13:46 -0400
+Message-Id: <20120330194854.953912829@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:50:08 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Richard Weinberger <richard@nod.at>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 095/149] UBI: fix error handling in ubi_scan()
+In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-please pull the latest core-locking-for-linus git tree from:
+------------------
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
+From: Richard Weinberger <richard@nod.at>
 
-Thanks,
+commit a29852be492d61001d86c6ebf5fff9b93d7b4be9 upstream.
 
-	tglx
+Two bad things can happen in ubi_scan():
+1. If kmem_cache_create() fails we jump to out_si and call
+   ubi_scan_destroy_si() which calls kmem_cache_destroy().
+   But si->scan_leb_slab is NULL.
+2. If process_eb() fails we jump to out_vidh, call
+   kmem_cache_destroy() and ubi_scan_destroy_si() which calls
+   again kmem_cache_destroy().
 
------------------->
-Kees Cook (2):
-      futex: Do not leak robust list to unprivileged process
-      futex: Mark get_robust_list as deprecated
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+---
+ drivers/mtd/ubi/scan.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
- Documentation/feature-removal-schedule.txt |   10 +++++++
- kernel/futex.c                             |   38 +++++++++++-----------------
- kernel/futex_compat.c                      |   38 +++++++++++-----------------
- 3 files changed, 40 insertions(+), 46 deletions(-)
-
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 0cad480..c1be806 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -529,3 +529,13 @@ When:	3.5
- Why:	The old kmap_atomic() with two arguments is deprecated, we only
- 	keep it for backward compatibility for few cycles and then drop it.
- Who:	Cong Wang <amwang@redhat.com>
-+
-+----------------------------
-+
-+What:	get_robust_list syscall
-+When:	2013
-+Why:	There appear to be no production users of the get_robust_list syscall,
-+	and it runs the risk of leaking address locations, allowing the bypass
-+	of ASLR. It was only ever intended for debugging, so it should be
-+	removed.
-+Who:	Kees Cook <keescook@chromium.org>
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 72efa1e..e2b0fb9 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -59,6 +59,7 @@
- #include <linux/magic.h>
- #include <linux/pid.h>
- #include <linux/nsproxy.h>
-+#include <linux/ptrace.h>
+--- a/drivers/mtd/ubi/scan.c
++++ b/drivers/mtd/ubi/scan.c
+@@ -1174,7 +1174,7 @@ struct ubi_scan_info *ubi_scan(struct ub
  
- #include <asm/futex.h>
+ 	ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
+ 	if (!ech)
+-		goto out_slab;
++		goto out_si;
  
-@@ -2443,40 +2444,31 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
- {
- 	struct robust_list_head __user *head;
- 	unsigned long ret;
--	const struct cred *cred = current_cred(), *pcred;
-+	struct task_struct *p;
- 
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
-+	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
-+
-+	rcu_read_lock();
-+
-+	ret = -ESRCH;
- 	if (!pid)
--		head = current->robust_list;
-+		p = current;
- 	else {
--		struct task_struct *p;
--
--		ret = -ESRCH;
--		rcu_read_lock();
- 		p = find_task_by_vpid(pid);
- 		if (!p)
- 			goto err_unlock;
--		ret = -EPERM;
--		pcred = __task_cred(p);
--		/* If victim is in different user_ns, then uids are not
--		   comparable, so we must have CAP_SYS_PTRACE */
--		if (cred->user->user_ns != pcred->user->user_ns) {
--			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--				goto err_unlock;
--			goto ok;
--		}
--		/* If victim is in same user_ns, then uids are comparable */
--		if (cred->euid != pcred->euid &&
--		    cred->euid != pcred->uid &&
--		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--			goto err_unlock;
--ok:
--		head = p->robust_list;
--		rcu_read_unlock();
+ 	vidh = ubi_zalloc_vid_hdr(ubi, GFP_KERNEL);
+ 	if (!vidh)
+@@ -1235,8 +1235,6 @@ out_vidh:
+ 	ubi_free_vid_hdr(ubi, vidh);
+ out_ech:
+ 	kfree(ech);
+-out_slab:
+-	kmem_cache_destroy(si->scan_leb_slab);
+ out_si:
+ 	ubi_scan_destroy_si(si);
+ 	return ERR_PTR(err);
+@@ -1325,7 +1323,9 @@ void ubi_scan_destroy_si(struct ubi_scan
+ 		}
  	}
  
-+	ret = -EPERM;
-+	if (!ptrace_may_access(p, PTRACE_MODE_READ))
-+		goto err_unlock;
+-	kmem_cache_destroy(si->scan_leb_slab);
++	if (si->scan_leb_slab)
++		kmem_cache_destroy(si->scan_leb_slab);
 +
-+	head = p->robust_list;
-+	rcu_read_unlock();
-+
- 	if (put_user(sizeof(*head), len_ptr))
- 		return -EFAULT;
- 	return put_user(head, head_ptr);
-diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-index 5f9e689..83e368b 100644
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -10,6 +10,7 @@
- #include <linux/compat.h>
- #include <linux/nsproxy.h>
- #include <linux/futex.h>
-+#include <linux/ptrace.h>
+ 	kfree(si);
+ }
  
- #include <asm/uaccess.h>
- 
-@@ -136,40 +137,31 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- {
- 	struct compat_robust_list_head __user *head;
- 	unsigned long ret;
--	const struct cred *cred = current_cred(), *pcred;
-+	struct task_struct *p;
- 
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
-+	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
-+
-+	rcu_read_lock();
-+
-+	ret = -ESRCH;
- 	if (!pid)
--		head = current->compat_robust_list;
-+		p = current;
- 	else {
--		struct task_struct *p;
--
--		ret = -ESRCH;
--		rcu_read_lock();
- 		p = find_task_by_vpid(pid);
- 		if (!p)
- 			goto err_unlock;
--		ret = -EPERM;
--		pcred = __task_cred(p);
--		/* If victim is in different user_ns, then uids are not
--		   comparable, so we must have CAP_SYS_PTRACE */
--		if (cred->user->user_ns != pcred->user->user_ns) {
--			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--				goto err_unlock;
--			goto ok;
--		}
--		/* If victim is in same user_ns, then uids are comparable */
--		if (cred->euid != pcred->euid &&
--		    cred->euid != pcred->uid &&
--		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
--			goto err_unlock;
--ok:
--		head = p->compat_robust_list;
--		rcu_read_unlock();
- 	}
- 
-+	ret = -EPERM;
-+	if (!ptrace_may_access(p, PTRACE_MODE_READ))
-+		goto err_unlock;
-+
-+	head = p->compat_robust_list;
-+	rcu_read_unlock();
-+
- 	if (put_user(sizeof(*head), len_ptr))
- 		return -EFAULT;
- 	return put_user(ptr_to_compat(head), head_ptr);
+
+
