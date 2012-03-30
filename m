@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965178Ab2C3WN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:13:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52160 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965134Ab2C3VOV (ORCPT
+	id S965197Ab2C3WOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:14:19 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56556 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965109Ab2C3VOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:21 -0400
-Message-Id: <20120330194855.727545474@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:14 -0400
+Message-Id: <20120330194856.653892246@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:12 -0700
+Date: Fri, 30 Mar 2012 12:50:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Ming Lei <tom.leiming@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 099/149] usbnet: dont clear urb->dev in tx_complete
+        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [ 104/149] sysctl: protect poll() in entries that may go away
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "tom.leiming@gmail.com" <tom.leiming@gmail.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 
-commit 5d5440a835710d09f0ef18da5000541ec98b537a upstream.
+commit 4e474a00d7ff746ed177ddae14fa8b2d4bad7a00 upstream.
 
-URB unlinking is always racing with its completion and tx_complete
-may be called before or during running usb_unlink_urb, so tx_complete
-must not clear urb->dev since it will be used in unlink path,
-otherwise invalid memory accesses or usb device leak may be caused
-inside usb_unlink_urb.
+Protect code accessing ctl_table by grabbing the header with grab_header()
+and after releasing with sysctl_head_finish().  This is needed if poll()
+is called in entries created by modules: currently only hostname and
+domainname support poll(), but this bug may be triggered when/if modules
+use it and if user called poll() in a file that doesn't support it.
 
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Dave Jones reported the following when using a syscall fuzzer while
+hibernating/resuming:
+
+RIP: 0010:[<ffffffff81233e3e>]  [<ffffffff81233e3e>] proc_sys_poll+0x4e/0x90
+RAX: 0000000000000145 RBX: ffff88020cab6940 RCX: 0000000000000000
+RDX: ffffffff81233df0 RSI: 6b6b6b6b6b6b6b6b RDI: ffff88020cab6940
+[ ... ]
+Code: 00 48 89 fb 48 89 f1 48 8b 40 30 4c 8b 60 e8 b8 45 01 00 00 49 83
+7c 24 28 00 74 2e 49 8b 74 24 30 48 85 f6 74 24 48 85 c9 75 32 <8b> 16
+b8 45 01 00 00 48 63 d2 49 39 d5 74 10 8b 06 48 98 48 89
+
+If an entry goes away while we are polling() it, ctl_table may not exist
+anymore.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/usbnet.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/proc/proc_sysctl.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1037,7 +1037,6 @@ static void tx_complete (struct urb *urb
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -188,20 +188,32 @@ static ssize_t proc_sys_write(struct fil
+ 
+ static int proc_sys_open(struct inode *inode, struct file *filp)
+ {
++	struct ctl_table_header *head = grab_header(inode);
+ 	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
+ 
++	/* sysctl was unregistered */
++	if (IS_ERR(head))
++		return PTR_ERR(head);
++
+ 	if (table->poll)
+ 		filp->private_data = proc_sys_poll_event(table->poll);
+ 
++	sysctl_head_finish(head);
++
+ 	return 0;
+ }
+ 
+ static unsigned int proc_sys_poll(struct file *filp, poll_table *wait)
+ {
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
++	struct ctl_table_header *head = grab_header(inode);
+ 	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
+-	unsigned long event = (unsigned long)filp->private_data;
+ 	unsigned int ret = DEFAULT_POLLMASK;
++	unsigned long event;
++
++	/* sysctl was unregistered */
++	if (IS_ERR(head))
++		return POLLERR | POLLHUP;
+ 
+ 	if (!table->proc_handler)
+ 		goto out;
+@@ -209,6 +221,7 @@ static unsigned int proc_sys_poll(struct
+ 	if (!table->poll)
+ 		goto out;
+ 
++	event = (unsigned long)filp->private_data;
+ 	poll_wait(filp, &table->poll->wait, wait);
+ 
+ 	if (event != atomic_read(&table->poll->event)) {
+@@ -217,6 +230,8 @@ static unsigned int proc_sys_poll(struct
  	}
  
- 	usb_autopm_put_interface_async(dev->intf);
--	urb->dev = NULL;
- 	entry->state = tx_done;
- 	defer_bh(dev, skb, &dev->txq);
+ out:
++	sysctl_head_finish(head);
++
+ 	return ret;
  }
+ 
 
 
