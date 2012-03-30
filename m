@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718Ab2C3Sl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 14:41:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34150 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757258Ab2C3SlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 14:41:24 -0400
-Date: Fri, 30 Mar 2012 11:41:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Geon Si Jeong <gshark.jeong@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] leds: Add LED driver for lm3556 chip
-Message-Id: <20120330114122.be769e8a.akpm@linux-foundation.org>
-In-Reply-To: <1333089508-8501-2-git-send-email-gshark.jeong@gmail.com>
-References: <1333089508-8501-1-git-send-email-gshark.jeong@gmail.com>
-	<1333089508-8501-2-git-send-email-gshark.jeong@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760973Ab2C3SqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 14:46:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44484 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756782Ab2C3SqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 14:46:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="135792267"
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Joerg Roedel <joerg.roedel@amd.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 00/10] vt-d irq_remap_ops patchset
+Date: Fri, 30 Mar 2012 11:46:58 -0700
+Message-Id: <1333133228-3134-1-git-send-email-suresh.b.siddha@intel.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012 15:38:28 +0900
-Geon Si Jeong <gshark.jeong@gmail.com> wrote:
+Ingo,
 
-> It is a simple driver for LM3556 Chip(Texas Instruments)
-> LM3556 :
-> The LM3556 is a 4 MHz fixed-frequency synchronous boost
-> converter plus 1.5A constant current driver for a high-current white LED.
-> Datasheet: www.national.com/ds/LM/LM3556.pdf
+Here is the Joerg's irq_remap_ops patchset updated for the latest -tip.
+Simplified some of the naming conventions to follow the irq_remapping
+terminology. There are still some "if (irq_remapping_enabled)" checks in
+io_apic.c that I would like to roll into the new io_apic_ops. I will
+look into that shortly.
 
-It needs this to build on x86_64:
+Joerg Roedel (8):
+  iommu: Rename intr_remapping files to intel_intr_remapping
+  iommu/vt-d: Make intr-remapping initialization generic
+  iommu/vt-d: Convert missing apic.c intr-remapping call to remap_ops
+  iommu/vt-d: Convert IR ioapic-setup to use remap_ops
+  iommu/vt-d: Convert IR set_affinity function to remap_ops
+  iommu/vt-d: Convert free_irte into a remap_ops callback
+  iommu/vt-d: Convert MSI remapping setup to remap_ops
+  x86, iommu/vt-d: Clean up interfaces for interrupt remapping
 
---- a/drivers/leds/leds-lm3556.c~leds-add-led-driver-for-lm3556-chip-fix-2
-+++ a/drivers/leds/leds-lm3556.c
-@@ -11,6 +11,7 @@
- #include <linux/delay.h>
- #include <linux/i2c.h>
- #include <linux/leds.h>
-+#include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/platform_device.h>
- #include <linux/types.h>
+Suresh Siddha (2):
+  iommu: rename intr_remapping references to irq_remapping
+  iommu: rename intr_remapping.[ch] to irq_remapping.[ch]
 
+ arch/ia64/include/asm/irq_remapping.h              |    4 +
+ arch/x86/include/asm/irq_remapping.h               |  120 +++++--
+ arch/x86/kernel/apic/apic.c                        |   30 +-
+ arch/x86/kernel/apic/io_apic.c                     |  297 ++++-------------
+ drivers/iommu/Makefile                             |    2 +-
+ drivers/iommu/dmar.c                               |    9 +-
+ drivers/iommu/intel-iommu.c                        |    3 +-
+ .../{intr_remapping.c => intel_irq_remapping.c}    |  355 ++++++++++++++++----
+ drivers/iommu/intr_remapping.h                     |   17 -
+ drivers/iommu/irq_remapping.c                      |  164 +++++++++
+ drivers/iommu/irq_remapping.h                      |   88 +++++
+ include/linux/dmar.h                               |   85 -----
+ 12 files changed, 724 insertions(+), 450 deletions(-)
+ create mode 100644 arch/ia64/include/asm/irq_remapping.h
+ rename drivers/iommu/{intr_remapping.c => intel_irq_remapping.c} (66%)
+ delete mode 100644 drivers/iommu/intr_remapping.h
+ create mode 100644 drivers/iommu/irq_remapping.c
+ create mode 100644 drivers/iommu/irq_remapping.h
 
-And here are some fixes for problems which were detected by checkpatch.
-Please use checkpatch.  Please review and test this change:
-
---- a/drivers/leds/leds-lm3556.c~leds-add-led-driver-for-lm3556-chip-checkpatch-fixes
-+++ a/drivers/leds/leds-lm3556.c
-@@ -141,7 +141,7 @@ static struct indicator indicator_patter
- };
- 
- /* i2c access*/
--int lm3556_read_reg(struct i2c_client *client, u8 reg, u8 * val)
-+int lm3556_read_reg(struct i2c_client *client, u8 reg, u8 *val)
- {
- 	int ret;
- 	struct lm3556_chip_data *chip = i2c_get_clientdata(client);
-@@ -317,12 +317,15 @@ static ssize_t lm3556_indicator_pattern_
- 					      const char *buf, size_t size)
- {
- 	char *after;
--	ssize_t ret = -EINVAL;
-+	ssize_t ret;
- 	struct i2c_client *client = container_of(dev->parent,
- 						 struct i2c_client, dev);
--	unsigned long state = simple_strtoul(buf, &after, 10);
-+	unsigned long state;
- 	size_t count = after - buf;
- 
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		goto out;
- 	if (isspace(*after))
- 		count++;
- 
-@@ -336,6 +339,7 @@ static ssize_t lm3556_indicator_pattern_
- 		lm3556_write_reg(client, REG_INDIC_PERIOD,
- 				 indicator_pattern[state].period_cnt);
- 	}
-+out:
- 	return ret;
- }
- 
-
+-- 
+1.7.6.5
 
