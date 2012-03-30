@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761653Ab2C3VKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:10:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S935743Ab2C3W1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:27:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761632Ab2C3VKl (ORCPT
+	with ESMTP id S1761632Ab2C3VKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:10:41 -0400
-Message-Id: <20120330194841.656234548@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:10:50 -0400
+Message-Id: <20120330194841.226970637@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:11 -0700
+Date: Fri, 30 Mar 2012 12:49:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 038/149] rtlwifi: rtl8192c_common: rtl8192de: Check for allocation failures
+        alan@lxorguk.ukuu.org.uk, Donald Lee <donald@asix.com.tw>
+Subject: [ 036/149] USB: serial: mos7840: Fixed MCS7820 device attach problem
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,93 +24,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Donald Lee <donald@asix.com.tw>
 
-commit 76a92be537f1c8c259e393632301446257ca3ea9 upstream.
+commit 093ea2d3a766cb8a4c4de57efec6c0a127a58792 upstream.
 
-In https://bugzilla.redhat.com/show_bug.cgi?id=771656, a kernel bug was
-triggered due to a failed skb allocation that was not checked. This event
-lead to an audit of all memory allocations in the complete rtlwifi family
-of drivers. This patch fixes the rest.
+A MCS7820 device supports two serial ports and a MCS7840 device supports
+four serial ports. Both devices use the same driver, but the attach function
+in driver was unable to correctly handle the port numbers for MCS7820
+device. This problem has been fixed in this patch and this fix has been
+verified on x86 Linux kernel 3.2.9 with both MCS7820 and MCS7840 devices.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Donald Lee <donald@asix.com.tw>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/pci.c                |    2 ++
- drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c |    2 ++
- drivers/net/wireless/rtlwifi/rtl8192de/fw.c       |   14 +++++++++-----
- drivers/net/wireless/rtlwifi/usb.c                |   12 +++++++-----
- 4 files changed, 20 insertions(+), 10 deletions(-)
+ drivers/usb/serial/mos7840.c |   81 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 56 insertions(+), 25 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -657,6 +657,8 @@ static void _rtl_receive_one(struct ieee
- 		return;
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -174,6 +174,7 @@
  
- 	uskb = dev_alloc_skb(skb->len + 128);
-+	if (!uskb)
-+		return;		/* exit if allocation failed */
- 	memcpy(IEEE80211_SKB_RXCB(uskb), &rx_status, sizeof(rx_status));
- 	pdata = (u8 *)skb_put(uskb, skb->len);
- 	memcpy(pdata, skb->data, skb->len);
---- a/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
-@@ -752,6 +752,8 @@ void rtl92c_set_fw_rsvdpagepkt(struct ie
+ #define CLK_MULTI_REGISTER         ((__u16)(0x02))
+ #define CLK_START_VALUE_REGISTER   ((__u16)(0x03))
++#define GPIO_REGISTER              ((__u16)(0x07))
  
+ #define SERIAL_LCR_DLAB            ((__u16)(0x0080))
  
- 	skb = dev_alloc_skb(totalpacketlen);
-+	if (!skb)
-+		return;
- 	memcpy((u8 *) skb_put(skb, totalpacketlen),
- 	       &reserved_page_packet, totalpacketlen);
+@@ -1103,14 +1104,25 @@ static int mos7840_open(struct tty_struc
+ 	mos7840_port->read_urb = port->read_urb;
  
---- a/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
-@@ -763,12 +763,16 @@ void rtl92d_set_fw_rsvdpagepkt(struct ie
- 		      "rtl92d_set_fw_rsvdpagepkt(): HW_VAR_SET_TX_CMD: ALL\n",
- 		      u1RsvdPageLoc, 3);
- 	skb = dev_alloc_skb(totalpacketlen);
--	memcpy((u8 *) skb_put(skb, totalpacketlen), &reserved_page_packet,
--		totalpacketlen);
--	rtstatus = _rtl92d_cmd_send_packet(hw, skb);
-+	if (!skb) {
-+		dlok = false;
+ 	/* set up our bulk in urb */
+-
+-	usb_fill_bulk_urb(mos7840_port->read_urb,
+-			  serial->dev,
+-			  usb_rcvbulkpipe(serial->dev,
+-					  port->bulk_in_endpointAddress),
+-			  port->bulk_in_buffer,
+-			  mos7840_port->read_urb->transfer_buffer_length,
+-			  mos7840_bulk_in_callback, mos7840_port);
++	if ((serial->num_ports == 2)
++		&& ((((__u16)port->number -
++			(__u16)(port->serial->minor)) % 2) != 0)) {
++		usb_fill_bulk_urb(mos7840_port->read_urb,
++			serial->dev,
++			usb_rcvbulkpipe(serial->dev,
++				(port->bulk_in_endpointAddress) + 2),
++			port->bulk_in_buffer,
++			mos7840_port->read_urb->transfer_buffer_length,
++			mos7840_bulk_in_callback, mos7840_port);
 +	} else {
-+		memcpy((u8 *) skb_put(skb, totalpacketlen),
-+			&reserved_page_packet, totalpacketlen);
-+		rtstatus = _rtl92d_cmd_send_packet(hw, skb);
- 
--	if (rtstatus)
--		dlok = true;
-+		if (rtstatus)
-+			dlok = true;
++		usb_fill_bulk_urb(mos7840_port->read_urb,
++			serial->dev,
++			usb_rcvbulkpipe(serial->dev,
++				port->bulk_in_endpointAddress),
++			port->bulk_in_buffer,
++			mos7840_port->read_urb->transfer_buffer_length,
++			mos7840_bulk_in_callback, mos7840_port);
 +	}
- 	if (dlok) {
- 		RT_TRACE(rtlpriv, COMP_POWER, DBG_LOUD,
- 			("Set RSVD page location to Fw.\n"));
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -481,12 +481,14 @@ static void _rtl_usb_rx_process_noagg(st
- 			u8 *pdata;
  
- 			uskb = dev_alloc_skb(skb->len + 128);
--			memcpy(IEEE80211_SKB_RXCB(uskb), &rx_status,
--			       sizeof(rx_status));
--			pdata = (u8 *)skb_put(uskb, skb->len);
--			memcpy(pdata, skb->data, skb->len);
-+			if (uskb) {	/* drop packet on allocation failure */
-+				memcpy(IEEE80211_SKB_RXCB(uskb), &rx_status,
-+				       sizeof(rx_status));
-+				pdata = (u8 *)skb_put(uskb, skb->len);
-+				memcpy(pdata, skb->data, skb->len);
-+				ieee80211_rx_irqsafe(hw, uskb);
-+			}
- 			dev_kfree_skb_any(skb);
--			ieee80211_rx_irqsafe(hw, uskb);
- 		} else {
- 			dev_kfree_skb_any(skb);
- 		}
+ 	dbg("mos7840_open: bulkin endpoint is %d",
+ 	    port->bulk_in_endpointAddress);
+@@ -1521,13 +1533,25 @@ static int mos7840_write(struct tty_stru
+ 	memcpy(urb->transfer_buffer, current_position, transfer_size);
+ 
+ 	/* fill urb with data and submit  */
+-	usb_fill_bulk_urb(urb,
+-			  serial->dev,
+-			  usb_sndbulkpipe(serial->dev,
+-					  port->bulk_out_endpointAddress),
+-			  urb->transfer_buffer,
+-			  transfer_size,
+-			  mos7840_bulk_out_data_callback, mos7840_port);
++	if ((serial->num_ports == 2)
++		&& ((((__u16)port->number -
++			(__u16)(port->serial->minor)) % 2) != 0)) {
++		usb_fill_bulk_urb(urb,
++			serial->dev,
++			usb_sndbulkpipe(serial->dev,
++				(port->bulk_out_endpointAddress) + 2),
++			urb->transfer_buffer,
++			transfer_size,
++			mos7840_bulk_out_data_callback, mos7840_port);
++	} else {
++		usb_fill_bulk_urb(urb,
++			serial->dev,
++			usb_sndbulkpipe(serial->dev,
++				port->bulk_out_endpointAddress),
++			urb->transfer_buffer,
++			transfer_size,
++			mos7840_bulk_out_data_callback, mos7840_port);
++	}
+ 
+ 	data1 = urb->transfer_buffer;
+ 	dbg("bulkout endpoint is %d", port->bulk_out_endpointAddress);
+@@ -1840,7 +1864,7 @@ static int mos7840_send_cmd_write_baud_r
+ 
+ 	} else {
+ #ifdef HW_flow_control
+-		/ *setting h/w flow control bit to 0 */
++		/* setting h/w flow control bit to 0 */
+ 		Data = 0xb;
+ 		mos7840_port->shadowMCR = Data;
+ 		status = mos7840_set_uart_reg(port, MODEM_CONTROL_REGISTER,
+@@ -2309,19 +2333,26 @@ static int mos7840_ioctl(struct tty_stru
+ 
+ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ {
+-	int mos7840_num_ports = 0;
++	__u16 Data = 0x00;
++	int ret = 0;
++	int mos7840_num_ports;
+ 
+-	dbg("numberofendpoints: cur %d, alt %d",
+-	    (int)serial->interface->cur_altsetting->desc.bNumEndpoints,
+-	    (int)serial->interface->altsetting->desc.bNumEndpoints);
+-	if (serial->interface->cur_altsetting->desc.bNumEndpoints == 5) {
+-		mos7840_num_ports = serial->num_ports = 2;
+-	} else if (serial->interface->cur_altsetting->desc.bNumEndpoints == 9) {
++	ret = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &Data,
++		VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++
++	if ((Data & 0x01) == 0) {
++		mos7840_num_ports = 2;
++		serial->num_bulk_in = 2;
++		serial->num_bulk_out = 2;
++		serial->num_ports = 2;
++	} else {
++		mos7840_num_ports = 4;
+ 		serial->num_bulk_in = 4;
+ 		serial->num_bulk_out = 4;
+-		mos7840_num_ports = serial->num_ports = 4;
++		serial->num_ports = 4;
+ 	}
+-	dbg ("mos7840_num_ports = %d", mos7840_num_ports);
++
+ 	return mos7840_num_ports;
+ }
+ 
 
 
