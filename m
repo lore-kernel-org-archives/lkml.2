@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761191Ab2C3RP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:15:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65201 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756440Ab2C3RPW convert rfc822-to-8bit (ORCPT
+	id S1761222Ab2C3RRI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:17:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47551 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757512Ab2C3RQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:15:22 -0400
+	Fri, 30 Mar 2012 13:16:58 -0400
+Date: Fri, 30 Mar 2012 10:16:44 -0700
+From: tip-bot for Andi Kleen <ak@linux.intel.com>
+Message-ID: <tip-c0e9afc0da6cb0f11497e5ea83377b3c451450e0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        ak@linux.intel.com, stable@vger.kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de, stable@vger.kernel.org
+In-Reply-To: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
+References: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Use -mno-avx when available
+Git-Commit-ID: c0e9afc0da6cb0f11497e5ea83377b3c451450e0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120330164913.GA19946@kroah.com>
-References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com>
- <20120330153013.GC18488@kroah.com> <CA+1xoqdZnxcWNpL-03xsR+RDcz3=aRbx2LbR6mTJ_gCmwp-0Rw@mail.gmail.com>
- <20120330164913.GA19946@kroah.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 30 Mar 2012 20:15:00 +0300
-Message-ID: <CA+1xoqfb4p95h1xp9ne_EnYkM8nE91uM8cFdOQJQTO=FV6JUJg@mail.gmail.com>
-Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: arnd@arndb.de, viro@zeniv.linux.org.uk, davej@redhat.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 30 Mar 2012 10:16:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 7:49 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Mar 30, 2012 at 07:37:37PM +0300, Sasha Levin wrote:
->> On Fri, Mar 30, 2012 at 6:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Fri, Mar 30, 2012 at 01:04:27PM -0400, Sasha Levin wrote:
->> >> There are no size checks in kmsg_write(), and we try allocating enough
->> >> memory to store everything userspace gave us, which may be too much for
->> >> kmalloc to allocate.
->> >
->> > Really?  Have you seen this fail?  As only root can do this, is this
->> > really a problem?
->>
->> Only root, and a whole bunch of management software that dumps data
->> into /dev/kmsg (systemd and friends).
->
-> Running as root, do any of these cause problems by asking for too much
-> memory here?  Is this something that needs to be addressed now, and in
-> stable kernels, or can it wait for 3.5?
+Commit-ID:  c0e9afc0da6cb0f11497e5ea83377b3c451450e0
+Gitweb:     http://git.kernel.org/tip/c0e9afc0da6cb0f11497e5ea83377b3c451450e0
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Wed, 28 Mar 2012 11:51:17 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 30 Mar 2012 10:06:39 -0700
 
-The only harm there is a kernel warning and the failure to write that
-specific message to kmsg, combined with the fact that no one
-complained about it before me I think it can probably wait for 3.5.
+x86: Use -mno-avx when available
 
->> >> One option would be to limit it to something, but we can't come up with
->> >> a number that would make sense.
->> >>
->> >> Instead, just use vmalloc so that nothing would break with large amounts
->> >> of data.
->> >
->> > Are you sure this will work properly?  Have you tested it with large
->> > amounts of data?
->>
->> My test was dumping 800mb of data into it, if there's anything else I
->> should try please let me know.
->
-> Did that fail before and now it works properly?
+On gccs that support AVX it's a good idea to disable that too, similar to
+how SSE2, SSE1 etc. are already disabled. This prevents the compiler
+from generating AVX ever implicitely.
 
-That's correct.
+No failure observed, just from review.
+
+[ hpa: Marking this for urgent and stable, simply because the patch
+  will either have absolutely no effect *or* it will avoid potentially
+  very hard to debug failures. ]
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1332960678-11879-1-git-send-email-andi@firstfloor.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/Makefile |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 968dbe2..41a7237 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -129,6 +129,7 @@ KBUILD_CFLAGS += -Wno-sign-compare
+ KBUILD_CFLAGS += -fno-asynchronous-unwind-tables
+ # prevent gcc from generating any FP code by mistake
+ KBUILD_CFLAGS += $(call cc-option,-mno-sse -mno-mmx -mno-sse2 -mno-3dnow,)
++KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
+ 
+ KBUILD_CFLAGS += $(mflags-y)
+ KBUILD_AFLAGS += $(mflags-y)
