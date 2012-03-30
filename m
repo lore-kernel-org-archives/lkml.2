@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936261Ab2C3Vod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:44:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41141 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965151Ab2C3VbW (ORCPT
+	id S966055Ab2C3VVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:21:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966015Ab2C3VVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:31:22 -0400
-X-Sasl-enc: 7xT6+Ujk1JlVcFp2GwTlBqy3SGykwimtUn4VFxSQasd2 1333143081
-X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:52 2012
-Message-Id: <20120330194852.601114116@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:21:13 -0400
+Message-Id: <20120330194842.361704605@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:36 -0700
+Date: Fri, 30 Mar 2012 12:49:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>
-Subject: [ 131/175] PM / shmobile: Make MTU2 driver use pm_genpd_dev_always_on()
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 088/175] target: Set peripheral device type consistently in INQUIRY response
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Roland Dreier <roland@purestorage.com>
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+commit 089461dda1770c10fea0b988ff74519a9be81d7e upstream.
 
-Commit 57d13370cfaf6017c68981e66ff5b3bf20a2705c upstream.
+Current code sets the peripheral device type to 0x3f == "not present
+unknown" for virtual LUN 0 for standard INQUIRY commands, but leaves it
+as 0 == "connected direct access block" for VPD INQUIRY commands.  This
+is just because the check for LUN 0 only happens in some code paths.
 
-Make the MTU2 clocksource driver mark its device as "always on"
-using pm_genpd_dev_always_on() to protect it from surprise power
-removals.
+Make our peripheral device type consistent by moving the LUN 0 check
+into the common emulate_inquiry() code.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Tested-by: Simon Horman <horms@verge.net.au>
-Acked-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clocksource/sh_mtu2.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/target/target_core_cdb.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---- a/drivers/clocksource/sh_mtu2.c
-+++ b/drivers/clocksource/sh_mtu2.c
-@@ -31,6 +31,7 @@
- #include <linux/sh_timer.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/pm_domain.h>
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -70,15 +70,11 @@ target_emulate_inquiry_std(struct se_cmd
+ {
+ 	struct se_lun *lun = cmd->se_lun;
+ 	struct se_device *dev = cmd->se_dev;
+-	struct se_portal_group *tpg = lun->lun_sep->sep_tpg;
  
- struct sh_mtu2_priv {
- 	void __iomem *mapbase;
-@@ -306,6 +307,9 @@ static int __devinit sh_mtu2_probe(struc
- 	struct sh_mtu2_priv *p = platform_get_drvdata(pdev);
- 	int ret;
- 
-+	if (!is_early_platform_device(pdev))
-+		pm_genpd_dev_always_on(&pdev->dev, true);
+-	if (dev == tpg->tpg_virt_lun0.lun_se_dev) {
+-		buf[0] = 0x3f; /* Not connected */
+-	} else {
+-		buf[0] = dev->transport->get_device_type(dev);
+-		if (buf[0] == TYPE_TAPE)
+-			buf[1] = 0x80;
+-	}
++	/* Set RMB (removable media) for tape devices */
++	if (dev->transport->get_device_type(dev) == TYPE_TAPE)
++		buf[1] = 0x80;
 +
- 	if (p) {
- 		dev_info(&pdev->dev, "kept as earlytimer\n");
- 		return 0;
+ 	buf[2] = dev->transport->get_device_rev(dev);
+ 
+ 	/*
+@@ -606,6 +602,7 @@ int target_emulate_inquiry(struct se_tas
+ {
+ 	struct se_cmd *cmd = task->task_se_cmd;
+ 	struct se_device *dev = cmd->se_dev;
++	struct se_portal_group *tpg = cmd->se_lun->lun_sep->sep_tpg;
+ 	unsigned char *buf, *map_buf;
+ 	unsigned char *cdb = cmd->t_task_cdb;
+ 	int p, ret;
+@@ -630,6 +627,11 @@ int target_emulate_inquiry(struct se_tas
+ 		buf = map_buf;
+ 	}
+ 
++	if (dev == tpg->tpg_virt_lun0.lun_se_dev)
++		buf[0] = 0x3f; /* Not connected */
++	else
++		buf[0] = dev->transport->get_device_type(dev);
++
+ 	if (!(cdb[1] & 0x1)) {
+ 		if (cdb[2]) {
+ 			pr_err("INQUIRY with EVPD==0 but PAGE CODE=%02x\n",
+@@ -643,8 +645,6 @@ int target_emulate_inquiry(struct se_tas
+ 		goto out;
+ 	}
+ 
+-	buf[0] = dev->transport->get_device_type(dev);
+-
+ 	for (p = 0; p < ARRAY_SIZE(evpd_handlers); ++p) {
+ 		if (cdb[2] == evpd_handlers[p].page) {
+ 			buf[1] = cdb[2];
 
 
