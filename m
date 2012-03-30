@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964947Ab2C3VN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:13:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935846Ab2C3VNQ (ORCPT
+	id S964961Ab2C3VNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:13:32 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58272 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935867Ab2C3VN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:16 -0400
-Message-Id: <20120330194853.145065448@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:26 -0400
+Message-Id: <20120330194853.795258629@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:59 -0700
+Date: Fri, 30 Mar 2012 12:50:02 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wang YanQing <udknight@gmail.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 086/149] video:uvesafb: Fix oops that uvesafb try to execute NX-protected page
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 089/149] NFS: Properly handle the case where the delegation is revoked
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,121 +24,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang YanQing <udknight@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit ec0d22e4d563e7cce9f6678e2000900755c2989d upstream.
+commit a1d0b5eebc4fd6e0edb02688b35f17f67f42aea5 upstream.
 
-This patch fixes the oops below
+If we know that the delegation stateid is bad or revoked, we need to
+remove that delegation as soon as possible, and then mark all the
+stateids that relied on that delegation for recovery. We cannot use
+the delegation as part of the recovery process.
 
-[   81.560602] uvesafb: NVIDIA Corporation, GT216 Board - 0696a290, Chip Rev   , OEM: NVIDIA, VBE v3.0
-[   81.609384] uvesafb: protected mode interface info at c000:d350
-[   81.609388] uvesafb: pmi: set display start = c00cd3b3, set palette = c00cd40e
-[   81.609390] uvesafb: pmi: ports = 3b4 3b5 3ba 3c0 3c1 3c4 3c5 3c6 3c7 3c8 3c9 3cc 3ce 3cf 3d0 3d1 3d2 3d3 3d4 3d5 3da
-[   81.614558] uvesafb: VBIOS/hardware doesn't support DDC transfers
-[   81.614562] uvesafb: no monitor limits have been set, default refresh rate will be used
-[   81.614994] uvesafb: scrolling: ypan using protected mode interface, yres_virtual=4915
-[   81.744147] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
-[   81.744153] BUG: unable to handle kernel paging request at c00cd3b3
-[   81.744159] IP: [<c00cd3b3>] 0xc00cd3b2
-[   81.744167] *pdpt = 00000000016d6001 *pde = 0000000001c7b067 *pte = 80000000000cd163
-[   81.744171] Oops: 0011 [#1] SMP
-[   81.744174] Modules linked in: uvesafb(+) cfbcopyarea cfbimgblt cfbfillrect
-[   81.744178]
-[   81.744181] Pid: 3497, comm: modprobe Not tainted 3.3.0-rc4NX+ #71 Acer            Aspire 4741                    /Aspire 4741
-[   81.744185] EIP: 0060:[<c00cd3b3>] EFLAGS: 00010246 CPU: 0
-[   81.744187] EIP is at 0xc00cd3b3
-[   81.744189] EAX: 00004f07 EBX: 00000000 ECX: 00000000 EDX: 00000000
-[   81.744191] ESI: f763f000 EDI: f763f6e8 EBP: f57f3a0c ESP: f57f3a00
-[   81.744192]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[   81.744195] Process modprobe (pid: 3497, ti=f57f2000 task=f748c600 task.ti=f57f2000)
-[   81.744196] Stack:
-[   81.744197]  f82512c5 f759341c 00000000 f57f3a30 c124a9bc 00000001 00000001 000001e0
-[   81.744202]  f8251280 f763f000 f7593400 00000000 f57f3a40 c12598dd f5c0c000 00000000
-[   81.744206]  f57f3b10 c1255efe c125a21a 00000006 f763f09c 00000000 c1c6cb60 f7593400
-[   81.744210] Call Trace:
-[   81.744215]  [<f82512c5>] ? uvesafb_pan_display+0x45/0x60 [uvesafb]
-[   81.744222]  [<c124a9bc>] fb_pan_display+0x10c/0x160
-[   81.744226]  [<f8251280>] ? uvesafb_vbe_find_mode+0x180/0x180 [uvesafb]
-[   81.744230]  [<c12598dd>] bit_update_start+0x1d/0x50
-[   81.744232]  [<c1255efe>] fbcon_switch+0x39e/0x550
-[   81.744235]  [<c125a21a>] ? bit_cursor+0x4ea/0x560
-[   81.744240]  [<c129b6cb>] redraw_screen+0x12b/0x220
-[   81.744245]  [<c128843b>] ? tty_do_resize+0x3b/0xc0
-[   81.744247]  [<c129ef42>] vc_do_resize+0x3d2/0x3e0
-[   81.744250]  [<c129efb4>] vc_resize+0x14/0x20
-[   81.744253]  [<c12586bd>] fbcon_init+0x29d/0x500
-[   81.744255]  [<c12984c4>] ? set_inverse_trans_unicode+0xe4/0x110
-[   81.744258]  [<c129b378>] visual_init+0xb8/0x150
-[   81.744261]  [<c129c16c>] bind_con_driver+0x16c/0x360
-[   81.744264]  [<c129b47e>] ? register_con_driver+0x6e/0x190
-[   81.744267]  [<c129c3a1>] take_over_console+0x41/0x50
-[   81.744269]  [<c1257b7a>] fbcon_takeover+0x6a/0xd0
-[   81.744272]  [<c12594b8>] fbcon_event_notify+0x758/0x790
-[   81.744277]  [<c10929e2>] notifier_call_chain+0x42/0xb0
-[   81.744280]  [<c1092d30>] __blocking_notifier_call_chain+0x60/0x90
-[   81.744283]  [<c1092d7a>] blocking_notifier_call_chain+0x1a/0x20
-[   81.744285]  [<c124a5a1>] fb_notifier_call_chain+0x11/0x20
-[   81.744288]  [<c124b759>] register_framebuffer+0x1d9/0x2b0
-[   81.744293]  [<c1061c73>] ? ioremap_wc+0x33/0x40
-[   81.744298]  [<f82537c6>] uvesafb_probe+0xaba/0xc40 [uvesafb]
-[   81.744302]  [<c12bb81f>] platform_drv_probe+0xf/0x20
-[   81.744306]  [<c12ba558>] driver_probe_device+0x68/0x170
-[   81.744309]  [<c12ba731>] __device_attach+0x41/0x50
-[   81.744313]  [<c12b9088>] bus_for_each_drv+0x48/0x70
-[   81.744316]  [<c12ba7f3>] device_attach+0x83/0xa0
-[   81.744319]  [<c12ba6f0>] ? __driver_attach+0x90/0x90
-[   81.744321]  [<c12b991f>] bus_probe_device+0x6f/0x90
-[   81.744324]  [<c12b8a45>] device_add+0x5e5/0x680
-[   81.744329]  [<c122a1a3>] ? kvasprintf+0x43/0x60
-[   81.744332]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744335]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744339]  [<c12bbe9f>] platform_device_add+0xff/0x1b0
-[   81.744343]  [<f8252906>] uvesafb_init+0x50/0x9b [uvesafb]
-[   81.744346]  [<c100111f>] do_one_initcall+0x2f/0x170
-[   81.744350]  [<f82528b6>] ? uvesafb_is_valid_mode+0x66/0x66 [uvesafb]
-[   81.744355]  [<c10c6994>] sys_init_module+0xf4/0x1410
-[   81.744359]  [<c1157fc0>] ? vfsmount_lock_local_unlock_cpu+0x30/0x30
-[   81.744363]  [<c144cb10>] sysenter_do_call+0x12/0x36
-[   81.744365] Code: f5 00 00 00 32 f6 66 8b da 66 d1 e3 66 ba d4 03 8a e3 b0 1c 66 ef b0 1e 66 ef 8a e7 b0 1d 66 ef b0 1f 66 ef e8 fa 00 00 00 61 c3 <60> e8 c8 00 00 00 66 8b f3 66 8b da 66 ba d4 03 b0 0c 8a e5 66
-[   81.744388] EIP: [<c00cd3b3>] 0xc00cd3b3 SS:ESP 0068:f57f3a00
-[   81.744391] CR2: 00000000c00cd3b3
-[   81.744393] ---[ end trace 18b2c87c925b54d6 ]---
+Also note that NFSv4.1 uses a different error code (NFS4ERR_DELEG_REVOKED)
+to indicate that the delegation was revoked.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Finally, ensure that setlk() and setattr() can both recover safely from
+a revoked delegation.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/uvesafb.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ fs/nfs/delegation.c |   11 +++++++++++
+ fs/nfs/delegation.h |    1 +
+ fs/nfs/nfs4_fs.h    |    2 ++
+ fs/nfs/nfs4proc.c   |   18 ++++++++++++++++--
+ fs/nfs/nfs4state.c  |   29 +++++++++++++++++++++++++++--
+ 5 files changed, 57 insertions(+), 4 deletions(-)
 
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -23,6 +23,7 @@
- #include <video/uvesafb.h>
- #ifdef CONFIG_X86
- #include <video/vga.h>
-+#include <linux/pci.h>
- #endif
- #ifdef CONFIG_MTRR
- #include <asm/mtrr.h>
-@@ -815,8 +816,15 @@ static int __devinit uvesafb_vbe_init(st
- 	par->pmi_setpal = pmi_setpal;
- 	par->ypan = ypan;
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -466,6 +466,17 @@ static void nfs_delegation_run_state_man
+ 		nfs4_schedule_state_manager(clp);
+ }
  
--	if (par->pmi_setpal || par->ypan)
--		uvesafb_vbe_getpmi(task, par);
-+	if (par->pmi_setpal || par->ypan) {
-+		if (pcibios_enabled) {
-+			uvesafb_vbe_getpmi(task, par);
-+		} else {
-+			par->pmi_setpal = par->ypan = 0;
-+			printk(KERN_WARNING "uvesafb: PCI BIOS area is NX."
-+				"Can't use protected mode interface\n");
-+		}
++void nfs_remove_bad_delegation(struct inode *inode)
++{
++	struct nfs_delegation *delegation;
++
++	delegation = nfs_detach_delegation(NFS_I(inode), NFS_SERVER(inode));
++	if (delegation) {
++		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
++		nfs_free_delegation(delegation);
 +	}
- #else
- 	/* The protected mode interface is not available on non-x86. */
- 	par->pmi_setpal = par->ypan = 0;
++}
++
+ /**
+  * nfs_expire_all_delegation_types
+  * @clp: client to process
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -45,6 +45,7 @@ void nfs_expire_unreferenced_delegations
+ void nfs_handle_cb_pathdown(struct nfs_client *clp);
+ int nfs_client_return_marked_delegations(struct nfs_client *clp);
+ int nfs_delegations_present(struct nfs_client *clp);
++void nfs_remove_bad_delegation(struct inode *inode);
+ 
+ void nfs_delegation_mark_reclaim(struct nfs_client *clp);
+ void nfs_delegation_reap_unclaimed(struct nfs_client *clp);
+--- a/fs/nfs/nfs4_fs.h
++++ b/fs/nfs/nfs4_fs.h
+@@ -324,6 +324,8 @@ extern void nfs4_put_open_state(struct n
+ extern void nfs4_close_state(struct nfs4_state *, fmode_t);
+ extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
+ extern void nfs4_state_set_mode_locked(struct nfs4_state *, fmode_t);
++extern void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid);
+ extern void nfs4_schedule_lease_recovery(struct nfs_client *);
+ extern void nfs4_schedule_state_manager(struct nfs_client *);
+ extern void nfs4_schedule_path_down_recovery(struct nfs_client *clp);
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -263,8 +263,11 @@ static int nfs4_handle_exception(struct
+ 	switch(errorcode) {
+ 		case 0:
+ 			return 0;
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -1316,8 +1319,11 @@ int nfs4_open_delegation_recall(struct n
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
++				nfs_inode_find_state_and_recover(state->inode,
++						stateid);
+ 				nfs4_schedule_stateid_recovery(server, state);
+ 			case -EKEYEXPIRED:
+ 				/*
+@@ -1893,7 +1899,9 @@ static int nfs4_do_setattr(struct inode
+ 			   struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(inode);
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 	do {
+ 		err = nfs4_handle_exception(server,
+@@ -3707,8 +3715,11 @@ nfs4_async_handle_error(struct rpc_task
+ 	if (task->tk_status >= 0)
+ 		return 0;
+ 	switch(task->tk_status) {
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -4526,7 +4537,9 @@ out:
+ 
+ static int nfs4_proc_setlk(struct nfs4_state *state, int cmd, struct file_lock *request)
+ {
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 
+ 	do {
+@@ -4619,6 +4632,7 @@ int nfs4_lock_delegation_recall(struct n
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
+ 			case -NFS4ERR_OPENMODE:
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1071,12 +1071,37 @@ void nfs4_schedule_stateid_recovery(cons
+ {
+ 	struct nfs_client *clp = server->nfs_client;
+ 
+-	if (test_and_clear_bit(NFS_DELEGATED_STATE, &state->flags))
+-		nfs_async_inode_return_delegation(state->inode, &state->stateid);
+ 	nfs4_state_mark_reclaim_nograce(clp, state);
+ 	nfs4_schedule_state_manager(clp);
+ }
+ 
++void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid)
++{
++	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
++	struct nfs_inode *nfsi = NFS_I(inode);
++	struct nfs_open_context *ctx;
++	struct nfs4_state *state;
++	bool found = false;
++
++	spin_lock(&inode->i_lock);
++	list_for_each_entry(ctx, &nfsi->open_files, list) {
++		state = ctx->state;
++		if (state == NULL)
++			continue;
++		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
++			continue;
++		if (memcmp(state->stateid.data, stateid->data, sizeof(state->stateid.data)) != 0)
++			continue;
++		nfs4_state_mark_reclaim_nograce(clp, state);
++		found = true;
++	}
++	spin_unlock(&inode->i_lock);
++	if (found)
++		nfs4_schedule_state_manager(clp);
++}
++
++
+ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_recovery_ops *ops)
+ {
+ 	struct inode *inode = state->inode;
 
 
