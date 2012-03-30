@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935756Ab2C3W0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:26:14 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64808 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935650Ab2C3VLN (ORCPT
+	id S935804Ab2C3W0g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:26:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935632Ab2C3VLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:13 -0400
-Message-Id: <20120330194842.402597318@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:11:03 -0400
+Message-Id: <20120330194843.427214431@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:14 -0700
+Date: Fri, 30 Mar 2012 12:49:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jingjun Wu <jingjun_wu@realsil.com.cn>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 041/149] rtlwifi: rtl8192ce: Fix loss of receive performance
+        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 045/149] ntp: Fix integer overflow when setting time
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jingjun Wu <jingjun_wu@realsil.com.cn>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit a9b89e2567c743483e6354f64d7a7e3a8c101e9e upstream.
+commit a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33 upstream.
 
-Driver rtl8192ce when used with the RTL8188CE device would start at about
-20 Mbps on a 54 Mbps connection, but quickly drop to 1 Mbps. One of the
-symptoms is that the AP would need to retransmit each packet 4 of 5 times
-before the driver would acknowledge it. Recovery is possible only by
-unloading and reloading the driver. This problem was reported at
-https://bugzilla.redhat.com/show_bug.cgi?id=770207.
+'long secs' is passed as divisor to div_s64, which accepts a 32bit
+divisor. On 64bit machines that value is trimmed back from 8 bytes
+back to 4, causing a divide by zero when the number is bigger than
+(1 << 32) - 1 and all 32 lower bits are 0.
 
-The problem is due to a missing update of the gain setting.
+Use div64_long() instead.
 
-Signed-off-by: Jingjun Wu <jingjun_wu@realsil.com.cn>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: johnstul@us.ibm.com
+Link: http://lkml.kernel.org/r/1331829374-31543-2-git-send-email-levinsasha928@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/time/ntp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-@@ -524,6 +524,10 @@ void rtl92c_dm_write_dig(struct ieee8021
- 		  dm_digtable.cur_igvalue, dm_digtable.pre_igvalue,
- 		  dm_digtable.backoff_val));
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -275,7 +275,7 @@ static inline s64 ntp_update_offset_fll(
  
-+	dm_digtable.cur_igvalue += 2;
-+	if (dm_digtable.cur_igvalue > 0x3f)
-+		dm_digtable.cur_igvalue = 0x3f;
-+
- 	if (dm_digtable.pre_igvalue != dm_digtable.cur_igvalue) {
- 		rtl_set_bbreg(hw, ROFDM0_XAAGCCORE1, 0x7f,
- 			      dm_digtable.cur_igvalue);
+ 	time_status |= STA_MODE;
+ 
+-	return div_s64(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
++	return div64_long(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
+ }
+ 
+ static void ntp_update_offset(long offset)
 
 
