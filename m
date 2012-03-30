@@ -1,141 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934097Ab2C3KvC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:51:02 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42310 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759788Ab2C3Kuz (ORCPT
+	id S934108Ab2C3Kzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:55:46 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:51885 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755769Ab2C3Kzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:50:55 -0400
-Date: Fri, 30 Mar 2012 12:50:48 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/13] edac: Create a dimm struct and move the labels
- into it
-Message-ID: <20120330105048.GA30876@aftab>
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
- <1333039546-5590-2-git-send-email-mchehab@redhat.com>
+	Fri, 30 Mar 2012 06:55:38 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V4 05/10] hugetlb: add charge/uncharge calls for HugeTLB alloc/free
+In-Reply-To: <20120329081003.GC30465@tiehlicka.suse.cz>
+References: <1331919570-2264-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331919570-2264-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120328131706.GF20949@tiehlicka.suse.cz> <87sjgs1v6x.fsf@skywalker.in.ibm.com> <20120329081003.GC30465@tiehlicka.suse.cz>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 30 Mar 2012 16:10:00 +0530
+Message-ID: <871uoamkxr.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333039546-5590-2-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12033010-9574-0000-0000-000002094902
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 01:45:34PM -0300, Mauro Carvalho Chehab wrote:
-> The way a DIMM is currently represented implies that they're
-> linked into a per-csrow struct. However, some drivers don't see
-> csrows, as they're ridden behind some chip like the AMB's
-> on FBDIMM's, for example.
-> 
-> This forced drivers to fake a csrow struct, and to create
-> a mess under csrow/channel original's concept.
-> 
-> Move the DIMM labels into a per-DIMM struct, and add there
-> the real location of the socket, in terms of csrow/channel.
-> Latter patches will modify the location to properly represent the
-> memory architecture.
-> 
-> All other drivers will use a per-csrow type of location.
-> Some of those drivers will require a latter conversion, as
-> they also fake the csrows internally.
-> 
-> TODO: While this patch doesn't change the existing behavior, on
-> csrows-based memory controllers, a csrow/channel pair points to a memory
-> rank. There's a known bug at the EDAC core that allows having different
-> labels for the same DIMM, if it has more than one rank. A latter patch
-> is need to merge the several ranks for a DIMM into the same dimm_info
-> struct, in order to avoid having different labels for the same DIMM.
-> 
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/edac/edac_mc.c       |   50 +++++++++++++++++++++++++++++++----------
->  drivers/edac/edac_mc_sysfs.c |   11 ++++-----
->  drivers/edac/i5100_edac.c    |    8 +++---
->  drivers/edac/i7core_edac.c   |    4 +-
->  drivers/edac/i82975x_edac.c  |    2 +-
->  drivers/edac/sb_edac.c       |    4 +-
->  include/linux/edac.h         |   28 +++++++++++++++++++----
->  7 files changed, 75 insertions(+), 32 deletions(-)
-> 
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index 690cbf1..c03bfe7 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -44,7 +44,7 @@ static void edac_mc_dump_channel(struct rank_info *chan)
->  	debugf4("\tchannel = %p\n", chan);
->  	debugf4("\tchannel->chan_idx = %d\n", chan->chan_idx);
->  	debugf4("\tchannel->ce_count = %d\n", chan->ce_count);
-> -	debugf4("\tchannel->label = '%s'\n", chan->label);
-> +	debugf4("\tchannel->label = '%s'\n", chan->dimm->label);
->  	debugf4("\tchannel->csrow = %p\n\n", chan->csrow);
->  }
->  
-> @@ -157,6 +157,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->  	struct mem_ctl_info *mci;
->  	struct csrow_info *csi, *csrow;
->  	struct rank_info *chi, *chp, *chan;
-> +	struct dimm_info *dimm;
->  	void *pvt;
->  	unsigned size;
->  	int row, chn;
-> @@ -170,7 +171,8 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->  	mci = (struct mem_ctl_info *)0;
->  	csi = edac_align_ptr(&mci[1], sizeof(*csi));
->  	chi = edac_align_ptr(&csi[nr_csrows], sizeof(*chi));
-> -	pvt = edac_align_ptr(&chi[nr_chans * nr_csrows], sz_pvt);
-> +	dimm = edac_align_ptr(&chi[nr_chans * nr_csrows], sizeof(*dimm));
-> +	pvt = edac_align_ptr(&dimm[nr_chans * nr_csrows], sz_pvt);
->  	size = ((unsigned long)pvt) + sz_pvt;
->  
->  	mci = kzalloc(size, GFP_KERNEL);
-> @@ -182,11 +184,13 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->  	 */
->  	csi = (struct csrow_info *)(((char *)mci) + ((unsigned long)csi));
->  	chi = (struct rank_info *)(((char *)mci) + ((unsigned long)chi));
-> +	dimm = (struct dimm_info *)(((char *)mci) + ((unsigned long)dimm));
->  	pvt = sz_pvt ? (((char *)mci) + ((unsigned long)pvt)) : NULL;
->  
->  	/* setup index and various internal pointers */
->  	mci->mc_idx = edac_index;
->  	mci->csrows = csi;
-> +	mci->dimms  = dimm;
->  	mci->pvt_info = pvt;
->  	mci->nr_csrows = nr_csrows;
->  
-> @@ -205,6 +209,21 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->  		}
->  	}
->  
-> +	/*
-> +	 * By default, assumes that a per-csrow arrangement will be used,
-> +	 * as most drivers are based on such assumption.
-> +	 */
-> +	dimm = mci->dimms;
-> +	for (row = 0; row < mci->nr_csrows; row++) {
-> +		for (chn = 0; chn < mci->csrows[row].nr_channels; chn++) {
-> +			mci->csrows[row].channels[chn].dimm = dimm;
-> +			dimm->csrow = row;
-> +			dimm->csrow_channel = chn;
-> +			dimm++;
-> +			mci->nr_dimms++;
-> +		}
-> +	}
+Michal Hocko <mhocko@suse.cz> writes:
 
-There's a double loop above this one which iterates over the same
-things: rows and then channels in each row. So merge that loop with the
-one above instead of repeating it here.
+> On Wed 28-03-12 23:09:34, Aneesh Kumar K.V wrote:
+>> Michal Hocko <mhocko@suse.cz> writes:
+>> 
+>> > On Fri 16-03-12 23:09:25, Aneesh Kumar K.V wrote:
+>> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>> >> 
+>> >> This adds necessary charge/uncharge calls in the HugeTLB code
+>> >
+>> > This begs for more description...
+>> > Other than that it looks correct.
+>> >
+>> 
+>> Updated as below
+>> 
+>>     hugetlb: add charge/uncharge calls for HugeTLB alloc/free
+>>     
+>>     This adds necessary charge/uncharge calls in the HugeTLB code. We do
+>>     memcg charge in page alloc and uncharge in compound page destructor.
+>>     We also need to ignore HugeTLB pages in __mem_cgroup_uncharge_common
+>>     because that get called from delete_from_page_cache
+>
+> and from mem_cgroup_end_migration used during soft_offline_page.
+>
+> Btw., while looking at mem_cgroup_end_migration, I have noticed that you
+> need to take care of mem_cgroup_prepare_migration as well otherwise the
+> page would get charged as a normal (shmem) page.
+>
 
--- 
-Regards/Gruss,
-Boris.
+Won't we skip HugeTLB pages in migrate ? check_range do check for
+is_vm_hugetlb_page.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+-aneesh
+
