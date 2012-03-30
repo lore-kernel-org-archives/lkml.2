@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936016Ab2C3VaF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:30:05 -0400
+	id S966102Ab2C3VVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:21:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966106Ab2C3VVv (ORCPT
+	with ESMTP id S966088Ab2C3VVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:21:51 -0400
-Message-Id: <20120330194845.283605127@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:21:39 -0400
+Message-Id: <20120330194844.321844918@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:05 -0700
+Date: Fri, 30 Mar 2012 12:50:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 100/175] firewire: ohci: fix too-early completion of IR multichannel buffers
+        alan@lxorguk.ukuu.org.uk, Brian Norris <computersforpeace@gmail.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 096/175] ahci: add AHCI_HFLAG_DELAY_ENGINE host flag
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 0c0efbacab8d70700d13301e0ae7975783c0cb0a upstream.
+commit 66583c9fa63d05d5580e409f9a58d3cad6d76d17 upstream.
 
-handle_ir_buffer_fill() assumed that a completed descriptor would be
-indicated by a non-zero transfer_status (as in most other descriptors).
-However, this field is written by the controller as soon as (the end of)
-the first packet has been written into the buffer.  As a consequence, if
-we happen to run into such a descriptor when the interrupt handler is
-executed after such a packet has completed, the descriptor would be
-taken out of the list of active descriptors as soon as the buffer had
-been partially filled, so the event for the buffer being completely
-filled would never be sent.
+The following commit was intended to fix problems with specific AHCI
+controller(s) that would become bricks if the AHCI specification was not
+followed strictly (that is, if ahci_start_engine() was called while the
+controller was in the wrong state):
 
-To fix this, handle descriptors only when they have been completely
-filled, i.e., when res_count == 0.  (This also matches the condition
-that is reported by the controller with an interrupt.)
+    commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
+    ahci: start engine only during soft/hard resets
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+However, some devices currently have issues with that fix, so we must
+implement a flag that delays the ahci_start_engine() call only for specific
+controllers.
+
+This commit simply introduces the flag, without enabling it in any driver.
+
+Note that even when AHCI_HFLAG_DELAY_ENGINE is not enabled, this patch does
+not constitue a full revert to commit 7faa33da; there is still a change in
+behavior to the ahci_port_suspend() failure path.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/ohci.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/ata/ahci.h    |    3 +++
+ drivers/ata/libahci.c |    5 +++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2748,7 +2748,7 @@ static int handle_ir_buffer_fill(struct
- 		container_of(context, struct iso_context, context);
- 	u32 buffer_dma;
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -210,6 +210,9 @@ enum {
+ 	AHCI_HFLAG_NO_SNTF		= (1 << 12), /* no sntf */
+ 	AHCI_HFLAG_NO_FPDMA_AA		= (1 << 13), /* no FPDMA AA */
+ 	AHCI_HFLAG_YES_FBS		= (1 << 14), /* force FBS cap on */
++	AHCI_HFLAG_DELAY_ENGINE		= (1 << 15), /* do not start engine on
++						        port start (wait until
++						        error-handling stage) */
  
--	if (!last->transfer_status)
-+	if (last->res_count != 0)
- 		/* Descriptor(s) not done yet, stop iteration */
- 		return 0;
+ 	/* ap->flags bits */
  
-@@ -2762,8 +2762,7 @@ static int handle_ir_buffer_fill(struct
- 	if (le16_to_cpu(last->control) & DESCRIPTOR_IRQ_ALWAYS)
- 		ctx->base.callback.mc(&ctx->base,
- 				      le32_to_cpu(last->data_address) +
--				      le16_to_cpu(last->req_count) -
--				      le16_to_cpu(last->res_count),
-+				      le16_to_cpu(last->req_count),
- 				      ctx->base.callback_data);
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -737,6 +737,7 @@ static void ahci_power_down(struct ata_p
  
- 	return 1;
+ static void ahci_start_port(struct ata_port *ap)
+ {
++	struct ahci_host_priv *hpriv = ap->host->private_data;
+ 	struct ahci_port_priv *pp = ap->private_data;
+ 	struct ata_link *link;
+ 	struct ahci_em_priv *emp;
+@@ -746,6 +747,10 @@ static void ahci_start_port(struct ata_p
+ 	/* enable FIS reception */
+ 	ahci_start_fis_rx(ap);
+ 
++	/* enable DMA */
++	if (!(hpriv->flags & AHCI_HFLAG_DELAY_ENGINE))
++		ahci_start_engine(ap);
++
+ 	/* turn on LEDs */
+ 	if (ap->flags & ATA_FLAG_EM) {
+ 		ata_for_each_link(link, ap, EDGE) {
 
 
