@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832Ab2C3VLY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:11:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935647Ab2C3VLT (ORCPT
+	id S935668Ab2C3VLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:11:47 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64808 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935685Ab2C3VLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:19 -0400
-Message-Id: <20120330194844.668957927@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:11:42 -0400
+Message-Id: <20120330194846.269072555@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:23 -0700
+Date: Fri, 30 Mar 2012 12:49:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Max Filippov <jcmvbkbc@gmail.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 050/149] p54spi: Release GPIO lines and IRQ on error in p54spi_probe
+        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Simon Horman <horms@verge.net.au>
+Subject: [ 057/149] PM / Domains: Fix handling of wakeup devices during system resume
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 62ebeed8d00aef75eac4fd6c161cae75a41965ca upstream.
+commit cc85b20780562d404e18a47b9b55b4a5102ae53e upstream.
 
-This makes it possible to reload driver if insmod has failed due to
-missing firmware.
+During system suspend pm_genpd_suspend_noirq() checks if the given
+device is in a wakeup path (i.e. it appears to be needed for one or
+more wakeup devices to work or is a wakeup device itself) and if it
+needs to be "active" for wakeup to work.  If that is the case, the
+function returns 0 without incrementing the device domain's counter
+of suspended devices and without executing genpd_stop_dev() for the
+device.  In consequence, the device is not stopped (e.g. its clock
+isn't disabled) and power is always supplied to its domain in the
+resulting system sleep state.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+However, pm_genpd_resume_noirq() doesn't repeat that check and it
+runs genpd_start_dev() and decrements the domain's counter of
+suspended devices even for the wakeup device that weren't stopped by
+pm_genpd_suspend_noirq().  As a result, the start callback may be run
+unnecessarily for them and their domains' counters of suspended
+devices may become negative.  Both outcomes aren't desirable, so fix
+pm_genpd_resume_noirq() to look for wakeup devices that might not be
+stopped by during system suspend.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Tested-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/p54spi.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/base/power/domain.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/p54/p54spi.c
-+++ b/drivers/net/wireless/p54/p54spi.c
-@@ -622,19 +622,19 @@ static int __devinit p54spi_probe(struct
- 	ret = spi_setup(spi);
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "spi_setup failed");
--		goto err_free_common;
-+		goto err_free;
- 	}
+--- a/drivers/base/power/domain.c
++++ b/drivers/base/power/domain.c
+@@ -751,7 +751,8 @@ static int pm_genpd_resume_noirq(struct
+ 	if (IS_ERR(genpd))
+ 		return -EINVAL;
  
- 	ret = gpio_request(p54spi_gpio_power, "p54spi power");
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "power GPIO request failed: %d", ret);
--		goto err_free_common;
-+		goto err_free;
- 	}
+-	if (genpd->suspend_power_off)
++	if (genpd->suspend_power_off
++	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
+ 		return 0;
  
- 	ret = gpio_request(p54spi_gpio_irq, "p54spi irq");
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "irq GPIO request failed: %d", ret);
--		goto err_free_common;
-+		goto err_free_gpio_power;
- 	}
- 
- 	gpio_direction_output(p54spi_gpio_power, 0);
-@@ -645,7 +645,7 @@ static int __devinit p54spi_probe(struct
- 			  priv->spi);
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "request_irq() failed");
--		goto err_free_common;
-+		goto err_free_gpio_irq;
- 	}
- 
- 	irq_set_irq_type(gpio_to_irq(p54spi_gpio_irq), IRQ_TYPE_EDGE_RISING);
-@@ -677,6 +677,12 @@ static int __devinit p54spi_probe(struct
- 	return 0;
- 
- err_free_common:
-+	free_irq(gpio_to_irq(p54spi_gpio_irq), spi);
-+err_free_gpio_irq:
-+	gpio_free(p54spi_gpio_irq);
-+err_free_gpio_power:
-+	gpio_free(p54spi_gpio_power);
-+err_free:
- 	p54_free_common(priv->hw);
- 	return ret;
- }
+ 	/*
 
 
