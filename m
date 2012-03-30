@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965937Ab2C3VU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:20:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935988Ab2C3VUX (ORCPT
+	id S965947Ab2C3VUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:20:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62781 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935988Ab2C3VUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:20:23 -0400
-Message-Id: <20120330194838.528005881@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:20:30 -0400
+Message-Id: <20120330194838.995447791@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:37 -0700
+Date: Fri, 30 Mar 2012 12:49:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 072/175] iscsi-target: Fix dynamic -> explict NodeACL pointer reference
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [ 074/175] usb gadget: fix a section mismatch when compiling g_ffs with CONFIG_USB_FUNCTIONFS_ETH
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,43 +26,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Lothar Waßmann <LW@KARO-electronics.de>
 
-commit d06283341aee9e48eff1b068779d340785c635ce upstream.
+commit 8d0698428822ce63f7269e7fe81fc4580807b9ac upstream.
 
-This patch fixes a free after use in lio_target_make_nodeacl() where
-iscsi_node_acl was referenced from the original se_nacl_new allocation,
-instead of from core_tpg_add_initiator_node_acl() in the case of dynamic
--> explict NodeACL conversion.
+ commit 28824b18ac4705e876a282a15ea0de8fc957551f:
+ |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
+ |Date:   Wed May 5 12:53:13 2010 +0200
+ |
+ |    USB: gadget: __init and __exit tags removed
+ |
+ |    __init, __initdata and __exit tags have have been removed from
+ |    various files to make it possible for gadgets that do not use
+ |    the __init/__exit tags to use those.
+ obviously missed (at least) this case leading to a section mismatch in
+ g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_configfs.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/f_subset.c |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_configfs.c
-+++ b/drivers/target/iscsi/iscsi_target_configfs.c
-@@ -812,9 +812,6 @@ static struct se_node_acl *lio_target_ma
- 	if (!se_nacl_new)
- 		return ERR_PTR(-ENOMEM);
+--- a/drivers/usb/gadget/f_subset.c
++++ b/drivers/usb/gadget/f_subset.c
+@@ -74,7 +74,7 @@ static inline struct f_gether *func_to_g
  
--	acl = container_of(se_nacl_new, struct iscsi_node_acl,
--				se_node_acl);
--
- 	cmdsn_depth = ISCSI_TPG_ATTRIB(tpg)->default_cmdsn_depth;
- 	/*
- 	 * se_nacl_new may be released by core_tpg_add_initiator_node_acl()
-@@ -825,7 +822,8 @@ static struct se_node_acl *lio_target_ma
- 	if (IS_ERR(se_nacl))
- 		return se_nacl;
+ /* interface descriptor: */
  
--	stats_cg = &acl->se_node_acl.acl_fabric_stat_group;
-+	acl = container_of(se_nacl, struct iscsi_node_acl, se_node_acl);
-+	stats_cg = &se_nacl->acl_fabric_stat_group;
+-static struct usb_interface_descriptor subset_data_intf __initdata = {
++static struct usb_interface_descriptor subset_data_intf = {
+ 	.bLength =		sizeof subset_data_intf,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
  
- 	stats_cg->default_groups = kzalloc(sizeof(struct config_group) * 2,
- 				GFP_KERNEL);
+@@ -87,7 +87,7 @@ static struct usb_interface_descriptor s
+ 	/* .iInterface = DYNAMIC */
+ };
+ 
+-static struct usb_cdc_header_desc mdlm_header_desc __initdata = {
++static struct usb_cdc_header_desc mdlm_header_desc = {
+ 	.bLength =		sizeof mdlm_header_desc,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
+@@ -95,7 +95,7 @@ static struct usb_cdc_header_desc mdlm_h
+ 	.bcdCDC =		cpu_to_le16(0x0110),
+ };
+ 
+-static struct usb_cdc_mdlm_desc mdlm_desc __initdata = {
++static struct usb_cdc_mdlm_desc mdlm_desc = {
+ 	.bLength =		sizeof mdlm_desc,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_MDLM_TYPE,
+@@ -111,7 +111,7 @@ static struct usb_cdc_mdlm_desc mdlm_des
+  * can't really use its struct.  All we do here is say that we're using
+  * the submode of "SAFE" which directly matches the CDC Subset.
+  */
+-static u8 mdlm_detail_desc[] __initdata = {
++static u8 mdlm_detail_desc[] = {
+ 	6,
+ 	USB_DT_CS_INTERFACE,
+ 	USB_CDC_MDLM_DETAIL_TYPE,
+@@ -121,7 +121,7 @@ static u8 mdlm_detail_desc[] __initdata
+ 	0,	/* network data capabilities ("raw" encapsulation) */
+ };
+ 
+-static struct usb_cdc_ether_desc ether_desc __initdata = {
++static struct usb_cdc_ether_desc ether_desc = {
+ 	.bLength =		sizeof ether_desc,
+ 	.bDescriptorType =	USB_DT_CS_INTERFACE,
+ 	.bDescriptorSubType =	USB_CDC_ETHERNET_TYPE,
+@@ -136,7 +136,7 @@ static struct usb_cdc_ether_desc ether_d
+ 
+ /* full speed support: */
+ 
+-static struct usb_endpoint_descriptor fs_subset_in_desc __initdata = {
++static struct usb_endpoint_descriptor fs_subset_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -144,7 +144,7 @@ static struct usb_endpoint_descriptor fs
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_endpoint_descriptor fs_subset_out_desc __initdata = {
++static struct usb_endpoint_descriptor fs_subset_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -152,7 +152,7 @@ static struct usb_endpoint_descriptor fs
+ 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+ };
+ 
+-static struct usb_descriptor_header *fs_eth_function[] __initdata = {
++static struct usb_descriptor_header *fs_eth_function[] = {
+ 	(struct usb_descriptor_header *) &subset_data_intf,
+ 	(struct usb_descriptor_header *) &mdlm_header_desc,
+ 	(struct usb_descriptor_header *) &mdlm_desc,
+@@ -165,7 +165,7 @@ static struct usb_descriptor_header *fs_
+ 
+ /* high speed support: */
+ 
+-static struct usb_endpoint_descriptor hs_subset_in_desc __initdata = {
++static struct usb_endpoint_descriptor hs_subset_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -173,7 +173,7 @@ static struct usb_endpoint_descriptor hs
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_endpoint_descriptor hs_subset_out_desc __initdata = {
++static struct usb_endpoint_descriptor hs_subset_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -181,7 +181,7 @@ static struct usb_endpoint_descriptor hs
+ 	.wMaxPacketSize =	cpu_to_le16(512),
+ };
+ 
+-static struct usb_descriptor_header *hs_eth_function[] __initdata = {
++static struct usb_descriptor_header *hs_eth_function[] = {
+ 	(struct usb_descriptor_header *) &subset_data_intf,
+ 	(struct usb_descriptor_header *) &mdlm_header_desc,
+ 	(struct usb_descriptor_header *) &mdlm_desc,
+@@ -194,7 +194,7 @@ static struct usb_descriptor_header *hs_
+ 
+ /* super speed support: */
+ 
+-static struct usb_endpoint_descriptor ss_subset_in_desc __initdata = {
++static struct usb_endpoint_descriptor ss_subset_in_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -202,7 +202,7 @@ static struct usb_endpoint_descriptor ss
+ 	.wMaxPacketSize =	cpu_to_le16(1024),
+ };
+ 
+-static struct usb_endpoint_descriptor ss_subset_out_desc __initdata = {
++static struct usb_endpoint_descriptor ss_subset_out_desc = {
+ 	.bLength =		USB_DT_ENDPOINT_SIZE,
+ 	.bDescriptorType =	USB_DT_ENDPOINT,
+ 
+@@ -210,7 +210,7 @@ static struct usb_endpoint_descriptor ss
+ 	.wMaxPacketSize =	cpu_to_le16(1024),
+ };
+ 
+-static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc __initdata = {
++static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc = {
+ 	.bLength =		sizeof ss_subset_bulk_comp_desc,
+ 	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
+ 
+@@ -219,7 +219,7 @@ static struct usb_ss_ep_comp_descriptor
+ 	/* .bmAttributes =	0, */
+ };
+ 
+-static struct usb_descriptor_header *ss_eth_function[] __initdata = {
++static struct usb_descriptor_header *ss_eth_function[] = {
+ 	(struct usb_descriptor_header *) &subset_data_intf,
+ 	(struct usb_descriptor_header *) &mdlm_header_desc,
+ 	(struct usb_descriptor_header *) &mdlm_desc,
+@@ -290,7 +290,7 @@ static void geth_disable(struct usb_func
+ 
+ /* serial function driver setup/binding */
+ 
+-static int __init
++static int
+ geth_bind(struct usb_configuration *c, struct usb_function *f)
+ {
+ 	struct usb_composite_dev *cdev = c->cdev;
+@@ -404,7 +404,7 @@ geth_unbind(struct usb_configuration *c,
+  * Caller must have called @gether_setup().  Caller is also responsible
+  * for calling @gether_cleanup() before module unload.
+  */
+-int __init geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
++int geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
+ {
+ 	struct f_gether	*geth;
+ 	int		status;
 
 
