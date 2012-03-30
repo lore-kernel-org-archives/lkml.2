@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936250Ab2C3Vjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:39:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42145 "EHLO
+	id S966349Ab2C3VkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:40:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53899 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936203Ab2C3VcE (ORCPT
+	by vger.kernel.org with ESMTP id S936193Ab2C3Vb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:04 -0400
-X-Sasl-enc: 3vogfC6LoXGNMFyL+CEykF9Qvp+PrsRD38C2ELgVreca 1333143123
+	Fri, 30 Mar 2012 17:31:58 -0400
+X-Sasl-enc: 45bDLP96HvMYVHH9koAJGhqQu6r3hZNNpKkKAbH1cGgS 1333143117
 X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:56 2012
-Message-Id: <20120330194856.611952768@linuxfoundation.org>
+Message-Id: <20120330194856.066111721@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:56 -0700
+Date: Fri, 30 Mar 2012 12:50:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 151/175] dm persistent data: fix btree rebalancing after remove
+        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
+        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 148/175] dm crypt: fix mempool deadlock
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,269 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit b0988900bae9ecf968a8a8d086a9eec671a9517a upstream.
+commit aeb2deae2660a1773c83d3c6e9e6575daa3855d6 upstream.
 
-When we remove an entry from a node we sometimes rebalance with it's
-two neighbours.  This wasn't being done correctly; in some cases
-entries have to move all the way from the right neighbour to the left
-neighbour, or vice versa.  This patch pretty much re-writes the
-balancing code to fix it.
+This patch fixes a possible deadlock in dm-crypt's mempool use.
 
-This code is barely used currently; only when you delete a thin
-device, and then only if you have hundreds of them in the same pool.
-Once we have discard support, which removes mappings, this will be used
-much more heavily.
+Currently, dm-crypt reserves a mempool of MIN_BIO_PAGES reserved pages.
+It allocates first MIN_BIO_PAGES with non-failing allocation (the allocation
+cannot fail and waits until the mempool is refilled). Further pages are
+allocated with different gfp flags that allow failing.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Because allocations may be done in parallel, this code can deadlock. Example:
+There are two processes, each tries to allocate MIN_BIO_PAGES and the processes
+run simultaneously.
+It may end up in a situation where each process allocates (MIN_BIO_PAGES / 2)
+pages. The mempool is exhausted. Each process waits for more pages to be freed
+to the mempool, which never happens.
+
+To avoid this deadlock scenario, this patch changes the code so that only
+the first page is allocated with non-failing gfp mask. Allocation of further
+pages may fail.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Milan Broz <mbroz@redhat.com>
 Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/persistent-data/dm-btree-remove.c |  174 +++++++++++++++------------
- 1 file changed, 99 insertions(+), 75 deletions(-)
+ drivers/md/dm-crypt.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/md/persistent-data/dm-btree-remove.c
-+++ b/drivers/md/persistent-data/dm-btree-remove.c
-@@ -128,18 +128,9 @@ static void delete_at(struct node *n, un
- 	n->header.nr_entries = cpu_to_le32(nr_entries - 1);
- }
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -176,7 +176,6 @@ struct crypt_config {
  
--static unsigned del_threshold(struct node *n)
--{
--	return le32_to_cpu(n->header.max_entries) / 3;
--}
--
- static unsigned merge_threshold(struct node *n)
- {
--	/*
--	 * The extra one is because we know we're potentially going to
--	 * delete an entry.
--	 */
--	return 2 * (le32_to_cpu(n->header.max_entries) / 3) + 1;
-+	return le32_to_cpu(n->header.max_entries) / 3;
- }
+ #define MIN_IOS        16
+ #define MIN_POOL_PAGES 32
+-#define MIN_BIO_PAGES  8
  
- struct child {
-@@ -188,6 +179,15 @@ static int exit_child(struct dm_btree_in
+ static struct kmem_cache *_crypt_io_pool;
  
- static void shift(struct node *left, struct node *right, int count)
- {
-+	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
-+	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
-+	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
-+	uint32_t r_max_entries = le32_to_cpu(right->header.max_entries);
-+
-+	BUG_ON(max_entries != r_max_entries);
-+	BUG_ON(nr_left - count > max_entries);
-+	BUG_ON(nr_right + count > max_entries);
-+
- 	if (!count)
- 		return;
+@@ -848,12 +847,11 @@ static struct bio *crypt_alloc_buffer(st
+ 		}
  
-@@ -199,13 +199,8 @@ static void shift(struct node *left, str
- 		node_shift(right, count);
- 	}
- 
--	left->header.nr_entries =
--		cpu_to_le32(le32_to_cpu(left->header.nr_entries) - count);
--	BUG_ON(le32_to_cpu(left->header.nr_entries) > le32_to_cpu(left->header.max_entries));
--
--	right->header.nr_entries =
--		cpu_to_le32(le32_to_cpu(right->header.nr_entries) + count);
--	BUG_ON(le32_to_cpu(right->header.nr_entries) > le32_to_cpu(right->header.max_entries));
-+	left->header.nr_entries = cpu_to_le32(nr_left - count);
-+	right->header.nr_entries = cpu_to_le32(nr_right + count);
- }
- 
- static void __rebalance2(struct dm_btree_info *info, struct node *parent,
-@@ -215,8 +210,9 @@ static void __rebalance2(struct dm_btree
- 	struct node *right = r->n;
- 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
- 	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
-+	unsigned threshold = 2 * merge_threshold(left) + 1;
- 
--	if (nr_left + nr_right <= merge_threshold(left)) {
-+	if (nr_left + nr_right < threshold) {
  		/*
- 		 * Merge
+-		 * if additional pages cannot be allocated without waiting,
+-		 * return a partially allocated bio, the caller will then try
+-		 * to allocate additional bios while submitting this partial bio
++		 * If additional pages cannot be allocated without waiting,
++		 * return a partially-allocated bio.  The caller will then try
++		 * to allocate more bios while submitting this partial bio.
  		 */
-@@ -234,9 +230,6 @@ static void __rebalance2(struct dm_btree
- 		 * Rebalance.
- 		 */
- 		unsigned target_left = (nr_left + nr_right) / 2;
--		unsigned shift_ = nr_left - target_left;
--		BUG_ON(le32_to_cpu(left->header.max_entries) <= nr_left - shift_);
--		BUG_ON(le32_to_cpu(right->header.max_entries) <= nr_right + shift_);
- 		shift(left, right, nr_left - target_left);
- 		*key_ptr(parent, r->index) = right->keys[0];
- 	}
-@@ -272,6 +265,84 @@ static int rebalance2(struct shadow_spin
- 	return exit_child(info, &right);
- }
+-		if (i == (MIN_BIO_PAGES - 1))
+-			gfp_mask = (gfp_mask | __GFP_NOWARN) & ~__GFP_WAIT;
++		gfp_mask = (gfp_mask | __GFP_NOWARN) & ~__GFP_WAIT;
  
-+/*
-+ * We dump as many entries from center as possible into left, then the rest
-+ * in right, then rebalance2.  This wastes some cpu, but I want something
-+ * simple atm.
-+ */
-+static void delete_center_node(struct dm_btree_info *info, struct node *parent,
-+			       struct child *l, struct child *c, struct child *r,
-+			       struct node *left, struct node *center, struct node *right,
-+			       uint32_t nr_left, uint32_t nr_center, uint32_t nr_right)
-+{
-+	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
-+	unsigned shift = min(max_entries - nr_left, nr_center);
-+
-+	BUG_ON(nr_left + shift > max_entries);
-+	node_copy(left, center, -shift);
-+	left->header.nr_entries = cpu_to_le32(nr_left + shift);
-+
-+	if (shift != nr_center) {
-+		shift = nr_center - shift;
-+		BUG_ON((nr_right + shift) > max_entries);
-+		node_shift(right, shift);
-+		node_copy(center, right, shift);
-+		right->header.nr_entries = cpu_to_le32(nr_right + shift);
-+	}
-+	*key_ptr(parent, r->index) = right->keys[0];
-+
-+	delete_at(parent, c->index);
-+	r->index--;
-+
-+	dm_tm_dec(info->tm, dm_block_location(c->block));
-+	__rebalance2(info, parent, l, r);
-+}
-+
-+/*
-+ * Redistributes entries among 3 sibling nodes.
-+ */
-+static void redistribute3(struct dm_btree_info *info, struct node *parent,
-+			  struct child *l, struct child *c, struct child *r,
-+			  struct node *left, struct node *center, struct node *right,
-+			  uint32_t nr_left, uint32_t nr_center, uint32_t nr_right)
-+{
-+	int s;
-+	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
-+	unsigned target = (nr_left + nr_center + nr_right) / 3;
-+	BUG_ON(target > max_entries);
-+
-+	if (nr_left < nr_right) {
-+		s = nr_left - target;
-+
-+		if (s < 0 && nr_center < -s) {
-+			/* not enough in central node */
-+			shift(left, center, nr_center);
-+			s = nr_center - target;
-+			shift(left, right, s);
-+			nr_right += s;
-+		} else
-+			shift(left, center, s);
-+
-+		shift(center, right, target - nr_right);
-+
-+	} else {
-+		s = target - nr_right;
-+		if (s > 0 && nr_center < s) {
-+			/* not enough in central node */
-+			shift(center, right, nr_center);
-+			s = target - nr_center;
-+			shift(left, right, s);
-+			nr_left -= s;
-+		} else
-+			shift(center, right, s);
-+
-+		shift(left, center, nr_left - target);
-+	}
-+
-+	*key_ptr(parent, c->index) = center->keys[0];
-+	*key_ptr(parent, r->index) = right->keys[0];
-+}
-+
- static void __rebalance3(struct dm_btree_info *info, struct node *parent,
- 			 struct child *l, struct child *c, struct child *r)
- {
-@@ -282,62 +353,18 @@ static void __rebalance3(struct dm_btree
- 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
- 	uint32_t nr_center = le32_to_cpu(center->header.nr_entries);
- 	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
--	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
- 
--	unsigned target;
-+	unsigned threshold = merge_threshold(left) * 4 + 1;
- 
- 	BUG_ON(left->header.max_entries != center->header.max_entries);
- 	BUG_ON(center->header.max_entries != right->header.max_entries);
- 
--	if (((nr_left + nr_center + nr_right) / 2) < merge_threshold(center)) {
--		/*
--		 * Delete center node:
--		 *
--		 * We dump as many entries from center as possible into
--		 * left, then the rest in right, then rebalance2.  This
--		 * wastes some cpu, but I want something simple atm.
--		 */
--		unsigned shift = min(max_entries - nr_left, nr_center);
--
--		BUG_ON(nr_left + shift > max_entries);
--		node_copy(left, center, -shift);
--		left->header.nr_entries = cpu_to_le32(nr_left + shift);
--
--		if (shift != nr_center) {
--			shift = nr_center - shift;
--			BUG_ON((nr_right + shift) >= max_entries);
--			node_shift(right, shift);
--			node_copy(center, right, shift);
--			right->header.nr_entries = cpu_to_le32(nr_right + shift);
--		}
--		*key_ptr(parent, r->index) = right->keys[0];
--
--		delete_at(parent, c->index);
--		r->index--;
--
--		dm_tm_dec(info->tm, dm_block_location(c->block));
--		__rebalance2(info, parent, l, r);
--
--		return;
--	}
--
--	/*
--	 * Rebalance
--	 */
--	target = (nr_left + nr_center + nr_right) / 3;
--	BUG_ON(target > max_entries);
--
--	/*
--	 * Adjust the left node
--	 */
--	shift(left, center, nr_left - target);
--
--	/*
--	 * Adjust the right node
--	 */
--	shift(center, right, target - nr_right);
--	*key_ptr(parent, c->index) = center->keys[0];
--	*key_ptr(parent, r->index) = right->keys[0];
-+	if ((nr_left + nr_center + nr_right) < threshold)
-+		delete_center_node(info, parent, l, c, r, left, center, right,
-+				   nr_left, nr_center, nr_right);
-+	else
-+		redistribute3(info, parent, l, c, r, left, center, right,
-+			      nr_left, nr_center, nr_right);
- }
- 
- static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
-@@ -441,9 +468,6 @@ static int rebalance_children(struct sha
- 	if (r)
- 		return r;
- 
--	if (child_entries > del_threshold(n))
--		return 0;
--
- 	has_left_sibling = i > 0;
- 	has_right_sibling = i < (le32_to_cpu(n->header.nr_entries) - 1);
+ 		len = (size > PAGE_SIZE) ? PAGE_SIZE : size;
  
 
 
