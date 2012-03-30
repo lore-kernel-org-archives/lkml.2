@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966416Ab2C3VfO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:35:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40871 "EHLO
+	id S936237Ab2C3Vfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:35:32 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52435 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966269Ab2C3Vcm (ORCPT
+	by vger.kernel.org with ESMTP id S966258Ab2C3Vck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:42 -0400
-X-Sasl-enc: 4qlNb4fn8pF8SV8lR5CuX7PR3khXjoJikanauMlKy8Py 1333143161
+	Fri, 30 Mar 2012 17:32:40 -0400
+X-Sasl-enc: JW3V+rLjbQZPjSAQUKHO2+LmytxrVHkzWNeyN3PZrHye 1333143159
 X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:49:00 2012
-Message-Id: <20120330194900.501905949@linuxfoundation.org>
+Message-Id: <20120330194900.314577349@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:16 -0700
+Date: Fri, 30 Mar 2012 12:51:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 171/175] compat: use sys_sendfile64() implementation for sendfile syscall
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 170/175] x86, tls: Off by one limit check
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1631fcea8399da5e80a80084b3b8c5bfd99d21e7 upstream.
+commit 8f0750f19789cf352d7e24a6cc50f2ab1b4f1372 upstream.
 
-<asm-generic/unistd.h> was set up to use sys_sendfile() for the 32-bit
-compat API instead of sys_sendfile64(), but in fact the right thing to
-do is to use sys_sendfile64() in all cases.  The 32-bit sendfile64() API
-in glibc uses the sendfile64 syscall, so it has to be capable of doing
-full 64-bit operations.  But the sys_sendfile() kernel implementation
-has a MAX_NON_LFS test in it which explicitly limits the offset to 2^32.
-So, we need to use the sys_sendfile64() implementation in the kernel
-for this case.
+These are used as offsets into an array of GDT_ENTRY_TLS_ENTRIES members
+so GDT_ENTRY_TLS_ENTRIES is one past the end of the array.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Link: http://lkml.kernel.org/r/20120324075250.GA28258@elgon.mountain
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/asm-generic/unistd.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/tls.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/asm-generic/unistd.h
-+++ b/include/asm-generic/unistd.h
-@@ -218,7 +218,7 @@ __SC_COMP(__NR_pwritev, sys_pwritev, com
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -163,7 +163,7 @@ int regset_tls_get(struct task_struct *t
+ {
+ 	const struct desc_struct *tls;
  
- /* fs/sendfile.c */
- #define __NR3264_sendfile 71
--__SC_3264(__NR3264_sendfile, sys_sendfile64, sys_sendfile)
-+__SYSCALL(__NR3264_sendfile, sys_sendfile64)
+-	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
++	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+ 	    (count % sizeof(struct user_desc)) != 0)
+ 		return -EINVAL;
+@@ -198,7 +198,7 @@ int regset_tls_set(struct task_struct *t
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
  
- /* fs/select.c */
- #define __NR_pselect6 72
+-	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
++	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+ 	    (count % sizeof(struct user_desc)) != 0)
+ 		return -EINVAL;
 
 
