@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760423Ab2C3CUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 22:20:06 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49053 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759115Ab2C3CT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 22:19:58 -0400
-Date: Fri, 30 Mar 2012 03:19:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, khlebnikov@openvz.org, minchan@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, hughd@google.com,
-        benh@kernel.crashing.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH 00/16] mm: prepare for converting vm->vm_flags to 64-bit
-Message-ID: <20120330021945.GT6589@ZenIV.linux.org.uk>
-References: <20120321065140.13852.52315.stgit@zurg>
- <20120321100602.GA5522@barrios>
- <4F69D496.2040509@openvz.org>
- <20120322142647.42395398.akpm@linux-foundation.org>
- <20120322212810.GE6589@ZenIV.linux.org.uk>
- <4F6CA298.4000301@jp.fujitsu.com>
+	id S1760440Ab2C3CVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 22:21:03 -0400
+Received: from asix.com.tw ([113.196.140.82]:50286 "EHLO asix.com.tw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759878Ab2C3CVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 22:21:00 -0400
+From: "Donald" <donald@asix.com.tw>
+To: "'Alan Cox'" <alan@lxorguk.ukuu.org.uk>
+Cc: "'Greg KH'" <gregkh@linuxfoundation.org>,
+        "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>	<20120313160951.GA18810@kroah.com>	<005a01cd0db0$8ec89e50$ac59daf0$@com.tw> <20120329160414.1e70d4c5@pyramind.ukuu.org.uk>
+In-Reply-To: <20120329160414.1e70d4c5@pyramind.ukuu.org.uk>
+Subject: RE: Patch "USB: serial: mos7840: Supported MCS7810 device"
+Date: Fri, 30 Mar 2012 10:16:48 +0800
+Message-ID: <002e01cd0e1b$2d01f020$8705d060$@com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6CA298.4000301@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac0NvPk6WTbJiywaR66606SaEELhZAAXOgYw
+Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 12:19:36PM -0400, KOSAKI Motohiro wrote:
-> On 3/22/2012 5:28 PM, Al Viro wrote:
-> > On Thu, Mar 22, 2012 at 02:26:47PM -0700, Andrew Morton wrote:
-> >> It would be nice to find some way of triggering compiler warnings or
-> >> sparse warnings if someone mixes a 32-bit type with a vm_flags_t.  Any
-> >> thoughts on this?
-> >>
-> >> (Maybe that's what __nocast does, but Documentation/sparse.txt doesn't
-> >> describe it)
-> > 
-> > Use __bitwise for that - check how gfp_t is handled.
-> 
-> Hmm..
-> 
-> If now we activate __bitwise, really plenty driver start create lots warnings.
-> Does it make sense?
+Hi Alan,
 
-Huh?  Why would they?  Just adjust definitions of VM_... to include
-force-cast to vm_flags_t and we should be OK...
+Thank you for your kind comments for this patch. I will refine the patch
+according to your comments and re-submit it then.
 
-> In fact, x86-32 keep 32bit vma_t forever. thus all x86 specific driver don't
-> need any change. Moreover many ancient drivers has no maintainer and I can't
-> expect such driver will be fixed even though a warning occur.
+Regards,
+Donald
 
-What warning?  If something does manual vma->vm_flags = 0xwhatever, then yes,
-we do want it dealt with.  If it's vma->vm_flags |= VM_something, there should
-be no warnings at all...
+-----Original Message-----
+From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
+Sent: Thursday, March 29, 2012 11:04 PM
+To: Donald
+Cc: 'Greg KH'; 'open list:USB SUBSYSTEM'; 'open list'
+Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
+
+
+> +static void mos7810_control_callback(struct urb *urb) {
+> +	if (!urb)
+> +		return;
+
+How can this ever occur. If its not theoretically possible then this check
+is just going to hide bugs in future.
+
+> +static void mos7810_led_off(unsigned long arg) {
+> +	struct moschip_port *mcs = (struct moschip_port *) arg;
+> +
+> +	if (!mcs)
+> +		return;
+
+Ditto
+
+> +	/* Turn on MCS7810 LED */
+> +	if (serial->num_ports == 1 && mos7840_port->mos7810_led_flag == 0) {
+> +		mos7840_port->mos7810_led_flag = 1;
+> +		mos7810_set_reg(mos7840_port, 0x0301,
+> MODEM_CONTROL_REGISTER);
+> +		mod_timer(&mos7840_port->mos7810_led_timer1, jiffies + 500);
+> +	}
+
+The assumption that serial->num_ports = 1 means "has LED" is going to cause
+problems later if another deivce appears with 1 port and no LED. I think it
+would be much clearer to have something like
+
+	if (mos7840_port->has_led)
+
+for these tests of the driver
+
+> +static int mos7810_check(struct usb_serial *serial) {
+> +	int i, pass_count = 0;
+> +	__u16 Data = 0, MCR_Data = 0;
+> +	__u16 test_pattern = 0x55AA, write_pattern;
+
+generally linux style is all lower case for egister names. Not a big deal
+
+> +		/* If this a MCS7810 device, both test patterns must match
+> */
+> +		if (((test_pattern >> i) & 0x0001) != ((~(Data >> 1)) &
+> 0x0001))
+
+		if (((test_pattern >> i) ^ (~Data >> 1)) & 0x0001) ?
+
+again trivia...
+
+
+> +			mos7840_port->mos7810_led_timer1.expires =
+> +							jiffies + 500;
+
+This 500 value depends upon the HZ value of the kernel which won't always be
+1000 on all platforms. You probably want
+
+			jiffies + msecs_to_jiffies(500);
+
+(or indeed HZ/2)
+
+> +				/* Turn off MCS7810 LED */
+> +				usb_control_msg(serial->dev,
+> +					usb_sndctrlpipe(serial->dev, 0),
+> +					MCS_WRREQ, MCS_WR_RTYPE, 0x0300,
+> +					MODEM_CONTROL_REGISTER,	NULL, 0,
+> +					MOS_WDR_TIMEOUT);
+> +
+
+Might be clearer if these occurences were a separate small function - gcc
+will inline them if it makes sense, and it will be clearer.
+
+
+Alan
+
+
