@@ -1,794 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2C3GlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 02:41:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56524 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579Ab2C3Gk4 (ORCPT
+	id S1755902Ab2C3Gni (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 02:43:38 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:40960 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060Ab2C3Gnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 02:40:56 -0400
-From: Geon Si Jeong <gshark.jeong@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geon Si Jeong <gshark.jeong@gmail.com>
-Subject: [PATCH 1/1] leds: Add LED driver for lm3556 chip
-Date: Fri, 30 Mar 2012 15:38:28 +0900
-Message-Id: <1333089508-8501-2-git-send-email-gshark.jeong@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333089508-8501-1-git-send-email-gshark.jeong@gmail.com>
-References: <1333089508-8501-1-git-send-email-gshark.jeong@gmail.com>
+	Fri, 30 Mar 2012 02:43:33 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q2U6hQt3008308, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v3 5/5] r8169: support RTL8411
+Date: Fri, 30 Mar 2012 14:48:06 +0800
+Message-ID: <1333090086-1815-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1333089184-1773-5-git-send-email-hayeswang@realtek.com>
+References: <1333089184-1773-5-git-send-email-hayeswang@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is a simple driver for LM3556 Chip(Texas Instruments)
-LM3556 :
-The LM3556 is a 4 MHz fixed-frequency synchronous boost
-converter plus 1.5A constant current driver for a high-current white LED.
-Datasheet: www.national.com/ds/LM/LM3556.pdf
+Support the new chip RTL8411.
 
-Tested on OMAP4430
-
-Signed-off-by: Geon Si Jeong <gshark.jeong@gmail.com>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/leds/Kconfig        |    9 +
- drivers/leds/Makefile       |    2 +-
- drivers/leds/leds-lm3556.c  |  462 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/leds-lm3556.h |  242 ++++++++++++++++++++++
- 4 files changed, 714 insertions(+), 1 deletions(-)
- create mode 100644 drivers/leds/leds-lm3556.c
- create mode 100644 include/linux/leds-lm3556.h
+ drivers/net/ethernet/realtek/r8169.c |  140 +++++++++++++++++++++++++++++++++-
+ 1 files changed, 138 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 589ba02..8ebdb3f 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -401,6 +401,15 @@ config LEDS_MAX8997
- 	  This option enables support for on-chip LED drivers on
- 	  MAXIM MAX8997 PMIC.
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 3ba49dc..dcc1ec5 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -46,6 +46,7 @@
+ #define FIRMWARE_8168F_2	"rtl_nic/rtl8168f-2.fw"
+ #define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
+ #define FIRMWARE_8402_1		"rtl_nic/rtl8402-1.fw"
++#define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
  
-+config LEDS_LM3556
-+	tristate "LED Support for TI LM3556 Chip"
-+	depends on LEDS_CLASS
-+	depends on I2C
-+	help
-+	  This option enables support for LEDs connected to LM3556.
-+	  LM3556 includes Torch, Flash and Indicator functions and
-+	  controlled via I2C.
-+
- config LEDS_OT200
- 	tristate "LED support for the Bachmann OT200"
- 	depends on LEDS_CLASS && HAS_IOMEM
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index fa0f428..8ad2a46 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -46,7 +46,7 @@ obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
- obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
- obj-$(CONFIG_LEDS_RENESAS_TPU)		+= leds-renesas-tpu.o
- obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
--
-+obj-$(CONFIG_LEDS_LM3556)		+= leds-lm3556.o
- # LED SPI Drivers
- obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+ #ifdef RTL8169_DEBUG
+ #define assert(expr) \
+@@ -136,6 +137,7 @@ enum mac_version {
+ 	RTL_GIGA_MAC_VER_35,
+ 	RTL_GIGA_MAC_VER_36,
+ 	RTL_GIGA_MAC_VER_37,
++	RTL_GIGA_MAC_VER_38,
+ 	RTL_GIGA_MAC_NONE   = 0xff,
+ };
  
-diff --git a/drivers/leds/leds-lm3556.c b/drivers/leds/leds-lm3556.c
-new file mode 100644
-index 0000000..65766c1
---- /dev/null
-+++ b/drivers/leds/leds-lm3556.c
-@@ -0,0 +1,462 @@
-+/*
-+ * Simple driver for Texas Instruments LM3556 LED Flash driver chip (Rev0x03)
-+ * Copyright (C) 2012 Texas Instruments
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/i2c.h>
-+#include <linux/leds.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/types.h>
-+#include <linux/ctype.h>
-+#include <linux/fs.h>
-+#include <linux/leds-lm3556.h>
-+
-+#define	REG_FILT_TIME			(0x0)
-+#define	REG_IVFM_MODE			(0x1)
-+#define	REG_NTC				(0x2)
-+#define	REG_INDIC_TIME			(0x3)
-+#define	REG_INDIC_BLINK			(0x4)
-+#define	REG_INDIC_PERIOD		(0x5)
-+#define	REG_TORCH_TIME			(0x6)
-+#define	REG_CONF			(0x7)
-+#define	REG_FLASH			(0x8)
-+#define	REG_I_CTRL			(0x9)
-+#define	REG_ENABLE			(0xA)
-+#define	REG_FLAG			(0xB)
-+#define	REG_MAX				(0xC)
-+
-+#define	IVFM_FILTER_TIME_SHIFT		(3)
-+#define	UVLO_EN_SHIFT			(7)
-+#define	HYSTERSIS_SHIFT			(5)
-+#define	IVM_D_TH_SHIFT			(2)
-+#define	IVFM_ADJ_MODE_SHIFT		(0)
-+#define	NTC_EVENT_LVL_SHIFT		(5)
-+#define	NTC_TRIP_TH_SHIFT		(2)
-+#define	NTC_BIAS_I_LVL_SHIFT		(0)
-+#define	INDIC_RAMP_UP_TIME_SHIFT	(3)
-+#define	INDIC_RAMP_DN_TIME_SHIFT	(0)
-+#define	INDIC_N_BLANK_SHIFT		(4)
-+#define	INDIC_PULSE_TIME_SHIFT		(0)
-+#define	INDIC_N_PERIOD_SHIFT		(0)
-+#define	TORCH_RAMP_UP_TIME_SHIFT	(3)
-+#define	TORCH_RAMP_DN_TIME_SHIFT	(0)
-+#define	STROBE_USUAGE_SHIFT		(7)
-+#define	STROBE_PIN_POLARITY_SHIFT	(6)
-+#define	TORCH_PIN_POLARITY_SHIFT	(5)
-+#define	TX_PIN_POLARITY_SHIFT		(4)
-+#define	TX_EVENT_LVL_SHIFT		(3)
-+#define	IVFM_EN_SHIFT			(2)
-+#define	NTC_MODE_SHIFT			(1)
-+#define	INDIC_MODE_SHIFT		(0)
-+#define	INDUCTOR_I_LIMIT_SHIFT		(6)
-+#define	FLASH_RAMP_TIME_SHIFT		(3)
-+#define	FLASH_TOUT_TIME_SHIFT		(0)
-+#define	TORCH_I_SHIFT			(4)
-+#define	FLASH_I_SHIFT			(0)
-+#define	NTC_EN_SHIFT			(7)
-+#define	TX_PIN_EN_SHIFT			(6)
-+#define	STROBE_PIN_EN_SHIFT		(5)
-+#define	TORCH_PIN_EN_SHIFT		(4)
-+#define	PRECHG_MODE_EN_SHIFT		(3)
-+#define	PASS_MODE_ONLY_EN_SHIFT		(2)
-+#define	MODE_BITS_SHIFT			(0)
-+
-+#define	IVFM_FILTER_TIME_MASK		(0x3)
-+#define	UVLO_EN_MASK			(0x1)
-+#define	HYSTERSIS_MASK			(0x3)
-+#define	IVM_D_TH_MASK			(0x7)
-+#define	IVFM_ADJ_MODE_MASK		(0x3)
-+#define	NTC_EVENT_LVL_MASK		(0x1)
-+#define	NTC_TRIP_TH_MASK		(0x7)
-+#define	NTC_BIAS_I_LVL_MASK		(0x3)
-+#define	INDIC_RAMP_UP_TIME_MASK		(0x7)
-+#define	INDIC_RAMP_DN_TIME_MASK		(0x7)
-+#define	INDIC_N_BLANK_MASK		(0x7)
-+#define	INDIC_PULSE_TIME_MASK		(0x7)
-+#define	INDIC_N_PERIOD_MASK		(0x7)
-+#define	TORCH_RAMP_UP_TIME_MASK		(0x7)
-+#define	TORCH_RAMP_DN_TIME_MASK		(0x7)
-+#define	STROBE_USUAGE_MASK		(0x1)
-+#define	STROBE_PIN_POLARITY_MASK	(0x1)
-+#define	TORCH_PIN_POLARITY_MASK		(0x1)
-+#define	TX_PIN_POLARITY_MASK		(0x1)
-+#define	TX_EVENT_LVL_MASK		(0x1)
-+#define	IVFM_EN_MASK			(0x1)
-+#define	NTC_MODE_MASK			(0x1)
-+#define	INDIC_MODE_MASK			(0x1)
-+#define	INDUCTOR_I_LIMIT_MASK		(0x3)
-+#define	FLASH_RAMP_TIME_MASK		(0x7)
-+#define	FLASH_TOUT_TIME_MASK		(0x7)
-+#define	TORCH_I_MASK			(0x7)
-+#define	FLASH_I_MASK			(0xF)
-+#define	NTC_EN_MASK			(0x1)
-+#define	TX_PIN_EN_MASK			(0x1)
-+#define	STROBE_PIN_EN_MASK		(0x1)
-+#define	TORCH_PIN_EN_MASK		(0x1)
-+#define	PRECHG_MODE_EN_MASK		(0x1)
-+#define	PASS_MODE_ONLY_EN_MASK		(0x1)
-+#define	MODE_BITS_MASK			(0x13)
-+#define EX_PIN_CONTROL_MASK		(0xF1)
-+#define EX_PIN_ENABLE_MASK		(0x70)
-+
-+
-+#define INDIC_PATTERN_SIZE 4
-+
-+struct indicator {
-+	u8 blinking;
-+	u8 period_cnt;
-+};
-+
-+struct lm3556_chip_data {
-+	struct i2c_client *client;
-+
-+	struct led_classdev cdev_flash;
-+	struct led_classdev cdev_torch;
-+	struct led_classdev cdev_indicator;
-+
-+	struct lm3556_platform_data *pdata;
-+	struct mutex lock;
-+
-+	u8 last_flag;
-+};
-+
-+/*Indicator Pattern*/
-+static struct indicator indicator_pattern[INDIC_PATTERN_SIZE] = {
-+	[0] = {(INDIC_N_BLANK_0 << INDIC_N_BLANK_SHIFT)
-+	       | PULSE_TIME_0_MS, INDIC_PERIOD_0},
-+	[1] = {(INDIC_N_BLANK_15 << INDIC_N_BLANK_SHIFT)
-+	       | PULSE_TIME_32_MS, INDIC_PERIOD_1},
-+	[2] = {(INDIC_N_BLANK_10 << INDIC_N_BLANK_SHIFT)
-+	       | PULSE_TIME_32_MS, INDIC_PERIOD_4},
-+	[3] = {(INDIC_N_BLANK_5 << INDIC_N_BLANK_SHIFT)
-+	       | PULSE_TIME_32_MS, INDIC_PERIOD_7},
-+};
-+
-+/* i2c access*/
-+int lm3556_read_reg(struct i2c_client *client, u8 reg, u8 * val)
+@@ -251,6 +253,9 @@ static const struct {
+ 	[RTL_GIGA_MAC_VER_37] =
+ 		_R("RTL8402",		RTL_TD_1, FIRMWARE_8402_1,
+ 							JUMBO_1K, true),
++	[RTL_GIGA_MAC_VER_38] =
++		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_1,
++							JUMBO_9K, false),
+ };
+ #undef _R
+ 
+@@ -783,6 +788,7 @@ MODULE_FIRMWARE(FIRMWARE_8105E_1);
+ MODULE_FIRMWARE(FIRMWARE_8168F_1);
+ MODULE_FIRMWARE(FIRMWARE_8168F_2);
+ MODULE_FIRMWARE(FIRMWARE_8402_1);
++MODULE_FIRMWARE(FIRMWARE_8411_1);
+ 
+ static void rtl_lock_work(struct rtl8169_private *tp)
+ {
+@@ -1262,7 +1268,8 @@ static void rtl_link_chg_patch(struct rtl8169_private *tp)
+ 	if (!netif_running(dev))
+ 		return;
+ 
+-	if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
++	if (tp->mac_version == RTL_GIGA_MAC_VER_34 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_38) {
+ 		if (RTL_R8(PHYstatus) & _1000bpsF) {
+ 			rtl_eri_write(ioaddr, 0x1bc, ERIAR_MASK_1111,
+ 				      0x00000011, ERIAR_EXGMAC);
+@@ -1867,6 +1874,7 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
+ 		int mac_version;
+ 	} mac_info[] = {
+ 		/* 8168F family. */
++		{ 0x7c800000, 0x48800000,	RTL_GIGA_MAC_VER_38 },
+ 		{ 0x7cf00000, 0x48100000,	RTL_GIGA_MAC_VER_36 },
+ 		{ 0x7cf00000, 0x48000000,	RTL_GIGA_MAC_VER_35 },
+ 
+@@ -3084,6 +3092,104 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl8168f_hw_phy_config(tp);
+ }
+ 
++static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
 +{
-+	int ret;
-+	struct lm3556_chip_data *chip = i2c_get_clientdata(client);
++	void __iomem *ioaddr = tp->mmio_addr;
++	static const struct phy_reg phy_reg_init[] = {
++		/* Channel estimation fine tune */
++		{ 0x1f, 0x0003 },
++		{ 0x09, 0xa20f },
++		{ 0x1f, 0x0000 },
 +
-+	mutex_lock(&chip->lock);
-+	ret = i2c_smbus_read_byte_data(client, reg);
-+	mutex_unlock(&chip->lock);
++		/* Modify green table for giga & fnet */
++		{ 0x1f, 0x0005 },
++		{ 0x05, 0x8b55 },
++		{ 0x06, 0x0000 },
++		{ 0x05, 0x8b5e },
++		{ 0x06, 0x0000 },
++		{ 0x05, 0x8b67 },
++		{ 0x06, 0x0000 },
++		{ 0x05, 0x8b70 },
++		{ 0x06, 0x0000 },
++		{ 0x1f, 0x0000 },
++		{ 0x1f, 0x0007 },
++		{ 0x1e, 0x0078 },
++		{ 0x17, 0x0000 },
++		{ 0x19, 0x00aa },
++		{ 0x1f, 0x0000 },
 +
-+	if (ret < 0) {
-+		printk(KERN_ERR "[LM3556]reading fail at 0x%02x error %d\n",
-+		       reg, ret);
-+		return ret;
-+	}
-+	*val = ret & 0xff;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(lm3556_read_reg);
++		/* Modify green table for 10M */
++		{ 0x1f, 0x0005 },
++		{ 0x05, 0x8b79 },
++		{ 0x06, 0xaa00 },
++		{ 0x1f, 0x0000 },
 +
-+int lm3556_write_reg(struct i2c_client *client, u8 reg, u8 val)
-+{
-+	int ret = 0;
-+	struct lm3556_chip_data *chip = i2c_get_clientdata(client);
++		/* Disable hiimpedance detection (RTCT) */
++		{ 0x1f, 0x0003 },
++		{ 0x01, 0x328a },
++		{ 0x1f, 0x0000 }
++	};
 +
-+	mutex_lock(&chip->lock);
-+	ret = i2c_smbus_write_byte_data(client, reg, val);
-+	mutex_unlock(&chip->lock);
 +
-+	if (ret < 0)
-+		printk(KERN_ERR"[LM3556] writting fail at 0x%02x\n", reg);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(lm3556_write_reg);
++	rtl_apply_firmware(tp);
 +
-+int lm3556_write_bits(struct i2c_client *client,
-+		      u8 reg, u8 val, u8 mask, u8 shift)
-+{
-+	int ret;
-+	u8 reg_val;
++	rtl8168f_hw_phy_config(tp);
 +
-+	ret = lm3556_read_reg(client, reg, &reg_val);
-+	if (ret < 0)
-+		return ret;
-+	reg_val &= (~(mask << shift));
-+	reg_val |= ((val & mask) << shift);
++	/* Improve 2-pair detection performance */
++	rtl_writephy(tp, 0x1f, 0x0005);
++	rtl_writephy(tp, 0x05, 0x8b85);
++	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
 +
-+	ret = lm3556_write_reg(client, reg, reg_val);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(lm3556_write_bits);
++	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 +
-+/* chip initialize*/
-+static int lm3556_chip_init(struct lm3556_chip_data *chip)
-+{
-+	u8 reg_val;
-+	int ret = 0;
-+	struct i2c_client *client = chip->client;
-+	struct lm3556_platform_data *pdata = chip->pdata;
++	/* Modify green table for giga */
++	rtl_writephy(tp, 0x1f, 0x0005);
++	rtl_writephy(tp, 0x05, 0x8b54);
++	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0800);
++	rtl_writephy(tp, 0x05, 0x8b5d);
++	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0800);
++	rtl_writephy(tp, 0x05, 0x8a7c);
++	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x05, 0x8a7f);
++	rtl_w1w0_phy(tp, 0x06, 0x0100, 0x0000);
++	rtl_writephy(tp, 0x05, 0x8a82);
++	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x05, 0x8a85);
++	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x05, 0x8a88);
++	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x1f, 0x0000);
 +
-+	/*Set Config Register for external PINs depended by HW*/
-+	ret = lm3556_read_reg(client, REG_CONF, &reg_val);
-+	reg_val &= ~EX_PIN_CONTROL_MASK;
-+	reg_val |= ((pdata->torch_pin_polarity & 0x01)
-+		    << TORCH_PIN_POLARITY_SHIFT);
-+	reg_val |= ((pdata->strobe_usuage & 0x01) << STROBE_USUAGE_SHIFT);
-+	reg_val |= ((pdata->strobe_pin_polarity & 0x01)
-+		    << STROBE_PIN_POLARITY_SHIFT);
-+	reg_val |= ((pdata->tx_pin_polarity & 0x01) << TX_PIN_POLARITY_SHIFT);
-+	reg_val |= ((pdata->indicator_mode & 0x01) << INDIC_MODE_SHIFT);
-+	ret |= lm3556_write_reg(client, REG_CONF, reg_val);
++	/* uc same-seed solution */
++	rtl_writephy(tp, 0x1f, 0x0005);
++	rtl_writephy(tp, 0x05, 0x8b85);
++	rtl_w1w0_phy(tp, 0x06, 0x8000, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
 +
-+	/*Set Enable Register for external PINs depended by HW*/
-+	ret = lm3556_read_reg(client, REG_ENABLE, &reg_val);
-+	reg_val &= ~EX_PIN_ENABLE_MASK;
-+	reg_val |= ((pdata->torch_pin_en & 0x01) << TORCH_PIN_EN_SHIFT);
-+	reg_val |= ((pdata->strobe_pin_en & 0x01) << STROBE_PIN_EN_SHIFT);
-+	reg_val |= ((pdata->tx_pin_en & 0x01) << TX_PIN_EN_SHIFT);
-+	ret |= lm3556_write_reg(client, REG_ENABLE, reg_val);
-+	return ret;
++	/* eee setting */
++	rtl_w1w0_eri(ioaddr, 0x1b0, ERIAR_MASK_0001, 0x00, 0x03, ERIAR_EXGMAC);
++	rtl_writephy(tp, 0x1f, 0x0005);
++	rtl_writephy(tp, 0x05, 0x8b85);
++	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x2000);
++	rtl_writephy(tp, 0x1f, 0x0004);
++	rtl_writephy(tp, 0x1f, 0x0007);
++	rtl_writephy(tp, 0x1e, 0x0020);
++	rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x0d, 0x0007);
++	rtl_writephy(tp, 0x0e, 0x003c);
++	rtl_writephy(tp, 0x0d, 0x4007);
++	rtl_writephy(tp, 0x0e, 0x0000);
++	rtl_writephy(tp, 0x0d, 0x0000);
++
++	/* Green feature */
++	rtl_writephy(tp, 0x1f, 0x0003);
++	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
++	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
++	rtl_writephy(tp, 0x1f, 0x0000);
 +}
 +
-+/* chip control*/
-+static void lm3556_control(struct lm3556_chip_data *chip,
-+			   u8 brightness, enum lm3556_mode opmode)
-+{
-+	struct i2c_client *client = chip->client;
-+	struct lm3556_platform_data *pdata = chip->pdata;
-+
-+	lm3556_read_reg(client, REG_FLAG, &chip->last_flag);
-+	if (chip->last_flag)
-+		printk(KERN_INFO"[LM3556] Last FLAG is 0x%x\n",
-+		       chip->last_flag);
-+
-+	/*Brightness 0 means off-state*/
-+	if (!brightness)
-+		opmode = MODES_STASNDBY;
-+
-+	switch (opmode) {
-+	case MODES_TORCH:
-+		lm3556_write_bits(client, REG_I_CTRL,
-+				  brightness - 1, TORCH_I_MASK, TORCH_I_SHIFT);
-+
-+		if (pdata->torch_pin_en)
-+			opmode |= (TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT);
+ static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init[] = {
+@@ -3238,6 +3344,10 @@ static void rtl_hw_phy_config(struct net_device *dev)
+ 		rtl8402_hw_phy_config(tp);
+ 		break;
+ 
++	case RTL_GIGA_MAC_VER_38:
++		rtl8411_hw_phy_config(tp);
 +		break;
 +
-+	case MODES_FLASH:
-+		lm3556_write_bits(client, REG_I_CTRL,
-+				  brightness - 1, FLASH_I_MASK, FLASH_I_SHIFT);
+ 	default:
+ 		break;
+ 	}
+@@ -3476,6 +3586,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_33:
+ 	case RTL_GIGA_MAC_VER_34:
+ 	case RTL_GIGA_MAC_VER_37:
++	case RTL_GIGA_MAC_VER_38:
+ 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
+ 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
+ 		break;
+@@ -3722,6 +3833,7 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_34:
+ 	case RTL_GIGA_MAC_VER_35:
+ 	case RTL_GIGA_MAC_VER_36:
++	case RTL_GIGA_MAC_VER_38:
+ 		ops->down	= r8168_pll_power_down;
+ 		ops->up		= r8168_pll_power_up;
+ 		break;
+@@ -4008,7 +4120,8 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
+ 	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_35 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_36 ||
+-	           tp->mac_version == RTL_GIGA_MAC_VER_37) {
++	           tp->mac_version == RTL_GIGA_MAC_VER_37 ||
++	           tp->mac_version == RTL_GIGA_MAC_VER_38) {
+ 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
+ 		while (!(RTL_R32(TxConfig) & TXCFG_EMPTY))
+ 			udelay(100);
+@@ -4339,6 +4452,7 @@ static void __devinit rtl_init_csi_ops(struct rtl8169_private *tp)
+ 		break;
+ 
+ 	case RTL_GIGA_MAC_VER_37:
++	case RTL_GIGA_MAC_VER_38:
+ 		ops->write	= r8402_csi_write;
+ 		ops->read	= r8402_csi_read;
+ 		break;
+@@ -4727,6 +4841,24 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
+ 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
+ }
+ 
++static void rtl_hw_start_8411(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	static const struct ephy_info e_info_8168f_1[] = {
++		{ 0x06, 0x00c0,	0x0020 },
++		{ 0x0f, 0xffff,	0x5200 },
++		{ 0x1e, 0x0000,	0x4000 },
++		{ 0x19, 0x0000,	0x0224 }
++	};
 +
-+		if (pdata->strobe_pin_en)
-+			opmode |= (STROBE_PIN_EN_MASK << STROBE_PIN_EN_SHIFT);
-+		if (pdata->tx_pin_en)
-+			opmode |= (TX_PIN_EN_MASK << TX_PIN_EN_SHIFT);
++	rtl_hw_start_8168f(tp);
++
++	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
++
++	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0x0000,
++		     ERIAR_EXGMAC);
++}
++
+ static void rtl_hw_start_8168(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+@@ -4824,6 +4956,10 @@ static void rtl_hw_start_8168(struct net_device *dev)
+ 		rtl_hw_start_8168f_1(tp);
+ 		break;
+ 
++	case RTL_GIGA_MAC_VER_38:
++		rtl_hw_start_8411(tp);
 +		break;
 +
-+	case MODES_INDIC:
-+		lm3556_write_bits(client, REG_I_CTRL,
-+				  brightness - 1, TORCH_I_MASK, TORCH_I_SHIFT);
-+
-+		if (pdata->indicator_mode)
-+			opmode |= (TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT);
-+		break;
-+
-+	case MODES_STASNDBY:
-+		if (pdata->torch_pin_en)
-+			opmode |= (TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT);
-+		break;
-+
-+	default:
-+		return;
-+	}
-+	lm3556_write_bits(client, REG_ENABLE,
-+			  opmode, MODE_BITS_MASK, MODE_BITS_SHIFT);
-+
-+	return;
-+}
-+
-+/*torch */
-+static void lm3556_torch_brightness_set(struct led_classdev *cdev,
-+					enum led_brightness brightness)
-+{
-+	struct lm3556_chip_data *chip =
-+	    container_of(cdev, struct lm3556_chip_data, cdev_torch);
-+
-+	lm3556_control(chip, (u8) brightness, MODES_TORCH);
-+	return;
-+}
-+
-+/* flash */
-+static void lm3556_strobe_brightness_set(struct led_classdev *cdev,
-+					 enum led_brightness brightness)
-+{
-+	struct lm3556_chip_data *chip =
-+	    container_of(cdev, struct lm3556_chip_data, cdev_flash);
-+
-+	lm3556_control(chip, (u8) brightness, MODES_FLASH);
-+	return;
-+}
-+
-+/* indicator */
-+static void lm3556_indicator_brightness_set(struct led_classdev *cdev,
-+					    enum led_brightness brightness)
-+{
-+	struct lm3556_chip_data *chip =
-+	    container_of(cdev, struct lm3556_chip_data, cdev_indicator);
-+
-+	lm3556_control(chip, (u8) brightness, MODES_INDIC);
-+	return;
-+}
-+
-+static ssize_t lm3556_indicator_pattern_store(struct device *dev,
-+					      struct device_attribute *devAttr,
-+					      const char *buf, size_t size)
-+{
-+	char *after;
-+	ssize_t ret = -EINVAL;
-+	struct i2c_client *client = container_of(dev->parent,
-+						 struct i2c_client, dev);
-+	unsigned long state = simple_strtoul(buf, &after, 10);
-+	size_t count = after - buf;
-+
-+	if (isspace(*after))
-+		count++;
-+
-+	if (count == size) {
-+		ret = count;
-+
-+		if (state > INDIC_PATTERN_SIZE - 1)
-+			state = INDIC_PATTERN_SIZE - 1;
-+		lm3556_write_reg(client, REG_INDIC_BLINK,
-+				 indicator_pattern[state].blinking);
-+		lm3556_write_reg(client, REG_INDIC_PERIOD,
-+				 indicator_pattern[state].period_cnt);
-+	}
-+	return ret;
-+}
-+
-+static DEVICE_ATTR(pattern, 0644, NULL, lm3556_indicator_pattern_store);
-+
-+/* Module Initialize */
-+static int lm3556_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct lm3556_platform_data *pdata = client->dev.platform_data;
-+	struct lm3556_chip_data *chip;
-+
-+	int err = -ENODEV;
-+
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		printk(KERN_ERR"[LM3556]i2c functionality check fail.\n");
-+		return err;
-+	}
-+
-+	if (pdata == NULL) {
-+		printk(KERN_ERR"[LM3556] Needs Platform Data.\n");
-+		return err;
-+	}
-+
-+	chip = kzalloc(sizeof(struct lm3556_chip_data), GFP_KERNEL);
-+	chip->client = client;
-+	chip->pdata = pdata;
-+
-+	mutex_init(&chip->lock);
-+	i2c_set_clientdata(client, chip);
-+
-+	if (lm3556_chip_init(chip) < 0)
-+		goto err_chip_init;
-+
-+	/*flash*/
-+	chip->cdev_flash.name = "flash";
-+	chip->cdev_flash.max_brightness = 16;
-+	chip->cdev_flash.brightness_set = lm3556_strobe_brightness_set;
-+	if (led_classdev_register((struct device *)
-+				  &client->dev, &chip->cdev_flash) < 0)
-+		goto err_create_flash_file;
-+	/*torch*/
-+	chip->cdev_torch.name = "torch";
-+	chip->cdev_torch.max_brightness = 8;
-+	chip->cdev_torch.brightness_set = lm3556_torch_brightness_set;
-+	if (led_classdev_register((struct device *)
-+				  &client->dev, &chip->cdev_torch) < 0)
-+		goto err_create_torch_file;
-+	/*indicator*/
-+	chip->cdev_indicator.name = "indicator";
-+	chip->cdev_indicator.max_brightness = 8;
-+	chip->cdev_indicator.brightness_set = lm3556_indicator_brightness_set;
-+	if (led_classdev_register((struct device *)
-+				  &client->dev, &chip->cdev_indicator) < 0)
-+		goto err_create_indicator_file;
-+
-+	if (device_create_file(chip->cdev_indicator.dev, &dev_attr_pattern) < 0)
-+		goto err_create_pattern_file;
-+
-+	return 0;
-+
-+err_create_pattern_file:
-+	led_classdev_unregister(&chip->cdev_indicator);
-+err_create_indicator_file:
-+	led_classdev_unregister(&chip->cdev_torch);
-+err_create_torch_file:
-+	led_classdev_unregister(&chip->cdev_flash);
-+err_create_flash_file:
-+err_chip_init:
-+	i2c_set_clientdata(client, NULL);
-+	kfree(chip);
-+	printk(KERN_ERR"[LM3556] probe func. returns failed\n");
-+	return -ENODEV;
-+}
-+
-+static int lm3556_remove(struct i2c_client *client)
-+{
-+	struct lm3556_chip_data *chip = i2c_get_clientdata(client);
-+
-+	device_remove_file(chip->cdev_indicator.dev, &dev_attr_pattern);
-+	led_classdev_unregister(&chip->cdev_indicator);
-+	led_classdev_unregister(&chip->cdev_torch);
-+	led_classdev_unregister(&chip->cdev_flash);
-+	lm3556_write_reg(client, REG_ENABLE, 0);
-+
-+	kfree(chip);
-+	printk(KERN_INFO "[LM3556] Removing is done");
-+	return 0;
-+}
-+
-+static const struct i2c_device_id lm3556_id[] = {
-+	{LM3556_NAME, 0},
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, lm3556_id);
-+
-+static struct i2c_driver lm3556_i2c_driver = {
-+	.driver = {
-+		   .name = LM3556_NAME,
-+		   .owner = THIS_MODULE,
-+		   .pm = NULL,
-+		   },
-+	.probe = lm3556_probe,
-+	.remove = __devexit_p(lm3556_remove),
-+	.id_table = lm3556_id,
-+};
-+
-+static int __init lm3556_init(void)
-+{
-+	return i2c_add_driver(&lm3556_i2c_driver);
-+}
-+
-+static void __exit lm3556_exit(void)
-+{
-+	i2c_del_driver(&lm3556_i2c_driver);
-+}
-+
-+module_init(lm3556_init);
-+module_exit(lm3556_exit);
-+
-+MODULE_DESCRIPTION("Texas Instruments Flash Lighting driver for LM3556");
-+MODULE_AUTHOR
-+	("Geon Si Jeong <daniel.jeong@ti.com>, Woogyom Kim <milo.kim@ti.com>");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/leds-lm3556.h b/include/linux/leds-lm3556.h
-new file mode 100644
-index 0000000..aee7fab
---- /dev/null
-+++ b/include/linux/leds-lm3556.h
-@@ -0,0 +1,242 @@
-+/*
-+ * Simple driver for Texas Instruments LM3556 LED Flash driver chip (Rev0x03)
-+ * Copyright (C) 2012 Texas Instruments
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef __LINUX_LM3556_H
-+#define __LINUX_LM3556_H
-+
-+#define LM3556_NAME "leds-lm3556"
-+
-+enum lm3556_ivfm_filter_time {
-+	IVFM_FILTER_TIME_HALF_CURRENT_STEP = 0,
-+	IVFM_FILTER_TIME_256_USEC,
-+	IVFM_FILTER_TIME_512_USEC,
-+	IVFM_FILTER_TIME_1024_USEC
-+};
-+
-+enum lm3556_ivfm_adj_mode {
-+	IVFM_ADJ_MODE_REPORT = 0,
-+	IVFM_ADJ_MODESTOP_HOLD,
-+	IVFM_ADJ_MODE_DOWN,
-+	IVFM_ADJ_MODE_UP_DOWN,
-+};
-+
-+enum lm3556_ivfm_down_threshold {
-+	IVFM_DN_TH_2_7_V = 0,
-+	IVFM_DN_TH_2_8_V,
-+	IVFM_DN_TH_2_9_V,
-+	IVFM_DN_TH_3_0_V,
-+	IVFM_DN_TH_3_1_V,
-+	IVFM_DN_TH_3_2_V,
-+	IVFM_DN_TH_3_3_V,
-+	IVFM_DN_TH_3_4_V,
-+};
-+
-+enum lm3556_ivfm_hyst {
-+	IVFM_HYST_50_MV = 0,
-+	IVFM_HYST_100_MV,
-+	IVFM_HYST_150_MV,
-+	IVFM_HYST_DIS
-+};
-+
-+enum lm3556_ntc_curr_lvl {
-+	NTC_CURR_LVL_25_UA = 0,
-+	NTC_CURR_LVL_50_UA,
-+	NTC_CURR_LVL_75_UA,
-+	NTC_CURR_LVL_100_UA
-+};
-+
-+enum lm3556_ntc_trip_threshold {
-+	NTC_TRIP_THRESHOLD_200_MV = 0,
-+	NTC_TRIP_THRESHOLD_300_MV,
-+	NTC_TRIP_THRESHOLD_400_MV,
-+	NTC_TRIP_THRESHOLD_500_MV,
-+	NTC_TRIP_THRESHOLD_600_MV,
-+	NTC_TRIP_THRESHOLD_700_MV,
-+	NTC_TRIP_THRESHOLD_800_MV,
-+	NTC_TRIP_THRESHOLD_900_MV
-+};
-+
-+enum lm3556_ntc_event_lvl {
-+	NTC_EVENT_LVL_STANDBY = 0,
-+	NTC_EVENT_LVL_REDUCE_MIN_TORCH
-+};
-+
-+enum lm3556_torch_indic_ramp_time {
-+	TORCH_INDIC_RAMP_TIME_16_MS = 0,
-+	TORCH_INDIC_RAMP_TIME_32_MS,
-+	TORCH_INDIC_RAMP_TIME_64_MS,
-+	TORCH_INDIC_RAMP_TIME_128_MS,
-+	TORCH_INDIC_RAMP_TIME_256_MS,
-+	TORCH_INDIC_RAMP_TIME_512_MS,
-+	TORCH_INDIC_RAMP_TIME_1024_MS,
-+	TORCH_INDIC_RAMP_TIME_2048_MS,
-+};
-+
-+enum lm3556_indic_pulse_time {
-+	PULSE_TIME_0_MS = 0,
-+	PULSE_TIME_32_MS,
-+	PULSE_TIME_64_MS,
-+	PULSE_TIME_92_MS,
-+	PULSE_TIME_128_MS,
-+	PULSE_TIME_160_MS,
-+	PULSE_TIME_196_MS,
-+	PULSE_TIME_224_MS,
-+	PULSE_TIME_256_MS,
-+	PULSE_TIME_288_MS,
-+	PULSE_TIME_320_MS,
-+	PULSE_TIME_352_MS,
-+	PULSE_TIME_384_MS,
-+	PULSE_TIME_416_MS,
-+	PULSE_TIME_448_MS,
-+	PULSE_TIME_480_MS,
-+};
-+
-+enum lm3556_indic_n_blank {
-+	INDIC_N_BLANK_0 = 0,
-+	INDIC_N_BLANK_1,
-+	INDIC_N_BLANK_2,
-+	INDIC_N_BLANK_3,
-+	INDIC_N_BLANK_4,
-+	INDIC_N_BLANK_5,
-+	INDIC_N_BLANK_6,
-+	INDIC_N_BLANK_7,
-+	INDIC_N_BLANK_8,
-+	INDIC_N_BLANK_9,
-+	INDIC_N_BLANK_10,
-+	INDIC_N_BLANK_11,
-+	INDIC_N_BLANK_12,
-+	INDIC_N_BLANK_13,
-+	INDIC_N_BLANK_14,
-+	INDIC_N_BLANK_15,
-+};
-+
-+enum lm3556_indic_period {
-+	INDIC_PERIOD_0 = 0,
-+	INDIC_PERIOD_1,
-+	INDIC_PERIOD_2,
-+	INDIC_PERIOD_3,
-+	INDIC_PERIOD_4,
-+	INDIC_PERIOD_5,
-+	INDIC_PERIOD_6,
-+	INDIC_PERIOD_7,
-+};
-+
-+enum lm3556_indic_mode {
-+	INDIC_MODE_INTERNAL = 0,
-+	INDIC_MODE_EXTERNAL,
-+};
-+
-+enum lm3556_flash_timeout {
-+	FLASH_TIMEOUT_50_MS = 0,
-+	FLASH_TIMEOUT_100_MS,
-+	FLASH_TIMEOUT_150_MS,
-+	FLASH_TIMEOUT_200_MS,
-+	FLASH_TIMEOUT_250_MS,
-+	FLASH_TIMEOUT_300_MS,
-+	FLASH_TIMEOUT_350_MS,
-+	FLASH_TIMEOUT_400_MS,
-+};
-+
-+enum lm3556_flash_ramp_time {
-+	FLASH_RAMP_TIME_256_US = 0,
-+	FLASH_RAMP_TIME_512_US,
-+	FLASH_RAMP_TIME_1024_US,
-+	FLASH_RAMP_TIME_2048_US,
-+	FLASH_RAMP_TIME_4096_US,
-+	FLASH_RAMP_TIME_8192_US,
-+	FLASH_RAMP_TIME_16384_US,
-+	FLASH_RAMP_TIME_32768_US,
-+};
-+
-+enum lm3556_indic_current_limit {
-+	INDIC_I_LIMIT_1500_MA = 0,
-+	INDIC_I_LIMIT_2000_MA,
-+	INDIC_I_LIMIT_2500_MA,
-+	INDIC_I_LIMIT_3000_MA
-+};
-+
-+enum lm3556_flash_current {
-+	FLASH_I_93750_UA = 0,
-+	FLASH_I_187500_UA,
-+	FLASH_I_281250_UA,
-+	FLASH_I_375000_UA,
-+	FLASH_I_468750_UA,
-+	FLASH_I_562500_UA,
-+	FLASH_I_656250_UA,
-+	FLASH_I_750000_UA,
-+	FLASH_I_843750_UA,
-+	FLASH_I_937500_UA,
-+	FLASH_I_1031250_UA,
-+	FLASH_I_1125000_UA,
-+	FLASH_I_1218750_UA,
-+	FLASH_I_1312500_UA,
-+	FLASH_I_1406250_UA,
-+	FLASH_I_1500000_UA,
-+
-+};
-+
-+enum lm3556_torch_current {
-+	TORCH_I_46880_UA = 0,
-+	TORCH_I_93750_UA,
-+	TORCH_I_1406300_UA,
-+	TORCH_I_187500_UA,
-+	TORCH_I_234380_UA,
-+	TORCH_I_281250_UA,
-+	TORCH_I_328130_UA,
-+	TORCH_I_375000_UA,
-+};
-+
-+enum lm3556_mode {
-+	MODES_STASNDBY = 0,
-+	MODES_INDIC,
-+	MODES_TORCH,
-+	MODES_FLASH
-+};
-+
-+enum lm3556_pass_mode {
-+	PASS_MODE_NORMAL = 0,
-+	PASS_MODE_PASS_ONLY
-+};
-+
-+enum lm3556_prechg_mode {
-+	PRE_CHARGE_MODE_NORMAL = 0,
-+	PRE_CHARGE_MODE_PRE_CHARGE
-+};
-+
-+enum lm3556_pin_polarity {
-+	PIN_LOW_ACTIVE = 0,
-+	PIN_HIGH_ACTIVE,
-+};
-+
-+enum lm3556_pin_enable {
-+	PIN_DISABLED = 0,
-+	PIN_ENABLED,
-+};
-+
-+enum lm3556_strobe_usuage {
-+	STROBE_EDGE_DETECT = 0,
-+	STROBE_LEVEL_DETECT,
-+};
-+
-+struct lm3556_platform_data {
-+	enum lm3556_pin_enable torch_pin_en;
-+	enum lm3556_pin_polarity torch_pin_polarity;
-+
-+	enum lm3556_strobe_usuage strobe_usuage;
-+	enum lm3556_pin_enable strobe_pin_en;
-+	enum lm3556_pin_polarity strobe_pin_polarity;
-+
-+	enum lm3556_pin_enable tx_pin_en;
-+	enum lm3556_pin_polarity tx_pin_polarity;
-+
-+	enum lm3556_indic_mode indicator_mode;
-+};
-+
-+#endif /* __LINUX_LM3556_H */
+ 	default:
+ 		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
+ 			dev->name, tp->mac_version);
 -- 
-1.7.5.4
+1.7.7.6
 
