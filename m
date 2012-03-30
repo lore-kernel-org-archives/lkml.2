@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965187Ab2C3WNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:13:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935831Ab2C3VO0 (ORCPT
+	id S965178Ab2C3WN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:13:59 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52160 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965134Ab2C3VOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:26 -0400
-Message-Id: <20120330194857.418248132@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:21 -0400
+Message-Id: <20120330194855.727545474@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:21 -0700
+Date: Fri, 30 Mar 2012 12:50:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 108/149] [media] mxl111sf: fix error on stream stop in mxl111sf_ep6_streaming_ctrl()
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Ming Lei <tom.leiming@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 099/149] usbnet: dont clear urb->dev in tx_complete
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Krufky <mkrufky@linuxtv.org>
+From: "tom.leiming@gmail.com" <tom.leiming@gmail.com>
 
-commit 3be5bb71fbf18f83cb88b54a62a78e03e5a4f30a upstream.
+commit 5d5440a835710d09f0ef18da5000541ec98b537a upstream.
 
-Remove unnecessary register access in mxl111sf_ep6_streaming_ctrl()
+URB unlinking is always racing with its completion and tx_complete
+may be called before or during running usb_unlink_urb, so tx_complete
+must not clear urb->dev since it will be used in unlink path,
+otherwise invalid memory accesses or usb device leak may be caused
+inside usb_unlink_urb.
 
-This code breaks driver operation in kernel 3.3 and later, although
-it works properly in 3.2  Disable register access to 0x12 for now.
-
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb/dvb-usb/mxl111sf.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/usb/usbnet.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/media/dvb/dvb-usb/mxl111sf.c
-+++ b/drivers/media/dvb/dvb-usb/mxl111sf.c
-@@ -351,15 +351,13 @@ static int mxl111sf_ep6_streaming_ctrl(s
- 					      adap_state->ep6_clockphase,
- 					      0, 0);
- 		mxl_fail(ret);
-+#if 0
- 	} else {
- 		ret = mxl111sf_disable_656_port(state);
- 		mxl_fail(ret);
-+#endif
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -1037,7 +1037,6 @@ static void tx_complete (struct urb *urb
  	}
  
--	mxl111sf_read_reg(state, 0x12, &tmp);
--	tmp &= ~0x04;
--	mxl111sf_write_reg(state, 0x12, tmp);
--
- 	return ret;
+ 	usb_autopm_put_interface_async(dev->intf);
+-	urb->dev = NULL;
+ 	entry->state = tx_done;
+ 	defer_bh(dev, skb, &dev->txq);
  }
- 
 
 
