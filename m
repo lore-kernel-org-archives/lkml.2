@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760554Ab2C3JMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 05:12:44 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36012 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759799Ab2C3JLz (ORCPT
+	id S1760127Ab2C3JOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 05:14:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51614 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758579Ab2C3JOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 05:11:55 -0400
-Message-ID: <1333098711.19659.9.camel@edumazet-laptop>
-Subject: Re: [REGRESSION][PATCH] bpf_jit drops the ball on indirect negative
- mem references
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jan Seiffert <kaffeemonster@googlemail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, Matt Evans <matt@ozlabs.org>
-Date: Fri, 30 Mar 2012 11:11:51 +0200
-In-Reply-To: <4F744D58.3070009@googlemail.com>
-References: <CAPwCz79wO=5zTZmCG+ePfRuEu-p_Vosi18bYZ-MVNZGOdbE3aQ@mail.gmail.com>
-	  <1332965129.2325.12.camel@edumazet-glaptop>
-	  <CAPwCz7_tnjq32duJSDj21LpRe5TFvGGszH4joQr1DGTjNd7GcA@mail.gmail.com>
-	 <1332967172.2325.22.camel@edumazet-glaptop>
-	 <4F744D58.3070009@googlemail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Fri, 30 Mar 2012 05:14:24 -0400
+Message-ID: <6AF6153696DE4E7EB79B86077851A00E@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: "Andy Whitcroft" <apw@canonical.com>, "Jeff Garzik" <jgarzik@pobox.com>,
+        <linux-ide@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        "Mike Sterling" <Mike.Sterling@microsoft.com>
+References: <1333042130-9634-1-git-send-email-apw@canonical.com>
+Subject: Re: [PATCH 1/1] ata_piix: defer disks to the Hyper-V paravirtualised drivers by default
+Date: Fri, 30 Mar 2012 12:14:20 +0300
+MIME-Version: 1.0
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Content-Type: text/plain;
+	format=flowed;
+	charset="koi8-r";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 29 mars 2012 à 13:54 +0200, Jan Seiffert a écrit :
 
-> 
-> +	.p2align 1
->  bpf_slow_path_word:
->  	bpf_slow_path_common(4)
->  	js	bpf_error
-> @@ -115,6 +116,7 @@ bpf_slow_path_word:
->  	bswap	%eax
->  	ret
->  
-> +	.p2align 1
->  bpf_slow_path_half:
->  	bpf_slow_path_common(2)
->  	js	bpf_error
-> @@ -123,12 +125,14 @@ bpf_slow_path_half:
->  	movzwl	%ax,%eax
->  	ret
+Hi!
 
-All these ".p2align 1" are noise for this patch.
+----- Original Message ----- 
+From: "Andy Whitcroft" apw
+Sent: Thursday, March 29, 2012 8:28 PM
+Subject: [PATCH 1/1] ata_piix: defer disks to the Hyper-V paravirtualised drivers by default
 
-This should be done as separate patch, explaining the rationale.
+> guest disks are exposed both via the Hyper-V paravirtualised drivers and via an emulated SATA disk
+> controller.   . . .  we need to prevent the
+> ata_piix driver from claiming the disks devices by default when running
+> on a Hyper-V hypervisor.
 
-...
+ Yes
 
->  			case BPF_S_LD_W_IND:
-> -				func = sk_load_word_ind;
-> +				func = sk_load_word;
->  common_load_ind:		seen |= SEEN_DATAREF | SEEN_XREG;
->  				t_offset = func - (image + addrs[i]);
-> -				EMIT1_off32(0xbe, K);	/* mov imm32,%esi   */
-> +				if (K) {
-> +					EMIT2(0x8d, 0xb3); /* lea imm32(%rbx),%esi */
-> +					EMIT(K, 4);
-> +				} else {
-> +					EMIT2(0x89,0xde); /* mov %ebx,%esi */
-> +				}
->  				EMIT1_off32(0xe8, t_offset);	/* call sk_load_xxx_ind */
->  				break;
+Thanks for patch!
 
+>    Comments?
 
-Please add the code for imm8 offsets as well ?
+ This patch is  "UBUNTU Way" Solution described in
 
-if (is_imm8(K))
-	EMIT3(0x8d, 0x73, K); /* lea imm8(%rbx),%esi */
-else
-	EMIT2_off32(0x8d, 0xb3, K); /* lea imm32(%rbx),%esi */
+See
+http://vvm.blog.tut.by/2012/03/29/linux-on-hyper-v-use-hv_storvsc-instead-of-ata_piix-to-handle-the-ide-disks-devices-but-not-for-the-dvd-rom-cd-rom-device-handling/
+Or
 
-Thanks
+http://marc.info/?l=linux-kernel&m=133302969709312&w=2
+==
+List: linux-kernel
+Subject: Linux on Hyper-V -- use hv_storvsc instead of ata_piix to handle the IDE disks devices ( but not for the 
+DVD-ROM / CD-ROM device handling) Fw: [PATCH RFC] ata_piix: ignore disks in a hyper-v guest
+From: "Victor Miasnikov"
+Date: 2012-03-29 14:00:05
+
+. . .
+
+"UBUNTU Way" Solution -- tested with
+Ubuntu 12.04 LTS (Precise Pangolin) Daily Build 2012-03-13
+precise-desktop-amd64.iso
+, work Ok
+. . .
+==
 
 
+
+i.e. "[PATCH 1/1] ata_piix: defer disks to the Hyper-V paravirtualised drivers by default"  is fully worked solution to 
+the described problem
+
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/ 
 
