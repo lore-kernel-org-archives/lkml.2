@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761234Ab2C3RVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:21:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42512 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758946Ab2C3RVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:21:51 -0400
-Date: Fri, 30 Mar 2012 18:21:24 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Russell King <rmk@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL/NEXT] sched/arch: Introduce the
- finish_arch_post_lock_switch() scheduler callback
-Message-ID: <20120330172124.GA28178@arm.com>
-References: <20120313101859.GA2626@elte.hu>
- <20120313112729.GA25835@flint.arm.linux.org.uk>
- <20120313115640.GA27378@elte.hu>
- <20120313121707.GA2174@flint.arm.linux.org.uk>
- <20120313124433.GA15333@elte.hu>
- <20120313130427.GC2174@flint.arm.linux.org.uk>
- <20120313133115.GA21634@elte.hu>
- <20120313154716.GA31293@elte.hu>
- <20120330135255.GC23295@arm.com>
- <20120330142544.GA13966@gmail.com>
+	id S1761253Ab2C3RWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:22:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9733 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761241Ab2C3RWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 13:22:09 -0400
+Date: Fri, 30 Mar 2012 19:14:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Karl Pickett <kjp@ci.uchicago.edu>
+Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: Is prctl(PR_SET_CHILD_SUBREAPER) going to break my code which
+	checks getppid == 1?
+Message-ID: <20120330171430.GA5865@redhat.com>
+References: <46799FA3-D575-4A2D-8DEB-CE5149A4110D@ci.uchicago.edu> <20120330124426.GA13811@redhat.com> <376EB22C-893C-4AF8-81DC-3A7687B1AE1B@ci.uchicago.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120330142544.GA13966@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <376EB22C-893C-4AF8-81DC-3A7687B1AE1B@ci.uchicago.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 03:25:44PM +0100, Ingo Molnar wrote:
-> 
-> * Catalin Marinas <catalin.marinas@arm.com> wrote:
-> 
-> > Hi Ingo,
-> > 
-> > On Tue, Mar 13, 2012 at 03:47:16PM +0000, Ingo Molnar wrote:
-> > > Anyway - regardless of any differences and flames about workflow 
-> > > details, both you and Catalin should still feel free to use both 
-> > > the original commit (1cf00341547a) or the tip:sched/arch branch 
-> > > I provided (01f23e1630d9).
-> > 
-> > About the scheduler hook patch, would it go into mainline via 
-> > the sched/urgent or the sched/arch branch? I would like to 
-> > rebase the ARM-specific patches on top of one of these 
-> > branches and send you a pull request (with Russell's ack).
-> 
-> I've merged it into sched/urgent yesterday, which I'll send to 
-> Linus - so you can base it on that.
+On 03/30, Karl Pickett wrote:
+>
+> On Mar 30, 2012, at 7:44 AM, Oleg Nesterov wrote:
+>
+> > Perhaps you can do something like
+> >
+> > 	ppid_for_child = getpid();
+> >
+> > 	if (!fork()) {
+> > 		// Child
+> > 		prctl(PR_SET_PDEATHSIG);
+> > 		if (getppid() != ppid_for_child)
+> > 			return;
+> > 		...
+> > 	}
+>
+> There are two problems with that.  1., I don't think TCL/TK lets me access
+> the parent pre-fork env like that - all I can change is the execed code.
 
-Thanks.
+Can't comment this, I do not know tcl/tk
 
-Russell, are you happy for me to add your acked-by to the ARM patches?
+> 2., That has a clear race with pid wrap around.
 
--- 
-Catalin
+Not really. This ppid_for_child can be re-used, yes. But the new process
+which gets this pid can't become the parent, getppid() can't return this
+number.
+
+Btw, PR_SET_PDEATHSIG + getppid() check is racy anyway (with or without
+PR_SET_CHILD_SUBREAPER), it can race with reparenting. But the window is
+tiny and the problem is purely theoretical I think.
+
+> You really need a
+> prctl(PR_DID_MY_REAL_PARENT_DIE) function to be safe.
+
+Oh, I don't know. Sure, PR_SET_CHILD_SUBREAPER can confuse the child.
+Just suppose it does daemonize() + assert(getppid() == 1). But this
+is not the kernel problem.
+
+Oleg.
+
