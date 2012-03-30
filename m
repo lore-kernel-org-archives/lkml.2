@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760736Ab2C3MjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:39:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25102 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759484Ab2C3Miy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:38:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="126958509"
-Message-ID: <1333111321.5440.29.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: allow atomic updates to sychronously erase old PEB
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: Matthieu CASTET <matthieu.castet@parrot.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 30 Mar 2012 15:42:01 +0300
-In-Reply-To: <alpine.DEB.2.00.1203301433270.10066@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1203291653210.912@eristoteles.iwoars.net>
-	  <4F748CD6.4080704@parrot.com>
-	  <alpine.DEB.2.00.1203301413080.10066@eristoteles.iwoars.net>
-	 <1333110503.5440.24.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1203301433270.10066@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-xNYMSv0O6nG03DmufvMS"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S933121Ab2C3Mqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:46:32 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:59478 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759484Ab2C3Mq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 08:46:27 -0400
+Date: Fri, 30 Mar 2012 20:42:07 +0800
+From: Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
+In-reply-to: <1332368265-21586-1-git-send-email-tj@kernel.org>
+X-Originating-IP: [10.166.88.150]
+To: Tejun Heo <tj@kernel.org>
+Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com
+Message-id: <4F75AA1F.9020007@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=GB2312
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
+ Thunderbird/11.0
+X-CFilter-Loop: Reflected
+References: <1332368265-21586-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tejun Heo wrote:
 
---=-xNYMSv0O6nG03DmufvMS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Hello,
+> 
+> This is the second take at improving cgroup file addition/removal
+> interface.  Changes from the last take[L] are,
+> 
+> * CGROUP_SUBSYS_CFTYPES[_COND]() dropped and
+>   cgroup_subsys->base_cftypes is added instead.  This works better for
+>   subsystems implemented as module.  tcp_memcontrol now uses an
+>   explicit __initcall() to register its cftypes.
+> 
+> * 0005-cgroup-relocate-cftype-and-cgroup_subsys-definitions.patch
+>   added as cleanup.
+> 
+> * 0007-memcg-always-create-memsw-files-if-CONFIG_CGROUP_MEM.patch
+>   added so that memsw files are always created if enabled in config as
+>   suggested by KAMEZAWA.
+> 
+> This patch replaces cgroup file interface with cftype based one which
+> allows dynamic additions and removals of cftype arrays whether the
+> target subsystem is attached or not.  This can be used to make subsys
+> rebinding via remount work properly but I intentionally avoided doing
+> that at the moment.
+> 
 
-On Fri, 2012-03-30 at 14:33 +0200, Joel Reardon wrote:
-> Just for 'blocking', or also all the 'erase's.
 
-Not sure I can provide a general definition :-) But use it for waiting
-for erase of the previous block to finish. It is also coherent with the
-'mtd_sync()' name.
+What's the problem with remount? and is it important enough that it
+should be fixed even the feature is marked as deprecated?
 
---=20
-Best Regards,
-Artem Bityutskiy
+> This makes cgroup population simpler for controllers and will be used
+> to allow controllers to be more dynamic.  e.g. blkio subsys has
+> sub-policies which may come and go while blkio subsys is attached and
+> it currently uses fixed set of files which stays blank if not in use.
 
---=-xNYMSv0O6nG03DmufvMS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Dynamic cgroup files was mentioned before. The scenario in mind was blkio
+control files can be added/removed automatically as devices come and ago.
 
-iQIcBAABAgAGBQJPdaoZAAoJECmIfjd9wqK0mykP/i19z3dbCh6BdLfBv0wJtfYN
-CTpzla1fDUD5TrhmwOjRTMH13V8NIYUB2dHdbmS1hqD3d4Fm7CNuHg72cHJZrl78
-FEgVgSFjAEaBc+amKv4Aw1Km21LPblnFGYedIZq1evzRcFtlDZ16tcZfiabJdZeT
-pOQXHwXW4aBBaBnU0XjSqyMpMeQMnDmJ667L+T8C2tTgTZacmcYMabiac/n/GF1I
-Ri41wqaHnegBa2AFR0u+VQFI2hlEK+IKJ3PRIO/raducLF9yBJoX3XfaOlYECmfZ
-YAqtUew2OO3BdxDJDXQvj/dxyxWDuDp+WjODTOQF/QcwBVonFN7y5QklSk3RKD3k
-yn4aMXYDLjQ44eGPDuW2jtT+vGBjA30EI/i4BpOyP4JBR4q31yd8lK+tUFxFiqeU
-Ve1xpUSd+RQdF1WvQa+rKecf/FvQvLMKsFoDyiW7hnWrQU59+jrvSxJ04Y2Lb82S
-GziOypnZcJsdBxHLx7LQd6GyDJVnzwmnU+nRoGatCdCyDnipXAwLdA+TmtwXklix
-rSsEaMQqGvkG4KeFUD8J06GvkANeJhU1C6P+hCdwTUXDhKI2OhxEgjtMIzsjgdHc
-YgZ1P0ktI6rmovHLFpmzVrax10qPq2x7paU8Ho2qpIdMzuu6MhfNIt7IW+mhPsr5
-x+DBcSyHD6WvjAMWe/c/
-=Qx4i
------END PGP SIGNATURE-----
+So this time blkio subsystem is really going to be made more dynamic
+soon?
 
---=-xNYMSv0O6nG03DmufvMS--
+> This will also be useful for implementing unified hierarchy.
+> 
+
+> This patchset contains the following patches.
+
+> 
+
+
+I'll look into the patches tomorrow.
+
+>  0001-cgroup-move-cgroup_clear_directory-call-out-of-cgrou.patch
+>  0002-cgroup-build-list-of-all-cgroups-under-a-given-cgrou.patch
+>  0003-cgroup-implement-cgroup_add_cftypes-and-friends.patch
+>  0004-cgroup-merge-cft_release_agent-cftype-array-into-the.patch
+>  0005-cgroup-relocate-cftype-and-cgroup_subsys-definitions.patch
+>  0006-cgroup-convert-all-non-memcg-controllers-to-the-new-.patch
+>  0007-memcg-always-create-memsw-files-if-CONFIG_CGROUP_MEM.patch
+>  0008-cgroup-convert-memcg-controller-to-the-new-cftype-in.patch
+>  0009-cgroup-remove-cgroup_add_file-s.patch
+>  0010-cgroup-relocate-__d_cgrp-and-__d_cft.patch
+>  0011-cgroup-introduce-struct-cfent.patch
+>  0012-cgroup-implement-cgroup_rm_cftypes.patch
+> 
+> and is on top of
+> 
+>   cgroup/for-3.4 3ce3230a0cff484e5130153f244d4fb8a56b3a8b
+> + [1] cgroup: deprecate remount option changes mount option
+> 
+> and is also available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup-cftype
+> 
+> Glauber, I think the cftypes registration for tcp_memcontrol is fine
+> as is in this patchset and we just need to move the init to the tail
+> of ->create().  Let's worry about memcg for module-loadable protocols
+> whey they are added.  Can you please send a patch to move init to
+> ->create()?
+> 
+> If nobody objects && after Li comes back and acks the changes, I'll
+> route these through cgroup/for-3.5.
+
 
