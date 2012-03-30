@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936256Ab2C3Vgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:36:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58309 "EHLO
+	id S936270Ab2C3VhE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:37:04 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51906 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966208Ab2C3Vcb (ORCPT
+	by vger.kernel.org with ESMTP id S966138Ab2C3Vc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:31 -0400
-X-Sasl-enc: 0/a3FHYyCPA1XE4bM1kLA8w7bLKL0Q+fXDJxQGOGOCJ0 1333143150
+	Fri, 30 Mar 2012 17:32:29 -0400
+X-Sasl-enc: Q+Z2NknVkasC+Ac97FA7ON6VfstgAXw+zgDkuWS+7BX9 1333143148
 X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:59 2012
-Message-Id: <20120330194859.368872589@linuxfoundation.org>
+Message-Id: <20120330194859.167320770@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:10 -0700
+Date: Fri, 30 Mar 2012 12:51:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arkadiusz Miskiewicz <arekm@maven.pl>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 165/175] sky2: override for PCI legacy power management
+Subject: [ 164/175] net: fix napi_reuse_skb() skb reserve
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,49 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 5676cc7bfe1e388e87843f71daa229610385b41e ]
+[ Upstream commit 2a2a459eeeff48640dc557548ce576d666ab06ed ]
 
-Some BIOS's don't setup power management correctly (what else is
-new) and don't allow use of PCI Express power control. Add a special
-exception module parameter to allow working around this issue.
-Based on slightly different patch by Knut Petersen.
+napi->skb is allocated in napi_get_frags() using
+netdev_alloc_skb_ip_align(), with a reserve of NET_SKB_PAD +
+NET_IP_ALIGN bytes.
 
-Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+However, when such skb is recycled in napi_reuse_skb(), it ends with a
+reserve of NET_IP_ALIGN which is suboptimal.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/sky2.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ net/core/dev.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -95,6 +95,10 @@ static int disable_msi = 0;
- module_param(disable_msi, int, 0);
- MODULE_PARM_DESC(disable_msi, "Disable Message Signaled Interrupt (MSI)");
- 
-+static int legacy_pme = 0;
-+module_param(legacy_pme, int, 0);
-+MODULE_PARM_DESC(legacy_pme, "Legacy power management");
-+
- static DEFINE_PCI_DEVICE_TABLE(sky2_id_table) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, 0x9000) }, /* SK-9Sxx */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, 0x9E00) }, /* SK-9Exx */
-@@ -867,6 +871,13 @@ static void sky2_wol_init(struct sky2_po
- 	/* Disable PiG firmware */
- 	sky2_write16(hw, B0_CTST, Y2_HW_WOL_OFF);
- 
-+	/* Needed by some broken BIOSes, use PCI rather than PCI-e for WOL */
-+	if (legacy_pme) {
-+		u32 reg1 = sky2_pci_read32(hw, PCI_DEV_REG1);
-+		reg1 |= PCI_Y2_PME_LEGACY;
-+		sky2_pci_write32(hw, PCI_DEV_REG1, reg1);
-+	}
-+
- 	/* block receiver */
- 	sky2_write8(hw, SK_REG(port, RX_GMF_CTRL_T), GMF_RST_SET);
- 	sky2_read32(hw, B0_CTST);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3569,7 +3569,8 @@ EXPORT_SYMBOL(napi_gro_receive);
+ static void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
+ {
+ 	__skb_pull(skb, skb_headlen(skb));
+-	skb_reserve(skb, NET_IP_ALIGN - skb_headroom(skb));
++	/* restore the reserve we had after netdev_alloc_skb_ip_align() */
++	skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN - skb_headroom(skb));
+ 	skb->vlan_tci = 0;
+ 	skb->dev = napi->dev;
+ 	skb->skb_iif = 0;
 
 
