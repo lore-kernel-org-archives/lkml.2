@@ -1,102 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934419Ab2C3Qn1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 12:43:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38801 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756922Ab2C3QnW (ORCPT
+	id S1761086Ab2C3QsZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 12:48:25 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43160 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab2C3QsR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 12:43:22 -0400
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 9/9] perf tools: Remove auto-generated bison/flex files
-References: <1333123764-15662-1-git-send-email-acme@infradead.org>
-	<1333123764-15662-10-git-send-email-acme@infradead.org>
-Date: Sat, 31 Mar 2012 01:43:13 +0900
-In-Reply-To: <1333123764-15662-10-git-send-email-acme@infradead.org> (Arnaldo
-	Carvalho de Melo's message of "Fri, 30 Mar 2012 13:09:24 -0300")
-Message-ID: <87iphmm44e.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 30 Mar 2012 12:48:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <4F759B4A.5010807@kernel.org>
+References: <4F759B4A.5010807@kernel.org>
+Date: Fri, 30 Mar 2012 11:48:17 -0500
+Message-ID: <CAMXH7KFRFjFmossoxfJC2bP-dhwkG-H4Ct5b5mMuezJSjKy9Jg@mail.gmail.com>
+Subject: Re: [GIT PULL] ACPI & Power Management patches for Linux-3.4-merge
+From: Rob Lee <rob.lee@linaro.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello Len,
 
-Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> From: Ingo Molnar <mingo@kernel.org>
+On Fri, Mar 30, 2012 at 6:38 AM, Len Brown <lenb@kernel.org> wrote:
+> Hi Linus,
 >
-> These should not be in the Git history - they are auto-generated.
+> Please pull these ACPI & Power Management patches.
 >
-> Extend the Makefile rules of the parser files to include the generation
-> run.
+> ACPI 5.0 after-ripples, ACPICA/Linux divergence cleanup
+> cpuidle evolving, more ARM use
+> thermal sub-system evolving, ditto
+> assorted other PM bits
 >
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/20120327183335.GA27621@gmail.com
-> [ committer note: Fixed up O= handling ]
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/Makefile                  |   47 +-
->  tools/perf/util/parse-events-bison.c | 1917 ----------------------------
->  tools/perf/util/parse-events-bison.h |   81 --
->  tools/perf/util/parse-events-flex.c  | 2272 ----------------------------------
->  tools/perf/util/parse-events-flex.h  |  316 -----
->  tools/perf/util/pmu-bison.c          | 1663 -------------------------
->  tools/perf/util/pmu-bison.h          |   73 --
->  tools/perf/util/pmu-flex.c           | 1821 ---------------------------
->  tools/perf/util/pmu-flex.h           |  316 -----
->  9 files changed, 30 insertions(+), 8476 deletions(-)
->  delete mode 100644 tools/perf/util/parse-events-bison.c
->  delete mode 100644 tools/perf/util/parse-events-bison.h
->  delete mode 100644 tools/perf/util/parse-events-flex.c
->  delete mode 100644 tools/perf/util/parse-events-flex.h
->  delete mode 100644 tools/perf/util/pmu-bison.c
->  delete mode 100644 tools/perf/util/pmu-bison.h
->  delete mode 100644 tools/perf/util/pmu-flex.c
->  delete mode 100644 tools/perf/util/pmu-flex.h
+> The top commit is a merge with your latest tree
+> to address some cpuidle/ARM conflicts.
 >
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index b492e3a..3e61c6f 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -61,8 +61,6 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
->  
->  CC = $(CROSS_COMPILE)gcc
->  AR = $(CROSS_COMPILE)ar
-> -FLEX = $(CROSS_COMPILE)flex
-> -BISON= $(CROSS_COMPILE)bison
->  
->  # Additional ARCH settings for x86
->  ifeq ($(ARCH),i386)
-> @@ -184,7 +182,7 @@ endif
->  
->  ### --- END CONFIGURATION SECTION ---
->  
-> -BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-> +BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)/util -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
->  BASIC_LDFLAGS =
->  
->  # Guard against environment variables
-> @@ -236,6 +234,25 @@ endif
->  
->  export PERL_PATH
->  
-> +FLEX = $(CROSS_COMPILE)flex
-> +BISON= $(CROSS_COMPILE)bison
+> Rob, Daniel,
+>
+> As you both modified at91_enter_idle(), and I don't know the semantics
+> of at91_standby(), I had to guess at the correct merge.
+> Please double check it and correct as necessary.
 
-Just out of curiousity, is this $(CROSS_COMPILE) prefix really needed
-for flex/bison?
+See this link which I believe is the same conflict on linux-next and
+Stephen's resolution is verified by me, Daniel, and Nicolas Ferre.
+
+https://lkml.org/lkml/2012/3/9/47
 
 Thanks,
-Namhyung
+Rob
 
+>
+> thanks!
+> Len Brown, Intel Open Source Technology Center
+>
+> The following changes since commit f52b69f86e27903d6896ed5fa7cd280fec8de532:
+>
+>  Merge tag 'sh-for-linus' of git://github.com/pmundt/linux-sh (2012-03-30 00:09:17 -0700)
+>
+> are available in the git repository at:
+>
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
+>
+> for you to fetch changes up to 14b5e206d755327ca176920ce2984c55191bbe1d:
+>
+>  Merge branch 'upstream' into release (2012-03-30 07:00:19 -0400)
+>
+> ----------------------------------------------------------------
+>
+> Alex He (1):
+>      ACPI: Clean redundant codes in scan.c
+>
+> Amit Daniel Kachhap (1):
+>      thermal: Fix for setting the thermal zone mode to enable/disable
+>
+> Andi Kleen (3):
+>      ACPI: ec: Do request_region outside WARN()
+>      ACPI: Make ACPI interrupt threaded
+>      Disable MCP limit exceeded messages from Intel IPS driver
+>
+> Bjorn Helgaas (1):
+>      ACPI / PM: print physical addresses consistently with other parts of kernel
+>
+> Bob Moore (16):
+>      ACPICA: Update _REV return value to 5
+>      ACPICA: ACPI 5: Support for new FADT SleepStatus, SleepControl registers
+>      ACPICA: Move ACPI timer prototypes to public acpixf file
+>      ACPICA: Support for custom ACPICA build for ACPI 5 reduced hardware
+>      ACPICA: Expand OSL memory read/write interfaces to 64 bits
+>      ACPICA: ACPI 5: Update debug output for new notify values
+>      ACPICA: Add acpi_os_physical_table_override interface
+>      ACPICA: Distill multiple sleep method functions to a single function
+>      ACPICA: Split sleep/wake functions into two files
+>      ACPICA: Add table-driven dispatch for sleep/wake functions
+>      ACPICA: Update to version 20120215
+>      ACPICA: Clarify METHOD_NAME* defines for full-pathname cases
+>      ACPICA: Change exception code for invalid pathname in acpi_evaluate_object
+>      ACPICA: Debugger: Add missing object info to namespace dump
+>      ACPICA: Object repair code: Support to add Package wrappers
+>      ACPICA: Update to version 20120320
+>
+> Boris Ostrovsky (2):
+>      idle, x86: Allow off-lined CPU to enter deeper C states
+>      cpuidle: power_usage should be declared signed integer
+>
+> Chen Gong (3):
+>      ACPI, APEI, EINJ, limit the range of einj_param
+>      ACPI, APEI, EINJ, new parameter to control trigger action
+>      Update documentation for parameter *notrigger* in einj.txt
+>
+> Corentin Chary (1):
+>      ACPI / Video: blacklist some samsung laptops
+>
+> Dan Carpenter (2):
+>      thermal: spear13xx: checking for NULL instead of IS_ERR()
+>      ACPI throttling: fix endian bug in acpi_read_throttling_status()
+>
+> Daniel Lezcano (3):
+>      cpuidle: use the driver's state_count as default
+>      cpuidle: remove useless array definition in cpuidle_structure
+>      cpuidle: remove unused 'governor_data' field
+>
+> Fabio Estevam (1):
+>      drivers/thermal/thermal_sys.c: fix build warning
+>
+> Gary Hade (1):
+>      ACPI, APEI: Fix incorrect APEI register bit width check and usage
+>
+> Jan Beulich (1):
+>      ACPI: consistently use should_use_kmap()
+>
+> Jiang Liu (2):
+>      ACPI, APEI, Fix ERST header length check
+>      CPER failed to handle generic error records with multiple sections
+>
+> Joe Perches (4):
+>      thermal_sys: remove unnecessary line continuations
+>      thermal_sys: remove obfuscating used-once macros
+>      thermal_sys: kernel style cleanups
+>      thermal_sys: convert printks to pr_<level>
+>
+> Julia Lawall (1):
+>      ACPI: processor_driver: add missing kfree
+>
+> Julian Anastasov (1):
+>      ACPICA: Fix regression in FADT revision checks
+>
+> Konrad Rzeszutek Wilk (1):
+>      tboot: Add return values for tboot_sleep
+>
+> Len Brown (11):
+>      ACPI: ignore FADT reset-reg-sup flag
+>      Merge branch 'stable/for-x86-for-3.4' of git://git.kernel.org/.../konrad/xen into tboot
+>      tools turbostat: add summary option
+>      tools turbostat: reduce measurement overhead due to IPIs
+>      tools turbostat: harden against cpu online/offline
+>      Merge branches 'acpica', 'bgrt', 'bz-11533', 'cpuidle', 'ec', 'hotplug', 'misc', 'thermal', 'turbostat' and 'video' into release
+>      Merge branch 'apei' into release
+>      Merge branch 'red-hat-bz-727865' into release
+>      Merge branch 'd3' into release
+>      Merge branch 'tboot' into release
+>      Merge branch 'upstream' into release
+>
+> Lin Ming (4):
+>      ACPICA: Sleep/Wake interfaces: optionally execute _GTS and _BFS
+>      ACPI: Move module parameter gts and bfs to sleep.c
+>      ACPI: Add interface to register/unregister device to/from power resources
+>      ACPI, PCI: Move acpi_dev_run_wake() to ACPI core
+>
+> Matthew Garrett (4):
+>      ACPI: Evaluate thermal trip points before reading temperature
+>      ACPI: Ensure thermal limits match CPU frequencies
+>      ACPI: export acpi_kobj
+>      ACPI: Add support for exposing BGRT data
+>
+> Myron Stowe (1):
+>      ACPI: Fix logic for removing mappings in 'acpi_unmap'
+>
+> Paul E. McKenney (1):
+>      ACPI: Fix unprotected smp_processor_id() in acpi_processor_cst_has_changed()
+>
+> Petr Vandrovec (1):
+>      ACPI: Fix use-after-free in acpi_map_lsapic
+>
+> Robert Lee (9):
+>      cpuidle: Add common time keeping and irq enabling
+>      ARM: at91: Consolidate time keeping and irq enable
+>      ARM: kirkwood: Consolidate time keeping and irq enable
+>      ARM: davinci: Consolidate time keeping and irq enable
+>      ARM: omap: Consolidate OMAP3 time keeping and irq enable
+>      ARM: omap: Consolidate OMAP4 time keeping and irq enable
+>      ARM: shmobile: Consolidate time keeping and irq enable
+>      SH: shmobile: Consolidate time keeping and irq enable
+>      ARM: davinci: Fix for cpuidle consolidation changes
+>
+> ShuoX Liu (1):
+>      cpuidle: add a sysfs entry to disable specific C state for debug purpose.
+>
+> Tang Liang (1):
+>      x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling tboot_sleep.
+>
+> Toshi Kani (1):
+>      ACPI: Add CPU hotplug support for processor device objects
+>
+> Vincenzo Frascino (1):
+>      thermal: add support for thermal sensor present on SPEAr13xx machines
+>
+> Viresh Kumar (1):
+>      thermal/spear_thermal: replace readl/writel with lighter _relaxed variants
+>
+> Yinghai Lu (1):
+>      PNPACPI: Fix device ref leaking in acpi_pnp_match
+>
+> Zhang Rui (1):
+>      ACPI: Introduce ACPI D3_COLD state support
+>
+>  Documentation/ABI/testing/sysfs-firmware-acpi    |   20 +
+>  Documentation/acpi/apei/einj.txt                 |    8 +
+>  Documentation/cpuidle/sysfs.txt                  |    5 +
+>  arch/arm/include/asm/cpuidle.h                   |   29 ++
+>  arch/arm/kernel/Makefile                         |    2 +-
+>  arch/arm/kernel/cpuidle.c                        |   21 ++
+>  arch/arm/mach-at91/cpuidle.c                     |   63 ++--
+>  arch/arm/mach-davinci/cpuidle.c                  |   83 ++--
+>  arch/arm/mach-kirkwood/cpuidle.c                 |   72 ++--
+>  arch/arm/mach-omap2/cpuidle34xx.c                |   42 +--
+>  arch/arm/mach-omap2/cpuidle44xx.c                |   21 +-
+>  arch/arm/mach-shmobile/cpuidle.c                 |   31 +-
+>  arch/sh/kernel/cpu/shmobile/cpuidle.c            |   10 +-
+>  arch/x86/kernel/acpi/boot.c                      |    3 +-
+>  arch/x86/kernel/smpboot.c                        |    4 +-
+>  arch/x86/kernel/tboot.c                          |    9 +-
+>  drivers/acpi/Kconfig                             |    9 +
+>  drivers/acpi/Makefile                            |    1 +
+>  drivers/acpi/acpica/Makefile                     |    4 +-
+>  drivers/acpi/acpica/accommon.h                   |    1 -
+>  drivers/acpi/acpica/acdebug.h                    |    8 +-
+>  drivers/acpi/acpica/acevents.h                   |   21 +-
+>  drivers/acpi/acpica/acglobal.h                   |   11 +-
+>  drivers/acpi/acpica/achware.h                    |   32 +-
+>  drivers/acpi/acpica/aclocal.h                    |    1 +
+>  drivers/acpi/acpica/acmacros.h                   |    6 +
+>  drivers/acpi/acpica/acnamesp.h                   |    5 +-
+>  drivers/acpi/acpica/actables.h                   |    5 +
+>  drivers/acpi/acpica/evevent.c                    |    4 +-
+>  drivers/acpi/acpica/evglock.c                    |    4 +-
+>  drivers/acpi/acpica/evgpe.c                      |    4 +-
+>  drivers/acpi/acpica/evgpeblk.c                   |    4 +-
+>  drivers/acpi/acpica/evgpeinit.c                  |    4 +-
+>  drivers/acpi/acpica/evgpeutil.c                  |    3 +
+>  drivers/acpi/acpica/evmisc.c                     |   26 +-
+>  drivers/acpi/acpica/evsci.c                      |    4 +-
+>  drivers/acpi/acpica/evxface.c                    |  436 +++++++++++-----------
+>  drivers/acpi/acpica/evxfevnt.c                   |    2 +
+>  drivers/acpi/acpica/evxfgpe.c                    |    2 +
+>  drivers/acpi/acpica/hwacpi.c                     |    3 +
+>  drivers/acpi/acpica/hwesleep.c                   |  247 ++++++++++++
+>  drivers/acpi/acpica/hwgpe.c                      |    4 +-
+>  drivers/acpi/acpica/hwregs.c                     |   16 +-
+>  drivers/acpi/acpica/hwsleep.c                    |  401 ++++----------------
+>  drivers/acpi/acpica/hwtimer.c                    |    2 +
+>  drivers/acpi/acpica/hwxface.c                    |   50 +--
+>  drivers/acpi/acpica/hwxfsleep.c                  |  431 +++++++++++++++++++++
+>  drivers/acpi/acpica/nsdump.c                     |   15 +-
+>  drivers/acpi/acpica/nsdumpdv.c                   |    2 +-
+>  drivers/acpi/acpica/nspredef.c                   |    4 +-
+>  drivers/acpi/acpica/nsrepair.c                   |  159 +++-----
+>  drivers/acpi/acpica/nsutils.c                    |    2 +-
+>  drivers/acpi/acpica/tbfadt.c                     |    8 +-
+>  drivers/acpi/acpica/tbinstal.c                   |  117 +++++-
+>  drivers/acpi/acpica/tbutils.c                    |   95 ++---
+>  drivers/acpi/acpica/utdecode.c                   |   34 +-
+>  drivers/acpi/acpica/utglobal.c                   |    9 +-
+>  drivers/acpi/acpica/utinit.c                     |   37 +-
+>  drivers/acpi/acpica/utxface.c                    |    6 +-
+>  drivers/acpi/apei/apei-base.c                    |   61 +--
+>  drivers/acpi/apei/cper.c                         |    2 +
+>  drivers/acpi/apei/einj.c                         |   17 +-
+>  drivers/acpi/apei/erst.c                         |    2 +-
+>  drivers/acpi/bgrt.c                              |  175 +++++++++
+>  drivers/acpi/bus.c                               |    1 +
+>  drivers/acpi/ec.c                                |    8 +-
+>  drivers/acpi/nvs.c                               |    4 +-
+>  drivers/acpi/osl.c                               |  124 ++----
+>  drivers/acpi/power.c                             |  166 +++++++-
+>  drivers/acpi/processor_driver.c                  |   62 ++-
+>  drivers/acpi/processor_idle.c                    |   34 +-
+>  drivers/acpi/processor_thermal.c                 |   45 ++-
+>  drivers/acpi/processor_throttling.c              |    5 +-
+>  drivers/acpi/reboot.c                            |    3 +-
+>  drivers/acpi/scan.c                              |   12 +-
+>  drivers/acpi/sleep.c                             |   76 +++-
+>  drivers/acpi/thermal.c                           |    8 +-
+>  drivers/acpi/video_detect.c                      |   49 +++
+>  drivers/cpuidle/cpuidle.c                        |   97 ++++-
+>  drivers/cpuidle/driver.c                         |    2 +-
+>  drivers/cpuidle/governors/menu.c                 |    7 +-
+>  drivers/cpuidle/sysfs.c                          |   40 ++
+>  drivers/pci/pci-acpi.c                           |   40 +-
+>  drivers/platform/x86/intel_ips.c                 |   13 +-
+>  drivers/pnp/pnpacpi/core.c                       |    7 +-
+>  drivers/thermal/Kconfig                          |    8 +
+>  drivers/thermal/Makefile                         |    1 +
+>  drivers/thermal/spear_thermal.c                  |  206 ++++++++++
+>  drivers/thermal/thermal_sys.c                    |   94 ++---
+>  {drivers/acpi/acpica => include/acpi}/acconfig.h |   19 +-
+>  include/acpi/acexcep.h                           |    7 +-
+>  include/acpi/acnames.h                           |   12 +-
+>  include/acpi/acpi_bus.h                          |    7 +
+>  include/acpi/acpiosxf.h                          |   13 +-
+>  include/acpi/acpixf.h                            |  229 ++++++++----
+>  include/acpi/actbl.h                             |    7 +
+>  include/acpi/actypes.h                           |   22 +-
+>  include/linux/acpi.h                             |   10 +
+>  include/linux/cpuidle.h                          |   22 +-
+>  include/linux/platform_data/spear_thermal.h      |   26 ++
+>  include/linux/tboot.h                            |    1 -
+>  tools/power/x86/turbostat/turbostat.8            |   99 +++--
+>  tools/power/x86/turbostat/turbostat.c            |  245 ++++++++----
+>  103 files changed, 3205 insertions(+), 1545 deletions(-)
+>  create mode 100644 arch/arm/include/asm/cpuidle.h
+>  create mode 100644 arch/arm/kernel/cpuidle.c
+>  create mode 100644 drivers/acpi/acpica/hwesleep.c
+>  create mode 100644 drivers/acpi/acpica/hwxfsleep.c
+>  create mode 100644 drivers/acpi/bgrt.c
+>  create mode 100644 drivers/thermal/spear_thermal.c
+>  rename {drivers/acpi/acpica => include/acpi}/acconfig.h (92%)
+>  create mode 100644 include/linux/platform_data/spear_thermal.h
