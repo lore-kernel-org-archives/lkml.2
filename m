@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936426Ab2C3V7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:59:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965557Ab2C3WAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:00:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965553Ab2C3VRs (ORCPT
+	with ESMTP id S965539Ab2C3VRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:17:48 -0400
-Message-Id: <20120330194828.996333504@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:17:42 -0400
+Message-Id: <20120330194828.681235444@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:47 -0700
+Date: Fri, 30 Mar 2012 12:48:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Supriya Karanth <supriya.karanth@stericsson.com>,
-        Praveena Nadahally <praveen.nadahally@stericsson.com>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        alan@lxorguk.ukuu.org.uk, Anton Tikhomirov <av.tikhomirov@samsung.com>,
         Felipe Balbi <balbi@ti.com>
-Subject: [ 022/175] usb: musb: Reselect index reg in interrupt context
+Subject: [ 020/175] usb: dwc3: use proper function for setting endpoint name
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,109 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Supriya Karanth <supriya.karanth@stericsson.com>
+From: Anton Tikhomirov <av.tikhomirov@samsung.com>
 
-commit 39287076e46d2c19aaceaa6f0a44168ae4d257ec upstream.
+commit 27a78d6a283d6782438f72306746afe4bf44c215 upstream.
 
-musb INDEX register is getting modified/corrupted during temporary
-un-locking in a SMP system. Set this register with proper value
-after re-acquiring the lock
+It's wrong to use the size of array as an argument for strncat.
+Memory corruption is possible. strlcat is exactly what we need here.
 
-Scenario:
----------
-CPU1 is handling a data transfer completion interrupt received for
-the CLASS1 EP
-CPU2 is handling a CLASS2 thread which is queuing data to musb for
-transfer
-
-Below is the error sequence:
-
-         CPU1                   |             CPU2
---------------------------------------------------------------------
-Data transfer completion inter- |
-rupt recieved.                  |
-                                |
-musb INDEX reg set to CLASS1 EP |
-                                |
-musb LOCK is acquired.          |
-                                |
-                                | CLASS2 thread queues data.
-                                |
-                                | CLASS2 thread tries to acquire musb
-                                | LOCK but lock is already taken by
-                                | CLASS1, so CLASS2 thread is
-                                | spinning.
-                                |
->From Interrupt Context musb     |
-giveback function is called     |
-                                |
-The giveback function releases  | CLASS2 thread now acquires LOCK
-LOCK                            |
-                                |
-ClASS1 Request's completion cal-| ClASS2 schedules the data transfer and
-lback is called                 | sets the MUSB INDEX to Class2 EP number
-                                |
-Interrupt handler for CLASS1 EP |
-tries to acquire LOCK and is    |
-spinning                        |
-                                |
-Interrupt for Class1 EP acquires| Class2 completes the scheduling etc and
-the MUSB LOCK                   | releases the musb LOCK
-                                |
-Interrupt for Class1 EP schedul-|
-es the next data transfer       |
-but musb INDEX register is still|
-set to CLASS2 EP                |
-
-Since the MUSB INDEX register is set to a different endpoint, we
-read and modify the wrong registers. Hence data transfer will not
-happen properly. This results in unpredictable behavior
-
-So, the MUSB INDEX register is set to proper value again when
-interrupt re-acquires the lock
-
-Signed-off-by: Supriya Karanth <supriya.karanth@stericsson.com>
-Signed-off-by: Praveena Nadahally <praveen.nadahally@stericsson.com>
-Reviewed-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+Signed-off-by: Anton Tikhomirov <av.tikhomirov@samsung.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_gadget.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/usb/dwc3/gadget.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -574,6 +574,15 @@ void musb_g_tx(struct musb *musb, u8 epn
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -485,16 +485,16 @@ static int dwc3_gadget_ep_enable(struct
  
- 		if (request->actual == request->length) {
- 			musb_g_giveback(musb_ep, request, 0);
-+			/*
-+			 * In the giveback function the MUSB lock is
-+			 * released and acquired after sometime. During
-+			 * this time period the INDEX register could get
-+			 * changed by the gadget_queue function especially
-+			 * on SMP systems. Reselect the INDEX to be sure
-+			 * we are reading/modifying the right registers
-+			 */
-+			musb_ep_select(mbase, epnum);
- 			req = musb_ep->desc ? next_request(musb_ep) : NULL;
- 			if (!req) {
- 				dev_dbg(musb->controller, "%s idle now\n",
-@@ -983,6 +992,15 @@ void musb_g_rx(struct musb *musb, u8 epn
- 		}
- #endif
- 		musb_g_giveback(musb_ep, request, 0);
-+		/*
-+		 * In the giveback function the MUSB lock is
-+		 * released and acquired after sometime. During
-+		 * this time period the INDEX register could get
-+		 * changed by the gadget_queue function especially
-+		 * on SMP systems. Reselect the INDEX to be sure
-+		 * we are reading/modifying the right registers
-+		 */
-+		musb_ep_select(mbase, epnum);
- 
- 		req = next_request(musb_ep);
- 		if (!req)
+ 	switch (usb_endpoint_type(desc)) {
+ 	case USB_ENDPOINT_XFER_CONTROL:
+-		strncat(dep->name, "-control", sizeof(dep->name));
++		strlcat(dep->name, "-control", sizeof(dep->name));
+ 		break;
+ 	case USB_ENDPOINT_XFER_ISOC:
+-		strncat(dep->name, "-isoc", sizeof(dep->name));
++		strlcat(dep->name, "-isoc", sizeof(dep->name));
+ 		break;
+ 	case USB_ENDPOINT_XFER_BULK:
+-		strncat(dep->name, "-bulk", sizeof(dep->name));
++		strlcat(dep->name, "-bulk", sizeof(dep->name));
+ 		break;
+ 	case USB_ENDPOINT_XFER_INT:
+-		strncat(dep->name, "-int", sizeof(dep->name));
++		strlcat(dep->name, "-int", sizeof(dep->name));
+ 		break;
+ 	default:
+ 		dev_err(dwc->dev, "invalid endpoint transfer type\n");
 
 
