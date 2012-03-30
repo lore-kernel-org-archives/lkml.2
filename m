@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933788Ab2C3MT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:19:28 -0400
+	id S934174Ab2C3MTh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:19:37 -0400
 Received: from vms173011pub.verizon.net ([206.46.173.11]:48688 "EHLO
 	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760680Ab2C3MSl (ORCPT
+	with ESMTP id S1760702Ab2C3MSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:18:41 -0400
+	Fri, 30 Mar 2012 08:18:47 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, ShuoX Liu <shuox.liu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 48/76] cpuidle: add a sysfs entry to disable specific C state
- for debug purpose.
-Date: Fri, 30 Mar 2012 06:13:51 -0400
-Message-id: <3a53396b0381ec9d5180fd8fe7a681c8ce95fd9a.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
+        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 30/76] ACPICA: Distill multiple sleep method functions to a
+ single function
+Date: Fri, 30 Mar 2012 06:13:33 -0400
+Message-id: <f99648b1aff8b6158333a06c50d627be3c243a32.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -27,220 +26,302 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+From: Bob Moore <robert.moore@intel.com>
 
-Some C states of new CPU might be not good.  One reason is BIOS might
-configure them incorrectly.  To help developers root cause it quickly, the
-patch adds a new sysfs entry, so developers could disable specific C state
-manually.
+Adds acpi_hw_execute_sleep_method to handle the various sleep methods
+such as _GTS, _BFS, _WAK, and _SST. Removes the specialized
+functions previously used for each of these methods.
 
-In addition, C state might have much impact on performance tuning, as it
-takes much time to enter/exit C states, which might delay interrupt
-processing.  With the new debug option, developers could check if a deep C
-state could impact performance and how much impact it could cause.
-
-Also add this option in Documentation/cpuidle/sysfs.txt.
-
-[akpm@linux-foundation.org: check kstrtol return value]
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
-Reviewed-by: Yanmin Zhang <yanmin_zhang@intel.com>
-Reviewed-and-Tested-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- Documentation/cpuidle/sysfs.txt  |    5 +++++
- drivers/cpuidle/cpuidle.c        |    1 +
- drivers/cpuidle/governors/menu.c |    5 ++++-
- drivers/cpuidle/sysfs.c          |   40 ++++++++++++++++++++++++++++++++++++++
- include/linux/cpuidle.h          |    1 +
- 5 files changed, 51 insertions(+), 1 deletion(-)
+ drivers/acpi/acpica/achware.h   |    2 +-
+ drivers/acpi/acpica/hwsleep.c   |  153 +++++++--------------------------------
+ drivers/acpi/acpica/hwxfsleep.c |    2 +-
+ 3 files changed, 29 insertions(+), 128 deletions(-)
 
-diff --git a/Documentation/cpuidle/sysfs.txt b/Documentation/cpuidle/sysfs.txt
-index 50d7b16..9d28a34 100644
---- a/Documentation/cpuidle/sysfs.txt
-+++ b/Documentation/cpuidle/sysfs.txt
-@@ -36,6 +36,7 @@ drwxr-xr-x 2 root root 0 Feb  8 10:42 state3
- /sys/devices/system/cpu/cpu0/cpuidle/state0:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -45,6 +46,7 @@ total 0
- /sys/devices/system/cpu/cpu0/cpuidle/state1:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -54,6 +56,7 @@ total 0
- /sys/devices/system/cpu/cpu0/cpuidle/state2:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -63,6 +66,7 @@ total 0
- /sys/devices/system/cpu/cpu0/cpuidle/state3:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -72,6 +76,7 @@ total 0
+diff --git a/drivers/acpi/acpica/achware.h b/drivers/acpi/acpica/achware.h
+index eed204a..d3f62a8 100644
+--- a/drivers/acpi/acpica/achware.h
++++ b/drivers/acpi/acpica/achware.h
+@@ -83,7 +83,7 @@ acpi_status acpi_hw_clear_acpi_status(void);
+ /*
+  * hwsleep - sleep/wake support
+  */
+-void acpi_hw_execute_SST(u32 value);
++void acpi_hw_execute_sleep_method(char *method_name, u32 integer_argument);
  
+ acpi_status acpi_hw_extended_sleep(u8 sleep_state);
  
- * desc : Small description about the idle state (string)
-+* disable : Option to disable this idle state (bool)
- * latency : Latency to exit out of this idle state (in microseconds)
- * name : Name of the idle state (string)
- * power : Power consumed while in this idle state (in milliwatts)
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 4869b55..77304b6 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -245,6 +245,7 @@ static void poll_idle_init(struct cpuidle_driver *drv)
- 	state->power_usage = -1;
- 	state->flags = 0;
- 	state->enter = poll_idle;
-+	state->disable = 0;
+diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+index fa34147..abe65ff 100644
+--- a/drivers/acpi/acpica/hwsleep.c
++++ b/drivers/acpi/acpica/hwsleep.c
+@@ -49,13 +49,6 @@
+ #define _COMPONENT          ACPI_HARDWARE
+ ACPI_MODULE_NAME("hwsleep")
+ 
+-/* Local prototypes */
+-static void acpi_hw_execute_GTS(u8 sleep_state);
+-
+-static void acpi_hw_execute_BFS(u8 sleep_state);
+-
+-static void acpi_hw_execute_WAK(u8 sleep_state);
+-
+ static unsigned int gts, bfs;
+ module_param(gts, uint, 0644);
+ module_param(bfs, uint, 0644);
+@@ -64,137 +57,45 @@ MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_hw_execute_GTS
++ * FUNCTION:    acpi_hw_execute_sleep_method
+  *
+- * PARAMETERS:  sleep_state         - Sleep state that will be entered
++ * PARAMETERS:  method_name         - Pathname of method to execute
++ *              integer_argument    - Argument to pass to the method
+  *
+  * RETURN:      None
+  *
+- * DESCRIPTION: Execute the optional _GTS method (Going To Sleep)
++ * DESCRIPTION: Execute a sleep/wake related method, with one integer argument
++ *              and no return value.
+  *
+  ******************************************************************************/
+-
+-static void acpi_hw_execute_GTS(u8 sleep_state)
++void acpi_hw_execute_sleep_method(char *method_name, u32 integer_argument)
+ {
+ 	struct acpi_object_list arg_list;
+ 	union acpi_object arg;
+ 	acpi_status status;
+ 
+-	if (!gts)
+-		return;
++	ACPI_FUNCTION_TRACE(hw_execute_sleep_method);
+ 
+-	/* One argument, sleep_state */
++	if (!ACPI_STRCMP(METHOD_NAME__GTS, method_name) && !gts)
++		return_VOID;
+ 
+-	arg_list.count = 1;
+-	arg_list.pointer = &arg;
+-	arg.type = ACPI_TYPE_INTEGER;
+-	arg.integer.value = sleep_state;
++	if (!ACPI_STRCMP(METHOD_NAME__BFS, method_name) && !bfs)
++		return_VOID;
+ 
+-	status = acpi_evaluate_object(NULL, METHOD_NAME__GTS, &arg_list, NULL);
+-	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
+-		ACPI_EXCEPTION((AE_INFO, status,
+-				"While executing method _GTS"));
+-	}
+-}
+-
+-/*******************************************************************************
+- *
+- * FUNCTION:    acpi_hw_execute_BFS
+- *
+- * PARAMETERS:  sleep_state         - Which sleep state we just exited
+- *
+- * RETURN:      None
+- *
+- * DESCRIPTION: Execute the optional _BFS method (Back From Sleep)
+- *
+- ******************************************************************************/
+-
+-static void acpi_hw_execute_BFS(u8 sleep_state)
+-{
+-	struct acpi_object_list arg_list;
+-	union acpi_object arg;
+-	acpi_status status;
+-
+-	if (!bfs)
+-		return;
+-
+-	/* One argument, sleep_state */
++	/* One argument, integer_argument */
+ 
+ 	arg_list.count = 1;
+ 	arg_list.pointer = &arg;
+ 	arg.type = ACPI_TYPE_INTEGER;
+-	arg.integer.value = sleep_state;
++	arg.integer.value = (u64)integer_argument;
+ 
+-	status = acpi_evaluate_object(NULL, METHOD_NAME__BFS, &arg_list, NULL);
++	status = acpi_evaluate_object(NULL, method_name, &arg_list, NULL);
+ 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
+-		ACPI_EXCEPTION((AE_INFO, status,
+-				"While executing method _BFS"));
++		ACPI_EXCEPTION((AE_INFO, status, "While executing method %s",
++				method_name));
+ 	}
+-}
+ 
+-/*******************************************************************************
+- *
+- * FUNCTION:    acpi_hw_execute_WAK
+- *
+- * PARAMETERS:  sleep_state         - Which sleep state we just exited
+- *
+- * RETURN:      None
+- *
+- * DESCRIPTION: Execute the _WAK method (System Wake)
+- *
+- ******************************************************************************/
+-
+-static void acpi_hw_execute_WAK(u8 sleep_state)
+-{
+-	struct acpi_object_list arg_list;
+-	union acpi_object arg;
+-	acpi_status status;
+-
+-	/* One argument, sleep_state */
+-
+-	arg_list.count = 1;
+-	arg_list.pointer = &arg;
+-	arg.type = ACPI_TYPE_INTEGER;
+-	arg.integer.value = sleep_state;
+-
+-	status = acpi_evaluate_object(NULL, METHOD_NAME__WAK, &arg_list, NULL);
+-	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
+-		ACPI_EXCEPTION((AE_INFO, status,
+-				"While executing method _WAK"));
+-	}
+-	/* TBD: _WAK "sometimes" returns stuff - do we want to look at it? */
+-}
+-
+-/*******************************************************************************
+- *
+- * FUNCTION:    acpi_hw_execute_SST
+- *
+- * PARAMETERS:  indicator_id        - Value to be passed to the _SST method
+- *
+- * RETURN:      None
+- *
+- * DESCRIPTION: Execute the optional _SST method (System Status)
+- *
+- ******************************************************************************/
+-
+-void acpi_hw_execute_SST(u32 indicator_id)
+-{
+-	struct acpi_object_list arg_list;
+-	union acpi_object arg;
+-	acpi_status status;
+-
+-	/* One argument, status indicator ID */
+-
+-	arg_list.count = 1;
+-	arg_list.pointer = &arg;
+-	arg.type = ACPI_TYPE_INTEGER;
+-
+-	arg.integer.value = indicator_id;
+-	status = acpi_evaluate_object(NULL, METHOD_NAME__SST, &arg_list, NULL);
+-	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
+-		ACPI_EXCEPTION((AE_INFO, status,
+-				"While executing method _SST"));
+-	}
++	return_VOID;
  }
- #else
- static void poll_idle_init(struct cpuidle_driver *drv) {}
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index ad09526..5c17ca1 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -280,7 +280,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	 * We want to default to C1 (hlt), not to busy polling
- 	 * unless the timer is happening really really soon.
- 	 */
--	if (data->expected_us > 5)
-+	if (data->expected_us > 5 &&
-+		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
- 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
+ 
+ #if (!ACPI_REDUCED_HARDWARE)
+@@ -271,7 +172,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+ 
+ 	/* Execute the _GTS method (Going To Sleep) */
+ 
+-	acpi_hw_execute_GTS(sleep_state);
++	acpi_hw_execute_sleep_method(METHOD_NAME__GTS, sleep_state);
+ 
+ 	/* Get current value of PM1A control */
+ 
+@@ -427,7 +328,7 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
+ 		}
+ 	}
+ 
+-	acpi_hw_execute_BFS(sleep_state);
++	acpi_hw_execute_sleep_method(METHOD_NAME__BFS, sleep_state);
+ 	return_ACPI_STATUS(status);
+ }
+ 
+@@ -453,7 +354,7 @@ acpi_status acpi_hw_legacy_wake(u8 sleep_state)
+ 	/* Ensure enter_sleep_state_prep -> enter_sleep_state ordering */
+ 
+ 	acpi_gbl_sleep_type_a = ACPI_SLEEP_TYPE_INVALID;
+-	acpi_hw_execute_SST(ACPI_SST_WAKING);
++	acpi_hw_execute_sleep_method(METHOD_NAME__SST, ACPI_SST_WAKING);
  
  	/*
-@@ -290,6 +291,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
- 		struct cpuidle_state *s = &drv->states[i];
+ 	 * GPEs must be enabled before _WAK is called as GPEs
+@@ -477,7 +378,7 @@ acpi_status acpi_hw_legacy_wake(u8 sleep_state)
+ 	 * Now we can execute _WAK, etc. Some machines require that the GPEs
+ 	 * are enabled before the wake methods are executed.
+ 	 */
+-	acpi_hw_execute_WAK(sleep_state);
++	acpi_hw_execute_sleep_method(METHOD_NAME__WAK, sleep_state);
  
-+		if (s->disable)
-+			continue;
- 		if (s->target_residency > data->predicted_us)
- 			continue;
- 		if (s->exit_latency > latency_req)
-diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-index 3fe41fe..88032b4 100644
---- a/drivers/cpuidle/sysfs.c
-+++ b/drivers/cpuidle/sysfs.c
-@@ -11,6 +11,7 @@
- #include <linux/sysfs.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
-+#include <linux/capability.h>
+ 	/*
+ 	 * Some BIOS code assumes that WAK_STS will be cleared on resume
+@@ -509,7 +410,7 @@ acpi_status acpi_hw_legacy_wake(u8 sleep_state)
+ 		return_ACPI_STATUS(status);
+ 	}
  
- #include "cpuidle.h"
- 
-@@ -222,6 +223,9 @@ struct cpuidle_state_attr {
- #define define_one_state_ro(_name, show) \
- static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444, show, NULL)
- 
-+#define define_one_state_rw(_name, show, store) \
-+static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644, show, store)
-+
- #define define_show_state_function(_name) \
- static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 			 struct cpuidle_state_usage *state_usage, char *buf) \
-@@ -229,6 +233,24 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 	return sprintf(buf, "%u\n", state->_name);\
+-	acpi_hw_execute_SST(ACPI_SST_WORKING);
++	acpi_hw_execute_sleep_method(METHOD_NAME__SST, ACPI_SST_WORKING);
+ 	return_ACPI_STATUS(status);
  }
  
-+#define define_store_state_function(_name) \
-+static ssize_t store_state_##_name(struct cpuidle_state *state, \
-+		const char *buf, size_t size) \
-+{ \
-+	long value; \
-+	int err; \
-+	if (!capable(CAP_SYS_ADMIN)) \
-+		return -EPERM; \
-+	err = kstrtol(buf, 0, &value); \
-+	if (err) \
-+		return err; \
-+	if (value) \
-+		state->disable = 1; \
-+	else \
-+		state->disable = 0; \
-+	return size; \
-+}
-+
- #define define_show_state_ull_function(_name) \
- static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 			struct cpuidle_state_usage *state_usage, char *buf) \
-@@ -251,6 +273,8 @@ define_show_state_ull_function(usage)
- define_show_state_ull_function(time)
- define_show_state_str_function(name)
- define_show_state_str_function(desc)
-+define_show_state_function(disable)
-+define_store_state_function(disable)
+@@ -555,7 +456,7 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
  
- define_one_state_ro(name, show_state_name);
- define_one_state_ro(desc, show_state_desc);
-@@ -258,6 +282,7 @@ define_one_state_ro(latency, show_state_exit_latency);
- define_one_state_ro(power, show_state_power_usage);
- define_one_state_ro(usage, show_state_usage);
- define_one_state_ro(time, show_state_time);
-+define_one_state_rw(disable, show_state_disable, store_state_disable);
+ 	/* Execute the _GTS method (Going To Sleep) */
  
- static struct attribute *cpuidle_state_default_attrs[] = {
- 	&attr_name.attr,
-@@ -266,6 +291,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
- 	&attr_power.attr,
- 	&attr_usage.attr,
- 	&attr_time.attr,
-+	&attr_disable.attr,
- 	NULL
- };
+-	acpi_hw_execute_GTS(sleep_state);
++	acpi_hw_execute_sleep_method(METHOD_NAME__GTS, sleep_state);
  
-@@ -287,8 +313,22 @@ static ssize_t cpuidle_state_show(struct kobject * kobj,
- 	return ret;
+ 	/* Flush caches, as per ACPI specification */
+ 
+@@ -625,7 +526,7 @@ acpi_status acpi_hw_extended_wake_prep(u8 sleep_state)
+ 				 &acpi_gbl_FADT.sleep_control);
+ 	}
+ 
+-	acpi_hw_execute_BFS(sleep_state);
++	acpi_hw_execute_sleep_method(METHOD_NAME__BFS, sleep_state);
+ 	return_ACPI_STATUS(AE_OK);
  }
  
-+static ssize_t cpuidle_state_store(struct kobject *kobj,
-+	struct attribute *attr, const char *buf, size_t size)
-+{
-+	int ret = -EIO;
-+	struct cpuidle_state *state = kobj_to_state(kobj);
-+	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
-+
-+	if (cattr->store)
-+		ret = cattr->store(state, buf, size);
-+
-+	return ret;
-+}
-+
- static const struct sysfs_ops cpuidle_state_sysfs_ops = {
- 	.show = cpuidle_state_show,
-+	.store = cpuidle_state_store,
- };
+@@ -652,8 +553,8 @@ acpi_status acpi_hw_extended_wake(u8 sleep_state)
  
- static void cpuidle_state_sysfs_release(struct kobject *kobj)
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 927db28..ca4e498 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -46,6 +46,7 @@ struct cpuidle_state {
- 	unsigned int	exit_latency; /* in US */
- 	unsigned int	power_usage; /* in mW */
- 	unsigned int	target_residency; /* in US */
-+	unsigned int    disable;
+ 	/* Execute the wake methods */
  
- 	int (*enter)	(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
+-	acpi_hw_execute_SST(ACPI_SST_WAKING);
+-	acpi_hw_execute_WAK(sleep_state);
++	acpi_hw_execute_sleep_method(METHOD_NAME__SST, ACPI_SST_WAKING);
++	acpi_hw_execute_sleep_method(METHOD_NAME__WAK, sleep_state);
+ 
+ 	/*
+ 	 * Some BIOS code assumes that WAK_STS will be cleared on resume
+@@ -663,6 +564,6 @@ acpi_status acpi_hw_extended_wake(u8 sleep_state)
+ 	(void)acpi_write(ACPI_X_WAKE_STATUS, &acpi_gbl_FADT.sleep_status);
+ 	acpi_gbl_system_awake_and_running = TRUE;
+ 
+-	acpi_hw_execute_SST(ACPI_SST_WORKING);
++	acpi_hw_execute_sleep_method(METHOD_NAME__SST, ACPI_SST_WORKING);
+ 	return_ACPI_STATUS(AE_OK);
+ }
+diff --git a/drivers/acpi/acpica/hwxfsleep.c b/drivers/acpi/acpica/hwxfsleep.c
+index d599961..ff20558 100644
+--- a/drivers/acpi/acpica/hwxfsleep.c
++++ b/drivers/acpi/acpica/hwxfsleep.c
+@@ -261,7 +261,7 @@ acpi_status acpi_enter_sleep_state_prep(u8 sleep_state)
+ 	 * Set the system indicators to show the desired sleep state.
+ 	 * _SST is an optional method (return no error if not found)
+ 	 */
+-	acpi_hw_execute_SST(sst_value);
++	acpi_hw_execute_sleep_method(METHOD_NAME__SST, sst_value);
+ 	return_ACPI_STATUS(AE_OK);
+ }
+ 
 -- 
 1.7.10.rc2.19.gfae9d
 
