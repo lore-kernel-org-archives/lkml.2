@@ -1,94 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936568Ab2C3Wgq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:36:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63185 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935429Ab2C3Wgm convert rfc822-to-8bit (ORCPT
+	id S935526Ab2C3WhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:37:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935363Ab2C3VIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:36:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120330153519.1e80735b.akpm@linux-foundation.org>
-References: <CA+1xoqfxZ8cji9SZFg0NZN-riFO7c8tKjtH7W1H9q-ES=J+ybw@mail.gmail.com>
- <20120330153519.1e80735b.akpm@linux-foundation.org>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sat, 31 Mar 2012 00:36:21 +0200
-Message-ID: <CA+1xoqcsSr6=tcm6Dyf_wCCu4kMzgxc3oYpFBt+H9qZ+pHo58Q@mail.gmail.com>
-Subject: Re: mm: migrate_pages hang
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Mar 2012 17:08:54 -0400
+From: Josenivaldo Benito Junior <jrbenito@benito.qsl.br>
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Josenivaldo Benito Junior" <jrbenito@benito.qsl.br>,
+        Franco Catrin <fcatrin@gmail.com>
+Subject: [PATCH] Aureal Remote Control Device Driver
+Date: Fri, 30 Mar 2012 18:08:27 -0300
+Message-Id: <1333141707-16069-1-git-send-email-jrbenito@benito.qsl.br>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 12:35 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat, 31 Mar 2012 00:23:30 +0200
-> Sasha Levin <levinsasha928@gmail.com> wrote:
->
->> Hi all,
->>
->> I saw the following inside a KVM guest, this is the first time I
->> observed this hang and it seems to have started with today's
->> (20120330) -next.
->>
->> [ 3122.093136] INFO: task trinity:17328 blocked for more than 120 seconds.
->> [ 3122.093807] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->> disables this message.
->> [ 3122.095237] trinity         D ffff8800703284d8  5648 17328   3101 0x00000004
->> [ 3122.096543]  ffff8800064cfb08 0000000000000082 ffff8800064cfab8
->> ffffffff8107d346
->> [ 3122.098087]  ffff8800064cffd8 00000000001d4580 ffff8800064ce010
->> 00000000001d4580
->> [ 3122.099447]  00000000001d4580 00000000001d4580 ffff8800064cffd8
->> 00000000001d4580
->> [ 3122.100607] Call Trace:
->> [ 3122.100983]  [<ffffffff8107d346>] ? kvm_clock_read+0x46/0x80
->> [ 3122.101950]  [<ffffffff81176260>] ? __lock_page+0x70/0x70
->> [ 3122.102761]  [<ffffffff827063d4>] schedule+0x24/0x70
->> [ 3122.103576]  [<ffffffff827064a7>] io_schedule+0x87/0xd0
->> [ 3122.104371]  [<ffffffff81176269>] sleep_on_page+0x9/0x10
->> [ 3122.105179]  [<ffffffff82704152>] __wait_on_bit_lock+0x52/0xb0
->> [ 3122.106042]  [<ffffffff81176252>] __lock_page+0x62/0x70
->> [ 3122.106811]  [<ffffffff810d78f0>] ? autoremove_wake_function+0x40/0x40
->> [ 3122.107450]  [<ffffffff811cc2f9>] lock_page+0x39/0x40
->> [ 3122.107976]  [<ffffffff811cd294>] __unmap_and_move+0x274/0x280
->> [ 3122.108848]  [<ffffffff81899061>] ? list_del+0x11/0x40
->> [ 3122.109385]  [<ffffffff811cd32d>] unmap_and_move+0x8d/0x130
->> [ 3122.109957]  [<ffffffff811cd47b>] migrate_pages+0xab/0x150
->> [ 3122.110788]  [<ffffffff811bc440>] ? isolate_freepages+0x390/0x390
->> [ 3122.111399]  [<ffffffff811bcc51>] compact_zone+0x1e1/0x2a0
->> [ 3122.111935]  [<ffffffff82707e15>] ? _raw_spin_unlock_irqrestore+0x75/0xa0
->> [ 3122.112579]  [<ffffffff811bcec3>] __compact_pgdat+0x1b3/0x200
->> [ 3122.113199]  [<ffffffff811bcf47>] compact_node+0x37/0x40
->> [ 3122.113631]  [<ffffffff81185080>] ? lru_add_drain_all+0x10/0x20
->> [ 3122.114266]  [<ffffffff811bcf98>] sysfs_compact_node+0x48/0x60
->> [ 3122.114768]  [<ffffffff8125c3d2>] ? sysfs_write_file+0x82/0xf0
->> [ 3122.115368]  [<ffffffff81b0dc3b>] dev_attr_store+0x1b/0x20
->> [ 3122.115877]  [<ffffffff8125c3ee>] sysfs_write_file+0x9e/0xf0
->> [ 3122.116423]  [<ffffffff811e3258>] vfs_write+0xc8/0x190
->> [ 3122.116934]  [<ffffffff811e340f>] sys_write+0x4f/0x90
->> [ 3122.117697]  [<ffffffff82708cf9>] system_call_fastpath+0x16/0x1b
->> [ 3122.118354] 2 locks held by trinity/17328:
->> [ 3122.118694]  #0:  (&buffer->mutex){+.+.+.}, at:
->> [<ffffffff8125c394>] sysfs_write_file+0x44/0xf0
->> [ 3122.119498]  #1:  (s_active#57){.+.+.+}, at: [<ffffffff8125c3d2>]
->> sysfs_write_file+0x82/0xf0
->
-> You reported what I suppose is the same bug a week ago ("mm: hung task
-> (handle_pte_fault)"): the kernel is waiting for a page to come
-> unlocked, thinking that there is I/O outstanding against it.
->
-> And my ugh still applies: "There are quite a lot of things which could
-> cause this, alas.  VM, readahead, scheduler, core wait/wakeup code, IO
-> system, interrupt system (if it happens outside KVM, I guess).  So....
-> ugh.  Hopefully someone will hit this in a situation where it can be
-> narrowed down or bisected."
+From: "Josenivaldo Benito Junior" <jrbenito@benito.qsl.br>
 
-Oh, I didn't think that this one was related to the one I've
-previously reported.
+Devices like Aureal Cy se W-01RN USB_V3.1 and some derived hardware
+have a bogus HID Report Descriptor. According to that report descriptor,
+the maximum logical value for key events is 1 and not 101 (101 keys).
+
+This quirk fixes this wrong Report Descriptor and is basically the same found
+in hid-elecom.c.
+
+Original driver can be found at: https://gitorious.org/hid-aureal-kernel-module
+
+Signed-off-by: Josenivaldo Benito Junior <jrbenito@benito.qsl.br>
+Signed-off-by: Franco Catrin <fcatrin@gmail.com>
+---
+ drivers/hid/Kconfig      |    6 +++++
+ drivers/hid/Makefile     |    1 +
+ drivers/hid/hid-aureal.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-ids.h    |    3 ++
+ 4 files changed, 64 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hid/hid-aureal.c
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 4ecc256..03e2281 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -92,6 +92,12 @@ config HID_APPLE
+ 	Say Y here if you want support for keyboards of	Apple iBooks, PowerBooks,
+ 	MacBooks, MacBook Pros and Apple Aluminum.
+ 
++config HID_AUREAL
++	tristate "Aureal"
++	depends on USB_HID
++	---help---
++	Support for Aureal Cy se W-01RN Remote Controller and other Aureal derived remotes.
++
+ config HID_BELKIN
+ 	tristate "Belkin Flip KVM and Wireless keyboard" if EXPERT
+ 	depends on USB_HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index 22f1d16..5363f17 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -36,6 +36,7 @@ endif
+ obj-$(CONFIG_HID_A4TECH)	+= hid-a4tech.o
+ obj-$(CONFIG_HID_ACRUX)		+= hid-axff.o
+ obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
++obj-$(CONFIG_HID_AUREAL)        += hid-aureal.o
+ obj-$(CONFIG_HID_BELKIN)	+= hid-belkin.o
+ obj-$(CONFIG_HID_CHERRY)	+= hid-cherry.o
+ obj-$(CONFIG_HID_CHICONY)	+= hid-chicony.o
+diff --git a/drivers/hid/hid-aureal.c b/drivers/hid/hid-aureal.c
+new file mode 100644
+index 0000000..9fb676b
+--- /dev/null
++++ b/drivers/hid/hid-aureal.c
+@@ -0,0 +1,54 @@
++/*
++ *  HID driver for Aureal Cy se W-01RN USB_V3.1 devices
++ *
++ *  Copyright (c) 2010 Franco Catrin <fcatrin@gmail.com>
++ *  Copyright (c) 2010 Ben Cropley <bcropley@internode.on.net>
++ *
++ *  Based on HID sunplus driver by
++ *  Copyright (c) 1999 Andreas Gal
++ *  Copyright (c) 2000-2005 Vojtech Pavlik <vojtech@suse.cz>
++ *  Copyright (c) 2005 Michael Haboustak <mike-@cinci.rr.com> for Concept2, Inc
++ *  Copyright (c) 2006-2007 Jiri Kosina
++ *  Copyright (c) 2007 Paul Walmsley
++ *  Copyright (c) 2008 Jiri Slaby
++ */
++#include <linux/device.h>
++#include <linux/hid.h>
++#include <linux/module.h>
++
++#include "hid-ids.h"
++
++static __u8 *aureal_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++		unsigned int *rsize)
++{
++	if (*rsize >= 54 && rdesc[52] == 0x25 && rdesc[53] == 0x01) {
++		dev_info(&hdev->dev, "fixing Aureal Cy se W-01RN USB_V3.1 report descriptor. Keyboard Logical Maximum = 101\n");
++		rdesc[53] = 0x65;
++	} return rdesc;
++}
++
++static const struct hid_device_id aureal_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_AUREAL, USB_DEVICE_ID_AUREAL_W01RN) },
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, aureal_devices);
++
++static struct hid_driver aureal_driver = {
++	.name = "aureal",
++	.id_table = aureal_devices,
++	.report_fixup = aureal_report_fixup,
++};
++
++static int __init aureal_init(void)
++{
++	return hid_register_driver(&aureal_driver);
++}
++
++static void __exit aureal_exit(void)
++{
++	hid_unregister_driver(&aureal_driver);
++}
++
++module_init(aureal_init);
++module_exit(aureal_exit);
++MODULE_LICENSE("GPL");
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 2b67e84..720c9e7 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -154,6 +154,9 @@
+ #define USB_DEVICE_ID_ATMEL_MULTITOUCH	0x211c
+ #define USB_DEVICE_ID_ATMEL_MXT_DIGITIZER	0x2118
+ 
++#define USB_VENDOR_ID_AUREAL		0x0755
++#define USB_DEVICE_ID_AUREAL_W01RN	0x2626
++
+ #define USB_VENDOR_ID_AVERMEDIA		0x07ca
+ #define USB_DEVICE_ID_AVER_FM_MR800	0xb800
+ 
+-- 
+1.7.5.4
+
