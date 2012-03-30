@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761636Ab2C3VKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:10:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33247 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760587Ab2C3VKg (ORCPT
+	id S935610Ab2C3VKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:10:53 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60805 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761639Ab2C3VKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:10:36 -0400
-Message-Id: <20120330194839.655785482@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:10:44 -0400
+Message-Id: <20120330194841.925946024@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:03 -0700
+Date: Fri, 30 Mar 2012 12:49:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Ramneek Mehresh <ramneek.mehresh@freescale.com>,
-        Peter Chen <peter.chen@freescale.com>
-Subject: [ 030/149] usb: Fix build error due to dma_mask is not at pdev_archdata at ARM
+        Simon Graham <simon.graham@virtualcomputer.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 039/149] rtlwifi: Handle previous allocation failures when freeing device memory
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Simon Graham <simon.graham@virtualcomputer.com>
 
-commit e90fc3cb087ce5c5f81e814358222cd6d197b5db upstream.
+commit 7f66c2f93e5779625c10d262c84537427a2673ca upstream.
 
-When build i.mx platform with imx_v6_v7_defconfig, and after adding
-USB Gadget support, it has below build error:
+Handle previous allocation failures when freeing device memory
 
-CC      drivers/usb/host/fsl-mph-dr-of.o
-drivers/usb/host/fsl-mph-dr-of.c: In function 'fsl_usb2_device_register':
-drivers/usb/host/fsl-mph-dr-of.c:97: error: 'struct pdev_archdata'
-has no member named 'dma_mask'
-
-It has discussed at: http://www.spinics.net/lists/linux-usb/msg57302.html
-
-For PowerPC, there is dma_mask at struct pdev_archdata, but there is
-no dma_mask at struct pdev_archdata for ARM. The pdev_archdata is
-related to specific platform, it should NOT be accessed by
-cross platform drivers, like USB.
-
-The code for pdev_archdata should be useless, as for PowerPC,
-it has already gotten the value for pdev->dev.dma_mask at function
-arch_setup_pdev_archdata of arch/powerpc/kernel/setup-common.c.
-
-Tested-by: Ramneek Mehresh <ramneek.mehresh@freescale.com>
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Signed-off-by: Simon Graham <simon.graham@virtualcomputer.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/fsl-mph-dr-of.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/rtlwifi/pci.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/fsl-mph-dr-of.c
-+++ b/drivers/usb/host/fsl-mph-dr-of.c
-@@ -94,7 +94,6 @@ struct platform_device * __devinit fsl_u
- 	pdev->dev.parent = &ofdev->dev;
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1155,10 +1155,12 @@ static void _rtl_pci_free_tx_ring(struct
+ 		ring->idx = (ring->idx + 1) % ring->entries;
+ 	}
  
- 	pdev->dev.coherent_dma_mask = ofdev->dev.coherent_dma_mask;
--	pdev->dev.dma_mask = &pdev->archdata.dma_mask;
- 	*pdev->dev.dma_mask = *ofdev->dev.dma_mask;
+-	pci_free_consistent(rtlpci->pdev,
+-			    sizeof(*ring->desc) * ring->entries,
+-			    ring->desc, ring->dma);
+-	ring->desc = NULL;
++	if (ring->desc) {
++		pci_free_consistent(rtlpci->pdev,
++				    sizeof(*ring->desc) * ring->entries,
++				    ring->desc, ring->dma);
++		ring->desc = NULL;
++	}
+ }
  
- 	retval = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+ static void _rtl_pci_free_rx_ring(struct rtl_pci *rtlpci)
+@@ -1182,12 +1184,14 @@ static void _rtl_pci_free_rx_ring(struct
+ 			kfree_skb(skb);
+ 		}
+ 
+-		pci_free_consistent(rtlpci->pdev,
++		if (rtlpci->rx_ring[rx_queue_idx].desc) {
++			pci_free_consistent(rtlpci->pdev,
+ 				    sizeof(*rtlpci->rx_ring[rx_queue_idx].
+ 					   desc) * rtlpci->rxringcount,
+ 				    rtlpci->rx_ring[rx_queue_idx].desc,
+ 				    rtlpci->rx_ring[rx_queue_idx].dma);
+-		rtlpci->rx_ring[rx_queue_idx].desc = NULL;
++			rtlpci->rx_ring[rx_queue_idx].desc = NULL;
++		}
+ 	}
+ }
+ 
 
 
