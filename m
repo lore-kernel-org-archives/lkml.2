@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936415Ab2C3V71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:59:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64535 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965510Ab2C3VRz (ORCPT
+	id S936426Ab2C3V7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:59:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965553Ab2C3VRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:17:55 -0400
-Message-Id: <20120330194829.308949218@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:17:48 -0400
+Message-Id: <20120330194828.996333504@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:49 -0700
+Date: Fri, 30 Mar 2012 12:48:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Supriya Karanth <supriya.karanth@stericsson.com>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
         Felipe Balbi <balbi@ti.com>
-Subject: [ 024/175] usb: renesas_usbhs: bugfix: add .release function to gpriv->gadget.dev
+Subject: [ 022/175] usb: musb: Reselect index reg in interrupt context
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +28,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+From: Supriya Karanth <supriya.karanth@stericsson.com>
 
-commit 3b2a2e47174cd978258bbb0fdf2e2b1b5ec2144c upstream.
+commit 39287076e46d2c19aaceaa6f0a44168ae4d257ec upstream.
 
-This patch fixup below warning on device_unregister()
+musb INDEX register is getting modified/corrupted during temporary
+un-locking in a SMP system. Set this register with proper value
+after re-acquiring the lock
 
-renesas_usbhs renesas_usbhs.1: host probed
-renesas_usbhs renesas_usbhs.1: gadget probed
-renesas_usbhs renesas_usbhs.1: irq request err
-------------[ cut here ]------------
-WARNING: at ${LINUX}/drivers/base/core.c:1)
-Device 'gadget' does not have a release() function, it is broken and must be fi.
-Modules linked in:
-[<c000e25c>] (unwind_backtrace+0x0/0xe4) from [<c0016960>] (warn_slowpath_commo)
-[<c0016960>] (warn_slowpath_common+0x4c/0x64) from [<c00169f8>] (warn_slowpath_)
-[<c00169f8>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0185b80>] (device_release+0x)
-[<c0185b80>] (device_release+0x70/0x84) from [<c013e300>] (kobject_cleanup+0x58)
-[<c013e300>] (kobject_cleanup+0x58/0x6c) from [<c01cba14>] (usbhs_mod_gadget_re)
-[<c01cba14>] (usbhs_mod_gadget_remove+0x3c/0x6c) from [<c01c8384>] (usbhs_mod_p)
-[<c01c8384>] (usbhs_mod_probe+0x68/0x80) from [<c01c7f84>] (usbhs_probe+0x1cc/0)
-...
+Scenario:
+---------
+CPU1 is handling a data transfer completion interrupt received for
+the CLASS1 EP
+CPU2 is handling a CLASS2 thread which is queuing data to musb for
+transfer
 
-Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Below is the error sequence:
+
+         CPU1                   |             CPU2
+--------------------------------------------------------------------
+Data transfer completion inter- |
+rupt recieved.                  |
+                                |
+musb INDEX reg set to CLASS1 EP |
+                                |
+musb LOCK is acquired.          |
+                                |
+                                | CLASS2 thread queues data.
+                                |
+                                | CLASS2 thread tries to acquire musb
+                                | LOCK but lock is already taken by
+                                | CLASS1, so CLASS2 thread is
+                                | spinning.
+                                |
+>From Interrupt Context musb     |
+giveback function is called     |
+                                |
+The giveback function releases  | CLASS2 thread now acquires LOCK
+LOCK                            |
+                                |
+ClASS1 Request's completion cal-| ClASS2 schedules the data transfer and
+lback is called                 | sets the MUSB INDEX to Class2 EP number
+                                |
+Interrupt handler for CLASS1 EP |
+tries to acquire LOCK and is    |
+spinning                        |
+                                |
+Interrupt for Class1 EP acquires| Class2 completes the scheduling etc and
+the MUSB LOCK                   | releases the musb LOCK
+                                |
+Interrupt for Class1 EP schedul-|
+es the next data transfer       |
+but musb INDEX register is still|
+set to CLASS2 EP                |
+
+Since the MUSB INDEX register is set to a different endpoint, we
+read and modify the wrong registers. Hence data transfer will not
+happen properly. This results in unpredictable behavior
+
+So, the MUSB INDEX register is set to proper value again when
+interrupt re-acquires the lock
+
+Signed-off-by: Supriya Karanth <supriya.karanth@stericsson.com>
+Signed-off-by: Praveena Nadahally <praveen.nadahally@stericsson.com>
+Reviewed-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/renesas_usbhs/mod_gadget.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/musb/musb_gadget.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/usb/renesas_usbhs/mod_gadget.c
-+++ b/drivers/usb/renesas_usbhs/mod_gadget.c
-@@ -941,6 +941,11 @@ static int usbhsg_stop(struct usbhs_priv
- 	return usbhsg_try_stop(priv, USBHSG_STATUS_STARTED);
- }
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -574,6 +574,15 @@ void musb_g_tx(struct musb *musb, u8 epn
  
-+static void usbhs_mod_gadget_release(struct device *pdev)
-+{
-+	/* do nothing */
-+}
-+
- int usbhs_mod_gadget_probe(struct usbhs_priv *priv)
- {
- 	struct usbhsg_gpriv *gpriv;
-@@ -989,6 +994,7 @@ int usbhs_mod_gadget_probe(struct usbhs_
- 	 */
- 	dev_set_name(&gpriv->gadget.dev, "gadget");
- 	gpriv->gadget.dev.parent	= dev;
-+	gpriv->gadget.dev.release	= usbhs_mod_gadget_release;
- 	gpriv->gadget.name		= "renesas_usbhs_udc";
- 	gpriv->gadget.ops		= &usbhsg_gadget_ops;
- 	gpriv->gadget.max_speed		= USB_SPEED_HIGH;
+ 		if (request->actual == request->length) {
+ 			musb_g_giveback(musb_ep, request, 0);
++			/*
++			 * In the giveback function the MUSB lock is
++			 * released and acquired after sometime. During
++			 * this time period the INDEX register could get
++			 * changed by the gadget_queue function especially
++			 * on SMP systems. Reselect the INDEX to be sure
++			 * we are reading/modifying the right registers
++			 */
++			musb_ep_select(mbase, epnum);
+ 			req = musb_ep->desc ? next_request(musb_ep) : NULL;
+ 			if (!req) {
+ 				dev_dbg(musb->controller, "%s idle now\n",
+@@ -983,6 +992,15 @@ void musb_g_rx(struct musb *musb, u8 epn
+ 		}
+ #endif
+ 		musb_g_giveback(musb_ep, request, 0);
++		/*
++		 * In the giveback function the MUSB lock is
++		 * released and acquired after sometime. During
++		 * this time period the INDEX register could get
++		 * changed by the gadget_queue function especially
++		 * on SMP systems. Reselect the INDEX to be sure
++		 * we are reading/modifying the right registers
++		 */
++		musb_ep_select(mbase, epnum);
+ 
+ 		req = next_request(musb_ep);
+ 		if (!req)
 
 
