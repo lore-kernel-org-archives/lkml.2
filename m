@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966076Ab2C3Vbh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:31:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37214 "EHLO
+	id S966132Ab2C3Vm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:42:56 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43129 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936141Ab2C3Vbc (ORCPT
+	by vger.kernel.org with ESMTP id S966078Ab2C3Vbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:31:32 -0400
-X-Sasl-enc: v3TytzXrjNMQLExRsHANdjkupBvq8R2qksMm2B2IUBWx 1333143091
+	Fri, 30 Mar 2012 17:31:38 -0400
+X-Sasl-enc: g9iOyJWAoQx8VIeAKrSbp4tOv3s+XdG2wmYMuh3if3i6 1333143096
 X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:53 2012
-Message-Id: <20120330194853.289087804@linuxfoundation.org>
+Message-Id: <20120330194852.874530733@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:39 -0700
+Date: Fri, 30 Mar 2012 12:50:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 134/175] NFSv4: Rate limit the state manager warning messages
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 132/175] rtlwifi: Convert to asynchronous firmware load
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,72 +27,852 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9a3ba432330e504ac61ff0043dbdaba7cea0e35a upstream.
+commit b0302aba812bcc39291cdab9ad7e37008f352a91 upstream.
 
-Prevent the state manager from filling up system logs when recovery
-fails on the server.
+This patch addresses a kernel bugzilla report and two recent mail threads.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+The kernel bugzilla report is https://bugzilla.kernel.org/show_bug.cgi?id=42632,
+which reports a udev timeout on boot.
+
+The first mail thread, which was on LKML (http://lkml.indiana.edu/hypermail/
+linux/kernel/1112.3/00965.html) was for a WARNING that occurs after a
+suspend/resume cycle for rtl8192cu.
+
+The scond mail thread (http://marc.info/?l=linux-wireless&m=132655490826766&w=2)
+concerned changes in udev that break drivers that delay while firmware is loaded
+on modprobe.
+
+This patch converts all rtlwifi-based drivers to use the asynchronous firmware
+loading mechanism. Drivers rtl8192ce, rtl8192cu and rtl8192de share a common
+callback routine. Driver rtl8192se needs different handling of the firmware,
+thus it has its own code.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- fs/nfs/callback_xdr.c |    4 +++-
- fs/nfs/nfs4proc.c     |    2 +-
- fs/nfs/nfs4state.c    |    4 ++--
- 3 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/callback_xdr.c
-+++ b/fs/nfs/callback_xdr.c
-@@ -9,6 +9,8 @@
- #include <linux/sunrpc/svc.h>
- #include <linux/nfs4.h>
- #include <linux/nfs_fs.h>
-+#include <linux/ratelimit.h>
-+#include <linux/printk.h>
- #include <linux/slab.h>
- #include <linux/sunrpc/bc_xprt.h>
- #include "nfs4_fs.h"
-@@ -167,7 +169,7 @@ static __be32 decode_compound_hdr_arg(st
- 	if (hdr->minorversion <= 1) {
- 		hdr->cb_ident = ntohl(*p++); /* ignored by v4.1 */
- 	} else {
--		printk(KERN_WARNING "%s: NFSv4 server callback with "
-+		pr_warn_ratelimited("NFS: %s: NFSv4 server callback with "
- 			"illegal minor version %u!\n",
- 			__func__, hdr->minorversion);
- 		return htonl(NFS4ERR_MINOR_VERS_MISMATCH);
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1845,7 +1845,7 @@ static struct nfs4_state *nfs4_do_open(s
- 		 * the user though...
- 		 */
- 		if (status == -NFS4ERR_BAD_SEQID) {
--			printk(KERN_WARNING "NFS: v4 server %s "
-+			pr_warn_ratelimited("NFS: v4 server %s "
- 					" returned a bad sequence-id error!\n",
- 					NFS_SERVER(dir)->nfs_client->cl_hostname);
- 			exception.retry = 1;
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -996,7 +996,7 @@ static void nfs_increment_seqid(int stat
- 		case -NFS4ERR_BAD_SEQID:
- 			if (seqid->sequence->flags & NFS_SEQID_CONFIRMED)
- 				return;
--			printk(KERN_WARNING "NFS: v4 server returned a bad"
-+			pr_warn_ratelimited("NFS: v4 server returned a bad"
- 					" sequence-id error on an"
- 					" unconfirmed sequence %p!\n",
- 					seqid->sequence);
-@@ -1826,7 +1826,7 @@ static void nfs4_state_manager(struct nf
- 	} while (atomic_read(&clp->cl_count) > 1);
- 	return;
- out_error:
--	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
-+	pr_warn_ratelimited("NFS: state manager failed on NFSv4 server %s"
- 			" with error %d\n", clp->cl_hostname, -status);
- 	nfs4_end_drain_session(clp);
- 	nfs4_clear_state_manager_bit(clp);
+---
+ drivers/net/wireless/rtlwifi/base.c               |    1 
+ drivers/net/wireless/rtlwifi/core.c               |   42 ++++++++++++++
+ drivers/net/wireless/rtlwifi/core.h               |    4 -
+ drivers/net/wireless/rtlwifi/pci.c                |   28 +++------
+ drivers/net/wireless/rtlwifi/pci.h                |    1 
+ drivers/net/wireless/rtlwifi/ps.c                 |    3 -
+ drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c |   10 ---
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c       |    6 --
+ drivers/net/wireless/rtlwifi/rtl8192ce/sw.c       |   24 ++------
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c       |   33 ++++-------
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c       |   29 +++------
+ drivers/net/wireless/rtlwifi/rtl8192de/fw.c       |    8 --
+ drivers/net/wireless/rtlwifi/rtl8192de/hw.c       |    3 -
+ drivers/net/wireless/rtlwifi/rtl8192de/sw.c       |   38 +++++-------
+ drivers/net/wireless/rtlwifi/rtl8192se/fw.c       |    2 
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c       |   16 +++--
+ drivers/net/wireless/rtlwifi/rtl8192se/led.c      |    5 +
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c       |   65 ++++++++++++++++------
+ drivers/net/wireless/rtlwifi/usb.c                |   36 +++++-------
+ drivers/net/wireless/rtlwifi/wifi.h               |    4 +
+ 20 files changed, 192 insertions(+), 166 deletions(-)
+
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -413,6 +413,7 @@ void rtl_init_rfkill(struct ieee80211_hw
+ 
+ 	wiphy_rfkill_start_polling(hw->wiphy);
+ }
++EXPORT_SYMBOL(rtl_init_rfkill);
+ 
+ void rtl_deinit_rfkill(struct ieee80211_hw *hw)
+ {
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -31,8 +31,50 @@
+ #include "core.h"
+ #include "cam.h"
+ #include "base.h"
++#include "pci.h"
+ #include "ps.h"
+ 
++#include <linux/export.h>
++
++void rtl_fw_cb(const struct firmware *firmware, void *context)
++{
++	struct ieee80211_hw *hw = context;
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	int err;
++
++	RT_TRACE(rtlpriv, COMP_ERR, DBG_LOUD,
++			 ("Firmware callback routine entered!\n"));
++	complete(&rtlpriv->firmware_loading_complete);
++	if (!firmware) {
++		pr_err("Firmware %s not available\n", rtlpriv->cfg->fw_name);
++		rtlpriv->max_fw_size = 0;
++		return;
++	}
++	if (firmware->size > rtlpriv->max_fw_size) {
++		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
++			 ("Firmware is too big!\n"));
++		release_firmware(firmware);
++		return;
++	}
++	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
++	rtlpriv->rtlhal.fwsize = firmware->size;
++	release_firmware(firmware);
++
++	err = ieee80211_register_hw(hw);
++	if (err) {
++		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
++			 ("Can't register mac80211 hw\n"));
++		return;
++	} else {
++		rtlpriv->mac80211.mac80211_registered = 1;
++	}
++	set_bit(RTL_STATUS_INTERFACE_START, &rtlpriv->status);
++
++	/*init rfkill */
++	rtl_init_rfkill(hw);
++}
++EXPORT_SYMBOL(rtl_fw_cb);
++
+ /*mutex for start & stop is must here. */
+ static int rtl_op_start(struct ieee80211_hw *hw)
+ {
+--- a/drivers/net/wireless/rtlwifi/core.h
++++ b/drivers/net/wireless/rtlwifi/core.h
+@@ -30,8 +30,6 @@
+ #ifndef __RTL_CORE_H__
+ #define __RTL_CORE_H__
+ 
+-#include <net/mac80211.h>
+-
+ #define RTL_SUPPORTED_FILTERS		\
+ 	(FIF_PROMISC_IN_BSS | \
+ 	FIF_ALLMULTI | FIF_CONTROL | \
+@@ -42,4 +40,6 @@
+ #define RTL_SUPPORTED_CTRL_FILTER	0xFF
+ 
+ extern const struct ieee80211_ops rtl_ops;
++void rtl_fw_cb(const struct firmware *firmware, void *context);
++
+ #endif
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -28,8 +28,8 @@
+  *****************************************************************************/
+ 
+ #include <linux/export.h>
+-#include "core.h"
+ #include "wifi.h"
++#include "core.h"
+ #include "pci.h"
+ #include "base.h"
+ #include "ps.h"
+@@ -1579,6 +1579,9 @@ static void rtl_pci_stop(struct ieee8021
+ 
+ 	rtlpci->driver_is_goingto_unload = true;
+ 	rtlpriv->cfg->ops->hw_disable(hw);
++	/* some things are not needed if firmware not available */
++	if (!rtlpriv->max_fw_size)
++		return;
+ 	rtlpriv->cfg->ops->led_control(hw, LED_CTL_POWER_OFF);
+ 
+ 	spin_lock_irqsave(&rtlpriv->locks.rf_ps_lock, flags);
+@@ -1797,6 +1800,7 @@ int __devinit rtl_pci_probe(struct pci_d
+ 	rtlpriv = hw->priv;
+ 	pcipriv = (void *)rtlpriv->priv;
+ 	pcipriv->dev.pdev = pdev;
++	init_completion(&rtlpriv->firmware_loading_complete);
+ 
+ 	/* init cfg & intf_ops */
+ 	rtlpriv->rtlhal.interface = INTF_PCI;
+@@ -1817,7 +1821,7 @@ int __devinit rtl_pci_probe(struct pci_d
+ 	err = pci_request_regions(pdev, KBUILD_MODNAME);
+ 	if (err) {
+ 		RT_ASSERT(false, ("Can't obtain PCI resources\n"));
+-		return err;
++		goto fail2;
+ 	}
+ 
+ 	pmem_start = pci_resource_start(pdev, rtlpriv->cfg->bar_id);
+@@ -1883,15 +1887,6 @@ int __devinit rtl_pci_probe(struct pci_d
+ 		goto fail3;
+ 	}
+ 
+-	err = ieee80211_register_hw(hw);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Can't register mac80211 hw.\n"));
+-		goto fail3;
+-	} else {
+-		rtlpriv->mac80211.mac80211_registered = 1;
+-	}
+-
+ 	err = sysfs_create_group(&pdev->dev.kobj, &rtl_attribute_group);
+ 	if (err) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+@@ -1899,9 +1894,6 @@ int __devinit rtl_pci_probe(struct pci_d
+ 		goto fail3;
+ 	}
+ 
+-	/*init rfkill */
+-	rtl_init_rfkill(hw);
+-
+ 	rtlpci = rtl_pcidev(pcipriv);
+ 	err = request_irq(rtlpci->pdev->irq, &_rtl_pci_interrupt,
+ 			  IRQF_SHARED, KBUILD_MODNAME, hw);
+@@ -1910,24 +1902,22 @@ int __devinit rtl_pci_probe(struct pci_d
+ 			 ("%s: failed to register IRQ handler\n",
+ 			  wiphy_name(hw->wiphy)));
+ 		goto fail3;
+-	} else {
+-		rtlpci->irq_alloc = 1;
+ 	}
++	rtlpci->irq_alloc = 1;
+ 
+-	set_bit(RTL_STATUS_INTERFACE_START, &rtlpriv->status);
+ 	return 0;
+ 
+ fail3:
+ 	pci_set_drvdata(pdev, NULL);
+ 	rtl_deinit_core(hw);
+ 	_rtl_pci_io_handler_release(hw);
+-	ieee80211_free_hw(hw);
+ 
+ 	if (rtlpriv->io.pci_mem_start != 0)
+ 		pci_iounmap(pdev, (void __iomem *)rtlpriv->io.pci_mem_start);
+ 
+ fail2:
+ 	pci_release_regions(pdev);
++	complete(&rtlpriv->firmware_loading_complete);
+ 
+ fail1:
+ 
+@@ -1946,6 +1936,8 @@ void rtl_pci_disconnect(struct pci_dev *
+ 	struct rtl_pci *rtlpci = rtl_pcidev(pcipriv);
+ 	struct rtl_mac *rtlmac = rtl_mac(rtlpriv);
+ 
++	/* just in case driver is removed before firmware callback */
++	wait_for_completion(&rtlpriv->firmware_loading_complete);
+ 	clear_bit(RTL_STATUS_INTERFACE_START, &rtlpriv->status);
+ 
+ 	sysfs_remove_group(&pdev->dev.kobj, &rtl_attribute_group);
+--- a/drivers/net/wireless/rtlwifi/pci.h
++++ b/drivers/net/wireless/rtlwifi/pci.h
+@@ -239,7 +239,6 @@ int __devinit rtl_pci_probe(struct pci_d
+ void rtl_pci_disconnect(struct pci_dev *pdev);
+ int rtl_pci_suspend(struct device *dev);
+ int rtl_pci_resume(struct device *dev);
+-
+ static inline u8 pci_read8_sync(struct rtl_priv *rtlpriv, u32 addr)
+ {
+ 	return readb((u8 __iomem *) rtlpriv->io.pci_mem_start + addr);
+--- a/drivers/net/wireless/rtlwifi/ps.c
++++ b/drivers/net/wireless/rtlwifi/ps.c
+@@ -47,7 +47,8 @@ bool rtl_ps_enable_nic(struct ieee80211_
+ 			 ("Driver is already down!\n"));
+ 
+ 	/*<2> Enable Adapter */
+-	rtlpriv->cfg->ops->hw_init(hw);
++	if (rtlpriv->cfg->ops->hw_init(hw))
++		return 1;
+ 	RT_CLEAR_PS_LEVEL(ppsc, RT_RF_OFF_LEVL_HALT_NIC);
+ 
+ 	/*<3> Enable Interrupt */
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
+@@ -262,10 +262,9 @@ int rtl92c_download_fw(struct ieee80211_
+ 	u32 fwsize;
+ 	enum version_8192c version = rtlhal->version;
+ 
+-	if (!rtlhal->pfirmware)
++	if (rtlpriv->max_fw_size == 0 || !rtlhal->pfirmware)
+ 		return 1;
+ 
+-	pr_info("Loading firmware file %s\n", rtlpriv->cfg->fw_name);
+ 	pfwheader = (struct rtl92c_firmware_header *)rtlhal->pfirmware;
+ 	pfwdata = (u8 *) rtlhal->pfirmware;
+ 	fwsize = rtlhal->fwsize;
+@@ -518,15 +517,8 @@ static void _rtl92c_fill_h2c_command(str
+ void rtl92c_fill_h2c_cmd(struct ieee80211_hw *hw,
+ 			 u8 element_id, u32 cmd_len, u8 *p_cmdbuffer)
+ {
+-	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
+ 	u32 tmp_cmdbuf[2];
+ 
+-	if (rtlhal->fw_ready == false) {
+-		RT_ASSERT(false, ("return H2C cmd because of Fw "
+-				  "download fail!!!\n"));
+-		return;
+-	}
+-
+ 	memset(tmp_cmdbuf, 0, 8);
+ 	memcpy(tmp_cmdbuf, p_cmdbuffer, cmd_len);
+ 	_rtl92c_fill_h2c_command(hw, element_id, cmd_len, (u8 *)&tmp_cmdbuf);
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -921,10 +921,7 @@ int rtl92ce_hw_init(struct ieee80211_hw
+ 			 ("Failed to download FW. Init HW "
+ 			  "without FW now..\n"));
+ 		err = 1;
+-		rtlhal->fw_ready = false;
+ 		return err;
+-	} else {
+-		rtlhal->fw_ready = true;
+ 	}
+ 
+ 	rtlhal->last_hmeboxnum = 0;
+@@ -1199,7 +1196,6 @@ static void _rtl92ce_poweroff_adapter(st
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct rtl_pci_priv *rtlpcipriv = rtl_pcipriv(hw);
+-	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
+ 	u8 u1b_tmp;
+ 	u32 u4b_tmp;
+ 
+@@ -1210,7 +1206,7 @@ static void _rtl92ce_poweroff_adapter(st
+ 	rtl_write_byte(rtlpriv, REG_APSD_CTRL, 0x40);
+ 	rtl_write_byte(rtlpriv, REG_SYS_FUNC_EN, 0xE2);
+ 	rtl_write_byte(rtlpriv, REG_SYS_FUNC_EN, 0xE0);
+-	if ((rtl_read_byte(rtlpriv, REG_MCUFWDL) & BIT(7)) && rtlhal->fw_ready)
++	if (rtl_read_byte(rtlpriv, REG_MCUFWDL) & BIT(7))
+ 		rtl92c_firmware_selfreset(hw);
+ 	rtl_write_byte(rtlpriv, REG_SYS_FUNC_EN + 1, 0x51);
+ 	rtl_write_byte(rtlpriv, REG_MCUFWDL, 0x00);
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+@@ -92,9 +92,7 @@ int rtl92c_init_sw_vars(struct ieee80211
+ 	int err;
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+-	const struct firmware *firmware;
+ 	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
+-	char *fw_name = NULL;
+ 
+ 	rtl8192ce_bt_reg_init(hw);
+ 
+@@ -166,26 +164,20 @@ int rtl92c_init_sw_vars(struct ieee80211
+ 	/* request fw */
+ 	if (IS_VENDOR_UMC_A_CUT(rtlhal->version) &&
+ 	    !IS_92C_SERIAL(rtlhal->version))
+-		fw_name = "rtlwifi/rtl8192cfwU.bin";
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cfwU.bin";
+ 	else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlhal->version))
+-		fw_name = "rtlwifi/rtl8192cfwU_B.bin";
+-	else
+-		fw_name = rtlpriv->cfg->fw_name;
+-	err = request_firmware(&firmware, fw_name, rtlpriv->io.dev);
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cfwU_B.bin";
++
++	rtlpriv->max_fw_size = 0x4000;
++	pr_info("Using firmware %s\n", rtlpriv->cfg->fw_name);
++	err = request_firmware_nowait(THIS_MODULE, 1, rtlpriv->cfg->fw_name,
++				      rtlpriv->io.dev, GFP_KERNEL, hw,
++				      rtl_fw_cb);
+ 	if (err) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Failed to request firmware!\n"));
+ 		return 1;
+ 	}
+-	if (firmware->size > 0x4000) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Firmware is too big!\n"));
+-		release_firmware(firmware);
+-		return 1;
+-	}
+-	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
+-	rtlpriv->rtlhal.fwsize = firmware->size;
+-	release_firmware(firmware);
+ 
+ 	return 0;
+ }
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -1171,10 +1171,7 @@ int rtl92cu_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 ("Failed to download FW. Init HW without FW now..\n"));
+ 		err = 1;
+-		rtlhal->fw_ready = false;
+ 		return err;
+-	} else {
+-		rtlhal->fw_ready = true;
+ 	}
+ 	rtlhal->last_hmeboxnum = 0; /* h2c */
+ 	_rtl92cu_phy_param_tab_init(hw);
+@@ -1270,24 +1267,22 @@ static void  _ResetDigitalProcedure1(str
+ 		if (rtl_read_byte(rtlpriv, REG_MCUFWDL) & BIT(1)) {
+ 			/* reset MCU ready status */
+ 			rtl_write_byte(rtlpriv, REG_MCUFWDL, 0);
+-			if (rtlhal->fw_ready) {
+-				/* 8051 reset by self */
+-				rtl_write_byte(rtlpriv, REG_HMETFR+3, 0x20);
+-				while ((retry_cnts++ < 100) &&
+-				       (FEN_CPUEN & rtl_read_word(rtlpriv,
+-				       REG_SYS_FUNC_EN))) {
+-					udelay(50);
+-				}
+-				if (retry_cnts >= 100) {
+-					RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
++			/* 8051 reset by self */
++			rtl_write_byte(rtlpriv, REG_HMETFR+3, 0x20);
++			while ((retry_cnts++ < 100) &&
++			       (FEN_CPUEN & rtl_read_word(rtlpriv,
++			       REG_SYS_FUNC_EN))) {
++				udelay(50);
++			}
++			if (retry_cnts >= 100) {
++				RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 						("#####=> 8051 reset failed!.."
+ 						".......................\n"););
+-					/* if 8051 reset fail, reset MAC. */
+-					rtl_write_byte(rtlpriv,
+-						       REG_SYS_FUNC_EN + 1,
+-						       0x50);
+-					udelay(100);
+-				}
++				/* if 8051 reset fail, reset MAC. */
++				rtl_write_byte(rtlpriv,
++					       REG_SYS_FUNC_EN + 1,
++					       0x50);
++				udelay(100);
+ 			}
+ 		}
+ 		/* Reset MAC and Enable 8051 */
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -54,7 +54,6 @@ MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin
+ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+-	const struct firmware *firmware;
+ 	int err;
+ 
+ 	rtlpriv->dm.dm_initialgain_enable = true;
+@@ -62,29 +61,21 @@ static int rtl92cu_init_sw_vars(struct i
+ 	rtlpriv->dm.disable_framebursting = false;
+ 	rtlpriv->dm.thermalvalue = 0;
+ 	rtlpriv->dbg.global_debuglevel = rtlpriv->cfg->mod_params->debug;
+-	rtlpriv->rtlhal.pfirmware = vmalloc(0x4000);
++
++	/* for firmware buf */
++	rtlpriv->rtlhal.pfirmware = vzalloc(0x4000);
+ 	if (!rtlpriv->rtlhal.pfirmware) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Can't alloc buffer for fw.\n"));
+ 		return 1;
+ 	}
+-	/* request fw */
+-	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+-			rtlpriv->io.dev);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Failed to request firmware!\n"));
+-		return 1;
+-	}
+-	if (firmware->size > 0x4000) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Firmware is too big!\n"));
+-		release_firmware(firmware);
+-		return 1;
+-	}
+-	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
+-	rtlpriv->rtlhal.fwsize = firmware->size;
+-	release_firmware(firmware);
++
++	pr_info("Loading firmware %s\n", rtlpriv->cfg->fw_name);
++	rtlpriv->max_fw_size = 0x4000;
++	err = request_firmware_nowait(THIS_MODULE, 1,
++				      rtlpriv->cfg->fw_name, rtlpriv->io.dev,
++				      GFP_KERNEL, hw, rtl_fw_cb);
++
+ 
+ 	return 0;
+ }
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
+@@ -257,7 +257,7 @@ int rtl92d_download_fw(struct ieee80211_
+ 	bool fw_downloaded = false, fwdl_in_process = false;
+ 	unsigned long flags;
+ 
+-	if (!rtlhal->pfirmware)
++	if (rtlpriv->max_fw_size == 0 || !rtlhal->pfirmware)
+ 		return 1;
+ 	fwsize = rtlhal->fwsize;
+ 	pfwheader = (u8 *) rtlhal->pfirmware;
+@@ -539,14 +539,8 @@ static void _rtl92d_fill_h2c_command(str
+ void rtl92d_fill_h2c_cmd(struct ieee80211_hw *hw,
+ 			 u8 element_id, u32 cmd_len, u8 *cmdbuffer)
+ {
+-	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
+ 	u32 tmp_cmdbuf[2];
+ 
+-	if (rtlhal->fw_ready == false) {
+-		RT_ASSERT(false, ("return H2C cmd because of Fw "
+-				  "download fail!!!\n"));
+-		return;
+-	}
+ 	memset(tmp_cmdbuf, 0, 8);
+ 	memcpy(tmp_cmdbuf, cmdbuffer, cmd_len);
+ 	_rtl92d_fill_h2c_command(hw, element_id, cmd_len, (u8 *)&tmp_cmdbuf);
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+@@ -932,10 +932,7 @@ int rtl92de_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 ("Failed to download FW. Init HW "
+ 			 "without FW..\n"));
+-		rtlhal->fw_ready = false;
+ 		return 1;
+-	} else {
+-		rtlhal->fw_ready = true;
+ 	}
+ 	rtlhal->last_hmeboxnum = 0;
+ 	rtlpriv->psc.fw_current_inpsmode = false;
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
+@@ -94,7 +94,6 @@ static int rtl92d_init_sw_vars(struct ie
+ 	u8 tid;
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+-	const struct firmware *firmware;
+ 	static int header_print;
+ 
+ 	rtlpriv->dm.dm_initialgain_enable = true;
+@@ -170,6 +169,15 @@ static int rtl92d_init_sw_vars(struct ie
+ 	else if (rtlpriv->psc.reg_fwctrl_lps == 3)
+ 		rtlpriv->psc.fwctrl_psmode = FW_PS_DTIM_MODE;
+ 
++	/* for early mode */
++	rtlpriv->rtlhal.earlymode_enable = true;
++	for (tid = 0; tid < 8; tid++)
++		skb_queue_head_init(&rtlpriv->mac80211.skb_waitq[tid]);
++
++	/* Only load firmware for first MAC */
++	if (header_print)
++		return 0;
++
+ 	/* for firmware buf */
+ 	rtlpriv->rtlhal.pfirmware = vzalloc(0x8000);
+ 	if (!rtlpriv->rtlhal.pfirmware) {
+@@ -178,33 +186,21 @@ static int rtl92d_init_sw_vars(struct ie
+ 		return 1;
+ 	}
+ 
+-	if (!header_print) {
+-		pr_info("Driver for Realtek RTL8192DE WLAN interface\n");
+-		pr_info("Loading firmware file %s\n", rtlpriv->cfg->fw_name);
+-		header_print++;
+-	}
++	rtlpriv->max_fw_size = 0x8000;
++	pr_info("Driver for Realtek RTL8192DE WLAN interface\n");
++	pr_info("Loading firmware file %s\n", rtlpriv->cfg->fw_name);
++	header_print++;
++
+ 	/* request fw */
+-	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+-			       rtlpriv->io.dev);
++	err = request_firmware_nowait(THIS_MODULE, 1, rtlpriv->cfg->fw_name,
++				      rtlpriv->io.dev, GFP_KERNEL, hw,
++				      rtl_fw_cb);
+ 	if (err) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Failed to request firmware!\n"));
+ 		return 1;
+ 	}
+-	if (firmware->size > 0x8000) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Firmware is too big!\n"));
+-		release_firmware(firmware);
+-		return 1;
+-	}
+-	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
+-	rtlpriv->rtlhal.fwsize = firmware->size;
+-	release_firmware(firmware);
+ 
+-	/* for early mode */
+-	rtlpriv->rtlhal.earlymode_enable = true;
+-	for (tid = 0; tid < 8; tid++)
+-		skb_queue_head_init(&rtlpriv->mac80211.skb_waitq[tid]);
+ 	return 0;
+ }
+ 
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.c
+@@ -364,7 +364,7 @@ int rtl92s_download_fw(struct ieee80211_
+ 	u8 fwstatus = FW_STATUS_INIT;
+ 	bool rtstatus = true;
+ 
+-	if (!rtlhal->pfirmware)
++	if (rtlpriv->max_fw_size == 0 || !rtlhal->pfirmware)
+ 		return 1;
+ 
+ 	firmware = (struct rt_firmware *)rtlhal->pfirmware;
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+@@ -952,11 +952,10 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	if (!rtstatus) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 ("Failed to download FW. "
+-			 "Init HW without FW now.., Please copy FW into"
++			 "Init HW without FW now.., "
++			 "Please copy FW into"
+ 			 "/lib/firmware/rtlwifi\n"));
+-		rtlhal->fw_ready = false;
+-	} else {
+-		rtlhal->fw_ready = true;
++		return 1;
+ 	}
+ 
+ 	/* After FW download, we have to reset MAC register */
+@@ -1219,9 +1218,14 @@ void rtl92se_enable_interrupt(struct iee
+ 
+ void rtl92se_disable_interrupt(struct ieee80211_hw *hw)
+ {
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
+-	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
++	struct rtl_priv *rtlpriv;
++	struct rtl_pci *rtlpci;
+ 
++	rtlpriv = rtl_priv(hw);
++	/* if firmware not available, no interrupts */
++	if (!rtlpriv || !rtlpriv->max_fw_size)
++		return;
++	rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+ 	rtl_write_dword(rtlpriv, INTA_MASK, 0);
+ 	rtl_write_dword(rtlpriv, INTA_MASK + 4, 0);
+ 
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/led.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/led.c
+@@ -76,10 +76,13 @@ void rtl92se_sw_led_on(struct ieee80211_
+ 
+ void rtl92se_sw_led_off(struct ieee80211_hw *hw, struct rtl_led *pled)
+ {
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_priv *rtlpriv;
+ 	struct rtl_pci_priv *pcipriv = rtl_pcipriv(hw);
+ 	u8 ledcfg;
+ 
++	rtlpriv = rtl_priv(hw);
++	if (!rtlpriv || rtlpriv->max_fw_size)
++		return;
+ 	RT_TRACE(rtlpriv, COMP_LED, DBG_LOUD,
+ 		 ("LedAddr:%X ledpin=%d\n", LEDCFG, pled->ledpin));
+ 
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+@@ -35,6 +35,8 @@
+ #include "../wifi.h"
+ #include "../core.h"
+ #include "../pci.h"
++#include "../base.h"
++#include "../pci.h"
+ #include "reg.h"
+ #include "def.h"
+ #include "phy.h"
+@@ -89,12 +91,53 @@ static void rtl92s_init_aspm_vars(struct
+ 	rtlpci->const_support_pciaspm = 2;
+ }
+ 
++static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
++{
++	struct ieee80211_hw *hw = context;
++	struct rtl_pci_priv *pcipriv = rtl_pcipriv(hw);
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	struct rtl_pci *rtlpci = rtl_pcidev(pcipriv);
++	struct rt_firmware *pfirmware = NULL;
++	int err;
++
++	RT_TRACE(rtlpriv, COMP_ERR, DBG_LOUD,
++			 ("Firmware callback routine entered!\n"));
++	complete(&rtlpriv->firmware_loading_complete);
++	if (!firmware) {
++		pr_err("Firmware %s not available\n", rtlpriv->cfg->fw_name);
++		rtlpriv->max_fw_size = 0;
++		return;
++	}
++	if (firmware->size > rtlpriv->max_fw_size) {
++		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
++			 ("Firmware is too big!\n"));
++		release_firmware(firmware);
++		return;
++	}
++	pfirmware = (struct rt_firmware *)rtlpriv->rtlhal.pfirmware;
++	memcpy(pfirmware->sz_fw_tmpbuffer, firmware->data, firmware->size);
++	pfirmware->sz_fw_tmpbufferlen = firmware->size;
++	release_firmware(firmware);
++
++	err = ieee80211_register_hw(hw);
++	if (err) {
++		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
++			 ("Can't register mac80211 hw\n"));
++		return;
++	} else {
++		rtlpriv->mac80211.mac80211_registered = 1;
++	}
++	rtlpci->irq_alloc = 1;
++	set_bit(RTL_STATUS_INTERFACE_START, &rtlpriv->status);
++
++	/*init rfkill */
++	rtl_init_rfkill(hw);
++}
++
+ static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+-	const struct firmware *firmware;
+-	struct rt_firmware *pfirmware = NULL;
+ 	int err = 0;
+ 	u16 earlyrxthreshold = 7;
+ 
+@@ -192,27 +235,19 @@ static int rtl92s_init_sw_vars(struct ie
+ 		return 1;
+ 	}
+ 
++	rtlpriv->max_fw_size = sizeof(struct rt_firmware);
++
+ 	pr_info("Driver for Realtek RTL8192SE/RTL8191SE\n"
+ 		"Loading firmware %s\n", rtlpriv->cfg->fw_name);
+ 	/* request fw */
+-	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+-			rtlpriv->io.dev);
++	err = request_firmware_nowait(THIS_MODULE, 1, rtlpriv->cfg->fw_name,
++				      rtlpriv->io.dev, GFP_KERNEL, hw,
++				      rtl92se_fw_cb);
+ 	if (err) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Failed to request firmware!\n"));
+ 		return 1;
+ 	}
+-	if (firmware->size > sizeof(struct rt_firmware)) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Firmware is too big!\n"));
+-		release_firmware(firmware);
+-		return 1;
+-	}
+-
+-	pfirmware = (struct rt_firmware *)rtlpriv->rtlhal.pfirmware;
+-	memcpy(pfirmware->sz_fw_tmpbuffer, firmware->data, firmware->size);
+-	pfirmware->sz_fw_tmpbufferlen = firmware->size;
+-	release_firmware(firmware);
+ 
+ 	return err;
+ }
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -29,8 +29,8 @@
+ 
+ #include <linux/usb.h>
+ #include <linux/export.h>
+-#include "core.h"
+ #include "wifi.h"
++#include "core.h"
+ #include "usb.h"
+ #include "base.h"
+ #include "ps.h"
+@@ -667,15 +667,17 @@ static int rtl_usb_start(struct ieee8021
+ 	struct rtl_usb *rtlusb = rtl_usbdev(rtl_usbpriv(hw));
+ 
+ 	err = rtlpriv->cfg->ops->hw_init(hw);
+-	rtl_init_rx_config(hw);
++	if (!err) {
++		rtl_init_rx_config(hw);
+ 
+-	/* Enable software */
+-	SET_USB_START(rtlusb);
+-	/* should after adapter start and interrupt enable. */
+-	set_hal_start(rtlhal);
++		/* Enable software */
++		SET_USB_START(rtlusb);
++		/* should after adapter start and interrupt enable. */
++		set_hal_start(rtlhal);
+ 
+-	/* Start bulk IN */
+-	_rtl_usb_receive(hw);
++		/* Start bulk IN */
++		_rtl_usb_receive(hw);
++	}
+ 
+ 	return err;
+ }
+@@ -952,6 +954,7 @@ int __devinit rtl_usb_probe(struct usb_i
+ 		return -ENOMEM;
+ 	}
+ 	rtlpriv = hw->priv;
++	init_completion(&rtlpriv->firmware_loading_complete);
+ 	SET_IEEE80211_DEV(hw, &intf->dev);
+ 	udev = interface_to_usbdev(intf);
+ 	usb_get_dev(udev);
+@@ -986,24 +989,12 @@ int __devinit rtl_usb_probe(struct usb_i
+ 		goto error_out;
+ 	}
+ 
+-	/*init rfkill */
+-	/* rtl_init_rfkill(hw); */
+-
+-	err = ieee80211_register_hw(hw);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_INIT, DBG_EMERG,
+-			 ("Can't register mac80211 hw.\n"));
+-		goto error_out;
+-	} else {
+-		rtlpriv->mac80211.mac80211_registered = 1;
+-	}
+-	set_bit(RTL_STATUS_INTERFACE_START, &rtlpriv->status);
+ 	return 0;
+ error_out:
+ 	rtl_deinit_core(hw);
+ 	_rtl_usb_io_handler_release(hw);
+-	ieee80211_free_hw(hw);
+ 	usb_put_dev(udev);
++	complete(&rtlpriv->firmware_loading_complete);
+ 	return -ENODEV;
+ }
+ EXPORT_SYMBOL(rtl_usb_probe);
+@@ -1017,6 +1008,9 @@ void rtl_usb_disconnect(struct usb_inter
+ 
+ 	if (unlikely(!rtlpriv))
+ 		return;
++
++	/* just in case driver is removed before firmware callback */
++	wait_for_completion(&rtlpriv->firmware_loading_complete);
+ 	/*ieee80211_unregister_hw will call ops_stop */
+ 	if (rtlmac->mac80211_registered == 1) {
+ 		ieee80211_unregister_hw(hw);
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -36,6 +36,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/usb.h>
+ #include <net/mac80211.h>
++#include <linux/completion.h>
+ #include "debug.h"
+ 
+ #define RF_CHANGE_BY_INIT			0
+@@ -1045,7 +1046,6 @@ struct rtl_hal {
+ 	u16 fw_subversion;
+ 	bool h2c_setinprogress;
+ 	u8 last_hmeboxnum;
+-	bool fw_ready;
+ 	/*Reserve page start offset except beacon in TxQ. */
+ 	u8 fw_rsvdpage_startoffset;
+ 	u8 h2c_txcmd_seq;
+@@ -1591,6 +1591,7 @@ struct rtl_debug {
+ };
+ 
+ struct rtl_priv {
++	struct completion firmware_loading_complete;
+ 	struct rtl_locks locks;
+ 	struct rtl_works works;
+ 	struct rtl_mac mac80211;
+@@ -1612,6 +1613,7 @@ struct rtl_priv {
+ 	struct rtl_rate_priv *rate_priv;
+ 
+ 	struct rtl_debug dbg;
++	int max_fw_size;
+ 
+ 	/*
+ 	 *hal_cfg : for diff cards
 
 
