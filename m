@@ -1,352 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760989Ab2C3Scs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 14:32:48 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45918 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760727Ab2C3Scp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 14:32:45 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Date: Fri, 30 Mar 2012 23:56:46 +0530
-Message-Id: <20120330182646.10018.85805.sendpatchset@srdronam.in.ibm.com>
-In-Reply-To: <20120330182631.10018.48175.sendpatchset@srdronam.in.ibm.com>
-References: <20120330182631.10018.48175.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 2/2] uprobes/core: Optimize probe hits with help of counter
-x-cbid: 12033008-5490-0000-0000-0000010C8019
+	id S1760059Ab2C3Sio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 14:38:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17540 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755411Ab2C3Sil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 14:38:41 -0400
+Date: Fri, 30 Mar 2012 20:31:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Jason Baron <jbaron@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: syscall_regfunc() && TIF_SYSCALL_TRACEPOINT
+Message-ID: <20120330183104.GA12927@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Hello.
 
-Maintain a per-mm counter (number of uprobes that are inserted on
-this process address space). This counter can be used at probe hit
-time to determine if we need a lookup in the uprobes rbtree.
-Everytime a probe gets inserted successfully, the probe count is
-incremented and everytime a probe gets removed, the probe count is
-decremented.
+I've looked at syscall_regfunc/unregfunc by accident, and I am
+a bit confused...
 
-The new uprobe_munmap hook ensures the count is correct on a unmap
-or remap of a region. We expect that once a uprobe_munmap() is
-called, the vma goes away.  So uprobe_unregister() finding a probe
-to unregister would either mean unmap event hasnt occurred yet or a
-mmap event on the same executable file occured after a unmap event.
+	void syscall_regfunc(void)
+	{
+		unsigned long flags;
+		struct task_struct *g, *t;
 
-Additionally, uprobe_mmap hook now also gets called:
-a. on every executable vma that is COWed at fork.
-b. a vma of interest is newly mapped; breakpoint insertion also
-   happens at the required address.
+		if (!sys_tracepoint_refcount) {
+			read_lock_irqsave(&tasklist_lock, flags);
 
-On process creation, make sure the probes count in the child is set
-correctly.
+Why _irqsave? write_lock(tasklist) needs to disable irqs, but read_
+doesn't. Any subtle reason I missed?
 
-Special cases that are taken care include:
-a. mremap
-b. VM_DONTCOPY vmas on fork()
-c. insertion/removal races in the parent during fork().
+			do_each_thread(g, t) {
+				/* Skip kernel threads. */
+				if (t->mm)
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
+We should check PF_KTHREAD, not ->mm.
 
-Changelog:
-(v7)
-- Move mm->mm_uprobes_count to mm->uprobes_state.count.
-- Separate this patch from the patch that implements uprobe_mmap.
-- Increment counter only after verifying that the probe lies underneath.
+					set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
 
-(v5)
-- While forking, handle vma's that have VM_DONTCOPY.
-- While forking, handle race of new breakpoints being inserted / removed
-  in the parent process.
+But the main question is, can't we race with clone() and miss the
+new child? The new task is not "visible" to do_each_thread() until
+copy_process()->list_add_tail_rcu(thread_group/init_task.tasks).
 
- include/linux/uprobes.h |    5 ++
- kernel/events/uprobes.c |  119 ++++++++++++++++++++++++++++++++++++++++++++---
- kernel/fork.c           |    3 +
- mm/mmap.c               |   10 ++++
- 4 files changed, 128 insertions(+), 9 deletions(-)
+Don't we need something like the patch below?
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index a111460..d594d3b 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -99,6 +99,7 @@ struct xol_area {
- 
- struct uprobes_state {
- 	struct xol_area		*xol_area;
-+	atomic_t		count;
- };
- extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
- extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
-@@ -106,6 +107,7 @@ extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
- extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern int uprobe_mmap(struct vm_area_struct *vma);
-+extern void uprobe_munmap(struct vm_area_struct *vma);
- extern void uprobe_free_utask(struct task_struct *t);
- extern void uprobe_copy_process(struct task_struct *t);
- extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
-@@ -132,6 +134,9 @@ static inline int uprobe_mmap(struct vm_area_struct *vma)
- {
- 	return 0;
- }
-+static inline void uprobe_munmap(struct vm_area_struct *vma)
-+{
-+}
- static inline void uprobe_notify_resume(struct pt_regs *regs)
- {
- }
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index b395edb..29e881b 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -642,6 +642,29 @@ copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
- 	return __copy_insn(mapping, vma, uprobe->arch.insn, bytes, uprobe->offset);
- }
- 
-+/*
-+ * How mm->uprobes_state.count gets updated
-+ * uprobe_mmap() increments the count if
-+ * 	- it successfully adds a breakpoint.
-+ * 	- it cannot add a breakpoint, but sees that there is a underlying
-+ * 	  breakpoint (via a is_swbp_at_addr()).
-+ *
-+ * uprobe_munmap() decrements the count if
-+ * 	- it sees a underlying breakpoint, (via is_swbp_at_addr)
-+ * 	  (Subsequent uprobe_unregister wouldnt find the breakpoint
-+ * 	  unless a uprobe_mmap kicks in, since the old vma would be
-+ * 	  dropped just after uprobe_munmap.)
-+ *
-+ * uprobe_register increments the count if:
-+ * 	- it successfully adds a breakpoint.
-+ *
-+ * uprobe_unregister decrements the count if:
-+ * 	- it sees a underlying breakpoint and removes successfully.
-+ * 	  (via is_swbp_at_addr)
-+ * 	  (Subsequent uprobe_munmap wouldnt find the breakpoint
-+ * 	  since there is no underlying breakpoint after the
-+ * 	  breakpoint removal.)
-+ */
- static int
- install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 			struct vm_area_struct *vma, loff_t vaddr)
-@@ -675,7 +698,19 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 
- 		uprobe->flags |= UPROBE_COPY_INSN;
- 	}
-+
-+	/*
-+	 * Ideally, should be updating the probe count after the breakpoint
-+	 * has been successfully inserted. However a thread could hit the
-+	 * breakpoint we just inserted even before the probe count is
-+	 * incremented. If this is the first breakpoint placed, breakpoint
-+	 * notifier might ignore uprobes and pass the trap to the thread.
-+	 * Hence increment before and decrement on failure.
-+	 */
-+	atomic_inc(&mm->uprobes_state.count);
- 	ret = set_swbp(&uprobe->arch, mm, addr);
-+	if (ret)
-+		atomic_dec(&mm->uprobes_state.count);
- 
- 	return ret;
- }
-@@ -683,7 +718,8 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- static void
- remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
- {
--	set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true);
-+	if (!set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true))
-+		atomic_dec(&mm->uprobes_state.count);
- }
- 
- /*
-@@ -1009,7 +1045,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	struct list_head tmp_list;
- 	struct uprobe *uprobe, *u;
- 	struct inode *inode;
--	int ret;
-+	int ret, count;
- 
- 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
- 		return 0;
-@@ -1023,6 +1059,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	build_probe_list(inode, &tmp_list);
- 
- 	ret = 0;
-+	count = 0;
- 
- 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
- 		loff_t vaddr;
-@@ -1030,21 +1067,85 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 		list_del(&uprobe->pending_list);
- 		if (!ret) {
- 			vaddr = vma_address(vma, uprobe->offset);
--			if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
--				ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
--				/* Ignore double add: */
--				if (ret == -EEXIST)
--					ret = 0;
-+
-+			if (vaddr < vma->vm_start || vaddr >= vma->vm_end) {
-+				put_uprobe(uprobe);
-+				continue;
- 			}
-+
-+			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
-+
-+			/* Ignore double add: */
-+			if (ret == -EEXIST) {
-+				ret = 0;
-+
-+				if (!is_swbp_at_addr(vma->vm_mm, vaddr))
-+					continue;
-+
-+				/*
-+				 * Unable to insert a breakpoint, but
-+				 * breakpoint lies underneath. Increment the
-+				 * probe count.
-+				 */
-+				atomic_inc(&vma->vm_mm->uprobes_state.count);
-+			}
-+
-+			if (!ret)
-+				count++;
- 		}
- 		put_uprobe(uprobe);
- 	}
- 
- 	mutex_unlock(uprobes_mmap_hash(inode));
- 
-+	if (ret)
-+		atomic_sub(count, &vma->vm_mm->uprobes_state.count);
-+
- 	return ret;
- }
- 
-+/*
-+ * Called in context of a munmap of a vma.
-+ */
-+void uprobe_munmap(struct vm_area_struct *vma)
-+{
-+	struct list_head tmp_list;
-+	struct uprobe *uprobe, *u;
-+	struct inode *inode;
-+
-+	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-+		return;
-+
-+	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
-+		return;
-+
-+	inode = vma->vm_file->f_mapping->host;
-+	if (!inode)
-+		return;
-+
-+	INIT_LIST_HEAD(&tmp_list);
-+	mutex_lock(uprobes_mmap_hash(inode));
-+	build_probe_list(inode, &tmp_list);
-+
-+	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-+		loff_t vaddr;
-+
-+		list_del(&uprobe->pending_list);
-+		vaddr = vma_address(vma, uprobe->offset);
-+
-+		if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
-+			/*
-+			 * An unregister could have removed the probe before
-+			 * unmap. So check before we decrement the count.
-+			 */
-+			if (is_swbp_at_addr(vma->vm_mm, vaddr) == 1)
-+				atomic_dec(&vma->vm_mm->uprobes_state.count);
-+		}
-+		put_uprobe(uprobe);
-+	}
-+	mutex_unlock(uprobes_mmap_hash(inode));
-+}
-+
- /* Slot allocation for XOL */
- static int xol_add_vma(struct xol_area *area)
- {
-@@ -1150,6 +1251,7 @@ void uprobe_clear_state(struct mm_struct *mm)
- void uprobe_reset_state(struct mm_struct *mm)
- {
- 	mm->uprobes_state.xol_area = NULL;
-+	atomic_set(&mm->uprobes_state.count, 0);
- }
- 
- /*
-@@ -1504,7 +1606,8 @@ int uprobe_pre_sstep_notifier(struct pt_regs *regs)
- {
- 	struct uprobe_task *utask;
- 
--	if (!current->mm)
-+	if (!current->mm || !atomic_read(&current->mm->uprobes_state.count))
-+		/* task is currently not uprobed */
- 		return 0;
- 
- 	utask = current->utask;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index b00f620..ca9a384 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -422,6 +422,9 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 
- 		if (retval)
- 			goto out;
-+
-+		if (file && uprobe_mmap(tmp))
-+			goto out;
- 	}
- 	/* a new mm has just been created */
- 	arch_dup_mmap(oldmm, mm);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 9ae8650..b17a39f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -218,6 +218,7 @@ void unlink_file_vma(struct vm_area_struct *vma)
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		__remove_shared_vm_struct(vma, file, mapping);
- 		mutex_unlock(&mapping->i_mmap_mutex);
-+		uprobe_munmap(vma);
- 	}
- }
- 
-@@ -545,8 +546,14 @@ again:			remove_next = 1 + (end > next->vm_end);
- 
- 	if (file) {
- 		mapping = file->f_mapping;
--		if (!(vma->vm_flags & VM_NONLINEAR))
-+		if (!(vma->vm_flags & VM_NONLINEAR)) {
- 			root = &mapping->i_mmap;
-+			uprobe_munmap(vma);
-+
-+			if (adjust_next)
-+				uprobe_munmap(next);
-+		}
-+
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		if (insert) {
- 			/*
-@@ -625,6 +632,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 
- 	if (remove_next) {
- 		if (file) {
-+			uprobe_munmap(next);
- 			fput(file);
- 			if (next->vm_flags & VM_EXECUTABLE)
- 				removed_exe_file_vma(mm);
+Oleg.
 
+
+--- x/kernel/fork.c
++++ x/kernel/fork.c
+@@ -1446,7 +1446,12 @@ static struct task_struct *copy_process(
+ 
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
++#ifdef CONFIG_TRACEPOINTS
++	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
++		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++#endif
+ 	write_unlock_irq(&tasklist_lock);
++
+ 	proc_fork_connector(p);
+ 	cgroup_post_fork(p);
+ 	if (clone_flags & CLONE_THREAD)
 
