@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759507Ab2C3H4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 03:56:40 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:56116 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759344Ab2C3H4c (ORCPT
+	id S1759580Ab2C3IJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 04:09:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65025 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759344Ab2C3IJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 03:56:32 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] video/console: Clip the right margin clear to the visible region
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4F750970.6040801@gmx.de>
-References: <1332793022-29292-1-git-send-email-chris@chris-wilson.co.uk> <4F750970.6040801@gmx.de>
-Date: Fri, 30 Mar 2012 08:56:10 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1333094186_153174@CP5-2952>
+	Fri, 30 Mar 2012 04:09:22 -0400
+Message-ID: <4F756A2D.9020500@linaro.org>
+Date: Fri, 30 Mar 2012 16:09:17 +0800
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Richard Zhao <richard.zhao@linaro.org>
+Subject: Re: [PATCH] ARM: dts: imx6q: add anatop regulators
+References: <1332214139-6833-1-git-send-email-paul.liu@linaro.org> <20120322074520.GD2213@S2101-09.ap.freescale.net>
+In-Reply-To: <20120322074520.GD2213@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012 01:16:32 +0000, Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
-> Hi Chris,
+(2012年03月22日 15:45), Shawn Guo wrote:
+>> +				};
+>> +
+>> +				regulator-1p1@110 {
+>> +					compatible = "fsl,anatop-regulator";
+>> +					regulator-name = "vdd1p1";
+>> +					regulator-min-microvolt = <800000>;
+>> +					regulator-max-microvolt = <1400000>;
+>> +					regulator-always-on;
+>> +					reg = <0x110>;
+>> +					anatop-vol-bit-shift = <8>;
+>> +					anatop-vol-bit-width = <5>;
+>> +					anatop-min-bit-val = <4>;
+>> +					anatop-min-voltage = <800000>;
+>> +					anatop-max-voltage = <1400000>;
 > 
-> On 03/26/2012 08:17 PM, Chris Wilson wrote:
-> > For some unknown reason, yres_virtual was 2x larger the the size specified
-> > by i915 and so when blit_clear_margins() tried to clear the full virtual
-> > right-hand margin it tried to write far beyond the end of the buffer.
-> > 
-> > This limits the clear to only the visible portion of the right-hand
-> > margin, similar to how the bottom margin is treated.
-> > 
-> > Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=38138
-> 
-> as you also found the root of the problem and posted a patch to fix i915
-> (or rather all KMS-based framebuffers) by validating the virtual
-> resolution in check var, I don't see any reason to apply this one. I'm
-> not sure about it, but changing the behaviour of this function might
-> cause some undesired changes in user experience and as there is no
-> problem with this code as is, I'd prefer to not change it.
+> 1.375V
 
-Ok, thanks for the review. Preventing userspace from programming an
-unhandled value of yres_virtual is definitely the way forward.
--Chris
+Hi Shawn,
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Sorry, why it is not 1.4V?
+
+LDO 1p1 should be from range 0.8V to 1.4V on section 53.3.1
