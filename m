@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934502Ab2C3Vyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:54:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S965685Ab2C3Vyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:54:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965766Ab2C3VTU (ORCPT
+	with ESMTP id S965724Ab2C3VS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:19:20 -0400
-Message-Id: <20120330194834.173342861@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:18:56 -0400
+Message-Id: <20120330194832.665053277@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:17 -0700
+Date: Fri, 30 Mar 2012 12:49:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrew Vagin <avagin@openvz.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: [ 052/175] uevent: send events in correct order according to seqnum (v3)
+        alan@lxorguk.ukuu.org.uk,
+        Simon Graham <simon.graham@virtualcomputer.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 044/175] rtlwifi: Handle previous allocation failures when freeing device memory
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,94 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Vagin <avagin@openvz.org>
+From: Simon Graham <simon.graham@virtualcomputer.com>
 
-commit 7b60a18da393ed70db043a777fd9e6d5363077c4 upstream.
+commit 7f66c2f93e5779625c10d262c84537427a2673ca upstream.
 
-The queue handling in the udev daemon assumes that the events are
-ordered.
+Handle previous allocation failures when freeing device memory
 
-Before this patch uevent_seqnum is incremented under sequence_lock,
-than an event is send uner uevent_sock_mutex. I want to say that code
-contained a window between incrementing seqnum and sending an event.
-
-This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
-
-v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
-v3: unlock the mutex before the goto exit
-
-Thanks for Kay for the comments.
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
-Tested-By: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Simon Graham <simon.graham@virtualcomputer.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/kobject_uevent.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/net/wireless/rtlwifi/pci.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -29,16 +29,17 @@
- 
- u64 uevent_seqnum;
- char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
--static DEFINE_SPINLOCK(sequence_lock);
- #ifdef CONFIG_NET
- struct uevent_sock {
- 	struct list_head list;
- 	struct sock *sk;
- };
- static LIST_HEAD(uevent_sock_list);
--static DEFINE_MUTEX(uevent_sock_mutex);
- #endif
- 
-+/* This lock protects uevent_seqnum and uevent_sock_list */
-+static DEFINE_MUTEX(uevent_sock_mutex);
-+
- /* the strings here must match the enum in include/linux/kobject.h */
- static const char *kobject_actions[] = {
- 	[KOBJ_ADD] =		"add",
-@@ -136,7 +137,6 @@ int kobject_uevent_env(struct kobject *k
- 	struct kobject *top_kobj;
- 	struct kset *kset;
- 	const struct kset_uevent_ops *uevent_ops;
--	u64 seq;
- 	int i = 0;
- 	int retval = 0;
- #ifdef CONFIG_NET
-@@ -243,17 +243,16 @@ int kobject_uevent_env(struct kobject *k
- 	else if (action == KOBJ_REMOVE)
- 		kobj->state_remove_uevent_sent = 1;
- 
-+	mutex_lock(&uevent_sock_mutex);
- 	/* we will send an event, so request a new sequence number */
--	spin_lock(&sequence_lock);
--	seq = ++uevent_seqnum;
--	spin_unlock(&sequence_lock);
--	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
--	if (retval)
-+	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)++uevent_seqnum);
-+	if (retval) {
-+		mutex_unlock(&uevent_sock_mutex);
- 		goto exit;
-+	}
- 
- #if defined(CONFIG_NET)
- 	/* send netlink message */
--	mutex_lock(&uevent_sock_mutex);
- 	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
- 		struct sock *uevent_sock = ue_sk->sk;
- 		struct sk_buff *skb;
-@@ -290,8 +289,8 @@ int kobject_uevent_env(struct kobject *k
- 		} else
- 			retval = -ENOMEM;
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1157,10 +1157,12 @@ static void _rtl_pci_free_tx_ring(struct
+ 		ring->idx = (ring->idx + 1) % ring->entries;
  	}
--	mutex_unlock(&uevent_sock_mutex);
- #endif
-+	mutex_unlock(&uevent_sock_mutex);
  
- 	/* call uevent_helper, usually only enabled during early boot */
- 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
+-	pci_free_consistent(rtlpci->pdev,
+-			    sizeof(*ring->desc) * ring->entries,
+-			    ring->desc, ring->dma);
+-	ring->desc = NULL;
++	if (ring->desc) {
++		pci_free_consistent(rtlpci->pdev,
++				    sizeof(*ring->desc) * ring->entries,
++				    ring->desc, ring->dma);
++		ring->desc = NULL;
++	}
+ }
+ 
+ static void _rtl_pci_free_rx_ring(struct rtl_pci *rtlpci)
+@@ -1184,12 +1186,14 @@ static void _rtl_pci_free_rx_ring(struct
+ 			kfree_skb(skb);
+ 		}
+ 
+-		pci_free_consistent(rtlpci->pdev,
++		if (rtlpci->rx_ring[rx_queue_idx].desc) {
++			pci_free_consistent(rtlpci->pdev,
+ 				    sizeof(*rtlpci->rx_ring[rx_queue_idx].
+ 					   desc) * rtlpci->rxringcount,
+ 				    rtlpci->rx_ring[rx_queue_idx].desc,
+ 				    rtlpci->rx_ring[rx_queue_idx].dma);
+-		rtlpci->rx_ring[rx_queue_idx].desc = NULL;
++			rtlpci->rx_ring[rx_queue_idx].desc = NULL;
++		}
+ 	}
+ }
+ 
 
 
