@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935859Ab2C3WTc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:19:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S964939Ab2C3WTz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:19:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964898Ab2C3VMw (ORCPT
+	with ESMTP id S964827Ab2C3VMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:12:52 -0400
-Message-Id: <20120330194851.724107757@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:12:46 -0400
+Message-Id: <20120330194850.012225138@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:53 -0700
+Date: Fri, 30 Mar 2012 12:49:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 080/149] target: Fix 16-bit target ports for SET TARGET PORT GROUPS emulation
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: [ 073/149] drm/i915: Only clear the GPU domains upon a successful finish
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 33395fb8a13731c7ef7b175dbf5a4d8a6738fe6c upstream.
+commit c501ae7f332cdaf42e31af30b72b4b66cbbb1604 upstream.
 
-The old code did (MSB << 8) & 0xff, which always evaluates to 0.  Just use
-get_unaligned_be16() so we don't have to worry about whether our open-coded
-version is correct or not.
+By clearing the GPU read domains before waiting upon the buffer, we run
+the risk of the wait being interrupted and the domains prematurely
+cleared. The next time we attempt to wait upon the buffer (after
+userspace handles the signal), we believe that the buffer is idle and so
+skip the wait.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+There are a number of bugs across all generations which show signs of an
+overly haste reuse of active buffers.
+
+Such as:
+
+  https://bugs.freedesktop.org/show_bug.cgi?id=29046
+  https://bugs.freedesktop.org/show_bug.cgi?id=35863
+  https://bugs.freedesktop.org/show_bug.cgi?id=38952
+  https://bugs.freedesktop.org/show_bug.cgi?id=40282
+  https://bugs.freedesktop.org/show_bug.cgi?id=41098
+  https://bugs.freedesktop.org/show_bug.cgi?id=41102
+  https://bugs.freedesktop.org/show_bug.cgi?id=41284
+  https://bugs.freedesktop.org/show_bug.cgi?id=42141
+
+A couple of those pre-date i915_gem_object_finish_gpu(), so may be
+unrelated (such as a wild write from a userspace command buffer), but
+this does look like a convincing cause for most of those bugs.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_alua.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -30,6 +30,7 @@
- #include <linux/export.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
-+#include <asm/unaligned.h>
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3084,10 +3084,13 @@ i915_gem_object_finish_gpu(struct drm_i9
+ 			return ret;
+ 	}
  
- #include <target/target_core_base.h>
- #include <target/target_core_device.h>
-@@ -268,8 +269,7 @@ int target_emulate_set_target_port_group
- 		 * changed.
- 		 */
- 		if (primary) {
--			tg_pt_id = ((ptr[2] << 8) & 0xff);
--			tg_pt_id |= (ptr[3] & 0xff);
-+			tg_pt_id = get_unaligned_be16(ptr + 2);
- 			/*
- 			 * Locate the matching target port group ID from
- 			 * the global tg_pt_gp list
-@@ -313,8 +313,7 @@ int target_emulate_set_target_port_group
- 			 * the Target Port in question for the the incoming
- 			 * SET_TARGET_PORT_GROUPS op.
- 			 */
--			rtpi = ((ptr[2] << 8) & 0xff);
--			rtpi |= (ptr[3] & 0xff);
-+			rtpi = get_unaligned_be16(ptr + 2);
- 			/*
- 			 * Locate the matching relative target port identifer
- 			 * for the struct se_device storage object.
++	ret = i915_gem_object_wait_rendering(obj);
++	if (ret)
++		return ret;
++
+ 	/* Ensure that we invalidate the GPU's caches and TLBs. */
+ 	obj->base.read_domains &= ~I915_GEM_GPU_DOMAINS;
+-
+-	return i915_gem_object_wait_rendering(obj);
++	return 0;
+ }
+ 
+ /**
 
 
