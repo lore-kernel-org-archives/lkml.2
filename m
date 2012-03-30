@@ -1,168 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab2C3BUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 21:20:23 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:35589
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754443Ab2C3BUS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 21:20:18 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zzc89bh1dbaL1432N98dKzz1202hzzz2dh668h839h93fhd25hd2bh)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1OBPO-01-0KC-02
-X-M-MSG: 
-Date: Fri, 30 Mar 2012 09:07:31 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-Message-ID: <20120330010730.GA27346@ladygaga>
-References: <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
- <Pine.LNX.4.44L0.1203291050580.1417-100000@iolanthe.rowland.org>
+	id S1760218Ab2C3BUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 21:20:41 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:50609 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443Ab2C3BUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 21:20:36 -0400
+Date: Fri, 30 Mar 2012 10:20:34 +0900
+From: Norbert Preining <preining@logic.at>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Dave Airlie <airlied@gmail.com>
+Subject: Re: regression(?) 3.3-rc4 -> 3.3-rc5: drm intel hangs
+Message-ID: <20120330012034.GI6277@gamma.logic.tuwien.ac.at>
+References: <20120228040327.GA9973@gamma.logic.tuwien.ac.at> <20120228083248.GA4249@phenom.ffwll.local> <20120309080741.GC7149@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1203291050580.1417-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-OriginalArrivalTime: 30 Mar 2012 01:20:05.0241 (UTC) FILETIME=[3CE4D690:01CD0E13]
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120309080741.GC7149@gamma.logic.tuwien.ac.at>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 11:00:18AM -0400, Alan Stern wrote:
-> On Thu, 29 Mar 2012, Aaron Lu wrote:
+Hi everyone,
+
+is there anything else I can provide?
+
+On Fr, 09 Mär 2012, Norbert Preining wrote:
+> Hi everyone,
 > 
-> > >>> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
-> > >>> ï¿½ ï¿½ ï¿½ unsigned int events;
-> > >>> ï¿½ ï¿½ ï¿½ int ret;
-> > >>>
-> > >>> + ï¿½ ï¿½ /* Not necessary to check events if enter ZPODD state */
-> > >>> + ï¿½ ï¿½ if (cd->device->power_off &&
-> > >>> + ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ pm_runtime_suspended(&cd->device->sdev_gendev))
-> > >>> + ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ return 0;
-> > >>
-> > >> The comment is wrong and the new code does the wrong thing. ï¿½You _do_
-> > >> have to check for events even in the ZPODD state, which means
-> > >> sr_check_events must power-up the device if necessary.
-> > >> sd_check_events in James Bottomley's scsi-misc tree now does the right
-> > >> thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
-> > >
-> > > The problem is userspace(GNOME, for example) will check for events
-> > > every seconds.
-> > > If sr is power up so frequently then we lost the expected power
-> > > savings from ZPODD.
+> currently 3.3.0-rc6+  I just was hit by that after wake up from ram:
 > 
-> That's true.  There's nothing you can do about it in the kernel; it's 
-> up to userspace to change the frequency of event polling.
-> 
-> > Agreed.
-> > BTW, it's udevd on my Linux box that changed the default poll msecs kernel param
-> > which caused sr_check_events being called every 2 seconds.
-> 
-> Indeed.
-> 
-> > > There are 2 events:
-> > >
-> > > DISK_EVENT_MEDIA_CHANGE
-> > > DISK_EVENT_EJECT_REQUEST
-> > >
-> > > In current implementation, if sr is in ZPODD state, then it means
-> > > there is no disk in the CDROM.
-> > > So if sr is in ZPODD state, MEDIA_CHANGE would never happen.
-> 
-> Sure it will: when the user inserts a disc.
-> 
-> > > EJECT_REQUEST seems can be ignored, since there is no disk in the CDROM at all.
-> > >
+> On Di, 28 Feb 2012, Daniel Vetter wrote:
+> > > Feb 28 11:42:47 mithrandir kernel: [15627.756071]
+> > > [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> > > Feb 28 11:42:47 mithrandir kernel: [15627.756087] [drm] capturing error
+> > > event; look for more information in /debug/dri/0/i915_error_state
 > > 
-> > For the ODD to be put into suspend state, the conditions should be:
-> > 1 tray closed
-> > 2 no media inside
-> > I think we missed the condition 1 check now.
-> > 
-> > And if we follow the two conditions, the events can be safely ignored.
+> > Wee need this i915_error_state file from debugfs (you might need to mount
+> > that first again) to diagnose gpu hangs. Also, it only contains
+> > information after a crash, so you need to rehang your machine if you've
+> > rebooted since then.
 > 
-> No, they can't.  Otherwise the device won't power back up when the user 
-> inserts a new disc.
+> Now I could get that file from debugfs, and the dmesg output with
+> proper debug value.
 > 
+> Attached are both.
 
-The ODD is put to zero power state, so it can't react to the eject
-button without being powered up back first ;-)
-On current implementation, ACPI is used to power back up the ODD like this:
-1 User press the eject button;
-2 A gpe event fired, and ACPI interrupt, and the corresponding gpe
-handler runs and the ODD's ACPI handle is notified about DEVICE_WAKE_UP;
-3 In ODD's acpi notify handler, we power back up it by scsi_autopm_get_device.
-This is handled in the following Lin Ming's patch:
-[PATCH v3 2/7] libata-acpi: add ata port runtime D3Cold support
+I think I have sent everything that I can send. The problem happens
+now again and again, but no pattern. Of course, *always* after
+resume from RAM.
 
-> > What do you think of blocking events for it when going to suspend and unblocking
-> > when resume? This could erase the unnecessary calls of the check events function
-> > when ODD is suspended.
-> > But disk_(un)block_events are not exported and can't be used in sr
-> > module. So I'm
-> > not sure how to do this.
-> > 
-> > Another thing to consider is, user might want to eject the tray by
-> > software like the
-> > eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
-> > thinking how to do this correctly.
-> 
-> What's the problem?  Can't the user already eject the tray via 
-> software?
-> 
+Best wishes
 
-When the ODD is put to zero power state, it will not be able to handle
-commands like CDROMEJECT. We have to power it up first and then handle
-the ioctl request. Currently, we only power back up the ODD when user
-press the eject button as explained above.
-
-> > >>> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
-> > >>> ï¿½ ï¿½ ï¿½ cd->media_present = scsi_status_is_good(ret) ||
-> > >>> ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ (scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
-> > >>>
-> > >>> + ï¿½ ï¿½ if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
-> > >>> + ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ scsi_autopm_put_device(cd->device);
-> > >>
-> > >> You can see your mistake here. ï¿½You call scsi_autopm_put_device here
-> > >> without calling scsi_autopm_get_device earlier.
-> > >
-> > > Let me check this.
-> > 
-> > I guess the earlier call of get device is this?
-> > 
-> >  869 int scsi_sysfs_add_sdev(struct scsi_device *sdev)
-> > ... ...
-> >  891
-> >  892        /* The following call will keep sdev active indefinitely, until
-> >  893         * its driver does a corresponding scsi_autopm_pm_device().  Only
-> >  894         * drivers supporting autosuspend will do this.
-> >  895         */
-> >  896        scsi_autopm_get_device(sdev);
-> >  897
-> 
-> You have to do this correctly.  Currently sr doesn't support runtime PM 
-> at all.  If you do want to support it, then the driver should call 
-> scsi_autopm_put_device at the end of the probe routine (or whenever it 
-> is ready to allow runtime suspends) and scsi_autopm_get_device at the 
-> start of the remove routine (or whenever it wants to prevent runtime 
-> suspends).
-> 
-> The idea is that the driver is probed with the PM usage counter set to
-> 1, so a runtime suspend won't occur until you do a put.  Similarly, in
-> the remove routine, you must make sure that your gets and puts balance
-> out.
-> 
-
-Oh, I see, thanks for your clear explanation.
-
--Aaron
-
-
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+`...and the Universe,' continued the waiter, determined
+not to be deflected on his home stretch, `will explode
+later for your pleasure.'
+Ford's head swivelled slowly towards him. He spoke with
+feeling.
+What sort of drinks do you serve in this
+place?'
+The waiter laughed a polite little waiter's laugh.
+I think sir has perhaps misunderstood me.'
+`Oh, I hope not,' breathed Ford.
+                 --- Ford in paradise.
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
