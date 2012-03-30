@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761739Ab2C3WIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:08:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41520 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761722Ab2C3WIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:08:16 -0400
-Date: Sat, 31 Mar 2012 00:07:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-In-Reply-To: <4F7616F5.4070000@zytor.com>
-Message-ID: <alpine.LFD.2.02.1203302333560.2542@ionos>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F7616F5.4070000@zytor.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1761714Ab2C3WIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:08:32 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33875 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761689Ab2C3WIZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 18:08:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <201203301850.22784.arnd@arndb.de>
+References: <201203301744.16762.arnd@arndb.de>
+	<201203301850.22784.arnd@arndb.de>
+Date: Fri, 30 Mar 2012 17:08:23 -0500
+Message-ID: <CAJN=5gDBQJc_KXUadqtzmxPqPF71PDcToGo_T-agNey9eN2MQA@mail.gmail.com>
+Subject: Re: swap on eMMC and other flash
+From: Zach Pfeffer <zach.pfeffer@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-kernel@lists.linaro.org, linux-mm@kvack.org,
+        Alex Lemberg <alex.lemberg@sandisk.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Hyojin Jeong <syr.jeong@samsung.com>,
+        "Luca Porzio (lporzio)" <lporzio@micron.com>, kernel-team@android.com,
+        Yejin Moon <yejin.moon@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012, H. Peter Anvin wrote:
+On 30 March 2012 13:50, Arnd Bergmann <arnd@arndb.de> wrote:
+> (sorry for the duplicated email, this corrects the address of the android
+> kernel team, please reply here)
+>
+> On Friday 30 March 2012, Arnd Bergmann wrote:
+>
+>  We've had a discussion in the Linaro storage team (Saugata, Venkat and me,
+>  with Luca joining in on the discussion) about swapping to flash based media
+>  such as eMMC. This is a summary of what we found and what we think should
+>  be done. If people agree that this is a good idea, we can start working
+>  on it.
+>
+>  The basic problem is that Linux without swap is sort of crippled and some
+>  things either don't work at all (hibernate) or not as efficient as they
+>  should (e.g. tmpfs). At the same time, the swap code seems to be rather
+>  inappropriate for the algorithms used in most flash media today, causing
+>  system performance to suffer drastically, and wearing out the flash hardware
+>  much faster than necessary. In order to change that, we would be
+>  implementing the following changes:
+>
+>  1) Try to swap out multiple pages at once, in a single write request. My
+>  reading of the current code is that we always send pages one by one to
+>  the swap device, while most flash devices have an optimum write size of
+>  32 or 64 kb and some require an alignment of more than a page. Ideally
+>  we would try to write an aligned 64 kb block all the time. Writing aligned
+>  64 kb chunks often gives us ten times the throughput of linear 4kb writes,
+>  and going beyond 64 kb usually does not give any better performance.
 
-> What is the current status of this patchset?  I haven't looked at it too
-> closely because I have been focused on 3.4 up until now...
+Last I read Transparent Huge Pages are still paged in and out a page
+at a time, is this or was this ever the case? If it is the case should
+the paging system be extended to support THP which would take care of
+the big block issues with flash media?
 
-The real question is whether these heuristics are the correct approach
-or not.
-
-If I look at it from the non virtualized kernel side then this is ass
-backwards. We know already that we are holding a spinlock which might
-cause other (v)cpus going into eternal spin. The non virtualized
-kernel solves this by disabling preemption and therefor getting out of
-the critical section as fast as possible,
-
-The virtualization problem reminds me a lot of the problem which RT
-kernels are observing where non raw spinlocks are turned into
-"sleeping spinlocks" and therefor can cause throughput issues for non
-RT workloads.
-
-Though the virtualized situation is even worse. Any preempted guest
-section which holds a spinlock is prone to cause unbound delays.
-
-The paravirt ticketlock solution can only mitigate the problem, but
-not solve it. With massive overcommit there is always a way to trigger
-worst case scenarious unless you are educating the scheduler to cope
-with that.
-
-So if we need to fiddle with the scheduler and frankly that's the only
-way to get a real gain (the numbers, which are achieved by this
-patches, are not that impressive) then the question arises whether we
-should turn the whole thing around.
-
-I know that Peter is going to go berserk on me, but if we are running
-a paravirt guest then it's simple to provide a mechanism which allows
-the host (aka hypervisor) to check that in the guest just by looking
-at some global state.
-
-So if a guest exits due to an external event it's easy to inspect the
-state of that guest and avoid to schedule away when it was interrupted
-in a spinlock held section. That guest/host shared state needs to be
-modified to indicate the guest to invoke an exit when the last nested
-lock has been released.
-
-Of course this needs to be time bound, so a rogue guest cannot
-monopolize the cpu forever, but that's the least to worry about
-problem simply because a guest which does not get out of a spinlocked
-region within a certain amount of time is borked and elegible to
-killing anyway.
-
-Thoughts ?
-
-Thanks,
-
-	tglx
+>  2) Make variable sized swap clusters. Right now, the swap space is
+>  organized in clusters of 256 pages (1MB), which is less than the typical
+>  erase block size of 4 or 8 MB. We should try to make the swap cluster
+>  aligned to erase blocks and have the size match to avoid garbage collection
+>  in the drive. The cluster size would typically be set by mkswap as a new
+>  option and interpreted at swapon time.
+>
+>  3) As Luca points out, some eMMC media would benefit significantly from
+>  having discard requests issued for every page that gets freed from
+>  the swap cache, rather than at the time just before we reuse a swap
+>  cluster. This would probably have to become a configurable option
+>  as well, to avoid the overhead of sending the discard requests on
+>  media that don't benefit from this.
+>
+>  Does this all sound appropriate for the Linux memory management people?
+>
+>  Also, does this sound useful to the Android developers? Would you
+>  start using swap if we make it perform well and not destroy the drives?
+>
+>  Finally, does this plan match up with the capabilities of the
+>  various eMMC devices? I know more about SD and USB devices and
+>  I'm quite convinced that it would help there, but eMMC can be
+>  more like an SSD in some ways, and the current code should be fine
+>  for real SSDs.
+>
+>        Arnd
+>
+>
+>
+> _______________________________________________
+> linaro-kernel mailing list
+> linaro-kernel@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-kernel
 
 
+
+-- 
+Zach Pfeffer
+Android Platform Team Lead, Linaro Platform Teams
+Linaro.org | Open source software for ARM SoCs
+Follow Linaro: http://www.facebook.com/pages/Linaro
+http://twitter.com/#!/linaroorg - http://www.linaro.org/linaro-blog
