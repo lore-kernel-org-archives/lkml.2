@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761522Ab2C3XQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:16:08 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:44160 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761361Ab2C3XQE (ORCPT
+	id S1761502Ab2C3XUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:20:33 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59822 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761361Ab2C3XU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 19:16:04 -0400
-Message-ID: <4F763EAF.2070904@xenotime.net>
-Date: Fri, 30 Mar 2012 16:15:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Fri, 30 Mar 2012 19:20:26 -0400
 MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+Date: Fri, 30 Mar 2012 16:20:25 -0700
+Message-ID: <CAOesGMjU5tehTf7+nYQv1_7a=+gGN2hVYUdh1g_BF=WRYj0hgg@mail.gmail.com>
+Subject: [GIT PULL] ARM: Two more fixes for merge window fallout
+From: Olof Johansson <olof@lixom.net>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: Re: [PATCH 1/8] Documentation: remove 'mach' from dontdiff file
-References: <4F76196A.9070709@xenotime.net> <CA+55aFz0WyVfJgO9GDM4ssUoWPRZfY0rs+97+P6fmYtc-jnDCw@mail.gmail.com>
-In-Reply-To: <CA+55aFz0WyVfJgO9GDM4ssUoWPRZfY0rs+97+P6fmYtc-jnDCw@mail.gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2012 03:39 PM, Linus Torvalds wrote:
+Linus,
 
-> On Fri, Mar 30, 2012 at 1:36 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> From: H Hartley Sweeten <hartleys@visionengravers.com>
->>
->> Documentation: remove mach from dontdiff file
-> 
-> Grr.
-> 
-> Most of these patches have the same stupid problem: why the *hell* do
-> you repeat the single-line top-level description in both the Subject
-> line and the body of the email? It only results in stupid duplicate
-> lines in the commit logs.
-> 
-> This is a disease. I don't know who the heck started doing it, but
-> it's WRONG. It's stupid. What broken piece-of-shit tool is it that
-> does this braindamage?
-> 
-> Fix it. Stop sending these broken commit messages to people.
-> 
-> I'm grumpy, yes, because this is a common problem. I see it all over
-> the place, and it makes our commit logs look f*cking retarded.
-> 
-> If you absolutely need to repeat the subject line in the body of the
-> email, do it together with the author line, and mark it as such, ie do
-> this:
-> 
->   From: H Hartley Sweeten <hartleys@visionengravers.com>
->   Subject: Documentation: remove mach from dontdiff file
-> 
-> so that git sees that it's a repeat of the subject line. Don't just
-> put it in the body as another stupid repeat.
+Apologies for back-to-back fixes pull requests, but one of the patches
+below are the kind we'll see posted over and over if we don't send it
+in. I hadn't done the full sanity-check of defconfig builds by the
+time I sent up the other fixes yesterday or I would have included it
+then.
+
+After this we're likely to switch to a more regular frequency of
+sending fixes up.
 
 
-I see.  Thanks for the info.
 
-Shall I resend all of these?
+Thanks,
 
--- 
-~Randy
+-Olof
+
+
+
+The following changes since commit f00e9b11863abdb837e555a2b1e3417e8b5d80dd:
+
+  Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
+(2012-03-29 20:36:18 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
+
+for you to fetch changes up to d3c7de52096a201ac188adb95b8351b90cab11f1:
+
+  ARM: clps711x: fix missing include file (2012-03-30 15:44:48 -0700)
+
+----------------------------------------------------------------
+ARM: A few more platform fixes for include file fallout
+
+Two patches, one dealing with the system.h fallout, the other is a missing
+linux/bug.h in a place where ARRAY_SIZE() is used.
+
+----------------------------------------------------------------
+Olof Johansson (2):
+      ARM: fix builds due to missing <asm/system_misc.h> includes
+      ARM: clps711x: fix missing include file
+
+ arch/arm/mach-at91/at91x40.c        |    1 +
+ arch/arm/mach-at91/setup.c          |    1 +
+ arch/arm/mach-clps711x/edb7211-mm.c |    1 +
+ arch/arm/mach-h720x/common.c        |    1 +
+ arch/arm/mach-imx/mm-imx3.c         |    1 +
+ arch/arm/mach-imx/mm-imx5.c         |    1 +
+ arch/arm/mach-ixp23xx/core.c        |    1 +
+ arch/arm/mach-ixp4xx/common.c       |    1 +
+ arch/arm/mach-pxa/raumfeld.c        |    2 ++
+ arch/arm/mach-shark/core.c          |    1 +
+ arch/arm/mach-w90x900/dev.c         |    1 +
+ arch/arm/plat-s3c24xx/cpu.c         |    1 +
+ 12 files changed, 13 insertions(+)
