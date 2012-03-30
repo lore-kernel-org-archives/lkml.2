@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936501Ab2C3W2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:28:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37615 "EHLO mx2.suse.de"
+	id S935656Ab2C3W2f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:28:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37635 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935778Ab2C3W1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:27:54 -0400
-Date: Sat, 31 Mar 2012 00:27:31 +0200
+	id S935798Ab2C3W15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 18:27:57 -0400
+Date: Sat, 31 Mar 2012 00:13:34 +0200
 From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Gregory.Dietsche@cuw.edu, Julia.Lawall@lip6.fr, hamo.by@gmail.com,
-        joerg.roedel@amd.com, kjbmail@gmail.com, mmarek@suse.cz,
-        shawnlandden@gmail.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild misc changes for v3.4-rc1
-Message-ID: <20120330222730.GA28545@sepie.suse.cz>
+Cc: JBeulich@suse.com, balbi@ti.com, bernhard@bwalle.de, bobbypowers@gmail.com,
+        dev@snitselaar.org, kirill.shutemov@linux.intel.com,
+        roland@purestorage.com, swarren@wwwdotorg.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild for 3.4
+Message-ID: <20120330221334.GA27849@sepie.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,70 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-this is the non-critical part of kbuild for 3.4-rc1:
+please pull the following kbuild change for 3.4-rc1. Nothing really
+exciting this time:
 
-* New semantic patches, make coccicheck M= fix
-* make gtags speedup
-* make tags/TAGS always removes struct forward declarations
-* make deb-pkg fixes (some patches are still pending, I know)
-* scripts/patch-kernel fix from the last user of this script ;)
-
-Note that the branch is based on 3.3-rc1, but I merged the rc-fixes
-branch to avoid conflicts. Hence the diffstat and shortlog below is
-against 3.3-rc5.
+* Unification of cmd_uimage among archs that use it
+* make headers_check tries harder before reporting a missing
+  <linux/types.h> include
+* kbuild portability fix for shells that do not support echo -e
+* make clean descends into samples/
+* setlocalversion grep fix
+* modpost typo fix
+* dtc warnings fix
 
 Thanks,
 Michal
 
+The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
 
-The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
-
-  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
+  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
 
 are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
 
-Greg Dietsche (1):
-      coccicheck: change handling of C={1,2} when M= is set
+Bernhard Walle (1):
+      scripts/Kbuild.include: Fix portability problem of "echo -e"
 
-Jianbin Kang (1):
-      kbuild: incremental tags update for GNU Global
+Bobby Powers (1):
+      headers_check: recursively search for linux/types.h inclusion
 
-Joerg Roedel (3):
-      kbuild: Fix link to headers in 'make deb-pkg'
-      kbuild: Only build linux-image package for UML
-      kbuild: Fix out-of-tree build for 'make deb-pkg'
+Felipe Balbi (1):
+      scripts: dtc: fix compile warnings
 
-Julia Lawall (6):
-      coccinelle: semantic patch for missing clk_put
-      coccinelle: semantic patch for missing iounmap
-      coccinelle: semantic patch converting 0 test to null test
-      coccinelle: semantic patch to check for PTR_ERR after reassignment
-      coccinelle: semantic patch for bool issues
-      scripts/coccinelle/api/ptr_ret.cocci: semantic patch for ptr_err
+Gerard Snitselaar (1):
+      kbuild: clean up samples directory
 
-Michal Marek (1):
-      Merge branch 'kbuild/rc-fixes' into kbuild/misc
+Jan Beulich (1):
+      modpost: fix ALL_INIT_DATA_SECTIONS
 
-Shawn Landden (1):
-      scripts/patch-kernel: digest kernel.org hosted .xz patches
+Kirill A. Shutemov (1):
+      kbuild: disable -Wmissing-field-initializers for W=1
 
-Yang Bai (1):
-      scripts: refactor remove structure forward declarations
+Roland Dreier (1):
+      setlocalversion: Use "grep -q" instead of piping output to "read dummy"
 
- scripts/coccinelle/api/ptr_ret.cocci   |   70 ++++++++++
- scripts/coccinelle/free/clk_put.cocci  |   67 +++++++++
- scripts/coccinelle/free/iounmap.cocci  |   67 +++++++++
- scripts/coccinelle/misc/boolinit.cocci |  178 ++++++++++++++++++++++++
- scripts/coccinelle/misc/cstptr.cocci   |   41 ++++++
- scripts/coccinelle/null/badzero.cocci  |  237 ++++++++++++++++++++++++++++++++
- scripts/package/builddeb               |   20 ++-
- scripts/patch-kernel                   |    4 +
- scripts/tags.sh                        |   13 ++-
- 9 files changed, 687 insertions(+), 10 deletions(-)
- create mode 100644 scripts/coccinelle/api/ptr_ret.cocci
- create mode 100644 scripts/coccinelle/free/clk_put.cocci
- create mode 100644 scripts/coccinelle/free/iounmap.cocci
- create mode 100644 scripts/coccinelle/misc/boolinit.cocci
- create mode 100644 scripts/coccinelle/misc/cstptr.cocci
- create mode 100644 scripts/coccinelle/null/badzero.cocci
+Stephen Warren (1):
+      Kbuild: centralize MKIMAGE and cmd_uimage definitions
+
+ Makefile                        |    2 +-
+ arch/arm/boot/Makefile          |   23 +++++++++--------------
+ arch/avr32/boot/images/Makefile |    9 +++------
+ arch/blackfin/boot/Makefile     |   19 ++++++++-----------
+ arch/microblaze/boot/Makefile   |   10 +++-------
+ arch/sh/boot/Makefile           |    8 ++------
+ arch/sparc/boot/Makefile        |    9 +++------
+ arch/unicore32/boot/Makefile    |   12 ++----------
+ scripts/Kbuild.include          |    2 +-
+ scripts/Makefile.build          |    2 ++
+ scripts/Makefile.lib            |   24 ++++++++++++++++++++++++
+ scripts/dtc/dtc.c               |    5 +----
+ scripts/dtc/flattree.c          |    2 --
+ scripts/headers_check.pl        |   38 +++++++++++++++++++++++++++++++++++++-
+ scripts/mod/modpost.c           |    2 +-
+ scripts/setlocalversion         |    3 +--
+ 16 files changed, 98 insertions(+), 72 deletions(-)
