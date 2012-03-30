@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761622Ab2C3VxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:53:18 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46401 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965808Ab2C3VTe (ORCPT
+	id S965668Ab2C3VTa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:19:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965758Ab2C3VTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:19:34 -0400
-Message-Id: <20120330194834.975064575@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:19:11 -0400
+Message-Id: <20120330194832.154072106@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:21 -0700
+Date: Fri, 30 Mar 2012 12:49:06 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Max Filippov <jcmvbkbc@gmail.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 056/175] p54spi: Release GPIO lines and IRQ on error in p54spi_probe
+        alan@lxorguk.ukuu.org.uk, Donald Lee <donald@asix.com.tw>
+Subject: [ 041/175] USB: serial: mos7840: Fixed MCS7820 device attach problem
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +24,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Donald Lee <donald@asix.com.tw>
 
-commit 62ebeed8d00aef75eac4fd6c161cae75a41965ca upstream.
+commit 093ea2d3a766cb8a4c4de57efec6c0a127a58792 upstream.
 
-This makes it possible to reload driver if insmod has failed due to
-missing firmware.
+A MCS7820 device supports two serial ports and a MCS7840 device supports
+four serial ports. Both devices use the same driver, but the attach function
+in driver was unable to correctly handle the port numbers for MCS7820
+device. This problem has been fixed in this patch and this fix has been
+verified on x86 Linux kernel 3.2.9 with both MCS7820 and MCS7840 devices.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Donald Lee <donald@asix.com.tw>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/p54spi.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/usb/serial/mos7840.c |   81 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 56 insertions(+), 25 deletions(-)
 
---- a/drivers/net/wireless/p54/p54spi.c
-+++ b/drivers/net/wireless/p54/p54spi.c
-@@ -618,19 +618,19 @@ static int __devinit p54spi_probe(struct
- 	ret = spi_setup(spi);
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "spi_setup failed");
--		goto err_free_common;
-+		goto err_free;
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -174,6 +174,7 @@
+ 
+ #define CLK_MULTI_REGISTER         ((__u16)(0x02))
+ #define CLK_START_VALUE_REGISTER   ((__u16)(0x03))
++#define GPIO_REGISTER              ((__u16)(0x07))
+ 
+ #define SERIAL_LCR_DLAB            ((__u16)(0x0080))
+ 
+@@ -1101,14 +1102,25 @@ static int mos7840_open(struct tty_struc
+ 	mos7840_port->read_urb = port->read_urb;
+ 
+ 	/* set up our bulk in urb */
+-
+-	usb_fill_bulk_urb(mos7840_port->read_urb,
+-			  serial->dev,
+-			  usb_rcvbulkpipe(serial->dev,
+-					  port->bulk_in_endpointAddress),
+-			  port->bulk_in_buffer,
+-			  mos7840_port->read_urb->transfer_buffer_length,
+-			  mos7840_bulk_in_callback, mos7840_port);
++	if ((serial->num_ports == 2)
++		&& ((((__u16)port->number -
++			(__u16)(port->serial->minor)) % 2) != 0)) {
++		usb_fill_bulk_urb(mos7840_port->read_urb,
++			serial->dev,
++			usb_rcvbulkpipe(serial->dev,
++				(port->bulk_in_endpointAddress) + 2),
++			port->bulk_in_buffer,
++			mos7840_port->read_urb->transfer_buffer_length,
++			mos7840_bulk_in_callback, mos7840_port);
++	} else {
++		usb_fill_bulk_urb(mos7840_port->read_urb,
++			serial->dev,
++			usb_rcvbulkpipe(serial->dev,
++				port->bulk_in_endpointAddress),
++			port->bulk_in_buffer,
++			mos7840_port->read_urb->transfer_buffer_length,
++			mos7840_bulk_in_callback, mos7840_port);
++	}
+ 
+ 	dbg("mos7840_open: bulkin endpoint is %d",
+ 	    port->bulk_in_endpointAddress);
+@@ -1519,13 +1531,25 @@ static int mos7840_write(struct tty_stru
+ 	memcpy(urb->transfer_buffer, current_position, transfer_size);
+ 
+ 	/* fill urb with data and submit  */
+-	usb_fill_bulk_urb(urb,
+-			  serial->dev,
+-			  usb_sndbulkpipe(serial->dev,
+-					  port->bulk_out_endpointAddress),
+-			  urb->transfer_buffer,
+-			  transfer_size,
+-			  mos7840_bulk_out_data_callback, mos7840_port);
++	if ((serial->num_ports == 2)
++		&& ((((__u16)port->number -
++			(__u16)(port->serial->minor)) % 2) != 0)) {
++		usb_fill_bulk_urb(urb,
++			serial->dev,
++			usb_sndbulkpipe(serial->dev,
++				(port->bulk_out_endpointAddress) + 2),
++			urb->transfer_buffer,
++			transfer_size,
++			mos7840_bulk_out_data_callback, mos7840_port);
++	} else {
++		usb_fill_bulk_urb(urb,
++			serial->dev,
++			usb_sndbulkpipe(serial->dev,
++				port->bulk_out_endpointAddress),
++			urb->transfer_buffer,
++			transfer_size,
++			mos7840_bulk_out_data_callback, mos7840_port);
++	}
+ 
+ 	data1 = urb->transfer_buffer;
+ 	dbg("bulkout endpoint is %d", port->bulk_out_endpointAddress);
+@@ -1838,7 +1862,7 @@ static int mos7840_send_cmd_write_baud_r
+ 
+ 	} else {
+ #ifdef HW_flow_control
+-		/ *setting h/w flow control bit to 0 */
++		/* setting h/w flow control bit to 0 */
+ 		Data = 0xb;
+ 		mos7840_port->shadowMCR = Data;
+ 		status = mos7840_set_uart_reg(port, MODEM_CONTROL_REGISTER,
+@@ -2305,19 +2329,26 @@ static int mos7840_ioctl(struct tty_stru
+ 
+ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ {
+-	int mos7840_num_ports = 0;
++	__u16 Data = 0x00;
++	int ret = 0;
++	int mos7840_num_ports;
+ 
+-	dbg("numberofendpoints: cur %d, alt %d",
+-	    (int)serial->interface->cur_altsetting->desc.bNumEndpoints,
+-	    (int)serial->interface->altsetting->desc.bNumEndpoints);
+-	if (serial->interface->cur_altsetting->desc.bNumEndpoints == 5) {
+-		mos7840_num_ports = serial->num_ports = 2;
+-	} else if (serial->interface->cur_altsetting->desc.bNumEndpoints == 9) {
++	ret = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &Data,
++		VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++
++	if ((Data & 0x01) == 0) {
++		mos7840_num_ports = 2;
++		serial->num_bulk_in = 2;
++		serial->num_bulk_out = 2;
++		serial->num_ports = 2;
++	} else {
++		mos7840_num_ports = 4;
+ 		serial->num_bulk_in = 4;
+ 		serial->num_bulk_out = 4;
+-		mos7840_num_ports = serial->num_ports = 4;
++		serial->num_ports = 4;
  	}
- 
- 	ret = gpio_request(p54spi_gpio_power, "p54spi power");
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "power GPIO request failed: %d", ret);
--		goto err_free_common;
-+		goto err_free;
- 	}
- 
- 	ret = gpio_request(p54spi_gpio_irq, "p54spi irq");
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "irq GPIO request failed: %d", ret);
--		goto err_free_common;
-+		goto err_free_gpio_power;
- 	}
- 
- 	gpio_direction_output(p54spi_gpio_power, 0);
-@@ -641,7 +641,7 @@ static int __devinit p54spi_probe(struct
- 			  priv->spi);
- 	if (ret < 0) {
- 		dev_err(&priv->spi->dev, "request_irq() failed");
--		goto err_free_common;
-+		goto err_free_gpio_irq;
- 	}
- 
- 	irq_set_irq_type(gpio_to_irq(p54spi_gpio_irq), IRQ_TYPE_EDGE_RISING);
-@@ -673,6 +673,12 @@ static int __devinit p54spi_probe(struct
- 	return 0;
- 
- err_free_common:
-+	free_irq(gpio_to_irq(p54spi_gpio_irq), spi);
-+err_free_gpio_irq:
-+	gpio_free(p54spi_gpio_irq);
-+err_free_gpio_power:
-+	gpio_free(p54spi_gpio_power);
-+err_free:
- 	p54_free_common(priv->hw);
- 	return ret;
+-	dbg ("mos7840_num_ports = %d", mos7840_num_ports);
++
+ 	return mos7840_num_ports;
  }
+ 
 
 
