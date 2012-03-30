@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966174Ab2C3VWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:22:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966130Ab2C3VWH (ORCPT
+	id S966171Ab2C3VWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:22:23 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52026 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933708Ab2C3VWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:22:07 -0400
-Message-Id: <20120330194846.517484801@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:22:13 -0400
+Message-Id: <20120330194847.069292325@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:10 -0700
+Date: Fri, 30 Mar 2012 12:50:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@samba.org>,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 105/175] CIFS: Respect negotiated MaxMpxCount
+        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
+        Jeff Layton <jlayton@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [ 107/175] CIFS: Fix a spurious error in cifs_push_posix_locks
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,196 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavel Shilovsky <piastry@etersoft.ru>
 
-commit 10b9b98e41ba248a899f6175ce96ee91431b6194 upstream.
+commit ce85852b90a214cf577fc1b4f49d99fd7e98784a upstream.
 
-Some servers sets this value less than 50 that was hardcoded and
-we lost the connection if when we exceed this limit. Fix this by
-respecting this value - not sending more than the server allows.
-
-Reviewed-by: Jeff Layton <jlayton@samba.org>
 Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsfs.c    |    8 ++++----
- fs/cifs/cifsglob.h  |   10 +++-------
- fs/cifs/cifssmb.c   |    9 +++++++--
- fs/cifs/connect.c   |   11 ++++-------
- fs/cifs/dir.c       |    6 ++++--
- fs/cifs/file.c      |    4 ++--
- fs/cifs/transport.c |    4 ++--
- 7 files changed, 26 insertions(+), 26 deletions(-)
+ fs/cifs/file.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -76,7 +76,7 @@ MODULE_PARM_DESC(cifs_min_small, "Small
- unsigned int cifs_max_pending = CIFS_MAX_REQ;
- module_param(cifs_max_pending, int, 0444);
- MODULE_PARM_DESC(cifs_max_pending, "Simultaneous requests to server. "
--				   "Default: 50 Range: 2 to 256");
-+				   "Default: 32767 Range: 2 to 32767.");
- unsigned short echo_retries = 5;
- module_param(echo_retries, ushort, 0644);
- MODULE_PARM_DESC(echo_retries, "Number of echo attempts before giving up and "
-@@ -1116,9 +1116,9 @@ init_cifs(void)
- 	if (cifs_max_pending < 2) {
- 		cifs_max_pending = 2;
- 		cFYI(1, "cifs_max_pending set to min of 2");
--	} else if (cifs_max_pending > 256) {
--		cifs_max_pending = 256;
--		cFYI(1, "cifs_max_pending set to max of 256");
-+	} else if (cifs_max_pending > CIFS_MAX_REQ) {
-+		cifs_max_pending = CIFS_MAX_REQ;
-+		cFYI(1, "cifs_max_pending set to max of %u", CIFS_MAX_REQ);
- 	}
- 
- 	rc = cifs_fscache_register();
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -55,14 +55,9 @@
- 
- /*
-  * MAX_REQ is the maximum number of requests that WE will send
-- * on one socket concurrently. It also matches the most common
-- * value of max multiplex returned by servers.  We may
-- * eventually want to use the negotiated value (in case
-- * future servers can handle more) when we are more confident that
-- * we will not have problems oveloading the socket with pending
-- * write data.
-+ * on one socket concurrently.
-  */
--#define CIFS_MAX_REQ 50
-+#define CIFS_MAX_REQ 32767
- 
- #define RFC1001_NAME_LEN 15
- #define RFC1001_NAME_LEN_WITH_NULL (RFC1001_NAME_LEN + 1)
-@@ -263,6 +258,7 @@ struct TCP_Server_Info {
- 	bool session_estab; /* mark when very first sess is established */
- 	u16 dialect; /* dialect index that server chose */
- 	enum securityEnum secType;
-+	bool oplocks:1; /* enable oplocks */
- 	unsigned int maxReq;	/* Clients should submit no more */
- 	/* than maxReq distinct unanswered SMBs to the server when using  */
- 	/* multiplexed reads or writes */
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -458,7 +458,10 @@ CIFSSMBNegotiate(unsigned int xid, struc
- 			goto neg_err_exit;
- 		}
- 		server->sec_mode = (__u8)le16_to_cpu(rsp->SecurityMode);
--		server->maxReq = le16_to_cpu(rsp->MaxMpxCount);
-+		server->maxReq = min_t(unsigned int,
-+				       le16_to_cpu(rsp->MaxMpxCount),
-+				       cifs_max_pending);
-+		server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
- 		server->maxBuf = le16_to_cpu(rsp->MaxBufSize);
- 		server->max_vcs = le16_to_cpu(rsp->MaxNumberVcs);
- 		/* even though we do not use raw we might as well set this
-@@ -564,7 +567,9 @@ CIFSSMBNegotiate(unsigned int xid, struc
- 
- 	/* one byte, so no need to convert this or EncryptionKeyLen from
- 	   little endian */
--	server->maxReq = le16_to_cpu(pSMBr->MaxMpxCount);
-+	server->maxReq = min_t(unsigned int, le16_to_cpu(pSMBr->MaxMpxCount),
-+			       cifs_max_pending);
-+	server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
- 	/* probably no need to store and check maxvcs */
- 	server->maxBuf = le32_to_cpu(pSMBr->MaxBufferSize);
- 	server->max_rw = le32_to_cpu(pSMBr->MaxRawSize);
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -642,14 +642,10 @@ static void clean_demultiplex_info(struc
- 	spin_unlock(&GlobalMid_Lock);
- 	wake_up_all(&server->response_q);
- 
--	/*
--	 * Check if we have blocked requests that need to free. Note that
--	 * cifs_max_pending is normally 50, but can be set at module install
--	 * time to as little as two.
--	 */
-+	/* Check if we have blocked requests that need to free. */
- 	spin_lock(&GlobalMid_Lock);
--	if (atomic_read(&server->inFlight) >= cifs_max_pending)
--		atomic_set(&server->inFlight, cifs_max_pending - 1);
-+	if (atomic_read(&server->inFlight) >= server->maxReq)
-+		atomic_set(&server->inFlight, server->maxReq - 1);
- 	/*
- 	 * We do not want to set the max_pending too low or we could end up
- 	 * with the counter going negative.
-@@ -1910,6 +1906,7 @@ cifs_get_tcp_session(struct smb_vol *vol
- 	tcp_ses->noautotune = volume_info->noautotune;
- 	tcp_ses->tcp_nodelay = volume_info->sockopt_tcp_nodelay;
- 	atomic_set(&tcp_ses->inFlight, 0);
-+	tcp_ses->maxReq = 1; /* enough to send negotiate request */
- 	init_waitqueue_head(&tcp_ses->response_q);
- 	init_waitqueue_head(&tcp_ses->request_q);
- 	INIT_LIST_HEAD(&tcp_ses->pending_mid_q);
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -171,7 +171,7 @@ cifs_create(struct inode *inode, struct
- 	}
- 	tcon = tlink_tcon(tlink);
- 
--	if (enable_oplocks)
-+	if (tcon->ses->server->oplocks)
- 		oplock = REQ_OPLOCK;
- 
- 	if (nd)
-@@ -492,7 +492,7 @@ cifs_lookup(struct inode *parent_dir_ino
- {
- 	int xid;
- 	int rc = 0; /* to get around spurious gcc warning, set to zero here */
--	__u32 oplock = enable_oplocks ? REQ_OPLOCK : 0;
-+	__u32 oplock;
- 	__u16 fileHandle = 0;
- 	bool posix_open = false;
- 	struct cifs_sb_info *cifs_sb;
-@@ -518,6 +518,8 @@ cifs_lookup(struct inode *parent_dir_ino
- 	}
- 	pTcon = tlink_tcon(tlink);
- 
-+	oplock = pTcon->ses->server->oplocks ? REQ_OPLOCK : 0;
-+
- 	/*
- 	 * Don't allow the separator character in a path component.
- 	 * The VFS will not allow "/", but "\" is allowed by posix.
 --- a/fs/cifs/file.c
 +++ b/fs/cifs/file.c
-@@ -380,7 +380,7 @@ int cifs_open(struct inode *inode, struc
- 	cFYI(1, "inode = 0x%p file flags are 0x%x for %s",
- 		 inode, file->f_flags, full_path);
+@@ -960,9 +960,9 @@ cifs_push_posix_locks(struct cifsFileInf
+ 	INIT_LIST_HEAD(&locks_to_send);
  
--	if (enable_oplocks)
-+	if (tcon->ses->server->oplocks)
- 		oplock = REQ_OPLOCK;
- 	else
- 		oplock = 0;
-@@ -505,7 +505,7 @@ static int cifs_reopen_file(struct cifsF
- 	cFYI(1, "inode = 0x%p file flags 0x%x for %s",
- 		 inode, pCifsFile->f_flags, full_path);
+ 	/*
+-	 * Allocating count locks is enough because no locks can be added to
+-	 * the list while we are holding cinode->lock_mutex that protects
+-	 * locking operations of this inode.
++	 * Allocating count locks is enough because no FL_POSIX locks can be
++	 * added to the list while we are holding cinode->lock_mutex that
++	 * protects locking operations of this inode.
+ 	 */
+ 	for (; i < count; i++) {
+ 		lck = kmalloc(sizeof(struct lock_to_push), GFP_KERNEL);
+@@ -973,18 +973,20 @@ cifs_push_posix_locks(struct cifsFileInf
+ 		list_add_tail(&lck->llist, &locks_to_send);
+ 	}
  
--	if (enable_oplocks)
-+	if (tcon->ses->server->oplocks)
- 		oplock = REQ_OPLOCK;
- 	else
- 		oplock = 0;
---- a/fs/cifs/transport.c
-+++ b/fs/cifs/transport.c
-@@ -265,12 +265,12 @@ static int wait_for_free_request(struct
- 
- 	spin_lock(&GlobalMid_Lock);
- 	while (1) {
--		if (atomic_read(&server->inFlight) >= cifs_max_pending) {
-+		if (atomic_read(&server->inFlight) >= server->maxReq) {
- 			spin_unlock(&GlobalMid_Lock);
- 			cifs_num_waiters_inc(server);
- 			wait_event(server->request_q,
- 				   atomic_read(&server->inFlight)
--				     < cifs_max_pending);
-+				     < server->maxReq);
- 			cifs_num_waiters_dec(server);
- 			spin_lock(&GlobalMid_Lock);
- 		} else {
+-	i = 0;
+ 	el = locks_to_send.next;
+ 	lock_flocks();
+ 	cifs_for_each_lock(cfile->dentry->d_inode, before) {
++		flock = *before;
++		if ((flock->fl_flags & FL_POSIX) == 0)
++			continue;
+ 		if (el == &locks_to_send) {
+-			/* something is really wrong */
++			/*
++			 * The list ended. We don't have enough allocated
++			 * structures - something is really wrong.
++			 */
+ 			cERROR(1, "Can't push all brlocks!");
+ 			break;
+ 		}
+-		flock = *before;
+-		if ((flock->fl_flags & FL_POSIX) == 0)
+-			continue;
+ 		length = 1 + flock->fl_end - flock->fl_start;
+ 		if (flock->fl_type == F_RDLCK || flock->fl_type == F_SHLCK)
+ 			type = CIFS_RDLCK;
+@@ -996,7 +998,6 @@ cifs_push_posix_locks(struct cifsFileInf
+ 		lck->length = length;
+ 		lck->type = type;
+ 		lck->offset = flock->fl_start;
+-		i++;
+ 		el = el->next;
+ 	}
+ 	unlock_flocks();
 
 
