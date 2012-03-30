@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934831Ab2C3VFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:05:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934766Ab2C3VE7 (ORCPT
+	id S936796Ab2C3XDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:03:00 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44162 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934833Ab2C3VFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:59 -0400
-Message-Id: <20120330195727.407421107@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:05:12 -0400
+Message-Id: <20120330195727.956651098@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:59 -0700
+Date: Fri, 30 Mar 2012 12:58:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 037/108] genirq: Fix long-term regression in genirq irq_set_irq_type() handling
+        alan@lxorguk.ukuu.org.uk, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 041/108] IB/iser: Post initial receive buffers before sending the final login request
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,93 +25,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <linux@arm.linux.org.uk>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-commit a09b659cd68c10ec6a30cb91ebd2c327fcd5bfe5 upstream.
+commit 89e984e2c2cd14f77ccb26c47726ac7f13b70ae8 upstream.
 
-In 2008, commit 0c5d1eb77a8be ("genirq: record trigger type") modified the
-way set_irq_type() handles the 'no trigger' condition.  However, this has
-an adverse effect on PCMCIA support on Intel StrongARM and probably PXA
-platforms.
+An iser target may send iscsi NO-OP PDUs as soon as it marks the iSER
+iSCSI session as fully operative.  This means that there is window
+where there are no posted receive buffers on the initiator side, so
+it's possible for the iSER RC connection to break because of RNR NAK /
+retry errors.  To fix this, rely on the flags bits in the login
+request to have FFP (0x3) in the lower nibble as a marker for the
+final login request, and post an initial chunk of receive buffers
+before sending that login request instead of after getting the login
+response.
 
-PCMCIA has several status signals on the socket which can trigger
-interrupts; some of these status signals depend on the card's mode
-(whether it is configured in memory or IO mode).  For example, cards have
-a 'Ready/IRQ' signal: in memory mode, this provides an indication to
-PCMCIA that the card has finished its power up initialization.  In IO
-mode, it provides the device interrupt signal.  Other status signals
-switch between on-board battery status and loud speaker output.
-
-In classical PCMCIA implementations, where you have a specific socket
-controller, the controller provides a method to mask interrupts from the
-socket, and importantly ignore any state transitions on the pins which
-correspond with interrupts once masked.  This masking prevents unwanted
-events caused by the removal and application of socket power being
-forwarded.
-
-However, on platforms where there is no socket controller, the PCMCIA
-status and interrupt signals are routed to standard edge-triggered GPIOs.
-These GPIOs can be configured to interrupt on rising edge, falling edge,
-or never.  This is where the problems start.
-
-Edge triggered interrupts are required to record events while disabled via
-the usual methods of {free,request,disable,enable}_irq() to prevent
-problems with dropped interrupts (eg, the 8390 driver uses disable_irq()
-to defer the delivery of interrupts).  As a result, these interfaces can
-not be used to implement the desired behaviour.
-
-The side effect of this is that if the 'Ready/IRQ' GPIO is disabled via
-disable_irq() on suspend, and enabled via enable_irq() after resume, we
-will record the state transitions caused by powering events as valid
-interrupts, and foward them to the card driver, which may attempt to
-access a card which is not powered up.
-
-This leads delays resume while drivers spin in their interrupt handlers,
-and complaints from drivers before they realize what's happened.
-
-Moreover, in the case of the 'Ready/IRQ' signal, this is requested and
-freed by the card driver itself; the PCMCIA core has no idea whether the
-interrupt is requested, and, therefore, whether a call to disable_irq()
-would be valid.  (We tried this around 2.4.17 / 2.5.1 kernel era, and
-ended up throwing it out because of this problem.)
-
-Therefore, it was decided back in around 2002 to disable the edge
-triggering instead, resulting in all state transitions on the GPIO being
-ignored.  That's what we actually need the hardware to do.
-
-The commit above changes this behaviour; it explicitly prevents the 'no
-trigger' state being selected.
-
-The reason that request_irq() does not accept the 'no trigger' state is
-for compatibility with existing drivers which do not provide their desired
-triggering configuration.  The set_irq_type() function is 'new' and not
-used by non-trigger aware drivers.
-
-Therefore, revert this change, and restore previously working platforms
-back to their former state.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: linux@arm.linux.org.uk
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/chip.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/infiniband/ulp/iser/iscsi_iser.c     |   18 +++-------------
+ drivers/infiniband/ulp/iser/iscsi_iser.h     |    1 
+ drivers/infiniband/ulp/iser/iser_initiator.c |   30 +++++++++++++++------------
+ 3 files changed, 22 insertions(+), 27 deletions(-)
 
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -61,8 +61,7 @@ int irq_set_irq_type(unsigned int irq, u
- 		return -EINVAL;
+--- a/drivers/infiniband/ulp/iser/iscsi_iser.c
++++ b/drivers/infiniband/ulp/iser/iscsi_iser.c
+@@ -354,6 +354,9 @@ iscsi_iser_conn_bind(struct iscsi_cls_se
+ 	}
+ 	ib_conn = ep->dd_data;
  
- 	type &= IRQ_TYPE_SENSE_MASK;
--	if (type != IRQ_TYPE_NONE)
--		ret = __irq_set_trigger(desc, irq, type);
-+	ret = __irq_set_trigger(desc, irq, type);
- 	irq_put_desc_busunlock(desc, flags);
- 	return ret;
++	if (iser_alloc_rx_descriptors(ib_conn))
++		return -ENOMEM;
++
+ 	/* binds the iSER connection retrieved from the previously
+ 	 * connected ep_handle to the iSCSI layer connection. exchanges
+ 	 * connection pointers */
+@@ -388,19 +391,6 @@ iscsi_iser_conn_stop(struct iscsi_cls_co
+ 	iser_conn->ib_conn = NULL;
  }
+ 
+-static int
+-iscsi_iser_conn_start(struct iscsi_cls_conn *cls_conn)
+-{
+-	struct iscsi_conn *conn = cls_conn->dd_data;
+-	int err;
+-
+-	err = iser_conn_set_full_featured_mode(conn);
+-	if (err)
+-		return err;
+-
+-	return iscsi_conn_start(cls_conn);
+-}
+-
+ static void iscsi_iser_session_destroy(struct iscsi_cls_session *cls_session)
+ {
+ 	struct Scsi_Host *shost = iscsi_session_to_shost(cls_session);
+@@ -686,7 +676,7 @@ static struct iscsi_transport iscsi_iser
+ 	.get_conn_param		= iscsi_conn_get_param,
+ 	.get_ep_param		= iscsi_iser_get_ep_param,
+ 	.get_session_param	= iscsi_session_get_param,
+-	.start_conn             = iscsi_iser_conn_start,
++	.start_conn             = iscsi_conn_start,
+ 	.stop_conn              = iscsi_iser_conn_stop,
+ 	/* iscsi host params */
+ 	.get_host_param		= iscsi_host_get_param,
+--- a/drivers/infiniband/ulp/iser/iscsi_iser.h
++++ b/drivers/infiniband/ulp/iser/iscsi_iser.h
+@@ -365,4 +365,5 @@ int iser_dma_map_task_data(struct iscsi_
+ void iser_dma_unmap_task_data(struct iscsi_iser_task *iser_task);
+ int  iser_initialize_task_headers(struct iscsi_task *task,
+ 			struct iser_tx_desc *tx_desc);
++int iser_alloc_rx_descriptors(struct iser_conn *ib_conn);
+ #endif
+--- a/drivers/infiniband/ulp/iser/iser_initiator.c
++++ b/drivers/infiniband/ulp/iser/iser_initiator.c
+@@ -170,7 +170,7 @@ static void iser_create_send_desc(struct
+ }
+ 
+ 
+-static int iser_alloc_rx_descriptors(struct iser_conn *ib_conn)
++int iser_alloc_rx_descriptors(struct iser_conn *ib_conn)
+ {
+ 	int i, j;
+ 	u64 dma_addr;
+@@ -236,23 +236,24 @@ void iser_free_rx_descriptors(struct ise
+ 	kfree(ib_conn->rx_descs);
+ }
+ 
+-/**
+- *  iser_conn_set_full_featured_mode - (iSER API)
+- */
+-int iser_conn_set_full_featured_mode(struct iscsi_conn *conn)
++static int iser_post_rx_bufs(struct iscsi_conn *conn, struct iscsi_hdr *req)
+ {
+ 	struct iscsi_iser_conn *iser_conn = conn->dd_data;
+ 
+-	iser_dbg("Initially post: %d\n", ISER_MIN_POSTED_RX);
++	iser_dbg("req op %x flags %x\n", req->opcode, req->flags);
++	/* check if this is the last login - going to full feature phase */
++	if ((req->flags & ISCSI_FULL_FEATURE_PHASE) != ISCSI_FULL_FEATURE_PHASE)
++		return 0;
+ 
+-	/* Check that there is no posted recv or send buffers left - */
+-	/* they must be consumed during the login phase */
+-	BUG_ON(iser_conn->ib_conn->post_recv_buf_count != 0);
+-	BUG_ON(atomic_read(&iser_conn->ib_conn->post_send_buf_count) != 0);
+-
+-	if (iser_alloc_rx_descriptors(iser_conn->ib_conn))
+-		return -ENOMEM;
++	/*
++	 * Check that there is one posted recv buffer (for the last login
++	 * response) and no posted send buffers left - they must have been
++	 * consumed during previous login phases.
++	 */
++	WARN_ON(iser_conn->ib_conn->post_recv_buf_count != 1);
++	WARN_ON(atomic_read(&iser_conn->ib_conn->post_send_buf_count) != 0);
+ 
++	iser_dbg("Initially post: %d\n", ISER_MIN_POSTED_RX);
+ 	/* Initial post receive buffers */
+ 	if (iser_post_recvm(iser_conn->ib_conn, ISER_MIN_POSTED_RX))
+ 		return -ENOMEM;
+@@ -421,6 +422,9 @@ int iser_send_control(struct iscsi_conn
+ 		err = iser_post_recvl(iser_conn->ib_conn);
+ 		if (err)
+ 			goto send_control_error;
++		err = iser_post_rx_bufs(conn, task->hdr);
++		if (err)
++			goto send_control_error;
+ 	}
+ 
+ 	err = iser_post_send(iser_conn->ib_conn, mdesc);
 
 
