@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618Ab2C3KTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:19:17 -0400
+	id S933667Ab2C3KT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:19:28 -0400
 Received: from vms173013pub.verizon.net ([206.46.173.13]:52218 "EHLO
 	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760584Ab2C3KSl (ORCPT
+	with ESMTP id S1760656Ab2C3KSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:18:41 -0400
+	Fri, 30 Mar 2012 06:18:46 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Robert Lee <rob.lee@linaro.org>,
+Cc: linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 22/76] ARM: davinci: Fix for cpuidle consolidation changes
-Date: Fri, 30 Mar 2012 06:13:25 -0400
-Message-id: <6a6ea0acc9375571a13aa8c4e105a0807e1c16a4.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 49/76] cpuidle: use the driver's state_count as default
+Date: Fri, 30 Mar 2012 06:13:52 -0400
+Message-id: <fc850f39ea54c760ce438a601cfea8ab80c4898e.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,39 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Lee <rob.lee@linaro.org>
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-The recent cpuidle consolidation changes erroneously omitted one
-critical line of code.
+If the state_count is not initialized for the device use
+the driver's state count as the default. That will prevent
+to add it manually in the cpuidle driver initialization
+routine and will save us from duplicate line of code.
 
-Signed-off-by: Robert Lee <rob.lee@linaro.org>
-Tested-by: Sekhar Nori <nsekhar@ti.com>
-Acked-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/arm/mach-davinci/cpuidle.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/cpuidle/cpuidle.c |    2 +-
+ drivers/cpuidle/driver.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/cpuidle.c b/arch/arm/mach-davinci/cpuidle.c
-index 93ae096..9107691 100644
---- a/arch/arm/mach-davinci/cpuidle.c
-+++ b/arch/arm/mach-davinci/cpuidle.c
-@@ -55,10 +55,11 @@ static int davinci_enter_idle(struct cpuidle_device *dev,
- #define DAVINCI_CPUIDLE_FLAGS_DDR2_PWDN	BIT(0)
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 77304b6..f7cab5e 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -268,7 +268,7 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+ 	if (!drv || !cpuidle_curr_governor)
+ 		return -EIO;
+ 	if (!dev->state_count)
+-		return -EINVAL;
++		dev->state_count = drv->state_count;
  
- static struct cpuidle_driver davinci_idle_driver = {
--	.name		= "cpuidle-davinci",
--	.owner		= THIS_MODULE,
--	.states[0]	= ARM_CPUIDLE_WFI_STATE,
--	.states[1]	= {
-+	.name			= "cpuidle-davinci",
-+	.owner			= THIS_MODULE,
-+	.en_core_tk_irqen	= 1,
-+	.states[0]		= ARM_CPUIDLE_WFI_STATE,
-+	.states[1]		= {
- 		.enter			= davinci_enter_idle,
- 		.exit_latency		= 10,
- 		.target_residency	= 100000,
+ 	if (dev->registered == 0) {
+ 		ret = __cpuidle_register_device(dev);
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 284d7af..40cd3f3 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -47,7 +47,7 @@ static void __cpuidle_register_driver(struct cpuidle_driver *drv)
+  */
+ int cpuidle_register_driver(struct cpuidle_driver *drv)
+ {
+-	if (!drv)
++	if (!drv || !drv->state_count)
+ 		return -EINVAL;
+ 
+ 	if (cpuidle_disabled())
 -- 
 1.7.10.rc2.19.gfae9d
 
