@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965570Ab2C3V6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:58:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S936405Ab2C3V6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:58:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965600Ab2C3VSN (ORCPT
+	with ESMTP id S965587Ab2C3VSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:18:13 -0400
-Message-Id: <20120330194830.310842692@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:18:07 -0400
+Message-Id: <20120330194829.977205189@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:55 -0700
+Date: Fri, 30 Mar 2012 12:48:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 030/175] tty: moxa: fix bit test in moxa_start()
+        alan@lxorguk.ukuu.org.uk, Masami Ichikawa <masami256@gmail.com>
+Subject: [ 028/175] sysfs: Fix memory leak in sysfs_sd_setsecdata().
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +24,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Masami Ichikawa <masami256@gmail.com>
 
-commit 58112dfbfe02d803566a2c6c8bd97b5fa3c62cdc upstream.
+commit 93518dd2ebafcc761a8637b2877008cfd748c202 upstream.
 
-This is supposed to be doing a shift before the comparison instead of
-just doing a bitwise AND directly.  The current code means the start()
-just returns without doing anything.
+This patch fixies follwing two memory leak patterns that reported by kmemleak.
+sysfs_sd_setsecdata() is called during sys_lsetxattr() operation.
+It checks sd->s_iattr is NULL or not. Then if it is NULL, it calls
+sysfs_init_inode_attrs() to allocate memory.
+That code is this.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
+iattrs = sd->s_iattr;
+if (!iattrs)
+                iattrs = sysfs_init_inode_attrs(sd);
+
+The iattrs recieves sysfs_init_inode_attrs()'s result,  but sd->s_iattr
+doesn't know the address. so it needs to set correct address to
+sd->s_iattr to free memory in other function.
+
+unreferenced object 0xffff880250b73e60 (size 32):
+  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
+  hex dump (first 32 bytes):
+    73 79 73 74 65 6d 5f 75 3a 6f 62 6a 65 63 74 5f  system_u:object_
+    72 3a 73 79 73 66 73 5f 74 3a 73 30 00 00 00 00  r:sysfs_t:s0....
+  backtrace:
+    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
+    [<ffffffff811270ab>] __kmalloc+0x100/0x12c
+    [<ffffffff8120775a>] context_struct_to_string+0x106/0x210
+    [<ffffffff81207cc1>] security_sid_to_context_core+0x10b/0x129
+    [<ffffffff812090ef>] security_sid_to_context+0x10/0x12
+    [<ffffffff811fb0da>] selinux_inode_getsecurity+0x7d/0xa8
+    [<ffffffff811fb127>] selinux_inode_getsecctx+0x22/0x2e
+    [<ffffffff811f4d62>] security_inode_getsecctx+0x16/0x18
+    [<ffffffff81191dad>] sysfs_setxattr+0x96/0x117
+    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
+    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
+    [<ffffffff811544c6>] setxattr+0xcf/0x101
+    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
+    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
+unreferenced object 0xffff88024163c5a0 (size 96):
+  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
+  hex dump (first 32 bytes):
+    00 00 00 00 ed 41 00 00 00 00 00 00 00 00 00 00  .....A..........
+    00 00 00 00 00 00 00 00 0c 64 42 4f 00 00 00 00  .........dBO....
+  backtrace:
+    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
+    [<ffffffff81127402>] kmem_cache_alloc_trace+0xc4/0xee
+    [<ffffffff81191cbe>] sysfs_init_inode_attrs+0x2a/0x83
+    [<ffffffff81191dd6>] sysfs_setxattr+0xbf/0x117
+    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
+    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
+    [<ffffffff811544c6>] setxattr+0xcf/0x101
+    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
+    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
+`
+
+Signed-off-by: Masami Ichikawa <masami256@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/moxa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/sysfs/inode.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/tty/moxa.c
-+++ b/drivers/tty/moxa.c
-@@ -1331,7 +1331,7 @@ static void moxa_start(struct tty_struct
- 	if (ch == NULL)
- 		return;
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -136,12 +136,13 @@ static int sysfs_sd_setsecdata(struct sy
+ 	void *old_secdata;
+ 	size_t old_secdata_len;
  
--	if (!(ch->statusflags & TXSTOPPED))
-+	if (!test_bit(TXSTOPPED, &ch->statusflags))
- 		return;
+-	iattrs = sd->s_iattr;
+-	if (!iattrs)
+-		iattrs = sysfs_init_inode_attrs(sd);
+-	if (!iattrs)
+-		return -ENOMEM;
++	if (!sd->s_iattr) {
++		sd->s_iattr = sysfs_init_inode_attrs(sd);
++		if (!sd->s_iattr)
++			return -ENOMEM;
++	}
  
- 	MoxaPortTxEnable(ch);
++	iattrs = sd->s_iattr;
+ 	old_secdata = iattrs->ia_secdata;
+ 	old_secdata_len = iattrs->ia_secdata_len;
+ 
 
 
