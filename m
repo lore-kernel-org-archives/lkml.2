@@ -1,178 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934075Ab2C3KlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:41:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47548 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933121Ab2C3KlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:41:13 -0400
-Date: Fri, 30 Mar 2012 12:41:01 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] fix idle ticks in cpu summary line of /proc/stat
-Message-ID: <20120330104101.GA15375@tiehlicka.suse.cz>
-References: <20120311182621.41674b39@de.ibm.com>
- <20120312121726.GA23608@tiehlicka.suse.cz>
- <20120312101739.26eb373e@de.ibm.com>
- <4F5E0CC1.6010102@linux.vnet.ibm.com>
- <20120312153906.GE3994@tiehlicka.suse.cz>
- <20120312164145.5110ed5c@de.ibm.com>
- <20120313080748.GA7754@tiehlicka.suse.cz>
- <alpine.LFD.2.02.1203291241360.2542@ionos>
- <20120330122308.18720283@de.ibm.com>
+	id S933933Ab2C3KoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:44:10 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57500 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201Ab2C3KoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 06:44:06 -0400
+Date: Fri, 30 Mar 2012 11:43:54 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+	__dma_request_channel()
+Message-ID: <20120330104354.GD22981@n2100.arm.linux.org.uk>
+References: <1331285959.4657.76.camel@vkoul-udesk3> <Pine.LNX.4.64.1203091049060.7852@axis700.grange> <1331520476.4657.79.camel@vkoul-udesk3> <Pine.LNX.4.64.1203161029490.13465@axis700.grange> <CACRpkdYiuERV08=UhBRnj2AjC_RxF+EY+zHAtEp6KYf2W10C_Q@mail.gmail.com> <Pine.LNX.4.64.1203161128120.13465@axis700.grange> <CACRpkdY7ApBc-gbSdf+=7PLtKSMvzYuBi7RNnVgi=vjcd-KvhQ@mail.gmail.com> <Pine.LNX.4.64.1203161522570.13465@axis700.grange> <20120330102910.GB22981@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203301236330.24548@axis700.grange>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120330122308.18720283@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.64.1203301236330.24548@axis700.grange>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 30-03-12 12:23:08, Martin Schwidefsky wrote:
-> Hi Thomas,
+On Fri, Mar 30, 2012 at 12:40:12PM +0200, Guennadi Liakhovetski wrote:
+> On Fri, 30 Mar 2012, Russell King - ARM Linux wrote:
 > 
-> On Thu, 29 Mar 2012 12:42:22 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > On Tue, 13 Mar 2012, Michal Hocko wrote:
+> > On Fri, Mar 16, 2012 at 03:28:39PM +0100, Guennadi Liakhovetski wrote:
+> > > Yessss!!! Let's do that! :-D Now, you're proposing exactly the same, as 
+> > > what I was proposing! :-) Now you just have to remove the filter function 
+> > > parameter from dma_request_channel() - it is anyway the same for all and 
+> > > implemented in the dmaengine core - and you get
+> > > 
+> > > dma_request_channel(mask, slave_desc)
+> > > 
+> > > which is exactly what I was proposing! :-)
 > > 
-> > > OK, so the updated version of the patch looks like this. I am sorry but
-> > > I had time to only compile test this...
-> > > ---
-> > > >From d12247f14c5f8b00ae97a87442f62e49227a759b Mon Sep 17 00:00:00 2001
-> > > From: Michal Hocko <mhocko@suse.cz>
-> > > Date: Mon, 12 Mar 2012 13:11:38 +0100
-> > > Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
-> > > 
-> > > Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
-> > > conditional" introduced a bug in regard to cpu hotplug. The effect is
-> > > that the number of idle ticks in the cpu summary line in /proc/stat is
-> > > still counting ticks for offline cpus.
-> > > 
-> > > Reproduction is easy, just start a workload that keeps all cpus busy,
-> > > switch off one or more cpus and then watch the idle field in top.
-> > > On a dual-core with one cpu 100% busy and one offline cpu you will get
-> > > something like this:
-> > > 
-> > > %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-> > > 
-> > > The problem is that an offline cpu still has ts->idle_active == 1.
-> > > To fix this we should make sure that the cpu is online when calling
-> > > get_cpu_idle_time_us and get_cpu_iowait_time_us.
-> > > 
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-> > > Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> > 
-> > Martin, does that solve the problem for you ?
+> > Bollocks it is.  You're wanting to use the peripheral address, width
+> > and burst size to try to determine what channel to use.  That's a
+> > totally crackpot idea, and as I've already said several times it won't
+> > work in many real life cases we have already.
 > 
-> Yes, the patch does solve the immediate problem. I just tested if again
-> on x86 and s390, works fine. I would like to have another change though.
-> The idle_sleep calculation in the scheduler is fine for x86 but for s390
-> the arch_idle_time delivers a much better precision. A patch would look
-> like this:
-> --
-> Subject: [PATCH] use arch_idle_time for idle and iowait times if available
-> 
-> From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> 
-> Git commit a25cac5198d4ff28 "proc: Consider NO_HZ when printing idle and
-> iowait times" changes the code for /proc/stat to use get_cpu_idle_time_us
-> and get_cpu_iowait_time_us if the system is running with nohz enabled.
-> For architectures which define arch_idle_time (currently s390 only)
-> this is a change for the worse. The result of arch_idle_time is supposed
-> to be the exact sleep time of the target cpu and should be used instead
-> of the value kept by the scheduler.
-> 
-> Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> I'm afraid I'm just somehow failing to explain my thoughts to you, 
+> Russell. I don't think I ever said about using addresses, widths etc.
 
-Looks good to me.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Not directly - what you said was about combining the request functionality
+along with the slave_config functionality.  The slave_config functionality
+takes exactly what I said above: the addresses, widths, burst size of the
+peripheral.
 
-> ---
->  fs/proc/stat.c |   34 ++++++++++++++++++++++++++++------
->  1 file changed, 28 insertions(+), 6 deletions(-)
-> 
-> --- a/fs/proc/stat.c
-> +++ b/fs/proc/stat.c
-> @@ -18,9 +18,30 @@
->  #ifndef arch_irq_stat
->  #define arch_irq_stat() 0
->  #endif
-> -#ifndef arch_idle_time
-> -#define arch_idle_time(cpu) 0
-> -#endif
-> +
-> +#ifdef arch_idle_time
-> +
-> +static cputime64_t get_idle_time(int cpu)
-> +{
-> +	cputime64_t idle;
-> +
-> +	idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-> +	if (cpu_online(cpu) && !nr_iowait_cpu(cpu))
-> +		idle += arch_idle_time(cpu);
-> +	return idle;
-> +}
-> +
-> +static cputime64_t get_iowait_time(int cpu)
-> +{
-> +	cputime64_t iowait;
-> +
-> +	iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
-> +	if (cpu_online(cpu) && nr_iowait_cpu(cpu))
-> +		iowait += arch_idle_time(cpu);
-> +	return iowait;
-> +}
-> +
-> +#else
->  
->  static u64 get_idle_time(int cpu)
->  {
-> @@ -29,11 +50,10 @@ static u64 get_idle_time(int cpu)
->  	if (cpu_online(cpu))
->  		idle_time = get_cpu_idle_time_us(cpu, NULL);
->  
-> -	if (idle_time == -1ULL) {
-> +	if (idle_time == -1ULL)
->  		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
->  		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-> -		idle += arch_idle_time(cpu);
-> -	} else
-> +	else
->  		idle = usecs_to_cputime64(idle_time);
->  
->  	return idle;
-> @@ -55,6 +75,8 @@ static u64 get_iowait_time(int cpu)
->  	return iowait;
->  }
->  
-> +#endif
-> +
->  static int show_stat(struct seq_file *p, void *v)
->  {
->  	int i, j;
-> 
-> -- 
-> blue skies,
->    Martin.
-> 
-> "Reality continues to ruin my life." - Calvin.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Therefore, you did _by implication of what the functions you have been
+referring to do_ been talking exactly about using addresses, widths and
+burst sizes to select the channel.
