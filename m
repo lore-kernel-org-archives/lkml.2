@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760498Ab2C3DwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 23:52:13 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47046 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759006Ab2C3DwH (ORCPT
+	id S1751180Ab2C3EN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 00:13:59 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:52345 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750786Ab2C3ENw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 23:52:07 -0400
-Message-ID: <4F752DB0.6060309@linux.vnet.ibm.com>
-Date: Fri, 30 Mar 2012 11:51:12 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Fri, 30 Mar 2012 00:13:52 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAPYxdU95LDmN/2dsb2JhbABEuR2BCIIJAQEFOhwjEAgDFQMuFCUDIROICbsmE5AaYwSVYJAvgns
+Date: Fri, 30 Mar 2012 15:13:48 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        xfs-masters@oss.sgi.com
+Subject: Re: [PATCH 05/13] XFS: Fix lock ASSERT on UP
+Message-ID: <20120330041348.GF18323@dastard>
+References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
+ <1332895637-32572-6-git-send-email-andi@firstfloor.org>
+ <20120329232114.GA26342@infradead.org>
+ <20120329235201.GF17822@one.firstfloor.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 03/13] KVM: MMU: split FNAME(prefetch_invalid_gpte)
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F7429C7.9030307@linux.vnet.ibm.com> <4F745CFE.4070703@redhat.com>
-In-Reply-To: <4F745CFE.4070703@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12032917-6102-0000-0000-00000123A06E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120329235201.GF17822@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 09:00 PM, Avi Kivity wrote:
-
-> On 03/29/2012 11:22 AM, Xiao Guangrong wrote:
->> Split FNAME(prefetch_invalid_gpte) to check gpte independently which will
->> be used in the later patch
->>
->>
->> -static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
->> -				    struct kvm_mmu_page *sp, u64 *spte,
->> -				    pt_element_t gpte)
->> +static bool FNAME(invalid_gpte)(struct kvm_vcpu *vcpu, pt_element_t gpte)
->>  {
->>  	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
->> -		goto no_present;
->> +		return true;
->>
->>  	if (!is_present_gpte(gpte))
->> -		goto no_present;
->> +		return true;
->>
->>  	if (!(gpte & PT_ACCESSED_MASK))
->> -		goto no_present;
->> +		return true;
->>
->>  	return false;
+On Fri, Mar 30, 2012 at 01:52:01AM +0200, Andi Kleen wrote:
+> On Thu, Mar 29, 2012 at 07:21:14PM -0400, Christoph Hellwig wrote:
+> > On Tue, Mar 27, 2012 at 05:47:09PM -0700, Andi Kleen wrote:
+> > > From: Andi Kleen <ak@linux.intel.com>
+> > > 
+> > > ASSERT(!spin_is_locked()) doesn't work on UP builds. Replace with a standard
+> > > lockdep_assert_held()
+> > 
+> > The "standard" is assert_spin_locked() - which not only is much cheaper
+> > but also has the advantage of working in non-lockdep builds.
 > 
-> A comment (or a name change) is needed to indicate that we're not
-> checking for an invalid gpte, just invalid for caching in an spte.
+> But then you have it unconditional, not just on debug builds.
 
+And the problem with that is what? There is so little overhead to the
+check it doesn't matter that it is enabled in production kernels...
 
-Yes, i will change the name to FNAME(is_cacheable_gpte) and and some
-comments.
+Cheers,
 
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
