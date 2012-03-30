@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965719Ab2C3VSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:18:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S965704Ab2C3VSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:18:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965695Ab2C3VSt (ORCPT
+	with ESMTP id S965677Ab2C3VSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:18:49 -0400
-Message-Id: <20120330194832.333477984@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:18:43 -0400
+Message-Id: <20120330194831.991627780@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:07 -0700
+Date: Fri, 30 Mar 2012 12:49:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mikhail Kryshen <mikhail@kryshen.net>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 042/175] rt2x00: Add support for D-Link DWA-127 to rt2800usb.
+        alan@lxorguk.ukuu.org.uk, Preston Fick <preston.fick@silabs.com>
+Subject: [ 040/175] usb: cp210x: Update to support CP2105 and multiple interface devices
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +24,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
+From: Preston Fick <preston.fick@silabs.com>
 
-commit d42a179b941a9e4cc6cf41d0f3cbadd75fc48a89 upstream.
+commit a5360a53a7ccad5ed9ccef210b94fef13c6e5529 upstream.
 
-This is an RT3070 based device.
+This patch updates the cp210x driver to support CP210x multiple
+interface devices devices from Silicon Labs. The existing driver
+always sends control requests to interface 0, which is hardcoded in
+the usb_control_msg function calls. This only allows for single
+interface devices to be used, and causes a bug when using ports on an
+interface other than 0 in the multiple interface devices.
 
-Reported-by: Mikhail Kryshen <mikhail@kryshen.net>
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Here are the changes included in this patch:
+- Updated the device list to contain the Silicon Labs factory default
+  VID/PID for multiple interface CP210x devices
+- Created a cp210x_port_private struct created for each port on
+  startup, this struct holds the interface number
+- Added a cp210x_release function to clean up the cp210x_port_private
+  memory created on startup
+- Modified usb_get_config and usb_set_config to get a pointer to the
+  cp210x_port_private struct, and use the interface number there in the
+  usb_control_message wIndex param
+
+Signed-off-by: Preston Fick <preston.fick@silabs.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/cp210x.c |   44 +++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 41 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -922,6 +922,7 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x07d1, 0x3c13) },
- 	{ USB_DEVICE(0x07d1, 0x3c15) },
- 	{ USB_DEVICE(0x07d1, 0x3c16) },
-+	{ USB_DEVICE(0x2001, 0x3c1b) },
- 	/* Draytek */
- 	{ USB_DEVICE(0x07fa, 0x7712) },
- 	/* DVICO */
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -49,6 +49,7 @@ static int cp210x_tiocmset_port(struct u
+ 		unsigned int, unsigned int);
+ static void cp210x_break_ctl(struct tty_struct *, int);
+ static int cp210x_startup(struct usb_serial *);
++static void cp210x_release(struct usb_serial *);
+ static void cp210x_dtr_rts(struct usb_serial_port *p, int on);
+ 
+ static bool debug;
+@@ -121,6 +122,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
++	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
++	{ USB_DEVICE(0x10C4, 0xEA80) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA71) }, /* Infinity GPS-MIC-1 Radio Monophone */
+ 	{ USB_DEVICE(0x10C4, 0xF001) }, /* Elan Digital Systems USBscope50 */
+ 	{ USB_DEVICE(0x10C4, 0xF002) }, /* Elan Digital Systems USBwave12 */
+@@ -149,6 +152,10 @@ static const struct usb_device_id id_tab
+ 
+ MODULE_DEVICE_TABLE(usb, id_table);
+ 
++struct cp210x_port_private {
++	__u8			bInterfaceNumber;
++};
++
+ static struct usb_driver cp210x_driver = {
+ 	.name		= "cp210x",
+ 	.probe		= usb_serial_probe,
+@@ -174,6 +181,7 @@ static struct usb_serial_driver cp210x_d
+ 	.tiocmget 		= cp210x_tiocmget,
+ 	.tiocmset		= cp210x_tiocmset,
+ 	.attach			= cp210x_startup,
++	.release		= cp210x_release,
+ 	.dtr_rts		= cp210x_dtr_rts
+ };
+ 
+@@ -261,6 +269,7 @@ static int cp210x_get_config(struct usb_
+ 		unsigned int *data, int size)
+ {
+ 	struct usb_serial *serial = port->serial;
++	struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
+ 	__le32 *buf;
+ 	int result, i, length;
+ 
+@@ -276,7 +285,7 @@ static int cp210x_get_config(struct usb_
+ 	/* Issue the request, attempting to read 'size' bytes */
+ 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_DEVICE_TO_HOST, 0x0000,
+-				0, buf, size, 300);
++				port_priv->bInterfaceNumber, buf, size, 300);
+ 
+ 	/* Convert data into an array of integers */
+ 	for (i = 0; i < length; i++)
+@@ -307,6 +316,7 @@ static int cp210x_set_config(struct usb_
+ 		unsigned int *data, int size)
+ {
+ 	struct usb_serial *serial = port->serial;
++	struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
+ 	__le32 *buf;
+ 	int result, i, length;
+ 
+@@ -328,12 +338,12 @@ static int cp210x_set_config(struct usb_
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_DEVICE, 0x0000,
+-				0, buf, size, 300);
++				port_priv->bInterfaceNumber, buf, size, 300);
+ 	} else {
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_DEVICE, data[0],
+-				0, NULL, 0, 300);
++				port_priv->bInterfaceNumber, NULL, 0, 300);
+ 	}
+ 
+ 	kfree(buf);
+@@ -844,11 +854,39 @@ static void cp210x_break_ctl (struct tty
+ 
+ static int cp210x_startup(struct usb_serial *serial)
+ {
++	struct cp210x_port_private *port_priv;
++	int i;
++
+ 	/* cp210x buffers behave strangely unless device is reset */
+ 	usb_reset_device(serial->dev);
++
++	for (i = 0; i < serial->num_ports; i++) {
++		port_priv = kzalloc(sizeof(*port_priv), GFP_KERNEL);
++		if (!port_priv)
++			return -ENOMEM;
++
++		memset(port_priv, 0x00, sizeof(*port_priv));
++		port_priv->bInterfaceNumber =
++		    serial->interface->cur_altsetting->desc.bInterfaceNumber;
++
++		usb_set_serial_port_data(serial->port[i], port_priv);
++	}
++
+ 	return 0;
+ }
+ 
++static void cp210x_release(struct usb_serial *serial)
++{
++	struct cp210x_port_private *port_priv;
++	int i;
++
++	for (i = 0; i < serial->num_ports; i++) {
++		port_priv = usb_get_serial_port_data(serial->port[i]);
++		kfree(port_priv);
++		usb_set_serial_port_data(serial->port[i], NULL);
++	}
++}
++
+ static int __init cp210x_init(void)
+ {
+ 	int retval;
 
 
