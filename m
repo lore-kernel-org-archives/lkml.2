@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761083Ab2C3QiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 12:38:07 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50713 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755319Ab2C3Qh6 convert rfc822-to-8bit (ORCPT
+	id S934419Ab2C3Qn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 12:43:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38801 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756922Ab2C3QnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 12:37:58 -0400
+	Fri, 30 Mar 2012 12:43:22 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 9/9] perf tools: Remove auto-generated bison/flex files
+References: <1333123764-15662-1-git-send-email-acme@infradead.org>
+	<1333123764-15662-10-git-send-email-acme@infradead.org>
+Date: Sat, 31 Mar 2012 01:43:13 +0900
+In-Reply-To: <1333123764-15662-10-git-send-email-acme@infradead.org> (Arnaldo
+	Carvalho de Melo's message of "Fri, 30 Mar 2012 13:09:24 -0300")
+Message-ID: <87iphmm44e.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120330153013.GC18488@kroah.com>
-References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com> <20120330153013.GC18488@kroah.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 30 Mar 2012 19:37:37 +0300
-Message-ID: <CA+1xoqdZnxcWNpL-03xsR+RDcz3=aRbx2LbR6mTJ_gCmwp-0Rw@mail.gmail.com>
-Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: arnd@arndb.de, viro@zeniv.linux.org.uk, davej@redhat.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 6:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Mar 30, 2012 at 01:04:27PM -0400, Sasha Levin wrote:
->> There are no size checks in kmsg_write(), and we try allocating enough
->> memory to store everything userspace gave us, which may be too much for
->> kmalloc to allocate.
+Hi,
+
+Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> From: Ingo Molnar <mingo@kernel.org>
 >
-> Really?  Have you seen this fail?  As only root can do this, is this
-> really a problem?
-
-Only root, and a whole bunch of management software that dumps data
-into /dev/kmsg (systemd and friends).
-
->> One option would be to limit it to something, but we can't come up with
->> a number that would make sense.
->>
->> Instead, just use vmalloc so that nothing would break with large amounts
->> of data.
+> These should not be in the Git history - they are auto-generated.
 >
-> Are you sure this will work properly?  Have you tested it with large
-> amounts of data?
+> Extend the Makefile rules of the parser files to include the generation
+> run.
+>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Link: http://lkml.kernel.org/r/20120327183335.GA27621@gmail.com
+> [ committer note: Fixed up O= handling ]
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/Makefile                  |   47 +-
+>  tools/perf/util/parse-events-bison.c | 1917 ----------------------------
+>  tools/perf/util/parse-events-bison.h |   81 --
+>  tools/perf/util/parse-events-flex.c  | 2272 ----------------------------------
+>  tools/perf/util/parse-events-flex.h  |  316 -----
+>  tools/perf/util/pmu-bison.c          | 1663 -------------------------
+>  tools/perf/util/pmu-bison.h          |   73 --
+>  tools/perf/util/pmu-flex.c           | 1821 ---------------------------
+>  tools/perf/util/pmu-flex.h           |  316 -----
+>  9 files changed, 30 insertions(+), 8476 deletions(-)
+>  delete mode 100644 tools/perf/util/parse-events-bison.c
+>  delete mode 100644 tools/perf/util/parse-events-bison.h
+>  delete mode 100644 tools/perf/util/parse-events-flex.c
+>  delete mode 100644 tools/perf/util/parse-events-flex.h
+>  delete mode 100644 tools/perf/util/pmu-bison.c
+>  delete mode 100644 tools/perf/util/pmu-bison.h
+>  delete mode 100644 tools/perf/util/pmu-flex.c
+>  delete mode 100644 tools/perf/util/pmu-flex.h
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index b492e3a..3e61c6f 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -61,8 +61,6 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+>  
+>  CC = $(CROSS_COMPILE)gcc
+>  AR = $(CROSS_COMPILE)ar
+> -FLEX = $(CROSS_COMPILE)flex
+> -BISON= $(CROSS_COMPILE)bison
+>  
+>  # Additional ARCH settings for x86
+>  ifeq ($(ARCH),i386)
+> @@ -184,7 +182,7 @@ endif
+>  
+>  ### --- END CONFIGURATION SECTION ---
+>  
+> -BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+> +BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)/util -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+>  BASIC_LDFLAGS =
+>  
+>  # Guard against environment variables
+> @@ -236,6 +234,25 @@ endif
+>  
+>  export PERL_PATH
+>  
+> +FLEX = $(CROSS_COMPILE)flex
+> +BISON= $(CROSS_COMPILE)bison
 
-My test was dumping 800mb of data into it, if there's anything else I
-should try please let me know.
+Just out of curiousity, is this $(CROSS_COMPILE) prefix really needed
+for flex/bison?
 
-Thanks.
+Thanks,
+Namhyung
+
