@@ -1,155 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760334Ab2C3LRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:17:36 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:48289 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760189Ab2C3LRa (ORCPT
+	id S933860Ab2C3LSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:18:39 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760189Ab2C3LSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:17:30 -0400
-Message-ID: <4F7592A6.8030500@linux.vnet.ibm.com>
-Date: Fri, 30 Mar 2012 16:31:58 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
-MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] fix idle ticks in cpu summary line of /proc/stat
-References: <20120311182621.41674b39@de.ibm.com> <20120312121726.GA23608@tiehlicka.suse.cz> <20120312101739.26eb373e@de.ibm.com>	<4F5E0CC1.6010102@linux.vnet.ibm.com> <20120312153906.GE3994@tiehlicka.suse.cz> <20120312164145.5110ed5c@de.ibm.com> <20120313080748.GA7754@tiehlicka.suse.cz> <alpine.LFD.2.02.1203291241360.2542@ionos> <20120330122308.18720283@de.ibm.com>
-In-Reply-To: <20120330122308.18720283@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12033011-9574-0000-0000-0000020957FC
+	Fri, 30 Mar 2012 07:18:32 -0400
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 65/76] ACPI: processor_driver: add missing kfree
+Date: Fri, 30 Mar 2012 06:14:08 -0400
+Message-id: <c80f5b31f3c55a197f5323b93d1e3553429a427e.1333101989.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
+In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+In-reply-to: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2012 03:53 PM, Martin Schwidefsky wrote:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> Hi Thomas,
-> 
-> On Thu, 29 Mar 2012 12:42:22 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
->> On Tue, 13 Mar 2012, Michal Hocko wrote:
->>
->>> OK, so the updated version of the patch looks like this. I am sorry but
->>> I had time to only compile test this...
->>> ---
->>> >From d12247f14c5f8b00ae97a87442f62e49227a759b Mon Sep 17 00:00:00 2001
->>> From: Michal Hocko <mhocko@suse.cz>
->>> Date: Mon, 12 Mar 2012 13:11:38 +0100
->>> Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
->>>
->>> Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
->>> conditional" introduced a bug in regard to cpu hotplug. The effect is
->>> that the number of idle ticks in the cpu summary line in /proc/stat is
->>> still counting ticks for offline cpus.
->>>
->>> Reproduction is easy, just start a workload that keeps all cpus busy,
->>> switch off one or more cpus and then watch the idle field in top.
->>> On a dual-core with one cpu 100% busy and one offline cpu you will get
->>> something like this:
->>>
->>> %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
->>>
->>> The problem is that an offline cpu still has ts->idle_active == 1.
->>> To fix this we should make sure that the cpu is online when calling
->>> get_cpu_idle_time_us and get_cpu_iowait_time_us.
->>>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
->>> Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
->>
->> Martin, does that solve the problem for you ?
-> 
-> Yes, the patch does solve the immediate problem. I just tested if again
-> on x86 and s390, works fine. I would like to have another change though.
-> The idle_sleep calculation in the scheduler is fine for x86 but for s390
-> the arch_idle_time delivers a much better precision. A patch would look
-> like this:
-> --
-> Subject: [PATCH] use arch_idle_time for idle and iowait times if available
-> 
-> From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> 
-> Git commit a25cac5198d4ff28 "proc: Consider NO_HZ when printing idle and
-> iowait times" changes the code for /proc/stat to use get_cpu_idle_time_us
-> and get_cpu_iowait_time_us if the system is running with nohz enabled.
-> For architectures which define arch_idle_time (currently s390 only)
-> this is a change for the worse. The result of arch_idle_time is supposed
-> to be the exact sleep time of the target cpu and should be used instead
-> of the value kept by the scheduler.
-> 
-> Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+The function acpi_processor_add is stored in the ops.add field of a
+acpi_driver structure.  This function is then called in
+acpi_bus_driver_init.  On failure, this function clears the field
+device->driver_data, but does not free its contents.  Thus the free has to
+be done by the add function.  In acpi_processor_add, the corresponding
+value is pr.  This value is currently freed on failure before storing it in
+device->driver_data, but not after.  This free is added in the error
+handling code at the end of the function.  The per_cpu variable
+processors is also cleared so that it does not refer to a dangling pointer.
 
-
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/processor_driver.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-> ---
->  fs/proc/stat.c |   34 ++++++++++++++++++++++++++++------
->  1 file changed, 28 insertions(+), 6 deletions(-)
-> 
-> --- a/fs/proc/stat.c
-> +++ b/fs/proc/stat.c
-> @@ -18,9 +18,30 @@
->  #ifndef arch_irq_stat
->  #define arch_irq_stat() 0
->  #endif
-> -#ifndef arch_idle_time
-> -#define arch_idle_time(cpu) 0
-> -#endif
-> +
-> +#ifdef arch_idle_time
-> +
-> +static cputime64_t get_idle_time(int cpu)
-> +{
-> +	cputime64_t idle;
-> +
-> +	idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-> +	if (cpu_online(cpu) && !nr_iowait_cpu(cpu))
-> +		idle += arch_idle_time(cpu);
-> +	return idle;
-> +}
-> +
-> +static cputime64_t get_iowait_time(int cpu)
-> +{
-> +	cputime64_t iowait;
-> +
-> +	iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
-> +	if (cpu_online(cpu) && nr_iowait_cpu(cpu))
-> +		iowait += arch_idle_time(cpu);
-> +	return iowait;
-> +}
-> +
-> +#else
-> 
->  static u64 get_idle_time(int cpu)
->  {
-> @@ -29,11 +50,10 @@ static u64 get_idle_time(int cpu)
->  	if (cpu_online(cpu))
->  		idle_time = get_cpu_idle_time_us(cpu, NULL);
-> 
-> -	if (idle_time == -1ULL) {
-> +	if (idle_time == -1ULL)
->  		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
->  		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-> -		idle += arch_idle_time(cpu);
-> -	} else
-> +	else
->  		idle = usecs_to_cputime64(idle_time);
-> 
->  	return idle;
-> @@ -55,6 +75,8 @@ static u64 get_iowait_time(int cpu)
->  	return iowait;
->  }
-> 
-> +#endif
-> +
->  static int show_stat(struct seq_file *p, void *v)
->  {
->  	int i, j;
-> 
-
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index 8ae05ce..fce0066 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -535,8 +535,8 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 		return -ENOMEM;
+ 
+ 	if (!zalloc_cpumask_var(&pr->throttling.shared_cpu_map, GFP_KERNEL)) {
+-		kfree(pr);
+-		return -ENOMEM;
++		result = -ENOMEM;
++		goto err_free_pr;
+ 	}
+ 
+ 	pr->handle = device->handle;
+@@ -576,7 +576,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 	dev = get_cpu_device(pr->id);
+ 	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
+ 		result = -EFAULT;
+-		goto err_free_cpumask;
++		goto err_clear_processor;
+ 	}
+ 
+ 	/*
+@@ -594,9 +594,15 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 
+ err_remove_sysfs:
+ 	sysfs_remove_link(&device->dev.kobj, "sysdev");
++err_clear_processor:
++	/*
++	 * processor_device_array is not cleared to allow checks for buggy BIOS
++	 */ 
++	per_cpu(processors, pr->id) = NULL;
+ err_free_cpumask:
+ 	free_cpumask_var(pr->throttling.shared_cpu_map);
+-
++err_free_pr:
++	kfree(pr);
+ 	return result;
+ }
+ 
+-- 
+1.7.10.rc2.19.gfae9d
 
