@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966263Ab2C3VWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:22:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S936052Ab2C3VZi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:25:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966242Ab2C3VWn (ORCPT
+	with ESMTP id S966269Ab2C3VWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:22:43 -0400
-Message-Id: <20120330194849.232840068@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:22:55 -0400
+Message-Id: <20120330194849.018491364@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:22 -0700
+Date: Fri, 30 Mar 2012 12:50:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 117/175] iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
+        alan@lxorguk.ukuu.org.uk, Steffen Persvold <sp@numascale.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 116/175] iommu/amd: Fix section warning for prealloc_protection_domains
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,79 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Steffen Persvold <sp@numascale.com>
 
-commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream.
+commit cebd5fa4d3046d5b43ce1836a0120612822a7fb0 upstream.
 
-Unfortunatly the interrupts for the event log and the
-peripheral page-faults are only enabled at boot but not
-re-enabled at resume. Fix that.
+Fix the following section warning in drivers/iommu/amd_iommu.c :
 
+WARNING: vmlinux.o(.text+0x526e77): Section mismatch in reference from the function prealloc_protection_domains() to the function .init.text:alloc_passthrough_domain()
+The function prealloc_protection_domains() references
+the function __init alloc_passthrough_domain().
+This is often because prealloc_protection_domains lacks a __init
+annotation or the annotation of alloc_passthrough_domain is wrong.
+
+Signed-off-by: Steffen Persvold <sp@numascale.com>
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu_init.c |   30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
+ drivers/iommu/amd_iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1131,8 +1131,9 @@ static int iommu_setup_msi(struct amd_io
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2804,7 +2804,7 @@ static int amd_iommu_dma_supported(struc
+  * we don't need to preallocate the protection domains anymore.
+  * For now we have to.
+  */
+-static void prealloc_protection_domains(void)
++static void __init prealloc_protection_domains(void)
  {
- 	int r;
- 
--	if (pci_enable_msi(iommu->dev))
--		return 1;
-+	r = pci_enable_msi(iommu->dev);
-+	if (r)
-+		return r;
- 
- 	r = request_threaded_irq(iommu->dev->irq,
- 				 amd_iommu_int_handler,
-@@ -1142,27 +1143,36 @@ static int iommu_setup_msi(struct amd_io
- 
- 	if (r) {
- 		pci_disable_msi(iommu->dev);
--		return 1;
-+		return r;
- 	}
- 
- 	iommu->int_enabled = true;
--	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
--
--	if (iommu->ppr_log != NULL)
--		iommu_feature_enable(iommu, CONTROL_PPFINT_EN);
- 
- 	return 0;
- }
- 
- static int iommu_init_msi(struct amd_iommu *iommu)
- {
-+	int ret;
-+
- 	if (iommu->int_enabled)
--		return 0;
-+		goto enable_faults;
- 
- 	if (pci_find_capability(iommu->dev, PCI_CAP_ID_MSI))
--		return iommu_setup_msi(iommu);
-+		ret = iommu_setup_msi(iommu);
-+	else
-+		ret = -ENODEV;
-+
-+	if (ret)
-+		return ret;
- 
--	return 1;
-+enable_faults:
-+	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
-+
-+	if (iommu->ppr_log != NULL)
-+		iommu_feature_enable(iommu, CONTROL_PPFINT_EN);
-+
-+	return 0;
- }
- 
- /****************************************************************************
+ 	struct iommu_dev_data *dev_data;
+ 	struct dma_ops_domain *dma_dom;
 
 
