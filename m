@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760055Ab2C3IiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 04:38:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36615 "EHLO mx2.suse.de"
+	id S1760156Ab2C3Ip2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 04:45:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37367 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759930Ab2C3IiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 04:38:04 -0400
-Date: Fri, 30 Mar 2012 10:38:01 +0200 (CEST)
+	id S1759611Ab2C3IpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 04:45:20 -0400
+Date: Fri, 30 Mar 2012 10:45:18 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, lizefan@huawei.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH for-3.4-fixes] cgroup: cgroup_attach_task() could return
- -errno after success
-In-Reply-To: <20120329162620.GD28941@google.com>
-Message-ID: <alpine.LNX.2.00.1203301037380.25526@pobox.suse.cz>
-References: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz> <20120329160433.GC28941@google.com> <20120329162620.GD28941@google.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
+Subject: Re: linux-next: build warning after merge of the hid tree
+In-Reply-To: <20120329115117.70e8660dbd0c73354486eba9@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1203301043180.25526@pobox.suse.cz>
+References: <20120329115117.70e8660dbd0c73354486eba9@canb.auug.org.au>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,33 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012, Tejun Heo wrote:
+On Thu, 29 Mar 2012, Stephen Rothwell wrote:
 
-> 61d1d219c4 "cgroup: remove extra calls to find_existing_css_set" made
-> cgroup_task_migrate() return void.  An unfortunate side effect was
-> that cgroup_attach_task() was depending on that function's return
-> value to clear its @retval on the success path.  On cgroup mounts
-> without any subsystem with ->can_attach() callback,
-> cgroup_attach_task() ended up returning @retval without initializing
-> it on success.
+> After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
+> produced this warning:
 > 
-> For some reason, gcc failed to warn about it and it didn't cause
-> cgroup_attach_task() to return non-zero value in many cases, probably
-> due to difference in register allocation.  When the problem
-> materializes, systemd fails to populate /systemd cgroup mount and
-> fails to boot.
+> drivers/hid/Kconfig:595:error: recursive dependency detected!
+> drivers/hid/Kconfig:595:	symbol HID_WACOM depends on HID_WACOM
 > 
-> Fix it by initializing @retval to zero on declaration.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Jiri Kosina <jkosina@suse.cz>
-> LKML-Reference: <alpine.LNX.2.00.1203282354440.25526@pobox.suse.cz>
-> ---
-> Jiri, can you please confirm the fix?
+> Caused (very obviously) by commit 224b321b312e ("HID: wacom: Remove
+> CONFIG_HID_WACOM_POWER_SUPPLY option").
 
-Thanks Tejun, it works here.
+Yeah, it has been already fixed in my tree a few hours after the first 
+commit, but I raced with you snapshotting the tree. It should be gone now.
 
-Tested-by: Jiri Kosina <jkosina@suse.cz>
+> Please test this stuff.  And don't rush stuff in during the merge window ...
+
+Hm, I accidentally pushed it out to for-next, even though it's not 
+destined for current merge window. Will flush the for-next branch now, 
+sorry for that. I don't have anything pending for this merge window at the 
+moment, so the for-next queue definitely should be empty.
+
+Thanks,
 
 -- 
 Jiri Kosina
