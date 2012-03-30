@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965276Ab2C3W3s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:29:48 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40391 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964812Ab2C3W3k (ORCPT
+	id S1761658Ab2C3WaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:30:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761548Ab2C3VK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:29:40 -0400
-Date: Fri, 30 Mar 2012 15:29:36 -0700
-From: Tejun Heo <tj@kernel.org>
-To: glommer@parallels.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com
-Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
-Message-ID: <20120330222936.GI28934@google.com>
-References: <1332368265-21586-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332368265-21586-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 30 Mar 2012 17:10:29 -0400
+Message-Id: <20120330194840.695674064@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:49:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Scott Dial <scott.dial@scientiallc.com>
+Subject: [ 034/149] usb-serial: Add support for the Sealevel SeaLINK+8 2038-ROHS device
+In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 03:17:33PM -0700, Tejun Heo wrote:
-> and is also available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup-cftype
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Branch has been refreshed on top of the current mainline and with the
-updated patch.
+------------------
 
-Thanks.
+From: Scott Dial <scott.dial@scientiallc.com>
 
--- 
-tejun
+commit 6d161b99f875269ad4ffa44375e1e54bca6fd02e upstream.
+
+This patch adds new device IDs to the ftdi_sio module to support
+the new Sealevel SeaLINK+8 2038-ROHS device.
+
+Signed-off-by: Scott Dial <scott.dial@scientiallc.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/ftdi_sio.c     |    4 ++++
+ drivers/usb/serial/ftdi_sio_ids.h |    4 ++++
+ 2 files changed, 8 insertions(+)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -537,6 +537,10 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_6_PID) },
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_7_PID) },
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_1_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_2_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_3_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_4_PID) },
+ 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
+ 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
+ 	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -689,6 +689,10 @@
+ #define SEALEVEL_2803_6_PID	0X2863	/* SeaLINK+8 (2803) Port 6 */
+ #define SEALEVEL_2803_7_PID	0X2873	/* SeaLINK+8 (2803) Port 7 */
+ #define SEALEVEL_2803_8_PID	0X2883	/* SeaLINK+8 (2803) Port 8 */
++#define SEALEVEL_2803R_1_PID	0Xa02a	/* SeaLINK+8 (2803-ROHS) Port 1+2 */
++#define SEALEVEL_2803R_2_PID	0Xa02b	/* SeaLINK+8 (2803-ROHS) Port 3+4 */
++#define SEALEVEL_2803R_3_PID	0Xa02c	/* SeaLINK+8 (2803-ROHS) Port 5+6 */
++#define SEALEVEL_2803R_4_PID	0Xa02d	/* SeaLINK+8 (2803-ROHS) Port 7+8 */
+ 
+ /*
+  * JETI SPECTROMETER SPECBOS 1201
+
+
