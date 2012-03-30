@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965125Ab2C3VOQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:14:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S965145Ab2C3VOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:14:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965086Ab2C3VOI (ORCPT
+	with ESMTP id S965128Ab2C3VOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:08 -0400
-Message-Id: <20120330194856.297863830@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:17 -0400
+Message-Id: <20120330194856.865704732@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:15 -0700
+Date: Fri, 30 Mar 2012 12:50:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Justin Pettit <jpettit@nicira.com>,
-        Pravin B Shelar <pshelar@nicira.com>, Jesse Gross <jesse@nicira.com>,
-        David Miller <davem@davemloft.net>
-Subject: [ 102/149] proc-ns: use d_set_d_op() API to set dentry ops in proc_ns_instantiate().
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 105/149] hwmon: (fam15h_power) Correct sign extension of running_avg_capture
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pravin B Shelar <pshelar@nicira.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit 1b26c9b334044cff6d1d2698f2be41bc7d9a0864 upstream.
+commit fc0900cbda9243957d812cd6b4cc87965f9fe75f upstream.
 
-The namespace cleanup path leaks a dentry which holds a reference count
-on a network namespace.  Keeping that network namespace from being freed
-when the last user goes away.  Leaving things like vlan devices in the
-leaked network namespace.
+Wrong bit was used for sign extension which caused wrong end results.
+Thanks to Andre for spotting this bug.
 
-If you use ip netns add for much real work this problem becomes apparent
-pretty quickly.  It light testing the problem hides because frequently
-you simply don't notice the leak.
-
-Use d_set_d_op() so that DCACHE_OP_* flags are set correctly.
-
-This issue exists back to 3.0.
-
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Reported-by: Justin Pettit <jpettit@nicira.com>
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Jesse Gross <jesse@nicira.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/namespaces.c |    2 +-
+ drivers/hwmon/fam15h_power.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -54,7 +54,7 @@ static struct dentry *proc_ns_instantiat
- 	ei->ns_ops    = ns_ops;
- 	ei->ns	      = ns;
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -60,7 +60,7 @@ static ssize_t show_power(struct device
+ 	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
+ 				  REG_TDP_RUNNING_AVERAGE, &val);
+ 	running_avg_capture = (val >> 4) & 0x3fffff;
+-	running_avg_capture = sign_extend32(running_avg_capture, 22);
++	running_avg_capture = sign_extend32(running_avg_capture, 21);
+ 	running_avg_range = val & 0xf;
  
--	dentry->d_op = &pid_dentry_operations;
-+	d_set_d_op(dentry, &pid_dentry_operations);
- 	d_add(dentry, inode);
- 	/* Close the race of the process dying before we return the dentry */
- 	if (pid_revalidate(dentry, NULL))
+ 	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
 
 
