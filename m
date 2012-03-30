@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966370Ab2C3VdI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:33:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50248 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966342Ab2C3Vcx (ORCPT
+	id S966384Ab2C3VdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:33:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50102 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966365Ab2C3VdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:53 -0400
-X-Sasl-enc: ACU/c2ODV6Xtmd56Zvu6g2zk8QIsJxHP2CEs8dL+/lHD 1333143172
-Date: Fri, 30 Mar 2012 14:11:20 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, X86 <x86@kernel.org>,
-        KVM <kvm@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-doc@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Xen <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [Xen-devel] [PATCH RFC V5 1/6] debugfs: Add support to print u32
- array in debugfs
-Message-ID: <20120330211120.GA15000@kroah.com>
-References: <20120323080503.14568.43092.sendpatchset@codeblue>
- <20120323080606.14568.31335.sendpatchset@codeblue>
- <20120330204912.GA29329@phenom.dumpdata.com>
+	Fri, 30 Mar 2012 17:33:06 -0400
+Date: Fri, 30 Mar 2012 14:31:34 -0700
+From: tip-bot for Jiang Liu <liuj97@gmail.com>
+Message-ID: <tip-f5cb92ac82d06cb583c1f66666314c5c0a4d7913@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        chenkeping@huawei.com, jiang.liu@huawei.com, liuj97@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, liuj97@gmail.com, jiang.liu@huawei.com,
+        chenkeping@huawei.com
+In-Reply-To: <1333120296-13563-2-git-send-email-jiang.liu@huawei.com>
+References: <1333120296-13563-2-git-send-email-jiang.liu@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq:
+  Adjust irq thread affinity on IRQ_SET_MASK_OK_NOCOPY return value
+Git-Commit-ID: f5cb92ac82d06cb583c1f66666314c5c0a4d7913
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120330204912.GA29329@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 30 Mar 2012 14:31:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 04:49:12PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Mar 23, 2012 at 01:36:28PM +0530, Raghavendra K T wrote:
-> > From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> > 
-> > Move the code from Xen to debugfs to make the code common
-> > for other users as well.
-> > 
-> > Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> > Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-> > Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Greg,
-> 
-> I was thinking to stick this patch in my queue, but I need your
-> OK since it touches fs/debugfs/file.c.
+Commit-ID:  f5cb92ac82d06cb583c1f66666314c5c0a4d7913
+Gitweb:     http://git.kernel.org/tip/f5cb92ac82d06cb583c1f66666314c5c0a4d7913
+Author:     Jiang Liu <liuj97@gmail.com>
+AuthorDate: Fri, 30 Mar 2012 23:11:33 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 30 Mar 2012 23:13:46 +0200
 
-That's fine with me:
+genirq: Adjust irq thread affinity on IRQ_SET_MASK_OK_NOCOPY return value
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+irq_move_masked_irq() checks the return code of
+chip->irq_set_affinity() only for 0, but IRQ_SET_MASK_OK_NOCOPY is
+also a valid return code, which is there to avoid a redundant copy of
+the cpumask. But in case of IRQ_SET_MASK_OK_NOCOPY we not only avoid
+the redundant copy, we also fail to adjust the thread affinity of an
+eventually threaded interrupt handler.
 
+Handle IRQ_SET_MASK_OK (==0) and IRQ_SET_MASK_OK_NOCOPY(==1) return
+values correctly by checking the valid return values seperately.
+
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+Cc: Keping Chen <chenkeping@huawei.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1333120296-13563-2-git-send-email-jiang.liu@huawei.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/migration.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
+index 4742090..c3c8975 100644
+--- a/kernel/irq/migration.c
++++ b/kernel/irq/migration.c
+@@ -43,12 +43,16 @@ void irq_move_masked_irq(struct irq_data *idata)
+ 	 * masking the irqs.
+ 	 */
+ 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
+-		   < nr_cpu_ids))
+-		if (!chip->irq_set_affinity(&desc->irq_data,
+-					    desc->pending_mask, false)) {
++		   < nr_cpu_ids)) {
++		int ret = chip->irq_set_affinity(&desc->irq_data,
++						 desc->pending_mask, false);
++		switch (ret) {
++		case IRQ_SET_MASK_OK:
+ 			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
++		case IRQ_SET_MASK_OK_NOCOPY:
+ 			irq_set_thread_affinity(desc);
+ 		}
++	}
+ 
+ 	cpumask_clear(desc->pending_mask);
+ }
