@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965404Ab2C3VP4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:15:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55333 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965279Ab2C3VPu (ORCPT
+	id S965438Ab2C3VQM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:16:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965408Ab2C3VQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:15:50 -0400
-Message-Id: <20120330194902.296951608@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:16:02 -0400
+Message-Id: <20120330194902.867062035@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:47 -0700
+Date: Fri, 30 Mar 2012 12:50:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Keith Packard <keithp@keithp.com>,
-        Petr Tesarik <kernel@tesarici.cz>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Bojan Smojver <bojan@rexursive.com>,
-        Andreas Hartmann <andihartmann@01019freenet.de>
-Subject: [ 134/149] drm/i915: suspend fbdev device around suspend/hibernate
+        alan@lxorguk.ukuu.org.uk, Ben Greear <greearb@candelatech.com>,
+        Dave Jones <davej@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 138/149] net: fix a potential rcu_read_lock() imbalance in rt6_fill_node()
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,88 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
 
-commit 3fa016a0b5c5237e9c387fc3249592b2cb5391c6 upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-Looking at hibernate overwriting I though it looked like a cursor,
-so I tracked down this missing piece to stop the cursor blink
-timer. I've no idea if this is sufficient to fix the hibernate
-problems people are seeing, but please test it.
+[ Upstream commit 94f826b8076e2cb92242061e92f21b5baa3eccc2 ]
 
-Both radeon and nouveau have done this for a long time.
+Commit f2c31e32b378 (net: fix NULL dereferences in check_peer_redir() )
+added a regression in rt6_fill_node(), leading to rcu_read_lock()
+imbalance.
 
-I've run this personally all night hib/resume cycles with no fails.
+Thats because NLA_PUT() can make a jump to nla_put_failure label.
 
-Reviewed-by: Keith Packard <keithp@keithp.com>
-Reported-by: Petr Tesarik <kernel@tesarici.cz>
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reported-by: Lots of misc segfaults after hibernate across the world.
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=37142
-Tested-by: Dave Airlie <airlied@redhat.com>
-Tested-by: Bojan Smojver <bojan@rexursive.com>
-Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fix this by using nla_put()
+
+Many thanks to Ben Greear for his help
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/i915_drv.c  |    7 +++++++
- drivers/gpu/drm/i915/intel_drv.h |    2 +-
- drivers/gpu/drm/i915/intel_fb.c  |   10 ++++++++++
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ net/ipv6/route.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -442,6 +442,10 @@ static int i915_drm_freeze(struct drm_de
- 	/* Modeset on resume, not lid events */
- 	dev_priv->modeset_on_lid = 0;
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -2446,8 +2446,12 @@ static int rt6_fill_node(struct net *net
  
-+	console_lock();
-+	intel_fbdev_set_suspend(dev, 1);
-+	console_unlock();
-+
- 	return 0;
- }
+ 	rcu_read_lock();
+ 	n = dst_get_neighbour(&rt->dst);
+-	if (n)
+-		NLA_PUT(skb, RTA_GATEWAY, 16, &n->primary_key);
++	if (n) {
++		if (nla_put(skb, RTA_GATEWAY, 16, &n->primary_key) < 0) {
++			rcu_read_unlock();
++			goto nla_put_failure;
++		}
++	}
+ 	rcu_read_unlock();
  
-@@ -514,6 +518,9 @@ static int i915_drm_thaw(struct drm_devi
- 
- 	dev_priv->modeset_on_lid = 0;
- 
-+	console_lock();
-+	intel_fbdev_set_suspend(dev, 0);
-+	console_unlock();
- 	return error;
- }
- 
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -364,7 +364,7 @@ extern int intel_framebuffer_init(struct
- 				  struct drm_i915_gem_object *obj);
- extern int intel_fbdev_init(struct drm_device *dev);
- extern void intel_fbdev_fini(struct drm_device *dev);
--
-+extern void intel_fbdev_set_suspend(struct drm_device *dev, int state);
- extern void intel_prepare_page_flip(struct drm_device *dev, int plane);
- extern void intel_finish_page_flip(struct drm_device *dev, int pipe);
- extern void intel_finish_page_flip_plane(struct drm_device *dev, int plane);
---- a/drivers/gpu/drm/i915/intel_fb.c
-+++ b/drivers/gpu/drm/i915/intel_fb.c
-@@ -257,6 +257,16 @@ void intel_fbdev_fini(struct drm_device
- 	kfree(dev_priv->fbdev);
- 	dev_priv->fbdev = NULL;
- }
-+
-+void intel_fbdev_set_suspend(struct drm_device *dev, int state)
-+{
-+	drm_i915_private_t *dev_priv = dev->dev_private;
-+	if (!dev_priv->fbdev)
-+		return;
-+
-+	fb_set_suspend(dev_priv->fbdev->helper.fbdev, state);
-+}
-+
- MODULE_LICENSE("GPL and additional rights");
- 
- void intel_fb_output_poll_changed(struct drm_device *dev)
+ 	if (rt->dst.dev)
 
 
