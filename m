@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934543Ab2C3RjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:39:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29095 "EHLO mga01.intel.com"
+	id S1757841Ab2C3Rj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:39:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60124 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755518Ab2C3RjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755742Ab2C3RjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 13:39:06 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="147943730"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="127050732"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@redhat.com
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] perf tools: Fix record sample overlap check for callchains
-Date: Fri, 30 Mar 2012 10:38:34 -0700
-Message-Id: <1333129114-22117-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 1/2] perf tools: fix build for rbtree.c change
+Date: Fri, 30 Mar 2012 10:38:33 -0700
+Message-Id: <1333129114-22117-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1333129114-22117-1-git-send-email-andi@firstfloor.org>
-References: <1333129114-22117-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-perf record checks for buffer overflow, but checked for the wrong
-size for callchains.  callchains are 8 bytes each, not 1.
+rbtree.c in the main tree now includes linux/export.h, so this file
+needs a stub too. This makes perf build again in mainline.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/evsel.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/include/linux/export.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/util/include/linux/export.h
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index f421f7c..90c0756 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -550,7 +550,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 
- 		data->callchain = (struct ip_callchain *)array;
- 
--		if (sample_overlap(event, array, data->callchain->nr))
-+		if (sample_overlap(event, array, (1 + data->callchain->nr) * 8))
- 			return -EFAULT;
- 
- 		array += 1 + data->callchain->nr;
+diff --git a/tools/perf/util/include/linux/export.h b/tools/perf/util/include/linux/export.h
+new file mode 100644
+index 0000000..493b181
+--- /dev/null
++++ b/tools/perf/util/include/linux/export.h
+@@ -0,0 +1 @@
++#include <linux/module.h>
 -- 
 1.7.7.6
 
