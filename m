@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966171Ab2C3VWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:22:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52026 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933708Ab2C3VWN (ORCPT
+	id S966217Ab2C3VWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:22:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966189Ab2C3VWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:22:13 -0400
-Message-Id: <20120330194847.069292325@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:22:25 -0400
+Message-Id: <20120330194846.793866062@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:12 -0700
+Date: Fri, 30 Mar 2012 12:50:11 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
-        Jeff Layton <jlayton@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 107/175] CIFS: Fix a spurious error in cifs_push_posix_locks
+        alan@lxorguk.ukuu.org.uk, Thomas Hadig <thomas@intapp.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [ 106/175] cifs: fix issue mounting of DFS ROOT when redirecting from one domain controller to the next
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit ce85852b90a214cf577fc1b4f49d99fd7e98784a upstream.
+commit 1daaae8fa4afe3df78ca34e724ed7e8187e4eb32 upstream.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
+This patch fixes an issue when cifs_mount receives a
+STATUS_BAD_NETWORK_NAME error during cifs_get_tcon but is able to
+continue after an DFS ROOT referral. In this case, the return code
+variable is not reset prior to trying to mount from the system referred
+to. Thus, is_path_accessible is not executed and the final DFS referral
+is not performed causing a mount error.
+
+Use case: In DNS, example.com  resolves to the secondary AD server
+ad2.example.com Our primary domain controller is ad1.example.com and has
+a DFS redirection set up from \\ad1\share\Users to \\files\share\Users.
+Mounting \\example.com\share\Users fails.
+
+Regression introduced by commit 724d9f1.
+
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru
+Signed-off-by: Thomas Hadig <thomas@intapp.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/file.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ fs/cifs/connect.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -960,9 +960,9 @@ cifs_push_posix_locks(struct cifsFileInf
- 	INIT_LIST_HEAD(&locks_to_send);
- 
- 	/*
--	 * Allocating count locks is enough because no locks can be added to
--	 * the list while we are holding cinode->lock_mutex that protects
--	 * locking operations of this inode.
-+	 * Allocating count locks is enough because no FL_POSIX locks can be
-+	 * added to the list while we are holding cinode->lock_mutex that
-+	 * protects locking operations of this inode.
- 	 */
- 	for (; i < count; i++) {
- 		lck = kmalloc(sizeof(struct lock_to_push), GFP_KERNEL);
-@@ -973,18 +973,20 @@ cifs_push_posix_locks(struct cifsFileInf
- 		list_add_tail(&lck->llist, &locks_to_send);
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -3368,7 +3368,7 @@ cifs_ra_pages(struct cifs_sb_info *cifs_
+ int
+ cifs_mount(struct cifs_sb_info *cifs_sb, struct smb_vol *volume_info)
+ {
+-	int rc = 0;
++	int rc;
+ 	int xid;
+ 	struct cifs_ses *pSesInfo;
+ 	struct cifs_tcon *tcon;
+@@ -3395,6 +3395,7 @@ try_mount_again:
+ 		FreeXid(xid);
  	}
- 
--	i = 0;
- 	el = locks_to_send.next;
- 	lock_flocks();
- 	cifs_for_each_lock(cfile->dentry->d_inode, before) {
-+		flock = *before;
-+		if ((flock->fl_flags & FL_POSIX) == 0)
-+			continue;
- 		if (el == &locks_to_send) {
--			/* something is really wrong */
-+			/*
-+			 * The list ended. We don't have enough allocated
-+			 * structures - something is really wrong.
-+			 */
- 			cERROR(1, "Can't push all brlocks!");
- 			break;
- 		}
--		flock = *before;
--		if ((flock->fl_flags & FL_POSIX) == 0)
--			continue;
- 		length = 1 + flock->fl_end - flock->fl_start;
- 		if (flock->fl_type == F_RDLCK || flock->fl_type == F_SHLCK)
- 			type = CIFS_RDLCK;
-@@ -996,7 +998,6 @@ cifs_push_posix_locks(struct cifsFileInf
- 		lck->length = length;
- 		lck->type = type;
- 		lck->offset = flock->fl_start;
--		i++;
- 		el = el->next;
- 	}
- 	unlock_flocks();
+ #endif
++	rc = 0;
+ 	tcon = NULL;
+ 	pSesInfo = NULL;
+ 	srvTcp = NULL;
 
 
