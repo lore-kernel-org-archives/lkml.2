@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934356Ab2C3QdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 12:33:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60231 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760247Ab2C3Qc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 12:32:57 -0400
-X-Sasl-enc: vjKMRd86uYX1CPniBh4v/GdmyzbPJ6TsSO689XqppecL 1333125176
-Date: Fri, 30 Mar 2012 09:32:54 -0700
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Anatolij Gustschin <agust@denx.de>
-Subject: Re: menuconfig looks funny since recently, i.e. USB gains on
- importance :)
-Message-ID: <20120330163254.GA19703@kroah.com>
-References: <20120330100056.GA27427@x1.osrc.amd.com>
- <alpine.LRH.2.00.1203301328330.22234@twin.jikos.cz>
- <20120330122750.GB27427@x1.osrc.amd.com>
- <4F75DF0B.2070704@gmail.com>
+	id S933431Ab2C3Qe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 12:34:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43141 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752511Ab2C3QeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 12:34:20 -0400
+Date: Fri, 30 Mar 2012 18:26:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: David Smith <dsmith@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] tracing: fix the "old_pid" usage in
+	trace_sched_process_exec()
+Message-ID: <20120330162636.GA4857@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F75DF0B.2070704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 09:27:55AM -0700, David Daney wrote:
-> On 03/30/2012 05:27 AM, Borislav Petkov wrote:
-> >On Fri, Mar 30, 2012 at 01:28:55PM +0200, Jiri Kosina wrote:
-> >>Caued by 53c6bc24fdc, adding David Daney.
-> >
-> >Thanks to all for the swift help, fixed by
-> >http://marc.info/?l=linux-kernel&m=133245014825438&w=2
-> >
-> 
-> That's right.  One would hope Greg Kroah-Hartman would send that
-> patch on its way soon.
+1. TRACE_EVENT(sched_process_exec) forgets to actually use the
+   old pid argument, it sets ->old_pid = p->pid.
 
-I will once 3.4-rc1 is out.
+2. search_binary_handler() uses the wrong pid number. tracepoint
+   needs the global pid_t from the root namespace, while old_pid
+   is the virtual pid number as it seen by the tracer/parent.
 
-thanks,
+With this patch we have two pid_t's in search_binary_handler(),
+not really nice. Perhaps we should switch to "struct pid*", but
+in this case it would be better to cleanup the current code first
+and move the "depth == 0" code outside.
 
-greg k-h
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ fs/exec.c                    |    7 ++++---
+ include/trace/events/sched.h |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index e48c66e..91db3e8 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1372,7 +1372,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	unsigned int depth = bprm->recursion_depth;
+ 	int try,retval;
+ 	struct linux_binfmt *fmt;
+-	pid_t old_pid;
++	pid_t old_pid, old_vpid;
+ 
+ 	retval = security_bprm_check(bprm);
+ 	if (retval)
+@@ -1383,8 +1383,9 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 		return retval;
+ 
+ 	/* Need to fetch pid before load_binary changes it */
++	old_pid = current->pid;
+ 	rcu_read_lock();
+-	old_pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
++	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
+ 	rcu_read_unlock();
+ 
+ 	retval = -ENOENT;
+@@ -1407,7 +1408,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			if (retval >= 0) {
+ 				if (depth == 0) {
+ 					trace_sched_process_exec(current, old_pid, bprm);
+-					ptrace_event(PTRACE_EVENT_EXEC, old_pid);
++					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+ 				}
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index e61ddfe..2f10e81 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -295,7 +295,7 @@ TRACE_EVENT(sched_process_exec,
+ 	TP_fast_assign(
+ 		__assign_str(filename, bprm->filename);
+ 		__entry->pid		= p->pid;
+-		__entry->old_pid	= p->pid;
++		__entry->old_pid	= old_pid;
+ 	),
+ 
+ 	TP_printk("filename=%s pid=%d old_pid=%d", __get_str(filename),
+-- 
+1.5.5.1
+
+
