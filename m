@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936559Ab2C3Wmq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:42:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935228Ab2C3VHj (ORCPT
+	id S935225Ab2C3VHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:07:37 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49634 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935210Ab2C3VHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:07:39 -0400
-Message-Id: <20120330195734.624880210@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:30 -0400
+Message-Id: <20120330195734.209505391@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:49 -0700
+Date: Fri, 30 Mar 2012 12:58:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
-        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 087/108] dm crypt: fix mempool deadlock
+        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 084/108] ext4: check for zero length extent
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit aeb2deae2660a1773c83d3c6e9e6575daa3855d6 upstream.
+commit 31d4f3a2f3c73f279ff96a7135d7202ef6833f12 upstream.
 
-This patch fixes a possible deadlock in dm-crypt's mempool use.
+Explicitly test for an extent whose length is zero, and flag that as a
+corrupted extent.
 
-Currently, dm-crypt reserves a mempool of MIN_BIO_PAGES reserved pages.
-It allocates first MIN_BIO_PAGES with non-failing allocation (the allocation
-cannot fail and waits until the mempool is refilled). Further pages are
-allocated with different gfp flags that allow failing.
+This avoids a kernel BUG_ON assertion failure.
 
-Because allocations may be done in parallel, this code can deadlock. Example:
-There are two processes, each tries to allocate MIN_BIO_PAGES and the processes
-run simultaneously.
-It may end up in a situation where each process allocates (MIN_BIO_PAGES / 2)
-pages. The mempool is exhausted. Each process waits for more pages to be freed
-to the mempool, which never happens.
+Tested: Without this patch, the file system image found in
+tests/f_ext_zero_len/image.gz in the latest e2fsprogs sources causes a
+kernel panic.  With this patch, an ext4 file system error is noted
+instead, and the file system is marked as being corrupted.
 
-To avoid this deadlock scenario, this patch changes the code so that only
-the first page is allocated with non-failing gfp mask. Allocation of further
-pages may fail.
+https://bugzilla.kernel.org/show_bug.cgi?id=42859
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Milan Broz <mbroz@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-crypt.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ fs/ext4/extents.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -177,7 +177,6 @@ struct crypt_config {
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -341,6 +341,8 @@ static int ext4_valid_extent(struct inod
+ 	ext4_fsblk_t block = ext4_ext_pblock(ext);
+ 	int len = ext4_ext_get_actual_len(ext);
  
- #define MIN_IOS        16
- #define MIN_POOL_PAGES 32
--#define MIN_BIO_PAGES  8
- 
- static struct kmem_cache *_crypt_io_pool;
- 
-@@ -849,12 +848,11 @@ static struct bio *crypt_alloc_buffer(st
- 		}
- 
- 		/*
--		 * if additional pages cannot be allocated without waiting,
--		 * return a partially allocated bio, the caller will then try
--		 * to allocate additional bios while submitting this partial bio
-+		 * If additional pages cannot be allocated without waiting,
-+		 * return a partially-allocated bio.  The caller will then try
-+		 * to allocate more bios while submitting this partial bio.
- 		 */
--		if (i == (MIN_BIO_PAGES - 1))
--			gfp_mask = (gfp_mask | __GFP_NOWARN) & ~__GFP_WAIT;
-+		gfp_mask = (gfp_mask | __GFP_NOWARN) & ~__GFP_WAIT;
- 
- 		len = (size > PAGE_SIZE) ? PAGE_SIZE : size;
++	if (len == 0)
++		return 0;
+ 	return ext4_data_block_valid(EXT4_SB(inode->i_sb), block, len);
+ }
  
 
 
