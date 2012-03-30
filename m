@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935798Ab2C3VM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:12:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S964885Ab2C3VMs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:12:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935786Ab2C3VMW (ORCPT
+	with ESMTP id S935830Ab2C3VMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:12:22 -0400
-Message-Id: <20120330194849.342930076@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:12:43 -0400
+Message-Id: <20120330194850.981900891@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:43 -0700
+Date: Fri, 30 Mar 2012 12:49:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
-Subject: [ 070/149] md: dont set md arrays to readonly on shutdown.
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 077/149] target: Dont set WBUS16 or SYNC bits in INQUIRY response
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,80 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit c744a65c1e2d59acc54333ce80a5b0702a98010b upstream.
+commit effc6cc8828257c32c37635e737f14fd6e19ecd7 upstream.
 
-It seems that with recent kernel, writeback can still be happening
-while shutdown is happening, and consequently data can be written
-after the md reboot notifier switches all arrays to read-only.
-This causes a BUG.
+SPC-4 says about the WBUS16 and SYNC bits:
 
-So don't switch them to read-only - just mark them clean and
-set 'safemode' to '2' which mean that immediately after any
-write the array will be switch back to 'clean'.
+    The meanings of these fields are specific to SPI-5 (see 6.4.3).
+    For SCSI transport protocols other than the SCSI Parallel
+    Interface, these fields are reserved.
 
-This could result in the shutdown happening when array is marked
-dirty, thus forcing a resync on reboot.  However if you reboot
-without performing a "sync" first, you get to keep both halves.
+We don't have a SPI fabric module, so we should never set these bits.
+(The comment was misleading, since it only mentioned Sync but the
+actual code set WBUS16 too).
 
-This is suitable for any stable kernel (though there might be some
-conflicts with obvious fixes in earlier kernels).
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |   37 +++++++++++++++----------------------
- 1 file changed, 15 insertions(+), 22 deletions(-)
+ drivers/target/target_core_cdb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -8097,30 +8097,23 @@ static int md_notify_reboot(struct notif
- 	struct mddev *mddev;
- 	int need_delay = 0;
- 
--	if ((code == SYS_DOWN) || (code == SYS_HALT) || (code == SYS_POWER_OFF)) {
--
--		printk(KERN_INFO "md: stopping all md devices.\n");
--
--		for_each_mddev(mddev, tmp) {
--			if (mddev_trylock(mddev)) {
--				/* Force a switch to readonly even array
--				 * appears to still be in use.  Hence
--				 * the '100'.
--				 */
--				md_set_readonly(mddev, 100);
--				mddev_unlock(mddev);
--			}
--			need_delay = 1;
-+	for_each_mddev(mddev, tmp) {
-+		if (mddev_trylock(mddev)) {
-+			__md_stop_writes(mddev);
-+			mddev->safemode = 2;
-+			mddev_unlock(mddev);
- 		}
--		/*
--		 * certain more exotic SCSI devices are known to be
--		 * volatile wrt too early system reboots. While the
--		 * right place to handle this issue is the given
--		 * driver, we do want to have a safe RAID driver ...
--		 */
--		if (need_delay)
--			mdelay(1000*1);
-+		need_delay = 1;
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -116,7 +116,7 @@ target_emulate_inquiry_std(struct se_cmd
+ 		goto out;
  	}
-+	/*
-+	 * certain more exotic SCSI devices are known to be
-+	 * volatile wrt too early system reboots. While the
-+	 * right place to handle this issue is the given
-+	 * driver, we do want to have a safe RAID driver ...
-+	 */
-+	if (need_delay)
-+		mdelay(1000*1);
-+
- 	return NOTIFY_DONE;
- }
  
+-	buf[7] = 0x32; /* Sync=1 and CmdQue=1 */
++	buf[7] = 0x2; /* CmdQue=1 */
+ 
+ 	/*
+ 	 * Do not include vendor, product, reversion info in INQUIRY
 
 
