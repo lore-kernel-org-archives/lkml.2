@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934210Ab2C3LVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:21:45 -0400
+	id S934139Ab2C3LWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:22:14 -0400
 Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
 	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934116Ab2C3LS4 (ORCPT
+	with ESMTP id S934112Ab2C3LSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:18:56 -0400
+	Fri, 30 Mar 2012 07:18:53 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 60/76] ACPI, APEI, Fix ERST header length check
-Date: Fri, 30 Mar 2012 06:14:03 -0400
-Message-id: <7ed28f2ed43ece424ff2fa4dedac7928bb37a23a.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Andi Kleen <ak@linux.intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 43/76] ACPI: Make ACPI interrupt threaded
+Date: Fri, 30 Mar 2012 06:13:46 -0400
+Message-id: <6fe0d0628245fdcd6fad8b837c81e8f7ebc3364d.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,33 +25,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Andi Kleen <andi@firstfloor.org>
 
-This fixes a trivial copy & paste error in ERST header length check.
-It's just for future safety because sizeof(struct acpi_table_einj)
-equals to sizeof(struct acpi_table_erst) with current ACPI5.0
-specification. It applies to v3.3-rc6.
+Some ACPI interrupt actions may need to wait, and it's easiest to
+have a thread context for this. So turn the ACPI interrupt
+into a threaded interrupt.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/apei/erst.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/osl.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index eb9fab5..e4d9d24 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -917,7 +917,7 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
- {
- 	if ((erst_tab->header_length !=
- 	     (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
--	    && (erst_tab->header_length != sizeof(struct acpi_table_einj)))
-+	    && (erst_tab->header_length != sizeof(struct acpi_table_erst)))
- 		return -EINVAL;
- 	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
- 		return -EINVAL;
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 412a1e0..02367a8 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -595,7 +595,8 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
+ 
+ 	acpi_irq_handler = handler;
+ 	acpi_irq_context = context;
+-	if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
++	if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
++				 acpi_irq)) {
+ 		printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
+ 		acpi_irq_handler = NULL;
+ 		return AE_NOT_ACQUIRED;
 -- 
 1.7.10.rc2.19.gfae9d
 
