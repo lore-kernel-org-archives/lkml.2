@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936512Ab2C3WOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:14:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S936519Ab2C3WPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:15:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965095Ab2C3VOK (ORCPT
+	with ESMTP id S965065Ab2C3VOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:14:10 -0400
-Message-Id: <20120330194856.474230230@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:04 -0400
+Message-Id: <20120330194856.095916061@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:16 -0700
+Date: Fri, 30 Mar 2012 12:50:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steffen Persvold <sp@numascale.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 103/149] iommu/amd: Fix section warning for prealloc_protection_domains
+        alan@lxorguk.ukuu.org.uk,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 101/149] x86-32: Fix endless loop when processing signals for kernel tasks
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Persvold <sp@numascale.com>
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
 
-commit cebd5fa4d3046d5b43ce1836a0120612822a7fb0 upstream.
+commit 29a2e2836ff9ea65a603c89df217f4198973a74f upstream.
 
-Fix the following section warning in drivers/iommu/amd_iommu.c :
+The problem occurs on !CONFIG_VM86 kernels [1] when a kernel-mode task
+returns from a system call with a pending signal.
 
-WARNING: vmlinux.o(.text+0x526e77): Section mismatch in reference from the function prealloc_protection_domains() to the function .init.text:alloc_passthrough_domain()
-The function prealloc_protection_domains() references
-the function __init alloc_passthrough_domain().
-This is often because prealloc_protection_domains lacks a __init
-annotation or the annotation of alloc_passthrough_domain is wrong.
+A real-life scenario is a child of 'khelper' returning from a failed
+kernel_execve() in ____call_usermodehelper() [ kernel/kmod.c ].
+kernel_execve() fails due to a pending SIGKILL, which is the result of
+"kill -9 -1" (at least, busybox's init does it upon reboot).
 
-Signed-off-by: Steffen Persvold <sp@numascale.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+The loop is as follows:
+
+* syscall_exit_work:
+ - work_pending:            // start_of_the_loop
+ - work_notify_sig:
+   - do_notify_resume()
+     - do_signal()
+       - if (!user_mode(regs)) return;
+ - resume_userspace         // TIF_SIGPENDING is still set
+ - work_pending             // so we call work_pending => goto
+                            // start_of_the_loop
+
+More information can be found in another LKML thread:
+http://www.serverphorums.com/read.php?12,457826
+
+[1] the problem was also seen on MIPS.
+
+Signed-off-by: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Link: http://lkml.kernel.org/r/1332448765.2299.68.camel@dimm
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/entry_32.S |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -2432,7 +2432,7 @@ static int amd_iommu_dma_supported(struc
-  * we don't need to preallocate the protection domains anymore.
-  * For now we have to.
-  */
--static void prealloc_protection_domains(void)
-+static void __init prealloc_protection_domains(void)
- {
- 	struct pci_dev *dev = NULL;
- 	struct dma_ops_domain *dma_dom;
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -99,12 +99,6 @@
+ #endif
+ .endm
+ 
+-#ifdef CONFIG_VM86
+-#define resume_userspace_sig	check_userspace
+-#else
+-#define resume_userspace_sig	resume_userspace
+-#endif
+-
+ /*
+  * User gs save/restore
+  *
+@@ -328,10 +322,19 @@ ret_from_exception:
+ 	preempt_stop(CLBR_ANY)
+ ret_from_intr:
+ 	GET_THREAD_INFO(%ebp)
+-check_userspace:
++resume_userspace_sig:
++#ifdef CONFIG_VM86
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
+ 	movb PT_CS(%esp), %al
+ 	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
++#else
++	/*
++	 * We can be coming here from a syscall done in the kernel space,
++	 * e.g. a failed kernel_execve().
++	 */
++	movl PT_CS(%esp), %eax
++	andl $SEGMENT_RPL_MASK, %eax
++#endif
+ 	cmpl $USER_RPL, %eax
+ 	jb resume_kernel		# not returning to v8086 or userspace
+ 
 
 
