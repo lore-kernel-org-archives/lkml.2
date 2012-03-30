@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964968Ab2C3WRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:17:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47677 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935855Ab2C3VNX (ORCPT
+	id S965091Ab2C3WSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:18:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964932Ab2C3VNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:23 -0400
-Message-Id: <20120330194852.451665868@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:13 -0400
+Message-Id: <20120330194852.934018713@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:56 -0700
+Date: Fri, 30 Mar 2012 12:49:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Keng-Yu Lin <kengyu@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 083/149] HID: add more hotkeys in Asus AIO keyboards
+        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 085/149] firewire: ohci: fix too-early completion of IR multichannel buffers
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keng-Yu Lin <kengyu@canonical.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 6c30d5a53229aad22bb675e0bd6eb518ecaa4316 upstream.
+commit 0c0efbacab8d70700d13301e0ae7975783c0cb0a upstream.
 
-Add support for the camera key. The hotkey for
-Asus S.H.E(Super Hybrid Engine) mode is mapped to KEY_KEY_PROG1
-just for notifying the userspace.
+handle_ir_buffer_fill() assumed that a completed descriptor would be
+indicated by a non-zero transfer_status (as in most other descriptors).
+However, this field is written by the controller as soon as (the end of)
+the first packet has been written into the buffer.  As a consequence, if
+we happen to run into such a descriptor when the interrupt handler is
+executed after such a packet has completed, the descriptor would be
+taken out of the list of active descriptors as soon as the buffer had
+been partially filled, so the event for the buffer being completely
+filled would never be sent.
 
-Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+To fix this, handle descriptors only when they have been completely
+filled, i.e., when res_count == 0.  (This also matches the condition
+that is reported by the controller with an interrupt.)
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-chicony.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/firewire/ohci.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-chicony.c
-+++ b/drivers/hid/hid-chicony.c
-@@ -49,6 +49,8 @@ static int ch_input_mapping(struct hid_d
- 	case 0x00f2: ch_map_key_clear(KEY_BRIGHTNESSDOWN);	break;
- 	case 0x00f3: ch_map_key_clear(KEY_BRIGHTNESSUP);	break;
- 	case 0x00f4: ch_map_key_clear(KEY_DISPLAY_OFF);	break;
-+	case 0x00f7: ch_map_key_clear(KEY_CAMERA);	break;
-+	case 0x00f8: ch_map_key_clear(KEY_PROG1);	break;
- 	default:
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2748,7 +2748,7 @@ static int handle_ir_buffer_fill(struct
+ 		container_of(context, struct iso_context, context);
+ 	u32 buffer_dma;
+ 
+-	if (!last->transfer_status)
++	if (last->res_count != 0)
+ 		/* Descriptor(s) not done yet, stop iteration */
  		return 0;
- 	}
+ 
+@@ -2762,8 +2762,7 @@ static int handle_ir_buffer_fill(struct
+ 	if (le16_to_cpu(last->control) & DESCRIPTOR_IRQ_ALWAYS)
+ 		ctx->base.callback.mc(&ctx->base,
+ 				      le32_to_cpu(last->data_address) +
+-				      le16_to_cpu(last->req_count) -
+-				      le16_to_cpu(last->res_count),
++				      le16_to_cpu(last->req_count),
+ 				      ctx->base.callback_data);
+ 
+ 	return 1;
 
 
