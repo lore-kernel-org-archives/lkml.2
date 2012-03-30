@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935290Ab2C3VIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:08:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	id S935470Ab2C3Wlo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:41:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935273Ab2C3VH5 (ORCPT
+	with ESMTP id S935263Ab2C3VHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:07:57 -0400
-Message-Id: <20120330195734.760905604@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:54 -0400
+Message-Id: <20120330195735.334705775@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:50 -0700
+Date: Fri, 30 Mar 2012 12:58:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
-        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 088/108] dm crypt: add missing error handling
+        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
+Subject: [ 092/108] slub: Do not hold slub_lock when calling sysfs_slab_add()
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,114 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Christoph Lameter <cl@linux.com>
 
-commit 72c6e7afc43e19f68a31dea204fc366624d6eee9 upstream.
+commit 66c4c35c6bc5a1a452b024cf0364635b28fd94e4 upstream.
 
-Always set io->error to -EIO when an error is detected in dm-crypt.
+sysfs_slab_add() calls various sysfs functions that actually may
+end up in userspace doing all sorts of things.
 
-There were cases where an error code would be set only if we finish
-processing the last sector. If there were other encryption operations in
-flight, the error would be ignored and bio would be returned with
-success as if no error happened.
+Release the slub_lock after adding the kmem_cache structure to the list.
+At that point the address of the kmem_cache is not known so we are
+guaranteed exlusive access to the following modifications to the
+kmem_cache structure.
 
-This bug is present in kcryptd_crypt_write_convert, kcryptd_crypt_read_convert
-and kcryptd_async_done.
+If the sysfs_slab_add fails then reacquire the slub_lock to
+remove the kmem_cache structure from the list.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Reviewed-by: Milan Broz <mbroz@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-crypt.c |   28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+ mm/slub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -1045,16 +1045,14 @@ static void kcryptd_queue_io(struct dm_c
- 	queue_work(cc->io_queue, &io->work);
- }
- 
--static void kcryptd_crypt_write_io_submit(struct dm_crypt_io *io,
--					  int error, int async)
-+static void kcryptd_crypt_write_io_submit(struct dm_crypt_io *io, int async)
- {
- 	struct bio *clone = io->ctx.bio_out;
- 	struct crypt_config *cc = io->target->private;
- 
--	if (unlikely(error < 0)) {
-+	if (unlikely(io->error < 0)) {
- 		crypt_free_buffer_pages(cc, clone);
- 		bio_put(clone);
--		io->error = -EIO;
- 		crypt_dec_pending(io);
- 		return;
- 	}
-@@ -1105,12 +1103,16 @@ static void kcryptd_crypt_write_convert(
- 		sector += bio_sectors(clone);
- 
- 		crypt_inc_pending(io);
-+
- 		r = crypt_convert(cc, &io->ctx);
-+		if (r < 0)
-+			io->error = -EIO;
-+
- 		crypt_finished = atomic_dec_and_test(&io->ctx.pending);
- 
- 		/* Encryption was already finished, submit io now */
- 		if (crypt_finished) {
--			kcryptd_crypt_write_io_submit(io, r, 0);
-+			kcryptd_crypt_write_io_submit(io, 0);
- 
- 			/*
- 			 * If there was an error, do not try next fragments.
-@@ -1161,11 +1163,8 @@ static void kcryptd_crypt_write_convert(
- 	crypt_dec_pending(io);
- }
- 
--static void kcryptd_crypt_read_done(struct dm_crypt_io *io, int error)
-+static void kcryptd_crypt_read_done(struct dm_crypt_io *io)
- {
--	if (unlikely(error < 0))
--		io->error = -EIO;
--
- 	crypt_dec_pending(io);
- }
- 
-@@ -1180,9 +1179,11 @@ static void kcryptd_crypt_read_convert(s
- 			   io->sector);
- 
- 	r = crypt_convert(cc, &io->ctx);
-+	if (r < 0)
-+		io->error = -EIO;
- 
- 	if (atomic_dec_and_test(&io->ctx.pending))
--		kcryptd_crypt_read_done(io, r);
-+		kcryptd_crypt_read_done(io);
- 
- 	crypt_dec_pending(io);
- }
-@@ -1203,15 +1204,18 @@ static void kcryptd_async_done(struct cr
- 	if (!error && cc->iv_gen_ops && cc->iv_gen_ops->post)
- 		error = cc->iv_gen_ops->post(cc, iv_of_dmreq(cc, dmreq), dmreq);
- 
-+	if (error < 0)
-+		io->error = -EIO;
-+
- 	mempool_free(req_of_dmreq(cc, dmreq), cc->req_pool);
- 
- 	if (!atomic_dec_and_test(&ctx->pending))
- 		return;
- 
- 	if (bio_data_dir(io->base_bio) == READ)
--		kcryptd_crypt_read_done(io, error);
-+		kcryptd_crypt_read_done(io);
- 	else
--		kcryptd_crypt_write_io_submit(io, error, 1);
-+		kcryptd_crypt_write_io_submit(io, 1);
- }
- 
- static void kcryptd_crypt(struct work_struct *work)
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3439,13 +3439,14 @@ struct kmem_cache *kmem_cache_create(con
+ 		if (kmem_cache_open(s, n,
+ 				size, align, flags, ctor)) {
+ 			list_add(&s->list, &slab_caches);
++			up_write(&slub_lock);
+ 			if (sysfs_slab_add(s)) {
++				down_write(&slub_lock);
+ 				list_del(&s->list);
+ 				kfree(n);
+ 				kfree(s);
+ 				goto err;
+ 			}
+-			up_write(&slub_lock);
+ 			return s;
+ 		}
+ 		kfree(n);
 
 
