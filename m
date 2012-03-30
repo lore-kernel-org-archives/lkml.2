@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965363Ab2C3WXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:23:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965294Ab2C3WXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:23:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935720Ab2C3VLw (ORCPT
+	with ESMTP id S935724Ab2C3VLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:52 -0400
-Message-Id: <20120330194846.971748410@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:11:54 -0400
+Message-Id: <20120330194847.223320722@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:33 -0700
+Date: Fri, 30 Mar 2012 12:49:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Timur Tabi <timur@freescale.com>,
+        alan@lxorguk.ukuu.org.uk, Daniel Mack <zonque@gmail.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 060/149] ASoC: fsl: p1022ds: tell the WM8776 codec driver that its the master
+Subject: [ 061/149] ASoC: pxa-ssp: atomically set stream active masks
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,86 +25,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timur Tabi <timur@freescale.com>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 70ac07bb633dee75ac554195b9a4d69adfa7803c upstream.
+commit 273b72c8ce6b28df6b49423d775c3e59072c73c5 upstream.
 
-The WM8776 codec driver requires the machine driver to set one of the
-SND_SOC_DAIFMT_CBx_xxx values.  The P1022DS machine driver should be setting
-SND_SOC_DAIFMT_CBM_CFM, but since that value was zero, no one noticed.
+PXA's SSP engine fails to take its current channel phase into account
+when enabling a stream while the engine is already running. This
+results in randomly swapped left/right channels on either the record
+or the playback side, depending on which one was enabled first.
 
-Commit 75d9ac46 ("ASoC: Allow DAI formats to be specified in the
-dai_link"), however, changed the value of SND_SOC_DAIFMT_CBM_CFM from zero
-to a non-zero value, which means that it now needs to be specifically set
-by the machine driver.
+The following patch fixes this by factoring out the bit field
+modifications in question to a separate function that pauses the
+engine temporarily, modifies the bits and kicks it off again
+afterwards. Appearantly, a transition of SSCR0_SSE syncs both
+directions properly.
 
-We also set SND_SOC_DAIFMT_NB_NF, for the same reason.
+The patch has been rolled out to quite a number of devices over the
+last weeks and seems to fix the issue reliably.
 
-Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: Sven Neumann <s.neumann@raumfeld.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/fsl/p1022_ds.c |   24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ sound/soc/pxa/pxa-ssp.c |   61 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 36 insertions(+), 25 deletions(-)
 
---- a/sound/soc/fsl/p1022_ds.c
-+++ b/sound/soc/fsl/p1022_ds.c
-@@ -392,7 +392,8 @@ static int p1022_ds_probe(struct platfor
- 	}
+--- a/sound/soc/pxa/pxa-ssp.c
++++ b/sound/soc/pxa/pxa-ssp.c
+@@ -668,6 +668,38 @@ static int pxa_ssp_hw_params(struct snd_
+ 	return 0;
+ }
  
- 	if (strcasecmp(sprop, "i2s-slave") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_I2S;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_OUT;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_IN;
++static void pxa_ssp_set_running_bit(struct snd_pcm_substream *substream,
++				    struct ssp_device *ssp, int value)
++{
++	uint32_t sscr0 = pxa_ssp_read_reg(ssp, SSCR0);
++	uint32_t sscr1 = pxa_ssp_read_reg(ssp, SSCR1);
++	uint32_t sspsp = pxa_ssp_read_reg(ssp, SSPSP);
++	uint32_t sssr = pxa_ssp_read_reg(ssp, SSSR);
++
++	if (value && (sscr0 & SSCR0_SSE))
++		pxa_ssp_write_reg(ssp, SSCR0, sscr0 & ~SSCR0_SSE);
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		if (value)
++			sscr1 |= SSCR1_TSRE;
++		else
++			sscr1 &= ~SSCR1_TSRE;
++	} else {
++		if (value)
++			sscr1 |= SSCR1_RSRE;
++		else
++			sscr1 &= ~SSCR1_RSRE;
++	}
++
++	pxa_ssp_write_reg(ssp, SSCR1, sscr1);
++
++	if (value) {
++		pxa_ssp_write_reg(ssp, SSSR, sssr);
++		pxa_ssp_write_reg(ssp, SSPSP, sspsp);
++		pxa_ssp_write_reg(ssp, SSCR0, sscr0 | SSCR0_SSE);
++	}
++}
++
+ static int pxa_ssp_trigger(struct snd_pcm_substream *substream, int cmd,
+ 			   struct snd_soc_dai *cpu_dai)
+ {
+@@ -681,42 +713,21 @@ static int pxa_ssp_trigger(struct snd_pc
+ 		pxa_ssp_enable(ssp);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+-		val = pxa_ssp_read_reg(ssp, SSCR1);
+-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-			val |= SSCR1_TSRE;
+-		else
+-			val |= SSCR1_RSRE;
+-		pxa_ssp_write_reg(ssp, SSCR1, val);
++		pxa_ssp_set_running_bit(substream, ssp, 1);
+ 		val = pxa_ssp_read_reg(ssp, SSSR);
+ 		pxa_ssp_write_reg(ssp, SSSR, val);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_START:
+-		val = pxa_ssp_read_reg(ssp, SSCR1);
+-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-			val |= SSCR1_TSRE;
+-		else
+-			val |= SSCR1_RSRE;
+-		pxa_ssp_write_reg(ssp, SSCR1, val);
+-		pxa_ssp_enable(ssp);
++		pxa_ssp_set_running_bit(substream, ssp, 1);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_STOP:
+-		val = pxa_ssp_read_reg(ssp, SSCR1);
+-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-			val &= ~SSCR1_TSRE;
+-		else
+-			val &= ~SSCR1_RSRE;
+-		pxa_ssp_write_reg(ssp, SSCR1, val);
++		pxa_ssp_set_running_bit(substream, ssp, 0);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 		pxa_ssp_disable(ssp);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		val = pxa_ssp_read_reg(ssp, SSCR1);
+-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-			val &= ~SSCR1_TSRE;
+-		else
+-			val &= ~SSCR1_RSRE;
+-		pxa_ssp_write_reg(ssp, SSCR1, val);
++		pxa_ssp_set_running_bit(substream, ssp, 0);
+ 		break;
  
-@@ -409,31 +410,38 @@ static int p1022_ds_probe(struct platfor
- 		}
- 		mdata->clk_frequency = be32_to_cpup(iprop);
- 	} else if (strcasecmp(sprop, "i2s-master") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_I2S;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_IN;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_OUT;
- 	} else if (strcasecmp(sprop, "lj-slave") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_LEFT_J;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_LEFT_J | SND_SOC_DAIFMT_CBM_CFM;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_OUT;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_IN;
- 	} else if (strcasecmp(sprop, "lj-master") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_LEFT_J;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_LEFT_J | SND_SOC_DAIFMT_CBS_CFS;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_IN;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_OUT;
- 	} else if (strcasecmp(sprop, "rj-slave") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_RIGHT_J;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_RIGHT_J | SND_SOC_DAIFMT_CBM_CFM;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_OUT;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_IN;
- 	} else if (strcasecmp(sprop, "rj-master") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_RIGHT_J;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_RIGHT_J | SND_SOC_DAIFMT_CBS_CFS;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_IN;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_OUT;
- 	} else if (strcasecmp(sprop, "ac97-slave") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_AC97;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_AC97 | SND_SOC_DAIFMT_CBM_CFM;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_OUT;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_IN;
- 	} else if (strcasecmp(sprop, "ac97-master") == 0) {
--		mdata->dai_format = SND_SOC_DAIFMT_AC97;
-+		mdata->dai_format = SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_AC97 | SND_SOC_DAIFMT_CBS_CFS;
- 		mdata->codec_clk_direction = SND_SOC_CLOCK_IN;
- 		mdata->cpu_clk_direction = SND_SOC_CLOCK_OUT;
- 	} else {
+ 	default:
 
 
