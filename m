@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936606Ab2C3WsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:48:24 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41969 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935037Ab2C3VGZ (ORCPT
+	id S935233Ab2C3Wsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:48:47 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47095 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934997Ab2C3VGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:25 -0400
-Message-Id: <201203302105.q2UL5AuJ006312@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 30 Mar 2012 16:24:41 -0400
-Subject: [PATCH] arch/tile: return SIGBUS for addresses that are unaligned AND invalid
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:10.0725 (UTC) FILETIME=[CB10A750:01CD0EB8]
+	Fri, 30 Mar 2012 17:06:23 -0400
+Message-Id: <20120330195731.185773502@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:25 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [ 063/108] KVM: x86: extend "struct x86_emulate_ops" with "get_cpuid"
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously we were returning SIGSEGV in this case.  It seems cleaner
-to return SIGBUS since the hardware figures out alignment traps
-before TLB violations, so SIGBUS is the "more correct" signal.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: =?UTF-8?q?Stephan=20B=C3=A4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
+
+commit bdb42f5afebe208eae90406959383856ae2caf2b upstream.
+
+In order to be able to proceed checks on CPU-specific properties
+within the emulator, function "get_cpuid" is introduced.
+With "get_cpuid" it is possible to virtually call the guests
+"cpuid"-opcode without changing the VM's context.
+
+[mtosatti: cleanup/beautify code]
+
+Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/kernel/single_step.c |   31 +++++++++++++++++++------------
- 1 files changed, 19 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |    3 +++
+ arch/x86/kvm/x86.c                 |   23 +++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
-diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
-index b231ef4..36ccd37 100644
---- a/arch/tile/kernel/single_step.c
-+++ b/arch/tile/kernel/single_step.c
-@@ -152,6 +152,25 @@ static tile_bundle_bits rewrite_load_store_unaligned(
- 	if (((unsigned long)addr % size) == 0)
- 		return bundle;
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -189,6 +189,9 @@ struct x86_emulate_ops {
+ 	int (*intercept)(struct x86_emulate_ctxt *ctxt,
+ 			 struct x86_instruction_info *info,
+ 			 enum x86_intercept_stage stage);
++
++	bool (*get_cpuid)(struct x86_emulate_ctxt *ctxt,
++			 u32 *eax, u32 *ebx, u32 *ecx, u32 *edx);
+ };
  
-+	/*
-+	 * Return SIGBUS with the unaligned address, if requested.
-+	 * Note that we return SIGBUS even for completely invalid addresses
-+	 * as long as they are in fact unaligned; this matches what the
-+	 * tilepro hardware would be doing, if it could provide us with the
-+	 * actual bad address in an SPR, which it doesn't.
-+	 */
-+	if (unaligned_fixup == 0) {
-+		siginfo_t info = {
-+			.si_signo = SIGBUS,
-+			.si_code = BUS_ADRALN,
-+			.si_addr = addr
-+		};
-+		trace_unhandled_signal("unaligned trap", regs,
-+				       (unsigned long)addr, SIGBUS);
-+		force_sig_info(info.si_signo, &info, current);
-+		return (tilepro_bundle_bits) 0;
+ typedef u32 __attribute__((vector_size(16))) sse128_t;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4407,6 +4407,28 @@ static int emulator_intercept(struct x86
+ 	return kvm_x86_ops->check_intercept(emul_to_vcpu(ctxt), info, stage);
+ }
+ 
++static bool emulator_get_cpuid(struct x86_emulate_ctxt *ctxt,
++			       u32 *eax, u32 *ebx, u32 *ecx, u32 *edx)
++{
++	struct kvm_cpuid_entry2 *cpuid = NULL;
++
++	if (eax && ecx)
++		cpuid = kvm_find_cpuid_entry(emul_to_vcpu(ctxt),
++					    *eax, *ecx);
++
++	if (cpuid) {
++		*eax = cpuid->eax;
++		*ecx = cpuid->ecx;
++		if (ebx)
++			*ebx = cpuid->ebx;
++		if (edx)
++			*edx = cpuid->edx;
++		return true;
 +	}
 +
- 	/* Handle unaligned load/store */
- 	if (mem_op == MEMOP_LOAD || mem_op == MEMOP_LOAD_POSTINCR) {
- 		unsigned short val_16;
-@@ -199,18 +218,6 @@ static tile_bundle_bits rewrite_load_store_unaligned(
- 		return (tile_bundle_bits) 0;
- 	}
++	return false;
++}
++
+ static struct x86_emulate_ops emulate_ops = {
+ 	.read_std            = kvm_read_guest_virt_system,
+ 	.write_std           = kvm_write_guest_virt_system,
+@@ -4437,6 +4459,7 @@ static struct x86_emulate_ops emulate_op
+ 	.get_fpu             = emulator_get_fpu,
+ 	.put_fpu             = emulator_put_fpu,
+ 	.intercept           = emulator_intercept,
++	.get_cpuid           = emulator_get_cpuid,
+ };
  
--	if (unaligned_fixup == 0) {
--		siginfo_t info = {
--			.si_signo = SIGBUS,
--			.si_code = BUS_ADRALN,
--			.si_addr = addr
--		};
--		trace_unhandled_signal("unaligned trap", regs,
--				       (unsigned long)addr, SIGBUS);
--		force_sig_info(info.si_signo, &info, current);
--		return (tile_bundle_bits) 0;
--	}
--
- 	if (unaligned_printk || unaligned_fixup_count == 0) {
- 		pr_info("Process %d/%s: PC %#lx: Fixup of"
- 			" unaligned %s at %#lx.\n",
--- 
-1.6.5.2
+ static void cache_all_regs(struct kvm_vcpu *vcpu)
+
 
