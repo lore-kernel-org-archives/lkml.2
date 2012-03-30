@@ -1,56 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933963Ab2C3K0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:26:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58270 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759310Ab2C3K0L (ORCPT
+	id S934057Ab2C3K0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:26:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12549 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933663Ab2C3K0b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:26:11 -0400
-Date: Fri, 30 Mar 2012 11:25:54 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
-	__dma_request_channel()
-Message-ID: <20120330102554.GA22981@n2100.arm.linux.org.uk>
-References: <1331211513.4657.67.camel@vkoul-udesk3> <Pine.LNX.4.64.1203081412550.29847@axis700.grange> <1331284918.4657.69.camel@vkoul-udesk3> <Pine.LNX.4.64.1203091022200.7852@axis700.grange> <1331285959.4657.76.camel@vkoul-udesk3> <Pine.LNX.4.64.1203091049060.7852@axis700.grange> <1331520476.4657.79.camel@vkoul-udesk3> <Pine.LNX.4.64.1203161029490.13465@axis700.grange> <CACRpkdYiuERV08=UhBRnj2AjC_RxF+EY+zHAtEp6KYf2W10C_Q@mail.gmail.com> <Pine.LNX.4.64.1203161128120.13465@axis700.grange>
+	Fri, 30 Mar 2012 06:26:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="83470318"
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Du, Alek" <alek.du@intel.com>, "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: RE: [PATCH v2] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Topic: [PATCH v2] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Index: AQHNA7FyIqQ3X9u/802xNIrZ6quEOpaCt2ZA
+Date: Fri, 30 Mar 2012 10:26:27 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FCCE410@SHSMSX102.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FCC5EC3@SHSMSX102.ccr.corp.intel.com>
+ <20120316201445.GA1240@kroah.com>
+In-Reply-To: <20120316201445.GA1240@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1203161128120.13465@axis700.grange>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 16, 2012 at 12:09:55PM +0100, Guennadi Liakhovetski wrote:
-> 3. the wrapper, proposed by Russell, now calls dmaengine_slave_config(), 
-> which fails, because that's a wrong channel (hope I get this right this 
-> time - configuration has nothing to do with selection:-))
+Hi Greg
+  Even there still a prepare buffer not protected, the patch is still good to protect rest case, so this patch is still "nice to have"
+it makes the situation better. for the not-fixed case, we can have another patch to address that. Do you agree?
 
-I keep saying this.  Slave configuration has nothing to do with
-channel selection.  All it does is tell the DMA engine about the
-essential details about the peripheral it's being asked to transfer
-data with.
+Br
+Xiaobing
 
-If a DMA engine itself doesn't support the peripheral, then none of
-the channels on that DMA engine would support it - eg, if the peripheral
-had a byte sized register but your DMA engine only supported word size,
-that would be a valid reason to have slave_config() fail.
 
-However, if that's the case why would you have wired the peripheral up
-to such a DMA engine?  And that's the hint here: you can't use any
-peripheral with any DMA engine - there has to be physical handshaking
-signals connecting the two together.  And that's what actually controls
-which DMA engines and DMA channels are suitable.
+-----Original Message-----
+From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org] 
+Sent: Saturday, March 17, 2012 4:15 AM
+To: Tu, Xiaobing; Jiri Slaby
+Cc: alan@lxorguk.ukuu.org.uk; linux-kernel@vger.kernel.org; Zhang, Yanmin; Du, Alek; Zuo, Jiao
+Subject: Re: [PATCH v2] tty: hold lock across tty buffer finding and buffer filling
 
-Not what the physical address or width or burst size required by the
-peripheral.  It's all to do with physical electrical signal routing.
+Jiri,
 
-The sooner you get this silly idea that dmaengine_slave_config() should
-somehow be involved with DMA channel selection the better it will be
-for everyone.
+Do you have any objections to me applying the patch below?
+
+thanks,
+
+greg k-h
+
+On Fri, Mar 16, 2012 at 03:00:26AM +0000, Tu, Xiaobing wrote:
+> From: Xiaobing Tu <xiaobing.tu@intel.com>
+> 
+> tty_buffer_request_room is well protected, but while after it returns,  
+> it releases the port->lock. tty->buf.tail might be modified by either 
+> irq handler or other threads. The patch adds more protection by 
+> holding the lock across tty buffer finding and buffer filling.
+> Signed-off-by: Alek Du <alek.du@intel.com>
+> Signed-off-by: Xiaobing Tu <xiaobing.tu@intel.com>
+> ---
+>  drivers/tty/tty_buffer.c |   85 +++++++++++++++++++++++++++++++++++-----------
+>  1 files changed, 65 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c index 
+> 6c9b7cd..91e326f 100644
+> --- a/drivers/tty/tty_buffer.c
+> +++ b/drivers/tty/tty_buffer.c
+> @@ -185,25 +185,19 @@ static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
+>  	/* Should possibly check if this fails for the largest buffer we
+>  	   have queued and recycle that ? */  }
+> -
+>  /**
+> - *	tty_buffer_request_room		-	grow tty buffer if needed
+> + *	__tty_buffer_request_room		-	grow tty buffer if needed
+>   *	@tty: tty structure
+>   *	@size: size desired
+>   *
+>   *	Make at least size bytes of linear space available for the tty
+>   *	buffer. If we fail return the size we managed to find.
+> - *
+> - *	Locking: Takes tty->buf.lock
+> + *      Locking: Caller must hold tty->buf.lock
+>   */
+> -int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+> +static int __tty_buffer_request_room(struct tty_struct *tty, size_t 
+> +size)
+>  {
+>  	struct tty_buffer *b, *n;
+>  	int left;
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&tty->buf.lock, flags);
+> -
+>  	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
+>  	   remove this conditional if its worth it. This would be invisible
+>  	   to the callers */
+> @@ -225,9 +219,30 @@ int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+>  			size = left;
+>  	}
+>  
+> -	spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  	return size;
+>  }
+> +
+> +
+> +/**
+> + *	tty_buffer_request_room		-	grow tty buffer if needed
+> + *	@tty: tty structure
+> + *	@size: size desired
+> + *
+> + *	Make at least size bytes of linear space available for the tty
+> + *	buffer. If we fail return the size we managed to find.
+> + *
+> + *	Locking: Takes tty->buf.lock
+> + */
+> +int tty_buffer_request_room(struct tty_struct *tty, size_t size) {
+> +	unsigned long flags;
+> +	int length;
+> +
+> +	spin_lock_irqsave(&tty->buf.lock, flags);
+> +	length = __tty_buffer_request_room(tty, size);
+> +	spin_unlock_irqrestore(&tty->buf.lock, flags);
+> +	return length;
+> +}
+>  EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+>  
+>  /**
+> @@ -249,14 +264,22 @@ int tty_insert_flip_string_fixed_flag(struct tty_struct *tty,
+>  	int copied = 0;
+>  	do {
+>  		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+> -		int space = tty_buffer_request_room(tty, goal);
+> -		struct tty_buffer *tb = tty->buf.tail;
+> +		int space;
+> +		unsigned long flags;
+> +		struct tty_buffer *tb;
+> +
+> +		spin_lock_irqsave(&tty->buf.lock, flags);
+> +		space = __tty_buffer_request_room(tty, goal);
+> +		tb = tty->buf.tail;
+>  		/* If there is no space then tb may be NULL */
+> -		if (unlikely(space == 0))
+> +		if (unlikely(space == 0)) {
+> +			spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  			break;
+> +		}
+>  		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+>  		memset(tb->flag_buf_ptr + tb->used, flag, space);
+>  		tb->used += space;
+> +		spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  		copied += space;
+>  		chars += space;
+>  		/* There is a small chance that we need to split the data over @@ 
+> -286,14 +309,22 @@ int tty_insert_flip_string_flags(struct tty_struct *tty,
+>  	int copied = 0;
+>  	do {
+>  		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+> -		int space = tty_buffer_request_room(tty, goal);
+> -		struct tty_buffer *tb = tty->buf.tail;
+> +		int space;
+> +		unsigned long __flags;
+> +		struct tty_buffer *tb;
+> +
+> +		spin_lock_irqsave(&tty->buf.lock, __flags);
+> +		space = __tty_buffer_request_room(tty, goal);
+> +		tb = tty->buf.tail;
+>  		/* If there is no space then tb may be NULL */
+> -		if (unlikely(space == 0))
+> +		if (unlikely(space == 0)) {
+> +			spin_unlock_irqrestore(&tty->buf.lock, __flags);
+>  			break;
+> +		}
+>  		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+>  		memcpy(tb->flag_buf_ptr + tb->used, flags, space);
+>  		tb->used += space;
+> +		spin_unlock_irqrestore(&tty->buf.lock, __flags);
+>  		copied += space;
+>  		chars += space;
+>  		flags += space;
+> @@ -344,13 +375,20 @@ EXPORT_SYMBOL(tty_schedule_flip);  int 
+> tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
+>  								size_t size)
+>  {
+> -	int space = tty_buffer_request_room(tty, size);
+> +	int space;
+> +	unsigned long flags;
+> +	struct tty_buffer *tb;
+> +
+> +	spin_lock_irqsave(&tty->buf.lock, flags);
+> +	space = __tty_buffer_request_room(tty, size);
+> +
+> +	tb = tty->buf.tail;
+>  	if (likely(space)) {
+> -		struct tty_buffer *tb = tty->buf.tail;
+>  		*chars = tb->char_buf_ptr + tb->used;
+>  		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
+>  		tb->used += space;
+>  	}
+> +	spin_unlock_irqrestore(&tty->buf.lock, flags);
+>  	return space;
+>  }
+>  EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+> @@ -374,13 +412,20 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+>  int tty_prepare_flip_string_flags(struct tty_struct *tty,
+>  			unsigned char **chars, char **flags, size_t size)  {
+> -	int space = tty_buffer_request_room(tty, size);
+> +	int space;
+> +	unsigned long __flags;
+> +	struct tty_buffer *tb;
+> +
+> +	spin_lock_irqsave(&tty->buf.lock, __flags);
+> +	space = __tty_buffer_request_room(tty, size);
+> +
+> +	tb = tty->buf.tail;
+>  	if (likely(space)) {
+> -		struct tty_buffer *tb = tty->buf.tail;
+>  		*chars = tb->char_buf_ptr + tb->used;
+>  		*flags = tb->flag_buf_ptr + tb->used;
+>  		tb->used += space;
+>  	}
+> +	spin_unlock_irqrestore(&tty->buf.lock, __flags);
+>  	return space;
+>  }
+>  EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
+> --
+> 1.7.4.1
