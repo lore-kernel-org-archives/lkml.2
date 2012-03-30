@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934623Ab2C3VER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:04:17 -0400
+	id S934743Ab2C3VEf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:04:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761568Ab2C3VEK (ORCPT
+	with ESMTP id S934543Ab2C3VEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:10 -0400
-Message-Id: <20120330195724.429974046@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:04:16 -0400
+Message-Id: <20120330195725.561573050@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:38 -0700
+Date: Fri, 30 Mar 2012 12:57:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Masami Ichikawa <masami256@gmail.com>
-Subject: [ 016/108] sysfs: Fix memory leak in sysfs_sd_setsecdata().
+        alan@lxorguk.ukuu.org.uk, Thomas Tuttle <ttuttle@chromium.org>
+Subject: [ 024/108] USB: qcserial: add several new serial devices
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,90 +24,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masami Ichikawa <masami256@gmail.com>
+From: Thomas Tuttle <ttuttle@chromium.org>
 
-commit 93518dd2ebafcc761a8637b2877008cfd748c202 upstream.
+commit 2db4d87070e87d198ab630e66a898b45eff316d9 upstream.
 
-This patch fixies follwing two memory leak patterns that reported by kmemleak.
-sysfs_sd_setsecdata() is called during sys_lsetxattr() operation.
-It checks sd->s_iattr is NULL or not. Then if it is NULL, it calls
-sysfs_init_inode_attrs() to allocate memory.
-That code is this.
-
-iattrs = sd->s_iattr;
-if (!iattrs)
-                iattrs = sysfs_init_inode_attrs(sd);
-
-The iattrs recieves sysfs_init_inode_attrs()'s result,  but sd->s_iattr
-doesn't know the address. so it needs to set correct address to
-sd->s_iattr to free memory in other function.
-
-unreferenced object 0xffff880250b73e60 (size 32):
-  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
-  hex dump (first 32 bytes):
-    73 79 73 74 65 6d 5f 75 3a 6f 62 6a 65 63 74 5f  system_u:object_
-    72 3a 73 79 73 66 73 5f 74 3a 73 30 00 00 00 00  r:sysfs_t:s0....
-  backtrace:
-    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
-    [<ffffffff811270ab>] __kmalloc+0x100/0x12c
-    [<ffffffff8120775a>] context_struct_to_string+0x106/0x210
-    [<ffffffff81207cc1>] security_sid_to_context_core+0x10b/0x129
-    [<ffffffff812090ef>] security_sid_to_context+0x10/0x12
-    [<ffffffff811fb0da>] selinux_inode_getsecurity+0x7d/0xa8
-    [<ffffffff811fb127>] selinux_inode_getsecctx+0x22/0x2e
-    [<ffffffff811f4d62>] security_inode_getsecctx+0x16/0x18
-    [<ffffffff81191dad>] sysfs_setxattr+0x96/0x117
-    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
-    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
-    [<ffffffff811544c6>] setxattr+0xcf/0x101
-    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
-    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
-    [<ffffffffffffffff>] 0xffffffffffffffff
-unreferenced object 0xffff88024163c5a0 (size 96):
-  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
-  hex dump (first 32 bytes):
-    00 00 00 00 ed 41 00 00 00 00 00 00 00 00 00 00  .....A..........
-    00 00 00 00 00 00 00 00 0c 64 42 4f 00 00 00 00  .........dBO....
-  backtrace:
-    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
-    [<ffffffff81127402>] kmem_cache_alloc_trace+0xc4/0xee
-    [<ffffffff81191cbe>] sysfs_init_inode_attrs+0x2a/0x83
-    [<ffffffff81191dd6>] sysfs_setxattr+0xbf/0x117
-    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
-    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
-    [<ffffffff811544c6>] setxattr+0xcf/0x101
-    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
-    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
-    [<ffffffffffffffff>] 0xffffffffffffffff
-`
-
-Signed-off-by: Masami Ichikawa <masami256@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/sysfs/inode.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/usb/serial/qcserial.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -136,12 +136,13 @@ static int sysfs_sd_setsecdata(struct sy
- 	void *old_secdata;
- 	size_t old_secdata_len;
- 
--	iattrs = sd->s_iattr;
--	if (!iattrs)
--		iattrs = sysfs_init_inode_attrs(sd);
--	if (!iattrs)
--		return -ENOMEM;
-+	if (!sd->s_iattr) {
-+		sd->s_iattr = sysfs_init_inode_attrs(sd);
-+		if (!sd->s_iattr)
-+			return -ENOMEM;
-+	}
- 
-+	iattrs = sd->s_iattr;
- 	old_secdata = iattrs->ia_secdata;
- 	old_secdata_len = iattrs->ia_secdata_len;
- 
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -35,6 +35,11 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE(0x413c, 0x8171)},	/* Dell Gobi QDL device */
+ 	{USB_DEVICE(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
+ 	{USB_DEVICE(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
++	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi QDL device */
++	{USB_DEVICE(0x1410, 0xa011)},	/* Novatel Gobi QDL device */
++	{USB_DEVICE(0x1410, 0xa012)},	/* Novatel Gobi QDL device */
++	{USB_DEVICE(0x1410, 0xa013)},	/* Novatel Gobi QDL device */
++	{USB_DEVICE(0x1410, 0xa014)},	/* Novatel Gobi QDL device */
+ 	{USB_DEVICE(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
+ 	{USB_DEVICE(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
+ 	{USB_DEVICE(0x19d2, 0xfff3)},	/* ONDA Gobi Modem device */
+@@ -85,7 +90,16 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
+ 	{USB_DEVICE(0x05c6, 0x9204)},	/* Gobi 2000 QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9205)},	/* Gobi 2000 Modem device */
++
++	{USB_DEVICE(0x05c6, 0x920c)},	/* Gobi 3000 QDL */
++	{USB_DEVICE(0x05c6, 0x920d)},	/* Gobi 3000 Composite */
++	{USB_DEVICE(0x1410, 0xa020)},   /* Novatel Gobi 3000 QDL */
++	{USB_DEVICE(0x1410, 0xa021)},	/* Novatel Gobi 3000 Composite */
++	{USB_DEVICE(0x413c, 0x8193)},	/* Dell Gobi 3000 QDL */
++	{USB_DEVICE(0x413c, 0x8194)},	/* Dell Gobi 3000 Composite */
+ 	{USB_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
++	{USB_DEVICE(0x12D1, 0x14F0)},	/* Sony Gobi 3000 QDL */
++	{USB_DEVICE(0x12D1, 0x14F1)},	/* Sony Gobi 3000 Composite */
+ 	{ }				/* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
