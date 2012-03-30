@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936048Ab2C3VZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:25:17 -0400
+	id S966263Ab2C3VWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:22:51 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966284Ab2C3VXB (ORCPT
+	with ESMTP id S966242Ab2C3VWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:23:01 -0400
-Message-Id: <20120330194850.627915339@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:22:43 -0400
+Message-Id: <20120330194849.232840068@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:28 -0700
+Date: Fri, 30 Mar 2012 12:50:22 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 123/175] [media] au8522: bug-fix: enable modulation AFTER tune (instead of before tuning)
+        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 117/175] iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +24,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Krufky <mkrufky@kernellabs.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit ef3d2dc366c8c32d58dbbf9898cfd4f853ff8fe0 upstream.
+commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream.
 
-The au8522 driver programs the tuner after programming the demodulator,
-but the tuner should be programmed first. This patch fixes this behavior.
+Unfortunatly the interrupts for the event log and the
+peripheral page-faults are only enabled at boot but not
+re-enabled at resume. Fix that.
 
-EDIT: Apparantly Devin created a similar patch some time ago, but hasn't
-submitted it for merge.  I never saw his patch, but I thank him anyhow
-for his efforts.  In addition, Devin pointed out a flaw in my patch:
-
-This newly generated patch takes Devin's comments into account.
-
-Thanks-to: Devin Heitmueller <dheitmueller@kernellabs.com>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb/frontends/au8522_dig.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/iommu/amd_iommu_init.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
---- a/drivers/media/dvb/frontends/au8522_dig.c
-+++ b/drivers/media/dvb/frontends/au8522_dig.c
-@@ -588,11 +588,6 @@ static int au8522_set_frontend(struct dv
- 	    (state->current_modulation == c->modulation))
- 		return 0;
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1131,8 +1131,9 @@ static int iommu_setup_msi(struct amd_io
+ {
+ 	int r;
  
--	au8522_enable_modulation(fe, c->modulation);
--
--	/* Allow the demod to settle */
--	msleep(100);
--
- 	if (fe->ops.tuner_ops.set_params) {
- 		if (fe->ops.i2c_gate_ctrl)
- 			fe->ops.i2c_gate_ctrl(fe, 1);
-@@ -604,6 +599,11 @@ static int au8522_set_frontend(struct dv
- 	if (ret < 0)
- 		return ret;
+-	if (pci_enable_msi(iommu->dev))
+-		return 1;
++	r = pci_enable_msi(iommu->dev);
++	if (r)
++		return r;
  
-+	/* Allow the tuner to settle */
-+	msleep(100);
-+
-+	au8522_enable_modulation(fe, c->modulation);
-+
- 	state->current_frequency = c->frequency;
+ 	r = request_threaded_irq(iommu->dev->irq,
+ 				 amd_iommu_int_handler,
+@@ -1142,27 +1143,36 @@ static int iommu_setup_msi(struct amd_io
+ 
+ 	if (r) {
+ 		pci_disable_msi(iommu->dev);
+-		return 1;
++		return r;
+ 	}
+ 
+ 	iommu->int_enabled = true;
+-	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
+-
+-	if (iommu->ppr_log != NULL)
+-		iommu_feature_enable(iommu, CONTROL_PPFINT_EN);
  
  	return 0;
+ }
+ 
+ static int iommu_init_msi(struct amd_iommu *iommu)
+ {
++	int ret;
++
+ 	if (iommu->int_enabled)
+-		return 0;
++		goto enable_faults;
+ 
+ 	if (pci_find_capability(iommu->dev, PCI_CAP_ID_MSI))
+-		return iommu_setup_msi(iommu);
++		ret = iommu_setup_msi(iommu);
++	else
++		ret = -ENODEV;
++
++	if (ret)
++		return ret;
+ 
+-	return 1;
++enable_faults:
++	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
++
++	if (iommu->ppr_log != NULL)
++		iommu_feature_enable(iommu, CONTROL_PPFINT_EN);
++
++	return 0;
+ }
+ 
+ /****************************************************************************
 
 
