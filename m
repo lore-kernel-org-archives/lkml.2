@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761534Ab2C3VDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:03:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S1761551Ab2C3VDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:03:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761404Ab2C3VDe (ORCPT
+	with ESMTP id S1761525Ab2C3VDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:03:34 -0400
-Message-Id: <20120330195722.999979387@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:03:37 -0400
+Message-Id: <20120330195723.862405447@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:28 -0700
+Date: Fri, 30 Mar 2012 12:57:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Korsgaard <jacmet@sunsite.dk>
-Subject: [ 006/108] USB: ftdi_sio: add support for BeagleBone rev A5+
+        alan@lxorguk.ukuu.org.uk,
+        Supriya Karanth <supriya.karanth@stericsson.com>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 012/108] usb: musb: Reselect index reg in interrupt context
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,33 +28,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <jacmet@sunsite.dk>
+From: Supriya Karanth <supriya.karanth@stericsson.com>
 
-commit 444aa7fa9bd752d19ce472d3e02558b987c3cc67 upstream.
+commit 39287076e46d2c19aaceaa6f0a44168ae4d257ec upstream.
 
-BeagleBone changed to the default FTDI 0403:6010 id in rev A5 to make life
-easier for Windows users, so we need a similar workaround as the Calao
-board to support it.
+musb INDEX register is getting modified/corrupted during temporary
+un-locking in a SMP system. Set this register with proper value
+after re-acquiring the lock
 
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Scenario:
+---------
+CPU1 is handling a data transfer completion interrupt received for
+the CLASS1 EP
+CPU2 is handling a CLASS2 thread which is queuing data to musb for
+transfer
+
+Below is the error sequence:
+
+         CPU1                   |             CPU2
+--------------------------------------------------------------------
+Data transfer completion inter- |
+rupt recieved.                  |
+                                |
+musb INDEX reg set to CLASS1 EP |
+                                |
+musb LOCK is acquired.          |
+                                |
+                                | CLASS2 thread queues data.
+                                |
+                                | CLASS2 thread tries to acquire musb
+                                | LOCK but lock is already taken by
+                                | CLASS1, so CLASS2 thread is
+                                | spinning.
+                                |
+>From Interrupt Context musb     |
+giveback function is called     |
+                                |
+The giveback function releases  | CLASS2 thread now acquires LOCK
+LOCK                            |
+                                |
+ClASS1 Request's completion cal-| ClASS2 schedules the data transfer and
+lback is called                 | sets the MUSB INDEX to Class2 EP number
+                                |
+Interrupt handler for CLASS1 EP |
+tries to acquire LOCK and is    |
+spinning                        |
+                                |
+Interrupt for Class1 EP acquires| Class2 completes the scheduling etc and
+the MUSB LOCK                   | releases the musb LOCK
+                                |
+Interrupt for Class1 EP schedul-|
+es the next data transfer       |
+but musb INDEX register is still|
+set to CLASS2 EP                |
+
+Since the MUSB INDEX register is set to a different endpoint, we
+read and modify the wrong registers. Hence data transfer will not
+happen properly. This results in unpredictable behavior
+
+So, the MUSB INDEX register is set to proper value again when
+interrupt re-acquires the lock
+
+Signed-off-by: Supriya Karanth <supriya.karanth@stericsson.com>
+Signed-off-by: Praveena Nadahally <praveen.nadahally@stericsson.com>
+Reviewed-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/musb/musb_gadget.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1755,8 +1755,8 @@ static int ftdi_8u2232c_probe(struct usb
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -576,6 +576,15 @@ void musb_g_tx(struct musb *musb, u8 epn
  
- 	dbg("%s", __func__);
+ 		if (request->actual == request->length) {
+ 			musb_g_giveback(musb_ep, request, 0);
++			/*
++			 * In the giveback function the MUSB lock is
++			 * released and acquired after sometime. During
++			 * this time period the INDEX register could get
++			 * changed by the gadget_queue function especially
++			 * on SMP systems. Reselect the INDEX to be sure
++			 * we are reading/modifying the right registers
++			 */
++			musb_ep_select(mbase, epnum);
+ 			req = musb_ep->desc ? next_request(musb_ep) : NULL;
+ 			if (!req) {
+ 				dev_dbg(musb->controller, "%s idle now\n",
+@@ -968,6 +977,15 @@ void musb_g_rx(struct musb *musb, u8 epn
+ 		}
+ #endif
+ 		musb_g_giveback(musb_ep, request, 0);
++		/*
++		 * In the giveback function the MUSB lock is
++		 * released and acquired after sometime. During
++		 * this time period the INDEX register could get
++		 * changed by the gadget_queue function especially
++		 * on SMP systems. Reselect the INDEX to be sure
++		 * we are reading/modifying the right registers
++		 */
++		musb_ep_select(mbase, epnum);
  
--	if ((udev->manufacturer) &&
--	    (strcmp(udev->manufacturer, "CALAO Systems") == 0))
-+	if ((udev->manufacturer && !strcmp(udev->manufacturer, "CALAO Systems")) ||
-+	    (udev->product && !strcmp(udev->product, "BeagleBone/XDS100")))
- 		return ftdi_jtag_probe(serial);
- 
- 	return 0;
+ 		req = next_request(musb_ep);
+ 		if (!req)
 
 
