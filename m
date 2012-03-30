@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935841Ab2C3W2A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:28:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37610 "EHLO mx2.suse.de"
+	id S936501Ab2C3W2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:28:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37615 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935626Ab2C3W1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935778Ab2C3W1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 18:27:54 -0400
-Date: Sat, 31 Mar 2012 00:18:07 +0200
+Date: Sat, 31 Mar 2012 00:27:31 +0200
 From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: john.stultz@linaro.org, jwboyer@redhat.com, lacombar@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kconfig for v3.4-rc1
-Message-ID: <20120330221807.GA28347@sepie.suse.cz>
+Cc: Gregory.Dietsche@cuw.edu, Julia.Lawall@lip6.fr, hamo.by@gmail.com,
+        joerg.roedel@amd.com, kjbmail@gmail.com, mmarek@suse.cz,
+        shawnlandden@gmail.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild misc changes for v3.4-rc1
+Message-ID: <20120330222730.GA28545@sepie.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,31 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-please pull these kconfig bits for 3.4-rc1. There is one fix for make
-oldconfig by Arnaud and updates to the merge_config.sh tool.
+this is the non-critical part of kbuild for 3.4-rc1:
+
+* New semantic patches, make coccicheck M= fix
+* make gtags speedup
+* make tags/TAGS always removes struct forward declarations
+* make deb-pkg fixes (some patches are still pending, I know)
+* scripts/patch-kernel fix from the last user of this script ;)
+
+Note that the branch is based on 3.3-rc1, but I merged the rc-fixes
+branch to avoid conflicts. Hence the diffstat and shortlog below is
+against 3.3-rc5.
 
 Thanks,
 Michal
 
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
 
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
+The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
+
+  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
 
 are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kconfig
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
 
-Arnaud Lacombe (1):
-      kconfig: fix new choices being skipped upon config update
+Greg Dietsche (1):
+      coccicheck: change handling of C={1,2} when M= is set
 
-John Stultz (2):
-      merge_config.sh: Set execute bit
-      merge_config.sh: Add option to display redundant configs
+Jianbin Kang (1):
+      kbuild: incremental tags update for GNU Global
 
-Josh Boyer (1):
-      merge_config.sh: Use the first file as the initial config
+Joerg Roedel (3):
+      kbuild: Fix link to headers in 'make deb-pkg'
+      kbuild: Only build linux-image package for UML
+      kbuild: Fix out-of-tree build for 'make deb-pkg'
 
- scripts/kconfig/confdata.c      |   26 ++++++--------------------
- scripts/kconfig/merge_config.sh |   15 ++++++++++++++-
- scripts/kconfig/symbol.c        |    9 ++++++++-
- 3 files changed, 28 insertions(+), 22 deletions(-)
- mode change 100644 => 100755 scripts/kconfig/merge_config.sh
+Julia Lawall (6):
+      coccinelle: semantic patch for missing clk_put
+      coccinelle: semantic patch for missing iounmap
+      coccinelle: semantic patch converting 0 test to null test
+      coccinelle: semantic patch to check for PTR_ERR after reassignment
+      coccinelle: semantic patch for bool issues
+      scripts/coccinelle/api/ptr_ret.cocci: semantic patch for ptr_err
+
+Michal Marek (1):
+      Merge branch 'kbuild/rc-fixes' into kbuild/misc
+
+Shawn Landden (1):
+      scripts/patch-kernel: digest kernel.org hosted .xz patches
+
+Yang Bai (1):
+      scripts: refactor remove structure forward declarations
+
+ scripts/coccinelle/api/ptr_ret.cocci   |   70 ++++++++++
+ scripts/coccinelle/free/clk_put.cocci  |   67 +++++++++
+ scripts/coccinelle/free/iounmap.cocci  |   67 +++++++++
+ scripts/coccinelle/misc/boolinit.cocci |  178 ++++++++++++++++++++++++
+ scripts/coccinelle/misc/cstptr.cocci   |   41 ++++++
+ scripts/coccinelle/null/badzero.cocci  |  237 ++++++++++++++++++++++++++++++++
+ scripts/package/builddeb               |   20 ++-
+ scripts/patch-kernel                   |    4 +
+ scripts/tags.sh                        |   13 ++-
+ 9 files changed, 687 insertions(+), 10 deletions(-)
+ create mode 100644 scripts/coccinelle/api/ptr_ret.cocci
+ create mode 100644 scripts/coccinelle/free/clk_put.cocci
+ create mode 100644 scripts/coccinelle/free/iounmap.cocci
+ create mode 100644 scripts/coccinelle/misc/boolinit.cocci
+ create mode 100644 scripts/coccinelle/misc/cstptr.cocci
+ create mode 100644 scripts/coccinelle/null/badzero.cocci
