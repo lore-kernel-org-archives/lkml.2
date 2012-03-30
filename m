@@ -1,147 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934221Ab2C3LW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:22:59 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933693Ab2C3LSd (ORCPT
+	id S934228Ab2C3LX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:23:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58561 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933693Ab2C3LXV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:18:33 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 56/76] ACPI: Add CPU hotplug support for processor device
- objects
-Date: Fri, 30 Mar 2012 06:13:59 -0400
-Message-id: <9f324bda970c599ca35f7be89d9d1bcb96d6053c.1333101989.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
-In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
-References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
-In-reply-to: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
-References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
-Reply-to: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+	Fri, 30 Mar 2012 07:23:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F7582B0.5010609@cn.fujitsu.com>
+References: <4F7581D4.4040301@cn.fujitsu.com> <4F7582B0.5010609@cn.fujitsu.com>
+From: Asias He <asias.hejun@gmail.com>
+Date: Fri, 30 Mar 2012 19:22:39 +0800
+Message-ID: <CAFO3S427vWXHBDaRmfwqZrGZ2Y8RPUn7CQswQou9EGMh43jU8Q@mail.gmail.com>
+Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass of
+ disks naming
+To: Ren Mingxin <renmx@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toshi Kani <toshi.kani@hp.com>
+Hi,  Ren
 
-acpi_processor_install_hotplug_notify() registers processor objects to
-receive ACPI CPU hotplug event notifications. This patch additionally
-registers processor device objects (ACPI0007) to receive the notifications
-as well.
+On Fri, Mar 30, 2012 at 5:53 PM, Ren Mingxin <renmx@cn.fujitsu.com> wrote:
+>  The current virtblk's naming algorithm only supports 263  disks.
+> If there are mass of virtblks(exceeding 263), there will be disks
+> with the same name.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/acpi/processor_driver.c |   48 +++++++++++++++++++++++++++++++--------
- 1 file changed, 38 insertions(+), 10 deletions(-)
+This fix is pretty nice. However, current virtblk's naming still
+supports up to 18278 disks, no?
+( index 0  -> vda, index 18277 -> vdzzz ).
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 8ae05ce..50be277 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -68,6 +68,7 @@
- #define ACPI_PROCESSOR_NOTIFY_PERFORMANCE 0x80
- #define ACPI_PROCESSOR_NOTIFY_POWER	0x81
- #define ACPI_PROCESSOR_NOTIFY_THROTTLING	0x82
-+#define ACPI_PROCESSOR_DEVICE_HID	"ACPI0007"
- 
- #define ACPI_PROCESSOR_LIMIT_USER	0
- #define ACPI_PROCESSOR_LIMIT_THERMAL	1
-@@ -88,7 +89,7 @@ static int acpi_processor_start(struct acpi_processor *pr);
- 
- static const struct acpi_device_id processor_device_ids[] = {
- 	{ACPI_PROCESSOR_OBJECT_HID, 0},
--	{"ACPI0007", 0},
-+	{ACPI_PROCESSOR_DEVICE_HID, 0},
- 	{"", 0},
- };
- MODULE_DEVICE_TABLE(acpi, processor_device_ids);
-@@ -741,20 +742,46 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
- 	return;
- }
- 
-+static acpi_status is_processor_device(acpi_handle handle)
-+{
-+	struct acpi_device_info *info;
-+	char *hid;
-+	acpi_status status;
-+
-+	status = acpi_get_object_info(handle, &info);
-+	if (ACPI_FAILURE(status))
-+		return status;
-+
-+	if (info->type == ACPI_TYPE_PROCESSOR) {
-+		kfree(info);
-+		return AE_OK;	/* found a processor object */
-+	}
-+
-+	if (!(info->valid & ACPI_VALID_HID)) {
-+		kfree(info);
-+		return AE_ERROR;
-+	}
-+
-+	hid = info->hardware_id.string;
-+	if ((hid == NULL) || strcmp(hid, ACPI_PROCESSOR_DEVICE_HID)) {
-+		kfree(info);
-+		return AE_ERROR;
-+	}
-+
-+	kfree(info);
-+	return AE_OK;	/* found a processor device object */
-+}
-+
- static acpi_status
- processor_walk_namespace_cb(acpi_handle handle,
- 			    u32 lvl, void *context, void **rv)
- {
- 	acpi_status status;
- 	int *action = context;
--	acpi_object_type type = 0;
- 
--	status = acpi_get_type(handle, &type);
-+	status = is_processor_device(handle);
- 	if (ACPI_FAILURE(status))
--		return (AE_OK);
--
--	if (type != ACPI_TYPE_PROCESSOR)
--		return (AE_OK);
-+		return AE_OK;	/* not a processor; continue to walk */
- 
- 	switch (*action) {
- 	case INSTALL_NOTIFY_HANDLER:
-@@ -772,7 +799,8 @@ processor_walk_namespace_cb(acpi_handle handle,
- 		break;
- 	}
- 
--	return (AE_OK);
-+	/* found a processor; skip walking underneath */
-+	return AE_CTRL_DEPTH;
- }
- 
- static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
-@@ -830,7 +858,7 @@ void acpi_processor_install_hotplug_notify(void)
- {
- #ifdef CONFIG_ACPI_HOTPLUG_CPU
- 	int action = INSTALL_NOTIFY_HANDLER;
--	acpi_walk_namespace(ACPI_TYPE_PROCESSOR,
-+	acpi_walk_namespace(ACPI_TYPE_ANY,
- 			    ACPI_ROOT_OBJECT,
- 			    ACPI_UINT32_MAX,
- 			    processor_walk_namespace_cb, NULL, &action, NULL);
-@@ -843,7 +871,7 @@ void acpi_processor_uninstall_hotplug_notify(void)
- {
- #ifdef CONFIG_ACPI_HOTPLUG_CPU
- 	int action = UNINSTALL_NOTIFY_HANDLER;
--	acpi_walk_namespace(ACPI_TYPE_PROCESSOR,
-+	acpi_walk_namespace(ACPI_TYPE_ANY,
- 			    ACPI_ROOT_OBJECT,
- 			    ACPI_UINT32_MAX,
- 			    processor_walk_namespace_cb, NULL, &action, NULL);
+> By renaming "sd_format_disk_name()" to "disk_name_format()"
+> and moving it into block core, virtio_blk can use this function to
+> support mass of disks.
+>
+> Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
+> ---
+>  virtio_blk.c |   13 +------------
+>  1 file changed, 1 insertion(+), 12 deletions(-)
+>
+> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> index c4a60ba..54612c2 100644
+> --- a/drivers/block/virtio_blk.c
+> +++ b/drivers/block/virtio_blk.c
+> @@ -442,18 +442,7 @@ static int __devinit virtblk_probe(struct virtio_device
+> *vdev)
+>
+>        q->queuedata = vblk;
+>
+> -       if (index < 26) {
+> -               sprintf(vblk->disk->disk_name, "vd%c", 'a' + index % 26);
+> -       } else if (index < (26 + 1) * 26) {
+> -               sprintf(vblk->disk->disk_name, "vd%c%c",
+> -                       'a' + index / 26 - 1, 'a' + index % 26);
+> -       } else {
+> -               const unsigned int m1 = (index / 26 - 1) / 26 - 1;
+> -               const unsigned int m2 = (index / 26 - 1) % 26;
+> -               const unsigned int m3 =  index % 26;
+> -               sprintf(vblk->disk->disk_name, "vd%c%c%c",
+> -                       'a' + m1, 'a' + m2, 'a' + m3);
+> -       }
+> +       disk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
+>
+>        vblk->disk->major = major;
+>        vblk->disk->first_minor = index_to_minor(index);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-1.7.10.rc2.19.gfae9d
-
+Asias He
