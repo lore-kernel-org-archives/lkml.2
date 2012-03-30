@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760799Ab2C3OFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 10:05:09 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58101 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759966Ab2C3OFB (ORCPT
+	id S1760878Ab2C3OI1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 10:08:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33390 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759401Ab2C3OIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 10:05:01 -0400
-Date: Fri, 30 Mar 2012 16:04:57 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Christoph Hellwig <hch@infradead.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, xfs-masters@oss.sgi.com
-Subject: Re: [PATCH 05/13] XFS: Fix lock ASSERT on UP
-Message-ID: <20120330140457.GH17822@one.firstfloor.org>
-References: <1332895637-32572-1-git-send-email-andi@firstfloor.org> <1332895637-32572-6-git-send-email-andi@firstfloor.org> <20120329232114.GA26342@infradead.org> <20120329235201.GF17822@one.firstfloor.org> <20120330041348.GF18323@dastard>
+	Fri, 30 Mar 2012 10:08:20 -0400
+Subject: Re: [REGRESSION][PATCH] bpf_jit drops the ball on indirect
+ negative mem references
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Seiffert <kaffeemonster@googlemail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, Matt Evans <matt@ozlabs.org>
+In-Reply-To: <4F75B828.3090705@googlemail.com>
+References: <CAPwCz79wO=5zTZmCG+ePfRuEu-p_Vosi18bYZ-MVNZGOdbE3aQ@mail.gmail.com>
+	 <1332965129.2325.12.camel@edumazet-glaptop>
+	 <CAPwCz7_tnjq32duJSDj21LpRe5TFvGGszH4joQr1DGTjNd7GcA@mail.gmail.com>
+	 <1332967172.2325.22.camel@edumazet-glaptop>
+	 <4F744D58.3070009@googlemail.com>
+	 <1333098711.19659.9.camel@edumazet-laptop>
+	 <4F75B828.3090705@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Mar 2012 16:08:13 +0200
+Message-ID: <1333116493.2325.2125.camel@edumazet-glaptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120330041348.GF18323@dastard>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 03:13:48PM +1100, Dave Chinner wrote:
-> On Fri, Mar 30, 2012 at 01:52:01AM +0200, Andi Kleen wrote:
-> > On Thu, Mar 29, 2012 at 07:21:14PM -0400, Christoph Hellwig wrote:
-> > > On Tue, Mar 27, 2012 at 05:47:09PM -0700, Andi Kleen wrote:
-> > > > From: Andi Kleen <ak@linux.intel.com>
-> > > > 
-> > > > ASSERT(!spin_is_locked()) doesn't work on UP builds. Replace with a standard
-> > > > lockdep_assert_held()
-> > > 
-> > > The "standard" is assert_spin_locked() - which not only is much cheaper
-> > > but also has the advantage of working in non-lockdep builds.
-> > 
-> > But then you have it unconditional, not just on debug builds.
-> 
-> And the problem with that is what? There is so little overhead to the
-> check it doesn't matter that it is enabled in production kernels...
+On Fri, 2012-03-30 at 15:42 +0200, Jan Seiffert wrote:
 
-It's really interesting how much you guys argue for your buggy construct
-which you clearly never tested on a UP build...
+> Do you know where i can ping the powerpc guys a little bit harder?
 
-Not sure if that is a hot path, but on highly contended locks every cache line
-fetch is quite expensive on larger systems.
+maybe using CC linux-arch@vger.kernel.org
 
-also I doubt the thing really catches bugs, and if it did you would be 
-probably better off with a sparse notation or so.
+One way to handle that would be to split this patch in 3 parts, so that
+I can Ack the non ppc part.
 
-Anyways I will turn it into the normal assert.
+[1] introduce bpf_internal_load_pointer_neg_helper()
+	[BTW no need to EXPORT_SYMBOL it, since jit is not a module ]
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+[2] x86_bpf_iit: handle negative offsets in loads
+
+[3] ppc_bpf_jit: handle negative offsets in loads
+
+
+
