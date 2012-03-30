@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966085Ab2C3VVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:21:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S966159Ab2C3VWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:22:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966018Ab2C3VVa (ORCPT
+	with ESMTP id S966130Ab2C3VV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:21:30 -0400
-Message-Id: <20120330194843.597509332@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:21:57 -0400
+Message-Id: <20120330194845.807457165@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:58 -0700
+Date: Fri, 30 Mar 2012 12:50:07 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Keng-Yu Lin <kengyu@canonical.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 093/175] Bluetooth: Add AR30XX device ID on Asus laptops
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 102/175] NFS: Properly handle the case where the delegation is revoked
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,63 +24,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keng-Yu Lin <kengyu@canonical.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 6b6ba88b5bb8779156b21bb957520a448c3642e2 upstream.
+commit a1d0b5eebc4fd6e0edb02688b35f17f67f42aea5 upstream.
 
-The ID is found on Asus K54HR and K53U.
-Blacklist the AR3011-based device ID [0489:e03d]
-and add to ath3k.c for firmware loading.
+If we know that the delegation stateid is bad or revoked, we need to
+remove that delegation as soon as possible, and then mark all the
+stateids that relied on that delegation for recovery. We cannot use
+the delegation as part of the recovery process.
 
-Below is the output of usb-devices script:
+Also note that NFSv4.1 uses a different error code (NFS4ERR_DELEG_REVOKED)
+to indicate that the delegation was revoked.
 
-Before the fiwmware loading:
+Finally, ensure that setlk() and setattr() can both recover safely from
+a revoked delegation.
 
-T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e03d Rev=00.01
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-
-After the fiwmware loading:
-
-T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=3005 Rev=00.01
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-
-Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    1 +
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 2 insertions(+)
+ fs/nfs/delegation.c |   11 +++++++++++
+ fs/nfs/delegation.h |    1 +
+ fs/nfs/nfs4_fs.h    |    2 ++
+ fs/nfs/nfs4proc.c   |   18 ++++++++++++++++--
+ fs/nfs/nfs4state.c  |   29 +++++++++++++++++++++++++++--
+ 5 files changed, 57 insertions(+), 4 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -65,6 +65,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0CF3, 0x3002) },
- 	{ USB_DEVICE(0x13d3, 0x3304) },
- 	{ USB_DEVICE(0x0930, 0x0215) },
-+	{ USB_DEVICE(0x0489, 0xE03D) },
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -466,6 +466,17 @@ static void nfs_delegation_run_state_man
+ 		nfs4_schedule_state_manager(clp);
+ }
  
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03F0, 0x311D) },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -121,6 +121,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
-+	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
++void nfs_remove_bad_delegation(struct inode *inode)
++{
++	struct nfs_delegation *delegation;
++
++	delegation = nfs_detach_delegation(NFS_I(inode), NFS_SERVER(inode));
++	if (delegation) {
++		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
++		nfs_free_delegation(delegation);
++	}
++}
++
+ /**
+  * nfs_expire_all_delegation_types
+  * @clp: client to process
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -45,6 +45,7 @@ void nfs_expire_unreferenced_delegations
+ void nfs_handle_cb_pathdown(struct nfs_client *clp);
+ int nfs_client_return_marked_delegations(struct nfs_client *clp);
+ int nfs_delegations_present(struct nfs_client *clp);
++void nfs_remove_bad_delegation(struct inode *inode);
  
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+ void nfs_delegation_mark_reclaim(struct nfs_client *clp);
+ void nfs_delegation_reap_unclaimed(struct nfs_client *clp);
+--- a/fs/nfs/nfs4_fs.h
++++ b/fs/nfs/nfs4_fs.h
+@@ -327,6 +327,8 @@ extern void nfs4_put_open_state(struct n
+ extern void nfs4_close_state(struct nfs4_state *, fmode_t);
+ extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
+ extern void nfs4_state_set_mode_locked(struct nfs4_state *, fmode_t);
++extern void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid);
+ extern void nfs4_schedule_lease_recovery(struct nfs_client *);
+ extern void nfs4_schedule_state_manager(struct nfs_client *);
+ extern void nfs4_schedule_path_down_recovery(struct nfs_client *clp);
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -265,8 +265,11 @@ static int nfs4_handle_exception(struct
+ 	switch(errorcode) {
+ 		case 0:
+ 			return 0;
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -1319,8 +1322,11 @@ int nfs4_open_delegation_recall(struct n
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
++				nfs_inode_find_state_and_recover(state->inode,
++						stateid);
+ 				nfs4_schedule_stateid_recovery(server, state);
+ 			case -EKEYEXPIRED:
+ 				/*
+@@ -1900,7 +1906,9 @@ static int nfs4_do_setattr(struct inode
+ 			   struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(inode);
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 	do {
+ 		err = nfs4_handle_exception(server,
+@@ -3714,8 +3722,11 @@ nfs4_async_handle_error(struct rpc_task
+ 	if (task->tk_status >= 0)
+ 		return 0;
+ 	switch(task->tk_status) {
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -4533,7 +4544,9 @@ out:
+ 
+ static int nfs4_proc_setlk(struct nfs4_state *state, int cmd, struct file_lock *request)
+ {
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 
+ 	do {
+@@ -4626,6 +4639,7 @@ int nfs4_lock_delegation_recall(struct n
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
+ 			case -NFS4ERR_OPENMODE:
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1132,12 +1132,37 @@ void nfs4_schedule_stateid_recovery(cons
+ {
+ 	struct nfs_client *clp = server->nfs_client;
+ 
+-	if (test_and_clear_bit(NFS_DELEGATED_STATE, &state->flags))
+-		nfs_async_inode_return_delegation(state->inode, &state->stateid);
+ 	nfs4_state_mark_reclaim_nograce(clp, state);
+ 	nfs4_schedule_state_manager(clp);
+ }
+ 
++void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid)
++{
++	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
++	struct nfs_inode *nfsi = NFS_I(inode);
++	struct nfs_open_context *ctx;
++	struct nfs4_state *state;
++	bool found = false;
++
++	spin_lock(&inode->i_lock);
++	list_for_each_entry(ctx, &nfsi->open_files, list) {
++		state = ctx->state;
++		if (state == NULL)
++			continue;
++		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
++			continue;
++		if (memcmp(state->stateid.data, stateid->data, sizeof(state->stateid.data)) != 0)
++			continue;
++		nfs4_state_mark_reclaim_nograce(clp, state);
++		found = true;
++	}
++	spin_unlock(&inode->i_lock);
++	if (found)
++		nfs4_schedule_state_manager(clp);
++}
++
++
+ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_recovery_ops *ops)
+ {
+ 	struct inode *inode = state->inode;
 
 
