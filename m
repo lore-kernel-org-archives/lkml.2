@@ -1,90 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935656Ab2C3W2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:28:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37635 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935798Ab2C3W15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:27:57 -0400
-Date: Sat, 31 Mar 2012 00:13:34 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: JBeulich@suse.com, balbi@ti.com, bernhard@bwalle.de, bobbypowers@gmail.com,
-        dev@snitselaar.org, kirill.shutemov@linux.intel.com,
-        roland@purestorage.com, swarren@wwwdotorg.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild for 3.4
-Message-ID: <20120330221334.GA27849@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935602Ab2C3VKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:10:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760587Ab2C3VK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 17:10:26 -0400
+Message-Id: <20120330194840.418741713@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:49:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dcbw@redhat.com>
+Subject: [ 033/149] USB: qcserial: dont grab QMI port on Gobi 1000 devices
+In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-please pull the following kbuild change for 3.4-rc1. Nothing really
-exciting this time:
+------------------
 
-* Unification of cmd_uimage among archs that use it
-* make headers_check tries harder before reporting a missing
-  <linux/types.h> include
-* kbuild portability fix for shells that do not support echo -e
-* make clean descends into samples/
-* setlocalversion grep fix
-* modpost typo fix
-* dtc warnings fix
+From: Dan Williams <dcbw@redhat.com>
 
-Thanks,
-Michal
+commit c192c8e71a2ded01170c1a992cd21aaedc822756 upstream.
 
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
+Gobi 1000 devices have a different port layout, which wasn't respected
+by the current driver, and thus it grabbed the QMI/net port.  In the
+near future we'll be attaching another driver to the QMI/net port for
+these devices (cdc-wdm and qmi_wwan) so make sure the qcserial driver
+doesn't claim them.  This patch also prevents qcserial from binding to
+interfaces 0 and 1 on 1K devices because those interfaces do not
+respond.
 
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+---
+ drivers/usb/serial/qcserial.c |  105 ++++++++++++++++++++++++------------------
+ 1 file changed, 62 insertions(+), 43 deletions(-)
 
-Bernhard Walle (1):
-      scripts/Kbuild.include: Fix portability problem of "echo -e"
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -24,39 +24,44 @@
+ 
+ static int debug;
+ 
++#define DEVICE_G1K(v, p) \
++	USB_DEVICE(v, p), .driver_info = 1
++
+ static const struct usb_device_id id_table[] = {
+-	{USB_DEVICE(0x05c6, 0x9211)},	/* Acer Gobi QDL device */
+-	{USB_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+-	{USB_DEVICE(0x03f0, 0x1f1d)},	/* HP un2400 Gobi Modem Device */
+-	{USB_DEVICE(0x03f0, 0x201d)},	/* HP un2400 Gobi QDL Device */
+-	{USB_DEVICE(0x03f0, 0x371d)},	/* HP un2430 Mobile Broadband Module */
+-	{USB_DEVICE(0x04da, 0x250d)},	/* Panasonic Gobi Modem device */
+-	{USB_DEVICE(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
+-	{USB_DEVICE(0x413c, 0x8172)},	/* Dell Gobi Modem device */
+-	{USB_DEVICE(0x413c, 0x8171)},	/* Dell Gobi QDL device */
+-	{USB_DEVICE(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
+-	{USB_DEVICE(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
+-	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi QDL device */
+-	{USB_DEVICE(0x1410, 0xa011)},	/* Novatel Gobi QDL device */
+-	{USB_DEVICE(0x1410, 0xa012)},	/* Novatel Gobi QDL device */
+-	{USB_DEVICE(0x1410, 0xa013)},	/* Novatel Gobi QDL device */
+-	{USB_DEVICE(0x1410, 0xa014)},	/* Novatel Gobi QDL device */
+-	{USB_DEVICE(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
+-	{USB_DEVICE(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
+-	{USB_DEVICE(0x19d2, 0xfff3)},	/* ONDA Gobi Modem device */
+-	{USB_DEVICE(0x19d2, 0xfff2)},	/* ONDA Gobi QDL device */
+-	{USB_DEVICE(0x1557, 0x0a80)},	/* OQO Gobi QDL device */
+-	{USB_DEVICE(0x05c6, 0x9001)},   /* Generic Gobi Modem device */
+-	{USB_DEVICE(0x05c6, 0x9002)},	/* Generic Gobi Modem device */
+-	{USB_DEVICE(0x05c6, 0x9202)},	/* Generic Gobi Modem device */
+-	{USB_DEVICE(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
+-	{USB_DEVICE(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
+-	{USB_DEVICE(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
+-	{USB_DEVICE(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
+-	{USB_DEVICE(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
+-	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+-	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
+-	{USB_DEVICE(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
++	/* Gobi 1000 devices */
++	{DEVICE_G1K(0x05c6, 0x9211)},	/* Acer Gobi QDL device */
++	{DEVICE_G1K(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
++	{DEVICE_G1K(0x03f0, 0x1f1d)},	/* HP un2400 Gobi Modem Device */
++	{DEVICE_G1K(0x03f0, 0x201d)},	/* HP un2400 Gobi QDL Device */
++	{DEVICE_G1K(0x04da, 0x250d)},	/* Panasonic Gobi Modem device */
++	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
++	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
++	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
++	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
++	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
++	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
++	{DEVICE_G1K(0x19d2, 0xfff3)},	/* ONDA Gobi Modem device */
++	{DEVICE_G1K(0x19d2, 0xfff2)},	/* ONDA Gobi QDL device */
++	{DEVICE_G1K(0x1557, 0x0a80)},	/* OQO Gobi QDL device */
++	{DEVICE_G1K(0x05c6, 0x9001)},   /* Generic Gobi Modem device */
++	{DEVICE_G1K(0x05c6, 0x9002)},	/* Generic Gobi Modem device */
++	{DEVICE_G1K(0x05c6, 0x9202)},	/* Generic Gobi Modem device */
++	{DEVICE_G1K(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
++	{DEVICE_G1K(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
++	{DEVICE_G1K(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
++	{DEVICE_G1K(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
++	{DEVICE_G1K(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
++	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
++	{DEVICE_G1K(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
++	{DEVICE_G1K(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
++
++	/* Gobi 2000 devices */
++	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi 2000 QDL device */
++	{USB_DEVICE(0x1410, 0xa011)},	/* Novatel Gobi 2000 QDL device */
++	{USB_DEVICE(0x1410, 0xa012)},	/* Novatel Gobi 2000 QDL device */
++	{USB_DEVICE(0x1410, 0xa013)},	/* Novatel Gobi 2000 QDL device */
++	{USB_DEVICE(0x1410, 0xa014)},	/* Novatel Gobi 2000 QDL device */
+ 	{USB_DEVICE(0x413c, 0x8185)},	/* Dell Gobi 2000 QDL device (N0218, VU936) */
+ 	{USB_DEVICE(0x413c, 0x8186)},	/* Dell Gobi 2000 Modem device (N0218, VU936) */
+ 	{USB_DEVICE(0x05c6, 0x9208)},	/* Generic Gobi 2000 QDL device */
+@@ -92,6 +97,8 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE(0x05c6, 0x9204)},	/* Gobi 2000 QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9205)},	/* Gobi 2000 Modem device */
+ 
++	/* Gobi 3000 devices */
++	{USB_DEVICE(0x03f0, 0x371d)},	/* HP un2430 Gobi 3000 QDL */
+ 	{USB_DEVICE(0x05c6, 0x920c)},	/* Gobi 3000 QDL */
+ 	{USB_DEVICE(0x05c6, 0x920d)},	/* Gobi 3000 Composite */
+ 	{USB_DEVICE(0x1410, 0xa020)},   /* Novatel Gobi 3000 QDL */
+@@ -122,8 +129,10 @@ static int qcprobe(struct usb_serial *se
+ 	int retval = -ENODEV;
+ 	__u8 nintf;
+ 	__u8 ifnum;
++	bool is_gobi1k = id->driver_info ? true : false;
+ 
+ 	dbg("%s", __func__);
++	dbg("Is Gobi 1000 = %d", is_gobi1k);
+ 
+ 	nintf = serial->dev->actconfig->desc.bNumInterfaces;
+ 	dbg("Num Interfaces = %d", nintf);
+@@ -171,15 +180,25 @@ static int qcprobe(struct usb_serial *se
+ 
+ 	case 3:
+ 	case 4:
+-		/* Composite mode */
+-		/* ifnum == 0 is a broadband network adapter */
+-		if (ifnum == 1) {
+-			/*
+-			 * Diagnostics Monitor (serial line 9600 8N1)
+-			 * Qualcomm DM protocol
+-			 * use "libqcdm" (ModemManager) for communication
+-			 */
+-			dbg("Diagnostics Monitor found");
++		/* Composite mode; don't bind to the QMI/net interface as that
++		 * gets handled by other drivers.
++		 */
++
++		/* Gobi 1K USB layout:
++		 * 0: serial port (doesn't respond)
++		 * 1: serial port (doesn't respond)
++		 * 2: AT-capable modem port
++		 * 3: QMI/net
++		 *
++		 * Gobi 2K+ USB layout:
++		 * 0: QMI/net
++		 * 1: DM/DIAG (use libqcdm from ModemManager for communication)
++		 * 2: AT-capable modem port
++		 * 3: NMEA
++		 */
++
++		if (ifnum == 1 && !is_gobi1k) {
++			dbg("Gobi 2K+ DM/DIAG interface found");
+ 			retval = usb_set_interface(serial->dev, ifnum, 0);
+ 			if (retval < 0) {
+ 				dev_err(&serial->dev->dev,
+@@ -198,13 +217,13 @@ static int qcprobe(struct usb_serial *se
+ 				retval = -ENODEV;
+ 				kfree(data);
+ 			}
+-		} else if (ifnum==3) {
++		} else if (ifnum==3 && !is_gobi1k) {
+ 			/*
+ 			 * NMEA (serial line 9600 8N1)
+ 			 * # echo "\$GPS_START" > /dev/ttyUSBx
+ 			 * # echo "\$GPS_STOP"  > /dev/ttyUSBx
+ 			 */
+-			dbg("NMEA GPS interface found");
++			dbg("Gobi 2K+ NMEA GPS interface found");
+ 			retval = usb_set_interface(serial->dev, ifnum, 0);
+ 			if (retval < 0) {
+ 				dev_err(&serial->dev->dev,
 
-Bobby Powers (1):
-      headers_check: recursively search for linux/types.h inclusion
 
-Felipe Balbi (1):
-      scripts: dtc: fix compile warnings
-
-Gerard Snitselaar (1):
-      kbuild: clean up samples directory
-
-Jan Beulich (1):
-      modpost: fix ALL_INIT_DATA_SECTIONS
-
-Kirill A. Shutemov (1):
-      kbuild: disable -Wmissing-field-initializers for W=1
-
-Roland Dreier (1):
-      setlocalversion: Use "grep -q" instead of piping output to "read dummy"
-
-Stephen Warren (1):
-      Kbuild: centralize MKIMAGE and cmd_uimage definitions
-
- Makefile                        |    2 +-
- arch/arm/boot/Makefile          |   23 +++++++++--------------
- arch/avr32/boot/images/Makefile |    9 +++------
- arch/blackfin/boot/Makefile     |   19 ++++++++-----------
- arch/microblaze/boot/Makefile   |   10 +++-------
- arch/sh/boot/Makefile           |    8 ++------
- arch/sparc/boot/Makefile        |    9 +++------
- arch/unicore32/boot/Makefile    |   12 ++----------
- scripts/Kbuild.include          |    2 +-
- scripts/Makefile.build          |    2 ++
- scripts/Makefile.lib            |   24 ++++++++++++++++++++++++
- scripts/dtc/dtc.c               |    5 +----
- scripts/dtc/flattree.c          |    2 --
- scripts/headers_check.pl        |   38 +++++++++++++++++++++++++++++++++++++-
- scripts/mod/modpost.c           |    2 +-
- scripts/setlocalversion         |    3 +--
- 16 files changed, 98 insertions(+), 72 deletions(-)
