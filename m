@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934132Ab2C3LTA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:19:00 -0400
+	id S934144Ab2C3LTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:19:10 -0400
 Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
 	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933701Ab2C3LSe (ORCPT
+	with ESMTP id S933740Ab2C3LSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:18:34 -0400
+	Fri, 30 Mar 2012 07:18:35 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 54/76] ACPI: Ensure thermal limits match CPU frequencies
-Date: Fri, 30 Mar 2012 06:13:57 -0400
-Message-id: <c68da7bebfc2dffc2684a62c3e8d055fd54a90ad.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH 40/76] tools turbostat: reduce measurement overhead due to IPIs
+Date: Fri, 30 Mar 2012 06:13:43 -0400
+Message-id: <88c3281f7ba449992f7a33bd2452a8c6fa5503cb.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,134 +25,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Len Brown <len.brown@intel.com>
 
-The ACPI thermal management code supports slowing down a CPU when it's
-overheating. Right now that's done by choosing to run it at 100%, 75%, 50%
-or 25% of full speed. However, most CPUs do not allow an arbitrary
-frequency to be set and so will run at the first frequency below that value.
-This doesn't match the intent of the specification, which is to drop the
-frequency state by state until the temperature stabalises. Fix this up
-so it uses actual frequencies rather than percentages.
+turbostat uses /dev/cpu/*/msr interface to read MSRs.
+For modern systems, it reads 10 MSR/CPU.  This can
+be observed as 10 "Function Call Interrupts"
+per CPU per sample added to /proc/interrupts.
 
-Reported by: Gene Snider <snider6982@comcast.net>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+This overhead is measurable on large idle systems,
+and as Yoquan Song pointed out, it can even trick
+cpuidle into thinking the system is busy.
+
+Here turbostat re-schedules itself in-turn to each
+CPU so that its MSR reads will always be local.
+This replaces the 10 "Function Call Interrupts"
+with a single "Rescheduling interrupt" per sample
+per CPU.
+
+On an idle 32-CPU system, this shifts some residency from
+the shallow c1 state to the deeper c7 state:
+
+ # ./turbostat.old -s
+   %c0  GHz  TSC    %c1    %c3    %c6    %c7   %pc2   %pc3   %pc6   %pc7
+  0.27 1.29 2.29   0.95   0.02   0.00  98.77  20.23   0.00  77.41   0.00
+  0.25 1.24 2.29   0.98   0.02   0.00  98.75  20.34   0.03  77.74   0.00
+  0.27 1.22 2.29   0.54   0.00   0.00  99.18  20.64   0.00  77.70   0.00
+  0.26 1.22 2.29   1.22   0.00   0.00  98.52  20.22   0.00  77.74   0.00
+  0.26 1.38 2.29   0.78   0.02   0.00  98.95  20.51   0.05  77.56   0.00
+^C
+ i# ./turbostat.new -s
+   %c0  GHz  TSC    %c1    %c3    %c6    %c7   %pc2   %pc3   %pc6   %pc7
+  0.27 1.20 2.29   0.24   0.01   0.00  99.49  20.58   0.00  78.20   0.00
+  0.27 1.22 2.29   0.25   0.00   0.00  99.48  20.79   0.00  77.85   0.00
+  0.27 1.20 2.29   0.25   0.02   0.00  99.46  20.71   0.03  77.89   0.00
+  0.28 1.26 2.29   0.25   0.01   0.00  99.46  20.89   0.02  77.67   0.00
+  0.27 1.20 2.29   0.24   0.01   0.00  99.48  20.65   0.00  78.04   0.00
+
+cc: Youquan Song <youquan.song@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/processor_thermal.c |   45 +++++++++++++++++++++-----------------
- 1 file changed, 25 insertions(+), 20 deletions(-)
+ tools/power/x86/turbostat/turbostat.c |   46 +++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-diff --git a/drivers/acpi/processor_thermal.c b/drivers/acpi/processor_thermal.c
-index 3b599ab..1fbf539 100644
---- a/drivers/acpi/processor_thermal.c
-+++ b/drivers/acpi/processor_thermal.c
-@@ -51,10 +51,8 @@ ACPI_MODULE_NAME("processor_thermal");
-  * _any_ cpufreq driver and not only the acpi-cpufreq driver.
+diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
+index 6436d54..fa60872 100644
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -19,6 +19,7 @@
+  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
   */
  
--#define CPUFREQ_THERMAL_MIN_STEP 0
--#define CPUFREQ_THERMAL_MAX_STEP 3
++#define _GNU_SOURCE
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <sys/types.h>
+@@ -32,6 +33,7 @@
+ #include <dirent.h>
+ #include <string.h>
+ #include <ctype.h>
++#include <sched.h>
  
--static DEFINE_PER_CPU(unsigned int, cpufreq_thermal_reduction_pctg);
-+static DEFINE_PER_CPU(unsigned int, cpufreq_thermal_limit_state);
- static unsigned int acpi_thermal_cpufreq_is_init = 0;
+ #define MSR_TSC	0x10
+ #define MSR_NEHALEM_PLATFORM_INFO	0xCE
+@@ -72,6 +74,8 @@ char *progname;
+ int need_reinitialize;
  
- static int cpu_has_cpufreq(unsigned int cpu)
-@@ -69,19 +67,19 @@ static int acpi_thermal_cpufreq_notifier(struct notifier_block *nb,
- 					 unsigned long event, void *data)
- {
- 	struct cpufreq_policy *policy = data;
--	unsigned long max_freq = 0;
-+	int state = per_cpu(cpufreq_thermal_limit_state, policy->cpu);
-+	struct cpufreq_frequency_table *table;
+ int num_cpus;
++cpu_set_t *cpu_mask;
++size_t cpu_mask_size;
  
- 	if (event != CPUFREQ_ADJUST)
--		goto out;
+ struct counters {
+ 	unsigned long long tsc;		/* per thread */
+@@ -100,6 +104,40 @@ struct timeval tv_even;
+ struct timeval tv_odd;
+ struct timeval tv_delta;
+ 
++/*
++ * cpu_mask_init(ncpus)
++ *
++ * allocate and clear cpu_mask
++ * set cpu_mask_size
++ */
++void cpu_mask_init(int ncpus)
++{
++	cpu_mask = CPU_ALLOC(ncpus);
++	if (cpu_mask == NULL) {
++		perror("CPU_ALLOC");
++		exit(3);
++	}
++	cpu_mask_size = CPU_ALLOC_SIZE(ncpus);
++	CPU_ZERO_S(cpu_mask_size, cpu_mask);
++}
++
++void cpu_mask_uninit()
++{
++	CPU_FREE(cpu_mask);
++	cpu_mask = NULL;
++	cpu_mask_size = 0;
++}
++
++int cpu_migrate(int cpu)
++{
++	CPU_ZERO_S(cpu_mask_size, cpu_mask);
++	CPU_SET_S(cpu, cpu_mask_size, cpu_mask);
++	if (sched_setaffinity(0, cpu_mask_size, cpu_mask) == -1)
++		return -1;
++	else
 +		return 0;
++}
 +
-+	table = cpufreq_frequency_get_table(policy->cpu);
- 
--	max_freq = (
--	    policy->cpuinfo.max_freq *
--	    (100 - per_cpu(cpufreq_thermal_reduction_pctg, policy->cpu) * 20)
--	) / 100;
-+	if (!table)
-+		return 0;
- 
--	cpufreq_verify_within_limits(policy, 0, max_freq);
-+	cpufreq_verify_within_limits(policy, 0, table[state].frequency);
- 
--      out:
- 	return 0;
- }
- 
-@@ -91,10 +89,21 @@ static struct notifier_block acpi_thermal_cpufreq_notifier_block = {
- 
- static int cpufreq_get_max_state(unsigned int cpu)
+ unsigned long long get_msr(int cpu, off_t offset)
  {
-+	int count = 0;
-+	struct cpufreq_frequency_table *table;
-+
- 	if (!cpu_has_cpufreq(cpu))
- 		return 0;
- 
--	return CPUFREQ_THERMAL_MAX_STEP;
-+	table = cpufreq_frequency_get_table(cpu);
-+
-+	if (!table)
-+		return 0;
-+
-+	while (table[count].frequency != CPUFREQ_TABLE_END)
-+		count++;
-+
-+	return count;
- }
- 
- static int cpufreq_get_cur_state(unsigned int cpu)
-@@ -102,7 +111,7 @@ static int cpufreq_get_cur_state(unsigned int cpu)
- 	if (!cpu_has_cpufreq(cpu))
- 		return 0;
- 
--	return per_cpu(cpufreq_thermal_reduction_pctg, cpu);
-+	return per_cpu(cpufreq_thermal_limit_state, cpu);
- }
- 
- static int cpufreq_set_cur_state(unsigned int cpu, int state)
-@@ -110,7 +119,7 @@ static int cpufreq_set_cur_state(unsigned int cpu, int state)
- 	if (!cpu_has_cpufreq(cpu))
- 		return 0;
- 
--	per_cpu(cpufreq_thermal_reduction_pctg, cpu) = state;
-+	per_cpu(cpufreq_thermal_limit_state, cpu) = state;
- 	cpufreq_update_policy(cpu);
- 	return 0;
- }
-@@ -121,7 +130,7 @@ void acpi_thermal_cpufreq_init(void)
- 
- 	for (i = 0; i < nr_cpu_ids; i++)
- 		if (cpu_present(i))
--			per_cpu(cpufreq_thermal_reduction_pctg, i) = 0;
-+			per_cpu(cpufreq_thermal_limit_state, i) = 0;
- 
- 	i = cpufreq_register_notifier(&acpi_thermal_cpufreq_notifier_block,
- 				      CPUFREQ_POLICY_NOTIFIER);
-@@ -169,15 +178,11 @@ int acpi_processor_get_limit_info(struct acpi_processor *pr)
- 	return 0;
- }
- 
--/* thermal coolign device callbacks */
-+/* thermal cooling device callbacks */
- static int acpi_processor_max_state(struct acpi_processor *pr)
+ 	ssize_t retval;
+@@ -471,6 +509,11 @@ void compute_average(struct counters *delta, struct counters *avg)
+ void get_counters(struct counters *cnt)
  {
- 	int max_state = 0;
+ 	for ( ; cnt; cnt = cnt->next) {
++		if (cpu_migrate(cnt->cpu)) {
++			need_reinitialize = 1;
++			return;
++		}
++
+ 		cnt->tsc = get_msr(cnt->cpu, MSR_TSC);
+ 		if (do_nhm_cstates)
+ 			cnt->c3 = get_msr(cnt->cpu, MSR_CORE_C3_RESIDENCY);
+@@ -752,6 +795,8 @@ void re_initialize(void)
+ 	free_all_counters();
+ 	num_cpus = for_all_cpus(alloc_new_counters);
+ 	need_reinitialize = 0;
++	cpu_mask_uninit();
++	cpu_mask_init(num_cpus);
+ 	printf("num_cpus is now %d\n", num_cpus);
+ }
  
--	/*
--	 * There exists four states according to
--	 * cpufreq_thermal_reduction_ptg. 0, 1, 2, 3
--	 */
- 	max_state += cpufreq_get_max_state(pr->id);
- 	if (pr->flags.throttling)
- 		max_state += (pr->throttling.state_count -1);
+@@ -984,6 +1029,7 @@ void turbostat_init()
+ 	check_super_user();
+ 
+ 	num_cpus = for_all_cpus(alloc_new_counters);
++	cpu_mask_init(num_cpus);
+ 
+ 	if (verbose)
+ 		print_nehalem_info();
 -- 
 1.7.10.rc2.19.gfae9d
 
