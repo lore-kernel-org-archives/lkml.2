@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667Ab2C3KT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:19:28 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:52218 "EHLO
+	id S933698Ab2C3KTd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:19:33 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:52238 "EHLO
 	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760656Ab2C3KSq (ORCPT
+	with ESMTP id S1760693Ab2C3KSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:18:46 -0400
+	Fri, 30 Mar 2012 06:18:45 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+Cc: linux-kernel@vger.kernel.org, Boris Ostrovsky <boris.ostrovsky@amd.com>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 49/76] cpuidle: use the driver's state_count as default
-Date: Fri, 30 Mar 2012 06:13:52 -0400
-Message-id: <fc850f39ea54c760ce438a601cfea8ab80c4898e.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 59/76] cpuidle: power_usage should be declared signed integer
+Date: Fri, 30 Mar 2012 06:14:02 -0400
+Message-id: <02401c06b7f6bec65f314e3cec7894502c973501.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,46 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-If the state_count is not initialized for the device use
-the driver's state count as the default. That will prevent
-to add it manually in the cpuidle driver initialization
-routine and will save us from duplicate line of code.
+power_usage is always assigned a negative value and should be declared
+a signed integer
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/cpuidle/cpuidle.c |    2 +-
- drivers/cpuidle/driver.c  |    2 +-
+ drivers/cpuidle/governors/menu.c |    2 +-
+ include/linux/cpuidle.h          |    2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 77304b6..f7cab5e 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -268,7 +268,7 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
- 	if (!drv || !cpuidle_curr_governor)
- 		return -EIO;
- 	if (!dev->state_count)
--		return -EINVAL;
-+		dev->state_count = drv->state_count;
- 
- 	if (dev->registered == 0) {
- 		ret = __cpuidle_register_device(dev);
-diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-index 284d7af..40cd3f3 100644
---- a/drivers/cpuidle/driver.c
-+++ b/drivers/cpuidle/driver.c
-@@ -47,7 +47,7 @@ static void __cpuidle_register_driver(struct cpuidle_driver *drv)
-  */
- int cpuidle_register_driver(struct cpuidle_driver *drv)
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 5c17ca1..0633575 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -236,7 +236,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
  {
--	if (!drv)
-+	if (!drv || !drv->state_count)
- 		return -EINVAL;
+ 	struct menu_device *data = &__get_cpu_var(menu_devices);
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+-	unsigned int power_usage = -1;
++	int power_usage = -1;
+ 	int i;
+ 	int multiplier;
+ 	struct timespec t;
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index d557bcd..6c26a3d 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -44,7 +44,7 @@ struct cpuidle_state {
  
- 	if (cpuidle_disabled())
+ 	unsigned int	flags;
+ 	unsigned int	exit_latency; /* in US */
+-	unsigned int	power_usage; /* in mW */
++	int		power_usage; /* in mW */
+ 	unsigned int	target_residency; /* in US */
+ 	unsigned int    disable;
+ 
 -- 
 1.7.10.rc2.19.gfae9d
 
