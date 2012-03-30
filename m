@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966305Ab2C3VXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:23:25 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49266 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964818Ab2C3VXR (ORCPT
+	id S966292Ab2C3VXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:23:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936024Ab2C3VXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:23:17 -0400
-Message-Id: <20120330194851.861211475@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:23:10 -0400
+Message-Id: <20120330194850.132878693@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:33 -0700
+Date: Fri, 30 Mar 2012 12:50:26 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>
-Subject: [ 128/175] PM / Domains: Introduce "always on" device flag
+        alan@lxorguk.ukuu.org.uk, Gianluca Gennari <gennarone@gmail.com>,
+        Ryley Angus <rangus@student.unimelb.edu.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 121/175] [media] as102: add __packed attribute to structs defined inside packed structs
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,151 +26,402 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Gianluca Gennari <gennarone@gmail.com>
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+commit abf9d005375d6c6160cc9c17e5dcac32e412c8dc upstream.
 
-This is a backport of mainline commit
-1e78a0c7fc92aee076965d516cf54475c39e9894.
+This patch fixes a regression in kernel 3.3 due to this patch:
 
-The TMU device on the Mackerel board belongs to the A4R power domain
-and loses power when the domain is turned off.  Unfortunately, the
-TMU driver is not prepared to cope with such situations and crashes
-the system when that happens.  To work around this problem introduce
-a new helper function, pm_genpd_dev_always_on(), allowing a device
-driver to mark its device as "always on" in case it belongs to a PM
-domain, which will make the generic PM domains core code avoid
-powering off the domain containing the device, both at run time and
-during system suspend.
+http://patchwork.linuxtv.org/patch/8332/
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Tested-by: Simon Horman <horms@verge.net.au>
-Acked-by: Paul Mundt <lethal@linux-sh.org>
+That patch changes "#pragma pack(1)" with "__packed" attributes, but it is not
+complete. In fact, in the as102 driver there are a lot of structs/unions
+defined inside other structs/unions.
+When the "__packed" attribute is applied only on the external struct, it will
+not affect the internal struct definitions.
+So the regression is fixed by specifiying the "__packed" attribute also on the
+internal structs.
+
+This patch should go into 3.3, as it fixes a regression introduced in the new
+kernel version.
+
+Signed-off-by: Gianluca Gennari <gennarone@gmail.com>
+Signed-off-by: Ryley Angus <rangus@student.unimelb.edu.au>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/domain.c |   36 ++++++++++++++++++++++++++++++------
- include/linux/pm_domain.h   |    3 +++
- 2 files changed, 33 insertions(+), 6 deletions(-)
+ drivers/staging/media/as102/as102_fw.h    |    2 
+ drivers/staging/media/as102/as10x_cmd.h   |   80 +++++++++++++++---------------
+ drivers/staging/media/as102/as10x_types.h |    2 
+ 3 files changed, 42 insertions(+), 42 deletions(-)
 
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -366,7 +366,7 @@ static int pm_genpd_poweroff(struct gene
- 	not_suspended = 0;
- 	list_for_each_entry(pdd, &genpd->dev_list, list_node)
- 		if (pdd->dev->driver && (!pm_runtime_suspended(pdd->dev)
--		    || pdd->dev->power.irq_safe))
-+		    || pdd->dev->power.irq_safe || to_gpd_data(pdd)->always_on))
- 			not_suspended++;
+--- a/drivers/staging/media/as102/as102_fw.h
++++ b/drivers/staging/media/as102/as102_fw.h
+@@ -29,7 +29,7 @@ struct as10x_fw_pkt_t {
+ 	union {
+ 		unsigned char request[2];
+ 		unsigned char length[2];
+-	} u;
++	} __packed u;
+ 	struct as10x_raw_fw_pkt raw;
+ } __packed;
  
- 	if (not_suspended > genpd->in_progress)
-@@ -503,6 +503,9 @@ static int pm_genpd_runtime_suspend(stru
+--- a/drivers/staging/media/as102/as10x_cmd.h
++++ b/drivers/staging/media/as102/as10x_cmd.h
+@@ -99,14 +99,14 @@ union as10x_turn_on {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- 	might_sleep_if(!genpd->dev_irq_safe);
+ union as10x_turn_off {
+@@ -114,14 +114,14 @@ union as10x_turn_off {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* error */
+ 		uint8_t err;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
-+	if (dev_gpd_data(dev)->always_on)
-+		return -EBUSY;
-+
- 	stop_ok = genpd->gov ? genpd->gov->stop_ok : NULL;
- 	if (stop_ok && !stop_ok(dev))
- 		return -EBUSY;
-@@ -847,7 +850,8 @@ static int pm_genpd_suspend_noirq(struct
- 	if (ret)
- 		return ret;
+ union as10x_set_tune {
+@@ -131,14 +131,14 @@ union as10x_set_tune {
+ 		uint16_t proc_id;
+ 		/* tune params */
+ 		struct as10x_tune_args args;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* response error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
--	if (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev))
-+	if (dev_gpd_data(dev)->always_on
-+	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
- 		return 0;
+ union as10x_get_tune_status {
+@@ -146,7 +146,7 @@ union as10x_get_tune_status {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -155,7 +155,7 @@ union as10x_get_tune_status {
+ 		uint8_t error;
+ 		/* tune status */
+ 		struct as10x_tune_status sts;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- 	genpd_stop_dev(genpd, dev);
-@@ -882,7 +886,7 @@ static int pm_genpd_resume_noirq(struct
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
+ union as10x_get_tps {
+@@ -163,7 +163,7 @@ union as10x_get_tps {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -172,7 +172,7 @@ union as10x_get_tps {
+ 		uint8_t error;
+ 		/* tps details */
+ 		struct as10x_tps tps;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
--	if (genpd->suspend_power_off
-+	if (genpd->suspend_power_off || dev_gpd_data(dev)->always_on
- 	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
- 		return 0;
+ union as10x_common {
+@@ -180,14 +180,14 @@ union as10x_common {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t  proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* response error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
-@@ -960,7 +964,7 @@ static int pm_genpd_freeze_noirq(struct
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
+ union as10x_add_pid_filter {
+@@ -201,7 +201,7 @@ union as10x_add_pid_filter {
+ 		uint8_t stream_type;
+ 		/* PID index in filter table */
+ 		uint8_t idx;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -210,7 +210,7 @@ union as10x_add_pid_filter {
+ 		uint8_t error;
+ 		/* Filter id */
+ 		uint8_t filter_id;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
--	if (genpd->suspend_power_off)
-+	if (genpd->suspend_power_off || dev_gpd_data(dev)->always_on)
- 		return 0;
+ union as10x_del_pid_filter {
+@@ -220,14 +220,14 @@ union as10x_del_pid_filter {
+ 		uint16_t  proc_id;
+ 		/* PID to remove */
+ 		uint16_t  pid;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* response error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- 	ret = genpd_freeze_late(genpd, dev);
-@@ -991,7 +995,7 @@ static int pm_genpd_thaw_noirq(struct de
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
+ union as10x_start_streaming {
+@@ -235,14 +235,14 @@ union as10x_start_streaming {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
--	if (genpd->suspend_power_off)
-+	if (genpd->suspend_power_off || dev_gpd_data(dev)->always_on)
- 		return 0;
+ union as10x_stop_streaming {
+@@ -250,14 +250,14 @@ union as10x_stop_streaming {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- 	genpd_start_dev(genpd, dev);
-@@ -1064,7 +1068,7 @@ static int pm_genpd_restore_noirq(struct
- 		}
- 	}
+ union as10x_get_demod_stats {
+@@ -265,7 +265,7 @@ union as10x_get_demod_stats {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -274,7 +274,7 @@ union as10x_get_demod_stats {
+ 		uint8_t error;
+ 		/* demod stats */
+ 		struct as10x_demod_stats stats;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
--	if (genpd->suspend_power_off)
-+	if (genpd->suspend_power_off || dev_gpd_data(dev)->always_on)
- 		return 0;
+ union as10x_get_impulse_resp {
+@@ -282,7 +282,7 @@ union as10x_get_impulse_resp {
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -291,7 +291,7 @@ union as10x_get_impulse_resp {
+ 		uint8_t error;
+ 		/* impulse response ready */
+ 		uint8_t is_ready;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- 	pm_genpd_poweron(genpd);
-@@ -1230,6 +1234,26 @@ int pm_genpd_remove_device(struct generi
- }
+ union as10x_fw_context {
+@@ -305,7 +305,7 @@ union as10x_fw_context {
+ 		uint16_t tag;
+ 		/* context request type */
+ 		uint16_t type;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -316,7 +316,7 @@ union as10x_fw_context {
+ 		uint16_t type;
+ 		/* error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- /**
-+ * pm_genpd_dev_always_on - Set/unset the "always on" flag for a given device.
-+ * @dev: Device to set/unset the flag for.
-+ * @val: The new value of the device's "always on" flag.
-+ */
-+void pm_genpd_dev_always_on(struct device *dev, bool val)
-+{
-+	struct pm_subsys_data *psd;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+
-+	psd = dev_to_psd(dev);
-+	if (psd && psd->domain_data)
-+		to_gpd_data(psd->domain_data)->always_on = val;
-+
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(pm_genpd_dev_always_on);
-+
-+/**
-  * pm_genpd_add_subdomain - Add a subdomain to an I/O PM domain.
-  * @genpd: Master PM domain to add the subdomain to.
-  * @subdomain: Subdomain to be added.
---- a/include/linux/pm_domain.h
-+++ b/include/linux/pm_domain.h
-@@ -97,6 +97,7 @@ struct generic_pm_domain_data {
- 	struct gpd_dev_ops ops;
- 	struct gpd_timing_data td;
- 	bool need_restore;
-+	bool always_on;
- };
+ union as10x_set_register {
+@@ -328,14 +328,14 @@ union as10x_set_register {
+ 		struct as10x_register_addr reg_addr;
+ 		/* register content */
+ 		struct as10x_register_value reg_val;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- static inline struct generic_pm_domain_data *to_gpd_data(struct pm_domain_data *pdd)
-@@ -125,6 +126,7 @@ static inline int pm_genpd_add_device(st
+ union as10x_get_register {
+@@ -345,7 +345,7 @@ union as10x_get_register {
+ 		uint16_t proc_id;
+ 		/* register description */
+ 		struct as10x_register_addr reg_addr;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -354,7 +354,7 @@ union as10x_get_register {
+ 		uint8_t error;
+ 		/* register content */
+ 		struct as10x_register_value reg_val;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
  
- extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- 				  struct device *dev);
-+extern void pm_genpd_dev_always_on(struct device *dev, bool val);
- extern int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 				  struct generic_pm_domain *new_subdomain);
- extern int pm_genpd_remove_subdomain(struct generic_pm_domain *genpd,
-@@ -163,6 +165,7 @@ static inline int pm_genpd_remove_device
- {
- 	return -ENOSYS;
- }
-+static inline void pm_genpd_dev_always_on(struct device *dev, bool val) {}
- static inline int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 					 struct generic_pm_domain *new_sd)
- {
+ union as10x_cfg_change_mode {
+@@ -364,14 +364,14 @@ union as10x_cfg_change_mode {
+ 		uint16_t proc_id;
+ 		/* mode */
+ 		uint8_t mode;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+ 		uint16_t proc_id;
+ 		/* error */
+ 		uint8_t error;
+-	} rsp;
++	} __packed rsp;
+ } __packed;
+ 
+ struct as10x_cmd_header_t {
+@@ -394,7 +394,7 @@ union as10x_dump_memory {
+ 		struct as10x_register_addr reg_addr;
+ 		/* nb blocks to read */
+ 		uint16_t num_blocks;
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		/* response identifier */
+@@ -408,8 +408,8 @@ union as10x_dump_memory {
+ 			uint8_t  data8[DUMP_BLOCK_SIZE];
+ 			uint16_t data16[DUMP_BLOCK_SIZE / sizeof(uint16_t)];
+ 			uint32_t data32[DUMP_BLOCK_SIZE / sizeof(uint32_t)];
+-		} u;
+-	} rsp;
++		} __packed u;
++	} __packed rsp;
+ } __packed;
+ 
+ union as10x_dumplog_memory {
+@@ -418,7 +418,7 @@ union as10x_dumplog_memory {
+ 		uint16_t proc_id;
+ 		/* dump memory type request */
+ 		uint8_t dump_req;
+-	} req;
++	} __packed req;
+ 	struct {
+ 		/* request identifier */
+ 		uint16_t proc_id;
+@@ -428,7 +428,7 @@ union as10x_dumplog_memory {
+ 		uint8_t dump_rsp;
+ 		/* dump data */
+ 		uint8_t data[DUMP_BLOCK_SIZE];
+-	} rsp;
++	} __packed rsp;
+ } __packed;
+ 
+ union as10x_raw_data {
+@@ -437,14 +437,14 @@ union as10x_raw_data {
+ 		uint16_t proc_id;
+ 		uint8_t data[64 - sizeof(struct as10x_cmd_header_t)
+ 			     - 2 /* proc_id */];
+-	} req;
++	} __packed req;
+ 	/* response */
+ 	struct {
+ 		uint16_t proc_id;
+ 		uint8_t error;
+ 		uint8_t data[64 - sizeof(struct as10x_cmd_header_t)
+ 			     - 2 /* proc_id */ - 1 /* rc */];
+-	} rsp;
++	} __packed rsp;
+ } __packed;
+ 
+ struct as10x_cmd_t {
+@@ -469,7 +469,7 @@ struct as10x_cmd_t {
+ 		union as10x_dump_memory		dump_memory;
+ 		union as10x_dumplog_memory	dumplog_memory;
+ 		union as10x_raw_data		raw_data;
+-	} body;
++	} __packed body;
+ } __packed;
+ 
+ struct as10x_token_cmd_t {
+--- a/drivers/staging/media/as102/as10x_types.h
++++ b/drivers/staging/media/as102/as10x_types.h
+@@ -181,7 +181,7 @@ struct as10x_register_value {
+ 		uint8_t  value8;   /* 8 bit value */
+ 		uint16_t value16;  /* 16 bit value */
+ 		uint32_t value32;  /* 32 bit value */
+-	} u;
++	} __packed u;
+ } __packed;
+ 
+ struct as10x_register_addr {
 
 
