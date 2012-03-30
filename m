@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934339Ab2C3MDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:03:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60443 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934350Ab2C3MAO (ORCPT
+	id S934329Ab2C3MG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:06:57 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17759 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933847Ab2C3MGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:00:14 -0400
-From: Bryan Wu <bryan.wu@canonical.com>
-To: tony@atomide.com, linux@arm.linux.org.uk, rpurdie@rpsys.net,
-        manuel.lauss@gmail.com, cjb@laptop.org, cbou@mail.ru,
-        dwmw2@infradead.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, akpm@linux-foundation.org
-Subject: [PATCH 07/18] ARM: mach-integrator: move CM_CTRL to header file for accessing by other functions
-Date: Fri, 30 Mar 2012 19:58:22 +0800
-Message-Id: <1333108713-12707-8-git-send-email-bryan.wu@canonical.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
-References: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
+	Fri, 30 Mar 2012 08:06:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 30 Mar 2012 05:06:50 -0700
+From: Alok Chauhan <alokc@nvidia.com>
+To: <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
+        <swarren@nvidia.com>, <olof@lixom.net>, <bones@secretlab.ca>,
+        <omaplinuxkernel@gmail.com>, <ccross@android.com>,
+        <ldewangan@nvidia.com>, <linux-tegra@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, <dgreid@chromium.org>
+CC: <alokc@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] i2c: tegra: Add delay before reset the controller
+Date: Fri, 30 Mar 2012 17:36:19 +0530
+Message-ID: <1333109179-12445-1-git-send-email-alokc@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
----
- arch/arm/mach-integrator/core.c            |    2 --
- arch/arm/mach-integrator/include/mach/cm.h |    2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
+In NACK error condition, I2C controller violates
+clock-to-data setup time before stop. In Software,
+because of this reset of controller is happening
+before I2C controller could complete STOP condition.
 
-diff --git a/arch/arm/mach-integrator/core.c b/arch/arm/mach-integrator/core.c
-index eaf6c63..8c53562 100644
---- a/arch/arm/mach-integrator/core.c
-+++ b/arch/arm/mach-integrator/core.c
-@@ -172,8 +172,6 @@ static struct amba_pl010_data integrator_uart_data = {
- 	.set_mctrl = integrator_uart_set_mctrl,
- };
+Added delay of 2 clock period before reset the
+controller in case of NACK error.
+
+Signed-off-by: Alok Chauhan <alokc@nvidia.com>
+---
+delay will be calculated based on clock frequency of the bus.
+ drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index e978635..344282e 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -516,6 +516,14 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+ 	if (likely(i2c_dev->msg_err == I2C_ERR_NONE))
+ 		return 0;
  
--#define CM_CTRL	IO_ADDRESS(INTEGRATOR_HDR_CTRL)
--
- static DEFINE_RAW_SPINLOCK(cm_lock);
- 
- /**
-diff --git a/arch/arm/mach-integrator/include/mach/cm.h b/arch/arm/mach-integrator/include/mach/cm.h
-index 445d57a..1a78692e 100644
---- a/arch/arm/mach-integrator/include/mach/cm.h
-+++ b/arch/arm/mach-integrator/include/mach/cm.h
-@@ -3,6 +3,8 @@
-  */
- void cm_control(u32, u32);
- 
-+#define CM_CTRL	IO_ADDRESS(INTEGRATOR_HDR_CTRL)
++	/*
++	 * In NACK error condition resetting of I2C controller happens
++	 * before STOP condition is properly completed by I2C controller,
++	 * so wait for 2 clock cycle to complete STOP condition.
++	 */
++	if (i2c_dev->msg_err == I2C_ERR_NO_ACK)
++		udelay(DIV_ROUND_UP(2 * 1000000, i2c_dev->bus_clk_rate));
 +
- #define CM_CTRL_LED			(1 << 0)
- #define CM_CTRL_nMBDET			(1 << 1)
- #define CM_CTRL_REMAP			(1 << 2)
+ 	tegra_i2c_init(i2c_dev);
+ 	if (i2c_dev->msg_err == I2C_ERR_NO_ACK) {
+ 		if (msg->flags & I2C_M_IGNORE_NAK)
 -- 
-1.7.9.1
+1.7.4.1
 
