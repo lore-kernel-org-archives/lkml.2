@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933949Ab2C3LUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:20:15 -0400
+	id S934244Ab2C3LU1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:20:27 -0400
 Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
 	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934104Ab2C3LSw (ORCPT
+	with ESMTP id S934115Ab2C3LSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:18:52 -0400
+	Fri, 30 Mar 2012 07:18:54 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
         Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 23/76] ACPICA: Update _REV return value to 5
-Date: Fri, 30 Mar 2012 06:13:26 -0400
-Message-id: <384fe875efdc99f367a58920acb89c63f7465479.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 35/76] ACPICA: Change exception code for invalid pathname in
+ acpi_evaluate_object
+Date: Fri, 30 Mar 2012 06:13:38 -0400
+Message-id: <a1acd22f7c6032e8394df7d8adee1a7cdad28b74.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -27,28 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Moore <robert.moore@intel.com>
 
-_REV returns the supported ACPI revision level, which is now 5.
+Change the returned exception code from AE_BAD_PARAMETER to the
+more appropriate AE_BAD_PATHNAME, when the input pathname to
+evaluate object is invalid.
 
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/acconfig.h |    2 +-
+ drivers/acpi/acpica/nsutils.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/acpica/acconfig.h b/drivers/acpi/acpica/acconfig.h
-index 1f30af6..3748f1a 100644
---- a/drivers/acpi/acpica/acconfig.h
-+++ b/drivers/acpi/acpica/acconfig.h
-@@ -93,7 +93,7 @@
+diff --git a/drivers/acpi/acpica/nsutils.c b/drivers/acpi/acpica/nsutils.c
+index a535b7a..7511375 100644
+--- a/drivers/acpi/acpica/nsutils.c
++++ b/drivers/acpi/acpica/nsutils.c
+@@ -341,7 +341,7 @@ acpi_status acpi_ns_build_internal_name(struct acpi_namestring_info *info)
  
- /* Version of ACPI supported */
+ 		if (!acpi_ns_valid_path_separator(*external_name) &&
+ 		    (*external_name != 0)) {
+-			return_ACPI_STATUS(AE_BAD_PARAMETER);
++			return_ACPI_STATUS(AE_BAD_PATHNAME);
+ 		}
  
--#define ACPI_CA_SUPPORT_LEVEL           3
-+#define ACPI_CA_SUPPORT_LEVEL           5
- 
- /* Maximum count for a semaphore object */
- 
+ 		/* Move on the next segment */
 -- 
 1.7.10.rc2.19.gfae9d
 
