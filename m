@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933620Ab2C3Aov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 20:44:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38906 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903Ab2C3Aoq (ORCPT
+	id S1751903Ab2C3App (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 20:45:45 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50471 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933630Ab2C3Aph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 20:44:46 -0400
-Subject: Re: [RFC 00/15] perf: Add backtrace post dwarf unwind
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        rostedt@goodmis.org, robert.richter@amd.com, fche@redhat.com,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-In-Reply-To: <CABPqkBQfy0CgSiDZ+KXd4fP9XxDxPTipyGbABZdEuTu4LkrsRQ@mail.gmail.com>
-References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
-	 <CABPqkBR7-JreB8c3Y1rNGpqdjeSN71qUkPrMxV-wjOSaTEx+vQ@mail.gmail.com>
-	 <1333065559.2960.8.camel@laptop>
-	 <CABPqkBQfy0CgSiDZ+KXd4fP9XxDxPTipyGbABZdEuTu4LkrsRQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Mar 2012 02:44:39 +0200
-Message-ID: <1333068279.2960.20.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Mar 2012 20:45:37 -0400
+Date: Fri, 30 Mar 2012 02:45:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@ti.com>, Geoff Levand <geoff@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Ingo Molnar <mingo@kernel.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Max Krasnyansky <maxk@qualcomm.com>, Zen Lin <zen@openhuawei.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
+Message-ID: <20120330004527.GB2571@somewhere.redhat.com>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+ <87r4wbhqqd.fsf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r4wbhqqd.fsf@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-29 at 17:38 -0700, Stephane Eranian wrote:
-> What I'd like to have is something similar to:
->     attr->sample_type |= PERF_SAMPLE_REGS
->     attr->sample_regs = EAX | EBX | EDI | ESI |.....
->     attr->sample_reg_mode = { INTR, PRECISE, USER }
+On Thu, Mar 29, 2012 at 05:33:46PM -0700, Kevin Hilman wrote:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
 > 
-> Then in each sample for the event you dump the u64 values
-> of the requested registers.  The order is that of the enum
-> enum regs {}. That enum is arch specific.
+> > There are still a lot of things to handle. Especially about
+> > what is done by scheduler_tick() but we also need to:
+> >
+> > - completely handle cputime accounting (need to find every "reader"
+> > of cputime and flush cputimes for all of them).
+> > -handle  perf
+> > - handle irqtime finegrained accounting
+> > - handle ilb load balancing
+> > - etc...
 > 
-> When you are in precise mode on Intel, you extract the regs
-> from PEBS. You already know the registers supported by PEBS
-> so you can reject any request for  unsupported regs.
+>   - add more arch support :)
 > 
-> When you are in intr they you get the regs from pt_regs.
-> The user mode case is taken care of by the this patch series
-> already.
+> For ARM, I've started hacking things into place and have some
+> preliminary patches to add ARM support for the new IPI, syscall support,
+> exception hooks, etc.[1]
 > 
-> I am not sure the sample_reg_mode needs to be a bitmask, i.e.,
-> do we need the reg state for INTR+PRECISE or USER+INTR?
-> But if so, then we would need attr->sample_regs[3] as not all
-> registers may be available in each mode. 
+> This is enough to get some basic things running and test the nohz
+> cpusets functionality on ARM, and for others to start trying it out.
+> 
+> For anyone interested in collaborating on ARM support, my
+> work-in-progress branch is below[1] based on Frederic's cpuset-v2
+> branch.  Patches and testing welcome.
+> 
+> Kevin
+> 
+> [1] git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux.git wip/arm-nohz-cpusets
 
-I'm really having trouble seeing how useful this is. You mentioned
-sampling function arguments, but most samples would be in the middle of
-functions where the regs are completely unrelated to arguments. Also
-isn't the 'normal' C ABI passing args on stack rather than registers?
-
-
-
+Nice! Thanks for working on this. You may want to work with Geoff Levand who's working
+on the ARM port too.
