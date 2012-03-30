@@ -1,254 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab2C3I4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 04:56:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44093 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759611Ab2C3I4j (ORCPT
+	id S1760532Ab2C3JMB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 05:12:01 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41296 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759788Ab2C3JLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 04:56:39 -0400
-Date: Fri, 30 Mar 2012 01:56:09 -0700
-From: tip-bot for Len Brown <len.brown@intel.com>
-Message-ID: <tip-3rhk9bzf0x9rljkv488tloib@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        jwboyer@redhat.com, akpm@linux-foundation.org, stable@kernel.org,
-        tglx@linutronix.de, len.brown@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, jwboyer@redhat.com,
-        torvalds@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk, len.brown@intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Remove the ancient and deprecated disable_hlt() and enable_hlt() facility
-Git-Commit-ID: f6365201d8a21fb347260f89d6e9b3e718d63c70
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 30 Mar 2012 05:11:54 -0400
+Date: Fri, 30 Mar 2012 11:11:46 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Greg K H <gregkh@linuxfoundation.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/14] edac: rewrite the sysfs code to use struct device
+Message-ID: <20120330091146.GB29854@aftab>
+References: <1333040821-6253-1-git-send-email-mchehab@redhat.com>
+ <1333040821-6253-2-git-send-email-mchehab@redhat.com>
+ <20120329220300.GA16491@kroah.com>
+ <4F74EDEC.5020804@redhat.com>
+ <20120329234037.GA16094@kroah.com>
+ <4F7516B3.8070505@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 30 Mar 2012 01:56:16 -0700 (PDT)
+In-Reply-To: <4F7516B3.8070505@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6365201d8a21fb347260f89d6e9b3e718d63c70
-Gitweb:     http://git.kernel.org/tip/f6365201d8a21fb347260f89d6e9b3e718d63c70
-Author:     Len Brown <len.brown@intel.com>
-AuthorDate: Thu, 29 Mar 2012 14:49:17 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 30 Mar 2012 08:50:27 +0200
+On Thu, Mar 29, 2012 at 11:13:07PM -0300, Mauro Carvalho Chehab wrote:
+> However, every time this patch series is submitted, someone come up with a 
+> bright idea to ask me to add more work to the scope, delaying its addition 
+> forever.
+> 
+> While I'm not convinced that moving from a single memory allocation into a 
+> series of k*alloc is a good thing for a subsystem that is there to detect
+> memory errors (as having everything altogether into a single page can
+> reduce the chances of errors at the EDAC data), I can work latter on a 
+> patchset to fix this issue for EDAC MC, but I'll do it only after merging 
+> this series, as it is counter-productive to do it otherwise, having to 
+> repeat the same set of tests on 10 machines (and compile the entire series 
+> of patches on 8 different archs/sub-archs).
+> 
+> So, I really want to move this ahead. So, please, first things first: let's
+> first fix the more serious bug. Then, we can fix the other minor stuff
+> that aren't so far causing any noticeable harm.
 
-x86: Remove the ancient and deprecated disable_hlt() and enable_hlt() facility
+Dude, stop complaining - this is the kernel not some pet project of
+yours. You either do things right or you don't do them at all. Others
+have to do the same iterations with patches and intergrate maintainer
+change requests until everything is done properly.
 
-The X86_32-only disable_hlt/enable_hlt mechanism was used by the
-32-bit floppy driver. Its effect was to replace the use of the
-HLT instruction inside default_idle() with cpu_relax() - essentially
-it turned off the use of HLT.
+Btw, this patch is
 
-This workaround was commented in the code as:
+ 5 files changed, 432 insertions(+), 717 deletions(-)
 
- "disable hlt during certain critical i/o operations"
+It is 1500+ lines and huuuuge! How do you think anyone can review this?
 
- "This halt magic was a workaround for ancient floppy DMA
-  wreckage. It should be safe to remove."
+Also, I told already: if you wanna fix one thing, then fix it with a
+smaller patchset which easier to review by people instead of throwing at
+them humongous patch bombs which are supposed to fix _everything_ and
+expecting everyone to understand immediately what you mean. And don't
+tell me these huge patches cannot be split, I'm not buying it.
 
-H. Peter Anvin additionally adds:
+-- 
+Regards/Gruss,
+Boris.
 
- "To the best of my knowledge, no-hlt only existed because of
-  flaky power distributions on 386/486 systems which were sold to
-  run DOS.  Since DOS did no power management of any kind,
-  including HLT, the power draw was fairly uniform; when exposed
-  to the much hhigher noise levels you got when Linux used HLT
-  caused some of these systems to fail.
-
-  They were by far in the minority even back then."
-
-Alan Cox further says:
-
- "Also for the Cyrix 5510 which tended to go castors up if a HLT
-  occurred during a DMA cycle and on a few other boxes HLT during
-  DMA tended to go astray.
-
-  Do we care ? I doubt it. The 5510 was pretty obscure, the 5520
-  fixed it, the 5530 is probably the oldest still in any kind of
-  use."
-
-So, let's finally drop this.
-
-Signed-off-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: "H. Peter Anvin" <hpa@zytor.com>
-Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stephen Hemminger <shemminger@vyatta.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/n/tip-3rhk9bzf0x9rljkv488tloib@git.kernel.org
-[ If anyone cares then alternative instruction patching could be
-  used to replace HLT with a one-byte NOP instruction. Much simpler. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- Documentation/feature-removal-schedule.txt |    8 ------
- arch/x86/include/asm/processor.h           |   10 -------
- arch/x86/kernel/process.c                  |   24 ------------------
- drivers/block/floppy.c                     |   36 ----------------------------
- 4 files changed, 0 insertions(+), 78 deletions(-)
-
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 0cad480..7c950d4 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -6,14 +6,6 @@ be removed from this file.
- 
- ---------------------------
- 
--What:	x86 floppy disable_hlt
--When:	2012
--Why:	ancient workaround of dubious utility clutters the
--	code used by everybody else.
--Who:	Len Brown <len.brown@intel.com>
--
-----------------------------
--
- What:	CONFIG_APM_CPU_IDLE, and its ability to call APM BIOS in idle
- When:	2012
- Why:	This optional sub-feature of APM is of dubious reliability,
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 7284c9a..4fa7dcc 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -974,16 +974,6 @@ extern bool cpu_has_amd_erratum(const int *);
- #define cpu_has_amd_erratum(x)	(false)
- #endif /* CONFIG_CPU_SUP_AMD */
- 
--#ifdef CONFIG_X86_32
--/*
-- * disable hlt during certain critical i/o operations
-- */
--#define HAVE_DISABLE_HLT
--#endif
--
--void disable_hlt(void);
--void enable_hlt(void);
--
- void cpu_idle_wait(void);
- 
- extern unsigned long arch_align_stack(unsigned long sp);
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index a33afaa..1d92a5a 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -362,34 +362,10 @@ void (*pm_idle)(void);
- EXPORT_SYMBOL(pm_idle);
- #endif
- 
--#ifdef CONFIG_X86_32
--/*
-- * This halt magic was a workaround for ancient floppy DMA
-- * wreckage. It should be safe to remove.
-- */
--static int hlt_counter;
--void disable_hlt(void)
--{
--	hlt_counter++;
--}
--EXPORT_SYMBOL(disable_hlt);
--
--void enable_hlt(void)
--{
--	hlt_counter--;
--}
--EXPORT_SYMBOL(enable_hlt);
--
--static inline int hlt_use_halt(void)
--{
--	return (!hlt_counter && boot_cpu_data.hlt_works_ok);
--}
--#else
- static inline int hlt_use_halt(void)
- {
- 	return 1;
- }
--#endif
- 
- #ifndef CONFIG_SMP
- static inline void play_dead(void)
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 76a0823..b0b00d7 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -1030,37 +1030,6 @@ static int fd_wait_for_completion(unsigned long delay, timeout_fn function)
- 	return 0;
- }
- 
--static DEFINE_SPINLOCK(floppy_hlt_lock);
--static int hlt_disabled;
--static void floppy_disable_hlt(void)
--{
--	unsigned long flags;
--
--	WARN_ONCE(1, "floppy_disable_hlt() scheduled for removal in 2012");
--	spin_lock_irqsave(&floppy_hlt_lock, flags);
--	if (!hlt_disabled) {
--		hlt_disabled = 1;
--#ifdef HAVE_DISABLE_HLT
--		disable_hlt();
--#endif
--	}
--	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
--}
--
--static void floppy_enable_hlt(void)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&floppy_hlt_lock, flags);
--	if (hlt_disabled) {
--		hlt_disabled = 0;
--#ifdef HAVE_DISABLE_HLT
--		enable_hlt();
--#endif
--	}
--	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
--}
--
- static void setup_DMA(void)
- {
- 	unsigned long f;
-@@ -1105,7 +1074,6 @@ static void setup_DMA(void)
- 	fd_enable_dma();
- 	release_dma_lock(f);
- #endif
--	floppy_disable_hlt();
- }
- 
- static void show_floppy(void);
-@@ -1707,7 +1675,6 @@ irqreturn_t floppy_interrupt(int irq, void *dev_id)
- 	fd_disable_dma();
- 	release_dma_lock(f);
- 
--	floppy_enable_hlt();
- 	do_floppy = NULL;
- 	if (fdc >= N_FDC || FDCS->address == -1) {
- 		/* we don't even know which FDC is the culprit */
-@@ -1856,8 +1823,6 @@ static void floppy_shutdown(unsigned long data)
- 		show_floppy();
- 	cancel_activity();
- 
--	floppy_enable_hlt();
--
- 	flags = claim_dma_lock();
- 	fd_disable_dma();
- 	release_dma_lock(flags);
-@@ -4508,7 +4473,6 @@ static void floppy_release_irq_and_dma(void)
- #if N_FDC > 1
- 	set_dor(1, ~8, 0);
- #endif
--	floppy_enable_hlt();
- 
- 	if (floppy_track_buffer && max_buffer_sectors) {
- 		tmpsize = max_buffer_sectors * 1024;
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
