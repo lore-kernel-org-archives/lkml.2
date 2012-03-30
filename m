@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936289Ab2C3VmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:42:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58000 "EHLO
+	id S936231Ab2C3VmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:42:08 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50118 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936151Ab2C3Vbn (ORCPT
+	by vger.kernel.org with ESMTP id S936156Ab2C3Vbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:31:43 -0400
-X-Sasl-enc: 0doSFajhOJWEOkz0iUHPPk5v5vjugBAGxcz8lXfI5AWj 1333143102
+	Fri, 30 Mar 2012 17:31:45 -0400
+X-Sasl-enc: 7hvI5yomAjIS6QRqf+7Kup1Mmin2IolAU8zS5TpsaHvQ 1333143104
 X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:54 2012
-Message-Id: <20120330194854.501801795@linuxfoundation.org>
+Message-Id: <20120330194854.719836303@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:45 -0700
+Date: Fri, 30 Mar 2012 12:50:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 140/175] ext4: check for zero length extent
+        alan@lxorguk.ukuu.org.uk, Michel Lespinasse <walken@google.com>
+Subject: [ 141/175] vfs: fix d_ancestor() case in d_materialize_unique
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Michel Lespinasse <walken@google.com>
 
-commit 31d4f3a2f3c73f279ff96a7135d7202ef6833f12 upstream.
+commit b18dafc86bb879d2f38a1743985d7ceb283c2f4d upstream.
 
-Explicitly test for an extent whose length is zero, and flag that as a
-corrupted extent.
+In d_materialise_unique() there are 3 subcases to the 'aliased dentry'
+case; in two subcases the inode i_lock is properly released but this
+does not occur in the -ELOOP subcase.
 
-This avoids a kernel BUG_ON assertion failure.
+This seems to have been introduced by commit 1836750115f2 ("fix loop
+checks in d_materialise_unique()").
 
-Tested: Without this patch, the file system image found in
-tests/f_ext_zero_len/image.gz in the latest e2fsprogs sources causes a
-kernel panic.  With this patch, an ext4 file system error is noted
-instead, and the file system is marked as being corrupted.
+Signed-off-by: Michel Lespinasse <walken@google.com>
+[ Added a comment, and moved the unlock to where we generate the -ELOOP,
+  which seems to be more natural.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=42859
+  You probably can't actually trigger this without a buggy network file
+  server - d_materialize_unique() is for finding aliases on non-local
+  filesystems, and the d_ancestor() case is for a hardlinked directory
+  loop.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+  But we should be robust in the case of such buggy servers anyway. ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/dcache.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -300,6 +300,8 @@ static int ext4_valid_extent(struct inod
- 	ext4_fsblk_t block = ext4_ext_pblock(ext);
- 	int len = ext4_ext_get_actual_len(ext);
- 
-+	if (len == 0)
-+		return 0;
- 	return ext4_data_block_valid(EXT4_SB(inode->i_sb), block, len);
- }
- 
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2405,6 +2405,7 @@ struct dentry *d_materialise_unique(stru
+ 			if (d_ancestor(alias, dentry)) {
+ 				/* Check for loops */
+ 				actual = ERR_PTR(-ELOOP);
++				spin_unlock(&inode->i_lock);
+ 			} else if (IS_ROOT(alias)) {
+ 				/* Is this an anonymous mountpoint that we
+ 				 * could splice into our tree? */
+@@ -2414,7 +2415,7 @@ struct dentry *d_materialise_unique(stru
+ 				goto found;
+ 			} else {
+ 				/* Nope, but we must(!) avoid directory
+-				 * aliasing */
++				 * aliasing. This drops inode->i_lock */
+ 				actual = __d_unalias(inode, dentry, alias);
+ 			}
+ 			write_sequnlock(&rename_lock);
 
 
