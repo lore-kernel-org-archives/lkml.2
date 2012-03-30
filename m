@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935520Ab2C3VJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:09:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S935621Ab2C3Wd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:33:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935505Ab2C3VJd (ORCPT
+	with ESMTP id S935512Ab2C3VJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:09:33 -0400
-Message-Id: <20120330194836.420415594@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:09:39 -0400
+Message-Id: <20120330194835.624132587@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:49 -0700
+Date: Fri, 30 Mar 2012 12:48:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Zimmerman <paulz@synopsys.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 016/149] usb: dwc3: fix bogus test in dwc3_gadget_start_isoc
+        alan@lxorguk.ukuu.org.uk, Shengzhou Liu <Shengzhou.Liu@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 012/149] powerpc/usb: fix bug of kernel hang when initializing usb
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+From: Shengzhou Liu <Shengzhou.Liu@freescale.com>
 
-commit 9bafa56c7cee5c6fa68de5924220abb220c7e229 upstream.
+commit 28c56ea1431421dec51b7b229369e991481453df upstream.
 
-Zero is a valid value for a microframe number. So remove the bogus
-test for non-zero in dwc3_gadget_start_isoc().
+If USB UTMI PHY is not enable, writing to portsc register will lead to
+kernel hang during boot up.
 
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Shengzhou Liu <Shengzhou.Liu@freescale.com>
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ drivers/usb/host/ehci-fsl.c |    4 ++++
+ drivers/usb/host/ehci-fsl.h |    1 +
+ 2 files changed, 5 insertions(+)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1405,7 +1405,7 @@ static void dwc3_endpoint_transfer_compl
- static void dwc3_gadget_start_isoc(struct dwc3 *dwc,
- 		struct dwc3_ep *dep, const struct dwc3_event_depevt *event)
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -216,6 +216,8 @@ static void ehci_fsl_setup_phy(struct eh
+ 			       unsigned int port_offset)
  {
--	u32 uf;
-+	u32 uf, mask;
+ 	u32 portsc;
++	struct usb_hcd *hcd = ehci_to_hcd(ehci);
++	void __iomem *non_ehci = hcd->regs;
  
- 	if (list_empty(&dep->request_list)) {
- 		dev_vdbg(dwc->dev, "ISOC ep %s run out for requests.\n",
-@@ -1413,16 +1413,10 @@ static void dwc3_gadget_start_isoc(struc
- 		return;
- 	}
- 
--	if (event->parameters) {
--		u32 mask;
--
--		mask = ~(dep->interval - 1);
--		uf = event->parameters & mask;
--		/* 4 micro frames in the future */
--		uf += dep->interval * 4;
--	} else {
--		uf = 0;
--	}
-+	mask = ~(dep->interval - 1);
-+	uf = event->parameters & mask;
-+	/* 4 micro frames in the future */
-+	uf += dep->interval * 4;
- 
- 	__dwc3_gadget_kick_transfer(dep, uf, 1);
- }
+ 	portsc = ehci_readl(ehci, &ehci->regs->port_status[port_offset]);
+ 	portsc &= ~(PORT_PTS_MSK | PORT_PTS_PTW);
+@@ -231,6 +233,8 @@ static void ehci_fsl_setup_phy(struct eh
+ 		portsc |= PORT_PTS_PTW;
+ 		/* fall through */
+ 	case FSL_USB2_PHY_UTMI:
++		/* enable UTMI PHY */
++		setbits32(non_ehci + FSL_SOC_USB_CTRL, CTRL_UTMI_PHY_EN);
+ 		portsc |= PORT_PTS_UTMI;
+ 		break;
+ 	case FSL_USB2_PHY_NONE:
+--- a/drivers/usb/host/ehci-fsl.h
++++ b/drivers/usb/host/ehci-fsl.h
+@@ -45,5 +45,6 @@
+ #define FSL_SOC_USB_PRICTRL	0x40c	/* NOTE: big-endian */
+ #define FSL_SOC_USB_SICTRL	0x410	/* NOTE: big-endian */
+ #define FSL_SOC_USB_CTRL	0x500	/* NOTE: big-endian */
++#define CTRL_UTMI_PHY_EN	(1<<9)
+ #define SNOOP_SIZE_2GB		0x1e
+ #endif				/* _EHCI_FSL_H */
 
 
