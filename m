@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936412Ab2C3WEp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:04:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935891Ab2C3VQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:16:32 -0400
-Message-Id: <20120330194904.342942001@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 148/149] nfsd: dont allow zero length strings in cache_parse()
-In-Reply-To: <20120330195823.GA31857@kroah.com>
+	id S936444Ab2C3WFI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:05:08 -0400
+Received: from atlas.wxnz.net ([58.28.6.122]:48488 "EHLO atlas.wxnz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935891Ab2C3WFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 18:05:00 -0400
+X-Greylist: delayed 1457 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Mar 2012 18:05:00 EDT
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Sat, 31 Mar 2012 10:40:37 +1300
+From: Webmail kontroll teamet <konto@webmail.no>
+To: undisclosed-recipients:;
+Subject: Vi har oppdaget et virus i kontoen din
+Organization: Webmail kontroll teamet
+Reply-To: konto@admin.in.th
+Message-ID: <727f46b625c2a782e68fa8fa8c7e567d@webmail-imap.wxnz.mgmt>
+User-Agent: Webmail-lite
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Dan Carpenter <dan.carpenter@oracle.com>
-
-commit 6d8d17499810479eabd10731179c04b2ca22152f upstream.
-
-There is no point in passing a zero length string here and quite a
-few of that cache_parse() implementations will Oops if count is
-zero.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/sunrpc/cache.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -828,6 +828,8 @@ static ssize_t cache_do_downcall(char *k
- {
- 	ssize_t ret;
- 
-+	if (count == 0)
-+		return -EINVAL;
- 	if (copy_from_user(kaddr, buf, count))
- 		return -EFAULT;
- 	kaddr[count] = '\0';
 
 
+-- 
+Kjære bruker
+
+ Vi har funnet et virus i kontoen din, vil dette viruset rett og slett
+blokkere innkommende meldinger og slette ulest melding.
+
+ Dette er forårsaket av Anti HTML blokkert, må vi løse dette ved å skanne
+kontoen din med vår automatisk skanning maskin ellers vil kontoen din bli
+sperret permanent.
+
+ Før vi løse dette må du verifisere og proove eierskapet til denne kontoen
+ved å gi dine detaljer nedenfor:
+
+ Brukernavn: ....
+ Passord: ....
+ Navn: ........
+ Telefon: .......
+
+
+ Kunne ikke bekrefte det konto, vil det bli gjengitt blokk permanent.
+
+ Soeey for incovenience.
+
+ Vi lovet å tjene deg bedre.
+
+
+ webmail kontroll teamet
