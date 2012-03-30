@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760929Ab2C3OLM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 10:11:12 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35274
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760911Ab2C3OLG (ORCPT
+	id S1760947Ab2C3OL3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 10:11:29 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:56836 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759684Ab2C3OLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 10:11:06 -0400
-Date: Fri, 30 Mar 2012 10:10:59 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, xfs-masters@oss.sgi.com
-Subject: Re: [PATCH 05/13] XFS: Fix lock ASSERT on UP
-Message-ID: <20120330141058.GA19986@infradead.org>
-References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
- <1332895637-32572-6-git-send-email-andi@firstfloor.org>
- <20120329232114.GA26342@infradead.org>
- <20120329235201.GF17822@one.firstfloor.org>
- <20120330041348.GF18323@dastard>
- <20120330140457.GH17822@one.firstfloor.org>
+	Fri, 30 Mar 2012 10:11:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120330140457.GH17822@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1333116493.2325.2125.camel@edumazet-glaptop>
+References: <CAPwCz79wO=5zTZmCG+ePfRuEu-p_Vosi18bYZ-MVNZGOdbE3aQ@mail.gmail.com>
+	<1332965129.2325.12.camel@edumazet-glaptop>
+	<CAPwCz7_tnjq32duJSDj21LpRe5TFvGGszH4joQr1DGTjNd7GcA@mail.gmail.com>
+	<1332967172.2325.22.camel@edumazet-glaptop>
+	<4F744D58.3070009@googlemail.com>
+	<1333098711.19659.9.camel@edumazet-laptop>
+	<4F75B828.3090705@googlemail.com>
+	<1333116493.2325.2125.camel@edumazet-glaptop>
+Date: Fri, 30 Mar 2012 10:11:19 -0400
+Message-ID: <CA+5PVA7+Wxv=L0680BZBN=MOnjk7Gri0aCfr2T9oaNxqS=G-EA@mail.gmail.com>
+Subject: Re: [REGRESSION][PATCH] bpf_jit drops the ball on indirect negative
+ mem references
+From: Josh Boyer <jwboyer@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jan Seiffert <kaffeemonster@googlemail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Matt Evans <matt@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 04:04:57PM +0200, Andi Kleen wrote:
-> It's really interesting how much you guys argue for your buggy construct
-> which you clearly never tested on a UP build...
+On Fri, Mar 30, 2012 at 10:08 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Fri, 2012-03-30 at 15:42 +0200, Jan Seiffert wrote:
+>
+>> Do you know where i can ping the powerpc guys a little bit harder?
+>
+> maybe using CC linux-arch@vger.kernel.org
 
+Or linuxppc-dev@lists.ozlabs.org
 
-spin_is_locked always return 0 on UP builds, and given that XFS only
-has !spin_is_locked asserts things will work just fine on UP builds
-(not the !CONFIG_SMP and !CONFIG_XFS_DEBUG would be a common
-combination).
-
-In fact if you check the archives the one use of assert_spin_locked was
-added exactly because some still tripped over the spin_is_locked
-behaviour on UP relatively soon.
-
-> Not sure if that is a hot path, but on highly contended locks every cache line
-> fetch is quite expensive on larger systems.
-
-It's not an overly contended lock.
-
-> also I doubt the thing really catches bugs, and if it did you would be 
-> probably better off with a sparse notation or so.
-
-This one probably doesn't - the first occurance is just after a blocking
-allocation, and the second one just before taking the lock.  So they
-probably could as well just be removed.
-
-The point that still stands is that lockdep_assert_held isn't actually
-a useful replacement.
+josh
