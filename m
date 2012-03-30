@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965022Ab2C3WQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:16:58 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62819 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964960Ab2C3VNh (ORCPT
+	id S965030Ab2C3WRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:17:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935846Ab2C3VNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:37 -0400
-Message-Id: <20120330194854.363795006@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:30 -0400
+Message-Id: <20120330194853.978968752@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:05 -0700
+Date: Fri, 30 Mar 2012 12:50:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@samba.org>,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 092/149] CIFS: Respect negotiated MaxMpxCount
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <miklos@szeredi.hu>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 090/149] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,198 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 10b9b98e41ba248a899f6175ce96ee91431b6194 upstream.
+commit 3114ea7a24d3264c090556a2444fc6d2c06176d4 upstream.
 
-Some servers sets this value less than 50 that was hardcoded and
-we lost the connection if when we exceed this limit. Fix this by
-respecting this value - not sending more than the server allows.
+If a setattr() fails because of an NFS4ERR_OPENMODE error, it is
+probably due to us holding a read delegation. Ensure that the
+recovery routines return that delegation in this case.
 
-Reviewed-by: Jeff Layton <jlayton@samba.org>
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Reported-by: Miklos Szeredi <miklos@szeredi.hu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsfs.c    |    8 ++++----
- fs/cifs/cifsglob.h  |   10 +++-------
- fs/cifs/cifssmb.c   |    9 +++++++--
- fs/cifs/connect.c   |   11 ++++-------
- fs/cifs/dir.c       |    6 ++++--
- fs/cifs/file.c      |    4 ++--
- fs/cifs/transport.c |    4 ++--
- 7 files changed, 26 insertions(+), 26 deletions(-)
+ fs/nfs/nfs4_fs.h  |    1 +
+ fs/nfs/nfs4proc.c |   13 ++++++++++++-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -76,7 +76,7 @@ MODULE_PARM_DESC(cifs_min_small, "Small
- unsigned int cifs_max_pending = CIFS_MAX_REQ;
- module_param(cifs_max_pending, int, 0444);
- MODULE_PARM_DESC(cifs_max_pending, "Simultaneous requests to server. "
--				   "Default: 50 Range: 2 to 256");
-+				   "Default: 32767 Range: 2 to 32767.");
- unsigned short echo_retries = 5;
- module_param(echo_retries, ushort, 0644);
- MODULE_PARM_DESC(echo_retries, "Number of echo attempts before giving up and "
-@@ -1116,9 +1116,9 @@ init_cifs(void)
- 	if (cifs_max_pending < 2) {
- 		cifs_max_pending = 2;
- 		cFYI(1, "cifs_max_pending set to min of 2");
--	} else if (cifs_max_pending > 256) {
--		cifs_max_pending = 256;
--		cFYI(1, "cifs_max_pending set to max of 256");
-+	} else if (cifs_max_pending > CIFS_MAX_REQ) {
-+		cifs_max_pending = CIFS_MAX_REQ;
-+		cFYI(1, "cifs_max_pending set to max of %u", CIFS_MAX_REQ);
- 	}
+--- a/fs/nfs/nfs4_fs.h
++++ b/fs/nfs/nfs4_fs.h
+@@ -191,6 +191,7 @@ struct nfs4_exception {
+ 	long timeout;
+ 	int retry;
+ 	struct nfs4_state *state;
++	struct inode *inode;
+ };
  
- 	rc = cifs_fscache_register();
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -55,14 +55,9 @@
- 
- /*
-  * MAX_REQ is the maximum number of requests that WE will send
-- * on one socket concurrently. It also matches the most common
-- * value of max multiplex returned by servers.  We may
-- * eventually want to use the negotiated value (in case
-- * future servers can handle more) when we are more confident that
-- * we will not have problems oveloading the socket with pending
-- * write data.
-+ * on one socket concurrently.
-  */
--#define CIFS_MAX_REQ 50
-+#define CIFS_MAX_REQ 32767
- 
- #define RFC1001_NAME_LEN 15
- #define RFC1001_NAME_LEN_WITH_NULL (RFC1001_NAME_LEN + 1)
-@@ -263,6 +258,7 @@ struct TCP_Server_Info {
- 	bool session_estab; /* mark when very first sess is established */
- 	u16 dialect; /* dialect index that server chose */
- 	enum securityEnum secType;
-+	bool oplocks:1; /* enable oplocks */
- 	unsigned int maxReq;	/* Clients should submit no more */
- 	/* than maxReq distinct unanswered SMBs to the server when using  */
- 	/* multiplexed reads or writes */
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -458,7 +458,10 @@ CIFSSMBNegotiate(unsigned int xid, struc
- 			goto neg_err_exit;
- 		}
- 		server->sec_mode = (__u8)le16_to_cpu(rsp->SecurityMode);
--		server->maxReq = le16_to_cpu(rsp->MaxMpxCount);
-+		server->maxReq = min_t(unsigned int,
-+				       le16_to_cpu(rsp->MaxMpxCount),
-+				       cifs_max_pending);
-+		server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
- 		server->maxBuf = le16_to_cpu(rsp->MaxBufSize);
- 		server->max_vcs = le16_to_cpu(rsp->MaxNumberVcs);
- 		/* even though we do not use raw we might as well set this
-@@ -564,7 +567,9 @@ CIFSSMBNegotiate(unsigned int xid, struc
- 
- 	/* one byte, so no need to convert this or EncryptionKeyLen from
- 	   little endian */
--	server->maxReq = le16_to_cpu(pSMBr->MaxMpxCount);
-+	server->maxReq = min_t(unsigned int, le16_to_cpu(pSMBr->MaxMpxCount),
-+			       cifs_max_pending);
-+	server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
- 	/* probably no need to store and check maxvcs */
- 	server->maxBuf = le32_to_cpu(pSMBr->MaxBufferSize);
- 	server->max_rw = le32_to_cpu(pSMBr->MaxRawSize);
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -625,14 +625,10 @@ static void clean_demultiplex_info(struc
- 	spin_unlock(&GlobalMid_Lock);
- 	wake_up_all(&server->response_q);
- 
--	/*
--	 * Check if we have blocked requests that need to free. Note that
--	 * cifs_max_pending is normally 50, but can be set at module install
--	 * time to as little as two.
--	 */
-+	/* Check if we have blocked requests that need to free. */
- 	spin_lock(&GlobalMid_Lock);
--	if (atomic_read(&server->inFlight) >= cifs_max_pending)
--		atomic_set(&server->inFlight, cifs_max_pending - 1);
-+	if (atomic_read(&server->inFlight) >= server->maxReq)
-+		atomic_set(&server->inFlight, server->maxReq - 1);
- 	/*
- 	 * We do not want to set the max_pending too low or we could end up
- 	 * with the counter going negative.
-@@ -1890,6 +1886,7 @@ cifs_get_tcp_session(struct smb_vol *vol
- 	tcp_ses->noautotune = volume_info->noautotune;
- 	tcp_ses->tcp_nodelay = volume_info->sockopt_tcp_nodelay;
- 	atomic_set(&tcp_ses->inFlight, 0);
-+	tcp_ses->maxReq = 1; /* enough to send negotiate request */
- 	init_waitqueue_head(&tcp_ses->response_q);
- 	init_waitqueue_head(&tcp_ses->request_q);
- 	INIT_LIST_HEAD(&tcp_ses->pending_mid_q);
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -171,7 +171,7 @@ cifs_create(struct inode *inode, struct
- 	}
- 	tcon = tlink_tcon(tlink);
- 
--	if (enable_oplocks)
-+	if (tcon->ses->server->oplocks)
- 		oplock = REQ_OPLOCK;
- 
- 	if (nd)
-@@ -492,7 +492,7 @@ cifs_lookup(struct inode *parent_dir_ino
+ struct nfs4_state_recovery_ops {
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -257,18 +257,28 @@ static int nfs4_handle_exception(struct
  {
- 	int xid;
- 	int rc = 0; /* to get around spurious gcc warning, set to zero here */
--	__u32 oplock = enable_oplocks ? REQ_OPLOCK : 0;
-+	__u32 oplock;
- 	__u16 fileHandle = 0;
- 	bool posix_open = false;
- 	struct cifs_sb_info *cifs_sb;
-@@ -518,6 +518,8 @@ cifs_lookup(struct inode *parent_dir_ino
- 	}
- 	pTcon = tlink_tcon(tlink);
+ 	struct nfs_client *clp = server->nfs_client;
+ 	struct nfs4_state *state = exception->state;
++	struct inode *inode = exception->inode;
+ 	int ret = errorcode;
  
-+	oplock = pTcon->ses->server->oplocks ? REQ_OPLOCK : 0;
-+
- 	/*
- 	 * Don't allow the separator character in a path component.
- 	 * The VFS will not allow "/", but "\" is allowed by posix.
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -380,7 +380,7 @@ int cifs_open(struct inode *inode, struc
- 	cFYI(1, "inode = 0x%p file flags are 0x%x for %s",
- 		 inode, file->f_flags, full_path);
- 
--	if (enable_oplocks)
-+	if (tcon->ses->server->oplocks)
- 		oplock = REQ_OPLOCK;
- 	else
- 		oplock = 0;
-@@ -505,7 +505,7 @@ static int cifs_reopen_file(struct cifsF
- 	cFYI(1, "inode = 0x%p file flags 0x%x for %s",
- 		 inode, pCifsFile->f_flags, full_path);
- 
--	if (enable_oplocks)
-+	if (tcon->ses->server->oplocks)
- 		oplock = REQ_OPLOCK;
- 	else
- 		oplock = 0;
---- a/fs/cifs/transport.c
-+++ b/fs/cifs/transport.c
-@@ -265,12 +265,12 @@ static int wait_for_free_request(struct
- 
- 	spin_lock(&GlobalMid_Lock);
- 	while (1) {
--		if (atomic_read(&server->inFlight) >= cifs_max_pending) {
-+		if (atomic_read(&server->inFlight) >= server->maxReq) {
- 			spin_unlock(&GlobalMid_Lock);
- 			cifs_num_waiters_inc(server);
- 			wait_event(server->request_q,
- 				   atomic_read(&server->inFlight)
--				     < cifs_max_pending);
-+				     < server->maxReq);
- 			cifs_num_waiters_dec(server);
- 			spin_lock(&GlobalMid_Lock);
- 		} else {
+ 	exception->retry = 0;
+ 	switch(errorcode) {
+ 		case 0:
+ 			return 0;
++		case -NFS4ERR_OPENMODE:
++			if (nfs_have_delegation(inode, FMODE_READ)) {
++				nfs_inode_return_delegation(inode);
++				exception->retry = 1;
++				return 0;
++			}
++			if (state == NULL)
++				break;
++			nfs4_schedule_stateid_recovery(server, state);
++			goto wait_on_recovery;
+ 		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
+ 			if (state != NULL)
+ 				nfs_remove_bad_delegation(state->inode);
+-		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+ 			nfs4_schedule_stateid_recovery(server, state);
+@@ -1901,6 +1911,7 @@ static int nfs4_do_setattr(struct inode
+ 	struct nfs_server *server = NFS_SERVER(inode);
+ 	struct nfs4_exception exception = {
+ 		.state = state,
++		.inode = inode,
+ 	};
+ 	int err;
+ 	do {
 
 
