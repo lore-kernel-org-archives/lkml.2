@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760801Ab2C3Mvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:51:37 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:54038
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760580Ab2C3Mvb (ORCPT
+	id S1760807Ab2C3MwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:52:17 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45276 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760777Ab2C3MwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:51:31 -0400
-X-SpamScore: 8
-X-BigFish: PS8(zzzz1202hzz8275eh3284oa1495iz2fh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:157.55.49.13;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0802HT009.namprd08.prod.outlook.com;RD:none;EFVD:NLI
-Message-ID: <4F75AC4A.7030409@ozmodevices.com>
-Date: Fri, 30 Mar 2012 13:51:22 +0100
-From: Rupesh Gujare <rgujare@ozmodevices.com>
-Organization: Ozmo Devices
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	Fri, 30 Mar 2012 08:52:05 -0400
+Date: Fri, 30 Mar 2012 16:51:58 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/15] perf: Unified API to record selective sets of arch
+ registers
+Message-ID: <20120330125158.GF1892@moon>
+References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
+ <1332938158-5244-4-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] Fix USB Kconfig
-References: <20120330100056.GA27427@x1.osrc.amd.com> <1333105532-7668-1-git-send-email-rgujare@ozmodevices.com> <20120330124811.GA27330@x1.osrc.amd.com>
-In-Reply-To: <20120330124811.GA27330@x1.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.149.82.179]
-X-OriginatorOrg: ozmodevices.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332938158-5244-4-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 28, 2012 at 02:35:46PM +0200, Jiri Olsa wrote:
+...
+> +static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
+> +{
+> +	switch (idx) {
+> +	case PERF_X86_64_REG_RAX:
+> +		return regs->ax;
+> +	case PERF_X86_64_REG_RBX:
+> +		return regs->bx;
+> +	case PERF_X86_64_REG_RCX:
+> +		return regs->cx;
+> +	case PERF_X86_64_REG_RDX:
+> +		return regs->dx;
+> +	case PERF_X86_64_REG_RSI:
+> +		return regs->si;
+> +	case PERF_X86_64_REG_RDI:
+> +		return regs->di;
+> +	case PERF_X86_64_REG_R8:
+> +		return regs->r8;
+> +	case PERF_X86_64_REG_R9:
+> +		return regs->r8;
+> +	case PERF_X86_64_REG_R10:
+> +		return regs->r8;
+> +	case PERF_X86_64_REG_R11:
+> +		return regs->r8;
+> +	case PERF_X86_64_REG_R12:
+> +		return regs->r8;
+> +	case PERF_X86_64_REG_R13:
+> +		return regs->r8;
+> +	case PERF_X86_64_REG_R14:
+> +		return regs->r8;
+> +	case PERF_X86_64_REG_R15:
+> +		return regs->r8;
 
-> Reportedly, there's a fix for this already, see thread at
-> http://marc.info/?l=linux-usb&m=133310173203793&w=2
->
-Thanks Boris,
+I guess there are too much r8's :-)
 
-I just realised it after sending a patch. :)
-
---
-Regards,
-Rupesh Guajre
-
-
+	Cyrill
