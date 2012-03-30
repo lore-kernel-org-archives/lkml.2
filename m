@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936778Ab2C3XI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:08:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	id S934710Ab2C3VE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:04:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761568Ab2C3VEa (ORCPT
+	with ESMTP id S934646Ab2C3VEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:30 -0400
-Message-Id: <20120330195726.131850741@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:04:22 -0400
+Message-Id: <20120330195725.835742231@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:50 -0700
+Date: Fri, 30 Mar 2012 12:57:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Donald Lee <donald@asix.com.tw>
-Subject: [ 028/108] USB: serial: mos7840: Fixed MCS7820 device attach problem
+        alan@lxorguk.ukuu.org.uk, Scott Dial <scott.dial@scientiallc.com>
+Subject: [ 026/108] usb-serial: Add support for the Sealevel SeaLINK+8 2038-ROHS device
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,144 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Donald Lee <donald@asix.com.tw>
+From: Scott Dial <scott.dial@scientiallc.com>
 
-commit 093ea2d3a766cb8a4c4de57efec6c0a127a58792 upstream.
+commit 6d161b99f875269ad4ffa44375e1e54bca6fd02e upstream.
 
-A MCS7820 device supports two serial ports and a MCS7840 device supports
-four serial ports. Both devices use the same driver, but the attach function
-in driver was unable to correctly handle the port numbers for MCS7820
-device. This problem has been fixed in this patch and this fix has been
-verified on x86 Linux kernel 3.2.9 with both MCS7820 and MCS7840 devices.
+This patch adds new device IDs to the ftdi_sio module to support
+the new Sealevel SeaLINK+8 2038-ROHS device.
 
-Signed-off-by: Donald Lee <donald@asix.com.tw>
+Signed-off-by: Scott Dial <scott.dial@scientiallc.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   81 +++++++++++++++++++++++++++++--------------
- 1 file changed, 56 insertions(+), 25 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    4 ++++
+ drivers/usb/serial/ftdi_sio_ids.h |    4 ++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -174,6 +174,7 @@
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -536,6 +536,10 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_6_PID) },
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_7_PID) },
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_1_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_2_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_3_PID) },
++	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803R_4_PID) },
+ 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
+ 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
+ 	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -689,6 +689,10 @@
+ #define SEALEVEL_2803_6_PID	0X2863	/* SeaLINK+8 (2803) Port 6 */
+ #define SEALEVEL_2803_7_PID	0X2873	/* SeaLINK+8 (2803) Port 7 */
+ #define SEALEVEL_2803_8_PID	0X2883	/* SeaLINK+8 (2803) Port 8 */
++#define SEALEVEL_2803R_1_PID	0Xa02a	/* SeaLINK+8 (2803-ROHS) Port 1+2 */
++#define SEALEVEL_2803R_2_PID	0Xa02b	/* SeaLINK+8 (2803-ROHS) Port 3+4 */
++#define SEALEVEL_2803R_3_PID	0Xa02c	/* SeaLINK+8 (2803-ROHS) Port 5+6 */
++#define SEALEVEL_2803R_4_PID	0Xa02d	/* SeaLINK+8 (2803-ROHS) Port 7+8 */
  
- #define CLK_MULTI_REGISTER         ((__u16)(0x02))
- #define CLK_START_VALUE_REGISTER   ((__u16)(0x03))
-+#define GPIO_REGISTER              ((__u16)(0x07))
- 
- #define SERIAL_LCR_DLAB            ((__u16)(0x0080))
- 
-@@ -1103,14 +1104,25 @@ static int mos7840_open(struct tty_struc
- 	mos7840_port->read_urb = port->read_urb;
- 
- 	/* set up our bulk in urb */
--
--	usb_fill_bulk_urb(mos7840_port->read_urb,
--			  serial->dev,
--			  usb_rcvbulkpipe(serial->dev,
--					  port->bulk_in_endpointAddress),
--			  port->bulk_in_buffer,
--			  mos7840_port->read_urb->transfer_buffer_length,
--			  mos7840_bulk_in_callback, mos7840_port);
-+	if ((serial->num_ports == 2)
-+		&& ((((__u16)port->number -
-+			(__u16)(port->serial->minor)) % 2) != 0)) {
-+		usb_fill_bulk_urb(mos7840_port->read_urb,
-+			serial->dev,
-+			usb_rcvbulkpipe(serial->dev,
-+				(port->bulk_in_endpointAddress) + 2),
-+			port->bulk_in_buffer,
-+			mos7840_port->read_urb->transfer_buffer_length,
-+			mos7840_bulk_in_callback, mos7840_port);
-+	} else {
-+		usb_fill_bulk_urb(mos7840_port->read_urb,
-+			serial->dev,
-+			usb_rcvbulkpipe(serial->dev,
-+				port->bulk_in_endpointAddress),
-+			port->bulk_in_buffer,
-+			mos7840_port->read_urb->transfer_buffer_length,
-+			mos7840_bulk_in_callback, mos7840_port);
-+	}
- 
- 	dbg("mos7840_open: bulkin endpoint is %d",
- 	    port->bulk_in_endpointAddress);
-@@ -1521,13 +1533,25 @@ static int mos7840_write(struct tty_stru
- 	memcpy(urb->transfer_buffer, current_position, transfer_size);
- 
- 	/* fill urb with data and submit  */
--	usb_fill_bulk_urb(urb,
--			  serial->dev,
--			  usb_sndbulkpipe(serial->dev,
--					  port->bulk_out_endpointAddress),
--			  urb->transfer_buffer,
--			  transfer_size,
--			  mos7840_bulk_out_data_callback, mos7840_port);
-+	if ((serial->num_ports == 2)
-+		&& ((((__u16)port->number -
-+			(__u16)(port->serial->minor)) % 2) != 0)) {
-+		usb_fill_bulk_urb(urb,
-+			serial->dev,
-+			usb_sndbulkpipe(serial->dev,
-+				(port->bulk_out_endpointAddress) + 2),
-+			urb->transfer_buffer,
-+			transfer_size,
-+			mos7840_bulk_out_data_callback, mos7840_port);
-+	} else {
-+		usb_fill_bulk_urb(urb,
-+			serial->dev,
-+			usb_sndbulkpipe(serial->dev,
-+				port->bulk_out_endpointAddress),
-+			urb->transfer_buffer,
-+			transfer_size,
-+			mos7840_bulk_out_data_callback, mos7840_port);
-+	}
- 
- 	data1 = urb->transfer_buffer;
- 	dbg("bulkout endpoint is %d", port->bulk_out_endpointAddress);
-@@ -1840,7 +1864,7 @@ static int mos7840_send_cmd_write_baud_r
- 
- 	} else {
- #ifdef HW_flow_control
--		/ *setting h/w flow control bit to 0 */
-+		/* setting h/w flow control bit to 0 */
- 		Data = 0xb;
- 		mos7840_port->shadowMCR = Data;
- 		status = mos7840_set_uart_reg(port, MODEM_CONTROL_REGISTER,
-@@ -2310,19 +2334,26 @@ static int mos7840_ioctl(struct tty_stru
- 
- static int mos7840_calc_num_ports(struct usb_serial *serial)
- {
--	int mos7840_num_ports = 0;
-+	__u16 Data = 0x00;
-+	int ret = 0;
-+	int mos7840_num_ports;
- 
--	dbg("numberofendpoints: cur %d, alt %d",
--	    (int)serial->interface->cur_altsetting->desc.bNumEndpoints,
--	    (int)serial->interface->altsetting->desc.bNumEndpoints);
--	if (serial->interface->cur_altsetting->desc.bNumEndpoints == 5) {
--		mos7840_num_ports = serial->num_ports = 2;
--	} else if (serial->interface->cur_altsetting->desc.bNumEndpoints == 9) {
-+	ret = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &Data,
-+		VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
-+
-+	if ((Data & 0x01) == 0) {
-+		mos7840_num_ports = 2;
-+		serial->num_bulk_in = 2;
-+		serial->num_bulk_out = 2;
-+		serial->num_ports = 2;
-+	} else {
-+		mos7840_num_ports = 4;
- 		serial->num_bulk_in = 4;
- 		serial->num_bulk_out = 4;
--		mos7840_num_ports = serial->num_ports = 4;
-+		serial->num_ports = 4;
- 	}
--	dbg ("mos7840_num_ports = %d", mos7840_num_ports);
-+
- 	return mos7840_num_ports;
- }
- 
+ /*
+  * JETI SPECTROMETER SPECBOS 1201
 
 
