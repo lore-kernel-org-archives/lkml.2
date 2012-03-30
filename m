@@ -1,427 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966292Ab2C3VXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:23:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936024Ab2C3VXK (ORCPT
+	id S966317Ab2C3VXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:23:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41224 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935395Ab2C3VXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:23:10 -0400
-Message-Id: <20120330194850.132878693@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gianluca Gennari <gennarone@gmail.com>,
-        Ryley Angus <rangus@student.unimelb.edu.au>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 121/175] [media] as102: add __packed attribute to structs defined inside packed structs
-In-Reply-To: <20120330195801.GA31806@kroah.com>
+	Fri, 30 Mar 2012 17:23:31 -0400
+Date: Fri, 30 Mar 2012 23:23:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <liuj97@gmail.com>
+cc: Jiang Liu <jiang.liu@huawei.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>, Cliff Wickman <cpw@sgi.com>,
+        x86@kernel.org, Keping Chen <chenkeping@huawei.com>,
+        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] IRQ,x86: normalize return value of chip->irq_set_affinity()
+ method
+In-Reply-To: <1333120296-13563-4-git-send-email-jiang.liu@huawei.com>
+Message-ID: <alpine.LFD.2.02.1203302320060.2542@ionos>
+References: <1333120296-13563-1-git-send-email-jiang.liu@huawei.com> <1333120296-13563-4-git-send-email-jiang.liu@huawei.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 30 Mar 2012, Jiang Liu wrote:
 
-------------------
+> On x86 platforms, interrupt controller chip's irq_set_affinity() method
+> always copies affinity mask to irq_data->affinity field but still returns
 
-From: Gianluca Gennari <gennarone@gmail.com>
+Now the question here is whether it copies the mask because it
+modified the mask in some way and want to reflect the change back.
 
-commit abf9d005375d6c6160cc9c17e5dcac32e412c8dc upstream.
+If it just copies the unmodified mask, then this patch is wrong. It
+should remove the copy from the arch code and return IRQ_SET_MASK_OK
+so the core code can take care of the copying.
 
-This patch fixes a regression in kernel 3.3 due to this patch:
+Ditto for the ia64 one.
 
-http://patchwork.linuxtv.org/patch/8332/
+Thanks,
 
-That patch changes "#pragma pack(1)" with "__packed" attributes, but it is not
-complete. In fact, in the as102 driver there are a lot of structs/unions
-defined inside other structs/unions.
-When the "__packed" attribute is applied only on the external struct, it will
-not affect the internal struct definitions.
-So the regression is fixed by specifiying the "__packed" attribute also on the
-internal structs.
-
-This patch should go into 3.3, as it fixes a regression introduced in the new
-kernel version.
-
-Signed-off-by: Gianluca Gennari <gennarone@gmail.com>
-Signed-off-by: Ryley Angus <rangus@student.unimelb.edu.au>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/media/as102/as102_fw.h    |    2 
- drivers/staging/media/as102/as10x_cmd.h   |   80 +++++++++++++++---------------
- drivers/staging/media/as102/as10x_types.h |    2 
- 3 files changed, 42 insertions(+), 42 deletions(-)
-
---- a/drivers/staging/media/as102/as102_fw.h
-+++ b/drivers/staging/media/as102/as102_fw.h
-@@ -29,7 +29,7 @@ struct as10x_fw_pkt_t {
- 	union {
- 		unsigned char request[2];
- 		unsigned char length[2];
--	} u;
-+	} __packed u;
- 	struct as10x_raw_fw_pkt raw;
- } __packed;
- 
---- a/drivers/staging/media/as102/as10x_cmd.h
-+++ b/drivers/staging/media/as102/as10x_cmd.h
-@@ -99,14 +99,14 @@ union as10x_turn_on {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_turn_off {
-@@ -114,14 +114,14 @@ union as10x_turn_off {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* error */
- 		uint8_t err;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_set_tune {
-@@ -131,14 +131,14 @@ union as10x_set_tune {
- 		uint16_t proc_id;
- 		/* tune params */
- 		struct as10x_tune_args args;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* response error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_get_tune_status {
-@@ -146,7 +146,7 @@ union as10x_get_tune_status {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -155,7 +155,7 @@ union as10x_get_tune_status {
- 		uint8_t error;
- 		/* tune status */
- 		struct as10x_tune_status sts;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_get_tps {
-@@ -163,7 +163,7 @@ union as10x_get_tps {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -172,7 +172,7 @@ union as10x_get_tps {
- 		uint8_t error;
- 		/* tps details */
- 		struct as10x_tps tps;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_common {
-@@ -180,14 +180,14 @@ union as10x_common {
- 	struct {
- 		/* request identifier */
- 		uint16_t  proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* response error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_add_pid_filter {
-@@ -201,7 +201,7 @@ union as10x_add_pid_filter {
- 		uint8_t stream_type;
- 		/* PID index in filter table */
- 		uint8_t idx;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -210,7 +210,7 @@ union as10x_add_pid_filter {
- 		uint8_t error;
- 		/* Filter id */
- 		uint8_t filter_id;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_del_pid_filter {
-@@ -220,14 +220,14 @@ union as10x_del_pid_filter {
- 		uint16_t  proc_id;
- 		/* PID to remove */
- 		uint16_t  pid;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* response error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_start_streaming {
-@@ -235,14 +235,14 @@ union as10x_start_streaming {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_stop_streaming {
-@@ -250,14 +250,14 @@ union as10x_stop_streaming {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_get_demod_stats {
-@@ -265,7 +265,7 @@ union as10x_get_demod_stats {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -274,7 +274,7 @@ union as10x_get_demod_stats {
- 		uint8_t error;
- 		/* demod stats */
- 		struct as10x_demod_stats stats;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_get_impulse_resp {
-@@ -282,7 +282,7 @@ union as10x_get_impulse_resp {
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -291,7 +291,7 @@ union as10x_get_impulse_resp {
- 		uint8_t error;
- 		/* impulse response ready */
- 		uint8_t is_ready;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_fw_context {
-@@ -305,7 +305,7 @@ union as10x_fw_context {
- 		uint16_t tag;
- 		/* context request type */
- 		uint16_t type;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -316,7 +316,7 @@ union as10x_fw_context {
- 		uint16_t type;
- 		/* error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_set_register {
-@@ -328,14 +328,14 @@ union as10x_set_register {
- 		struct as10x_register_addr reg_addr;
- 		/* register content */
- 		struct as10x_register_value reg_val;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_get_register {
-@@ -345,7 +345,7 @@ union as10x_get_register {
- 		uint16_t proc_id;
- 		/* register description */
- 		struct as10x_register_addr reg_addr;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -354,7 +354,7 @@ union as10x_get_register {
- 		uint8_t error;
- 		/* register content */
- 		struct as10x_register_value reg_val;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_cfg_change_mode {
-@@ -364,14 +364,14 @@ union as10x_cfg_change_mode {
- 		uint16_t proc_id;
- 		/* mode */
- 		uint8_t mode;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
- 		uint16_t proc_id;
- 		/* error */
- 		uint8_t error;
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- struct as10x_cmd_header_t {
-@@ -394,7 +394,7 @@ union as10x_dump_memory {
- 		struct as10x_register_addr reg_addr;
- 		/* nb blocks to read */
- 		uint16_t num_blocks;
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		/* response identifier */
-@@ -408,8 +408,8 @@ union as10x_dump_memory {
- 			uint8_t  data8[DUMP_BLOCK_SIZE];
- 			uint16_t data16[DUMP_BLOCK_SIZE / sizeof(uint16_t)];
- 			uint32_t data32[DUMP_BLOCK_SIZE / sizeof(uint32_t)];
--		} u;
--	} rsp;
-+		} __packed u;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_dumplog_memory {
-@@ -418,7 +418,7 @@ union as10x_dumplog_memory {
- 		uint16_t proc_id;
- 		/* dump memory type request */
- 		uint8_t dump_req;
--	} req;
-+	} __packed req;
- 	struct {
- 		/* request identifier */
- 		uint16_t proc_id;
-@@ -428,7 +428,7 @@ union as10x_dumplog_memory {
- 		uint8_t dump_rsp;
- 		/* dump data */
- 		uint8_t data[DUMP_BLOCK_SIZE];
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- union as10x_raw_data {
-@@ -437,14 +437,14 @@ union as10x_raw_data {
- 		uint16_t proc_id;
- 		uint8_t data[64 - sizeof(struct as10x_cmd_header_t)
- 			     - 2 /* proc_id */];
--	} req;
-+	} __packed req;
- 	/* response */
- 	struct {
- 		uint16_t proc_id;
- 		uint8_t error;
- 		uint8_t data[64 - sizeof(struct as10x_cmd_header_t)
- 			     - 2 /* proc_id */ - 1 /* rc */];
--	} rsp;
-+	} __packed rsp;
- } __packed;
- 
- struct as10x_cmd_t {
-@@ -469,7 +469,7 @@ struct as10x_cmd_t {
- 		union as10x_dump_memory		dump_memory;
- 		union as10x_dumplog_memory	dumplog_memory;
- 		union as10x_raw_data		raw_data;
--	} body;
-+	} __packed body;
- } __packed;
- 
- struct as10x_token_cmd_t {
---- a/drivers/staging/media/as102/as10x_types.h
-+++ b/drivers/staging/media/as102/as10x_types.h
-@@ -181,7 +181,7 @@ struct as10x_register_value {
- 		uint8_t  value8;   /* 8 bit value */
- 		uint16_t value16;  /* 16 bit value */
- 		uint32_t value32;  /* 32 bit value */
--	} u;
-+	} __packed u;
- } __packed;
- 
- struct as10x_register_addr {
-
-
+	tglx
