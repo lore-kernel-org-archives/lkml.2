@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935668Ab2C3VLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:11:47 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64808 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935685Ab2C3VLm (ORCPT
+	id S935733Ab2C3VL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:11:56 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60223 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935685Ab2C3VLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:42 -0400
-Message-Id: <20120330194846.269072555@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:11:48 -0400
+Message-Id: <20120330194846.771612939@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:30 -0700
+Date: Fri, 30 Mar 2012 12:49:32 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Simon Horman <horms@verge.net.au>
-Subject: [ 057/149] PM / Domains: Fix handling of wakeup devices during system resume
+        alan@lxorguk.ukuu.org.uk,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>
+Subject: [ 059/149] hugetlbfs: avoid taking i_mutex from hugetlbfs_read()
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +28,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit cc85b20780562d404e18a47b9b55b4a5102ae53e upstream.
+commit a05b0855fd15504972dba2358e5faa172a1e50ba upstream.
 
-During system suspend pm_genpd_suspend_noirq() checks if the given
-device is in a wakeup path (i.e. it appears to be needed for one or
-more wakeup devices to work or is a wakeup device itself) and if it
-needs to be "active" for wakeup to work.  If that is the case, the
-function returns 0 without incrementing the device domain's counter
-of suspended devices and without executing genpd_stop_dev() for the
-device.  In consequence, the device is not stopped (e.g. its clock
-isn't disabled) and power is always supplied to its domain in the
-resulting system sleep state.
+Taking i_mutex in hugetlbfs_read() can result in deadlock with mmap as
+explained below
 
-However, pm_genpd_resume_noirq() doesn't repeat that check and it
-runs genpd_start_dev() and decrements the domain's counter of
-suspended devices even for the wakeup device that weren't stopped by
-pm_genpd_suspend_noirq().  As a result, the start callback may be run
-unnecessarily for them and their domains' counters of suspended
-devices may become negative.  Both outcomes aren't desirable, so fix
-pm_genpd_resume_noirq() to look for wakeup devices that might not be
-stopped by during system suspend.
+ Thread A:
+  read() on hugetlbfs
+   hugetlbfs_read() called
+    i_mutex grabbed
+     hugetlbfs_read_actor() called
+      __copy_to_user() called
+       page fault is triggered
+ Thread B, sharing address space with A:
+  mmap() the same file
+   ->mmap_sem is grabbed on task_B->mm->mmap_sem
+    hugetlbfs_file_mmap() is called
+     attempt to grab ->i_mutex and block waiting for A to give it up
+ Thread A:
+  pagefault handled blocked on attempt to grab task_A->mm->mmap_sem,
+ which happens to be the same thing as task_B->mm->mmap_sem.  Block waiting
+ for B to give it up.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Tested-by: Simon Horman <horms@verge.net.au>
+AFAIU the i_mutex locking was added to hugetlbfs_read() as per
+http://lkml.indiana.edu/hypermail/linux/kernel/0707.2/3066.html to take
+care of the race between truncate and read.  This patch fixes this by
+looking at page->mapping under lock_page() (find_lock_page()) to ensure
+that the inode didn't get truncated in the range during a parallel read.
+
+Ideally we can extend the patch to make sure we don't increase i_size in
+mmap.  But that will break userspace, because applications will now have
+to use truncate(2) to increase i_size in hugetlbfs.
+
+Based on the original patch from Hillf Danton.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/domain.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/hugetlbfs/inode.c |   25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -751,7 +751,8 @@ static int pm_genpd_resume_noirq(struct
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -238,17 +238,10 @@ static ssize_t hugetlbfs_read(struct fil
+ 	loff_t isize;
+ 	ssize_t retval = 0;
  
--	if (genpd->suspend_power_off)
-+	if (genpd->suspend_power_off
-+	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
- 		return 0;
+-	mutex_lock(&inode->i_mutex);
+-
+ 	/* validate length */
+ 	if (len == 0)
+ 		goto out;
  
- 	/*
+-	isize = i_size_read(inode);
+-	if (!isize)
+-		goto out;
+-
+-	end_index = (isize - 1) >> huge_page_shift(h);
+ 	for (;;) {
+ 		struct page *page;
+ 		unsigned long nr, ret;
+@@ -256,18 +249,21 @@ static ssize_t hugetlbfs_read(struct fil
+ 
+ 		/* nr is the maximum number of bytes to copy from this page */
+ 		nr = huge_page_size(h);
++		isize = i_size_read(inode);
++		if (!isize)
++			goto out;
++		end_index = (isize - 1) >> huge_page_shift(h);
+ 		if (index >= end_index) {
+ 			if (index > end_index)
+ 				goto out;
+ 			nr = ((isize - 1) & ~huge_page_mask(h)) + 1;
+-			if (nr <= offset) {
++			if (nr <= offset)
+ 				goto out;
+-			}
+ 		}
+ 		nr = nr - offset;
+ 
+ 		/* Find the page */
+-		page = find_get_page(mapping, index);
++		page = find_lock_page(mapping, index);
+ 		if (unlikely(page == NULL)) {
+ 			/*
+ 			 * We have a HOLE, zero out the user-buffer for the
+@@ -279,17 +275,18 @@ static ssize_t hugetlbfs_read(struct fil
+ 			else
+ 				ra = 0;
+ 		} else {
++			unlock_page(page);
++
+ 			/*
+ 			 * We have the page, copy it to user space buffer.
+ 			 */
+ 			ra = hugetlbfs_read_actor(page, offset, buf, len, nr);
+ 			ret = ra;
++			page_cache_release(page);
+ 		}
+ 		if (ra < 0) {
+ 			if (retval == 0)
+ 				retval = ra;
+-			if (page)
+-				page_cache_release(page);
+ 			goto out;
+ 		}
+ 
+@@ -299,16 +296,12 @@ static ssize_t hugetlbfs_read(struct fil
+ 		index += offset >> huge_page_shift(h);
+ 		offset &= ~huge_page_mask(h);
+ 
+-		if (page)
+-			page_cache_release(page);
+-
+ 		/* short read or no more work */
+ 		if ((ret != nr) || (len == 0))
+ 			break;
+ 	}
+ out:
+ 	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
+-	mutex_unlock(&inode->i_mutex);
+ 	return retval;
+ }
+ 
 
 
