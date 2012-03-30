@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935959Ab2C3WC4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:02:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935902Ab2C3VRD (ORCPT
+	id S936437Ab2C3WDH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:03:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62200 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935902Ab2C3WDA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:17:03 -0400
-Message-Id: <20120330194827.052996140@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Korsgaard <jacmet@sunsite.dk>
-Subject: [ 009/175] USB: ftdi_sio: add support for BeagleBone rev A5+
-In-Reply-To: <20120330195801.GA31806@kroah.com>
+	Fri, 30 Mar 2012 18:03:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120330211744.GA16314@kroah.com>
+References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com>
+ <20120330204235.GA883@kroah.com> <alpine.LFD.2.02.1203302247130.2542@ionos>
+ <201203302105.52987.arnd@arndb.de> <20120330211744.GA16314@kroah.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 31 Mar 2012 00:02:39 +0200
+Message-ID: <CA+1xoqeWLrU46gBJVY1j1S2_wNkvCvG-CdK0DKx5dgWR=EmU+Q@mail.gmail.com>
+Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        viro@zeniv.linux.org.uk, davej@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Mar 30, 2012 at 11:17 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Mar 30, 2012 at 09:05:52PM +0000, Arnd Bergmann wrote:
+>> On Friday 30 March 2012, Thomas Gleixner wrote:
+>> > I think so. This is an interface to inject stuff into dmesg. Limiting
+>> > that to a reasonable size makes sense. We can probably limit it to
+>> > something small like 1024, but I don't know about the "ideas" of those
+>> > folks who think that it's a great idea to do it at all.
+>>
+>> I guess a page would be a reasonable size, similar to what we do for
+>> sysfs.
+>
+> Ok. Sasha, as you seem to have noticed this, care to dig in syslog and
+> systemd to get an idea of the buffer sizes they are expecting to pass
+> into kmsg, and if they can handle a short write properly?  If so,
+> restricting it to a page is fine with me, otherwise we might want to
+> make it a bit bigger.
 
-------------------
-
-From: Peter Korsgaard <jacmet@sunsite.dk>
-
-commit 444aa7fa9bd752d19ce472d3e02558b987c3cc67 upstream.
-
-BeagleBone changed to the default FTDI 0403:6010 id in rev A5 to make life
-easier for Windows users, so we need a similar workaround as the Calao
-board to support it.
-
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/ftdi_sio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1763,8 +1763,8 @@ static int ftdi_8u2232c_probe(struct usb
- 
- 	dbg("%s", __func__);
- 
--	if ((udev->manufacturer) &&
--	    (strcmp(udev->manufacturer, "CALAO Systems") == 0))
-+	if ((udev->manufacturer && !strcmp(udev->manufacturer, "CALAO Systems")) ||
-+	    (udev->product && !strcmp(udev->product, "BeagleBone/XDS100")))
- 		return ftdi_jtag_probe(serial);
- 
- 	return 0;
-
-
+systemd seems to use posix LINE_MAX sized buffers, syslog-ng uses
+dynamic strings, but it chews them one line at the time.
