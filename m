@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934382Ab2C3Pqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:46:31 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:43958 "EHLO
+	id S934405Ab2C3Pqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:46:40 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43908 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934114Ab2C3Pol (ORCPT
+	with ESMTP id S934091Ab2C3Pog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:44:41 -0400
+	Fri, 30 Mar 2012 11:44:36 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        fuse-devel@lists.sourceforge.net
-Subject: [RFC PATCH v2 03/21] fuse: convert fuse to use iov_iter_copy_[to|from]_user
-Date: Fri, 30 Mar 2012 10:43:30 -0500
-Message-Id: <1333122228-13633-4-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [RFC PATCH v2 16/21] ext3: add support for .read_iter and .write_iter
+Date: Fri, 30 Mar 2012 10:43:43 -0500
+Message-Id: <1333122228-13633-17-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4F75D4DD.00FE,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F75D4DF.0090,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A future patch hides the internals of struct iov_iter, so fuse should
-be using the supported interface.
+From: Zach Brown <zab@zabbo.net>
+
+ext3 uses the generic .read_iter and .write_iter functions.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: fuse-devel@lists.sourceforge.net
+Cc: Zach Brown <zab@zabbo.net>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
- fs/fuse/file.c |   29 ++++++++---------------------
- 1 file changed, 8 insertions(+), 21 deletions(-)
+ fs/ext3/file.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 4a199fd..877cee0 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1582,30 +1582,17 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
- 	while (iov_iter_count(&ii)) {
- 		struct page *page = pages[page_idx++];
- 		size_t todo = min_t(size_t, PAGE_SIZE, iov_iter_count(&ii));
--		void *kaddr;
-+		size_t left;
- 
--		kaddr = kmap(page);
--
--		while (todo) {
--			char __user *uaddr = ii.iov->iov_base + ii.iov_offset;
--			size_t iov_len = ii.iov->iov_len - ii.iov_offset;
--			size_t copy = min(todo, iov_len);
--			size_t left;
--
--			if (!to_user)
--				left = copy_from_user(kaddr, uaddr, copy);
--			else
--				left = copy_to_user(uaddr, kaddr, copy);
--
--			if (unlikely(left))
--				return -EFAULT;
-+		if (!to_user)
-+			left = iov_iter_copy_from_user(page, &ii, 0, todo);
-+		else
-+			left = iov_iter_copy_to_user(page, &ii, 0, todo);
- 
--			iov_iter_advance(&ii, copy);
--			todo -= copy;
--			kaddr += copy;
--		}
-+		if (unlikely(left))
-+			return -EFAULT;
- 
--		kunmap(page);
-+		iov_iter_advance(&ii, todo);
- 	}
- 
- 	return 0;
+diff --git a/fs/ext3/file.c b/fs/ext3/file.c
+index 724df69..30447a5 100644
+--- a/fs/ext3/file.c
++++ b/fs/ext3/file.c
+@@ -58,6 +58,8 @@ const struct file_operations ext3_file_operations = {
+ 	.write		= do_sync_write,
+ 	.aio_read	= generic_file_aio_read,
+ 	.aio_write	= generic_file_aio_write,
++	.read_iter	= generic_file_read_iter,
++	.write_iter	= generic_file_write_iter,
+ 	.unlocked_ioctl	= ext3_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl	= ext3_compat_ioctl,
 -- 
 1.7.9.5
 
