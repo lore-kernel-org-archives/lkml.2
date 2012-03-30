@@ -1,56 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935706Ab2C3Wec (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:34:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S935498Ab2C3Wex (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:34:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59569 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935475Ab2C3VJV (ORCPT
+	with ESMTP id S935481Ab2C3We2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:09:21 -0400
-Message-Id: <20120330194834.604600767@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:40 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Korsgaard <jacmet@sunsite.dk>
-Subject: [ 007/149] USB: ftdi_sio: add support for BeagleBone rev A5+
-In-Reply-To: <20120330195823.GA31857@kroah.com>
+	Fri, 30 Mar 2012 18:34:28 -0400
+Date: Fri, 30 Mar 2012 15:34:23 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com, Vivek Goyal <vgoyal@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 1/2] cgroup: use negative bias on css->refcnt to block
+ css_tryget()
+Message-ID: <20120330223423.GJ28934@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+When a cgroup is about to be removed, cgroup_clear_css_refs() is
+called to check and ensure that there are no active css references.
 
-------------------
+This is currently achieved by dropping the refcnt to zero iff it has
+only the base ref.  If all css refs could be dropped to zero, ref
+clearing is successful and CSS_REMOVED is set on all css.  If not, the
+base ref is restored.  While css ref is zero w/o CSS_REMOVED set, any
+css_tryget() attempt on it busy loops so that they are atomic
+w.r.t. the whole css ref clearing.
 
-From: Peter Korsgaard <jacmet@sunsite.dk>
+This does work but dropping and re-instating the base ref is somewhat
+hairy and makes it difficult to add more logic to the put path as
+there are two of them - the regular css_put() and the reversible base
+ref clearing.
 
-commit 444aa7fa9bd752d19ce472d3e02558b987c3cc67 upstream.
+This patch updates css ref clearing such that blocking new
+css_tryget() and putting the base ref are separate operations.
+CSS_DEACT_BIAS, defined as INT_MIN, is added to css->refcnt and
+css_tryget() busy loops while refcnt is negative.  After all css refs
+are deactivated, if they were all one, ref clearing succeeded and
+CSS_REMOVED is set and the base ref is put using the regular
+css_put(); otherwise, CSS_DEACT_BIAS is subtracted from the refcnts
+and the original postive values are restored.
 
-BeagleBone changed to the default FTDI 0403:6010 id in rev A5 to make life
-easier for Windows users, so we need a similar workaround as the Calao
-board to support it.
+css_refcnt() accessor which always returns the unbiased positive
+reference counts is added and used to simplify refcnt usages.  While
+at it, relocate and reformat comments in cgroup_has_css_refs().
 
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This separates css->refcnt deactivation and putting the base ref,
+which enables the next patch to make ref clearing optional.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/usb/serial/ftdi_sio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+These two patches should be applied on top of the cftype patchset[1]
+and is available in the following git branch.
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1763,8 +1763,8 @@ static int ftdi_8u2232c_probe(struct usb
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup-css-refs
+
+Thanks.
+
+[1] http://thread.gmane.org/gmane.linux.kernel.cgroups/1322
+
+ include/linux/cgroup.h |   12 ++---
+ kernel/cgroup.c        |  119 ++++++++++++++++++++++++++++-------------------
+ 2 files changed, 75 insertions(+), 56 deletions(-)
+
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 028478c..be81faf 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -115,16 +115,12 @@ static inline bool css_is_removed(struct cgroup_subsys_state *css)
+  * the css has been destroyed.
+  */
  
- 	dbg("%s", __func__);
++extern bool __css_tryget(struct cgroup_subsys_state *css);
+ static inline bool css_tryget(struct cgroup_subsys_state *css)
+ {
+ 	if (test_bit(CSS_ROOT, &css->flags))
+ 		return true;
+-	while (!atomic_inc_not_zero(&css->refcnt)) {
+-		if (test_bit(CSS_REMOVED, &css->flags))
+-			return false;
+-		cpu_relax();
+-	}
+-	return true;
++	return __css_tryget(css);
+ }
  
--	if ((udev->manufacturer) &&
--	    (strcmp(udev->manufacturer, "CALAO Systems") == 0))
-+	if ((udev->manufacturer && !strcmp(udev->manufacturer, "CALAO Systems")) ||
-+	    (udev->product && !strcmp(udev->product, "BeagleBone/XDS100")))
- 		return ftdi_jtag_probe(serial);
+ /*
+@@ -132,11 +128,11 @@ static inline bool css_tryget(struct cgroup_subsys_state *css)
+  * css_get() or css_tryget()
+  */
  
+-extern void __css_put(struct cgroup_subsys_state *css, int count);
++extern void __css_put(struct cgroup_subsys_state *css);
+ static inline void css_put(struct cgroup_subsys_state *css)
+ {
+ 	if (!test_bit(CSS_ROOT, &css->flags))
+-		__css_put(css, 1);
++		__css_put(css);
+ }
+ 
+ /* bits in struct cgroup flags field */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 21bba77..2eade51 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -63,6 +63,9 @@
+ 
+ #include <linux/atomic.h>
+ 
++/* css deactivation bias, makes css->refcnt negative to deny new trygets */
++#define CSS_DEACT_BIAS		INT_MIN
++
+ /*
+  * cgroup_mutex is the master lock.  Any modification to cgroup or its
+  * hierarchy must be performed while holding it.
+@@ -251,6 +254,14 @@ int cgroup_lock_is_held(void)
+ 
+ EXPORT_SYMBOL_GPL(cgroup_lock_is_held);
+ 
++/* the current nr of refs, always >= 0 whether @css is deactivated or not */
++static int css_refcnt(struct cgroup_subsys_state *css)
++{
++	int v = atomic_read(&css->refcnt);
++
++	return v >= 0 ? v : v - CSS_DEACT_BIAS;
++}
++
+ /* convenient tests for these bits */
+ inline int cgroup_is_removed(const struct cgroup *cgrp)
+ {
+@@ -4006,18 +4017,19 @@ static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 	return cgroup_create(c_parent, dentry, mode | S_IFDIR);
+ }
+ 
++/*
++ * Check the reference count on each subsystem. Since we already
++ * established that there are no tasks in the cgroup, if the css refcount
++ * is also 1, then there should be no outstanding references, so the
++ * subsystem is safe to destroy. We scan across all subsystems rather than
++ * using the per-hierarchy linked list of mounted subsystems since we can
++ * be called via check_for_release() with no synchronization other than
++ * RCU, and the subsystem linked list isn't RCU-safe.
++ */
+ static int cgroup_has_css_refs(struct cgroup *cgrp)
+ {
+-	/* Check the reference count on each subsystem. Since we
+-	 * already established that there are no tasks in the
+-	 * cgroup, if the css refcount is also 1, then there should
+-	 * be no outstanding references, so the subsystem is safe to
+-	 * destroy. We scan across all subsystems rather than using
+-	 * the per-hierarchy linked list of mounted subsystems since
+-	 * we can be called via check_for_release() with no
+-	 * synchronization other than RCU, and the subsystem linked
+-	 * list isn't RCU-safe */
+ 	int i;
++
+ 	/*
+ 	 * We won't need to lock the subsys array, because the subsystems
+ 	 * we're concerned about aren't going anywhere since our cgroup root
+@@ -4026,17 +4038,21 @@ static int cgroup_has_css_refs(struct cgroup *cgrp)
+ 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+ 		struct cgroup_subsys *ss = subsys[i];
+ 		struct cgroup_subsys_state *css;
++
+ 		/* Skip subsystems not present or not in this hierarchy */
+ 		if (ss == NULL || ss->root != cgrp->root)
+ 			continue;
++
+ 		css = cgrp->subsys[ss->subsys_id];
+-		/* When called from check_for_release() it's possible
++		/*
++		 * When called from check_for_release() it's possible
+ 		 * that by this point the cgroup has been removed
+ 		 * and the css deleted. But a false-positive doesn't
+ 		 * matter, since it can only happen if the cgroup
+ 		 * has been deleted and hence no longer needs the
+-		 * release agent to be called anyway. */
+-		if (css && (atomic_read(&css->refcnt) > 1))
++		 * release agent to be called anyway.
++		 */
++		if (css && css_refcnt(css) > 1)
+ 			return 1;
+ 	}
  	return 0;
-
+@@ -4053,44 +4069,37 @@ static int cgroup_clear_css_refs(struct cgroup *cgrp)
+ 	struct cgroup_subsys *ss;
+ 	unsigned long flags;
+ 	bool failed = false;
++
+ 	local_irq_save(flags);
++
++	/*
++	 * Block new css_tryget() by deactivating refcnt.  If all refcnts
++	 * were 1 at the moment of deactivation, we succeeded.
++	 */
+ 	for_each_subsys(cgrp->root, ss) {
+ 		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
+-		int refcnt;
+-		while (1) {
+-			/* We can only remove a CSS with a refcnt==1 */
+-			refcnt = atomic_read(&css->refcnt);
+-			if (refcnt > 1) {
+-				failed = true;
+-				goto done;
+-			}
+-			BUG_ON(!refcnt);
+-			/*
+-			 * Drop the refcnt to 0 while we check other
+-			 * subsystems. This will cause any racing
+-			 * css_tryget() to spin until we set the
+-			 * CSS_REMOVED bits or abort
+-			 */
+-			if (atomic_cmpxchg(&css->refcnt, refcnt, 0) == refcnt)
+-				break;
+-			cpu_relax();
+-		}
++
++		WARN_ON(atomic_read(&css->refcnt) < 0);
++		atomic_add(CSS_DEACT_BIAS, &css->refcnt);
++		failed |= css_refcnt(css) != 1;
+ 	}
+- done:
++
++	/*
++	 * If succeeded, set REMOVED and put all the base refs; otherwise,
++	 * restore refcnts to positive values.  Either way, all in-progress
++	 * css_tryget() will be released.
++	 */
+ 	for_each_subsys(cgrp->root, ss) {
+ 		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
+-		if (failed) {
+-			/*
+-			 * Restore old refcnt if we previously managed
+-			 * to clear it from 1 to 0
+-			 */
+-			if (!atomic_read(&css->refcnt))
+-				atomic_set(&css->refcnt, 1);
+-		} else {
+-			/* Commit the fact that the CSS is removed */
++
++		if (!failed) {
+ 			set_bit(CSS_REMOVED, &css->flags);
++			css_put(css);
++		} else {
++			atomic_sub(CSS_DEACT_BIAS, &css->refcnt);
+ 		}
+ 	}
++
+ 	local_irq_restore(flags);
+ 	return !failed;
+ }
+@@ -4887,13 +4896,28 @@ static void check_for_release(struct cgroup *cgrp)
+ }
+ 
+ /* Caller must verify that the css is not for root cgroup */
+-void __css_put(struct cgroup_subsys_state *css, int count)
++bool __css_tryget(struct cgroup_subsys_state *css)
++{
++	do {
++		int v = css_refcnt(css);
++
++		if (atomic_cmpxchg(&css->refcnt, v, v + 1) == v)
++			return true;
++		cpu_relax();
++	} while (!test_bit(CSS_REMOVED, &css->flags));
++
++	return false;
++}
++EXPORT_SYMBOL_GPL(__css_tryget);
++
++/* Caller must verify that the css is not for root cgroup */
++void __css_put(struct cgroup_subsys_state *css)
+ {
+ 	struct cgroup *cgrp = css->cgroup;
+-	int val;
++
+ 	rcu_read_lock();
+-	val = atomic_sub_return(count, &css->refcnt);
+-	if (val == 1) {
++	atomic_dec(&css->refcnt);
++	if (css_refcnt(css) == 1) {
+ 		if (notify_on_release(cgrp)) {
+ 			set_bit(CGRP_RELEASABLE, &cgrp->flags);
+ 			check_for_release(cgrp);
+@@ -4901,7 +4925,6 @@ void __css_put(struct cgroup_subsys_state *css, int count)
+ 		cgroup_wakeup_rmdir_waiter(cgrp);
+ 	}
+ 	rcu_read_unlock();
+-	WARN_ON_ONCE(val < 1);
+ }
+ EXPORT_SYMBOL_GPL(__css_put);
+ 
+@@ -5020,7 +5043,7 @@ unsigned short css_id(struct cgroup_subsys_state *css)
+ 	 * on this or this is under rcu_read_lock(). Once css->id is allocated,
+ 	 * it's unchanged until freed.
+ 	 */
+-	cssid = rcu_dereference_check(css->id, atomic_read(&css->refcnt));
++	cssid = rcu_dereference_check(css->id, css_refcnt(css));
+ 
+ 	if (cssid)
+ 		return cssid->id;
+@@ -5032,7 +5055,7 @@ unsigned short css_depth(struct cgroup_subsys_state *css)
+ {
+ 	struct css_id *cssid;
+ 
+-	cssid = rcu_dereference_check(css->id, atomic_read(&css->refcnt));
++	cssid = rcu_dereference_check(css->id, css_refcnt(css));
+ 
+ 	if (cssid)
+ 		return cssid->depth;
+-- 
+1.7.7.3
 
