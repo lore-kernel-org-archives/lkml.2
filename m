@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935212Ab2C3WqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:46:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S935286Ab2C3Wqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:46:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935122Ab2C3VGy (ORCPT
+	with ESMTP id S935108Ab2C3VGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:54 -0400
-Message-Id: <20120330195732.666452340@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:06:44 -0400
+Message-Id: <20120330195732.222210258@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:35 -0700
+Date: Fri, 30 Mar 2012 12:58:32 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Ming Lei <tom.leiming@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 073/108] usbnet: dont clear urb->dev in tx_complete
+        alan@lxorguk.ukuu.org.uk, Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 070/108] UBI: fix eraseblock picking criteria
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "tom.leiming@gmail.com" <tom.leiming@gmail.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 5d5440a835710d09f0ef18da5000541ec98b537a upstream.
+commit 7eb3aa65853e1b223bfc786b023b702018cb76c0 upstream.
 
-URB unlinking is always racing with its completion and tx_complete
-may be called before or during running usb_unlink_urb, so tx_complete
-must not clear urb->dev since it will be used in unlink path,
-otherwise invalid memory accesses or usb device leak may be caused
-inside usb_unlink_urb.
+The 'find_wl_entry()' function expects the maximum difference as the second
+argument, not the maximum absolute value. So the "unknown" eraseblock picking
+was incorrect, as Shmulik Ladkani spotted. This patch fixes the issue.
 
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reviewed-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/usbnet.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/mtd/ubi/wl.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1033,7 +1033,6 @@ static void tx_complete (struct urb *urb
- 	}
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -386,7 +386,7 @@ static struct ubi_wl_entry *find_wl_entr
+  */
+ int ubi_wl_get_peb(struct ubi_device *ubi, int dtype)
+ {
+-	int err, medium_ec;
++	int err;
+ 	struct ubi_wl_entry *e, *first, *last;
  
- 	usb_autopm_put_interface_async(dev->intf);
--	urb->dev = NULL;
- 	entry->state = tx_done;
- 	defer_bh(dev, skb, &dev->txq);
- }
+ 	ubi_assert(dtype == UBI_LONGTERM || dtype == UBI_SHORTTERM ||
+@@ -424,7 +424,7 @@ retry:
+ 		 * For unknown data we pick a physical eraseblock with medium
+ 		 * erase counter. But we by no means can pick a physical
+ 		 * eraseblock with erase counter greater or equivalent than the
+-		 * lowest erase counter plus %WL_FREE_MAX_DIFF.
++		 * lowest erase counter plus %WL_FREE_MAX_DIFF/2.
+ 		 */
+ 		first = rb_entry(rb_first(&ubi->free), struct ubi_wl_entry,
+ 					u.rb);
+@@ -433,10 +433,8 @@ retry:
+ 		if (last->ec - first->ec < WL_FREE_MAX_DIFF)
+ 			e = rb_entry(ubi->free.rb_node,
+ 					struct ubi_wl_entry, u.rb);
+-		else {
+-			medium_ec = (first->ec + WL_FREE_MAX_DIFF)/2;
+-			e = find_wl_entry(&ubi->free, medium_ec);
+-		}
++		else
++			e = find_wl_entry(&ubi->free, WL_FREE_MAX_DIFF/2);
+ 		break;
+ 	case UBI_SHORTTERM:
+ 		/*
 
 
