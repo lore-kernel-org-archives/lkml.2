@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936078Ab2C3V0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:26:35 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58046 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966237Ab2C3VWl (ORCPT
+	id S936090Ab2C3V0z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:26:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966222Ab2C3VWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:22:41 -0400
-Message-Id: <20120330194847.971182042@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:22:34 -0400
+Message-Id: <20120330194848.575357800@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:16 -0700
+Date: Fri, 30 Mar 2012 12:50:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
-        Ming Lei <tom.leiming@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 111/175] usbnet: increase URB reference count before usb_unlink_urb
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 114/175] x86-32: Fix endless loop when processing signals for kernel tasks
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,59 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "tom.leiming@gmail.com" <tom.leiming@gmail.com>
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
 
-commit 0956a8c20b23d429e79ff86d4325583fc06f9eb4 upstream.
+commit 29a2e2836ff9ea65a603c89df217f4198973a74f upstream.
 
-Commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d(net/usbnet: avoid
-recursive locking in usbnet_stop()) fixes the recursive locking
-problem by releasing the skb queue lock, but it makes usb_unlink_urb
-racing with defer_bh, and the URB to being unlinked may be freed before
-or during calling usb_unlink_urb, so use-after-free problem may be
-triggerd inside usb_unlink_urb.
+The problem occurs on !CONFIG_VM86 kernels [1] when a kernel-mode task
+returns from a system call with a pending signal.
 
-The patch fixes the use-after-free problem by increasing URB
-reference count with skb queue lock held before calling
-usb_unlink_urb, so the URB won't be freed until return from
-usb_unlink_urb.
+A real-life scenario is a child of 'khelper' returning from a failed
+kernel_execve() in ____call_usermodehelper() [ kernel/kmod.c ].
+kernel_execve() fails due to a pending SIGKILL, which is the result of
+"kill -9 -1" (at least, busybox's init does it upon reboot).
 
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Oliver Neukum <oliver@neukum.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The loop is as follows:
+
+* syscall_exit_work:
+ - work_pending:            // start_of_the_loop
+ - work_notify_sig:
+   - do_notify_resume()
+     - do_signal()
+       - if (!user_mode(regs)) return;
+ - resume_userspace         // TIF_SIGPENDING is still set
+ - work_pending             // so we call work_pending => goto
+                            // start_of_the_loop
+
+More information can be found in another LKML thread:
+http://www.serverphorums.com/read.php?12,457826
+
+[1] the problem was also seen on MIPS.
+
+Signed-off-by: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Link: http://lkml.kernel.org/r/1332448765.2299.68.camel@dimm
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/usbnet.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/kernel/entry_32.S |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -589,6 +589,14 @@ static int unlink_urbs (struct usbnet *d
- 		entry = (struct skb_data *) skb->cb;
- 		urb = entry->urb;
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -98,12 +98,6 @@
+ #endif
+ .endm
  
-+		/*
-+		 * Get reference count of the URB to avoid it to be
-+		 * freed during usb_unlink_urb, which may trigger
-+		 * use-after-free problem inside usb_unlink_urb since
-+		 * usb_unlink_urb is always racing with .complete
-+		 * handler(include defer_bh).
-+		 */
-+		usb_get_urb(urb);
- 		spin_unlock_irqrestore(&q->lock, flags);
- 		// during some PM-driven resume scenarios,
- 		// these (async) unlinks complete immediately
-@@ -597,6 +605,7 @@ static int unlink_urbs (struct usbnet *d
- 			netdev_dbg(dev->net, "unlink urb err, %d\n", retval);
- 		else
- 			count++;
-+		usb_put_urb(urb);
- 		spin_lock_irqsave(&q->lock, flags);
- 	}
- 	spin_unlock_irqrestore (&q->lock, flags);
+-#ifdef CONFIG_VM86
+-#define resume_userspace_sig	check_userspace
+-#else
+-#define resume_userspace_sig	resume_userspace
+-#endif
+-
+ /*
+  * User gs save/restore
+  *
+@@ -327,10 +321,19 @@ ret_from_exception:
+ 	preempt_stop(CLBR_ANY)
+ ret_from_intr:
+ 	GET_THREAD_INFO(%ebp)
+-check_userspace:
++resume_userspace_sig:
++#ifdef CONFIG_VM86
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
+ 	movb PT_CS(%esp), %al
+ 	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
++#else
++	/*
++	 * We can be coming here from a syscall done in the kernel space,
++	 * e.g. a failed kernel_execve().
++	 */
++	movl PT_CS(%esp), %eax
++	andl $SEGMENT_RPL_MASK, %eax
++#endif
+ 	cmpl $USER_RPL, %eax
+ 	jb resume_kernel		# not returning to v8086 or userspace
+ 
 
 
