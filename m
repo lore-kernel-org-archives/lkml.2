@@ -1,80 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761502Ab2C3XUd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:20:33 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59822 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761361Ab2C3XU0 (ORCPT
+	id S1761632Ab2C3XZx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:25:53 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:42878 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760278Ab2C3XZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 19:20:26 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-Date: Fri, 30 Mar 2012 16:20:25 -0700
-Message-ID: <CAOesGMjU5tehTf7+nYQv1_7a=+gGN2hVYUdh1g_BF=WRYj0hgg@mail.gmail.com>
-Subject: [GIT PULL] ARM: Two more fixes for merge window fallout
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 30 Mar 2012 19:25:50 -0400
+Message-Id: <201203302325.q2UNPm8j012403@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Mar 2012 19:23:35 -0400
+Subject: [PATCH] tilepro ethernet driver: fix a few minor issues
+To: Chris Metcalf <cmetcalf@tilera.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 23:25:49.0011 (UTC) FILETIME=[70ACEA30:01CD0ECC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This commit fixes a number of issues seen with the driver:
 
-Apologies for back-to-back fixes pull requests, but one of the patches
-below are the kind we'll see posted over and over if we don't send it
-in. I hadn't done the full sanity-check of defconfig builds by the
-time I sent up the other fixes yesterday or I would have included it
-then.
+- Improve handling of return credits to the hardware shim
+- Use skb_frag_size() appropriately
+- Add netpoll support to run console over UDP
 
-After this we're likely to switch to a more regular frequency of
-sending fixes up.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ drivers/net/ethernet/tile/tilepro.c |   75 +++++++++++++++++++++++------------
+ 1 files changed, 50 insertions(+), 25 deletions(-)
 
+diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
+index d9951af..eb4ea08 100644
+--- a/drivers/net/ethernet/tile/tilepro.c
++++ b/drivers/net/ethernet/tile/tilepro.c
+@@ -342,6 +342,21 @@ inline int __netio_fastio1(u32 fastio_index, u32 arg0)
+ }
+ 
+ 
++static void tile_net_return_credit(struct tile_net_cpu *info)
++{
++	struct tile_netio_queue *queue = &info->queue;
++	netio_queue_user_impl_t *qup = &queue->__user_part;
++
++	/* Return four credits after every fourth packet. */
++	if (--qup->__receive_credit_remaining == 0) {
++		u32 interval = qup->__receive_credit_interval;
++		qup->__receive_credit_remaining = interval;
++		__netio_fastio_return_credits(qup->__fastio_index, interval);
++	}
++}
++
++
++
+ /*
+  * Provide a linux buffer to LIPP.
+  */
+@@ -864,19 +879,11 @@ static bool tile_net_poll_aux(struct tile_net_cpu *info, int index)
+ 
+ 		stats->rx_packets++;
+ 		stats->rx_bytes += len;
+-
+-		if (small)
+-			info->num_needed_small_buffers++;
+-		else
+-			info->num_needed_large_buffers++;
+ 	}
+ 
+-	/* Return four credits after every fourth packet. */
+-	if (--qup->__receive_credit_remaining == 0) {
+-		u32 interval = qup->__receive_credit_interval;
+-		qup->__receive_credit_remaining = interval;
+-		__netio_fastio_return_credits(qup->__fastio_index, interval);
+-	}
++	/* ISSUE: It would be nice to defer this until the packet has */
++	/* actually been processed. */
++	tile_net_return_credit(info);
+ 
+ 	/* Consume this packet. */
+ 	qup->__packet_receive_read = index2;
+@@ -1543,7 +1550,7 @@ static int tile_net_drain_lipp_buffers(struct tile_net_priv *priv)
+ 
+ 	/* Drain all the LIPP buffers. */
+ 	while (true) {
+-		int buffer;
++		unsigned int buffer;
+ 
+ 		/* NOTE: This should never fail. */
+ 		if (hv_dev_pread(priv->hv_devhdl, 0, (HV_VirtAddr)&buffer,
+@@ -1707,7 +1714,7 @@ static unsigned int tile_net_tx_frags(lepp_frag_t *frags,
+ 		if (!hash_default) {
+ 			void *va = pfn_to_kaddr(pfn) + f->page_offset;
+ 			BUG_ON(PageHighMem(skb_frag_page(f)));
+-			finv_buffer_remote(va, f->size, 0);
++			finv_buffer_remote(va, skb_frag_size(f), 0);
+ 		}
+ 
+ 		cpa = ((phys_addr_t)pfn << PAGE_SHIFT) + f->page_offset;
+@@ -1735,8 +1742,8 @@ static unsigned int tile_net_tx_frags(lepp_frag_t *frags,
+  * Sometimes, if "sendfile()" requires copying, we will be called with
+  * "data" containing the header and payload, with "frags" being empty.
+  *
+- * In theory, "sh->nr_frags" could be 3, but in practice, it seems
+- * that this will never actually happen.
++ * Sometimes, for example when using NFS over TCP, a single segment can
++ * span 3 fragments, which must be handled carefully in LEPP.
+  *
+  * See "emulate_large_send_offload()" for some reference code, which
+  * does not handle checksumming.
+@@ -1844,10 +1851,8 @@ static int tile_net_tx_tso(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	spin_lock_irqsave(&priv->eq_lock, irqflags);
+ 
+-	/*
+-	 * Handle completions if needed to make room.
+-	 * HACK: Spin until there is sufficient room.
+-	 */
++	/* Handle completions if needed to make room. */
++	/* NOTE: Return NETDEV_TX_BUSY if there is still no room. */
+ 	if (lepp_num_free_comp_slots(eq) == 0) {
+ 		nolds = tile_net_lepp_grab_comps(eq, olds, wanted, 0);
+ 		if (nolds == 0) {
+@@ -1861,6 +1866,7 @@ busy:
+ 	cmd_tail = eq->cmd_tail;
+ 
+ 	/* Prepare to advance, detecting full queue. */
++	/* NOTE: Return NETDEV_TX_BUSY if the queue is full. */
+ 	cmd_next = cmd_tail + cmd_size;
+ 	if (cmd_tail < cmd_head && cmd_next >= cmd_head)
+ 		goto busy;
+@@ -2023,10 +2029,8 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	spin_lock_irqsave(&priv->eq_lock, irqflags);
+ 
+-	/*
+-	 * Handle completions if needed to make room.
+-	 * HACK: Spin until there is sufficient room.
+-	 */
++	/* Handle completions if needed to make room. */
++	/* NOTE: Return NETDEV_TX_BUSY if there is still no room. */
+ 	if (lepp_num_free_comp_slots(eq) == 0) {
+ 		nolds = tile_net_lepp_grab_comps(eq, olds, wanted, 0);
+ 		if (nolds == 0) {
+@@ -2040,6 +2044,7 @@ busy:
+ 	cmd_tail = eq->cmd_tail;
+ 
+ 	/* Copy the commands, or fail. */
++	/* NOTE: Return NETDEV_TX_BUSY if the queue is full. */
+ 	for (i = 0; i < num_frags; i++) {
+ 
+ 		/* Prepare to advance, detecting full queue. */
+@@ -2260,6 +2265,23 @@ static int tile_net_get_mac(struct net_device *dev)
+ 	return 0;
+ }
+ 
++
++#ifdef CONFIG_NET_POLL_CONTROLLER
++/*
++ * Polling 'interrupt' - used by things like netconsole to send skbs
++ * without having to re-enable interrupts. It's not called while
++ * the interrupt routine is executing.
++ */
++static void tile_net_netpoll(struct net_device *dev)
++{
++	struct tile_net_priv *priv = netdev_priv(dev);
++	disable_percpu_irq(priv->intr_id);
++	tile_net_handle_ingress_interrupt(priv->intr_id, dev);
++	enable_percpu_irq(priv->intr_id, 0);
++}
++#endif
++
++
+ static const struct net_device_ops tile_net_ops = {
+ 	.ndo_open = tile_net_open,
+ 	.ndo_stop = tile_net_stop,
+@@ -2268,7 +2290,10 @@ static const struct net_device_ops tile_net_ops = {
+ 	.ndo_get_stats = tile_net_get_stats,
+ 	.ndo_change_mtu = tile_net_change_mtu,
+ 	.ndo_tx_timeout = tile_net_tx_timeout,
+-	.ndo_set_mac_address = tile_net_set_mac_address
++	.ndo_set_mac_address = tile_net_set_mac_address,
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	.ndo_poll_controller = tile_net_netpoll,
++#endif
+ };
+ 
+ 
+@@ -2408,7 +2433,7 @@ static void tile_net_cleanup(void)
+  */
+ static int tile_net_init_module(void)
+ {
+-	pr_info("Tilera IPP Net Driver\n");
++	pr_info("Tilera Network Driver\n");
+ 
+ 	tile_net_devs[0] = tile_net_dev_init("xgbe0");
+ 	tile_net_devs[1] = tile_net_dev_init("xgbe1");
+-- 
+1.6.5.2
 
-
-Thanks,
-
--Olof
-
-
-
-The following changes since commit f00e9b11863abdb837e555a2b1e3417e8b5d80dd:
-
-  Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
-(2012-03-29 20:36:18 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
-
-for you to fetch changes up to d3c7de52096a201ac188adb95b8351b90cab11f1:
-
-  ARM: clps711x: fix missing include file (2012-03-30 15:44:48 -0700)
-
-----------------------------------------------------------------
-ARM: A few more platform fixes for include file fallout
-
-Two patches, one dealing with the system.h fallout, the other is a missing
-linux/bug.h in a place where ARRAY_SIZE() is used.
-
-----------------------------------------------------------------
-Olof Johansson (2):
-      ARM: fix builds due to missing <asm/system_misc.h> includes
-      ARM: clps711x: fix missing include file
-
- arch/arm/mach-at91/at91x40.c        |    1 +
- arch/arm/mach-at91/setup.c          |    1 +
- arch/arm/mach-clps711x/edb7211-mm.c |    1 +
- arch/arm/mach-h720x/common.c        |    1 +
- arch/arm/mach-imx/mm-imx3.c         |    1 +
- arch/arm/mach-imx/mm-imx5.c         |    1 +
- arch/arm/mach-ixp23xx/core.c        |    1 +
- arch/arm/mach-ixp4xx/common.c       |    1 +
- arch/arm/mach-pxa/raumfeld.c        |    2 ++
- arch/arm/mach-shark/core.c          |    1 +
- arch/arm/mach-w90x900/dev.c         |    1 +
- arch/arm/plat-s3c24xx/cpu.c         |    1 +
- 12 files changed, 13 insertions(+)
