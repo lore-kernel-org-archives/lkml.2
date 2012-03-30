@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934606Ab2C3RlE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:41:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47749 "EHLO
+	id S934610Ab2C3Rlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:41:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47764 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934419Ab2C3Rku (ORCPT
+	with ESMTP id S1752967Ab2C3Rl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:40:50 -0400
-Date: Fri, 30 Mar 2012 10:40:28 -0700
-From: tip-bot for Richard Weinberger <richard@nod.at>
-Message-ID: <tip-35372a7d45291140a97518a8d1c8cb0e31ee2bb7@git.kernel.org>
+	Fri, 30 Mar 2012 13:41:29 -0400
+Date: Fri, 30 Mar 2012 10:41:19 -0700
+From: tip-bot for Andi Kleen <ak@linux.intel.com>
+Message-ID: <tip-1873e870fd63ee4b87dbe0125ca373e420fb4987@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jbeulich@suse.com, richard@nod.at, tglx@linutronix.de
+        ak@linux.intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@suse.com, richard@nod.at, tglx@linutronix.de
-In-Reply-To: <1333064283-3109-1-git-send-email-richard@nod.at>
-References: <1333064283-3109-1-git-send-email-richard@nod.at>
+        ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1332960678-11879-2-git-send-email-andi@firstfloor.org>
+References: <1332960678-11879-2-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: spinlock.h: Remove REG_PTR_MODE
-Git-Commit-ID: 35372a7d45291140a97518a8d1c8cb0e31ee2bb7
+Subject: [tip:x86/cleanups] debug: Add CONFIG_READABLE_ASM
+Git-Commit-ID: 1873e870fd63ee4b87dbe0125ca373e420fb4987
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,42 +27,72 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 30 Mar 2012 10:40:36 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 30 Mar 2012 10:41:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  35372a7d45291140a97518a8d1c8cb0e31ee2bb7
-Gitweb:     http://git.kernel.org/tip/35372a7d45291140a97518a8d1c8cb0e31ee2bb7
-Author:     Richard Weinberger <richard@nod.at>
-AuthorDate: Fri, 30 Mar 2012 01:38:03 +0200
+Commit-ID:  1873e870fd63ee4b87dbe0125ca373e420fb4987
+Gitweb:     http://git.kernel.org/tip/1873e870fd63ee4b87dbe0125ca373e420fb4987
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Wed, 28 Mar 2012 11:51:18 -0700
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 30 Mar 2012 10:01:59 -0700
+CommitDate: Fri, 30 Mar 2012 10:15:21 -0700
 
-x86: spinlock.h: Remove REG_PTR_MODE
+debug: Add CONFIG_READABLE_ASM
 
-REG_PTR_MODE has no users at all.
+Add a config option to disable various gcc compiler optimizations that
+make assembler listings much harder to read. This is everything that reorders
+code significantly or creates partial functions.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Link: http://lkml.kernel.org/r/1333064283-3109-1-git-send-email-richard@nod.at
-Acked-by: Acked-by: Jan Beulich <jbeulich@suse.com>
+This is mainly to keep kernel hackers sane.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1332960678-11879-2-git-send-email-andi@firstfloor.org
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/include/asm/spinlock.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ Makefile          |   10 ++++++++++
+ lib/Kconfig.debug |    9 +++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 76bfa2c..b315a33 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -20,10 +20,8 @@
+diff --git a/Makefile b/Makefile
+index 1932984..6f7328b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -564,6 +564,16 @@ else
+ KBUILD_CFLAGS	+= -O2
+ endif
  
- #ifdef CONFIG_X86_32
- # define LOCK_PTR_REG "a"
--# define REG_PTR_MODE "k"
- #else
- # define LOCK_PTR_REG "D"
--# define REG_PTR_MODE "q"
- #endif
++ifdef CONFIG_READABLE_ASM
++# Disable optimizations that make assembler listings hard to read.
++# reorder blocks reorders the control in the function
++# ipa clone creates specialized cloned functions
++# partial inlining inlines only parts of functions
++KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
++                 $(call cc-option,-fno-ipa-cp-clone,) \
++                 $(call cc-option,-fno-partial-inlining)
++endif
++
+ include $(srctree)/arch/$(SRCARCH)/Makefile
  
- #if defined(CONFIG_X86_32) && \
+ ifneq ($(CONFIG_FRAME_WARN),0)
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 6777153..4d3cbbb 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -70,6 +70,15 @@ config STRIP_ASM_SYMS
+ 	  that look like '.Lxxx') so they don't pollute the output of
+ 	  get_wchan() and suchlike.
+ 
++config READABLE_ASM
++        bool "Generate readable assembler code"
++        depends on DEBUG_KERNEL
++        help
++          Disable some compiler optimizations that tend to generate human unreadable
++          assembler output. This may make the kernel slightly slower, but it helps
++          to keep kernel developers who have to stare a lot at assembler listings
++          sane.
++
+ config UNUSED_SYMBOLS
+ 	bool "Enable unused/obsolete exported symbols"
+ 	default y if X86
