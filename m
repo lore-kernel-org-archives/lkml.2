@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab2C3XvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:51:13 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977Ab2C3XvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 19:51:08 -0400
-Message-ID: <4F7646DC.8090802@nod.at>
-Date: Sat, 31 Mar 2012 01:50:52 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1755728Ab2C3XzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:55:09 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:47853 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab2C3XzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 19:55:06 -0400
+From: "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONT - Type 2]" 
+	<asamymuthupa@micron.com>
+To: Ren Mingxin <renmx@cn.fujitsu.com>
+CC: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 3/4] block: replace rssd_disk_name_format() to
+ disk_name_format()
+Thread-Topic: [PATCH 3/4] block: replace rssd_disk_name_format() to
+ disk_name_format()
+Thread-Index: AQHNDlr4t9IsT32K8UyBqG6eXi4OGZaDcyEA
+Date: Fri, 30 Mar 2012 23:54:12 +0000
+Message-ID: <4F764778.1030406@micron.com>
+References: <4F7581D4.4040301@cn.fujitsu.com>
+ <4F758297.5020600@cn.fujitsu.com>
+In-Reply-To: <4F758297.5020600@cn.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+x-ms-exchange-imapappendstamp: NTXBOICAS03.micron.com (14.01.0355.001)
+x-originating-ip: [137.201.88.182]
+x-tm-as-product-ver: SMEX-10.0.0.4152-6.500.1024-18808.001
+x-tm-as-result: No--25.989500-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1E778E757F563B4A8AC9502D61A5B220@exchange>
 MIME-Version: 1.0
-To: Phillip Lougher <plougher@redhat.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Eugene Teo <eteo@redhat.com>,
-        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] sysctl: fix restrict write access to dmesg_restrict
-References: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
-In-Reply-To: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigDBBF6865E0044E09D25B1AB5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2UNtIaa020591
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigDBBF6865E0044E09D25B1AB5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 3/30/2012 2:53 AM, Ren Mingxin wrote:
 
-Am 31.03.2012 01:43, schrieb Phillip Lougher:
-> Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
-> however, it incorrectly alters kptr_restrict rather than
-> dmesg_restrict.
->=20
-> The original patch from Richard Weinberger
-> (https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
-> expected, and so the patch seems to have been misapplied.
->=20
-
-Hmm, indeed.
-Any idea how this could happen, Andrew?
-
-Thanks,
-//richard
+>  Currently, block core has been supplied "disk_name_format()", so
+> we should remove duplicate function "rssd_disk_name_format()"
+> and use the new function to format rssd disk names.
+> 
+> Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
+> ---
+>  mtip32xx.c |   33 +--------------------------------
+>  1 file changed, 1 insertion(+), 32 deletions(-)
 
 
---------------enigDBBF6865E0044E09D25B1AB5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Looks fine.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Should the subject be "mtip32xx: ..." instead of "block: ..."? I
+understand "block:" as relating to block core. I am fairly new here. If
+"block:" can be used for block drivers too, that is fine too.
 
-iQEcBAEBAgAGBQJPdkbjAAoJEN9758yqZn9ezX0IAJz0XUMJOJqt3nE704iwkBqD
-4WJeDik9qoeoU1mKMYt+Mv6jiA3z6Mf8g6hUs9TZwTU2/ezMB+SB6aDntW64vQg8
-JRSLYs9qf0TUKJ8kAba4gElM5Gz82sk+/6kc1QpTgGxSimudPmpGv22uZ5taypMg
-fbq+MuBzJrnlZrFEoCUL3erp5ogiGoEQrd3MT4gMGzgx1OkTD+1Uyz3FHbLA+c8D
-cP/QcVgJw+nx0n5VX0U5MAMesgRobQ7Fh2RcEjYNJ8bvA67Z2QwdM8DqNTnPHrIF
-qxDvwvd71Q2z+TGhtZ+k5mhZjiyGbDJLVkseQHmZFfCfxV4w4YwJlBfpZHGZCvc=
-=Ch/Q
------END PGP SIGNATURE-----
-
---------------enigDBBF6865E0044E09D25B1AB5--
+--
+Regards,
+Asai Thambi
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
