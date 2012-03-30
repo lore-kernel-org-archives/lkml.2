@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761395Ab2C3U6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:58:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57807 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760597Ab2C3U6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:58:46 -0400
-Date: Fri, 30 Mar 2012 17:58:37 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] perf tools: fix build for rbtree.c change
-Message-ID: <20120330205837.GI18888@infradead.org>
-References: <1333129114-22117-1-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333129114-22117-1-git-send-email-andi@firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1761423Ab2C3VDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:03:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760713Ab2C3VDE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 17:03:04 -0400
+Message-Id: <20120330195722.427219001@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:57:24 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Daniele Palmas <dnlplm@gmail.com>
+Subject: [ 002/108] USB: option driver: adding support for Telit CC864-SINGLE, CC864-DUAL and DE910-DUAL modems
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Mar 30, 2012 at 10:38:33AM -0700, Andi Kleen escreveu:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> rbtree.c in the main tree now includes linux/export.h, so this file
-> needs a stub too. This makes perf build again in mainline.
+3.0-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Daniele Palmas <dnlplm@gmail.com>
+
+commit 7204cf584836c24b4b06e4ad4a8e6bb8ea84908e upstream.
+
+Adding PID for Telit CC864-SINGLE, CC864-DUAL and DE910-DUAL
+modems
+
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -307,6 +307,9 @@ static void option_instat_callback(struc
+ #define TELIT_VENDOR_ID				0x1bc7
+ #define TELIT_PRODUCT_UC864E			0x1003
+ #define TELIT_PRODUCT_UC864G			0x1004
++#define TELIT_PRODUCT_CC864_DUAL		0x1005
++#define TELIT_PRODUCT_CC864_SINGLE		0x1006
++#define TELIT_PRODUCT_DE910_DUAL		0x1010
  
+ /* ZTE PRODUCTS */
+ #define ZTE_VENDOR_ID				0x19d2
+@@ -771,6 +774,9 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
 
-Thank you, this one got fixed already.
 
-
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/util/include/linux/export.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->  create mode 100644 tools/perf/util/include/linux/export.h
-> 
-> diff --git a/tools/perf/util/include/linux/export.h b/tools/perf/util/include/linux/export.h
-> new file mode 100644
-> index 0000000..493b181
-> --- /dev/null
-> +++ b/tools/perf/util/include/linux/export.h
-> @@ -0,0 +1 @@
-> +#include <linux/module.h>
-> -- 
-> 1.7.7.6
