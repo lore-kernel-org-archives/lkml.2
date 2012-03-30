@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760812Ab2C3Mxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:53:46 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:44484 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760777Ab2C3Mxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:53:41 -0400
-Message-ID: <4F75ACCA.4090009@ti.com>
-Date: Fri, 30 Mar 2012 18:23:30 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	id S1760820Ab2C3NBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 09:01:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8501 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760609Ab2C3NBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 09:01:35 -0400
+Date: Fri, 30 Mar 2012 15:01:09 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/15] perf: Unified API to record selective sets of arch
+ registers
+Message-ID: <20120330130109.GC1586@m.brq.redhat.com>
+References: <1332938158-5244-1-git-send-email-jolsa@redhat.com>
+ <1332938158-5244-4-git-send-email-jolsa@redhat.com>
+ <20120330125158.GF1892@moon>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
-        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Rob Lee <rob.lee@linaro.org>
-Subject: Re: [PATCHv2 0/5] coupled cpuidle state support
-References: <1331749794-8056-1-git-send-email-ccross@android.com> <CAMbhsRQAw2+as13NVvWkh7ojyRs+jNpFist2gmiiEY52U=o84A@mail.gmail.com>
-In-Reply-To: <CAMbhsRQAw2+as13NVvWkh7ojyRs+jNpFist2gmiiEY52U=o84A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120330125158.GF1892@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin,
-
-On Friday 16 March 2012 05:07 AM, Colin Cross wrote:
-> On Wed, Mar 14, 2012 at 11:29 AM, Colin Cross <ccross@android.com> wrote:
-
-[...]
-
->>
->> v2:
->>   * removed the coupled lock, replacing it with atomic counters
->>   * added a check for outstanding pokes before beginning the
->>     final transition to avoid extra wakeups
->>   * made the cpuidle_coupled struct completely private
->>   * fixed kerneldoc comment formatting
->>   * added a patch with a helper function for resynchronizing
->>     cpus after aborting idle
->>   * added a patch (not for merging) to add trace events for
->>     verification and performance testing
+On Fri, Mar 30, 2012 at 04:51:58PM +0400, Cyrill Gorcunov wrote:
+> On Wed, Mar 28, 2012 at 02:35:46PM +0200, Jiri Olsa wrote:
+> ...
+> > +static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
+> > +{
+> > +	switch (idx) {
+> > +	case PERF_X86_64_REG_RAX:
+> > +		return regs->ax;
+> > +	case PERF_X86_64_REG_RBX:
+> > +		return regs->bx;
+> > +	case PERF_X86_64_REG_RCX:
+> > +		return regs->cx;
+> > +	case PERF_X86_64_REG_RDX:
+> > +		return regs->dx;
+> > +	case PERF_X86_64_REG_RSI:
+> > +		return regs->si;
+> > +	case PERF_X86_64_REG_RDI:
+> > +		return regs->di;
+> > +	case PERF_X86_64_REG_R8:
+> > +		return regs->r8;
+> > +	case PERF_X86_64_REG_R9:
+> > +		return regs->r8;
+> > +	case PERF_X86_64_REG_R10:
+> > +		return regs->r8;
+> > +	case PERF_X86_64_REG_R11:
+> > +		return regs->r8;
+> > +	case PERF_X86_64_REG_R12:
+> > +		return regs->r8;
+> > +	case PERF_X86_64_REG_R13:
+> > +		return regs->r8;
+> > +	case PERF_X86_64_REG_R14:
+> > +		return regs->r8;
+> > +	case PERF_X86_64_REG_R15:
+> > +		return regs->r8;
 > 
-> I forgot to mention, this patch series is on v3.3-rc7, and will
-> conflict with the cpuidle timekeeping patches.  If those go in first
-> (which is likely), I will rework this series on top of it.  I left it
-> on v3.3-rc7 now to make testing easier.
+> I guess there are too much r8's :-)
+> 
+> 	Cyrill
 
-I have re-based your series against Len Browns
-next branch [1] which has time keeping and other cpuidle patches.
-Have also folded the CPU hotplug fix which I posted in the
-original coupled idle patch.
+yay :)) right, one should be enough..
 
-If you want, the updated branch can be pulled from:
-
-git://gitorious.org/omap-sw-develoment/linux-omap-dev.git
-for_3.5/coupled_cpuidle-rebase
-
-Regards
-Santosh
-
-[1] Power Management
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git
+thanks,
+jirka
