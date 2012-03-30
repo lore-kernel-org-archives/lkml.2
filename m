@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935804Ab2C3W0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:26:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	id S935770Ab2C3W0e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:26:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935632Ab2C3VLD (ORCPT
+	with ESMTP id S935638Ab2C3VLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:03 -0400
-Message-Id: <20120330194843.427214431@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:11:06 -0400
+Message-Id: <20120330194843.681593116@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:18 -0700
+Date: Fri, 30 Mar 2012 12:49:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 045/149] ntp: Fix integer overflow when setting time
+        alan@lxorguk.ukuu.org.uk, Andrew Vagin <avagin@openvz.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: [ 046/149] uevent: send events in correct order according to seqnum (v3)
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Andrew Vagin <avagin@openvz.org>
 
-commit a078c6d0e6288fad6d83fb6d5edd91ddb7b6ab33 upstream.
+commit 7b60a18da393ed70db043a777fd9e6d5363077c4 upstream.
 
-'long secs' is passed as divisor to div_s64, which accepts a 32bit
-divisor. On 64bit machines that value is trimmed back from 8 bytes
-back to 4, causing a divide by zero when the number is bigger than
-(1 << 32) - 1 and all 32 lower bits are 0.
+The queue handling in the udev daemon assumes that the events are
+ordered.
 
-Use div64_long() instead.
+Before this patch uevent_seqnum is incremented under sequence_lock,
+than an event is send uner uevent_sock_mutex. I want to say that code
+contained a window between incrementing seqnum and sending an event.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Cc: johnstul@us.ibm.com
-Link: http://lkml.kernel.org/r/1331829374-31543-2-git-send-email-levinsasha928@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
+
+v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
+v3: unlock the mutex before the goto exit
+
+Thanks for Kay for the comments.
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Tested-By: Kay Sievers <kay.sievers@vrfy.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/ntp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/kobject_uevent.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -275,7 +275,7 @@ static inline s64 ntp_update_offset_fll(
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -29,16 +29,17 @@
  
- 	time_status |= STA_MODE;
+ u64 uevent_seqnum;
+ char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
+-static DEFINE_SPINLOCK(sequence_lock);
+ #ifdef CONFIG_NET
+ struct uevent_sock {
+ 	struct list_head list;
+ 	struct sock *sk;
+ };
+ static LIST_HEAD(uevent_sock_list);
+-static DEFINE_MUTEX(uevent_sock_mutex);
+ #endif
  
--	return div_s64(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
-+	return div64_long(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
- }
++/* This lock protects uevent_seqnum and uevent_sock_list */
++static DEFINE_MUTEX(uevent_sock_mutex);
++
+ /* the strings here must match the enum in include/linux/kobject.h */
+ static const char *kobject_actions[] = {
+ 	[KOBJ_ADD] =		"add",
+@@ -136,7 +137,6 @@ int kobject_uevent_env(struct kobject *k
+ 	struct kobject *top_kobj;
+ 	struct kset *kset;
+ 	const struct kset_uevent_ops *uevent_ops;
+-	u64 seq;
+ 	int i = 0;
+ 	int retval = 0;
+ #ifdef CONFIG_NET
+@@ -243,17 +243,16 @@ int kobject_uevent_env(struct kobject *k
+ 	else if (action == KOBJ_REMOVE)
+ 		kobj->state_remove_uevent_sent = 1;
  
- static void ntp_update_offset(long offset)
++	mutex_lock(&uevent_sock_mutex);
+ 	/* we will send an event, so request a new sequence number */
+-	spin_lock(&sequence_lock);
+-	seq = ++uevent_seqnum;
+-	spin_unlock(&sequence_lock);
+-	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
+-	if (retval)
++	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)++uevent_seqnum);
++	if (retval) {
++		mutex_unlock(&uevent_sock_mutex);
+ 		goto exit;
++	}
+ 
+ #if defined(CONFIG_NET)
+ 	/* send netlink message */
+-	mutex_lock(&uevent_sock_mutex);
+ 	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
+ 		struct sock *uevent_sock = ue_sk->sk;
+ 		struct sk_buff *skb;
+@@ -287,8 +286,8 @@ int kobject_uevent_env(struct kobject *k
+ 		} else
+ 			retval = -ENOMEM;
+ 	}
+-	mutex_unlock(&uevent_sock_mutex);
+ #endif
++	mutex_unlock(&uevent_sock_mutex);
+ 
+ 	/* call uevent_helper, usually only enabled during early boot */
+ 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
 
 
