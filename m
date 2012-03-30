@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936223Ab2C3Vml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:42:41 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52403 "EHLO
+	id S966076Ab2C3Vbh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:31:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37214 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936107Ab2C3Vbk (ORCPT
+	by vger.kernel.org with ESMTP id S936141Ab2C3Vbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:31:40 -0400
-X-Sasl-enc: 9EHdcgORbXhtcJ2I6ZDSyD34k202jhOJO1RVhFnJFG2k 1333143098
-X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:54 2012
-Message-Id: <20120330194854.108746832@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:31:32 -0400
+X-Sasl-enc: v3TytzXrjNMQLExRsHANdjkupBvq8R2qksMm2B2IUBWx 1333143091
+X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:53 2012
+Message-Id: <20120330194853.289087804@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:43 -0700
+Date: Fri, 30 Mar 2012 12:50:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 138/175] ext4: fix race between unwritten extent conversion and truncate
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 134/175] NFSv4: Rate limit the state manager warning messages
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,83 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 266991b13890049ee1a6bb95b9817f06339ee3d7 upstream.
+commit 9a3ba432330e504ac61ff0043dbdaba7cea0e35a upstream.
 
-The following comment in ext4_end_io_dio caught my attention:
+Prevent the state manager from filling up system logs when recovery
+fails on the server.
 
-	/* XXX: probably should move into the real I/O completion handler */
-        inode_dio_done(inode);
-
-The truncate code takes i_mutex, then calls inode_dio_wait.  Because the
-ext4 code path above will end up dropping the mutex before it is
-reacquired by the worker thread that does the extent conversion, it
-seems to me that the truncate can happen out of order.  Jan Kara
-mentioned that this might result in error messages in the system logs,
-but that should be the extent of the "damage."
-
-The fix is pretty straight-forward: don't call inode_dio_done until the
-extent conversion is complete.
-
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h    |    1 +
- fs/ext4/inode.c   |   10 +++++-----
- fs/ext4/page-io.c |    2 ++
- 3 files changed, 8 insertions(+), 5 deletions(-)
+ fs/nfs/callback_xdr.c |    4 +++-
+ fs/nfs/nfs4proc.c     |    2 +-
+ fs/nfs/nfs4state.c    |    4 ++--
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -184,6 +184,7 @@ struct mpage_da_data {
- #define	EXT4_IO_END_UNWRITTEN	0x0001
- #define EXT4_IO_END_ERROR	0x0002
- #define EXT4_IO_END_QUEUED	0x0004
-+#define EXT4_IO_END_DIRECT	0x0008
- 
- struct ext4_io_page {
- 	struct page	*p_page;
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2796,9 +2796,6 @@ out:
- 
- 	/* queue the work to convert unwritten extents to written */
- 	queue_work(wq, &io_end->work);
--
--	/* XXX: probably should move into the real I/O completion handler */
--	inode_dio_done(inode);
- }
- 
- static void ext4_end_io_buffer_write(struct buffer_head *bh, int uptodate)
-@@ -2922,9 +2919,12 @@ static ssize_t ext4_ext_direct_IO(int rw
- 		iocb->private = NULL;
- 		EXT4_I(inode)->cur_aio_dio = NULL;
- 		if (!is_sync_kiocb(iocb)) {
--			iocb->private = ext4_init_io_end(inode, GFP_NOFS);
--			if (!iocb->private)
-+			ext4_io_end_t *io_end =
-+				ext4_init_io_end(inode, GFP_NOFS);
-+			if (!io_end)
- 				return -ENOMEM;
-+			io_end->flag |= EXT4_IO_END_DIRECT;
-+			iocb->private = io_end;
- 			/*
- 			 * we save the io structure for current async
- 			 * direct IO, so that later ext4_map_blocks()
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -110,6 +110,8 @@ int ext4_end_io_nolock(ext4_io_end_t *io
- 	if (io->iocb)
- 		aio_complete(io->iocb, io->result, 0);
- 
-+	if (io->flag & EXT4_IO_END_DIRECT)
-+		inode_dio_done(inode);
- 	/* Wake up anyone waiting on unwritten extent conversion */
- 	if (atomic_dec_and_test(&EXT4_I(inode)->i_aiodio_unwritten))
- 		wake_up_all(ext4_ioend_wq(io->inode));
+--- a/fs/nfs/callback_xdr.c
++++ b/fs/nfs/callback_xdr.c
+@@ -9,6 +9,8 @@
+ #include <linux/sunrpc/svc.h>
+ #include <linux/nfs4.h>
+ #include <linux/nfs_fs.h>
++#include <linux/ratelimit.h>
++#include <linux/printk.h>
+ #include <linux/slab.h>
+ #include <linux/sunrpc/bc_xprt.h>
+ #include "nfs4_fs.h"
+@@ -167,7 +169,7 @@ static __be32 decode_compound_hdr_arg(st
+ 	if (hdr->minorversion <= 1) {
+ 		hdr->cb_ident = ntohl(*p++); /* ignored by v4.1 */
+ 	} else {
+-		printk(KERN_WARNING "%s: NFSv4 server callback with "
++		pr_warn_ratelimited("NFS: %s: NFSv4 server callback with "
+ 			"illegal minor version %u!\n",
+ 			__func__, hdr->minorversion);
+ 		return htonl(NFS4ERR_MINOR_VERS_MISMATCH);
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1845,7 +1845,7 @@ static struct nfs4_state *nfs4_do_open(s
+ 		 * the user though...
+ 		 */
+ 		if (status == -NFS4ERR_BAD_SEQID) {
+-			printk(KERN_WARNING "NFS: v4 server %s "
++			pr_warn_ratelimited("NFS: v4 server %s "
+ 					" returned a bad sequence-id error!\n",
+ 					NFS_SERVER(dir)->nfs_client->cl_hostname);
+ 			exception.retry = 1;
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -996,7 +996,7 @@ static void nfs_increment_seqid(int stat
+ 		case -NFS4ERR_BAD_SEQID:
+ 			if (seqid->sequence->flags & NFS_SEQID_CONFIRMED)
+ 				return;
+-			printk(KERN_WARNING "NFS: v4 server returned a bad"
++			pr_warn_ratelimited("NFS: v4 server returned a bad"
+ 					" sequence-id error on an"
+ 					" unconfirmed sequence %p!\n",
+ 					seqid->sequence);
+@@ -1826,7 +1826,7 @@ static void nfs4_state_manager(struct nf
+ 	} while (atomic_read(&clp->cl_count) > 1);
+ 	return;
+ out_error:
+-	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
++	pr_warn_ratelimited("NFS: state manager failed on NFSv4 server %s"
+ 			" with error %d\n", clp->cl_hostname, -status);
+ 	nfs4_end_drain_session(clp);
+ 	nfs4_clear_state_manager_bit(clp);
 
 
