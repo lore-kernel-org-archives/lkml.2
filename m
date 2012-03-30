@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935012Ab2C3Wwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:52:35 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934971Ab2C3VGG (ORCPT
+	id S935053Ab2C3Wwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:52:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934975Ab2C3VGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 17:06:06 -0400
-Message-Id: <201203302105.q2UL57c5006303@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 29 Mar 2012 16:14:40 -0400
-Subject: [PATCH] arch/tile: fix pointer cast in cacheflush.c
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:07.0819 (UTC) FILETIME=[C9553BB0:01CD0EB8]
+Message-Id: <20120330195730.455613793@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Keng-Yu Lin <kengyu@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 058/108] HID: add extra hotkeys in Asus AIO keyboards
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pragmatically it couldn't be wrong to cast pointers to long to compare
-them (since all kernel addresses are in the top half of VA space),
-but it's more correct to cast to unsigned long.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: Keng-Yu Lin <kengyu@canonical.com>
+
+commit 3596bb929f2abd3433c2eaa5755fad48ac207af1 upstream.
+
+The Asus All-In-One PC has a wireless keyboard with wifi toggle,
+brightness up, brightness down and display off hotkeys.
+
+This patch adds suppoort for these hotkeys.
+
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/lib/cacheflush.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/hid/hid-chicony.c |    5 +++++
+ drivers/hid/hid-core.c    |    1 +
+ drivers/hid/hid-ids.h     |    1 +
+ 3 files changed, 7 insertions(+)
 
-diff --git a/arch/tile/lib/cacheflush.c b/arch/tile/lib/cacheflush.c
-index 8928aac..6af2b97 100644
---- a/arch/tile/lib/cacheflush.c
-+++ b/arch/tile/lib/cacheflush.c
-@@ -109,7 +109,7 @@ void finv_buffer_remote(void *buffer, size_t size, int hfh)
+--- a/drivers/hid/hid-chicony.c
++++ b/drivers/hid/hid-chicony.c
+@@ -45,6 +45,10 @@ static int ch_input_mapping(struct hid_d
+ 	case 0xff09: ch_map_key_clear(BTN_9);	break;
+ 	case 0xff0a: ch_map_key_clear(BTN_A);	break;
+ 	case 0xff0b: ch_map_key_clear(BTN_B);	break;
++	case 0x00f1: ch_map_key_clear(KEY_WLAN);	break;
++	case 0x00f2: ch_map_key_clear(KEY_BRIGHTNESSDOWN);	break;
++	case 0x00f3: ch_map_key_clear(KEY_BRIGHTNESSUP);	break;
++	case 0x00f4: ch_map_key_clear(KEY_DISPLAY_OFF);	break;
+ 	default:
+ 		return 0;
+ 	}
+@@ -53,6 +57,7 @@ static int ch_input_mapping(struct hid_d
  
- 	/* Figure out how far back we need to go. */
- 	base = p - (step_size * (load_count - 2));
--	if ((long)base < (long)buffer)
-+	if ((unsigned long)base < (unsigned long)buffer)
- 		base = buffer;
+ static const struct hid_device_id ch_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, ch_devices);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1372,6 +1372,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHERRY, USB_DEVICE_ID_CHERRY_CYMOTION_SOLAR) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT, USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CVTOUCH, USB_DEVICE_ID_CVTOUCH_SCREEN) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -189,6 +189,7 @@
+ #define USB_DEVICE_ID_CHICONY_TACTICAL_PAD	0x0418
+ #define USB_DEVICE_ID_CHICONY_MULTI_TOUCH	0xb19d
+ #define USB_DEVICE_ID_CHICONY_WIRELESS	0x0618
++#define USB_DEVICE_ID_CHICONY_WIRELESS2	0x1123
  
- 	/*
--- 
-1.6.5.2
+ #define USB_VENDOR_ID_CHUNGHWAT		0x2247
+ #define USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH	0x0001
+
 
