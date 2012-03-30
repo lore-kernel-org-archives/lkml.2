@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761125Ab2C3Qw1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 12:52:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62093 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab2C3QwV convert rfc822-to-8bit (ORCPT
+	id S1761162Ab2C3Qy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 12:54:29 -0400
+Received: from uhura.skim.hs-owl.de ([193.174.118.81]:58066 "EHLO
+	uhura.skim.hs-owl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757251Ab2C3QyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 12:52:21 -0400
+	Fri, 30 Mar 2012 12:54:16 -0400
+Message-ID: <4F75CA89.4010709@googlemail.com>
+Date: Fri, 30 Mar 2012 17:00:25 +0200
+From: Jan Seiffert <kaffeemonster@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Firefox/11.0 SeaMonkey/2.8
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvwRDos2njfoF9wSZcinXRJQ7rUo1UZrPqaw2yC-u0LAkw@mail.gmail.com>
-References: <alpine.DEB.2.00.1203290811240.25319@skynet.skynet.ie>
- <86fwcroo6t.fsf@sumi.keithp.com> <CAFLxGvwRDos2njfoF9wSZcinXRJQ7rUo1UZrPqaw2yC-u0LAkw@mail.gmail.com>
-From: Eugeni Dodonov <eugeni@dodonov.net>
-Date: Fri, 30 Mar 2012 13:51:40 -0300
-X-Google-Sender-Auth: o4MItmPUc7uP8XDsvIItovL_0Qo
-Message-ID: <CAC7Lmns_vHwt7Y8j84OcG+S5LE28Q4iOxYMtFYua_1wea7abtw@mail.gmail.com>
-Subject: Re: [git pull] drm intel hibernation fix
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Keith Packard <keithp@keithp.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: <netdev@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        "Matt Evans" <matt@ozlabs.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [REGRESSION][PATCH V4 0/3] bpf jit drops the ball on negative memory
+ references
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Skim-SendBy: exchange.hs-owl.de on Fri, 30 Mar 2012 18:54:06 +0200
+X-SA-Exim-Connect-IP: 193.174.118.178
+X-SA-Exim-Mail-From: kaffeemonster@googlemail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 16:43, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Thu, Mar 29, 2012 at 9:34 AM, Keith Packard <keithp@keithp.com> wrote:
->> <#part sign=pgpmime>
->> On Thu, 29 Mar 2012 08:14:08 +0100 (IST), Dave Airlie <airlied@linux.ie> wrote:
->>
->>> Dave Airlie (1):
->>>       drm/i915: suspend fbdev device around suspend/hibernate
->>
->
-> I've reported the issue one year ago and kept the discussion
-> alive until the problem was found and resolved:
-> https://lkml.org/lkml/2011/3/23/360
+Consider the following test program:
 
-For the historical purposes, I think this would also fix
-https://bugs.freedesktop.org/show_bug.cgi?id=35648 and
-https://bugs.freedesktop.org/show_bug.cgi?id=40241 as well.
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <pcap-bpf.h>
 
--- 
-Eugeni Dodonov
+#define die(x) do {perror(x); return 1;} while (0)
+struct bpf_insn udp_filter[] = {
+	/*   0 */ BPF_STMT(BPF_LDX|BPF_W|BPF_IMM, -1048576+(0)), /* leax	net[0] */
+	/*   1 */ BPF_STMT(BPF_LD|BPF_B|BPF_IND, 0),             /* ldb	[x+0] */
+	/*   2 */ BPF_STMT(BPF_RET|BPF_A, 0),                    /* ret	a */
+};
+
+int main(int argc, char *argv[])
+{
+	char buf[512];
+	struct sockaddr_in addr;
+	struct bpf_program prg;
+	socklen_t addr_s;
+	ssize_t res;
+	int fd;
+
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(5000);
+	addr.sin_addr.s_addr = 0;
+	addr_s = sizeof(addr);
+	prg.bf_len = sizeof(udp_filter)/sizeof(udp_filter[0]);
+	prg.bf_insns = udp_filter;
+	if(-1 == (fd = socket(AF_INET, SOCK_DGRAM, 0)))
+		die("socket");
+	if(-1 == bind(fd, (struct sockaddr *)&addr, sizeof(addr)))
+		die("bind");
+	if(-1 == setsockopt(fd, SOL_SOCKET, SO_ATTACH_FILTER, &prg, sizeof(prg)))
+		die("setsockopt");
+	res = recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&addr, &addr_s);
+	if(res != -1)
+		printf("packet received: %zi bytes\n", res);
+	else
+		die("recvfrom");
+	return 0;
+}
+
+when used with the bpf jit disabled works:
+console 1 $ ./bpf
+console 2 $ echo "hello" | nc -u localhost 5000
+console 1: packet received: 6 bytes
+
+When the bpf jit gets enabled (echo 100 >
+/proc/sys/net/core/bpf_jit_enable) the same program stops working:
+console 1 $ ./bpf
+console 2 $ echo "hello" | nc -u localhost 5000
+console 1:
+
+The reason is that both jits (x86 and powerpc) do not handle negative
+memory references like SKF_NET_OFF or SKF_LL_OFF, only the simple
+ancillary data references are supported (by mapping to special
+instructions).
+In the case of an absolute reference, the jit aborts the translation
+if a negative reference is seen, also a negative k on the indirect
+load aborts the translation, but if X is negative to begin with, only
+the error handler is reached at runtime which drops the whole packet.
+
+Such a setup is useful to say filter bogus source addresses on an UDP
+socket.
+
+I propose the following patch series to fix this situation.
+Patch 1 exports the helper function the interpreter uses.
+Patch 2 incorporates the helper into the x86 jit (so it depends on patch 1).
+Patch 3 incorporates the helper into the powerpc jit (so it depends on patch 1).
+
+Lightly tested on x86, but the powerpc asm part is prop. wrong, could
+need assistance.
+
+
+Signed-of-by: Jan Seiffert <kaffeemonster@googlemail.com>
+
