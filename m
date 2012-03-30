@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934035Ab2C3Ady (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 20:33:54 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:34782 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933574Ab2C3Adt (ORCPT
+	id S934049Ab2C3AeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 20:34:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43801 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933574Ab2C3AeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 20:33:49 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Geoff Levand <geoff@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Ingo Molnar <mingo@kernel.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Max Krasnyansky <maxk@qualcomm.com>, Zen Lin <zen@openhuawei.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
-Organization: Texas Instruments, Inc.
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-Date: Thu, 29 Mar 2012 17:33:46 -0700
-Message-ID: <87r4wbhqqd.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 29 Mar 2012 20:34:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <CAOesGMgaQ7mjV-1Q5uPthw8PAtU+BUfDgOqor=3jtvkL30L1ZA@mail.gmail.com>
+References: <1332918842-13521-1-git-send-email-olof@lixom.net>
+	<1332918842-13521-2-git-send-email-olof@lixom.net>
+	<20120328082501.GA22414@n2100.arm.linux.org.uk>
+	<CAOesGMjwZOON9kFNvaEq8QhSvjAgsJT_J1Ysb9-AbePd6g+-rQ@mail.gmail.com>
+	<20120328192816.GD22414@n2100.arm.linux.org.uk>
+	<CA+55aFyJH8yO7=AzuddsQZouHqRDtmeh-vbd8Y5VQLQx-6ZV-Q@mail.gmail.com>
+	<CAOesGMgaQ7mjV-1Q5uPthw8PAtU+BUfDgOqor=3jtvkL30L1ZA@mail.gmail.com>
+Date: Thu, 29 Mar 2012 17:34:04 -0700
+Message-ID: <CAOesGMj4Osx0KBCxM4_N09PMTkpTdhhQRvEcwEeY8PFKanT_-w@mail.gmail.com>
+Subject: Re: [GIT PULL 1/5] ARM: cleanups of io includes
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
+On Thu, Mar 29, 2012 at 5:27 PM, Olof Johansson <olof@lixom.net> wrote:
 
-> There are still a lot of things to handle. Especially about
-> what is done by scheduler_tick() but we also need to:
->
-> - completely handle cputime accounting (need to find every "reader"
-> of cputime and flush cputimes for all of them).
-> -handle  perf
-> - handle irqtime finegrained accounting
-> - handle ilb load balancing
-> - etc...
+> It hasn't grown any new merge conflicts
+> since before as of now, so see the original pull request for those.
 
-  - add more arch support :)
+D'oh, I did a git remote update but didn't checkout the new head for
+your tree when I verified the merge conflict situation. It does have a
+couple of new trivial ones:
 
-For ARM, I've started hacking things into place and have some
-preliminary patches to add ARM support for the new IPI, syscall support,
-exception hooks, etc.[1]
+* arch/arm/mach-tegra/Makefile: keep reset.o, remove localtimer.o
+* arch/arm/mach-vexpress/include/mach/io.h: line remove vs file remove
+conflict: file is gone, but a patch in rmk's tree had removed a line
+from it. It's safe to still remove the file.
 
-This is enough to get some basic things running and test the nohz
-cpusets functionality on ARM, and for others to start trying it out.
++ the previous ones from original pull request:
 
-For anyone interested in collaborating on ARM support, my
-work-in-progress branch is below[1] based on Frederic's cpuset-v2
-branch.  Patches and testing welcome.
+arch/arm/Kconfig: New selects added for ARCH_S3C24X. Include both
+sides of the merge.
 
-Kevin
+arch/arm/mach-shmobile/smp-sh73a0.c: A readl vs readw fix collided
+with the io accessor cleanup. Ditch the __io() use but keep readl.
 
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux.git wip/arm-nohz-cpusets
+arch/arm/mach-tegra/include/mach/debug-macro.S: include of mach/io.h
+is going away, iomap.h is kept.
+
+-Olof
