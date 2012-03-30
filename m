@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965011Ab2C3VNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:13:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S965034Ab2C3WQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:16:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964992Ab2C3VNn (ORCPT
+	with ESMTP id S964973Ab2C3VNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:43 -0400
-Message-Id: <20120330194854.761662655@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:39 -0400
+Message-Id: <20120330194853.562330757@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:07 -0700
+Date: Fri, 30 Mar 2012 12:50:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
-        Jeff Layton <jlayton@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 094/149] CIFS: Fix a spurious error in cifs_push_posix_locks
+        alan@lxorguk.ukuu.org.uk,
+        Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [ 088/149] KVM: x86: fix missing checks in syscall emulation
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +27,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: =?UTF-8?q?Stephan=20B=C3=A4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
 
-commit ce85852b90a214cf577fc1b4f49d99fd7e98784a upstream.
+commit c2226fc9e87ba3da060e47333657cd6616652b84 upstream.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+On hosts without this patch, 32bit guests will crash (and 64bit guests
+may behave in a wrong way) for example by simply executing following
+nasm-demo-application:
+
+    [bits 32]
+    global _start
+    SECTION .text
+    _start: syscall
+
+(I tested it with winxp and linux - both always crashed)
+
+    Disassembly of section .text:
+
+    00000000 <_start>:
+       0:   0f 05                   syscall
+
+The reason seems a missing "invalid opcode"-trap (int6) for the
+syscall opcode "0f05", which is not available on Intel CPUs
+within non-longmodes, as also on some AMD CPUs within legacy-mode.
+(depending on CPU vendor, MSR_EFER and cpuid)
+
+Because previous mentioned OSs may not engage corresponding
+syscall target-registers (STAR, LSTAR, CSTAR), they remain
+NULL and (non trapping) syscalls are leading to multiple
+faults and finally crashs.
+
+Depending on the architecture (AMD or Intel) pretended by
+guests, various checks according to vendor's documentation
+are implemented to overcome the current issue and behave
+like the CPUs physical counterparts.
+
+[mtosatti: cleanup/beautify code]
+
+Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/file.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |   13 +++++++++
+ arch/x86/kvm/emulate.c             |   51 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
 
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -960,9 +960,9 @@ cifs_push_posix_locks(struct cifsFileInf
- 	INIT_LIST_HEAD(&locks_to_send);
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -300,6 +300,19 @@ struct x86_emulate_ctxt {
+ #define X86EMUL_MODE_PROT     (X86EMUL_MODE_PROT16|X86EMUL_MODE_PROT32| \
+ 			       X86EMUL_MODE_PROT64)
  
- 	/*
--	 * Allocating count locks is enough because no locks can be added to
--	 * the list while we are holding cinode->lock_mutex that protects
--	 * locking operations of this inode.
-+	 * Allocating count locks is enough because no FL_POSIX locks can be
-+	 * added to the list while we are holding cinode->lock_mutex that
-+	 * protects locking operations of this inode.
- 	 */
- 	for (; i < count; i++) {
- 		lck = kmalloc(sizeof(struct lock_to_push), GFP_KERNEL);
-@@ -973,18 +973,20 @@ cifs_push_posix_locks(struct cifsFileInf
- 		list_add_tail(&lck->llist, &locks_to_send);
- 	}
++/* CPUID vendors */
++#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx 0x68747541
++#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx 0x444d4163
++#define X86EMUL_CPUID_VENDOR_AuthenticAMD_edx 0x69746e65
++
++#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx 0x69444d41
++#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx 0x21726574
++#define X86EMUL_CPUID_VENDOR_AMDisbetterI_edx 0x74656273
++
++#define X86EMUL_CPUID_VENDOR_GenuineIntel_ebx 0x756e6547
++#define X86EMUL_CPUID_VENDOR_GenuineIntel_ecx 0x6c65746e
++#define X86EMUL_CPUID_VENDOR_GenuineIntel_edx 0x49656e69
++
+ enum x86_intercept_stage {
+ 	X86_ICTP_NONE = 0,   /* Allow zero-init to not match anything */
+ 	X86_ICPT_PRE_EXCEPT,
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1877,6 +1877,51 @@ setup_syscalls_segments(struct x86_emula
+ 	ss->p = 1;
+ }
  
--	i = 0;
- 	el = locks_to_send.next;
- 	lock_flocks();
- 	cifs_for_each_lock(cfile->dentry->d_inode, before) {
-+		flock = *before;
-+		if ((flock->fl_flags & FL_POSIX) == 0)
-+			continue;
- 		if (el == &locks_to_send) {
--			/* something is really wrong */
-+			/*
-+			 * The list ended. We don't have enough allocated
-+			 * structures - something is really wrong.
-+			 */
- 			cERROR(1, "Can't push all brlocks!");
- 			break;
- 		}
--		flock = *before;
--		if ((flock->fl_flags & FL_POSIX) == 0)
--			continue;
- 		length = 1 + flock->fl_end - flock->fl_start;
- 		if (flock->fl_type == F_RDLCK || flock->fl_type == F_SHLCK)
- 			type = CIFS_RDLCK;
-@@ -996,7 +998,6 @@ cifs_push_posix_locks(struct cifsFileInf
- 		lck->length = length;
- 		lck->type = type;
- 		lck->offset = flock->fl_start;
--		i++;
- 		el = el->next;
- 	}
- 	unlock_flocks();
++static bool em_syscall_is_enabled(struct x86_emulate_ctxt *ctxt)
++{
++	struct x86_emulate_ops *ops = ctxt->ops;
++	u32 eax, ebx, ecx, edx;
++
++	/*
++	 * syscall should always be enabled in longmode - so only become
++	 * vendor specific (cpuid) if other modes are active...
++	 */
++	if (ctxt->mode == X86EMUL_MODE_PROT64)
++		return true;
++
++	eax = 0x00000000;
++	ecx = 0x00000000;
++	if (ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx)) {
++		/*
++		 * Intel ("GenuineIntel")
++		 * remark: Intel CPUs only support "syscall" in 64bit
++		 * longmode. Also an 64bit guest with a
++		 * 32bit compat-app running will #UD !! While this
++		 * behaviour can be fixed (by emulating) into AMD
++		 * response - CPUs of AMD can't behave like Intel.
++		 */
++		if (ebx == X86EMUL_CPUID_VENDOR_GenuineIntel_ebx &&
++		    ecx == X86EMUL_CPUID_VENDOR_GenuineIntel_ecx &&
++		    edx == X86EMUL_CPUID_VENDOR_GenuineIntel_edx)
++			return false;
++
++		/* AMD ("AuthenticAMD") */
++		if (ebx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx &&
++		    ecx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx &&
++		    edx == X86EMUL_CPUID_VENDOR_AuthenticAMD_edx)
++			return true;
++
++		/* AMD ("AMDisbetter!") */
++		if (ebx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx &&
++		    ecx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx &&
++		    edx == X86EMUL_CPUID_VENDOR_AMDisbetterI_edx)
++			return true;
++	}
++
++	/* default: (not Intel, not AMD), apply Intel's stricter rules... */
++	return false;
++}
++
+ static int em_syscall(struct x86_emulate_ctxt *ctxt)
+ {
+ 	struct x86_emulate_ops *ops = ctxt->ops;
+@@ -1890,9 +1935,15 @@ static int em_syscall(struct x86_emulate
+ 	    ctxt->mode == X86EMUL_MODE_VM86)
+ 		return emulate_ud(ctxt);
+ 
++	if (!(em_syscall_is_enabled(ctxt)))
++		return emulate_ud(ctxt);
++
+ 	ops->get_msr(ctxt, MSR_EFER, &efer);
+ 	setup_syscalls_segments(ctxt, &cs, &ss);
+ 
++	if (!(efer & EFER_SCE))
++		return emulate_ud(ctxt);
++
+ 	ops->get_msr(ctxt, MSR_STAR, &msr_data);
+ 	msr_data >>= 32;
+ 	cs_sel = (u16)(msr_data & 0xfffc);
 
 
