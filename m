@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760644Ab2C3LPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:15:21 -0400
+	id S1760684Ab2C3LPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:15:47 -0400
 Received: from vms173021pub.verizon.net ([206.46.173.21]:22202 "EHLO
 	vms173021pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760193Ab2C3LPB (ORCPT
+	with ESMTP id S1760298Ab2C3LPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:15:01 -0400
+	Fri, 30 Mar 2012 07:15:04 -0400
 X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Mar 2012 07:15:01 EDT
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Julian Anastasov <ja@ssi.bg>,
+Cc: linux-kernel@vger.kernel.org, Robert Lee <rob.lee@linaro.org>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 04/76] ACPICA: Fix regression in FADT revision checks
-Date: Fri, 30 Mar 2012 06:13:07 -0400
-Message-id: <3e80acd1af40fcd91a200b0416a7616b20c5d647.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 09/76] ARM: omap: Consolidate OMAP3 time keeping and irq enable
+Date: Fri, 30 Mar 2012 06:13:12 -0400
+Message-id: <6da45dce3ce4a1f1f2548c9ad9954d57ab0625b3.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -26,64 +26,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Robert Lee <rob.lee@linaro.org>
 
-	commit 64b3db22c04586997ab4be46dd5a5b99f8a2d390 (2.6.39),
-"Remove use of unreliable FADT revision field" causes regression
-for old P4 systems because now cst_control and other fields are
-not reset to 0.
+Use core cpuidle timekeeping and irqen wrapper and remove that
+handling from this code.
 
-	The effect is that acpi_processor_power_init will notice
-cst_control != 0 and a write to CST_CNT register is performed
-that should not happen. As result, the system oopses after the
-"No _CST, giving up" message, sometimes in acpi_ns_internalize_name,
-sometimes in acpi_ns_get_type, usually at random places. May be
-during migration to CPU 1 in acpi_processor_get_throttling.
-
-	Every one of these settings help to avoid this problem:
- - acpi=off
- - processor.nocst=1
- - maxcpus=1
-
-	The fix is to update acpi_gbl_FADT.header.length after
-the original value is used to check for old revisions.
-
-https://bugzilla.kernel.org/show_bug.cgi?id=42700
-https://bugzilla.redhat.com/show_bug.cgi?id=727865
-
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Acked-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Robert Lee <rob.lee@linaro.org>
+Reviewed-by: Kevin Hilman <khilman@ti.com>
+Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Tested-by: Jean Pihet <j-pihet@ti.com>
+Acked-by: Jean Pihet <j-pihet@ti.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/tbfadt.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mach-omap2/cpuidle34xx.c |   42 +++++++++++++++----------------------
+ 1 file changed, 17 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
-index c5d8704..4c9c760 100644
---- a/drivers/acpi/acpica/tbfadt.c
-+++ b/drivers/acpi/acpica/tbfadt.c
-@@ -363,10 +363,6 @@ static void acpi_tb_convert_fadt(void)
- 	u32 address32;
- 	u32 i;
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 464cffd..5358664 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -87,29 +87,14 @@ static int _cpuidle_deny_idle(struct powerdomain *pwrdm,
+ 	return 0;
+ }
  
--	/* Update the local FADT table header length */
+-/**
+- * omap3_enter_idle - Programs OMAP3 to enter the specified state
+- * @dev: cpuidle device
+- * @drv: cpuidle driver
+- * @index: the index of state to be entered
+- *
+- * Called from the CPUidle framework to program the device to the
+- * specified target state selected by the governor.
+- */
+-static int omap3_enter_idle(struct cpuidle_device *dev,
++static int __omap3_enter_idle(struct cpuidle_device *dev,
+ 				struct cpuidle_driver *drv,
+ 				int index)
+ {
+ 	struct omap3_idle_statedata *cx =
+ 			cpuidle_get_statedata(&dev->states_usage[index]);
+-	struct timespec ts_preidle, ts_postidle, ts_idle;
+ 	u32 mpu_state = cx->mpu_state, core_state = cx->core_state;
+-	int idle_time;
 -
--	acpi_gbl_FADT.header.length = sizeof(struct acpi_table_fadt);
--
- 	/*
- 	 * Expand the 32-bit FACS and DSDT addresses to 64-bit as necessary.
- 	 * Later code will always use the X 64-bit field. Also, check for an
-@@ -408,6 +404,10 @@ static void acpi_tb_convert_fadt(void)
- 		acpi_gbl_FADT.boot_flags = 0;
+-	/* Used to keep track of the total time in idle */
+-	getnstimeofday(&ts_preidle);
+ 
+-	local_irq_disable();
+ 	local_fiq_disable();
+ 
+ 	pwrdm_set_next_pwrst(mpu_pd, mpu_state);
+@@ -148,22 +133,29 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
  	}
  
-+	/* Update the local FADT table header length */
+ return_sleep_time:
+-	getnstimeofday(&ts_postidle);
+-	ts_idle = timespec_sub(ts_postidle, ts_preidle);
+ 
+-	local_irq_enable();
+ 	local_fiq_enable();
+ 
+-	idle_time = ts_idle.tv_nsec / NSEC_PER_USEC + ts_idle.tv_sec * \
+-								USEC_PER_SEC;
+-
+-	/* Update cpuidle counters */
+-	dev->last_residency = idle_time;
+-
+ 	return index;
+ }
+ 
+ /**
++ * omap3_enter_idle - Programs OMAP3 to enter the specified state
++ * @dev: cpuidle device
++ * @drv: cpuidle driver
++ * @index: the index of state to be entered
++ *
++ * Called from the CPUidle framework to program the device to the
++ * specified target state selected by the governor.
++ */
++static inline int omap3_enter_idle(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv,
++				int index)
++{
++	return cpuidle_wrap_enter(dev, drv, index, __omap3_enter_idle);
++}
 +
-+	acpi_gbl_FADT.header.length = sizeof(struct acpi_table_fadt);
-+
- 	/*
- 	 * Expand the ACPI 1.0 32-bit addresses to the ACPI 2.0 64-bit "X"
- 	 * generic address structures as necessary. Later code will always use
++/**
+  * next_valid_state - Find next valid C-state
+  * @dev: cpuidle device
+  * @drv: cpuidle driver
 -- 
 1.7.10.rc2.19.gfae9d
 
