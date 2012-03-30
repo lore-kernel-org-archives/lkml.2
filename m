@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936354Ab2C3VuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:50:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S936365Ab2C3VuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:50:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965883Ab2C3VUF (ORCPT
+	with ESMTP id S965742Ab2C3VUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:20:05 -0400
-Message-Id: <20120330194835.991874868@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:20:02 -0400
+Message-Id: <20120330194836.802943528@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:26 -0700
+Date: Fri, 30 Mar 2012 12:49:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?=C3=81lvaro=20Castillo?= <midgoon@gmail.com>,
-        Jon Dufresne <jon@jondufresne.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [ 061/175] x86/ioapic: Add register level checks to detect bogus io-apic entries
+        alan@lxorguk.ukuu.org.uk, Nishanth Aravamudan <nacc@us.ibm.com>,
+        Dave Hansen <haveblue@us.ibm.com>, Anton Blanchard <anton@au1.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+Subject: [ 065/175] bootmem/sparsemem: remove limit constraint in alloc_bootmem_section
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,107 +29,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-commit 73d63d038ee9f769f5e5b46792d227fe20e442c5 upstream.
+commit f5bf18fa22f8c41a13eb8762c7373eb3a93a7333 upstream.
 
-With the recent changes to clear_IO_APIC_pin() which tries to
-clear remoteIRR bit explicitly, some of the users started to see
-"Unable to reset IRR for apic .." messages.
+While testing AMS (Active Memory Sharing) / CMO (Cooperative Memory
+Overcommit) on powerpc, we tripped the following:
 
-Close look shows that these are related to bogus IO-APIC entries
-which return's all 1's for their io-apic registers. And the
-above mentioned error messages are benign. But kernel should
-have ignored such io-apic's in the first place.
+  kernel BUG at mm/bootmem.c:483!
+  cpu 0x0: Vector: 700 (Program Check) at [c000000000c03940]
+      pc: c000000000a62bd8: .alloc_bootmem_core+0x90/0x39c
+      lr: c000000000a64bcc: .sparse_early_usemaps_alloc_node+0x84/0x29c
+      sp: c000000000c03bc0
+     msr: 8000000000021032
+    current = 0xc000000000b0cce0
+    paca    = 0xc000000001d80000
+      pid   = 0, comm = swapper
+  kernel BUG at mm/bootmem.c:483!
+  enter ? for help
+  [c000000000c03c80] c000000000a64bcc
+  .sparse_early_usemaps_alloc_node+0x84/0x29c
+  [c000000000c03d50] c000000000a64f10 .sparse_init+0x12c/0x28c
+  [c000000000c03e20] c000000000a474f4 .setup_arch+0x20c/0x294
+  [c000000000c03ee0] c000000000a4079c .start_kernel+0xb4/0x460
+  [c000000000c03f90] c000000000009670 .start_here_common+0x1c/0x2c
 
-Check if register 0, 1, 2 of the listed io-apic are all 1's and
-ignore such io-apic.
+This is
 
-Reported-by: Álvaro Castillo <midgoon@gmail.com>
-Tested-by: Jon Dufresne <jon@jondufresne.org>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: yinghai@kernel.org
-Cc: kernel-team@fedoraproject.org
-Cc: Josh Boyer <jwboyer@redhat.com>
-Link: http://lkml.kernel.org/r/1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com
-[ Performed minor cleanup of affected code. ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+        BUG_ON(limit && goal + size > limit);
+
+and after some debugging, it seems that
+
+	goal = 0x7ffff000000
+	limit = 0x80000000000
+
+and sparse_early_usemaps_alloc_node ->
+sparse_early_usemaps_alloc_pgdat_section calls
+
+	return alloc_bootmem_section(usemap_size() * count, section_nr);
+
+This is on a system with 8TB available via the AMS pool, and as a quirk
+of AMS in firmware, all of that memory shows up in node 0.  So, we end
+up with an allocation that will fail the goal/limit constraints.
+
+In theory, we could "fall-back" to alloc_bootmem_node() in
+sparse_early_usemaps_alloc_node(), but since we actually have HOTREMOVE
+defined, we'll BUG_ON() instead.  A simple solution appears to be to
+unconditionally remove the limit condition in alloc_bootmem_section,
+meaning allocations are allowed to cross section boundaries (necessary
+for systems of this size).
+
+Johannes Weiner pointed out that if alloc_bootmem_section() no longer
+guarantees section-locality, we need check_usemap_section_nr() to print
+possible cross-dependencies between node descriptors and the usemaps
+allocated through it.  That makes the two loops in
+sparse_early_usemaps_alloc_node() identical, so re-factor the code a
+bit.
+
+[akpm@linux-foundation.org: code simplification]
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: Dave Hansen <haveblue@us.ibm.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
+Cc: Robert Jennings <rcj@linux.vnet.ibm.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/io_apic.c |   40 ++++++++++++++++++++++++++++++++--------
- 1 file changed, 32 insertions(+), 8 deletions(-)
+ mm/bootmem.c |    5 ++---
+ mm/sparse.c  |   30 +++++++++++-------------------
+ 2 files changed, 13 insertions(+), 22 deletions(-)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3967,18 +3967,36 @@ int mp_find_ioapic_pin(int ioapic, u32 g
- static __init int bad_ioapic(unsigned long address)
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -766,14 +766,13 @@ void * __init alloc_bootmem_section(unsi
+ 				    unsigned long section_nr)
  {
- 	if (nr_ioapics >= MAX_IO_APICS) {
--		printk(KERN_WARNING "WARNING: Max # of I/O APICs (%d) exceeded "
--		       "(found %d), skipping\n", MAX_IO_APICS, nr_ioapics);
-+		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
-+			MAX_IO_APICS, nr_ioapics);
- 		return 1;
+ 	bootmem_data_t *bdata;
+-	unsigned long pfn, goal, limit;
++	unsigned long pfn, goal;
+ 
+ 	pfn = section_nr_to_pfn(section_nr);
+ 	goal = pfn << PAGE_SHIFT;
+-	limit = section_nr_to_pfn(section_nr + 1) << PAGE_SHIFT;
+ 	bdata = &bootmem_node_data[early_pfn_to_nid(pfn)];
+ 
+-	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, limit);
++	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, 0);
+ }
+ #endif
+ 
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -353,29 +353,21 @@ static void __init sparse_early_usemaps_
+ 
+ 	usemap = sparse_early_usemaps_alloc_pgdat_section(NODE_DATA(nodeid),
+ 								 usemap_count);
+-	if (usemap) {
+-		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
+-			if (!present_section_nr(pnum))
+-				continue;
+-			usemap_map[pnum] = usemap;
+-			usemap += size;
++	if (!usemap) {
++		usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
++		if (!usemap) {
++			printk(KERN_WARNING "%s: allocation failed\n", __func__);
++			return;
+ 		}
+-		return;
  	}
- 	if (!address) {
--		printk(KERN_WARNING "WARNING: Bogus (zero) I/O APIC address"
--		       " found in table, skipping!\n");
-+		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
- 		return 1;
+ 
+-	usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
+-	if (usemap) {
+-		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
+-			if (!present_section_nr(pnum))
+-				continue;
+-			usemap_map[pnum] = usemap;
+-			usemap += size;
+-			check_usemap_section_nr(nodeid, usemap_map[pnum]);
+-		}
+-		return;
++	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
++		if (!present_section_nr(pnum))
++			continue;
++		usemap_map[pnum] = usemap;
++		usemap += size;
++		check_usemap_section_nr(nodeid, usemap_map[pnum]);
  	}
- 	return 0;
+-
+-	printk(KERN_WARNING "%s: allocation failed\n", __func__);
  }
  
-+static __init int bad_ioapic_register(int idx)
-+{
-+	union IO_APIC_reg_00 reg_00;
-+	union IO_APIC_reg_01 reg_01;
-+	union IO_APIC_reg_02 reg_02;
-+
-+	reg_00.raw = io_apic_read(idx, 0);
-+	reg_01.raw = io_apic_read(idx, 1);
-+	reg_02.raw = io_apic_read(idx, 2);
-+
-+	if (reg_00.raw == -1 && reg_01.raw == -1 && reg_02.raw == -1) {
-+		pr_warn("I/O APIC 0x%x registers return all ones, skipping!\n",
-+			mpc_ioapic_addr(idx));
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
- 	int idx = 0;
-@@ -3995,6 +4013,12 @@ void __init mp_register_ioapic(int id, u
- 	ioapics[idx].mp_config.apicaddr = address;
- 
- 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
-+
-+	if (bad_ioapic_register(idx)) {
-+		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
-+		return;
-+	}
-+
- 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
- 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
- 
-@@ -4015,10 +4039,10 @@ void __init mp_register_ioapic(int id, u
- 	if (gsi_cfg->gsi_end >= gsi_top)
- 		gsi_top = gsi_cfg->gsi_end + 1;
- 
--	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
--	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
--	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
--	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
-+	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
-+		idx, mpc_ioapic_id(idx),
-+		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
-+		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
- 
- 	nr_ioapics++;
- }
+ #ifndef CONFIG_SPARSEMEM_VMEMMAP
 
 
