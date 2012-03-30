@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718Ab2C3MSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:18:50 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:48615 "EHLO
+	id S933630Ab2C3MTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:19:00 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:48688 "EHLO
 	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759370Ab2C3MS0 (ORCPT
+	with ESMTP id S933361Ab2C3MSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:18:26 -0400
+	Fri, 30 Mar 2012 08:18:31 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Petr Vandrovec <petr@vmware.com>,
-        Alok N Kataria <akataria@vmware.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 66/76] ACPI: Fix use-after-free in acpi_map_lsapic
-Date: Fri, 30 Mar 2012 06:14:09 -0400
-Message-id: <ac909ec308ce8d5177963c780564824d12bc3fa2.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 16/76] thermal_sys: kernel style cleanups
+Date: Fri, 30 Mar 2012 06:13:19 -0400
+Message-id: <caca8b803520b0694423e2ac0ee3d58650b04a12.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,50 +26,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Vandrovec <petr@vmware.com>
+From: Joe Perches <joe@perches.com>
 
-When processor is being hot-added to the system, acpi_map_lsapic invokes
-ACPI _MAT method to find APIC ID and flags, verifies that returned structure
-is indeed ACPI's local APIC structure, and that flags contain MADT_ENABLED
-bit.  Then saves APIC ID, frees structure - and accesses structure when
-computing arguments for acpi_register_lapic call.  Which sometime leads
-to acpi_register_lapic call being made with second argument zero, failing
-to bring processor online with error 'Unable to map lapic to logical cpu
-number'.
+Just a few tidies to make it more like most kernel sources.
 
-As lapic->lapic_flags & ACPI_MADT_ENABLED was already confirmed to be non-zero
-few lines above, we can just pass unconditional ACPI_MADT_ENABLED to the
-acpi_register_lapic.
+A couple of long lines still remain.
 
-Signed-off-by: Petr Vandrovec <petr@vmware.com>
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+Cc: Len Brown <lenb@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/thermal/thermal_sys.c |   30 +++++++++++++-----------------
+ 1 file changed, 13 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index ce664f3..bbcc2c3 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -642,6 +642,7 @@ static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
- 	kfree(buffer.pointer);
- 	buffer.length = ACPI_ALLOCATE_BUFFER;
- 	buffer.pointer = NULL;
-+	lapic = NULL;
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 11237bc..db5d8f8 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -64,7 +64,7 @@ static int get_idr(struct idr *idr, struct mutex *lock, int *id)
+ {
+ 	int err;
  
- 	if (!alloc_cpumask_var(&tmp_map, GFP_KERNEL))
- 		goto out;
-@@ -650,7 +651,7 @@ static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
- 		goto free_tmp_map;
+-      again:
++again:
+ 	if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
+ 		return -ENOMEM;
  
- 	cpumask_copy(tmp_map, cpu_present_mask);
--	acpi_register_lapic(physid, lapic->lapic_flags & ACPI_MADT_ENABLED);
-+	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
+@@ -816,15 +816,14 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
+ 		return 0;
  
- 	/*
- 	 * If mp_register_lapic successfully generates a new logical cpu
+ 	device_remove_file(&tz->device, &dev->attr);
+-      remove_symbol_link:
++remove_symbol_link:
+ 	sysfs_remove_link(&tz->device.kobj, dev->name);
+-      release_idr:
++release_idr:
+ 	release_idr(&tz->idr, &tz->lock, dev->id);
+-      free_mem:
++free_mem:
+ 	kfree(dev);
+ 	return result;
+ }
+-
+ EXPORT_SYMBOL(thermal_zone_bind_cooling_device);
+ 
+ /**
+@@ -854,14 +853,13 @@ int thermal_zone_unbind_cooling_device(struct thermal_zone_device *tz,
+ 
+ 	return -ENODEV;
+ 
+-      unbind:
++unbind:
+ 	device_remove_file(&tz->device, &pos->attr);
+ 	sysfs_remove_link(&tz->device.kobj, pos->name);
+ 	release_idr(&tz->idr, &tz->lock, pos->id);
+ 	kfree(pos);
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL(thermal_zone_unbind_cooling_device);
+ 
+ static void thermal_release(struct device *dev)
+@@ -869,7 +867,8 @@ static void thermal_release(struct device *dev)
+ 	struct thermal_zone_device *tz;
+ 	struct thermal_cooling_device *cdev;
+ 
+-	if (!strncmp(dev_name(dev), "thermal_zone", sizeof "thermal_zone" - 1)) {
++	if (!strncmp(dev_name(dev), "thermal_zone",
++		     sizeof("thermal_zone") - 1)) {
+ 		tz = to_thermal_zone(dev);
+ 		kfree(tz);
+ 	} else {
+@@ -889,8 +888,9 @@ static struct class thermal_class = {
+  * @devdata:	device private data.
+  * @ops:		standard thermal cooling devices callbacks.
+  */
+-struct thermal_cooling_device *thermal_cooling_device_register(
+-     char *type, void *devdata, const struct thermal_cooling_device_ops *ops)
++struct thermal_cooling_device *
++thermal_cooling_device_register(char *type, void *devdata,
++				const struct thermal_cooling_device_ops *ops)
+ {
+ 	struct thermal_cooling_device *cdev;
+ 	struct thermal_zone_device *pos;
+@@ -955,12 +955,11 @@ struct thermal_cooling_device *thermal_cooling_device_register(
+ 	if (!result)
+ 		return cdev;
+ 
+-      unregister:
++unregister:
+ 	release_idr(&thermal_cdev_idr, &thermal_idr_lock, cdev->id);
+ 	device_unregister(&cdev->device);
+ 	return ERR_PTR(result);
+ }
+-
+ EXPORT_SYMBOL(thermal_cooling_device_register);
+ 
+ /**
+@@ -1005,7 +1004,6 @@ void thermal_cooling_device_unregister(struct
+ 	device_unregister(&cdev->device);
+ 	return;
+ }
+-
+ EXPORT_SYMBOL(thermal_cooling_device_unregister);
+ 
+ /**
+@@ -1081,7 +1079,7 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ 
+ 	tz->last_temperature = temp;
+ 
+-      leave:
++leave:
+ 	if (tz->passive)
+ 		thermal_zone_device_set_polling(tz, tz->passive_delay);
+ 	else if (tz->polling_delay)
+@@ -1221,12 +1219,11 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
+ 	if (!result)
+ 		return tz;
+ 
+-      unregister:
++unregister:
+ 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
+ 	device_unregister(&tz->device);
+ 	return ERR_PTR(result);
+ }
+-
+ EXPORT_SYMBOL(thermal_zone_device_register);
+ 
+ /**
+@@ -1278,7 +1275,6 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+ 	device_unregister(&tz->device);
+ 	return;
+ }
+-
+ EXPORT_SYMBOL(thermal_zone_device_unregister);
+ 
+ #ifdef CONFIG_NET
 -- 
 1.7.10.rc2.19.gfae9d
 
