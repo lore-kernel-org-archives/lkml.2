@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935473Ab2C3WmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:42:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49634 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935222Ab2C3VHv (ORCPT
+	id S935524Ab2C3WmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:42:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935246Ab2C3VHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:07:51 -0400
-Message-Id: <20120330195735.193500018@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:45 -0400
+Message-Id: <20120330195734.899459654@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:53 -0700
+Date: Fri, 30 Mar 2012 12:58:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
-        Dave Chinner <dchinner@redhat.com>, Ben Myers <bpm@sgi.com>
-Subject: [ 091/108] xfs: Fix oops on IO error during xlog_recover_process_iunlinks()
+        alan@lxorguk.ukuu.org.uk,
+        Andrei Warkentin <andrey.warkentin@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 089/108] dm exception store: fix init error path
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,81 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
 
-commit d97d32edcd732110758799ae60af725e5110b3dc upstream.
+commit aadbe266f2f89ccc68b52f4effc7b3a8b29521ef upstream.
 
-When an IO error happens during inode deletion run from
-xlog_recover_process_iunlinks() filesystem gets shutdown. Thus any subsequent
-attempt to read buffers fails. Code in xlog_recover_process_iunlinks() does not
-count with the fact that read of a buffer which was read a while ago can
-really fail which results in the oops on
-  agi = XFS_BUF_TO_AGI(agibp);
+Call the correct exit function on failure in dm_exception_store_init.
 
-Fix the problem by cleaning up the buffer handling in
-xlog_recover_process_iunlinks() as suggested by Dave Chinner. We release buffer
-lock but keep buffer reference to AG buffer. That is enough for buffer to stay
-pinned in memory and we don't have to call xfs_read_agi() all the time.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_log_recover.c |   33 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 22 deletions(-)
+ drivers/md/dm-exception-store.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/xfs/xfs_log_recover.c
-+++ b/fs/xfs/xfs_log_recover.c
-@@ -3159,37 +3159,26 @@ xlog_recover_process_iunlinks(
- 			 */
- 			continue;
- 		}
-+		/*
-+		 * Unlock the buffer so that it can be acquired in the normal
-+		 * course of the transaction to truncate and free each inode.
-+		 * Because we are not racing with anyone else here for the AGI
-+		 * buffer, we don't even need to hold it locked to read the
-+		 * initial unlinked bucket entries out of the buffer. We keep
-+		 * buffer reference though, so that it stays pinned in memory
-+		 * while we need the buffer.
-+		 */
- 		agi = XFS_BUF_TO_AGI(agibp);
-+		xfs_buf_unlock(agibp);
+--- a/drivers/md/dm-exception-store.c
++++ b/drivers/md/dm-exception-store.c
+@@ -282,7 +282,7 @@ int dm_exception_store_init(void)
+ 	return 0;
  
- 		for (bucket = 0; bucket < XFS_AGI_UNLINKED_BUCKETS; bucket++) {
- 			agino = be32_to_cpu(agi->agi_unlinked[bucket]);
- 			while (agino != NULLAGINO) {
--				/*
--				 * Release the agi buffer so that it can
--				 * be acquired in the normal course of the
--				 * transaction to truncate and free the inode.
--				 */
--				xfs_buf_relse(agibp);
--
- 				agino = xlog_recover_process_one_iunlink(mp,
- 							agno, agino, bucket);
--
--				/*
--				 * Reacquire the agibuffer and continue around
--				 * the loop. This should never fail as we know
--				 * the buffer was good earlier on.
--				 */
--				error = xfs_read_agi(mp, NULL, agno, &agibp);
--				ASSERT(error == 0);
--				agi = XFS_BUF_TO_AGI(agibp);
- 			}
- 		}
--
--		/*
--		 * Release the buffer for the current agi so we can
--		 * go on to the next one.
--		 */
--		xfs_buf_relse(agibp);
-+		xfs_buf_rele(agibp);
- 	}
- 
- 	mp->m_dmevmask = mp_dmevmask;
+ persistent_fail:
+-	dm_persistent_snapshot_exit();
++	dm_transient_snapshot_exit();
+ transient_fail:
+ 	return r;
+ }
 
 
