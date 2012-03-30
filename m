@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760960Ab2C3O22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 10:28:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51065 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760262Ab2C3O2X (ORCPT
+	id S1760965Ab2C3O3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 10:29:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38602 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760807Ab2C3O3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 10:28:23 -0400
-Date: Fri, 30 Mar 2012 10:28:23 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@amd.com>
-cc: Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-In-Reply-To: <20120330010730.GA27346@ladygaga>
-Message-ID: <Pine.LNX.4.44L0.1203301021140.1280-100000@iolanthe.rowland.org>
+	Fri, 30 Mar 2012 10:29:40 -0400
+Date: Fri, 30 Mar 2012 16:29:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Henningsson <david.henningsson@canonical.com>
+cc: Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] [RESEND] rlimits: Print more information when limits
+ are exceeded
+In-Reply-To: <4F75BF5B.7000306@canonical.com>
+Message-ID: <alpine.LFD.2.02.1203301614310.2542@ionos>
+References: <1330025378-26075-1-git-send-email-arun.raghavan@collabora.co.uk> <alpine.LFD.2.02.1203301455360.2542@ionos> <4F75BF5B.7000306@canonical.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012, Aaron Lu wrote:
-
-> > > For the ODD to be put into suspend state, the conditions should be:
-> > > 1 tray closed
-> > > 2 no media inside
-> > > I think we missed the condition 1 check now.
-> > > 
-> > > And if we follow the two conditions, the events can be safely ignored.
+On Fri, 30 Mar 2012, David Henningsson wrote:
+> On 03/30/2012 03:39 PM, Thomas Gleixner wrote:
+> > On Fri, 24 Feb 2012, Arun Raghavan wrote:
 > > 
-> > No, they can't.  Otherwise the device won't power back up when the user 
-> > inserts a new disc.
+> > > This dumps some information in logs when a process exceeds its CPU or RT
+> > > limits (soft and hard). Makes debugging easier when userspace triggers
+> > > these limits.
 > > 
+> > Why do we need to spam the logs with such information?
+> > 
+> > SIGXCPU is only ever sent by this code. If there is a signal handler
+> > in the application it's easy to debug. If not it's even easier, the
+> > thing will simply be killed and you get the reason printed.
 > 
-> The ODD is put to zero power state, so it can't react to the eject
-> button without being powered up back first ;-)
-> On current implementation, ACPI is used to power back up the ODD like this:
-> 1 User press the eject button;
-> 2 A gpe event fired, and ACPI interrupt, and the corresponding gpe
-> handler runs and the ODD's ACPI handle is notified about DEVICE_WAKE_UP;
-> 3 In ODD's acpi notify handler, we power back up it by scsi_autopm_get_device.
-> This is handled in the following Lin Ming's patch:
-> [PATCH v3 2/7] libata-acpi: add ata port runtime D3Cold support
+> I'm not totally sure, but don't we log SIGSEGVs? If so, the same reasoning
+> would apply to SIGSEGV.
 
-I see.  Then you are right; it's not necessary to check for events 
-while the drive is at zero power.
+I think so. Dunno why this was added in the first place. core dumps or
+proper signal handlers are telling you usually more than that single
+line in dmesg.
+ 
+> > For the SIGKILL case there only a limited number of reasons why a
+> > SIGKILL is sent. So no, I rather commit a patch which removes that
+> > ugly printk which is already there instead of adding more of them.
+> 
+> The reason I proposed some kind of printk for SIGKILL, was to get some
+> diagnostic information out of the SIGKILL. E g, if you have two threads both
+> running on rtprio rlimits in the same process, it would be very interesting to
+> know which one of them was causing the kernel to send SIGKILL.
 
-> When the ODD is put to zero power state, it will not be able to handle
-> commands like CDROMEJECT. We have to power it up first and then handle
-> the ioctl request. Currently, we only power back up the ODD when user
-> press the eject button as explained above.
+Usually the one which ignored SIGXCPU for quite a while. There is a
+reason why SIGXCPU can be handled by the application.
 
-Then you may want to avoid going to zero-power while a program is
-holding the device file open.  After all, the program might issue a
-CDROMEJECT ioctl.
+> Also, it could be useful to know whether the SIGKILL was actually sent by the
+> kernel, or by some other process feeling evil (e g "kill -9").
 
-Alan Stern
+Agreed, but instead of adding that printk to the rlimit code I prefer
+a generic infrastructure which can be used by all call sites which
+issue SIGKILL. Something like: [__]kill_it(flags, task, "Reason");
+
+Thanks,
+
+	tglx
 
