@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965828Ab2C3VTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:19:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	id S936372Ab2C3Vwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:52:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965740Ab2C3VTB (ORCPT
+	with ESMTP id S965818Ab2C3VTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:19:01 -0400
-Message-Id: <20120330194833.001626121@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:19:40 -0400
+Message-Id: <20120330194835.401245147@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:11 -0700
+Date: Fri, 30 Mar 2012 12:49:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jingjun Wu <jingjun_wu@realsil.com.cn>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 046/175] rtlwifi: rtl8192ce: Fix loss of receive performance
+        alan@lxorguk.ukuu.org.uk, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 058/175] IB/iser: Post initial receive buffers before sending the final login request
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +25,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jingjun Wu <jingjun_wu@realsil.com.cn>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-commit a9b89e2567c743483e6354f64d7a7e3a8c101e9e upstream.
+commit 89e984e2c2cd14f77ccb26c47726ac7f13b70ae8 upstream.
 
-Driver rtl8192ce when used with the RTL8188CE device would start at about
-20 Mbps on a 54 Mbps connection, but quickly drop to 1 Mbps. One of the
-symptoms is that the AP would need to retransmit each packet 4 of 5 times
-before the driver would acknowledge it. Recovery is possible only by
-unloading and reloading the driver. This problem was reported at
-https://bugzilla.redhat.com/show_bug.cgi?id=770207.
+An iser target may send iscsi NO-OP PDUs as soon as it marks the iSER
+iSCSI session as fully operative.  This means that there is window
+where there are no posted receive buffers on the initiator side, so
+it's possible for the iSER RC connection to break because of RNR NAK /
+retry errors.  To fix this, rely on the flags bits in the login
+request to have FFP (0x3) in the lower nibble as a marker for the
+final login request, and post an initial chunk of receive buffers
+before sending that login request instead of after getting the login
+response.
 
-The problem is due to a missing update of the gain setting.
-
-Signed-off-by: Jingjun Wu <jingjun_wu@realsil.com.cn>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/ulp/iser/iscsi_iser.c     |   18 +++-------------
+ drivers/infiniband/ulp/iser/iscsi_iser.h     |    1 
+ drivers/infiniband/ulp/iser/iser_initiator.c |   30 +++++++++++++++------------
+ 3 files changed, 22 insertions(+), 27 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-@@ -524,6 +524,10 @@ void rtl92c_dm_write_dig(struct ieee8021
- 		  dm_digtable.cur_igvalue, dm_digtable.pre_igvalue,
- 		  dm_digtable.backoff_val));
+--- a/drivers/infiniband/ulp/iser/iscsi_iser.c
++++ b/drivers/infiniband/ulp/iser/iscsi_iser.c
+@@ -364,6 +364,9 @@ iscsi_iser_conn_bind(struct iscsi_cls_se
+ 	}
+ 	ib_conn = ep->dd_data;
  
-+	dm_digtable.cur_igvalue += 2;
-+	if (dm_digtable.cur_igvalue > 0x3f)
-+		dm_digtable.cur_igvalue = 0x3f;
++	if (iser_alloc_rx_descriptors(ib_conn))
++		return -ENOMEM;
 +
- 	if (dm_digtable.pre_igvalue != dm_digtable.cur_igvalue) {
- 		rtl_set_bbreg(hw, ROFDM0_XAAGCCORE1, 0x7f,
- 			      dm_digtable.cur_igvalue);
+ 	/* binds the iSER connection retrieved from the previously
+ 	 * connected ep_handle to the iSCSI layer connection. exchanges
+ 	 * connection pointers */
+@@ -398,19 +401,6 @@ iscsi_iser_conn_stop(struct iscsi_cls_co
+ 	iser_conn->ib_conn = NULL;
+ }
+ 
+-static int
+-iscsi_iser_conn_start(struct iscsi_cls_conn *cls_conn)
+-{
+-	struct iscsi_conn *conn = cls_conn->dd_data;
+-	int err;
+-
+-	err = iser_conn_set_full_featured_mode(conn);
+-	if (err)
+-		return err;
+-
+-	return iscsi_conn_start(cls_conn);
+-}
+-
+ static void iscsi_iser_session_destroy(struct iscsi_cls_session *cls_session)
+ {
+ 	struct Scsi_Host *shost = iscsi_session_to_shost(cls_session);
+@@ -724,7 +714,7 @@ static struct iscsi_transport iscsi_iser
+ 	.get_conn_param		= iscsi_conn_get_param,
+ 	.get_ep_param		= iscsi_iser_get_ep_param,
+ 	.get_session_param	= iscsi_session_get_param,
+-	.start_conn             = iscsi_iser_conn_start,
++	.start_conn             = iscsi_conn_start,
+ 	.stop_conn              = iscsi_iser_conn_stop,
+ 	/* iscsi host params */
+ 	.get_host_param		= iscsi_host_get_param,
+--- a/drivers/infiniband/ulp/iser/iscsi_iser.h
++++ b/drivers/infiniband/ulp/iser/iscsi_iser.h
+@@ -366,4 +366,5 @@ int iser_dma_map_task_data(struct iscsi_
+ void iser_dma_unmap_task_data(struct iscsi_iser_task *iser_task);
+ int  iser_initialize_task_headers(struct iscsi_task *task,
+ 			struct iser_tx_desc *tx_desc);
++int iser_alloc_rx_descriptors(struct iser_conn *ib_conn);
+ #endif
+--- a/drivers/infiniband/ulp/iser/iser_initiator.c
++++ b/drivers/infiniband/ulp/iser/iser_initiator.c
+@@ -170,7 +170,7 @@ static void iser_create_send_desc(struct
+ }
+ 
+ 
+-static int iser_alloc_rx_descriptors(struct iser_conn *ib_conn)
++int iser_alloc_rx_descriptors(struct iser_conn *ib_conn)
+ {
+ 	int i, j;
+ 	u64 dma_addr;
+@@ -242,23 +242,24 @@ void iser_free_rx_descriptors(struct ise
+ 	kfree(ib_conn->rx_descs);
+ }
+ 
+-/**
+- *  iser_conn_set_full_featured_mode - (iSER API)
+- */
+-int iser_conn_set_full_featured_mode(struct iscsi_conn *conn)
++static int iser_post_rx_bufs(struct iscsi_conn *conn, struct iscsi_hdr *req)
+ {
+ 	struct iscsi_iser_conn *iser_conn = conn->dd_data;
+ 
+-	iser_dbg("Initially post: %d\n", ISER_MIN_POSTED_RX);
++	iser_dbg("req op %x flags %x\n", req->opcode, req->flags);
++	/* check if this is the last login - going to full feature phase */
++	if ((req->flags & ISCSI_FULL_FEATURE_PHASE) != ISCSI_FULL_FEATURE_PHASE)
++		return 0;
+ 
+-	/* Check that there is no posted recv or send buffers left - */
+-	/* they must be consumed during the login phase */
+-	BUG_ON(iser_conn->ib_conn->post_recv_buf_count != 0);
+-	BUG_ON(atomic_read(&iser_conn->ib_conn->post_send_buf_count) != 0);
+-
+-	if (iser_alloc_rx_descriptors(iser_conn->ib_conn))
+-		return -ENOMEM;
++	/*
++	 * Check that there is one posted recv buffer (for the last login
++	 * response) and no posted send buffers left - they must have been
++	 * consumed during previous login phases.
++	 */
++	WARN_ON(iser_conn->ib_conn->post_recv_buf_count != 1);
++	WARN_ON(atomic_read(&iser_conn->ib_conn->post_send_buf_count) != 0);
+ 
++	iser_dbg("Initially post: %d\n", ISER_MIN_POSTED_RX);
+ 	/* Initial post receive buffers */
+ 	if (iser_post_recvm(iser_conn->ib_conn, ISER_MIN_POSTED_RX))
+ 		return -ENOMEM;
+@@ -438,6 +439,9 @@ int iser_send_control(struct iscsi_conn
+ 		err = iser_post_recvl(iser_conn->ib_conn);
+ 		if (err)
+ 			goto send_control_error;
++		err = iser_post_rx_bufs(conn, task->hdr);
++		if (err)
++			goto send_control_error;
+ 	}
+ 
+ 	err = iser_post_send(iser_conn->ib_conn, mdesc);
 
 
