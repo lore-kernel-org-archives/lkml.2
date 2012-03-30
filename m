@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935733Ab2C3VL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:11:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60223 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935685Ab2C3VLs (ORCPT
+	id S935768Ab2C3VMO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:12:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935677Ab2C3VMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:48 -0400
-Message-Id: <20120330194846.771612939@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:12:00 -0400
+Message-Id: <20120330194846.536738848@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:32 -0700
+Date: Fri, 30 Mar 2012 12:49:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>
-Subject: [ 059/149] hugetlbfs: avoid taking i_mutex from hugetlbfs_read()
+        alan@lxorguk.ukuu.org.uk, Nishanth Aravamudan <nacc@us.ibm.com>,
+        Dave Hansen <haveblue@us.ibm.com>, Anton Blanchard <anton@au1.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+Subject: [ 058/149] bootmem/sparsemem: remove limit constraint in alloc_bootmem_section
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,137 +29,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-commit a05b0855fd15504972dba2358e5faa172a1e50ba upstream.
+commit f5bf18fa22f8c41a13eb8762c7373eb3a93a7333 upstream.
 
-Taking i_mutex in hugetlbfs_read() can result in deadlock with mmap as
-explained below
+While testing AMS (Active Memory Sharing) / CMO (Cooperative Memory
+Overcommit) on powerpc, we tripped the following:
 
- Thread A:
-  read() on hugetlbfs
-   hugetlbfs_read() called
-    i_mutex grabbed
-     hugetlbfs_read_actor() called
-      __copy_to_user() called
-       page fault is triggered
- Thread B, sharing address space with A:
-  mmap() the same file
-   ->mmap_sem is grabbed on task_B->mm->mmap_sem
-    hugetlbfs_file_mmap() is called
-     attempt to grab ->i_mutex and block waiting for A to give it up
- Thread A:
-  pagefault handled blocked on attempt to grab task_A->mm->mmap_sem,
- which happens to be the same thing as task_B->mm->mmap_sem.  Block waiting
- for B to give it up.
+  kernel BUG at mm/bootmem.c:483!
+  cpu 0x0: Vector: 700 (Program Check) at [c000000000c03940]
+      pc: c000000000a62bd8: .alloc_bootmem_core+0x90/0x39c
+      lr: c000000000a64bcc: .sparse_early_usemaps_alloc_node+0x84/0x29c
+      sp: c000000000c03bc0
+     msr: 8000000000021032
+    current = 0xc000000000b0cce0
+    paca    = 0xc000000001d80000
+      pid   = 0, comm = swapper
+  kernel BUG at mm/bootmem.c:483!
+  enter ? for help
+  [c000000000c03c80] c000000000a64bcc
+  .sparse_early_usemaps_alloc_node+0x84/0x29c
+  [c000000000c03d50] c000000000a64f10 .sparse_init+0x12c/0x28c
+  [c000000000c03e20] c000000000a474f4 .setup_arch+0x20c/0x294
+  [c000000000c03ee0] c000000000a4079c .start_kernel+0xb4/0x460
+  [c000000000c03f90] c000000000009670 .start_here_common+0x1c/0x2c
 
-AFAIU the i_mutex locking was added to hugetlbfs_read() as per
-http://lkml.indiana.edu/hypermail/linux/kernel/0707.2/3066.html to take
-care of the race between truncate and read.  This patch fixes this by
-looking at page->mapping under lock_page() (find_lock_page()) to ensure
-that the inode didn't get truncated in the range during a parallel read.
+This is
 
-Ideally we can extend the patch to make sure we don't increase i_size in
-mmap.  But that will break userspace, because applications will now have
-to use truncate(2) to increase i_size in hugetlbfs.
+        BUG_ON(limit && goal + size > limit);
 
-Based on the original patch from Hillf Danton.
+and after some debugging, it seems that
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>
+	goal = 0x7ffff000000
+	limit = 0x80000000000
+
+and sparse_early_usemaps_alloc_node ->
+sparse_early_usemaps_alloc_pgdat_section calls
+
+	return alloc_bootmem_section(usemap_size() * count, section_nr);
+
+This is on a system with 8TB available via the AMS pool, and as a quirk
+of AMS in firmware, all of that memory shows up in node 0.  So, we end
+up with an allocation that will fail the goal/limit constraints.
+
+In theory, we could "fall-back" to alloc_bootmem_node() in
+sparse_early_usemaps_alloc_node(), but since we actually have HOTREMOVE
+defined, we'll BUG_ON() instead.  A simple solution appears to be to
+unconditionally remove the limit condition in alloc_bootmem_section,
+meaning allocations are allowed to cross section boundaries (necessary
+for systems of this size).
+
+Johannes Weiner pointed out that if alloc_bootmem_section() no longer
+guarantees section-locality, we need check_usemap_section_nr() to print
+possible cross-dependencies between node descriptors and the usemaps
+allocated through it.  That makes the two loops in
+sparse_early_usemaps_alloc_node() identical, so re-factor the code a
+bit.
+
+[akpm@linux-foundation.org: code simplification]
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: Dave Hansen <haveblue@us.ibm.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
+Cc: Robert Jennings <rcj@linux.vnet.ibm.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/hugetlbfs/inode.c |   25 +++++++++----------------
- 1 file changed, 9 insertions(+), 16 deletions(-)
+ mm/bootmem.c |    5 ++---
+ mm/sparse.c  |   30 +++++++++++-------------------
+ 2 files changed, 13 insertions(+), 22 deletions(-)
 
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -238,17 +238,10 @@ static ssize_t hugetlbfs_read(struct fil
- 	loff_t isize;
- 	ssize_t retval = 0;
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -768,14 +768,13 @@ void * __init alloc_bootmem_section(unsi
+ 				    unsigned long section_nr)
+ {
+ 	bootmem_data_t *bdata;
+-	unsigned long pfn, goal, limit;
++	unsigned long pfn, goal;
  
--	mutex_lock(&inode->i_mutex);
--
- 	/* validate length */
- 	if (len == 0)
- 		goto out;
+ 	pfn = section_nr_to_pfn(section_nr);
+ 	goal = pfn << PAGE_SHIFT;
+-	limit = section_nr_to_pfn(section_nr + 1) << PAGE_SHIFT;
+ 	bdata = &bootmem_node_data[early_pfn_to_nid(pfn)];
  
--	isize = i_size_read(inode);
--	if (!isize)
--		goto out;
--
--	end_index = (isize - 1) >> huge_page_shift(h);
- 	for (;;) {
- 		struct page *page;
- 		unsigned long nr, ret;
-@@ -256,18 +249,21 @@ static ssize_t hugetlbfs_read(struct fil
+-	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, limit);
++	return alloc_bootmem_core(bdata, size, SMP_CACHE_BYTES, goal, 0);
+ }
+ #endif
  
- 		/* nr is the maximum number of bytes to copy from this page */
- 		nr = huge_page_size(h);
-+		isize = i_size_read(inode);
-+		if (!isize)
-+			goto out;
-+		end_index = (isize - 1) >> huge_page_shift(h);
- 		if (index >= end_index) {
- 			if (index > end_index)
- 				goto out;
- 			nr = ((isize - 1) & ~huge_page_mask(h)) + 1;
--			if (nr <= offset) {
-+			if (nr <= offset)
- 				goto out;
--			}
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -353,29 +353,21 @@ static void __init sparse_early_usemaps_
+ 
+ 	usemap = sparse_early_usemaps_alloc_pgdat_section(NODE_DATA(nodeid),
+ 								 usemap_count);
+-	if (usemap) {
+-		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
+-			if (!present_section_nr(pnum))
+-				continue;
+-			usemap_map[pnum] = usemap;
+-			usemap += size;
++	if (!usemap) {
++		usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
++		if (!usemap) {
++			printk(KERN_WARNING "%s: allocation failed\n", __func__);
++			return;
  		}
- 		nr = nr - offset;
- 
- 		/* Find the page */
--		page = find_get_page(mapping, index);
-+		page = find_lock_page(mapping, index);
- 		if (unlikely(page == NULL)) {
- 			/*
- 			 * We have a HOLE, zero out the user-buffer for the
-@@ -279,17 +275,18 @@ static ssize_t hugetlbfs_read(struct fil
- 			else
- 				ra = 0;
- 		} else {
-+			unlock_page(page);
-+
- 			/*
- 			 * We have the page, copy it to user space buffer.
- 			 */
- 			ra = hugetlbfs_read_actor(page, offset, buf, len, nr);
- 			ret = ra;
-+			page_cache_release(page);
- 		}
- 		if (ra < 0) {
- 			if (retval == 0)
- 				retval = ra;
--			if (page)
--				page_cache_release(page);
- 			goto out;
- 		}
- 
-@@ -299,16 +296,12 @@ static ssize_t hugetlbfs_read(struct fil
- 		index += offset >> huge_page_shift(h);
- 		offset &= ~huge_page_mask(h);
- 
--		if (page)
--			page_cache_release(page);
--
- 		/* short read or no more work */
- 		if ((ret != nr) || (len == 0))
- 			break;
+-		return;
  	}
- out:
- 	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
--	mutex_unlock(&inode->i_mutex);
- 	return retval;
+ 
+-	usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
+-	if (usemap) {
+-		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
+-			if (!present_section_nr(pnum))
+-				continue;
+-			usemap_map[pnum] = usemap;
+-			usemap += size;
+-			check_usemap_section_nr(nodeid, usemap_map[pnum]);
+-		}
+-		return;
++	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
++		if (!present_section_nr(pnum))
++			continue;
++		usemap_map[pnum] = usemap;
++		usemap += size;
++		check_usemap_section_nr(nodeid, usemap_map[pnum]);
+ 	}
+-
+-	printk(KERN_WARNING "%s: allocation failed\n", __func__);
  }
  
+ #ifndef CONFIG_SPARSEMEM_VMEMMAP
 
 
