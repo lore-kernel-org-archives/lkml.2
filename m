@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936494Ab2C3WI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:08:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	id S965359Ab2C3VPj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:15:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965366Ab2C3VPm (ORCPT
+	with ESMTP id S965340Ab2C3VPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:15:42 -0400
-Message-Id: <20120330194902.002276664@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:15:30 -0400
+Message-Id: <20120330194901.386758063@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:45 -0700
+Date: Fri, 30 Mar 2012 12:50:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tim Abbott <tim.abbott@oracle.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 132/149] module: Remove module size limit
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
+        Dave Chinner <dchinner@redhat.com>, Ben Myers <bpm@sgi.com>
+Subject: [ 128/149] xfs: Fix oops on IO error during xlog_recover_process_iunlinks()
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +25,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit f946eeb9313ff1470758e171a60fe7438a2ded3f upstream.
+commit d97d32edcd732110758799ae60af725e5110b3dc upstream.
 
-Module size was limited to 64MB, this was legacy limitation due to vmalloc()
-which was removed a while ago.
+When an IO error happens during inode deletion run from
+xlog_recover_process_iunlinks() filesystem gets shutdown. Thus any subsequent
+attempt to read buffers fails. Code in xlog_recover_process_iunlinks() does not
+count with the fact that read of a buffer which was read a while ago can
+really fail which results in the oops on
+  agi = XFS_BUF_TO_AGI(agibp);
 
-Limiting module size to 64MB is both pointless and affects real world use
-cases.
+Fix the problem by cleaning up the buffer handling in
+xlog_recover_process_iunlinks() as suggested by Dave Chinner. We release buffer
+lock but keep buffer reference to AG buffer. That is enough for buffer to stay
+pinned in memory and we don't have to call xfs_read_agi() all the time.
 
-Cc: Tim Abbott <tim.abbott@oracle.com>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/xfs/xfs_log_recover.c |   33 +++++++++++----------------------
+ 1 file changed, 11 insertions(+), 22 deletions(-)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2341,8 +2341,7 @@ static int copy_and_check(struct load_in
- 		return -ENOEXEC;
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -3161,37 +3161,26 @@ xlog_recover_process_iunlinks(
+ 			 */
+ 			continue;
+ 		}
++		/*
++		 * Unlock the buffer so that it can be acquired in the normal
++		 * course of the transaction to truncate and free each inode.
++		 * Because we are not racing with anyone else here for the AGI
++		 * buffer, we don't even need to hold it locked to read the
++		 * initial unlinked bucket entries out of the buffer. We keep
++		 * buffer reference though, so that it stays pinned in memory
++		 * while we need the buffer.
++		 */
+ 		agi = XFS_BUF_TO_AGI(agibp);
++		xfs_buf_unlock(agibp);
  
- 	/* Suck in entire file: we'll want most of it. */
--	/* vmalloc barfs on "unusual" numbers.  Check here */
--	if (len > 64 * 1024 * 1024 || (hdr = vmalloc(len)) == NULL)
-+	if ((hdr = vmalloc(len)) == NULL)
- 		return -ENOMEM;
+ 		for (bucket = 0; bucket < XFS_AGI_UNLINKED_BUCKETS; bucket++) {
+ 			agino = be32_to_cpu(agi->agi_unlinked[bucket]);
+ 			while (agino != NULLAGINO) {
+-				/*
+-				 * Release the agi buffer so that it can
+-				 * be acquired in the normal course of the
+-				 * transaction to truncate and free the inode.
+-				 */
+-				xfs_buf_relse(agibp);
+-
+ 				agino = xlog_recover_process_one_iunlink(mp,
+ 							agno, agino, bucket);
+-
+-				/*
+-				 * Reacquire the agibuffer and continue around
+-				 * the loop. This should never fail as we know
+-				 * the buffer was good earlier on.
+-				 */
+-				error = xfs_read_agi(mp, NULL, agno, &agibp);
+-				ASSERT(error == 0);
+-				agi = XFS_BUF_TO_AGI(agibp);
+ 			}
+ 		}
+-
+-		/*
+-		 * Release the buffer for the current agi so we can
+-		 * go on to the next one.
+-		 */
+-		xfs_buf_relse(agibp);
++		xfs_buf_rele(agibp);
+ 	}
  
- 	if (copy_from_user(hdr, umod, len) != 0) {
+ 	mp->m_dmevmask = mp_dmevmask;
 
 
