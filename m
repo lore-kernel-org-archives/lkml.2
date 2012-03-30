@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934502Ab2C3UFm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:05:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53443 "EHLO
+	id S934692Ab2C3UHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:07:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53505 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934280Ab2C3UFd (ORCPT
+	with ESMTP id S934651Ab2C3UFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:05:33 -0400
+	Fri, 30 Mar 2012 16:05:44 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v2 06/15] mfd: mark const init data with __initconst instead of __initdata
-Date: Fri, 30 Mar 2012 22:04:56 +0200
-Message-Id: <1333137905-13809-6-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: kernel@pengutronix.de, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net
+Subject: [PATCH v2 14/15] drivers/x86: mark const init data with __initconst instead of __initdata
+Date: Fri, 30 Mar 2012 22:05:04 +0200
+Message-Id: <1333137905-13809-14-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <20120330200358.GV15647@pengutronix.de>
 References: <20120330200358.GV15647@pengutronix.de>
@@ -38,26 +41,30 @@ because a section containing const variables is marked read only and so
 cannot contain non-const variables.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
+Cc: platform-driver-x86@vger.kernel.org
+Cc: ibm-acpi-devel@lists.sourceforge.net
 ---
-no changes since (implicit) v1
+changes since (implict) v1:
+ - drop wrong changes to drivers/platform/x86/thinkpad_acpi.c
 
- drivers/mfd/ab5500-core.c |    2 +-
+ drivers/platform/x86/dell-laptop.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/ab5500-core.c b/drivers/mfd/ab5500-core.c
-index 54d0fe4..3765c76 100644
---- a/drivers/mfd/ab5500-core.c
-+++ b/drivers/mfd/ab5500-core.c
-@@ -1291,7 +1291,7 @@ struct ab_family_id {
- 	char	*name;
- };
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index a05fc9c..882bfa4 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -94,7 +94,7 @@ static struct rfkill *wifi_rfkill;
+ static struct rfkill *bluetooth_rfkill;
+ static struct rfkill *wwan_rfkill;
  
--static const struct ab_family_id ids[] __initdata = {
-+static const struct ab_family_id ids[] __initconst = {
- 	/* AB5500 */
+-static const struct dmi_system_id __initdata dell_device_table[] = {
++static const struct dmi_system_id dell_device_table[] __initconst = {
  	{
- 		.id = AB5500_1_0,
+ 		.ident = "Dell laptop",
+ 		.matches = {
 -- 
 1.7.9.5
 
