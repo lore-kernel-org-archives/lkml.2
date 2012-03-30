@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935700Ab2C3VLo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:11:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935636Ab2C3VLi (ORCPT
+	id S965381Ab2C3WYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:24:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54648 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935676Ab2C3WXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:11:38 -0400
-Message-Id: <20120330194846.015068418@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:29 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [ 056/149] TPM: Zero buffer whole after copying to userspace
-In-Reply-To: <20120330195823.GA31857@kroah.com>
+	Fri, 30 Mar 2012 18:23:51 -0400
+MIME-Version: 1.0
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 31 Mar 2012 00:23:30 +0200
+Message-ID: <CA+1xoqfxZ8cji9SZFg0NZN-riFO7c8tKjtH7W1H9q-ES=J+ybw@mail.gmail.com>
+Subject: mm: migrate_pages hang
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Hi all,
 
-------------------
+I saw the following inside a KVM guest, this is the first time I
+observed this hang and it seems to have started with today's
+(20120330) -next.
 
-From: Tim Gardner <tim.gardner@canonical.com>
-
-commit 3ab1aff89477dafb1aaeafe8c8669114a02b7226 upstream.
-
-Commit 3321c07ae5068568cd61ac9f4ba749006a7185c9 correctly clears the TPM
-buffer if the user specified read length is >= the TPM buffer length. However,
-if the user specified read length is < the TPM buffer length, then part of the
-TPM buffer is left uncleared.
-
-Reported-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: Debora Velarde <debora@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Cc: Marcel Selhorst <m.selhorst@sirrix.com>
-Cc: tpmdd-devel@lists.sourceforge.net
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/char/tpm/tpm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1115,12 +1115,13 @@ ssize_t tpm_read(struct file *file, char
- 	ret_size = atomic_read(&chip->data_pending);
- 	atomic_set(&chip->data_pending, 0);
- 	if (ret_size > 0) {	/* relay data */
-+		ssize_t orig_ret_size = ret_size;
- 		if (size < ret_size)
- 			ret_size = size;
- 
- 		mutex_lock(&chip->buffer_mutex);
- 		rc = copy_to_user(buf, chip->data_buffer, ret_size);
--		memset(chip->data_buffer, 0, ret_size);
-+		memset(chip->data_buffer, 0, orig_ret_size);
- 		if (rc)
- 			ret_size = -EFAULT;
- 
-
-
+[ 3122.093136] INFO: task trinity:17328 blocked for more than 120 seconds.
+[ 3122.093807] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 3122.095237] trinity         D ffff8800703284d8  5648 17328   3101 0x00000004
+[ 3122.096543]  ffff8800064cfb08 0000000000000082 ffff8800064cfab8
+ffffffff8107d346
+[ 3122.098087]  ffff8800064cffd8 00000000001d4580 ffff8800064ce010
+00000000001d4580
+[ 3122.099447]  00000000001d4580 00000000001d4580 ffff8800064cffd8
+00000000001d4580
+[ 3122.100607] Call Trace:
+[ 3122.100983]  [<ffffffff8107d346>] ? kvm_clock_read+0x46/0x80
+[ 3122.101950]  [<ffffffff81176260>] ? __lock_page+0x70/0x70
+[ 3122.102761]  [<ffffffff827063d4>] schedule+0x24/0x70
+[ 3122.103576]  [<ffffffff827064a7>] io_schedule+0x87/0xd0
+[ 3122.104371]  [<ffffffff81176269>] sleep_on_page+0x9/0x10
+[ 3122.105179]  [<ffffffff82704152>] __wait_on_bit_lock+0x52/0xb0
+[ 3122.106042]  [<ffffffff81176252>] __lock_page+0x62/0x70
+[ 3122.106811]  [<ffffffff810d78f0>] ? autoremove_wake_function+0x40/0x40
+[ 3122.107450]  [<ffffffff811cc2f9>] lock_page+0x39/0x40
+[ 3122.107976]  [<ffffffff811cd294>] __unmap_and_move+0x274/0x280
+[ 3122.108848]  [<ffffffff81899061>] ? list_del+0x11/0x40
+[ 3122.109385]  [<ffffffff811cd32d>] unmap_and_move+0x8d/0x130
+[ 3122.109957]  [<ffffffff811cd47b>] migrate_pages+0xab/0x150
+[ 3122.110788]  [<ffffffff811bc440>] ? isolate_freepages+0x390/0x390
+[ 3122.111399]  [<ffffffff811bcc51>] compact_zone+0x1e1/0x2a0
+[ 3122.111935]  [<ffffffff82707e15>] ? _raw_spin_unlock_irqrestore+0x75/0xa0
+[ 3122.112579]  [<ffffffff811bcec3>] __compact_pgdat+0x1b3/0x200
+[ 3122.113199]  [<ffffffff811bcf47>] compact_node+0x37/0x40
+[ 3122.113631]  [<ffffffff81185080>] ? lru_add_drain_all+0x10/0x20
+[ 3122.114266]  [<ffffffff811bcf98>] sysfs_compact_node+0x48/0x60
+[ 3122.114768]  [<ffffffff8125c3d2>] ? sysfs_write_file+0x82/0xf0
+[ 3122.115368]  [<ffffffff81b0dc3b>] dev_attr_store+0x1b/0x20
+[ 3122.115877]  [<ffffffff8125c3ee>] sysfs_write_file+0x9e/0xf0
+[ 3122.116423]  [<ffffffff811e3258>] vfs_write+0xc8/0x190
+[ 3122.116934]  [<ffffffff811e340f>] sys_write+0x4f/0x90
+[ 3122.117697]  [<ffffffff82708cf9>] system_call_fastpath+0x16/0x1b
+[ 3122.118354] 2 locks held by trinity/17328:
+[ 3122.118694]  #0:  (&buffer->mutex){+.+.+.}, at:
+[<ffffffff8125c394>] sysfs_write_file+0x44/0xf0
+[ 3122.119498]  #1:  (s_active#57){.+.+.+}, at: [<ffffffff8125c3d2>]
+sysfs_write_file+0x82/0xf0
