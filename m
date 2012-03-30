@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935045Ab2C3VG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935011Ab2C3VGQ (ORCPT
+	id S935063Ab2C3VGa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:06:30 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41969 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935011Ab2C3VG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:16 -0400
-Message-Id: <20120330195730.895811790@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 061/108] firewire: ohci: fix too-early completion of IR multichannel buffers
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+	Fri, 30 Mar 2012 17:06:27 -0400
+Message-Id: <201203302105.q2UL5AJZ006313@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Mar 2012 16:27:20 -0400
+Subject: [PATCH] arch/tile: remove bogus performance optimization
+In-Reply-To: <4F761E1C.80808.com>
+References: <4F761E1C.80808.com>
+To: Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Julia Lawall <julia@diku.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 21:05:10.0866 (UTC) FILETIME=[CB262B20:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+We were re-homing the initial task's kernel stack on the boot cpu,
+but in fact it's better to let it stay globally homed, since that
+task isn't bound to the boot cpu anyway.  This is more of a general
+cleanup than an actual performance optimization, but it removes
+code, which is a good thing. :-)
 
-------------------
-
-From: Clemens Ladisch <clemens@ladisch.de>
-
-commit 0c0efbacab8d70700d13301e0ae7975783c0cb0a upstream.
-
-handle_ir_buffer_fill() assumed that a completed descriptor would be
-indicated by a non-zero transfer_status (as in most other descriptors).
-However, this field is written by the controller as soon as (the end of)
-the first packet has been written into the buffer.  As a consequence, if
-we happen to run into such a descriptor when the interrupt handler is
-executed after such a packet has completed, the descriptor would be
-taken out of the list of active descriptors as soon as the buffer had
-been partially filled, so the event for the buffer being completely
-filled would never be sent.
-
-To fix this, handle descriptors only when they have been completely
-filled, i.e., when res_count == 0.  (This also matches the condition
-that is reported by the controller with an interrupt.)
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/firewire/ohci.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/tile/mm/init.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2558,15 +2558,14 @@ static int handle_ir_buffer_fill(struct
- 	struct iso_context *ctx =
- 		container_of(context, struct iso_context, context);
+diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+index 5276f05..0138e8c 100644
+--- a/arch/tile/mm/init.c
++++ b/arch/tile/mm/init.c
+@@ -250,11 +250,6 @@ static pgprot_t __init init_pgprot(ulong address)
+ 		return construct_pgprot(PAGE_KERNEL_RO, PAGE_HOME_IMMUTABLE);
+ 	}
  
--	if (!last->transfer_status)
-+	if (last->res_count != 0)
- 		/* Descriptor(s) not done yet, stop iteration */
- 		return 0;
- 
- 	if (le16_to_cpu(last->control) & DESCRIPTOR_IRQ_ALWAYS)
- 		ctx->base.callback.mc(&ctx->base,
- 				      le32_to_cpu(last->data_address) +
--				      le16_to_cpu(last->req_count) -
--				      le16_to_cpu(last->res_count),
-+				      le16_to_cpu(last->req_count),
- 				      ctx->base.callback_data);
- 
- 	return 1;
-
+-	/* As a performance optimization, keep the boot init stack here. */
+-	if (address >= (ulong)&init_thread_union &&
+-	    address < (ulong)&init_thread_union + THREAD_SIZE)
+-		return construct_pgprot(PAGE_KERNEL, smp_processor_id());
+-
+ #ifndef __tilegx__
+ #if !ATOMIC_LOCKS_FOUND_VIA_TABLE()
+ 	/* Force the atomic_locks[] array page to be hash-for-home. */
+-- 
+1.6.5.2
 
