@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934144Ab2C3LTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:19:10 -0400
+	id S934154Ab2C3LTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:19:17 -0400
 Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
 	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933740Ab2C3LSf (ORCPT
+	with ESMTP id S933832Ab2C3LSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:18:35 -0400
+	Fri, 30 Mar 2012 07:18:38 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH 40/76] tools turbostat: reduce measurement overhead due to IPIs
-Date: Fri, 30 Mar 2012 06:13:43 -0400
-Message-id: <88c3281f7ba449992f7a33bd2452a8c6fa5503cb.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 52/76] ACPI, PCI: Move acpi_dev_run_wake() to ACPI core
+Date: Fri, 30 Mar 2012 06:13:55 -0400
+Message-id: <b24e5098853653554baf6ec975b9e855f3d6e5c0.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,147 +25,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Lin Ming <ming.m.lin@intel.com>
 
-turbostat uses /dev/cpu/*/msr interface to read MSRs.
-For modern systems, it reads 10 MSR/CPU.  This can
-be observed as 10 "Function Call Interrupts"
-per CPU per sample added to /proc/interrupts.
+acpi_dev_run_wake() is a generic function which can be used by
+other subsystem too. Rename it to acpi_pm_device_run_wake, to be
+consistent with acpi_pm_device_sleep_wake.
 
-This overhead is measurable on large idle systems,
-and as Yoquan Song pointed out, it can even trick
-cpuidle into thinking the system is busy.
+Then move it to ACPI core.
 
-Here turbostat re-schedules itself in-turn to each
-CPU so that its MSR reads will always be local.
-This replaces the 10 "Function Call Interrupts"
-with a single "Rescheduling interrupt" per sample
-per CPU.
-
-On an idle 32-CPU system, this shifts some residency from
-the shallow c1 state to the deeper c7 state:
-
- # ./turbostat.old -s
-   %c0  GHz  TSC    %c1    %c3    %c6    %c7   %pc2   %pc3   %pc6   %pc7
-  0.27 1.29 2.29   0.95   0.02   0.00  98.77  20.23   0.00  77.41   0.00
-  0.25 1.24 2.29   0.98   0.02   0.00  98.75  20.34   0.03  77.74   0.00
-  0.27 1.22 2.29   0.54   0.00   0.00  99.18  20.64   0.00  77.70   0.00
-  0.26 1.22 2.29   1.22   0.00   0.00  98.52  20.22   0.00  77.74   0.00
-  0.26 1.38 2.29   0.78   0.02   0.00  98.95  20.51   0.05  77.56   0.00
-^C
- i# ./turbostat.new -s
-   %c0  GHz  TSC    %c1    %c3    %c6    %c7   %pc2   %pc3   %pc6   %pc7
-  0.27 1.20 2.29   0.24   0.01   0.00  99.49  20.58   0.00  78.20   0.00
-  0.27 1.22 2.29   0.25   0.00   0.00  99.48  20.79   0.00  77.85   0.00
-  0.27 1.20 2.29   0.25   0.02   0.00  99.46  20.71   0.03  77.89   0.00
-  0.28 1.26 2.29   0.25   0.01   0.00  99.46  20.89   0.02  77.67   0.00
-  0.27 1.20 2.29   0.24   0.01   0.00  99.48  20.65   0.00  78.04   0.00
-
-cc: Youquan Song <youquan.song@intel.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- tools/power/x86/turbostat/turbostat.c |   46 +++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ drivers/acpi/sleep.c    |   35 +++++++++++++++++++++++++++++++++++
+ drivers/pci/pci-acpi.c  |   40 +++-------------------------------------
+ include/acpi/acpi_bus.h |    5 +++++
+ 3 files changed, 43 insertions(+), 37 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index 6436d54..fa60872 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -19,6 +19,7 @@
-  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-  */
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index ca191ff..00fa664 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -17,6 +17,7 @@
+ #include <linux/suspend.h>
+ #include <linux/reboot.h>
+ #include <linux/acpi.h>
++#include <linux/pm_runtime.h>
  
-+#define _GNU_SOURCE
- #include <stdio.h>
- #include <unistd.h>
- #include <sys/types.h>
-@@ -32,6 +33,7 @@
- #include <dirent.h>
- #include <string.h>
- #include <ctype.h>
-+#include <sched.h>
+ #include <asm/io.h>
  
- #define MSR_TSC	0x10
- #define MSR_NEHALEM_PLATFORM_INFO	0xCE
-@@ -72,6 +74,8 @@ char *progname;
- int need_reinitialize;
+@@ -730,6 +731,40 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
  
- int num_cpus;
-+cpu_set_t *cpu_mask;
-+size_t cpu_mask_size;
- 
- struct counters {
- 	unsigned long long tsc;		/* per thread */
-@@ -100,6 +104,40 @@ struct timeval tv_even;
- struct timeval tv_odd;
- struct timeval tv_delta;
- 
-+/*
-+ * cpu_mask_init(ncpus)
+ #ifdef CONFIG_PM_SLEEP
+ /**
++ * acpi_pm_device_run_wake - Enable/disable wake-up for given device.
++ * @phys_dev: Device to enable/disable the platform to wake-up the system for.
++ * @enable: Whether enable or disable the wake-up functionality.
 + *
-+ * allocate and clear cpu_mask
-+ * set cpu_mask_size
++ * Find the ACPI device object corresponding to @pci_dev and try to
++ * enable/disable the GPE associated with it.
 + */
-+void cpu_mask_init(int ncpus)
++int acpi_pm_device_run_wake(struct device *phys_dev, bool enable)
 +{
-+	cpu_mask = CPU_ALLOC(ncpus);
-+	if (cpu_mask == NULL) {
-+		perror("CPU_ALLOC");
-+		exit(3);
++	struct acpi_device *dev;
++	acpi_handle handle;
++
++	if (!device_run_wake(phys_dev))
++		return -EINVAL;
++
++	handle = DEVICE_ACPI_HANDLE(phys_dev);
++	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &dev))) {
++		dev_dbg(phys_dev, "ACPI handle has no context in %s!\n",
++			__func__);
++		return -ENODEV;
 +	}
-+	cpu_mask_size = CPU_ALLOC_SIZE(ncpus);
-+	CPU_ZERO_S(cpu_mask_size, cpu_mask);
++
++	if (enable) {
++		acpi_enable_wakeup_device_power(dev, ACPI_STATE_S0);
++		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
++	} else {
++		acpi_disable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
++		acpi_disable_wakeup_device_power(dev);
++	}
++
++	return 0;
 +}
 +
-+void cpu_mask_uninit()
-+{
-+	CPU_FREE(cpu_mask);
-+	cpu_mask = NULL;
-+	cpu_mask_size = 0;
-+}
-+
-+int cpu_migrate(int cpu)
-+{
-+	CPU_ZERO_S(cpu_mask_size, cpu_mask);
-+	CPU_SET_S(cpu, cpu_mask_size, cpu_mask);
-+	if (sched_setaffinity(0, cpu_mask_size, cpu_mask) == -1)
-+		return -1;
-+	else
-+		return 0;
-+}
-+
- unsigned long long get_msr(int cpu, off_t offset)
- {
- 	ssize_t retval;
-@@ -471,6 +509,11 @@ void compute_average(struct counters *delta, struct counters *avg)
- void get_counters(struct counters *cnt)
- {
- 	for ( ; cnt; cnt = cnt->next) {
-+		if (cpu_migrate(cnt->cpu)) {
-+			need_reinitialize = 1;
-+			return;
-+		}
-+
- 		cnt->tsc = get_msr(cnt->cpu, MSR_TSC);
- 		if (do_nhm_cstates)
- 			cnt->c3 = get_msr(cnt->cpu, MSR_CORE_C3_RESIDENCY);
-@@ -752,6 +795,8 @@ void re_initialize(void)
- 	free_all_counters();
- 	num_cpus = for_all_cpus(alloc_new_counters);
- 	need_reinitialize = 0;
-+	cpu_mask_uninit();
-+	cpu_mask_init(num_cpus);
- 	printf("num_cpus is now %d\n", num_cpus);
++/**
+  *	acpi_pm_device_sleep_wake - enable or disable the system wake-up
+  *                                  capability of given device
+  *	@dev: device to handle
+diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+index 060fd22..0f150f2 100644
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -277,40 +277,6 @@ static int acpi_pci_sleep_wake(struct pci_dev *dev, bool enable)
+ 	return 0;
  }
  
-@@ -984,6 +1029,7 @@ void turbostat_init()
- 	check_super_user();
+-/**
+- * acpi_dev_run_wake - Enable/disable wake-up for given device.
+- * @phys_dev: Device to enable/disable the platform to wake-up the system for.
+- * @enable: Whether enable or disable the wake-up functionality.
+- *
+- * Find the ACPI device object corresponding to @pci_dev and try to
+- * enable/disable the GPE associated with it.
+- */
+-static int acpi_dev_run_wake(struct device *phys_dev, bool enable)
+-{
+-	struct acpi_device *dev;
+-	acpi_handle handle;
+-
+-	if (!device_run_wake(phys_dev))
+-		return -EINVAL;
+-
+-	handle = DEVICE_ACPI_HANDLE(phys_dev);
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &dev))) {
+-		dev_dbg(phys_dev, "ACPI handle has no context in %s!\n",
+-			__func__);
+-		return -ENODEV;
+-	}
+-
+-	if (enable) {
+-		acpi_enable_wakeup_device_power(dev, ACPI_STATE_S0);
+-		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
+-	} else {
+-		acpi_disable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
+-		acpi_disable_wakeup_device_power(dev);
+-	}
+-
+-	return 0;
+-}
+-
+ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
+ {
+ 	while (bus->parent) {
+@@ -318,14 +284,14 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
  
- 	num_cpus = for_all_cpus(alloc_new_counters);
-+	cpu_mask_init(num_cpus);
+ 		if (bridge->pme_interrupt)
+ 			return;
+-		if (!acpi_dev_run_wake(&bridge->dev, enable))
++		if (!acpi_pm_device_run_wake(&bridge->dev, enable))
+ 			return;
+ 		bus = bus->parent;
+ 	}
  
- 	if (verbose)
- 		print_nehalem_info();
+ 	/* We have reached the root bus. */
+ 	if (bus->bridge)
+-		acpi_dev_run_wake(bus->bridge, enable);
++		acpi_pm_device_run_wake(bus->bridge, enable);
+ }
+ 
+ static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
+@@ -333,7 +299,7 @@ static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
+ 	if (dev->pme_interrupt)
+ 		return 0;
+ 
+-	if (!acpi_dev_run_wake(&dev->dev, enable))
++	if (!acpi_pm_device_run_wake(&dev->dev, enable))
+ 		return 0;
+ 
+ 	acpi_pci_propagate_run_wake(dev->bus, enable);
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index e168fff..f1c8ca6 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -394,8 +394,13 @@ static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
+ #endif
+ 
+ #ifdef CONFIG_PM_SLEEP
++int acpi_pm_device_run_wake(struct device *, bool);
+ int acpi_pm_device_sleep_wake(struct device *, bool);
+ #else
++static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
++{
++	return -ENODEV;
++}
+ static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
+ {
+ 	return -ENODEV;
 -- 
 1.7.10.rc2.19.gfae9d
 
