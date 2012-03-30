@@ -1,95 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934372Ab2C3MHM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:07:12 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:39088 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933847Ab2C3MHF (ORCPT
+	id S934343Ab2C3MH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:07:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41452 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933847Ab2C3MHR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:07:05 -0400
-Date: Fri, 30 Mar 2012 14:06:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Sharp <dhsharp@google.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Justin Teravest <teravest@google.com>,
-        Laurent Chavey <chavey@google.com>, Michael Davidson <md@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] trace: trace syscall in its handler not from ptrace
- handler
-Message-ID: <20120330120657.GC13022@somewhere.redhat.com>
-References: <4F714982.6020208@zytor.com>
- <CAL26m8Jfb8bgfDLKZtn2LkYHD6uCccD3UcsSMbHtpnUKR5_mxw@mail.gmail.com>
- <4F73CC3A.2080901@zytor.com>
- <CAL26m8+zbbqngfK0fYb+A2UBQ1fZ9Uxrf4VLWqU1VuMzkcF4xw@mail.gmail.com>
- <20120329062031.GB1376@gmail.com>
- <CAL26m8+BmN=DxR7LbukM7S4w9XcURjfDFizUNpEcZA_8g4JNVg@mail.gmail.com>
- <4F74B42F.3050100@zytor.com>
- <CAL26m8JA4HJQayJW2nYbVpHD7mgd0Bz6rFMipq2Nf6OECiyk1Q@mail.gmail.com>
- <4F74C0B2.1010100@zytor.com>
- <CAJL_ekvU8sjt0wi6GjrMiqy03kBZ6YzQkz9TO+MQzQAr_-2VnQ@mail.gmail.com>
+	Fri, 30 Mar 2012 08:07:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJL_ekvU8sjt0wi6GjrMiqy03kBZ6YzQkz9TO+MQzQAr_-2VnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <0e569b120d19c35dcc4f5549956cd884c3241270.1333101989.git.len.brown@intel.com>
+References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+	<1333102459-23750-1-git-send-email-lenb@kernel.org>
+	<0e569b120d19c35dcc4f5549956cd884c3241270.1333101989.git.len.brown@intel.com>
+Date: Fri, 30 Mar 2012 14:07:15 +0200
+Message-ID: <CAHR064iEVsoMiP1PYzXeZeZzOFCPTk1YDBty6nHAfzej2qh_qA@mail.gmail.com>
+Subject: Re: [PATCH 57/76] ACPI / Video: blacklist some samsung laptops
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 03:40:17PM -0700, David Sharp wrote:
-> On Thu, Mar 29, 2012 at 1:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> > I had a long discussion with Frederic over IRC earlier today. �We came
-> > up with the following strawman:
-> >
-> > 1. A system call thunk (which could be enabled/disabled by patching the
-> > syscall table.) �This provides an entry and exit hook, and also sets a
-> > per-thread flag to capture userspace traffic.
-> 
-> Our goal is for syscall traces to be as fast as regular tracepoints.
-> iirc, What we've found is that much of the extra overhead of syscall
-> tracepoints as compared to regular tracepoints is due to that the code
-> path for syscall tracing is bundled with checks for ptrace and other
-> stuff (Vaibhav did all this characterization, he can jump in with
-> details if wanted). How much work would this "thunk" have to do that
-> is not either recording the trace or calling the syscall?
-> 
-> >
-> > 2. Instrumenting get_user/put_user/copy_from_user/copy_to_user to
-> > capture traffic to userspace. �This captures the *full* set of system
-> > call arguments, including things addressed via pointers. �Furthermore,
-> > it captures the exact versions fed to or returned from the kernel, and
-> > deals with data-dependent collection like ioctl().
-> 
-> Do I understand correctly that you are thinking to copy tho contents
-> of those buffers into the ring buffer? This sounds useful. However I
-> think it should be optional and the number of bytes copied should be
-> limited (tunable). On highly utilized systems, we don't always have a
-> lot of memory to dedicate to the ring bufffer, so filling it with the
-> contents of, eg, the payload of "read" or "write" would not be
-> acceptable under those circumstances. And since events in the ring
-> buffer can't cross page boundaries, at some threshold this will cause
-> an unacceptable level of unutilized space in the ring buffer.
-> 
-> (For context, this is coming from the folks that added "tiny" versions
-> of syscall tracepoints that only put 16 bits of arg0 into the ring
-> buffer so we can get longer trace durations.)
+On Fri, Mar 30, 2012 at 12:14 PM, Len Brown <lenb@kernel.org> wrote:
+> From: Corentin Chary <corentincj@iksaif.net>
+>
+> On these laptops, the ACPI video is not functional, and very unlikely
+> to be fixed by the vendor. Note that intel_backlight works for some
+> of these laptops, and the backlight from samsung-laptop always work.
+>
+> The good news is that newer laptops have functional ACPI video device
+> and won't end up growing this list.
+>
+> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+>  drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 49 insertions(+)
+>
+> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+> index f3f0fe7..b6f6979 100644
+> --- a/drivers/acpi/video_detect.c
+> +++ b/drivers/acpi/video_detect.c
+> @@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
+>        return AE_OK;
+>  }
+>
+> +/* Force to use vendor driver when the ACPI device is known to be
+> + * buggy */
+> +static int video_detect_force_vendor(const struct dmi_system_id *d)
+> +{
+> +       acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+> +       return 0;
+> +}
+> +
+> +static struct dmi_system_id video_detect_dmi_table[] = {
+> +       {
+> +        .callback = video_detect_force_vendor,
+> +        .ident = "N150P",
+> +        .matches = {
+> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> +               DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
+> +               DMI_MATCH(DMI_BOARD_NAME, "N150P"),
+> +               },
+> +       },
+> +       {
+> +        .callback = video_detect_force_vendor,
+> +        .ident = "N145P/N250P/N260P",
+> +        .matches = {
+> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> +               DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
+> +               DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
+> +               },
+> +       },
+> +       {
+> +        .callback = video_detect_force_vendor,
+> +        .ident = "N150/N210/N220",
+> +        .matches = {
+> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> +               DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
+> +               DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
+> +               },
+> +       },
+> +       {
+> +        .callback = video_detect_force_vendor,
+> +        .ident = "NF110/NF210/NF310",
+> +        .matches = {
+> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> +               DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
+> +               DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
+> +               },
+> +       },
+> +};
+> +
+>  /*
+>  * Returns the video capabilities of a specific ACPI graphics device
+>  *
+> @@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
+>                 *              ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+>                 *}
+>                 */
+> +
+> +               dmi_check_system(video_detect_dmi_table);
+>        } else {
+>                status = acpi_bus_get_device(graphics_handle, &tmp_dev);
+>                if (ACPI_FAILURE(status)) {
+> --
+> 1.7.10.rc2.19.gfae9d
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-BTW, since tracing overhead (in terms of volume and throughput) is
-important for you guys, have you considered adding some option to ftrace
-to ignore the "common" fields on the trace record:
+Hi Len,
 
-        field:unsigned short common_type;       offset:0;       size:2; signed:0;
-        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
-        field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
-        field:int common_pid;   offset:4;       size:4; signed:1;
-        field:int common_padding;       offset:8;       size:4; signed:1;
+Sorry for that but this patch was re-sent recently, and Matthew told
+me to do that this should be done in samsung-laptop.c instead.
 
-I think you talked about that on the last kernel summit. This would be
-interesting for everyone.
+The resulting patch has been merged in Matthew's tree:
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blobdiff;f=drivers/platform/x86/samsung-laptop.c;h=e2a34b42ddc1d584b5333fe9921d0d2c2b12dda4;hp=4787afdf11dc20e69af8fe5324366d4bd65aeb98;hb=a979e2e2af7d5b4bb3b20f6a716c627bb23a6753;hpb=5719b81988f3c24ff694dc3a37e35b35630a3966
 
-You can find out the pid on top of sched switch events. The rest is probably useless
-most of the time.
+One of these patches should be reverted, but which one ?
+Note that apple-gmux and acer-wmi are also using the
+acpi_video_unregister() trick in linux-next.
+
+Thanks,
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
