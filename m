@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965082Ab2C3VOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:14:07 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52160 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965055Ab2C3VN7 (ORCPT
+	id S965101Ab2C3VOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:14:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965062Ab2C3VOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:59 -0400
-Message-Id: <20120330194854.571877834@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:14:01 -0400
+Message-Id: <20120330194855.919240459@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:06 -0700
+Date: Fri, 30 Mar 2012 12:50:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Hadig <thomas@intapp.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 093/149] cifs: fix issue mounting of DFS ROOT when redirecting from one domain controller to the next
+        alan@lxorguk.ukuu.org.uk, Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Flavio Leitner <fbl@redhat.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 100/149] e1000e: Avoid wrong check on TX hang
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-commit 1daaae8fa4afe3df78ca34e724ed7e8187e4eb32 upstream.
+commit 09357b00255c233705b1cf6d76a8d147340545b8 upstream.
 
-This patch fixes an issue when cifs_mount receives a
-STATUS_BAD_NETWORK_NAME error during cifs_get_tcon but is able to
-continue after an DFS ROOT referral. In this case, the return code
-variable is not reset prior to trying to mount from the system referred
-to. Thus, is_path_accessible is not executed and the final DFS referral
-is not performed causing a mount error.
+Based on the original patch submitted my Michael Wang
+<wangyun@linux.vnet.ibm.com>.
+Descriptors may not be write-back while checking TX hang with flag
+FLAG2_DMA_BURST on.
+So when we detect hang, we just flush the descriptor and detect
+again for once.
 
-Use case: In DNS, example.com  resolves to the secondary AD server
-ad2.example.com Our primary domain controller is ad1.example.com and has
-a DFS redirection set up from \\ad1\share\Users to \\files\share\Users.
-Mounting \\example.com\share\Users fails.
+-v2 change 1 to true and 0 to false and remove extra ()
 
-Regression introduced by commit 724d9f1.
-
-Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru
-Signed-off-by: Thomas Hadig <thomas@intapp.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+CC: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: Flavio Leitner <fbl@redhat.com>
+Acked-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/e1000.h  |    1 +
+ drivers/net/ethernet/intel/e1000e/netdev.c |   23 ++++++++++++++++++++---
+ 2 files changed, 21 insertions(+), 3 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -3217,7 +3217,7 @@ cifs_ra_pages(struct cifs_sb_info *cifs_
- int
- cifs_mount(struct cifs_sb_info *cifs_sb, struct smb_vol *volume_info)
- {
--	int rc = 0;
-+	int rc;
- 	int xid;
- 	struct cifs_ses *pSesInfo;
- 	struct cifs_tcon *tcon;
-@@ -3244,6 +3244,7 @@ try_mount_again:
- 		FreeXid(xid);
+--- a/drivers/net/ethernet/intel/e1000e/e1000.h
++++ b/drivers/net/ethernet/intel/e1000e/e1000.h
+@@ -309,6 +309,7 @@ struct e1000_adapter {
+ 	u32 txd_cmd;
+ 
+ 	bool detect_tx_hung;
++	bool tx_hang_recheck;
+ 	u8 tx_timeout_factor;
+ 
+ 	u32 tx_int_delay;
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -1030,6 +1030,7 @@ static void e1000_print_hw_hang(struct w
+ 	struct e1000_adapter *adapter = container_of(work,
+ 	                                             struct e1000_adapter,
+ 	                                             print_hang_task);
++	struct net_device *netdev = adapter->netdev;
+ 	struct e1000_ring *tx_ring = adapter->tx_ring;
+ 	unsigned int i = tx_ring->next_to_clean;
+ 	unsigned int eop = tx_ring->buffer_info[i].next_to_watch;
+@@ -1041,6 +1042,21 @@ static void e1000_print_hw_hang(struct w
+ 	if (test_bit(__E1000_DOWN, &adapter->state))
+ 		return;
+ 
++	if (!adapter->tx_hang_recheck &&
++	    (adapter->flags2 & FLAG2_DMA_BURST)) {
++		/* May be block on write-back, flush and detect again
++		 * flush pending descriptor writebacks to memory
++		 */
++		ew32(TIDV, adapter->tx_int_delay | E1000_TIDV_FPD);
++		/* execute the writes immediately */
++		e1e_flush();
++		adapter->tx_hang_recheck = true;
++		return;
++	}
++	/* Real hang detected */
++	adapter->tx_hang_recheck = false;
++	netif_stop_queue(netdev);
++
+ 	e1e_rphy(hw, PHY_STATUS, &phy_status);
+ 	e1e_rphy(hw, PHY_1000T_STATUS, &phy_1000t_status);
+ 	e1e_rphy(hw, PHY_EXT_STATUS, &phy_ext_status);
+@@ -1154,10 +1170,10 @@ static bool e1000_clean_tx_irq(struct e1
+ 		if (tx_ring->buffer_info[i].time_stamp &&
+ 		    time_after(jiffies, tx_ring->buffer_info[i].time_stamp
+ 			       + (adapter->tx_timeout_factor * HZ)) &&
+-		    !(er32(STATUS) & E1000_STATUS_TXOFF)) {
++		    !(er32(STATUS) & E1000_STATUS_TXOFF))
+ 			schedule_work(&adapter->print_hang_task);
+-			netif_stop_queue(netdev);
+-		}
++		else
++			adapter->tx_hang_recheck = false;
  	}
- #endif
-+	rc = 0;
- 	tcon = NULL;
- 	pSesInfo = NULL;
- 	srvTcp = NULL;
+ 	adapter->total_tx_bytes += total_tx_bytes;
+ 	adapter->total_tx_packets += total_tx_packets;
+@@ -3782,6 +3798,7 @@ static int e1000_open(struct net_device
+ 
+ 	e1000_irq_enable(adapter);
+ 
++	adapter->tx_hang_recheck = false;
+ 	netif_start_queue(netdev);
+ 
+ 	adapter->idle_check = true;
 
 
