@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934083Ab2C3K1C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:27:02 -0400
-Received: from aldebaran.gro-tsen.net ([88.191.60.176]:40558 "EHLO
-	aldebaran.gro-tsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933663Ab2C3K05 (ORCPT
+	id S934071Ab2C3K1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:27:48 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:49342 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933663Ab2C3K1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:26:57 -0400
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Mar 2012 06:26:56 EDT
-Date: Fri, 30 Mar 2012 12:21:21 +0200
-From: David Madore <david+ml@madore.org>
-To: Linux Kernel Mailing-List <linux-kernel@vger.kernel.org>
-Subject: since when does linkat() on deleted /proc/$PID/fd/$num return
- ENOENT ?
-Message-ID: <20120330102121.GA5999@aldebaran.gro-tsen.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 30 Mar 2012 06:27:41 -0400
+Subject: Re: [PATCH] acer-wmi: add Aspire 5741G touchpad toggle key
+From: joeyli <jlee@suse.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120329095322.GA3576@swordfish.minsk.epam.com>
+References: <20120306123355.GA3904@swordfish.minsk.epam.com>
+	 <1331266669.10557.107.camel@linux-s257.site>
+	 <20120312101956.GA8522@swordfish.minsk.epam.com>
+	 <1331607878.10557.145.camel@linux-s257.site>
+	 <20120329095322.GA3576@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Mar 2012 18:25:36 +0800
+Message-ID: <1333103136.7293.18.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It used to be the case (last time I checked was around late 2008 or
-early 2009) that deleted entries from /proc/$PID/fd/ could be linked
-back to the filesystem by using linkat(,,,,AT_SYMLINK_FOLLOW).
+Hi Sergey, 
 
-Now this just returns ENOENT.
+於 四，2012-03-29 於 12:53 +0300，Sergey Senozhatsky 提到：
+> acer-wmi: add Aspire 5741G touchpad toggle key
+> 
+> add Aspire 5741G KEY_TOUCHPAD_TOGGLE to wmi keymap.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+>  drivers/platform/x86/acer-wmi.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> index c1a3fd8..94a6747 100644
+> --- a/drivers/platform/x86/acer-wmi.c
+> +++ b/drivers/platform/x86/acer-wmi.c
+> @@ -125,6 +125,7 @@ static const struct key_entry acer_wmi_keymap[] = {
+>  	{KE_KEY, 0x64, {KEY_SWITCHVIDEOMODE} },	/* Display Switch */
+>  	{KE_IGNORE, 0x81, {KEY_SLEEP} },
+>  	{KE_KEY, 0x82, {KEY_TOUCHPAD_TOGGLE} },	/* Touch Pad On/Off */
+> +	{KE_KEY, 0x85, {KEY_TOUCHPAD_TOGGLE} },
+>  	{KE_IGNORE, 0x83, {KEY_TOUCHPAD_TOGGLE} },
+>  	{KE_END, 0}
+>  };
+> 
 
-I'd like to understand when, how and why this change took place.  What
-commit introduced it and was it a deliberate move (e.g., because the
-feature was a security issue of itself, or came into conflict with
-something else) or was it accidental?  Does it depend on the /proc
-filesystem itself or on the target filesystem where the deleted file
-used to reside?
+Acked-by: Lee, Chun-Yi <jlee@suse.com>
 
-(There's a Reddit thread, <URL:
-http://www.reddit.com/r/programming/comments/7yx6f/how_to_undelete_any_open_deleted_file_in_linux/
- >, where some people are reporting ENOENT on 2.6.27 or perhaps even
-2.6.26, which helps but a bound on the change.)
 
-(See also this thread: <URL:
-http://comments.gmane.org/gmane.linux.kernel/1224071
- >, where the question is not answered, however.)
+This patch is OK to me!
 
--- 
-     David A. Madore
-   ( http://www.madore.org/~david/ )
+
+Thanks for your patch!
+Joey Lee
+
