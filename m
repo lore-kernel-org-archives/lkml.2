@@ -1,140 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760799Ab2C3N0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 09:26:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54149 "EHLO mx1.redhat.com"
+	id S933508Ab2C3N0v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 09:26:51 -0400
+Received: from mailhost.anl.gov ([130.202.113.50]:50305 "EHLO mailhost.anl.gov"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760037Ab2C3N0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 09:26:23 -0400
-Message-ID: <4F75B475.7060608@redhat.com>
-Date: Fri, 30 Mar 2012 10:26:13 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/13] edac: Create a dimm struct and move the labels
- into it
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com> <1333039546-5590-2-git-send-email-mchehab@redhat.com> <20120330105048.GA30876@aftab>
-In-Reply-To: <20120330105048.GA30876@aftab>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760037Ab2C3N0p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 09:26:45 -0400
+Subject: Re: Is prctl(PR_SET_CHILD_SUBREAPER) going to break my code which checks getppid == 1?
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Karl Pickett <kjp@ci.uchicago.edu>
+In-Reply-To: <376EB22C-893C-4AF8-81DC-3A7687B1AE1B@ci.uchicago.edu>
+Date: Fri, 30 Mar 2012 08:26:44 -0500
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        kay.sievers@vrfy.org, Lennart Poettering <lennart@poettering.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DA877BA4-5DCC-4F72-A6D5-B08ABEF1672B@ci.uchicago.edu>
+References: <46799FA3-D575-4A2D-8DEB-CE5149A4110D@ci.uchicago.edu> <20120330124426.GA13811@redhat.com> <376EB22C-893C-4AF8-81DC-3A7687B1AE1B@ci.uchicago.edu>
+To: Karl Pickett <kjp@ci.uchicago.edu>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 30-03-2012 07:50, Borislav Petkov escreveu:
-> On Thu, Mar 29, 2012 at 01:45:34PM -0300, Mauro Carvalho Chehab wrote:
->> The way a DIMM is currently represented implies that they're
->> linked into a per-csrow struct. However, some drivers don't see
->> csrows, as they're ridden behind some chip like the AMB's
->> on FBDIMM's, for example.
->>
->> This forced drivers to fake a csrow struct, and to create
->> a mess under csrow/channel original's concept.
->>
->> Move the DIMM labels into a per-DIMM struct, and add there
->> the real location of the socket, in terms of csrow/channel.
->> Latter patches will modify the location to properly represent the
->> memory architecture.
->>
->> All other drivers will use a per-csrow type of location.
->> Some of those drivers will require a latter conversion, as
->> they also fake the csrows internally.
->>
->> TODO: While this patch doesn't change the existing behavior, on
->> csrows-based memory controllers, a csrow/channel pair points to a memory
->> rank. There's a known bug at the EDAC core that allows having different
->> labels for the same DIMM, if it has more than one rank. A latter patch
->> is need to merge the several ranks for a DIMM into the same dimm_info
->> struct, in order to avoid having different labels for the same DIMM.
->>
->> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
->> ---
->>  drivers/edac/edac_mc.c       |   50 +++++++++++++++++++++++++++++++----------
->>  drivers/edac/edac_mc_sysfs.c |   11 ++++-----
->>  drivers/edac/i5100_edac.c    |    8 +++---
->>  drivers/edac/i7core_edac.c   |    4 +-
->>  drivers/edac/i82975x_edac.c  |    2 +-
->>  drivers/edac/sb_edac.c       |    4 +-
->>  include/linux/edac.h         |   28 +++++++++++++++++++----
->>  7 files changed, 75 insertions(+), 32 deletions(-)
->>
->> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
->> index 690cbf1..c03bfe7 100644
->> --- a/drivers/edac/edac_mc.c
->> +++ b/drivers/edac/edac_mc.c
->> @@ -44,7 +44,7 @@ static void edac_mc_dump_channel(struct rank_info *chan)
->>  	debugf4("\tchannel = %p\n", chan);
->>  	debugf4("\tchannel->chan_idx = %d\n", chan->chan_idx);
->>  	debugf4("\tchannel->ce_count = %d\n", chan->ce_count);
->> -	debugf4("\tchannel->label = '%s'\n", chan->label);
->> +	debugf4("\tchannel->label = '%s'\n", chan->dimm->label);
->>  	debugf4("\tchannel->csrow = %p\n\n", chan->csrow);
->>  }
->>  
->> @@ -157,6 +157,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->>  	struct mem_ctl_info *mci;
->>  	struct csrow_info *csi, *csrow;
->>  	struct rank_info *chi, *chp, *chan;
->> +	struct dimm_info *dimm;
->>  	void *pvt;
->>  	unsigned size;
->>  	int row, chn;
->> @@ -170,7 +171,8 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->>  	mci = (struct mem_ctl_info *)0;
->>  	csi = edac_align_ptr(&mci[1], sizeof(*csi));
->>  	chi = edac_align_ptr(&csi[nr_csrows], sizeof(*chi));
->> -	pvt = edac_align_ptr(&chi[nr_chans * nr_csrows], sz_pvt);
->> +	dimm = edac_align_ptr(&chi[nr_chans * nr_csrows], sizeof(*dimm));
->> +	pvt = edac_align_ptr(&dimm[nr_chans * nr_csrows], sz_pvt);
->>  	size = ((unsigned long)pvt) + sz_pvt;
->>  
->>  	mci = kzalloc(size, GFP_KERNEL);
->> @@ -182,11 +184,13 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->>  	 */
->>  	csi = (struct csrow_info *)(((char *)mci) + ((unsigned long)csi));
->>  	chi = (struct rank_info *)(((char *)mci) + ((unsigned long)chi));
->> +	dimm = (struct dimm_info *)(((char *)mci) + ((unsigned long)dimm));
->>  	pvt = sz_pvt ? (((char *)mci) + ((unsigned long)pvt)) : NULL;
->>  
->>  	/* setup index and various internal pointers */
->>  	mci->mc_idx = edac_index;
->>  	mci->csrows = csi;
->> +	mci->dimms  = dimm;
->>  	mci->pvt_info = pvt;
->>  	mci->nr_csrows = nr_csrows;
->>  
->> @@ -205,6 +209,21 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->>  		}
->>  	}
->>  
->> +	/*
->> +	 * By default, assumes that a per-csrow arrangement will be used,
->> +	 * as most drivers are based on such assumption.
->> +	 */
->> +	dimm = mci->dimms;
->> +	for (row = 0; row < mci->nr_csrows; row++) {
->> +		for (chn = 0; chn < mci->csrows[row].nr_channels; chn++) {
->> +			mci->csrows[row].channels[chn].dimm = dimm;
->> +			dimm->csrow = row;
->> +			dimm->csrow_channel = chn;
->> +			dimm++;
->> +			mci->nr_dimms++;
->> +		}
->> +	}
+
+On Mar 30, 2012, at 8:17 AM, Karl Pickett wrote:
+
+> On Mar 30, 2012, at 7:44 AM, Oleg Nesterov wrote:
 > 
-> There's a double loop above this one which iterates over the same
-> things: rows and then channels in each row. So merge that loop with the
-> one above instead of repeating it here.
+>> On 03/29, Karl Pickett wrote:
+>>> 
+>>> Re: http://thread.gmane.org/gmane.linux.kernel/1236479
+>>> 
+>>> I'm wondering if this is going to break code that checks getppid() == 1?
+>>> 
+>>> I have a TCL/TK GUI app that spawns ssh.  I want the ssh to die
+>>> immediately if the GUI process crashes, so ssh is launched with a wrapper
+>>> c program that does:
+>>> 
+>>>  prctl(PR_SET_PDEATHSIG, SIGHUP);
+>>>  if (getppid() == 1) /* parent died already? */
+>>>      return 0;
+>> 
+>> Yes, this won't work if the parent of this app does PR_SET_CHILD_SUBREAPER.
+>> 
+>>> So what is getppid() going to return for some user using this new
+>>> 'session manager reaper'?
+>> 
+>> The new parent's pid ;)
+>> 
+>> Perhaps you can do something like
+>> 
+>> 	ppid_for_child = getpid();
+>> 
+>> 	if (!fork()) {
+>> 		// Child
+>> 		prctl(PR_SET_PDEATHSIG);
+>> 		if (getppid() != ppid_for_child)
+>> 			return;
+>> 		...
+>> 	}
 > 
+> There are two problems with that.  1., I don't think TCL/TK lets me access the parent pre-fork env like that - all I can change is the execed code.  2., That has a clear race with pid wrap around.  You really need a prctl(PR_DID_MY_REAL_PARENT_DIE) function to be safe.
 
-The first loop will disappear on the patch I'm writing right now with the 
-edac_mc_alloc() changes to per-csrow/per-dimm/per-channel kzalloc().
+Maybe there is not a race with pid wrap around since that can not create a 'new' parent for me?  Too early in the morning.  
 
-Regards,
-Mauro
+1 init -> 2 Subreaper -> 3 Gui App -> 4 ssh.  If 3 (gui app dies), is there any way another process with pid 3 could become my parent?   
 
+Maybe with TCL/TK I could set an environment variable that records its pid.  I already thought about this, but for some reason was still thinking pid wrap around would happen.  However, that requires access to that programs source code (which I fortunately have) but I think the authors of the patch need to recognize the compatibility problems of this patch and provide a better workaround (like PR_DID_MY_REAL_PARENT_DIE).  Otherwise, PR_SET_PDEATHSIG is not as useful as it has been for quite some time.
+
+> 
+> 
+>> 
+>> Just in case, I do not know how PR_SET_CHILD_SUBREAPER will be really used.
+>> I do not know if systemd will run the "normal" user applications under
+>> PR_SET_CHILD_SUBREAPER. Probably yes, but this is the question to Kay.
+>> 
+>> Oleg.
+>> 
+> 
 
