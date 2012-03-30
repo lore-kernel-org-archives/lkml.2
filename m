@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463Ab2C3KTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:19:06 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:52238 "EHLO
+	id S933618Ab2C3KTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:19:17 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:52218 "EHLO
 	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760658Ab2C3KSf (ORCPT
+	with ESMTP id S1760584Ab2C3KSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:18:35 -0400
+	Fri, 30 Mar 2012 06:18:41 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+Cc: linux-kernel@vger.kernel.org, Robert Lee <rob.lee@linaro.org>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 51/76] cpuidle: remove unused 'governor_data' field
-Date: Fri, 30 Mar 2012 06:13:54 -0400
-Message-id: <e07510585a88c0f6c6c728e2e006aa913496d4ae.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 22/76] ARM: davinci: Fix for cpuidle consolidation changes
+Date: Fri, 30 Mar 2012 06:13:25 -0400
+Message-id: <6a6ea0acc9375571a13aa8c4e105a0807e1c16a4.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -25,28 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
+From: Robert Lee <rob.lee@linaro.org>
 
-As far as I can see, this field is never used in the code.
+The recent cpuidle consolidation changes erroneously omitted one
+critical line of code.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Robert Lee <rob.lee@linaro.org>
+Tested-by: Sekhar Nori <nsekhar@ti.com>
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- include/linux/cpuidle.h |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/mach-davinci/cpuidle.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index f7f1d90..f3ebbba 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -98,7 +98,6 @@ struct cpuidle_device {
- 	struct list_head 	device_list;
- 	struct kobject		kobj;
- 	struct completion	kobj_unregister;
--	void			*governor_data;
- };
+diff --git a/arch/arm/mach-davinci/cpuidle.c b/arch/arm/mach-davinci/cpuidle.c
+index 93ae096..9107691 100644
+--- a/arch/arm/mach-davinci/cpuidle.c
++++ b/arch/arm/mach-davinci/cpuidle.c
+@@ -55,10 +55,11 @@ static int davinci_enter_idle(struct cpuidle_device *dev,
+ #define DAVINCI_CPUIDLE_FLAGS_DDR2_PWDN	BIT(0)
  
- DECLARE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
+ static struct cpuidle_driver davinci_idle_driver = {
+-	.name		= "cpuidle-davinci",
+-	.owner		= THIS_MODULE,
+-	.states[0]	= ARM_CPUIDLE_WFI_STATE,
+-	.states[1]	= {
++	.name			= "cpuidle-davinci",
++	.owner			= THIS_MODULE,
++	.en_core_tk_irqen	= 1,
++	.states[0]		= ARM_CPUIDLE_WFI_STATE,
++	.states[1]		= {
+ 		.enter			= davinci_enter_idle,
+ 		.exit_latency		= 10,
+ 		.target_residency	= 100000,
 -- 
 1.7.10.rc2.19.gfae9d
 
