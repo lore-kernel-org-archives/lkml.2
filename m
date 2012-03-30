@@ -1,85 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760849Ab2C3OKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 10:10:52 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35470 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759385Ab2C3OKp (ORCPT
+	id S1760908Ab2C3OLE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 10:11:04 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:34804 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760272Ab2C3OKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 10:10:45 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Geoff Levand <geoff@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Ingo Molnar <mingo@kernel.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Max Krasnyansky <maxk@qualcomm.com>, Zen Lin <zen@openhuawei.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
-Organization: Texas Instruments, Inc.
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	<87r4wbhqqd.fsf@ti.com> <20120330004527.GB2571@somewhere.redhat.com>
-	<1333073233.4912.44.camel@smoke>
-Date: Fri, 30 Mar 2012 07:10:43 -0700
-In-Reply-To: <1333073233.4912.44.camel@smoke> (Geoff Levand's message of "Thu,
-	29 Mar 2012 19:07:13 -0700")
-Message-ID: <87k422gows.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 30 Mar 2012 10:10:49 -0400
+Message-ID: <4F75BED4.9050005@linux.vnet.ibm.com>
+Date: Fri, 30 Mar 2012 19:40:28 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, a.p.zijlstra@chello.nl,
+        mingo@kernel.org, "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        vapier@gentoo.org, srivatsa.bhat@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au
+Subject: Re: sched: WARNING: at include/linux/cpumask.h:108 select_fallback_rq+0x241/0x280()
+References: <CA+1xoqcf6qJOouKXGEHsjWSBJdA7qtMnuVopq+hoHS+TX8fvSg@mail.gmail.com> <CA+1xoqcJAwgTgQG=nZPsH_SLkPFkGt2rUiVWGn5SO5JOAC1RAA@mail.gmail.com>
+In-Reply-To: <CA+1xoqcJAwgTgQG=nZPsH_SLkPFkGt2rUiVWGn5SO5JOAC1RAA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12033014-4790-0000-0000-0000020392FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geoff Levand <geoff@infradead.org> writes:
+On 03/30/2012 02:02 AM, Sasha Levin wrote:
 
-> Hi All,
->
-> On Fri, 2012-03-30 at 02:45 +0200, Frederic Weisbecker wrote:
->> On Thu, Mar 29, 2012 at 05:33:46PM -0700, Kevin Hilman wrote:
->> > For anyone interested in collaborating on ARM support, my
->> > work-in-progress branch is below[1] based on Frederic's cpuset-v2
->> > branch.  Patches and testing welcome.
->> > 
->> > [1] git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux.git wip/arm-nohz-cpusets
->> 
->> Nice! Thanks for working on this. You may want to work with Geoff Levand who's working
->> on the ARM port too.
->
-> You can see my work here:
->
->   http://git.kernel.org/?p=linux/kernel/git/geoff/nohz.git
+> (and now with lkml)
+> 
+> Hi all,
+> 
+> I got the following spew using trinity in a kvm tools guest on the
+> latest linux-next kernel.
+> 
+> This is the result of trying to offline CPU1. I'm not sure how to
+> reproduce it easily besides putting some pressure on the system and
+> shutting down CPUs until it happens.
+> 
+> [  317.238839] Cannot set affinity for irq 0
+> [  317.238839] ------------[ cut here ]------------
+> [  317.238839] WARNING: at include/linux/cpumask.h:108
+> select_fallback_rq+0x241/0x280()
+> [  317.238839] Pid: 13, comm: migration/1 Not tainted
+> 3.3.0-next-20120329-sasha #4
+> [  317.238839] Call Trace:
+> [  317.238839]  [<ffffffff810b26b5>] warn_slowpath_common+0x75/0xb0
+> [  317.238839]  [<ffffffff810b2705>] warn_slowpath_null+0x15/0x20
+> [  317.238839]  [<ffffffff810e5991>] select_fallback_rq+0x241/0x280
+> [  317.238839]  [<ffffffff810f1a40>] ? dequeue_task_fair+0x100/0x100
+> [  317.238839]  [<ffffffff810f1a40>] ? dequeue_task_fair+0x100/0x100
+> [  317.238839]  [<ffffffff810ecd20>] migrate_tasks+0x80/0xf0
+> [  317.238839]  [<ffffffff826fe03a>] ? migration_call+0xae/0x16b
+> [  317.238839]  [<ffffffff826fe073>] migration_call+0xe7/0x16b
+> [  317.238839]  [<ffffffff810ddebf>] notifier_call_chain+0x5f/0x150
+> [  317.238839]  [<ffffffff810ddfb9>] __raw_notifier_call_chain+0x9/0x10
+> [  317.238839]  [<ffffffff810b489b>] __cpu_notify+0x1b/0x30
+> [  317.238839]  [<ffffffff826c3fbd>] take_cpu_down+0x2d/0x40
+> [  317.238839]  [<ffffffff811357fa>] stop_machine_cpu_stop+0xda/0x1a0
+> [  317.238839]  [<ffffffff81135720>] ? queue_stop_cpus_work+0x190/0x190
+> [  317.238839]  [<ffffffff811352ae>] cpu_stopper_thread+0xee/0x200
+> [  317.238839]  [<ffffffff82705c1a>] ? __schedule+0x49a/0x860
+> [  317.238839]  [<ffffffff811351c0>] ? res_counter_init+0x50/0x50
+> [  317.238839]  [<ffffffff810d715e>] kthread+0xbe/0xd0
+> [  317.238839]  [<ffffffff82709e74>] kernel_thread_helper+0x4/0x10
+> [  317.238839]  [<ffffffff810e3ee0>] ? finish_task_switch+0x80/0x110
+> [  317.238839]  [<ffffffff82708174>] ? retint_restore_args+0x13/0x13
+> [  317.238839]  [<ffffffff810d70a0>] ? __init_kthread_worker+0x70/0x70
+> [  317.238839]  [<ffffffff82709e70>] ? gs_change+0x13/0x13
+> [  317.238839] ---[ end trace 79079cf527253aab ]---
+> [  317.250645] [sched_delayed] process 2267 (trinity) no longer affine to cpu1
+> [  317.323711] CPU 1 is now offline
+> [  317.591059] [sched_delayed] process 1956 (trinity) no longer affine to cpu1
+> [  317.812110] [sched_delayed] process 2004 (trinity) no longer affine to cpu1
+> [  318.401016] [sched_delayed] process 2228 (trinity) no longer affine to cpu1
+> [  318.581015] [sched_delayed] process 2099 (trinity) no longer affine to cpu1
+> --
 
-Great! Will have a closer look.
 
-A quick look suggests we've done almost exactly the same thing.  Guess
-that's a good sign. :) 
 
-> I also put a simple test I got from Frederic here:
->
->   http://git.kernel.org/?p=linux/kernel/git/geoff/nohz-tests.git
+Does this patch help?
 
-Great, having a common test to compare results was going to be my next
-question.  I'll start playing with these next week.   Thanks.
+---
 
-> Feel free to expand on either!
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: sched: Fix incorrect usage of for_each_cpu_mask() in select_fallback_rq()
 
-> Kevin, I'll take a look at your work, I guess it has the same things as
-> mine.  
+The function for_each_cpu_mask() expects a *pointer* to struct cpumask
+as its second argument, whereas select_fallback_rq() passes the value
+itself. And moreover, for_each_cpu_mask() has been marked as obselete
+in include/linux/cpumask.h. So move to the more appropriate for_each_cpu()
+variant.
 
-Yeah, we've done basically the same thing.  I see though that you've
-also already handled some RCU idle cases that I hadn't.
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Since you're a little further than me, I'll switch you yours and 
-start using that as the base
+ kernel/sched/core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> Will you be at the Collaboration Summit next week?
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e3ed0ec..e85046d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1270,7 +1270,7 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
+ 	int dest_cpu;
+ 
+ 	/* Look for allowed, online CPU in same node. */
+-	for_each_cpu_mask(dest_cpu, *nodemask) {
++	for_each_cpu(dest_cpu, nodemask) {
+ 		if (!cpu_online(dest_cpu))
+ 			continue;
+ 		if (!cpu_active(dest_cpu))
+@@ -1281,7 +1281,7 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
+ 
+ 	for (;;) {
+ 		/* Any allowed, online CPU? */
+-		for_each_cpu_mask(dest_cpu, *tsk_cpus_allowed(p)) {
++		for_each_cpu(dest_cpu, tsk_cpus_allowed(p)) {
+ 			if (!cpu_online(dest_cpu))
+ 				continue;
+ 			if (!cpu_active(dest_cpu))
 
-Unfortunately, no.
 
-Kevin
