@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760935Ab2C3NTT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 09:19:19 -0400
-Received: from vms173021pub.verizon.net ([206.46.173.21]:33467 "EHLO
-	vms173021pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760877Ab2C3NSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 09:18:31 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 13/76] drivers/thermal/thermal_sys.c: fix build warning
-Date: Fri, 30 Mar 2012 06:13:16 -0400
-Message-id: <b11de07ce561574b6e03c8192b28bad540da8f79.1333101989.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
-In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
-References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
-In-reply-to: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
-References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
-Reply-to: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+	id S1760883Ab2C3NXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 09:23:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758908Ab2C3NXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 09:23:15 -0400
+Message-ID: <4F75B3B2.7030901@redhat.com>
+Date: Fri, 30 Mar 2012 10:22:58 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/13] edac: move dimm properties to struct memset_info
+References: <1333039546-5590-1-git-send-email-mchehab@redhat.com> <1333039546-5590-3-git-send-email-mchehab@redhat.com> <20120330131037.GB30876@aftab>
+In-Reply-To: <20120330131037.GB30876@aftab>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <festevam@gmail.com>
+Em 30-03-2012 10:10, Borislav Petkov escreveu:
+> Please don't call it 'memset_info' - this is misleading beyond belief.
+> 
+> Hmm, what struct memset_info - where the hell is this? It is nowhere to
+> be seen in the patches following that one too, WTF?
 
-With CONFIG_NET=n:
+s/memset_info/dimm_info/
 
-drivers/thermal/thermal_sys.c:63: warning: 'thermal_event_seqnum' defined but not used
+Sorry, I forgot to rename the patch name on the rebase I've renamed
+this field (rebase 8?).
 
-Move 'thermal_event_seqnum' definition inside the '#ifdef CONFIG_NET'
-
-[akpm@linux-foundation.org: make thermal_event_seqnum local to generate_netlink_event()]
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Durgadoss R <durgadoss.r@intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/thermal/thermal_sys.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 220ce7e..859b80b 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -60,8 +60,6 @@ static LIST_HEAD(thermal_tz_list);
- static LIST_HEAD(thermal_cdev_list);
- static DEFINE_MUTEX(thermal_list_lock);
- 
--static unsigned int thermal_event_seqnum;
--
- static int get_idr(struct idr *idr, struct mutex *lock, int *id)
- {
- 	int err;
-@@ -1312,6 +1310,7 @@ int thermal_generate_netlink_event(u32 orig, enum events event)
- 	void *msg_header;
- 	int size;
- 	int result;
-+	static unsigned int thermal_event_seqnum;
- 
- 	/* allocate memory */
- 	size = nla_total_size(sizeof(struct thermal_genl_event)) + \
--- 
-1.7.10.rc2.19.gfae9d
+> On Thu, Mar 29, 2012 at 01:45:35PM -0300, Mauro Carvalho Chehab wrote:
+>> On systems based on chip select rows, all channels need to use memories
+>> with the same properties, otherwise the memories on channels A and B
+>> won't be recognized.
+>>
+>> However, such assumption is not true for all types of memory
+>> controllers.
+>>
+>> Controllers for FB-DIMM's don't have such requirements.
+>>
+>> Also, modern Intel controllers seem to be capable of handling such
+>> differences.
+>>
+>> So, we need to get rid of storing the DIMM information into a per-csrow
+>> data, storing it, instead at the right place.
+>>
+>> The first step is to move grain, mtype, dtype and edac_mode to the
+>> per-dimm struct.
+> 
 
