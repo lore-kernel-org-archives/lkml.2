@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966114Ab2C3VVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:21:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S936016Ab2C3VaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:30:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966100Ab2C3VVp (ORCPT
+	with ESMTP id S966106Ab2C3VVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:21:45 -0400
-Message-Id: <20120330194844.835227748@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:21:51 -0400
+Message-Id: <20120330194845.283605127@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:03 -0700
+Date: Fri, 30 Mar 2012 12:50:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Brian Norris <computersforpeace@gmail.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 098/175] ahci_platform: add STRICT_AHCI platform type
+        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 100/175] firewire: ohci: fix too-early completion of IR multichannel buffers
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit d408e2b14fba4fa214fa5bc24b7baae8a55e563c upstream.
+commit 0c0efbacab8d70700d13301e0ae7975783c0cb0a upstream.
 
-Some platforms need to make use of the AHCI_HFLAG_DELAY_ENGINE flag.
+handle_ir_buffer_fill() assumed that a completed descriptor would be
+indicated by a non-zero transfer_status (as in most other descriptors).
+However, this field is written by the controller as soon as (the end of)
+the first packet has been written into the buffer.  As a consequence, if
+we happen to run into such a descriptor when the interrupt handler is
+executed after such a packet has completed, the descriptor would be
+taken out of the list of active descriptors as soon as the buffer had
+been partially filled, so the event for the buffer being completely
+filled would never be sent.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+To fix this, handle descriptors only when they have been completely
+filled, i.e., when res_count == 0.  (This also matches the condition
+that is reported by the controller with an interrupt.)
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci_platform.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/firewire/ohci.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -26,6 +26,7 @@
- enum ahci_type {
- 	AHCI,		/* standard platform ahci */
- 	IMX53_AHCI,	/* ahci on i.mx53 */
-+	STRICT_AHCI,	/* delayed DMA engine start */
- };
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2748,7 +2748,7 @@ static int handle_ir_buffer_fill(struct
+ 		container_of(context, struct iso_context, context);
+ 	u32 buffer_dma;
  
- static struct platform_device_id ahci_devtype[] = {
-@@ -36,6 +37,9 @@ static struct platform_device_id ahci_de
- 		.name = "imx53-ahci",
- 		.driver_data = IMX53_AHCI,
- 	}, {
-+		.name = "strict-ahci",
-+		.driver_data = STRICT_AHCI,
-+	}, {
- 		/* sentinel */
- 	}
- };
-@@ -56,6 +60,13 @@ static const struct ata_port_info ahci_p
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &ahci_pmp_retry_srst_ops,
- 	},
-+	[STRICT_AHCI] = {
-+		AHCI_HFLAGS	(AHCI_HFLAG_DELAY_ENGINE),
-+		.flags		= AHCI_FLAG_COMMON,
-+		.pio_mask	= ATA_PIO4,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &ahci_ops,
-+	},
- };
+-	if (!last->transfer_status)
++	if (last->res_count != 0)
+ 		/* Descriptor(s) not done yet, stop iteration */
+ 		return 0;
  
- static struct scsi_host_template ahci_platform_sht = {
+@@ -2762,8 +2762,7 @@ static int handle_ir_buffer_fill(struct
+ 	if (le16_to_cpu(last->control) & DESCRIPTOR_IRQ_ALWAYS)
+ 		ctx->base.callback.mc(&ctx->base,
+ 				      le32_to_cpu(last->data_address) +
+-				      le16_to_cpu(last->req_count) -
+-				      le16_to_cpu(last->res_count),
++				      le16_to_cpu(last->req_count),
+ 				      ctx->base.callback_data);
+ 
+ 	return 1;
 
 
