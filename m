@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936330Ab2C3Vrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:47:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S965996Ab2C3Vre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:47:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965957Ab2C3VUm (ORCPT
+	with ESMTP id S965968Ab2C3VUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:20:42 -0400
-Message-Id: <20120330194839.939657249@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:20:47 -0400
+Message-Id: <20120330194840.460418919@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:43 -0700
+Date: Fri, 30 Mar 2012 12:49:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 078/175] ib_srpt: Fix srpt_handle_cmd send_ioctx->ioctx_kref leak on exception
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Subject: [ 080/175] md: dont set md arrays to readonly on shutdown.
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +24,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 187e70a554e0f0717a65998bc9199945cbbd4692 upstream.
+commit c744a65c1e2d59acc54333ce80a5b0702a98010b upstream.
 
-This patch addresses a bug in srpt_handle_cmd() failure handling where
-send_ioctx->kref is being leaked with the local extra reference after init,
-causing the expected kref_put() in srpt_handle_send_comp() to not be the final
-call to invoke srpt_put_send_ioctx_kref() -> transport_generic_free_cmd() and
-perform se_cmd descriptor memory release.
+It seems that with recent kernel, writeback can still be happening
+while shutdown is happening, and consequently data can be written
+after the md reboot notifier switches all arrays to read-only.
+This causes a BUG.
 
-It also fixes a SCF_SCSI_RESERVATION_CONFLICT handling bug where this code
-is incorrectly falling through to transport_handle_cdb_direct() after
-invoking srpt_queue_status() to send SAM_STAT_RESERVATION_CONFLICT status.
+So don't switch them to read-only - just mark them clean and
+set 'safemode' to '2' which mean that immediately after any
+write the array will be switch back to 'clean'.
 
-Note this patch is for >= v3.3 mainline code, and current lio-core.git
-code has already been converted to target_submit_cmd() + se_cmd->cmd_kref usage,
-and internal ioctx->kref usage has been removed.  I'm including this patch
-now into target-pending/for-next with a CC' for v3.3 stable.
+This could result in the shutdown happening when array is marked
+dirty, thus forcing a resync on reboot.  However if you reboot
+without performing a "sync" first, you get to keep both halves.
 
-Cc: Bart Van Assche <bvanassche@acm.org>
-Cc: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This is suitable for any stable kernel (though there might be some
+conflicts with obvious fixes in earlier kernels).
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/md/md.c |   37 +++++++++++++++----------------------
+ 1 file changed, 15 insertions(+), 22 deletions(-)
 
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -1750,6 +1750,7 @@ static int srpt_handle_cmd(struct srpt_r
- 		       srp_cmd->tag);
- 		cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
- 		cmd->scsi_sense_reason = TCM_INVALID_CDB_FIELD;
-+		kref_put(&send_ioctx->kref, srpt_put_send_ioctx_kref);
- 		goto send_sense;
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -8157,30 +8157,23 @@ static int md_notify_reboot(struct notif
+ 	struct mddev *mddev;
+ 	int need_delay = 0;
+ 
+-	if ((code == SYS_DOWN) || (code == SYS_HALT) || (code == SYS_POWER_OFF)) {
+-
+-		printk(KERN_INFO "md: stopping all md devices.\n");
+-
+-		for_each_mddev(mddev, tmp) {
+-			if (mddev_trylock(mddev)) {
+-				/* Force a switch to readonly even array
+-				 * appears to still be in use.  Hence
+-				 * the '100'.
+-				 */
+-				md_set_readonly(mddev, 100);
+-				mddev_unlock(mddev);
+-			}
+-			need_delay = 1;
++	for_each_mddev(mddev, tmp) {
++		if (mddev_trylock(mddev)) {
++			__md_stop_writes(mddev);
++			mddev->safemode = 2;
++			mddev_unlock(mddev);
+ 		}
+-		/*
+-		 * certain more exotic SCSI devices are known to be
+-		 * volatile wrt too early system reboots. While the
+-		 * right place to handle this issue is the given
+-		 * driver, we do want to have a safe RAID driver ...
+-		 */
+-		if (need_delay)
+-			mdelay(1000*1);
++		need_delay = 1;
  	}
++	/*
++	 * certain more exotic SCSI devices are known to be
++	 * volatile wrt too early system reboots. While the
++	 * right place to handle this issue is the given
++	 * driver, we do want to have a safe RAID driver ...
++	 */
++	if (need_delay)
++		mdelay(1000*1);
++
+ 	return NOTIFY_DONE;
+ }
  
-@@ -1757,15 +1758,19 @@ static int srpt_handle_cmd(struct srpt_r
- 	cmd->data_direction = dir;
- 	unpacked_lun = srpt_unpack_lun((uint8_t *)&srp_cmd->lun,
- 				       sizeof(srp_cmd->lun));
--	if (transport_lookup_cmd_lun(cmd, unpacked_lun) < 0)
-+	if (transport_lookup_cmd_lun(cmd, unpacked_lun) < 0) {
-+		kref_put(&send_ioctx->kref, srpt_put_send_ioctx_kref);
- 		goto send_sense;
-+	}
- 	ret = transport_generic_allocate_tasks(cmd, srp_cmd->cdb);
--	if (cmd->se_cmd_flags & SCF_SCSI_RESERVATION_CONFLICT)
--		srpt_queue_status(cmd);
--	else if (cmd->se_cmd_flags & SCF_SCSI_CDB_EXCEPTION)
--		goto send_sense;
--	else
--		WARN_ON_ONCE(ret);
-+	if (ret < 0) {
-+		kref_put(&send_ioctx->kref, srpt_put_send_ioctx_kref);
-+		if (cmd->se_cmd_flags & SCF_SCSI_RESERVATION_CONFLICT) {
-+			srpt_queue_status(cmd);
-+			return 0;
-+		} else
-+			goto send_sense;
-+	}
- 
- 	transport_handle_cdb_direct(cmd);
- 	return 0;
 
 
