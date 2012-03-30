@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966106Ab2C3VcT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:32:19 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44941 "EHLO
+	id S966139Ab2C3VcY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:32:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53985 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936191Ab2C3VcM (ORCPT
+	by vger.kernel.org with ESMTP id S936231Ab2C3VcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:12 -0400
-X-Sasl-enc: bMiCkB3sX4v3bKhGP4hOyqPbwEoefJodlswu9cObXHIk 1333143131
+	Fri, 30 Mar 2012 17:32:14 -0400
+X-Sasl-enc: ycY2O34fzpRoKuqHcG4TnIt6OXl88ayj+OHq8iGQAmL9 1333143133
 X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:57 2012
-Message-Id: <20120330194857.344159667@linuxfoundation.org>
+Message-Id: <20120330194857.525291667@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:00 -0700
+Date: Fri, 30 Mar 2012 12:51:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [ 155/175] slub: Do not hold slub_lock when calling sysfs_slab_add()
+        alan@lxorguk.ukuu.org.uk, Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 156/175] NFSv4: Fix two infinite loops in the mount code
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,48 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Lameter <cl@linux.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 66c4c35c6bc5a1a452b024cf0364635b28fd94e4 upstream.
+commit 05e9cfb408b24debb3a85fd98edbfd09dd148881 upstream.
 
-sysfs_slab_add() calls various sysfs functions that actually may
-end up in userspace doing all sorts of things.
+We can currently loop forever in nfs4_lookup_root() and in
+nfs41_proc_secinfo_no_name(), if the first iteration returns a
+NFS4ERR_DELAY or something else that causes exception.retry to get
+set.
 
-Release the slub_lock after adding the kmem_cache structure to the list.
-At that point the address of the kmem_cache is not known so we are
-guaranteed exlusive access to the following modifications to the
-kmem_cache structure.
-
-If the sysfs_slab_add fails then reacquire the slub_lock to
-remove the kmem_cache structure from the list.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Reported-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slub.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3929,13 +3929,14 @@ struct kmem_cache *kmem_cache_create(con
- 		if (kmem_cache_open(s, n,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
-+			up_write(&slub_lock);
- 			if (sysfs_slab_add(s)) {
-+				down_write(&slub_lock);
- 				list_del(&s->list);
- 				kfree(n);
- 				kfree(s);
- 				goto err;
- 			}
--			up_write(&slub_lock);
- 			return s;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2249,11 +2249,12 @@ static int nfs4_lookup_root(struct nfs_s
+ 		switch (err) {
+ 		case 0:
+ 		case -NFS4ERR_WRONGSEC:
+-			break;
++			goto out;
+ 		default:
+ 			err = nfs4_handle_exception(server, err, &exception);
  		}
- 		kfree(n);
+ 	} while (exception.retry);
++out:
+ 	return err;
+ }
+ 
+@@ -6068,11 +6069,12 @@ nfs41_proc_secinfo_no_name(struct nfs_se
+ 		case 0:
+ 		case -NFS4ERR_WRONGSEC:
+ 		case -NFS4ERR_NOTSUPP:
+-			break;
++			goto out;
+ 		default:
+ 			err = nfs4_handle_exception(server, err, &exception);
+ 		}
+ 	} while (exception.retry);
++out:
+ 	return err;
+ }
+ 
 
 
