@@ -1,49 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934174Ab2C3LWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:22:48 -0400
-Received: from smtpf3.forptr.21cn.com ([59.36.102.62]:20356 "EHLO 21cn.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934112Ab2C3LWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:22:19 -0400
-HMM_SOURCE_IP: 10.27.2.12:40298.1720209024
-HMM_ATTACHE_NUM: 0000
-HMM_SOURCE_TYPE: SMTP
-0/X-Brightmail-Tracker: AAAAAA==
-1/X-Total-Score: 0:
-3/X-Total-Score: 0:
-X-FILTER-SCORE: to=<linux-kernel@vger.kernel.org>, score=<1333106536JiJLIixAvrM9JJJJJLJJIJU5jmU2DwQIb55555j55m55>  
-Date: Fri, 30 Mar 2012 19:22:11 +0800
-From: "Xfjn" <censouvdvpgf@21cn.com>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: 9N0Q
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-Message-Id: <20120330112213.6B1B8506D28@21cn.com>
+	id S934221Ab2C3LW7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:22:59 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:51544 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933693Ab2C3LSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 07:18:33 -0400
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 56/76] ACPI: Add CPU hotplug support for processor device
+ objects
+Date: Fri, 30 Mar 2012 06:13:59 -0400
+Message-id: <9f324bda970c599ca35f7be89d9d1bcb96d6053c.1333101989.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
+In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+In-reply-to: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2UBMqjs012877
 
-gUi8k9m0O0Q1RfSgUi8k9l9N0P1RfSgUi8k9m9N0P1RfSgUi8k9m0P1RfSg1SfTi8k9l9N0P1RfSgUi8k9m9N0P1RfSgUi8k9m9N0P1RfTgUi8k9m0O0Ql9m0O0Q1SfThVj8l9m0O0Q1SfThVj8l9m0O0Q1SgThVj8l9n0Ol9m0P1ReSgUi8k9l9N0P1RfSgUi8k9l9N0P1RfSgUi8k9m9N0PP1Q1ThVj8k9m0O0P1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q1RfThV1Q1ShVj8k9m0O0Q1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q1RfThVj9l9n0P0Q1SgUhVj9l9n0O1Q1SgUiVj9l9n0O1Q1SgUiVj9l9m0O0P1RfThVj9l99O0QeSgUi8k9l0O0Q1RfThVj8l9m0O0Q1SgUj8k9m0O0Q1RfThVj9l9NP1RfThUiVj9l9n0O1Q1SgUiVj9l9m0O0P1Q1SgThVj8k9l9m0O0QVj9m0P1RfSgUi8k9m9N0P1RfSgUi8k9m9N0P1RfTgUi8j9l9n0O1RfTUiWk9m0O0Q1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q1RfThVj8k9m0P1l9O0Q1RfThVj8k9m0O0Q1RfTgUi8k9l9N0P1RfSgUi8k9l9N0Pl9N0Q1SfThVj8l9m0O0Q1SfThVi8k9l9n0O1Q1SgThVj9l9n0Ok9m0O0P1RfThUi8k9m0O0P1RfThVi8k9m0O0P1RfThVi8k9m0O0N0P1RfThUi8k9m0O0P1RfThUi8k9m0O0P1RfThVi8j9l9n0P1Q1ThVi9N0Q1RfThVj8l9m0O0Q1SfThVj8l9m0O0Q1SfThVj8l9m0O0Q1SfThVj
+From: Toshi Kani <toshi.kani@hp.com>
 
+acpi_processor_install_hotplug_notify() registers processor objects to
+receive ACPI CPU hotplug event notifications. This patch additionally
+registers processor device objects (ACPI0007) to receive the notifications
+as well.
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/processor_driver.c |   48 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 38 insertions(+), 10 deletions(-)
 
-ƒ˙∫√ £°
-    œ÷       ø™
-        ø…       ÊŒ
-”–:∑˛ŒÒ£¨π„∏Ê£¨≤Õ“˚£¨◊°Àﬁ£¨◊‚¡ﬁ£¨‘À∑—£¨ª˙–µ£¨∏÷Ã˙£¨Ω®≤ƒ£¨√∫Ãø£¨ Ø”Õ...µ»£° 
-        ∂˙πÿœµ£∫ 1 £≥£∂°°3 2 9£µ5 0£π8 –°¡ı
-ø€  Q£∫16 £µ£≥£≥ 5  376 9
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index 8ae05ce..50be277 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -68,6 +68,7 @@
+ #define ACPI_PROCESSOR_NOTIFY_PERFORMANCE 0x80
+ #define ACPI_PROCESSOR_NOTIFY_POWER	0x81
+ #define ACPI_PROCESSOR_NOTIFY_THROTTLING	0x82
++#define ACPI_PROCESSOR_DEVICE_HID	"ACPI0007"
+ 
+ #define ACPI_PROCESSOR_LIMIT_USER	0
+ #define ACPI_PROCESSOR_LIMIT_THERMAL	1
+@@ -88,7 +89,7 @@ static int acpi_processor_start(struct acpi_processor *pr);
+ 
+ static const struct acpi_device_id processor_device_ids[] = {
+ 	{ACPI_PROCESSOR_OBJECT_HID, 0},
+-	{"ACPI0007", 0},
++	{ACPI_PROCESSOR_DEVICE_HID, 0},
+ 	{"", 0},
+ };
+ MODULE_DEVICE_TABLE(acpi, processor_device_ids);
+@@ -741,20 +742,46 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+ 	return;
+ }
+ 
++static acpi_status is_processor_device(acpi_handle handle)
++{
++	struct acpi_device_info *info;
++	char *hid;
++	acpi_status status;
++
++	status = acpi_get_object_info(handle, &info);
++	if (ACPI_FAILURE(status))
++		return status;
++
++	if (info->type == ACPI_TYPE_PROCESSOR) {
++		kfree(info);
++		return AE_OK;	/* found a processor object */
++	}
++
++	if (!(info->valid & ACPI_VALID_HID)) {
++		kfree(info);
++		return AE_ERROR;
++	}
++
++	hid = info->hardware_id.string;
++	if ((hid == NULL) || strcmp(hid, ACPI_PROCESSOR_DEVICE_HID)) {
++		kfree(info);
++		return AE_ERROR;
++	}
++
++	kfree(info);
++	return AE_OK;	/* found a processor device object */
++}
++
+ static acpi_status
+ processor_walk_namespace_cb(acpi_handle handle,
+ 			    u32 lvl, void *context, void **rv)
+ {
+ 	acpi_status status;
+ 	int *action = context;
+-	acpi_object_type type = 0;
+ 
+-	status = acpi_get_type(handle, &type);
++	status = is_processor_device(handle);
+ 	if (ACPI_FAILURE(status))
+-		return (AE_OK);
+-
+-	if (type != ACPI_TYPE_PROCESSOR)
+-		return (AE_OK);
++		return AE_OK;	/* not a processor; continue to walk */
+ 
+ 	switch (*action) {
+ 	case INSTALL_NOTIFY_HANDLER:
+@@ -772,7 +799,8 @@ processor_walk_namespace_cb(acpi_handle handle,
+ 		break;
+ 	}
+ 
+-	return (AE_OK);
++	/* found a processor; skip walking underneath */
++	return AE_CTRL_DEPTH;
+ }
+ 
+ static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+@@ -830,7 +858,7 @@ void acpi_processor_install_hotplug_notify(void)
+ {
+ #ifdef CONFIG_ACPI_HOTPLUG_CPU
+ 	int action = INSTALL_NOTIFY_HANDLER;
+-	acpi_walk_namespace(ACPI_TYPE_PROCESSOR,
++	acpi_walk_namespace(ACPI_TYPE_ANY,
+ 			    ACPI_ROOT_OBJECT,
+ 			    ACPI_UINT32_MAX,
+ 			    processor_walk_namespace_cb, NULL, &action, NULL);
+@@ -843,7 +871,7 @@ void acpi_processor_uninstall_hotplug_notify(void)
+ {
+ #ifdef CONFIG_ACPI_HOTPLUG_CPU
+ 	int action = UNINSTALL_NOTIFY_HANDLER;
+-	acpi_walk_namespace(ACPI_TYPE_PROCESSOR,
++	acpi_walk_namespace(ACPI_TYPE_ANY,
+ 			    ACPI_ROOT_OBJECT,
+ 			    ACPI_UINT32_MAX,
+ 			    processor_walk_namespace_cb, NULL, &action, NULL);
+-- 
+1.7.10.rc2.19.gfae9d
 
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-k9m0P1Q1SgUiWk9l9n0P1Q1SgUiWk9l9n0P1ReSgUi8k9l9N0P1RfThVj8k99m0O1Q1SgUiWk9l9n0P1Q1SgUiWk9l9N0P1ReSgUi8k9l9N0P1ReThVjfThVk9l9N0P1RfSgUi8k9l9N0P1RfSgUi8k9m9N0P1RfTgUi8k9m0O0Q1Sg0P1SgUi8k9m0N0P1RfThUi8k9m0N0P1RfThUi8k9m0O0P1RfThUi8k9m09N1QfTgUi8k9m0O1Q1SgThVj9l9n0O1Q1SgUhVj9l9n0O1Q1SgUh8k9mVj9l9n0P1Q1SgUiVj9l9n0P1Q1SgUiWj9l9n0P1Q1SgUiWj9l9n0P1RgUiVj9l9n0P1Q1SgUiVj9l9n0P1Q1SgUiWj9l9n0P1Q1SgUiWj8k9n0P1Q1Vj9l0O0P1RfThUi8k9m0O0P1RfThVi8k9m0O0P1RfThVi8k9m0O0Q1SQfTgVj8k9m0O0Q1SgUiWj9l9n0P1RfThVj8k9m0P1Q1SgUiVj9l90P1QfThVi8k9m0O0P1RfThVi8k9m0O0P1RfThVj8k9n0P1Q1SgUi8k9m0P1RgUiVj9l9n0P1Q1RfThVj8k9m0O0P1RfThVj8k9m0O0Q1RfThWj9l9gUi8k9m0N0P1RfTgUi8k9m0N0P1RfThUi8k9m0N0P1RfThUi8k9m0O1Q1SgUhVj9l9N0P1RfThUi8k9n0O1Q1SgUhVj9l9n0O1Q1SgUhVj9l9n0P1k9m9N0P1RfTgUi8k9m9N0P1RfTgUi8k9m0N0P1RfTgUi8k9m0NO0P1SgUhVj9l9n0O1Q1SgUiVj9l9n0O1Q1SgUiVj9l9n0P1Q1Sg9m0N0P1RfThUi8k9m0O0P1RfThUi8k9m0O0P1RfThVi8k9m0O0P1SgUij9l9O0P1RfThVi8k9m0O0P1RfThVi8k9m0O0P1RfThVj8k9m0O0P1SgUiWj9gThVk9m9N0P1RfTgUi8k9m9N0P1RfTgUi8k9m0N0P1RfThUi8k9m0O1Q1SgUi8j9m0O0P1RfThVi8k9l9n0P1Q1SgUiVj9l9n0P1Q1SgUiWj9l9O08l9n0P1RfTgUi8k9m0N0P1RfTgUi8k9m0N0P1RfThUi8k9m0N0P1SgUO0Q1SgUi8k9l9N0P1RfSgUi8k9l9N0P1RfSfThVj8l9m0O0Q1SgTUi8k9n0O1Q1SgUhVj9l9n0O1Q1SgUiVj9l9n0O1Q1SgUiVj9l9n0P1k9n0P1Q1SgUhVj9l9n0O1Q1RfThUi8k9m0O0P1RfThVi8k9m0O9m9N0P1RfSgUi8k9m9N0P1RfTgUi8k9m9N0P1RfTgUi8k9m0N0P1SgTh9n0P1RfThVj8k9m0O0P1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q1RfUiWj0Q1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q1RfTh8k9l9hWj9m0O0Q1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q1RfThVj8k9m0O1Q1SgUik9m0O0Q1SfThVj8l9m0O0P1RfTgUi8k9m0N0P1RfTgUi8k9m0O0O0Q1SgUiWk9l9n0P1Q1SgUiWk9l9N0P1ReSgUi8k9l9N0P1ReSgVj8l9k9n0P1RfThUi8k9m0O0P1RfThVi8k9m0O0P1RfThVi8k9m0O0PVj9m0O0P1SgUiVj9l9n0P1RfThVi8k9m0O1Q1SgUi8k9m0O0P1RfUhVO0Q1SgUiVj9l9n0P1Q1SgUiVj8k9m0O0P1RfThVj8k9m0O0Q1RfVj8l9N0P1RfSgUi8k9l9N0P1RfSgUi8k9m9m0O0Q1SgThVj8l9m0P1i8l0N0P1SgThVj9l9n0N0P1RfThUi8k9m0N0P1RfThUi8k9m0O0P1SgUhVj98k9l0O0Q1SfThVj8l9m0O0Q1SfThVj8l9m0O0Q1SfThVj8l9m0O0RfSP1Sg8k9m0O0Q1RfThVj8l9m0O0Q1RfThVj8l9l9N0P1RfSgUi8k8l9m0P1RfSgUi8k9l9m0O0Q1SgThVj9l9n0O1Q1SgThVj9l9n0O18k9P1SgVj
-8l9m9N0P1RfTgUi8k9m9N0P1RfTgUi8k9m0N0P1RfTgUi8Q1Th8k9m0N0P1RfThUi8k9m0N0P1RfThUi8k9m0O0P1RfThUi8k9Vj9l0N1Q1SgThVj9l9n0O1Q1SgUhVj9l9n0O1Q1SgUhVj9l9n0O1RfTVj8k9n0P1ReSgUi8k9l9N0P1ReSgUi8j8l9m0O0Q1SfThVj8l9m9O01RfTiWj9l9n0P1Q1SgUiWj9l9n0P1Q1SgUiWk9l9n0P1Q1SgUiWk9m0O0Q0P1ShVi8k9m0O0P1RfThVi8k9m0O0P1RfThVj8k9m0O0P1RfThVj9l9n0m0O0P1RfThVi8k9m0O0P1RfThVj8k9m0O0Q1RfThVj8k9m0O0Q19l0O1ReRfThVj8l9m0O0Q1SfTgUi8k9m9N0P1RfTgUi8k9m9N0P1SfTh9m0P1RfThVi8k9m9n0P1Q1SgUiWj9l9n0P1Q1SgUiWj9l9n0P1Q1ThVj1ShVj9m0O0Q1RfThVj8k9m0O0Q1RfThVj8k9l9N0P1ReSgUi8k9l0O0Q1R0P1RfThVj8l9m0O0Q1SfThVj8l9m0O0Q1SfThVj8l9m0O0Q1SgTh8k9m9gUiVk9m0O0P1RfThVi8k9m0O0P1RfThVi8k9m0O0P1RfThVj8k9m0O0P1Rf0Q1RgUiWk9l9n0P1R1SgUi8k9l9N0P1ReRfThVj8k9m9N0P1RfSgVj8l98k9m0P1RfSgUi8k9m9N0P1RfTgUi8k9m9N0P1RfThVj8l9m0O1Q1TgUˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
