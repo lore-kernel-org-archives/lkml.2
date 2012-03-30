@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936645Ab2C3Wxt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:53:49 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36741 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934960Ab2C3VGA (ORCPT
+	id S935001Ab2C3Wyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:54:37 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49761 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934947Ab2C3VF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:00 -0400
-Message-Id: <20120330195730.152111916@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 056/108] target: Fix 16-bit target ports for SET TARGET PORT GROUPS emulation
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+	Fri, 30 Mar 2012 17:05:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
+Date: Fri, 30 Mar 2012 21:05:52 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>, viro@zeniv.linux.org.uk,
+        davej@redhat.com, linux-kernel@vger.kernel.org
+References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com> <20120330204235.GA883@kroah.com> <alpine.LFD.2.02.1203302247130.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1203302247130.2542@ionos>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203302105.52987.arnd@arndb.de>
+X-Provags-ID: V02:K0:Now03PC6g1oYdvxvwnGUuPOkmsIN6TzsiPaJVLv0aHN
+ pI8OSF/EasQ67i16GrfF8bXcqGxS+VwlzOt/ZGe3+iu7hStwNq
+ AqAzqdNWHzOQuZrygElTNhFVq7TZvlLLA2aGH8/4MUziJP7YNu
+ HWIz+rxR90ICwOzpGrZkzoifkTeOiTbXJ1PSwKkpw6ZfoxQvzX
+ 0xl7p7JLNflGmJ9RfL4oXJSsDChEoCmf0bdOlfPiug3W2+EFL4
+ ozVEQ8CYFc7Fz9gSZoEQyohGfXsXvMaXQP9wMK1agE2DJ5u2Va
+ fwlUBNoxh25rO45msgpwOJPA5iJzHPIhGVOs1O+h/RsrtHD8xA
+ Ps+VvdL7kVk1gBWZPFqw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Friday 30 March 2012, Thomas Gleixner wrote:
+> I think so. This is an interface to inject stuff into dmesg. Limiting
+> that to a reasonable size makes sense. We can probably limit it to
+> something small like 1024, but I don't know about the "ideas" of those
+> folks who think that it's a great idea to do it at all.
 
-------------------
+I guess a page would be a reasonable size, similar to what we do for
+sysfs. 
 
-From: Roland Dreier <roland@purestorage.com>
-
-commit 33395fb8a13731c7ef7b175dbf5a4d8a6738fe6c upstream.
-
-The old code did (MSB << 8) & 0xff, which always evaluates to 0.  Just use
-get_unaligned_be16() so we don't have to worry about whether our open-coded
-version is correct or not.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/target/target_core_alua.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -30,6 +30,7 @@
- #include <linux/configfs.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
-+#include <asm/unaligned.h>
- 
- #include <target/target_core_base.h>
- #include <target/target_core_device.h>
-@@ -238,8 +239,7 @@ int core_emulate_set_target_port_groups(
- 		 * changed.
- 		 */
- 		if (primary) {
--			tg_pt_id = ((ptr[2] << 8) & 0xff);
--			tg_pt_id |= (ptr[3] & 0xff);
-+			tg_pt_id = get_unaligned_be16(ptr + 2);
- 			/*
- 			 * Locate the matching target port group ID from
- 			 * the global tg_pt_gp list
-@@ -280,8 +280,7 @@ int core_emulate_set_target_port_groups(
- 			 * the Target Port in question for the the incoming
- 			 * SET_TARGET_PORT_GROUPS op.
- 			 */
--			rtpi = ((ptr[2] << 8) & 0xff);
--			rtpi |= (ptr[3] & 0xff);
-+			rtpi = get_unaligned_be16(ptr + 2);
- 			/*
- 			 * Locate the matching relative target port identifer
- 			 * for the struct se_device storage object.
-
-
+	Arnd
