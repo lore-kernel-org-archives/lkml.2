@@ -1,51 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936710Ab2C3XAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:00:15 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41825 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934863Ab2C3VFW (ORCPT
+	id S964808Ab2C3XAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:00:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934868Ab2C3VFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:22 -0400
-Message-Id: <201203302105.q2UL53Gm006281@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 29 Mar 2012 14:02:52 -0400
-Subject: [PATCH] arch/tile: avoid false corrupt frame warning in early boot
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:03.0741 (UTC) FILETIME=[C6E6FAD0:01CD0EB8]
+	Fri, 30 Mar 2012 17:05:24 -0400
+Message-Id: <20120330195728.553324494@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>
+Subject: [ 045/108] hugetlbfs: avoid taking i_mutex from hugetlbfs_read()
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With lockstat we can end up trying to get a backtrace before
-"high_memory" is initialized, so don't worry about range testing
-if it is zero.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+------------------
+
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+
+commit a05b0855fd15504972dba2358e5faa172a1e50ba upstream.
+
+Taking i_mutex in hugetlbfs_read() can result in deadlock with mmap as
+explained below
+
+ Thread A:
+  read() on hugetlbfs
+   hugetlbfs_read() called
+    i_mutex grabbed
+     hugetlbfs_read_actor() called
+      __copy_to_user() called
+       page fault is triggered
+ Thread B, sharing address space with A:
+  mmap() the same file
+   ->mmap_sem is grabbed on task_B->mm->mmap_sem
+    hugetlbfs_file_mmap() is called
+     attempt to grab ->i_mutex and block waiting for A to give it up
+ Thread A:
+  pagefault handled blocked on attempt to grab task_A->mm->mmap_sem,
+ which happens to be the same thing as task_B->mm->mmap_sem.  Block waiting
+ for B to give it up.
+
+AFAIU the i_mutex locking was added to hugetlbfs_read() as per
+http://lkml.indiana.edu/hypermail/linux/kernel/0707.2/3066.html to take
+care of the race between truncate and read.  This patch fixes this by
+looking at page->mapping under lock_page() (find_lock_page()) to ensure
+that the inode didn't get truncated in the range during a parallel read.
+
+Ideally we can extend the patch to make sure we don't increase i_size in
+mmap.  But that will break userspace, because applications will now have
+to use truncate(2) to increase i_size in hugetlbfs.
+
+Based on the original patch from Hillf Danton.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/tile/kernel/process.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/hugetlbfs/inode.c |   25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
-index 4c1ac6e..3be7eb5 100644
---- a/arch/tile/kernel/process.c
-+++ b/arch/tile/kernel/process.c
-@@ -286,7 +286,7 @@ struct task_struct *validate_current(void)
- 	static struct task_struct corrupt = { .comm = "<corrupt>" };
- 	struct task_struct *tsk = current;
- 	if (unlikely((unsigned long)tsk < PAGE_OFFSET ||
--		     (void *)tsk > high_memory ||
-+		     (high_memory && (void *)tsk > high_memory) ||
- 		     ((unsigned long)tsk & (__alignof__(*tsk) - 1)) != 0)) {
- 		pr_err("Corrupt 'current' %p (sp %#lx)\n", tsk, stack_pointer);
- 		tsk = &corrupt;
--- 
-1.6.5.2
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -238,17 +238,10 @@ static ssize_t hugetlbfs_read(struct fil
+ 	loff_t isize;
+ 	ssize_t retval = 0;
+ 
+-	mutex_lock(&inode->i_mutex);
+-
+ 	/* validate length */
+ 	if (len == 0)
+ 		goto out;
+ 
+-	isize = i_size_read(inode);
+-	if (!isize)
+-		goto out;
+-
+-	end_index = (isize - 1) >> huge_page_shift(h);
+ 	for (;;) {
+ 		struct page *page;
+ 		unsigned long nr, ret;
+@@ -256,18 +249,21 @@ static ssize_t hugetlbfs_read(struct fil
+ 
+ 		/* nr is the maximum number of bytes to copy from this page */
+ 		nr = huge_page_size(h);
++		isize = i_size_read(inode);
++		if (!isize)
++			goto out;
++		end_index = (isize - 1) >> huge_page_shift(h);
+ 		if (index >= end_index) {
+ 			if (index > end_index)
+ 				goto out;
+ 			nr = ((isize - 1) & ~huge_page_mask(h)) + 1;
+-			if (nr <= offset) {
++			if (nr <= offset)
+ 				goto out;
+-			}
+ 		}
+ 		nr = nr - offset;
+ 
+ 		/* Find the page */
+-		page = find_get_page(mapping, index);
++		page = find_lock_page(mapping, index);
+ 		if (unlikely(page == NULL)) {
+ 			/*
+ 			 * We have a HOLE, zero out the user-buffer for the
+@@ -279,17 +275,18 @@ static ssize_t hugetlbfs_read(struct fil
+ 			else
+ 				ra = 0;
+ 		} else {
++			unlock_page(page);
++
+ 			/*
+ 			 * We have the page, copy it to user space buffer.
+ 			 */
+ 			ra = hugetlbfs_read_actor(page, offset, buf, len, nr);
+ 			ret = ra;
++			page_cache_release(page);
+ 		}
+ 		if (ra < 0) {
+ 			if (retval == 0)
+ 				retval = ra;
+-			if (page)
+-				page_cache_release(page);
+ 			goto out;
+ 		}
+ 
+@@ -299,16 +296,12 @@ static ssize_t hugetlbfs_read(struct fil
+ 		index += offset >> huge_page_shift(h);
+ 		offset &= ~huge_page_mask(h);
+ 
+-		if (page)
+-			page_cache_release(page);
+-
+ 		/* short read or no more work */
+ 		if ((ret != nr) || (len == 0))
+ 			break;
+ 	}
+ out:
+ 	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
+-	mutex_unlock(&inode->i_mutex);
+ 	return retval;
+ }
+ 
+
 
