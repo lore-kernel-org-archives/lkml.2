@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935454Ab2C3Wj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:39:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55577 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935338Ab2C3VIW (ORCPT
+	id S935357Ab2C3WkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:40:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52476 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935310Ab2C3VIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:08:22 -0400
-Message-Id: <20120330195736.626098826@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:08:13 -0400
+Message-Id: <20120330195735.479570668@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:59:03 -0700
+Date: Fri, 30 Mar 2012 12:58:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arkadiusz Miskiewicz <arekm@maven.pl>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 101/108] sky2: override for PCI legacy power management
+        alan@lxorguk.ukuu.org.uk, Tim Abbott <tim.abbott@oracle.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 093/108] module: Remove module size limit
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Sasha Levin <levinsasha928@gmail.com>
 
-From: stephen hemminger <shemminger@vyatta.com>
+commit f946eeb9313ff1470758e171a60fe7438a2ded3f upstream.
 
-[ Upstream commit 5676cc7bfe1e388e87843f71daa229610385b41e ]
+Module size was limited to 64MB, this was legacy limitation due to vmalloc()
+which was removed a while ago.
 
-Some BIOS's don't setup power management correctly (what else is
-new) and don't allow use of PCI Express power control. Add a special
-exception module parameter to allow working around this issue.
-Based on slightly different patch by Knut Petersen.
+Limiting module size to 64MB is both pointless and affects real world use
+cases.
 
-Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Tim Abbott <tim.abbott@oracle.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/sky2.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
 
---- a/drivers/net/sky2.c
-+++ b/drivers/net/sky2.c
-@@ -94,6 +94,10 @@ static int disable_msi = 0;
- module_param(disable_msi, int, 0);
- MODULE_PARM_DESC(disable_msi, "Disable Message Signaled Interrupt (MSI)");
+---
+ kernel/module.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2290,8 +2290,7 @@ static int copy_and_check(struct load_in
+ 		return -ENOEXEC;
  
-+static int legacy_pme = 0;
-+module_param(legacy_pme, int, 0);
-+MODULE_PARM_DESC(legacy_pme, "Legacy power management");
-+
- static DEFINE_PCI_DEVICE_TABLE(sky2_id_table) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, 0x9000) }, /* SK-9Sxx */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, 0x9E00) }, /* SK-9Exx */
-@@ -794,6 +798,13 @@ static void sky2_wol_init(struct sky2_po
- 	/* Disable PiG firmware */
- 	sky2_write16(hw, B0_CTST, Y2_HW_WOL_OFF);
+ 	/* Suck in entire file: we'll want most of it. */
+-	/* vmalloc barfs on "unusual" numbers.  Check here */
+-	if (len > 64 * 1024 * 1024 || (hdr = vmalloc(len)) == NULL)
++	if ((hdr = vmalloc(len)) == NULL)
+ 		return -ENOMEM;
  
-+	/* Needed by some broken BIOSes, use PCI rather than PCI-e for WOL */
-+	if (legacy_pme) {
-+		u32 reg1 = sky2_pci_read32(hw, PCI_DEV_REG1);
-+		reg1 |= PCI_Y2_PME_LEGACY;
-+		sky2_pci_write32(hw, PCI_DEV_REG1, reg1);
-+	}
-+
- 	/* block receiver */
- 	sky2_write8(hw, SK_REG(port, RX_GMF_CTRL_T), GMF_RST_SET);
- }
+ 	if (copy_from_user(hdr, umod, len) != 0) {
 
 
