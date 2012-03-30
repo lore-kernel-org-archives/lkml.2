@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933838Ab2C3KUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:20:47 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:52218 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932841Ab2C3KSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:18:49 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 63/76] Update documentation for parameter *notrigger* in
- einj.txt
-Date: Fri, 30 Mar 2012 06:14:06 -0400
-Message-id: <6ef19ab7fa1535d35006535dba6c407dad2d845c.1333101989.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
-In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
-References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
-In-reply-to: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
-References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
-Reply-to: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+	id S933860Ab2C3KU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:20:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38498 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933727Ab2C3KUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 06:20:33 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <spi-devel-general@lists.sourceforge.net>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCHv3 0/6] spi: omap2-mcspi: driver updates
+Date: Fri, 30 Mar 2012 15:50:16 +0530
+Message-ID: <1333102822-17171-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen Gong <gong.chen@linux.intel.com>
+The patch series does the following cleanups
+- Converts the spi to module_platform_driver
+- Use the devm functions so that the freeing need not 
+  be done in the driver.
+- Makes the driver use autosuspend
+- Folds Benoit's bus_num removal patch in the series
 
-Add description of parameter notrigger in the einj.txt.
-One can utilize this new parameter to do some SRAR injection
-test. Pay attention, the operation is highly depended on the
-BIOS implementation. If no proper BIOS supports it, even if
-enabling this parameter, expected result will not happen.
+Changes from v1
+- Makes the driver use autosuspend
+- Folds Benoit's bus_num removal patch in the series
 
-v2:
-  Update the documentation suggested by Tony
+Changes from v2
+- The tmp variable is used to write this can be optimised 
+ as it is not needed if the value is directly written.
+ Acknowledge  Tarun for the suggestion.
 
-Suggested-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- Documentation/acpi/apei/einj.txt |    8 ++++++++
- 1 file changed, 8 insertions(+)
+This is also available through
+git     : git://gitorious.org/linus-tree/linus-tree.git
+branch  : spi
 
-diff --git a/Documentation/acpi/apei/einj.txt b/Documentation/acpi/apei/einj.txt
-index e7cc363..e20b6da 100644
---- a/Documentation/acpi/apei/einj.txt
-+++ b/Documentation/acpi/apei/einj.txt
-@@ -53,6 +53,14 @@ directory apei/einj. The following files are provided.
-   This file is used to set the second error parameter value. Effect of
-   parameter depends on error_type specified.
- 
-+- notrigger
-+  The EINJ mechanism is a two step process. First inject the error, then
-+  perform some actions to trigger it. Setting "notrigger" to 1 skips the
-+  trigger phase, which *may* allow the user to cause the error in some other
-+  context by a simple access to the cpu, memory location, or device that is
-+  the target of the error injection. Whether this actually works depends
-+  on what operations the BIOS actually includes in the trigger phase.
-+
- BIOS versions based in the ACPI 4.0 specification have limited options
- to control where the errors are injected.  Your BIOS may support an
- extension (enabled with the param_extension=1 module parameter, or
--- 
-1.7.10.rc2.19.gfae9d
+This is targeted for v3.5. 
+
+Benoit Cousson (1):
+  spi/omap: Remove bus_num usage for instance index
+
+Felipe Balbi (2):
+  spi: omap2-mcspi: make it behave as a module
+  spi: omap2-mcspi: convert to module_platform_driver
+
+Shubhrajyoti D (3):
+  spi: omap2-mcspi: use devm_* functions
+  spi: omap2-mcspi: add support for pm_runtime autosuspend
+  spi: omap2-mcspi: Trivial optimisation
+
+ drivers/spi/spi-omap2-mcspi.c |  132 +++++++++++++++-------------------------
+ 1 files changed, 50 insertions(+), 82 deletions(-)
 
