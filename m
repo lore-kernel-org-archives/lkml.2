@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934570Ab2C3UFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:05:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53362 "EHLO
+	id S934684Ab2C3UFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:05:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53459 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934280Ab2C3UFR (ORCPT
+	with ESMTP id S934626Ab2C3UFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:05:17 -0400
+	Fri, 30 Mar 2012 16:05:35 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anatolij Gustschin <agust@denx.de>,
-        Kumar Gala <galak@kernel.crashing.org>, Arnd Bergmann <arnd@arndb.de>,
-        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org
-Subject: [PATCH v2 10/15] powerpc: mark const init data with __initconst instead of __initdata
-Date: Fri, 30 Mar 2012 22:05:00 +0200
-Message-Id: <1333137905-13809-10-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: kernel@pengutronix.de, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH v2 09/15] ia64: mark const init data with __initconst instead of __initdata
+Date: Fri, 30 Mar 2012 22:04:59 +0200
+Message-Id: <1333137905-13809-9-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <20120330200358.GV15647@pengutronix.de>
 References: <20120330200358.GV15647@pengutronix.de>
@@ -43,72 +39,42 @@ because a section containing const variables is marked read only and so
 cannot contain non-const variables.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Anatolij Gustschin <agust@denx.de>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: cbe-oss-dev@lists.ozlabs.org
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
 ---
-changes since (implicit) v1:
- - drop wrong changes to several files:
-   - arch/powerpc/platforms/40x/ppc40x_simple.c
-   - arch/powerpc/platforms/512x/mpc5121_generic.c
-   - arch/powerpc/platforms/52xx/lite5200.c
-   - arch/powerpc/platforms/52xx/media5200.c
-   - arch/powerpc/platforms/52xx/mpc5200_simple.c
-   - arch/powerpc/platforms/83xx/mpc830x_rdb.c
-   - arch/powerpc/platforms/83xx/mpc831x_rdb.c
-   - arch/powerpc/platforms/83xx/mpc837x_rdb.c
-   - arch/powerpc/platforms/85xx/tqm85xx.c
+no changes since (implicit) v1
 
- arch/powerpc/platforms/52xx/mpc52xx_pci.c |    2 +-
- arch/powerpc/platforms/cell/qpace_setup.c |    2 +-
- arch/powerpc/platforms/cell/setup.c       |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/ia64/xen/irq_xen.c |    2 +-
+ arch/ia64/xen/irq_xen.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/platforms/52xx/mpc52xx_pci.c b/arch/powerpc/platforms/52xx/mpc52xx_pci.c
-index bfb11e0..e2d401a 100644
---- a/arch/powerpc/platforms/52xx/mpc52xx_pci.c
-+++ b/arch/powerpc/platforms/52xx/mpc52xx_pci.c
-@@ -93,7 +93,7 @@ struct mpc52xx_pci {
- };
- 
- /* MPC5200 device tree match tables */
--const struct of_device_id mpc52xx_pci_ids[] __initdata = {
-+const struct of_device_id mpc52xx_pci_ids[] __initconst = {
- 	{ .type = "pci", .compatible = "fsl,mpc5200-pci", },
- 	{ .type = "pci", .compatible = "mpc5200-pci", },
- 	{}
-diff --git a/arch/powerpc/platforms/cell/qpace_setup.c b/arch/powerpc/platforms/cell/qpace_setup.c
-index 7f9b674..6e3409d 100644
---- a/arch/powerpc/platforms/cell/qpace_setup.c
-+++ b/arch/powerpc/platforms/cell/qpace_setup.c
-@@ -61,7 +61,7 @@ static void qpace_progress(char *s, unsigned short hex)
- 	printk("*** %04x : %s\n", hex, s ? s : "");
+diff --git a/arch/ia64/xen/irq_xen.c b/arch/ia64/xen/irq_xen.c
+index 3bb1223..01f479e 100644
+--- a/arch/ia64/xen/irq_xen.c
++++ b/arch/ia64/xen/irq_xen.c
+@@ -433,7 +433,7 @@ xen_resend_irq(unsigned int vector)
+ 	(void)resend_irq_on_evtchn(vector);
  }
  
--static const struct of_device_id qpace_bus_ids[] __initdata = {
-+static const struct of_device_id qpace_bus_ids[] __initconst = {
- 	{ .type = "soc", },
- 	{ .compatible = "soc", },
- 	{ .type = "spider", },
-diff --git a/arch/powerpc/platforms/cell/setup.c b/arch/powerpc/platforms/cell/setup.c
-index fa3e294..4ab0876 100644
---- a/arch/powerpc/platforms/cell/setup.c
-+++ b/arch/powerpc/platforms/cell/setup.c
-@@ -140,7 +140,7 @@ static int __devinit cell_setup_phb(struct pci_controller *phb)
- 	return 0;
- }
+-const struct pv_irq_ops xen_irq_ops __initdata = {
++const struct pv_irq_ops xen_irq_ops __initconst = {
+ 	.register_ipi = xen_register_ipi,
  
--static const struct of_device_id cell_bus_ids[] __initdata = {
-+static const struct of_device_id cell_bus_ids[] __initconst = {
- 	{ .type = "soc", },
- 	{ .compatible = "soc", },
- 	{ .type = "spider", },
+ 	.assign_irq_vector = xen_assign_irq_vector,
+diff --git a/arch/ia64/xen/irq_xen.h b/arch/ia64/xen/irq_xen.h
+index 26110f3..1778517 100644
+--- a/arch/ia64/xen/irq_xen.h
++++ b/arch/ia64/xen/irq_xen.h
+@@ -27,7 +27,7 @@ extern void (*late_time_init)(void);
+ extern char xen_event_callback;
+ void __init xen_init_IRQ(void);
+ 
+-extern const struct pv_irq_ops xen_irq_ops __initdata;
++extern const struct pv_irq_ops xen_irq_ops __initconst;
+ extern void xen_smp_intr_init(void);
+ extern void xen_send_ipi(int cpu, int vec);
+ 
 -- 
 1.7.9.5
 
