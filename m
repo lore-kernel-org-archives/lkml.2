@@ -1,20 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934684Ab2C3UFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:05:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53459 "EHLO
+	id S934700Ab2C3UFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:05:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53519 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934626Ab2C3UFf (ORCPT
+	with ESMTP id S934675Ab2C3UFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:05:35 -0400
+	Fri, 30 Mar 2012 16:05:50 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel@pengutronix.de, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH v2 09/15] ia64: mark const init data with __initconst instead of __initdata
-Date: Fri, 30 Mar 2012 22:04:59 +0200
-Message-Id: <1333137905-13809-9-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: kernel@pengutronix.de, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Lennert Buytenhek <kernel@wantstofly.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>, Barry Song <baohua.song@csr.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-samsung-soc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: [PATCH v2 02/15] ARM: mark const init data with __initconst instead of __initdata
+Date: Fri, 30 Mar 2012 22:04:52 +0200
+Message-Id: <1333137905-13809-2-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <20120330200358.GV15647@pengutronix.de>
 References: <20120330200358.GV15647@pengutronix.de>
@@ -39,42 +56,387 @@ because a section containing const variables is marked read only and so
 cannot contain non-const variables.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Lennert Buytenhek <kernel@wantstofly.org>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Barry Song <baohua.song@csr.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org
+Cc: linux-omap@vger.kernel.org
 ---
-no changes since (implicit) v1
+changes since (implicit) v1:
+ - drop changes to several files that were wrong:
+   - arch/arm/mach-at91/board-dt.c
+   - arch/arm/mach-exynos/*
+   - arch/arm/mach-imx/*
+   - arch/arm/mach-mmp/mmp-dt.c
+   - arch/arm/mach-msm/board-msm8x60.c
+   - arch/arm/mach-omap2/board-generic.c
+   - arch/arm/mach-omap2/voltagedomains{3x,44}xx_data.c
+   - arch/arm/mach-prima2
+ - fix position of __initconst
+   - arch/arm/mach-kirkwood/addr-map.c
+   - arch/arm/mach-orion5x/addr-map.c
 
- arch/ia64/xen/irq_xen.c |    2 +-
- arch/ia64/xen/irq_xen.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-at91/clock.c                  |    2 +-
+ arch/arm/mach-davinci/board-tnetv107x-evm.c |    6 ++--
+ arch/arm/mach-davinci/da830.c               |   48 +++++++++++++--------------
+ arch/arm/mach-davinci/da850.c               |    6 ++--
+ arch/arm/mach-dove/addr-map.c               |    2 +-
+ arch/arm/mach-kirkwood/addr-map.c           |    2 +-
+ arch/arm/mach-msm/board-qsd8x50.c           |    4 +--
+ arch/arm/mach-omap2/display.c               |    6 ++--
+ arch/arm/mach-orion5x/addr-map.c            |    2 +-
+ 9 files changed, 39 insertions(+), 39 deletions(-)
 
-diff --git a/arch/ia64/xen/irq_xen.c b/arch/ia64/xen/irq_xen.c
-index 3bb1223..01f479e 100644
---- a/arch/ia64/xen/irq_xen.c
-+++ b/arch/ia64/xen/irq_xen.c
-@@ -433,7 +433,7 @@ xen_resend_irq(unsigned int vector)
- 	(void)resend_irq_on_evtchn(vector);
+diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+index a0f4d74..e4a255d 100644
+--- a/arch/arm/mach-at91/clock.c
++++ b/arch/arm/mach-at91/clock.c
+@@ -613,7 +613,7 @@ fail:
+ 	return 0;
  }
  
--const struct pv_irq_ops xen_irq_ops __initdata = {
-+const struct pv_irq_ops xen_irq_ops __initconst = {
- 	.register_ipi = xen_register_ipi,
+-static struct clk *const standard_pmc_clocks[] __initdata = {
++static struct clk *const standard_pmc_clocks[] __initconst = {
+ 	/* four primary clocks */
+ 	&clk32k,
+ 	&main_clk,
+diff --git a/arch/arm/mach-davinci/board-tnetv107x-evm.c b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+index 5f14e30..645a587 100644
+--- a/arch/arm/mach-davinci/board-tnetv107x-evm.c
++++ b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+@@ -88,7 +88,7 @@ static struct davinci_mmc_config mmc_config = {
+ 	.version	= MMC_CTLR_VERSION_1,
+ };
  
- 	.assign_irq_vector = xen_assign_irq_vector,
-diff --git a/arch/ia64/xen/irq_xen.h b/arch/ia64/xen/irq_xen.h
-index 26110f3..1778517 100644
---- a/arch/ia64/xen/irq_xen.h
-+++ b/arch/ia64/xen/irq_xen.h
-@@ -27,7 +27,7 @@ extern void (*late_time_init)(void);
- extern char xen_event_callback;
- void __init xen_init_IRQ(void);
+-static const short sdio1_pins[] __initdata = {
++static const short sdio1_pins[] __initconst = {
+ 	TNETV107X_SDIO1_CLK_1,		TNETV107X_SDIO1_CMD_1,
+ 	TNETV107X_SDIO1_DATA0_1,	TNETV107X_SDIO1_DATA1_1,
+ 	TNETV107X_SDIO1_DATA2_1,	TNETV107X_SDIO1_DATA3_1,
+@@ -96,12 +96,12 @@ static const short sdio1_pins[] __initdata = {
+ 	-1
+ };
  
--extern const struct pv_irq_ops xen_irq_ops __initdata;
-+extern const struct pv_irq_ops xen_irq_ops __initconst;
- extern void xen_smp_intr_init(void);
- extern void xen_send_ipi(int cpu, int vec);
+-static const short uart1_pins[] __initdata = {
++static const short uart1_pins[] __initconst = {
+ 	TNETV107X_UART1_RD,		TNETV107X_UART1_TD,
+ 	-1
+ };
  
+-static const short ssp_pins[] __initdata = {
++static const short ssp_pins[] __initconst = {
+ 	TNETV107X_SSP0_0, TNETV107X_SSP0_1, TNETV107X_SSP0_2,
+ 	TNETV107X_SSP1_0, TNETV107X_SSP1_1, TNETV107X_SSP1_2,
+ 	TNETV107X_SSP1_3, -1
+diff --git a/arch/arm/mach-davinci/da830.c b/arch/arm/mach-davinci/da830.c
+index deee5c2..510648e 100644
+--- a/arch/arm/mach-davinci/da830.c
++++ b/arch/arm/mach-davinci/da830.c
+@@ -838,7 +838,7 @@ static const struct mux_config da830_pins[] = {
+ #endif
+ };
+ 
+-const short da830_emif25_pins[] __initdata = {
++const short da830_emif25_pins[] __initconst = {
+ 	DA830_EMA_D_0, DA830_EMA_D_1, DA830_EMA_D_2, DA830_EMA_D_3,
+ 	DA830_EMA_D_4, DA830_EMA_D_5, DA830_EMA_D_6, DA830_EMA_D_7,
+ 	DA830_EMA_D_8, DA830_EMA_D_9, DA830_EMA_D_10, DA830_EMA_D_11,
+@@ -853,19 +853,19 @@ const short da830_emif25_pins[] __initdata = {
+ 	-1
+ };
+ 
+-const short da830_spi0_pins[] __initdata = {
++const short da830_spi0_pins[] __initconst = {
+ 	DA830_SPI0_SOMI_0, DA830_SPI0_SIMO_0, DA830_SPI0_CLK, DA830_NSPI0_ENA,
+ 	DA830_NSPI0_SCS_0,
+ 	-1
+ };
+ 
+-const short da830_spi1_pins[] __initdata = {
++const short da830_spi1_pins[] __initconst = {
+ 	DA830_SPI1_SOMI_0, DA830_SPI1_SIMO_0, DA830_SPI1_CLK, DA830_NSPI1_ENA,
+ 	DA830_NSPI1_SCS_0,
+ 	-1
+ };
+ 
+-const short da830_mmc_sd_pins[] __initdata = {
++const short da830_mmc_sd_pins[] __initconst = {
+ 	DA830_MMCSD_DAT_0, DA830_MMCSD_DAT_1, DA830_MMCSD_DAT_2,
+ 	DA830_MMCSD_DAT_3, DA830_MMCSD_DAT_4, DA830_MMCSD_DAT_5,
+ 	DA830_MMCSD_DAT_6, DA830_MMCSD_DAT_7, DA830_MMCSD_CLK,
+@@ -873,32 +873,32 @@ const short da830_mmc_sd_pins[] __initdata = {
+ 	-1
+ };
+ 
+-const short da830_uart0_pins[] __initdata = {
++const short da830_uart0_pins[] __initconst = {
+ 	DA830_NUART0_CTS, DA830_NUART0_RTS, DA830_UART0_RXD, DA830_UART0_TXD,
+ 	-1
+ };
+ 
+-const short da830_uart1_pins[] __initdata = {
++const short da830_uart1_pins[] __initconst = {
+ 	DA830_UART1_RXD, DA830_UART1_TXD,
+ 	-1
+ };
+ 
+-const short da830_uart2_pins[] __initdata = {
++const short da830_uart2_pins[] __initconst = {
+ 	DA830_UART2_RXD, DA830_UART2_TXD,
+ 	-1
+ };
+ 
+-const short da830_usb20_pins[] __initdata = {
++const short da830_usb20_pins[] __initconst = {
+ 	DA830_USB0_DRVVBUS, DA830_USB_REFCLKIN,
+ 	-1
+ };
+ 
+-const short da830_usb11_pins[] __initdata = {
++const short da830_usb11_pins[] __initconst = {
+ 	DA830_USB_REFCLKIN,
+ 	-1
+ };
+ 
+-const short da830_uhpi_pins[] __initdata = {
++const short da830_uhpi_pins[] __initconst = {
+ 	DA830_UHPI_HD_0, DA830_UHPI_HD_1, DA830_UHPI_HD_2, DA830_UHPI_HD_3,
+ 	DA830_UHPI_HD_4, DA830_UHPI_HD_5, DA830_UHPI_HD_6, DA830_UHPI_HD_7,
+ 	DA830_UHPI_HD_8, DA830_UHPI_HD_9, DA830_UHPI_HD_10, DA830_UHPI_HD_11,
+@@ -909,14 +909,14 @@ const short da830_uhpi_pins[] __initdata = {
+ 	-1
+ };
+ 
+-const short da830_cpgmac_pins[] __initdata = {
++const short da830_cpgmac_pins[] __initconst = {
+ 	DA830_RMII_TXD_0, DA830_RMII_TXD_1, DA830_RMII_TXEN, DA830_RMII_CRS_DV,
+ 	DA830_RMII_RXD_0, DA830_RMII_RXD_1, DA830_RMII_RXER, DA830_MDIO_CLK,
+ 	DA830_MDIO_D,
+ 	-1
+ };
+ 
+-const short da830_emif3c_pins[] __initdata = {
++const short da830_emif3c_pins[] __initconst = {
+ 	DA830_EMB_SDCKE, DA830_EMB_CLK_GLUE, DA830_EMB_CLK, DA830_NEMB_CS_0,
+ 	DA830_NEMB_CAS, DA830_NEMB_RAS, DA830_NEMB_WE, DA830_EMB_BA_1,
+ 	DA830_EMB_BA_0, DA830_EMB_A_0, DA830_EMB_A_1, DA830_EMB_A_2,
+@@ -935,7 +935,7 @@ const short da830_emif3c_pins[] __initdata = {
+ 	-1
+ };
+ 
+-const short da830_mcasp0_pins[] __initdata = {
++const short da830_mcasp0_pins[] __initconst = {
+ 	DA830_AHCLKX0, DA830_ACLKX0, DA830_AFSX0,
+ 	DA830_AHCLKR0, DA830_ACLKR0, DA830_AFSR0, DA830_AMUTE0,
+ 	DA830_AXR0_0, DA830_AXR0_1, DA830_AXR0_2, DA830_AXR0_3,
+@@ -945,7 +945,7 @@ const short da830_mcasp0_pins[] __initdata = {
+ 	-1
+ };
+ 
+-const short da830_mcasp1_pins[] __initdata = {
++const short da830_mcasp1_pins[] __initconst = {
+ 	DA830_AHCLKX1, DA830_ACLKX1, DA830_AFSX1,
+ 	DA830_AHCLKR1, DA830_ACLKR1, DA830_AFSR1, DA830_AMUTE1,
+ 	DA830_AXR1_0, DA830_AXR1_1, DA830_AXR1_2, DA830_AXR1_3,
+@@ -954,24 +954,24 @@ const short da830_mcasp1_pins[] __initdata = {
+ 	-1
+ };
+ 
+-const short da830_mcasp2_pins[] __initdata = {
++const short da830_mcasp2_pins[] __initconst = {
+ 	DA830_AHCLKX2, DA830_ACLKX2, DA830_AFSX2,
+ 	DA830_AHCLKR2, DA830_ACLKR2, DA830_AFSR2, DA830_AMUTE2,
+ 	DA830_AXR2_0, DA830_AXR2_1, DA830_AXR2_2, DA830_AXR2_3,
+ 	-1
+ };
+ 
+-const short da830_i2c0_pins[] __initdata = {
++const short da830_i2c0_pins[] __initconst = {
+ 	DA830_I2C0_SDA, DA830_I2C0_SCL,
+ 	-1
+ };
+ 
+-const short da830_i2c1_pins[] __initdata = {
++const short da830_i2c1_pins[] __initconst = {
+ 	DA830_I2C1_SCL, DA830_I2C1_SDA,
+ 	-1
+ };
+ 
+-const short da830_lcdcntl_pins[] __initdata = {
++const short da830_lcdcntl_pins[] __initconst = {
+ 	DA830_LCD_D_0, DA830_LCD_D_1, DA830_LCD_D_2, DA830_LCD_D_3,
+ 	DA830_LCD_D_4, DA830_LCD_D_5, DA830_LCD_D_6, DA830_LCD_D_7,
+ 	DA830_LCD_D_8, DA830_LCD_D_9, DA830_LCD_D_10, DA830_LCD_D_11,
+@@ -981,34 +981,34 @@ const short da830_lcdcntl_pins[] __initdata = {
+ 	-1
+ };
+ 
+-const short da830_pwm_pins[] __initdata = {
++const short da830_pwm_pins[] __initconst = {
+ 	DA830_ECAP0_APWM0, DA830_ECAP1_APWM1, DA830_EPWM0B, DA830_EPWM0A,
+ 	DA830_EPWMSYNCI, DA830_EPWMSYNC0, DA830_ECAP2_APWM2, DA830_EHRPWMGLUETZ,
+ 	DA830_EPWM2B, DA830_EPWM2A, DA830_EPWM1B, DA830_EPWM1A,
+ 	-1
+ };
+ 
+-const short da830_ecap0_pins[] __initdata = {
++const short da830_ecap0_pins[] __initconst = {
+ 	DA830_ECAP0_APWM0,
+ 	-1
+ };
+ 
+-const short da830_ecap1_pins[] __initdata = {
++const short da830_ecap1_pins[] __initconst = {
+ 	DA830_ECAP1_APWM1,
+ 	-1
+ };
+ 
+-const short da830_ecap2_pins[] __initdata = {
++const short da830_ecap2_pins[] __initconst = {
+ 	DA830_ECAP2_APWM2,
+ 	-1
+ };
+ 
+-const short da830_eqep0_pins[] __initdata = {
++const short da830_eqep0_pins[] __initconst = {
+ 	DA830_EQEP0I, DA830_EQEP0S, DA830_EQEP0A, DA830_EQEP0B,
+ 	-1
+ };
+ 
+-const short da830_eqep1_pins[] __initdata = {
++const short da830_eqep1_pins[] __initconst = {
+ 	DA830_EQEP1I, DA830_EQEP1S, DA830_EQEP1A, DA830_EQEP1B,
+ 	-1
+ };
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index b44dc84..6676dee 100644
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -576,17 +576,17 @@ static const struct mux_config da850_pins[] = {
+ #endif
+ };
+ 
+-const short da850_i2c0_pins[] __initdata = {
++const short da850_i2c0_pins[] __initconst = {
+ 	DA850_I2C0_SDA, DA850_I2C0_SCL,
+ 	-1
+ };
+ 
+-const short da850_i2c1_pins[] __initdata = {
++const short da850_i2c1_pins[] __initconst = {
+ 	DA850_I2C1_SCL, DA850_I2C1_SDA,
+ 	-1
+ };
+ 
+-const short da850_lcdcntl_pins[] __initdata = {
++const short da850_lcdcntl_pins[] __initconst = {
+ 	DA850_LCD_D_0, DA850_LCD_D_1, DA850_LCD_D_2, DA850_LCD_D_3,
+ 	DA850_LCD_D_4, DA850_LCD_D_5, DA850_LCD_D_6, DA850_LCD_D_7,
+ 	DA850_LCD_D_8, DA850_LCD_D_9, DA850_LCD_D_10, DA850_LCD_D_11,
+diff --git a/arch/arm/mach-dove/addr-map.c b/arch/arm/mach-dove/addr-map.c
+index 98b8c83b..93ea37d 100644
+--- a/arch/arm/mach-dove/addr-map.c
++++ b/arch/arm/mach-dove/addr-map.c
+@@ -49,7 +49,7 @@ static struct __initdata orion_addr_map_cfg addr_map_cfg = {
+ 	.bridge_virt_base = BRIDGE_VIRT_BASE,
+ };
+ 
+-static const struct __initdata orion_addr_map_info addr_map_info[] = {
++static const struct orion_addr_map_info addr_map_info[] __initconst = {
+ 	/*
+ 	 * Windows for PCIe IO+MEM space.
+ 	 */
+diff --git a/arch/arm/mach-kirkwood/addr-map.c b/arch/arm/mach-kirkwood/addr-map.c
+index e9a7180..b2c0dee 100644
+--- a/arch/arm/mach-kirkwood/addr-map.c
++++ b/arch/arm/mach-kirkwood/addr-map.c
+@@ -44,7 +44,7 @@ static struct __initdata orion_addr_map_cfg addr_map_cfg = {
+ 	.bridge_virt_base = BRIDGE_VIRT_BASE,
+ };
+ 
+-static const struct __initdata orion_addr_map_info addr_map_info[] = {
++static const struct orion_addr_map_info addr_map_info[] __initconst = {
+ 	/*
+ 	 * Windows for PCIe IO+MEM space.
+ 	 */
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index 7e8909c..11de242 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -39,8 +39,8 @@
+ 
+ extern struct sys_timer msm_timer;
+ 
+-static const resource_size_t qsd8x50_surf_smc91x_base __initdata = 0x70000300;
+-static const unsigned        qsd8x50_surf_smc91x_gpio __initdata = 156;
++static const resource_size_t qsd8x50_surf_smc91x_base __initconst = 0x70000300;
++static const unsigned        qsd8x50_surf_smc91x_gpio __initconst = 156;
+ 
+ /* Leave smc91x resources empty here, as we'll fill them in
+  * at run-time: they vary from board to board, and the true
+diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
+index 9706c64..df2ef11 100644
+--- a/arch/arm/mach-omap2/display.c
++++ b/arch/arm/mach-omap2/display.c
+@@ -74,14 +74,14 @@ struct omap_dss_hwmod_data {
+ 	const int id;
+ };
+ 
+-static const struct omap_dss_hwmod_data omap2_dss_hwmod_data[] __initdata = {
++static const struct omap_dss_hwmod_data omap2_dss_hwmod_data[] __initconst = {
+ 	{ "dss_core", "omapdss_dss", -1 },
+ 	{ "dss_dispc", "omapdss_dispc", -1 },
+ 	{ "dss_rfbi", "omapdss_rfbi", -1 },
+ 	{ "dss_venc", "omapdss_venc", -1 },
+ };
+ 
+-static const struct omap_dss_hwmod_data omap3_dss_hwmod_data[] __initdata = {
++static const struct omap_dss_hwmod_data omap3_dss_hwmod_data[] __initconst = {
+ 	{ "dss_core", "omapdss_dss", -1 },
+ 	{ "dss_dispc", "omapdss_dispc", -1 },
+ 	{ "dss_rfbi", "omapdss_rfbi", -1 },
+@@ -89,7 +89,7 @@ static const struct omap_dss_hwmod_data omap3_dss_hwmod_data[] __initdata = {
+ 	{ "dss_dsi1", "omapdss_dsi", 0 },
+ };
+ 
+-static const struct omap_dss_hwmod_data omap4_dss_hwmod_data[] __initdata = {
++static const struct omap_dss_hwmod_data omap4_dss_hwmod_data[] __initconst = {
+ 	{ "dss_core", "omapdss_dss", -1 },
+ 	{ "dss_dispc", "omapdss_dispc", -1 },
+ 	{ "dss_rfbi", "omapdss_rfbi", -1 },
+diff --git a/arch/arm/mach-orion5x/addr-map.c b/arch/arm/mach-orion5x/addr-map.c
+index 3638e5c..277fcf4 100644
+--- a/arch/arm/mach-orion5x/addr-map.c
++++ b/arch/arm/mach-orion5x/addr-map.c
+@@ -82,7 +82,7 @@ static struct __initdata orion_addr_map_cfg addr_map_cfg = {
+ 	.bridge_virt_base = ORION5X_BRIDGE_VIRT_BASE,
+ };
+ 
+-static const struct __initdata orion_addr_map_info addr_map_info[] = {
++static const struct orion_addr_map_info addr_map_info[] __initconst = {
+ 	/*
+ 	 * Setup windows for PCI+PCIe IO+MEM space.
+ 	 */
 -- 
 1.7.9.5
 
