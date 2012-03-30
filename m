@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760853Ab2C3NKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 09:10:50 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:43579 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760839Ab2C3NKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 09:10:44 -0400
-Date: Fri, 30 Mar 2012 15:10:37 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/13] edac: move dimm properties to struct memset_info
-Message-ID: <20120330131037.GB30876@aftab>
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
- <1333039546-5590-3-git-send-email-mchehab@redhat.com>
+	id S1760843Ab2C3NOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 09:14:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758592Ab2C3NOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 09:14:24 -0400
+Date: Fri, 30 Mar 2012 15:05:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/2] uprobes/core: counter to optimize probe hits.
+Message-ID: <20120330130530.GA16319@redhat.com>
+References: <20120321180811.22773.5801.sendpatchset@srdronam.in.ibm.com> <20120321180826.22773.57531.sendpatchset@srdronam.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333039546-5590-3-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120321180826.22773.57531.sendpatchset@srdronam.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please don't call it 'memset_info' - this is misleading beyond belief.
+On 03/21, Srikar Dronamraju wrote:
+>
+> + * uprobe_munmap() decrements the count if
+> + * 	- it sees a underlying breakpoint, (via is_swbp_at_addr)
+> + * 	  (Subsequent unregister_uprobe wouldnt find the breakpoint
+> + * 	  unless a uprobe_mmap kicks in, since the old vma would be
+> + * 	  dropped just after uprobe_munmap.)
+> + *
+> + * register_uprobe increments the count if:
+> + * 	- it successfully adds a breakpoint.
+> + *
+> + * unregister_uprobe decrements the count if:
 
-Hmm, what struct memset_info - where the hell is this? It is nowhere to
-be seen in the patches following that one too, WTF?
+Cosmetic nit, register_uprobe/unregister_uprobe do not exist.
+uprobe_register/unregister.
 
-On Thu, Mar 29, 2012 at 01:45:35PM -0300, Mauro Carvalho Chehab wrote:
-> On systems based on chip select rows, all channels need to use memories
-> with the same properties, otherwise the memories on channels A and B
-> won't be recognized.
-> 
-> However, such assumption is not true for all types of memory
-> controllers.
-> 
-> Controllers for FB-DIMM's don't have such requirements.
-> 
-> Also, modern Intel controllers seem to be capable of handling such
-> differences.
-> 
-> So, we need to get rid of storing the DIMM information into a per-csrow
-> data, storing it, instead at the right place.
-> 
-> The first step is to move grain, mtype, dtype and edac_mode to the
-> per-dimm struct.
+Oleg.
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
