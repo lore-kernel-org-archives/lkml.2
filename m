@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab2C3VKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:10:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56418 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935582Ab2C3VKR (ORCPT
+	id S1761636Ab2C3VKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:10:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33247 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760587Ab2C3VKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:10:17 -0400
-Message-Id: <20120330194838.179315148@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:10:36 -0400
+Message-Id: <20120330194839.655785482@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:57 -0700
+Date: Fri, 30 Mar 2012 12:49:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 024/149] tty: moxa: fix bit test in moxa_start()
+        alan@lxorguk.ukuu.org.uk,
+        Ramneek Mehresh <ramneek.mehresh@freescale.com>,
+        Peter Chen <peter.chen@freescale.com>
+Subject: [ 030/149] usb: Fix build error due to dma_mask is not at pdev_archdata at ARM
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 58112dfbfe02d803566a2c6c8bd97b5fa3c62cdc upstream.
+commit e90fc3cb087ce5c5f81e814358222cd6d197b5db upstream.
 
-This is supposed to be doing a shift before the comparison instead of
-just doing a bitwise AND directly.  The current code means the start()
-just returns without doing anything.
+When build i.mx platform with imx_v6_v7_defconfig, and after adding
+USB Gadget support, it has below build error:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
+CC      drivers/usb/host/fsl-mph-dr-of.o
+drivers/usb/host/fsl-mph-dr-of.c: In function 'fsl_usb2_device_register':
+drivers/usb/host/fsl-mph-dr-of.c:97: error: 'struct pdev_archdata'
+has no member named 'dma_mask'
+
+It has discussed at: http://www.spinics.net/lists/linux-usb/msg57302.html
+
+For PowerPC, there is dma_mask at struct pdev_archdata, but there is
+no dma_mask at struct pdev_archdata for ARM. The pdev_archdata is
+related to specific platform, it should NOT be accessed by
+cross platform drivers, like USB.
+
+The code for pdev_archdata should be useless, as for PowerPC,
+it has already gotten the value for pdev->dev.dma_mask at function
+arch_setup_pdev_archdata of arch/powerpc/kernel/setup-common.c.
+
+Tested-by: Ramneek Mehresh <ramneek.mehresh@freescale.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/moxa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/fsl-mph-dr-of.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/tty/moxa.c
-+++ b/drivers/tty/moxa.c
-@@ -1331,7 +1331,7 @@ static void moxa_start(struct tty_struct
- 	if (ch == NULL)
- 		return;
+--- a/drivers/usb/host/fsl-mph-dr-of.c
++++ b/drivers/usb/host/fsl-mph-dr-of.c
+@@ -94,7 +94,6 @@ struct platform_device * __devinit fsl_u
+ 	pdev->dev.parent = &ofdev->dev;
  
--	if (!(ch->statusflags & TXSTOPPED))
-+	if (!test_bit(TXSTOPPED, &ch->statusflags))
- 		return;
+ 	pdev->dev.coherent_dma_mask = ofdev->dev.coherent_dma_mask;
+-	pdev->dev.dma_mask = &pdev->archdata.dma_mask;
+ 	*pdev->dev.dma_mask = *ofdev->dev.dma_mask;
  
- 	MoxaPortTxEnable(ch);
+ 	retval = platform_device_add_data(pdev, pdata, sizeof(*pdata));
 
 
