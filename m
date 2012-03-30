@@ -1,57 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935376Ab2C3WkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:40:15 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:41247 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935279Ab2C3WkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 18:40:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F76196A.9070709@xenotime.net>
-References: <4F76196A.9070709@xenotime.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 30 Mar 2012 15:39:45 -0700
-X-Google-Sender-Auth: QBkgkWRmYxkOZQerxAgV-t4VxvA
-Message-ID: <CA+55aFz0WyVfJgO9GDM4ssUoWPRZfY0rs+97+P6fmYtc-jnDCw@mail.gmail.com>
-Subject: Re: [PATCH 1/8] Documentation: remove 'mach' from dontdiff file
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S935421Ab2C3WkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:40:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935279Ab2C3WkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 18:40:17 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4F761E1C.80808@tilera.com>
+References: <4F761E1C.80808@tilera.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: dhowells@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH summary] arch/tile changes for 3.4
+Date: Fri, 30 Mar 2012 23:40:11 +0100
+Message-ID: <13853.1333147211@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 1:36 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> From: H Hartley Sweeten <hartleys@visionengravers.com>
->
-> Documentation: remove mach from dontdiff file
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-Grr.
+>  arch/tile/include/asm/system.h                     |   10 +-
 
-Most of these patches have the same stupid problem: why the *hell* do
-you repeat the single-line top-level description in both the Subject
-line and the body of the email? It only results in stupid duplicate
-lines in the commit logs.
+asm/system.h is no more.
 
-This is a disease. I don't know who the heck started doing it, but
-it's WRONG. It's stupid. What broken piece-of-shit tool is it that
-does this braindamage?
-
-Fix it. Stop sending these broken commit messages to people.
-
-I'm grumpy, yes, because this is a common problem. I see it all over
-the place, and it makes our commit logs look f*cking retarded.
-
-If you absolutely need to repeat the subject line in the body of the
-email, do it together with the author line, and mark it as such, ie do
-this:
-
-  From: H Hartley Sweeten <hartleys@visionengravers.com>
-  Subject: Documentation: remove mach from dontdiff file
-
-so that git sees that it's a repeat of the subject line. Don't just
-put it in the body as another stupid repeat.
-
-                                  Linus
+David
