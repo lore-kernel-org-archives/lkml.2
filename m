@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936237Ab2C3Vfc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:35:32 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52435 "EHLO
+	id S966240Ab2C3Vcg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:32:36 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49870 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966258Ab2C3Vck (ORCPT
+	by vger.kernel.org with ESMTP id S966149Ab2C3Vc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:32:40 -0400
-X-Sasl-enc: JW3V+rLjbQZPjSAQUKHO2+LmytxrVHkzWNeyN3PZrHye 1333143159
-X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:49:00 2012
-Message-Id: <20120330194900.314577349@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:32:27 -0400
+X-Sasl-enc: KFYE0cFZtMq0vr2WaXLIOw+GmjAahuULPDxc0p6HcwDP 1333143146
+X-Mailbox-Line: From gregkh@linuxfoundation.org Fri Mar 30 12:48:58 2012
+Message-Id: <20120330194857.937774211@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:51:15 -0700
+Date: Fri, 30 Mar 2012 12:51:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 170/175] x86, tls: Off by one limit check
+        alan@lxorguk.ukuu.org.uk, Tim Abbott <tim.abbott@oracle.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 158/175] module: Remove module size limit
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit 8f0750f19789cf352d7e24a6cc50f2ab1b4f1372 upstream.
+commit f946eeb9313ff1470758e171a60fe7438a2ded3f upstream.
 
-These are used as offsets into an array of GDT_ENTRY_TLS_ENTRIES members
-so GDT_ENTRY_TLS_ENTRIES is one past the end of the array.
+Module size was limited to 64MB, this was legacy limitation due to vmalloc()
+which was removed a while ago.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Link: http://lkml.kernel.org/r/20120324075250.GA28258@elgon.mountain
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Limiting module size to 64MB is both pointless and affects real world use
+cases.
+
+Cc: Tim Abbott <tim.abbott@oracle.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/tls.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/module.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -163,7 +163,7 @@ int regset_tls_get(struct task_struct *t
- {
- 	const struct desc_struct *tls;
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2380,8 +2380,7 @@ static int copy_and_check(struct load_in
+ 		return -ENOEXEC;
  
--	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
-+	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
- 	    (pos % sizeof(struct user_desc)) != 0 ||
- 	    (count % sizeof(struct user_desc)) != 0)
- 		return -EINVAL;
-@@ -198,7 +198,7 @@ int regset_tls_set(struct task_struct *t
- 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
- 	const struct user_desc *info;
+ 	/* Suck in entire file: we'll want most of it. */
+-	/* vmalloc barfs on "unusual" numbers.  Check here */
+-	if (len > 64 * 1024 * 1024 || (hdr = vmalloc(len)) == NULL)
++	if ((hdr = vmalloc(len)) == NULL)
+ 		return -ENOMEM;
  
--	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
-+	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
- 	    (pos % sizeof(struct user_desc)) != 0 ||
- 	    (count % sizeof(struct user_desc)) != 0)
- 		return -EINVAL;
+ 	if (copy_from_user(hdr, umod, len) != 0) {
 
 
