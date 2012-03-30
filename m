@@ -1,147 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934418Ab2C3PrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:47:20 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46961 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933922Ab2C3Pob (ORCPT
+	id S934419Ab2C3PsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:48:01 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43843 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933878Ab2C3Poa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:44:31 -0400
+	Fri, 30 Mar 2012 11:44:30 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying file
-Date: Fri, 30 Mar 2012 10:43:42 -0500
-Message-Id: <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com>
+Subject: [RFC PATCH v2 12/21] aio: add aio_kernel_() interface
+Date: Fri, 30 Mar 2012 10:43:39 -0500
+Message-Id: <1333122228-13633-13-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4F75D4DE.00B6,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F75D4DE.003B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zach Brown <zab@zabbo.net>
 
-This uses the new kernel aio interface to process loopback IO by
-submitting concurrent direct aio.  Previously loop's IO was serialized
-by synchronous processing in a thread.
-
-The aio operations specify the memory for the IO with the bio_vec arrays
-directly instead of mappings of the pages.
-
-The use of aio operations is enabled when the backing file supports the
-read_iter and write_iter methods.  These methods must only be added when
-O_DIRECT on bio_vecs is supported.
+This adds an interface that lets kernel callers submit aio iocbs without
+going through the user space syscalls.  This lets kernel callers avoid
+the management limits and overhead of the context.  It will also let us
+integrate aio operations with other kernel apis that the user space
+interface doesn't have access to.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
 ---
- drivers/block/loop.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/loop.h |    1 +
- 2 files changed, 55 insertions(+), 1 deletion(-)
+ fs/aio.c            |   92 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/aio.h |   11 ++++++
+ 2 files changed, 103 insertions(+)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index cd50435..cdc34e1 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -76,6 +76,7 @@
- #include <linux/sysfs.h>
- #include <linux/miscdevice.h>
- #include <linux/falloc.h>
-+#include <linux/aio.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -213,6 +214,46 @@ lo_do_transfer(struct loop_device *lo, int cmd,
- 	return lo->transfer(lo, cmd, rpage, roffs, lpage, loffs, size, rblock);
- }
- 
-+void lo_rw_aio_complete(u64 data, long res)
-+{
-+	struct bio *bio = (struct bio *)data;
-+
-+	if (res > 0)
-+		res = 0;
-+	else if (res < 0)
-+		res = -EIO;
-+
-+	bio_endio(bio, res);
-+}
-+
-+static int lo_rw_aio(struct loop_device *lo, struct bio *bio)
-+{
-+	struct file *file = lo->lo_backing_file;
-+	struct kiocb *iocb;
-+	unsigned short op;
-+	struct iov_iter iter;
-+	struct bio_vec *bvec;
-+	size_t nr_segs;
-+	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
-+
-+	iocb = aio_kernel_alloc(GFP_NOIO);
-+	if (!iocb)
-+		return -ENOMEM;
-+
-+	if (bio_rw(bio) & WRITE)
-+		op = IOCB_CMD_WRITE_ITER;
-+	else
-+		op = IOCB_CMD_READ_ITER;
-+
-+	bvec = bio_iovec_idx(bio, bio->bi_idx);
-+	nr_segs = bio_segments(bio);
-+	iov_iter_init_bvec(&iter, bvec, nr_segs, bvec_length(bvec, nr_segs), 0);
-+	aio_kernel_init_iter(iocb, file, op, &iter, pos);
-+	aio_kernel_init_callback(iocb, lo_rw_aio_complete, (u64)bio);
-+
-+	return aio_kernel_submit(iocb);
-+}
-+
- /**
-  * __do_lo_send_write - helper for writing data to a loop device
-  *
-@@ -512,7 +553,14 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
- 		do_loop_switch(lo, bio->bi_private);
- 		bio_put(bio);
- 	} else {
--		int ret = do_bio_filebacked(lo, bio);
-+		int ret;
-+		if (lo->lo_flags & LO_FLAGS_USE_AIO &&
-+		    lo->transfer == transfer_none) {
-+			ret = lo_rw_aio(lo, bio);
-+			if (ret == 0)
-+				return;
-+		} else
-+			ret = do_bio_filebacked(lo, bio);
- 		bio_endio(bio, ret);
+diff --git a/fs/aio.c b/fs/aio.c
+index b9d64d8..aed1c9f 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -997,6 +997,10 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+ 		iocb->ki_users = 0;
+ 		wake_up_process(iocb->ki_obj.tsk);
+ 		return 1;
++	} else if (is_kernel_kiocb(iocb)) {
++		iocb->ki_obj.complete(iocb->ki_user_data, res);
++		aio_kernel_free(iocb);
++		return 0;
  	}
- }
-@@ -854,6 +902,11 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 	    !file->f_op->write)
- 		lo_flags |= LO_FLAGS_READ_ONLY;
  
-+	if (file->f_op->write_iter && file->f_op->read_iter) {
-+		file->f_flags |= O_DIRECT;
-+		lo_flags |= LO_FLAGS_USE_AIO;
+ 	info = &ctx->ring_info;
+@@ -1594,6 +1598,94 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
+ 	return 0;
+ }
+ 
++ /*
++ * This allocates an iocb that will be used to submit and track completion of
++ * an IO that is issued from kernel space.
++ *
++ * The caller is expected to call the appropriate aio_kernel_init_() functions
++ * and then call aio_kernel_submit().  From that point forward progress is
++ * guaranteed by the file system aio method.  Eventually the caller's
++ * completion callback will be called.
++ *
++ * These iocbs are special.  They don't have a context, we don't limit the
++ * number pending, they can't be canceled, and can't be retried.  In the short
++ * term callers need to be careful not to call operations which might retry by
++ * only calling new ops which never add retry support.  In the long term
++ * retry-based AIO should be removed.
++ */
++struct kiocb *aio_kernel_alloc(gfp_t gfp)
++{
++	struct kiocb *iocb = kzalloc(sizeof(struct kiocb), gfp);
++	if (iocb)
++		iocb->ki_key = KIOCB_KERNEL_KEY;
++	return iocb;
++}
++EXPORT_SYMBOL_GPL(aio_kernel_alloc);
++
++void aio_kernel_free(struct kiocb *iocb)
++{
++	kfree(iocb);
++}
++EXPORT_SYMBOL_GPL(aio_kernel_free);
++
++/*
++ * ptr and count can be a buff and bytes or an iov and segs.
++ */
++void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
++			unsigned short op, void *ptr, size_t nr, loff_t off)
++{
++	iocb->ki_filp = filp;
++	iocb->ki_opcode = op;
++	iocb->ki_buf = (char __user *)(unsigned long)ptr;
++	iocb->ki_left = nr;
++	iocb->ki_nbytes = nr;
++	iocb->ki_pos = off;
++}
++EXPORT_SYMBOL_GPL(aio_kernel_init_rw);
++
++void aio_kernel_init_callback(struct kiocb *iocb,
++			      void (*complete)(u64 user_data, long res),
++			      u64 user_data)
++{
++	iocb->ki_obj.complete = complete;
++	iocb->ki_user_data = user_data;
++}
++EXPORT_SYMBOL_GPL(aio_kernel_init_callback);
++
++/*
++ * The iocb is our responsibility once this is called.  The caller must not
++ * reference it.  This comes from aio_setup_iocb() modifying the iocb.
++ *
++ * Callers must be prepared for their iocb completion callback to be called the
++ * moment they enter this function.  The completion callback may be called from
++ * any context.
++ *
++ * Returns: 0: the iocb completion callback will be called with the op result
++ * negative errno: the operation was not submitted and the iocb was freed
++ */
++int aio_kernel_submit(struct kiocb *iocb)
++{
++	int ret;
++
++	BUG_ON(!is_kernel_kiocb(iocb));
++	BUG_ON(!iocb->ki_obj.complete);
++	BUG_ON(!iocb->ki_filp);
++
++	ret = aio_setup_iocb(iocb, 0);
++	if (ret) {
++		aio_kernel_free(iocb);
++		return ret;
 +	}
 +
- 	lo_blocksize = S_ISBLK(inode->i_mode) ?
- 		inode->i_bdev->bd_block_size : PAGE_SIZE;
++	ret = iocb->ki_retry(iocb);
++	BUG_ON(ret == -EIOCBRETRY);
++	if (ret != -EIOCBQUEUED)
++		aio_complete(iocb, ret, 0);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(aio_kernel_submit);
++
+ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 			 struct iocb *iocb, struct kiocb_batch *batch,
+ 			 bool compat)
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 2314ad8..96e8e69 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -24,6 +24,7 @@ struct kioctx;
+ #define KIOCB_C_COMPLETE	0x02
  
-diff --git a/include/linux/loop.h b/include/linux/loop.h
-index 11a41a8..5163fd3 100644
---- a/include/linux/loop.h
-+++ b/include/linux/loop.h
-@@ -75,6 +75,7 @@ enum {
- 	LO_FLAGS_READ_ONLY	= 1,
- 	LO_FLAGS_AUTOCLEAR	= 4,
- 	LO_FLAGS_PARTSCAN	= 8,
-+	LO_FLAGS_USE_AIO	= 16,
+ #define KIOCB_SYNC_KEY		(~0U)
++#define KIOCB_KERNEL_KEY		(~1U)
+ 
+ /* ki_flags bits */
+ /*
+@@ -99,6 +100,7 @@ struct kiocb {
+ 	union {
+ 		void __user		*user;
+ 		struct task_struct	*tsk;
++		void			(*complete)(u64 user_data, long res);
+ 	} ki_obj;
+ 
+ 	__u64			ki_user_data;	/* user's data for completion */
+@@ -127,6 +129,7 @@ struct kiocb {
  };
  
- #include <asm/posix_types.h>	/* for __kernel_old_dev_t */
+ #define is_sync_kiocb(iocb)	((iocb)->ki_key == KIOCB_SYNC_KEY)
++#define is_kernel_kiocb(iocb)	((iocb)->ki_key == KIOCB_KERNEL_KEY)
+ #define init_sync_kiocb(x, filp)			\
+ 	do {						\
+ 		struct task_struct *tsk = current;	\
+@@ -215,6 +218,14 @@ struct mm_struct;
+ extern void exit_aio(struct mm_struct *mm);
+ extern long do_io_submit(aio_context_t ctx_id, long nr,
+ 			 struct iocb __user *__user *iocbpp, bool compat);
++struct kiocb *aio_kernel_alloc(gfp_t gfp);
++void aio_kernel_free(struct kiocb *iocb);
++void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
++			unsigned short op, void *ptr, size_t nr, loff_t off);
++void aio_kernel_init_callback(struct kiocb *iocb,
++			      void (*complete)(u64 user_data, long res),
++			      u64 user_data);
++int aio_kernel_submit(struct kiocb *iocb);
+ #else
+ static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
+ static inline int aio_put_req(struct kiocb *iocb) { return 0; }
 -- 
 1.7.9.5
 
