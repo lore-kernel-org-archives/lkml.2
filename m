@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965571Ab2C3WAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:00:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965525Ab2C3VRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:17:39 -0400
-Message-Id: <20120330194828.511468068@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Zimmerman <paulz@synopsys.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 019/175] usb: dwc3: fix bogus test in dwc3_gadget_start_isoc
-In-Reply-To: <20120330195801.GA31806@kroah.com>
+	id S965577Ab2C3WAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:00:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965386Ab2C3WAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 18:00:36 -0400
+Date: Fri, 30 Mar 2012 19:00:30 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/2] perf tools: fix build for rbtree.c change
+Message-ID: <20120330220030.GK18888@infradead.org>
+References: <1333129114-22117-1-git-send-email-andi@firstfloor.org>
+ <CA+5PVA6h3+493VrZg1OyjkjP9f77CLC9PP9PuJOGMYNLM9Lq4w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA6h3+493VrZg1OyjkjP9f77CLC9PP9PuJOGMYNLM9Lq4w@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+Em Fri, Mar 30, 2012 at 01:47:53PM -0400, Josh Boyer escreveu:
+> On Fri, Mar 30, 2012 at 1:38 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> >
+> > rbtree.c in the main tree now includes linux/export.h, so this file
+> > needs a stub too. This makes perf build again in mainline.
+> >
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> 
+> http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commit;h=2c86bf172e550b4bf089ac7f0de3f6370e243842
+> 
+> Apparently 'perf-urgent-for-linus' isn't as urgent as it sounds?
 
-------------------
+There was a delay due to a resolution on getting rid of pre-generated
+bison/flex files, but Ingo should expedite that pull request RSN.
 
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-
-commit 9bafa56c7cee5c6fa68de5924220abb220c7e229 upstream.
-
-Zero is a valid value for a microframe number. So remove the bogus
-test for non-zero in dwc3_gadget_start_isoc().
-
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/dwc3/gadget.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
-
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1498,7 +1498,7 @@ static void dwc3_endpoint_transfer_compl
- static void dwc3_gadget_start_isoc(struct dwc3 *dwc,
- 		struct dwc3_ep *dep, const struct dwc3_event_depevt *event)
- {
--	u32 uf;
-+	u32 uf, mask;
- 
- 	if (list_empty(&dep->request_list)) {
- 		dev_vdbg(dwc->dev, "ISOC ep %s run out for requests.\n",
-@@ -1506,16 +1506,10 @@ static void dwc3_gadget_start_isoc(struc
- 		return;
- 	}
- 
--	if (event->parameters) {
--		u32 mask;
--
--		mask = ~(dep->interval - 1);
--		uf = event->parameters & mask;
--		/* 4 micro frames in the future */
--		uf += dep->interval * 4;
--	} else {
--		uf = 0;
--	}
-+	mask = ~(dep->interval - 1);
-+	uf = event->parameters & mask;
-+	/* 4 micro frames in the future */
-+	uf += dep->interval * 4;
- 
- 	__dwc3_gadget_kick_transfer(dep, uf, 1);
- }
-
-
+- Arnaldo
