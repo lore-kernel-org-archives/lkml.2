@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760953Ab2C3OZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 10:25:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55751 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760779Ab2C3OZt (ORCPT
+	id S1760960Ab2C3O22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 10:28:28 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51065 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760262Ab2C3O2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 10:25:49 -0400
-Date: Fri, 30 Mar 2012 16:25:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Russell King <rmk@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL/NEXT] sched/arch: Introduce the
- finish_arch_post_lock_switch() scheduler callback
-Message-ID: <20120330142544.GA13966@gmail.com>
-References: <20120313095020.GA13220@flint.arm.linux.org.uk>
- <20120313101859.GA2626@elte.hu>
- <20120313112729.GA25835@flint.arm.linux.org.uk>
- <20120313115640.GA27378@elte.hu>
- <20120313121707.GA2174@flint.arm.linux.org.uk>
- <20120313124433.GA15333@elte.hu>
- <20120313130427.GC2174@flint.arm.linux.org.uk>
- <20120313133115.GA21634@elte.hu>
- <20120313154716.GA31293@elte.hu>
- <20120330135255.GC23295@arm.com>
+	Fri, 30 Mar 2012 10:28:23 -0400
+Date: Fri, 30 Mar 2012 10:28:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@amd.com>
+cc: Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+In-Reply-To: <20120330010730.GA27346@ladygaga>
+Message-ID: <Pine.LNX.4.44L0.1203301021140.1280-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120330135255.GC23295@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 30 Mar 2012, Aaron Lu wrote:
 
-* Catalin Marinas <catalin.marinas@arm.com> wrote:
-
-> Hi Ingo,
+> > > For the ODD to be put into suspend state, the conditions should be:
+> > > 1 tray closed
+> > > 2 no media inside
+> > > I think we missed the condition 1 check now.
+> > > 
+> > > And if we follow the two conditions, the events can be safely ignored.
+> > 
+> > No, they can't.  Otherwise the device won't power back up when the user 
+> > inserts a new disc.
+> > 
 > 
-> On Tue, Mar 13, 2012 at 03:47:16PM +0000, Ingo Molnar wrote:
-> > Anyway - regardless of any differences and flames about workflow 
-> > details, both you and Catalin should still feel free to use both 
-> > the original commit (1cf00341547a) or the tip:sched/arch branch 
-> > I provided (01f23e1630d9).
-> 
-> About the scheduler hook patch, would it go into mainline via 
-> the sched/urgent or the sched/arch branch? I would like to 
-> rebase the ARM-specific patches on top of one of these 
-> branches and send you a pull request (with Russell's ack).
+> The ODD is put to zero power state, so it can't react to the eject
+> button without being powered up back first ;-)
+> On current implementation, ACPI is used to power back up the ODD like this:
+> 1 User press the eject button;
+> 2 A gpe event fired, and ACPI interrupt, and the corresponding gpe
+> handler runs and the ODD's ACPI handle is notified about DEVICE_WAKE_UP;
+> 3 In ODD's acpi notify handler, we power back up it by scsi_autopm_get_device.
+> This is handled in the following Lin Ming's patch:
+> [PATCH v3 2/7] libata-acpi: add ata port runtime D3Cold support
 
-I've merged it into sched/urgent yesterday, which I'll send to 
-Linus - so you can base it on that.
+I see.  Then you are right; it's not necessary to check for events 
+while the drive is at zero power.
 
-Thanks,
+> When the ODD is put to zero power state, it will not be able to handle
+> commands like CDROMEJECT. We have to power it up first and then handle
+> the ioctl request. Currently, we only power back up the ODD when user
+> press the eject button as explained above.
 
-	Ingo
+Then you may want to avoid going to zero-power while a program is
+holding the device file open.  After all, the program might issue a
+CDROMEJECT ioctl.
+
+Alan Stern
+
