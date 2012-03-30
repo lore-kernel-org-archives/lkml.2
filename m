@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab2C3HF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 03:05:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45650 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756321Ab2C3HFR convert rfc822-to-8bit (ORCPT
+	id S1756642Ab2C3HLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 03:11:33 -0400
+Received: from out08.mta.xmission.com ([166.70.13.238]:41706 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755060Ab2C3HL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 03:05:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="83415850"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Brown, Len" <len.brown@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
- platform
-Thread-Topic: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
- platform
-Thread-Index: AQHNDdb5qmcRrTC4dkmeB7vjruTwoZaCZ/Pw
-Date: Fri, 30 Mar 2012 07:05:13 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335113E50@SHSMSX101.ccr.corp.intel.com>
-References: <4F46530B020000780007F751@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
- <20120226173458.GB18098@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350BAC09@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC8292335105EFA@SHSMSX101.ccr.corp.intel.com>
- <20120326164835.GE10236@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC829233510F52B@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233510F5C5@SHSMSX101.ccr.corp.intel.com>
- <20120329180842.GA14789@phenom.dumpdata.com>
-In-Reply-To: <20120329180842.GA14789@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Mar 2012 03:11:28 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+References: <20120329164828.GD21579@dhcp-26-207.brq.redhat.com>
+Date: Fri, 30 Mar 2012 00:15:05 -0700
+In-Reply-To: <20120329164828.GD21579@dhcp-26-207.brq.redhat.com> (Alexander
+	Gordeev's message of "Thu, 29 Mar 2012 18:48:32 +0200")
+Message-ID: <m17gy2mufa.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18fcpgZv1Ab/zzu565GoFTwxEl8n3/PiBE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Alexander Gordeev <agordeev@redhat.com>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH] x86, acpi/irq: Minor readability cleanup of gsi_to_irq()
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
->>>> If it benefits other architectures (say ARM) then adding in hooks
->>>> there (in osl for example) makes sense - but I am not sure if ARM
->>>> has a form of _PUR code/calls it needs to do.
->>>> 
->>>> So with that in mind, neither of those options seems proper - as
->>>> all of them depend on changing something in drivers/acpi/*.
->>>> 
->>>> I've one or two suggestions of what could be done to still make
->>>> this work, but I need you to first see what happens if the native
->>>> acpi_pad runs under Xen with the latest upstream code (along with
->>>> three patches that are in a BZ I pointed you too).
->>> 
->>> Do you mean test the patch
->>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/x86/xen/enlighten.c;h=b132ade26f778f2cfec7c2d5c7b6db48afe424d5;hp=4172af8ceeb363d06912af15bf89e8508752b794;hb=d4c6fa73fe984e504d52f3d6bba291fd76fe49f7;hpb=aab008db8063364dc3c8ccf4981c21124866b395
-> 
-> Right.
+Alexander Gordeev <agordeev@redhat.com> writes:
 
-OK, I test by simulated method (I don't have platform w/ _PUR), executed __monitor at dom0 kernel.
-In the test, it in fact no need to use platform w/ _PUR since it only care mwait, and __monitor would generated UD no matter xen hypervisor exposing mwait or not (break cpuid law or CPL law).
+> Init value of 'irq' variable is never used. So do not initialize it.
 
-As expected, UD not handled by hypervisor, then bounce back to the created bounce frame of dom0, then
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[   82.282152] invalid opcode: 0000 [#1] SMP ^M
-[   82.282170] CPU 0 ^M
-[   82.282175] Modules linked in: monitor(O+) xen_gntdev [last unloaded: scsi_wait_scan]^M
-[   82.282196] ^M
-[   82.282203] Pid: 5315, comm: insmod Tainted: G           O 3.3.0-rc3+ #22 Intel Corporation S2600CP/S2600CP^M
-[   82.282222] RIP: e030:[<ffffffffa0005019>]  [<ffffffffa0005019>] init_module+0x19/0x20 [monitor]^M
-[   82.282243] RSP: e02b:ffff8807a6357e68  EFLAGS: 00010246^M
-[   82.282251] RAX: ffffffffa0005068 RBX: 0000000001ab4010 RCX: 0000000000000000^M
-[   82.282261] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffffa0005000^M
-[   82.282271] RBP: ffff8807a6357e68 R08: ffff8807bdee2c60 R09: ffff8807b9802700^M
-[   82.282280] R10: ffffffff8111bd9c R11: 0000000000000000 R12: 0000000000000000^M
-[   82.282289] R13: ffffffffa0005000 R14: 0000000000000000 R15: ffff8807a6357ee8^M
-[   82.282307] FS:  00007fb88c33c700(0000) GS:ffff8807bdecd000(0000) knlGS:0000000000000000^M
-[   82.282318] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b^M
-[   82.282327] CR2: 00000035044d9380 CR3: 00000007a637d000 CR4: 0000000000042660^M
-[   82.282370] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000^M
-[   82.282389] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400^M
-[   82.282394] Process insmod (pid: 5315, threadinfo ffff8807a6356000, task ffff8807b22aba80)^M
-[   82.282399] Stack:^M
-[   82.282402]  ffff8807a6357e98 ffffffff8100203d 0000000001ab4010 ffffffffa0005080^M
-[   82.282411]  ffffffffa0007210 0000000000000000 ffff8807a6357f78 ffffffff8109f298^M
-[   82.282420]  ffff8807b3815300 ffffc90013f29000 ffff880700000005 ffff880700000003^M
-[   82.282429] Call Trace:^M
-[   82.282440]  [<ffffffff8100203d>] do_one_initcall+0x3d/0x170^M
-[   82.282450]  [<ffffffff8109f298>] sys_init_module+0x138/0x1720^M
-[   82.282462]  [<ffffffff8174f039>] system_call_fastpath+0x16/0x1b^M
-[   82.282466] Code: <0f> 01 c8 31 c0 c9 c3 55 48 c7 c7 58 50 00 a0 31 c0 48 89 e5 e8 44 ^M
-[   82.282500] RIP  [<ffffffffa0005019>] init_module+0x19/0x20 [monitor]^M
-[   82.282526]  RSP <ffff8807a6357e68>^M
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+
+Looks good to me.    I was going to ask what idiot wrote that silly
+thing but it appears that idiot was me.    I must have rewritten
+the function and forgotten to cleanup that initial assignment to irq.
+
+That change makes it much clearer what is going on thank you.
+
+Eric
+
+>  arch/x86/kernel/acpi/boot.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index 406ed77..f148557 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -103,13 +103,11 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
+>  
+>  static unsigned int gsi_to_irq(unsigned int gsi)
+>  {
+> -	unsigned int irq = gsi + NR_IRQS_LEGACY;
+> -	unsigned int i;
+> +	unsigned int irq;
+>  
+> -	for (i = 0; i < NR_IRQS_LEGACY; i++) {
+> -		if (isa_irq_to_gsi[i] == gsi) {
+> -			return i;
+> -		}
+> +	for (irq = 0; irq < NR_IRQS_LEGACY; irq++) {
+> +		if (isa_irq_to_gsi[irq] == gsi)
+> +			return irq;
+>  	}
+>  
+>  	/* Provide an identity mapping of gsi == irq
