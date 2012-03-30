@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760989Ab2C3Pkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:40:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7069 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751393Ab2C3Pke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:40:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="147903044"
-Message-ID: <1333122195.5440.60.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jan Kara <jack@suse.cz>
-Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Date: Fri, 30 Mar 2012 18:43:15 +0300
-In-Reply-To: <20120330153530.GH5587@quack.suse.cz>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
-	 <20120322095342.GC14485@quack.suse.cz>
-	 <1332410747.18717.12.camel@sauron.fi.intel.com>
-	 <20120322103309.GA14484@quack.suse.cz>
-	 <1332854998.31549.40.camel@sauron.fi.intel.com>
-	 <20120327201401.GF5020@quack.suse.cz>
-	 <1333121035.5440.49.camel@sauron.fi.intel.com>
-	 <20120330153530.GH5587@quack.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-SUsM4MwbD4bL9dz+dA+g"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S932832Ab2C3Pm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:42:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59083 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab2C3Pmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 11:42:50 -0400
+Date: Fri, 30 Mar 2012 08:42:46 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com
+Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
+Message-ID: <20120330154246.GE28934@google.com>
+References: <1332368265-21586-1-git-send-email-tj@kernel.org>
+ <4F75AA1F.9020007@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F75AA1F.9020007@huawei.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey, Li.
 
---=-SUsM4MwbD4bL9dz+dA+g
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 30, 2012 at 08:42:07PM +0800, Li Zefan wrote:
+> > This patch replaces cgroup file interface with cftype based one which
+> > allows dynamic additions and removals of cftype arrays whether the
+> > target subsystem is attached or not.  This can be used to make subsys
+> > rebinding via remount work properly but I intentionally avoided doing
+> > that at the moment.
+> 
+> What's the problem with remount?
 
-On Fri, 2012-03-30 at 17:35 +0200, Jan Kara wrote:
-> > [23500.239442]  [<ffffffff811ab59d>] write_dirty_buffer+0x4d/0x80
-> > [23500.239442]  [<ffffffff8123be1d>] __flush_batch+0x4d/0xa0
-> > [23500.239442]  [<ffffffff8123c605>] jbd2_log_do_checkpoint+0xf5/0x4f0
-> > [23500.239442]  [<ffffffff8123ca89>] __jbd2_log_wait_for_space+0x89/0x1=
-90
-> > [23500.239442]  [<ffffffff81237a98>] start_this_handle+0x3a8/0x4e0
-> > [23500.239442]  [<ffffffff810799e0>] ? remove_wait_queue+0x50/0x50
-> > [23500.239442]  [<ffffffff81237c93>] jbd2__journal_start+0xc3/0x100
-> > [23500.239442]  [<ffffffff81237ce3>] jbd2_journal_start+0x13/0x20
-> > [23500.239442]  [<ffffffff8121743f>] ext4_journal_start_sb+0x7f/0x1d0
-> > [23500.239442]  [<ffffffff81224a24>] ? ext4_fallocate+0x1a4/0x530
-> > [23500.239442]  [<ffffffff811f64c5>] ? ext4_meta_trans_blocks+0xa5/0xb0
-> > [23500.239442]  [<ffffffff81224a24>] ext4_fallocate+0x1a4/0x530
-> > [23500.239442]  [<ffffffff8117a092>] do_fallocate+0xf2/0x160
-> > [23500.239442]  [<ffffffff8117a14b>] sys_fallocate+0x4b/0x70
-> > [23500.239442]  [<ffffffff815e6d69>] system_call_fastpath+0x16/0x1b
-> > [23500.239442] Code: ee 44 89 e7 e8 35 1f 0f 00 49 8b 5d 18 4c 89 ef e8=
- 19 4e 00 00 48 83 c4 08 c1 e3 18 c1 fb 1f 83 e3 a1 89 d8 5b 41 5c 41 5d 5d=
- c3 <0f> 0b 0f 0b 0f 0b 0f 0b 0f 0b 66 0f 1f 84 00 00 00 00 00 55 48=20
-> > [23500.239442] RIP  [<ffffffff811a9add>] submit_bh+0x10d/0x120
-> > [23500.239442]  RSP <ffff880273a41b58>
-> > [23500.261657] ---[ end trace 3db7a7a7ae953551 ]---
->   Hmm, looks like we tried to checkpoint BH_Unwritten buffer. That looks
-> like a bug in fallocate() support. Not really related but definitely wort=
-h
-> reporting.
+Subsys can't be changed if any non-root cgroup exists.
 
-Well, I ran vanilla the tests in vanilla 3.3 overnight, they were fine.
-But may be I was lucky. I'll try to run the tests with vanilla kernel
-some more. I mean, it would make more sense to report something against
-vanilla 3.3, not a patched 3.3.
+> and is it important enough that it should be fixed even the feature
+> is marked as deprecated?
 
-Any hints how to properly report an ext4 bug?
+I'm not sure.  We *might* need it during multi-mount -> single-mount
+transition depending on how that's implemented, so the "at the moment"
+qualifier.  It probably won't be fixed but I'm not fully sure.
 
---=20
-Best Regards,
-Artem Bityutskiy
+> > This makes cgroup population simpler for controllers and will be used
+> > to allow controllers to be more dynamic.  e.g. blkio subsys has
+> > sub-policies which may come and go while blkio subsys is attached and
+> > it currently uses fixed set of files which stays blank if not in use.
+> 
+> Dynamic cgroup files was mentioned before. The scenario in mind was blkio
+> control files can be added/removed automatically as devices come and ago.
+> 
+> So this time blkio subsystem is really going to be made more dynamic
+> soon?
 
---=-SUsM4MwbD4bL9dz+dA+g
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Patchset already posted.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+  http://thread.gmane.org/gmane.linux.kernel.cgroups/1376
 
-iQIcBAABAgAGBQJPddSTAAoJECmIfjd9wqK0DrMP/0lAMmGzzu/GCNR7hcMdCnJ9
-pIO8HY+3LekQO44m0oZTKDcUY4iDewfO+NszE/4MQn7fA6pdWrvn6tutyIYdRMkm
-RW9QrlQSxWwFp0EUr4XAHbuiEQd+NMf/+aYh3tbKdznP1TsZUls+hXLXe805EpsI
-B6jgQli01+5oWo8+rBhRCnZU8kbyYlPgnnOUB+ebHce171Cf0ovjslw2rHxZF0Eh
-BbMfGv2P5E3vLcPm6zPWj5TWBIiV4qQnTwpJFVwuMsPNRPIntYOxBeKQXbrYYHFA
-wMhS0m8JWIsVt1iD57slrIKLV8+ytsEXd1H1eFdgKQcjt3rFwYBCfuqjyuGODTaK
-q8ci5kRjVeTJp3bKy7p2t1ALEf50D/RJhPIYFxg3EwqgkP6us+X4Hf9EFaMUq0CT
-mrg1FSWwbG+VU+5HDpc1DHo9ZV5KLIfmaj4VwB1w7WLqDmeFPjt5MkfvzHxO9fuQ
-Cy93RXvcqtUxcynYisYowqiS73o/fzsxhAZ+mUFLuWyxW8fJ8GySc/PPQI/dPlv+
-UcINTnzQWO1pW0XuxMfvIAnSyi07Hufj3lB3h5ZILtvjToZBosAyAKyKwIFNxuXt
-cNga7qKW6jTT+9By5PHmEc0ABUqdSaIIyYnEsQC7TJFg33/MFxqne8f/lxMDwOyl
-/wmt/Eg5YXBtlPQQrX2J
-=FgRr
------END PGP SIGNATURE-----
+Thanks.
 
---=-SUsM4MwbD4bL9dz+dA+g--
-
+-- 
+tejun
