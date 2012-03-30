@@ -1,163 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934464Ab2C3PrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:47:05 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46968 "EHLO
+	id S934418Ab2C3PrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:47:20 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:46961 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933939Ab2C3Pob (ORCPT
+	with ESMTP id S933922Ab2C3Pob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Mar 2012 11:44:31 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
-Subject: [RFC PATCH v2 20/21] btrfs: add support for read_iter and write_iter
-Date: Fri, 30 Mar 2012 10:43:47 -0500
-Message-Id: <1333122228-13633-21-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying file
+Date: Fri, 30 Mar 2012 10:43:42 -0500
+Message-Id: <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090207.4F75D4DF.0028,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090207.4F75D4DE.00B6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-btrfs can use generic_file_read_iter(). Base btrfs_file_write_iter()
-on btrfs_file_aio_write(), then have the latter call the former.
+From: Zach Brown <zab@zabbo.net>
+
+This uses the new kernel aio interface to process loopback IO by
+submitting concurrent direct aio.  Previously loop's IO was serialized
+by synchronous processing in a thread.
+
+The aio operations specify the memory for the IO with the bio_vec arrays
+directly instead of mappings of the pages.
+
+The use of aio operations is enabled when the backing file supports the
+read_iter and write_iter methods.  These methods must only be added when
+O_DIRECT on bio_vecs is supported.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: linux-btrfs@vger.kernel.org
 ---
- fs/btrfs/file.c |   55 ++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 30 insertions(+), 25 deletions(-)
+ drivers/block/loop.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/loop.h |    1 +
+ 2 files changed, 55 insertions(+), 1 deletion(-)
 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index e8d06b6..31275d1 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1285,20 +1285,17 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index cd50435..cdc34e1 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -76,6 +76,7 @@
+ #include <linux/sysfs.h>
+ #include <linux/miscdevice.h>
+ #include <linux/falloc.h>
++#include <linux/aio.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -213,6 +214,46 @@ lo_do_transfer(struct loop_device *lo, int cmd,
+ 	return lo->transfer(lo, cmd, rpage, roffs, lpage, loffs, size, rblock);
  }
  
- static ssize_t __btrfs_direct_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos,
--				    loff_t *ppos, size_t count, size_t ocount)
-+				    struct iov_iter *iter,
-+				    loff_t pos, loff_t *ppos, size_t count)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = fdentry(file)->d_inode;
--	struct iov_iter i;
- 	ssize_t written;
- 	ssize_t written_buffered;
- 	loff_t endbyte;
- 	int err;
- 
--	written = generic_file_direct_write(iocb, iov, &nr_segs, pos, ppos,
--					    count, ocount);
-+	written = generic_file_direct_write_iter(iocb, iter, pos, ppos, count);
- 
- 	/*
- 	 * the generic O_DIRECT will update in-memory i_size after the
-@@ -1317,8 +1314,7 @@ static ssize_t __btrfs_direct_write(struct kiocb *iocb,
- 
- 	pos += written;
- 	count -= written;
--	iov_iter_init(&i, iov, nr_segs, count, written);
--	written_buffered = __btrfs_buffered_write(file, &i, pos);
-+	written_buffered = __btrfs_buffered_write(file, iter, pos);
- 	if (written_buffered < 0) {
- 		err = written_buffered;
- 		goto out;
-@@ -1335,9 +1331,8 @@ out:
- 	return written ? written : err;
- }
- 
--static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos)
-+static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
-+				     struct iov_iter *iter, loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = fdentry(file)->d_inode;
-@@ -1346,18 +1341,13 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 	u64 start_pos;
- 	ssize_t num_written = 0;
- 	ssize_t err = 0;
--	size_t count, ocount;
-+	size_t count;
- 
- 	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
- 
- 	mutex_lock(&inode->i_mutex);
- 
--	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
--	if (err) {
--		mutex_unlock(&inode->i_mutex);
--		goto out;
--	}
--	count = ocount;
-+	count = iov_iter_count(iter);
- 
- 	current->backing_dev_info = inode->i_mapping->backing_dev_info;
- 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
-@@ -1406,14 +1396,10 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 	}
- 
- 	if (unlikely(file->f_flags & O_DIRECT)) {
--		num_written = __btrfs_direct_write(iocb, iov, nr_segs,
--						   pos, ppos, count, ocount);
-+		num_written = __btrfs_direct_write(iocb, iter, pos, ppos,
-+						   count);
- 	} else {
--		struct iov_iter i;
--
--		iov_iter_init(&i, iov, nr_segs, count, num_written);
--
--		num_written = __btrfs_buffered_write(file, &i, pos);
-+		num_written = __btrfs_buffered_write(file, iter, pos);
- 		if (num_written > 0)
- 			*ppos = pos + num_written;
- 	}
-@@ -1443,6 +1429,23 @@ out:
- 	return num_written ? num_written : err;
- }
- 
-+static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
-+				    const struct iovec *iov,
-+				    unsigned long nr_segs, loff_t pos)
++void lo_rw_aio_complete(u64 data, long res)
 +{
-+	struct iov_iter i;
-+	int ret;
-+	size_t count;
++	struct bio *bio = (struct bio *)data;
 +
-+	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
-+	if (ret)
-+		return ret;
++	if (res > 0)
++		res = 0;
++	else if (res < 0)
++		res = -EIO;
 +
-+	iov_iter_init(&i, iov, nr_segs, count, 0);
-+
-+	return btrfs_file_write_iter(iocb, &i, pos);
++	bio_endio(bio, res);
 +}
 +
- int btrfs_release_file(struct inode *inode, struct file *filp)
- {
- 	/*
-@@ -1874,7 +1877,9 @@ const struct file_operations btrfs_file_operations = {
- 	.write		= do_sync_write,
- 	.aio_read       = generic_file_aio_read,
- 	.splice_read	= generic_file_splice_read,
-+	.read_iter	= generic_file_read_iter,
- 	.aio_write	= btrfs_file_aio_write,
-+	.write_iter	= btrfs_file_write_iter,
- 	.mmap		= btrfs_file_mmap,
- 	.open		= generic_file_open,
- 	.release	= btrfs_release_file,
++static int lo_rw_aio(struct loop_device *lo, struct bio *bio)
++{
++	struct file *file = lo->lo_backing_file;
++	struct kiocb *iocb;
++	unsigned short op;
++	struct iov_iter iter;
++	struct bio_vec *bvec;
++	size_t nr_segs;
++	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
++
++	iocb = aio_kernel_alloc(GFP_NOIO);
++	if (!iocb)
++		return -ENOMEM;
++
++	if (bio_rw(bio) & WRITE)
++		op = IOCB_CMD_WRITE_ITER;
++	else
++		op = IOCB_CMD_READ_ITER;
++
++	bvec = bio_iovec_idx(bio, bio->bi_idx);
++	nr_segs = bio_segments(bio);
++	iov_iter_init_bvec(&iter, bvec, nr_segs, bvec_length(bvec, nr_segs), 0);
++	aio_kernel_init_iter(iocb, file, op, &iter, pos);
++	aio_kernel_init_callback(iocb, lo_rw_aio_complete, (u64)bio);
++
++	return aio_kernel_submit(iocb);
++}
++
+ /**
+  * __do_lo_send_write - helper for writing data to a loop device
+  *
+@@ -512,7 +553,14 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
+ 		do_loop_switch(lo, bio->bi_private);
+ 		bio_put(bio);
+ 	} else {
+-		int ret = do_bio_filebacked(lo, bio);
++		int ret;
++		if (lo->lo_flags & LO_FLAGS_USE_AIO &&
++		    lo->transfer == transfer_none) {
++			ret = lo_rw_aio(lo, bio);
++			if (ret == 0)
++				return;
++		} else
++			ret = do_bio_filebacked(lo, bio);
+ 		bio_endio(bio, ret);
+ 	}
+ }
+@@ -854,6 +902,11 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 	    !file->f_op->write)
+ 		lo_flags |= LO_FLAGS_READ_ONLY;
+ 
++	if (file->f_op->write_iter && file->f_op->read_iter) {
++		file->f_flags |= O_DIRECT;
++		lo_flags |= LO_FLAGS_USE_AIO;
++	}
++
+ 	lo_blocksize = S_ISBLK(inode->i_mode) ?
+ 		inode->i_bdev->bd_block_size : PAGE_SIZE;
+ 
+diff --git a/include/linux/loop.h b/include/linux/loop.h
+index 11a41a8..5163fd3 100644
+--- a/include/linux/loop.h
++++ b/include/linux/loop.h
+@@ -75,6 +75,7 @@ enum {
+ 	LO_FLAGS_READ_ONLY	= 1,
+ 	LO_FLAGS_AUTOCLEAR	= 4,
+ 	LO_FLAGS_PARTSCAN	= 8,
++	LO_FLAGS_USE_AIO	= 16,
+ };
+ 
+ #include <asm/posix_types.h>	/* for __kernel_old_dev_t */
 -- 
 1.7.9.5
 
