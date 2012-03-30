@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935565Ab2C3VKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:10:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56418 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964827Ab2C3VKC (ORCPT
+	id S936524Ab2C3Wbf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:31:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935550Ab2C3VKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:10:02 -0400
-Message-Id: <20120330194838.408676401@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:10:07 -0400
+Message-Id: <20120330194838.887387171@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:58 -0700
+Date: Fri, 30 Mar 2012 12:49:00 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Liz Clark <liz.clark@hp.com>
-Subject: [ 025/149] TTY: Wrong unicode value copied in con_set_unimap()
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oliver@neukum.org>
+Subject: [ 027/149] cdc-wdm: Fix more races on the read path
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,117 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liz Clark <liz.clark@hp.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 4a4c61b7ce26bfc9d49ea4bd121d52114bad9f99 upstream.
+commit 711c68b3c0f7a924ffbee4aa962d8f62b85188ff upstream.
 
-Bugzilla 40012: PIO_UNIMAP bug: error updating Unicode-to-font map
-https://bugzilla.kernel.org/show_bug.cgi?id=40012
+We must not allow the input buffer length to change while we're
+shuffling the buffer contents.  We also mustn't clear the WDM_READ
+flag after more data might have arrived.  Therefore move both of these
+into the spinlocked region at the bottom of wdm_read().
 
-The unicode font map for the virtual console is a 32x32x64 table which
-allocates rows dynamically as entries are added.  The unicode value
-increases sequentially and should count all entries even in empty
-rows.  The defect is when copying the unicode font map in con_set_unimap(),
-the unicode value is not incremented properly.  The wrong unicode value
-is entered in the new font map.
+When reading desc->length without holding the iuspin lock, use
+ACCESS_ONCE() to ensure the compiler doesn't re-read it with
+inconsistent results.
 
-Signed-off-by: Liz Clark <liz.clark@hp.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Tested-by: Bjørn Mork <bjorn@mork.no>
+Cc: Oliver Neukum <oliver@neukum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/vt/consolemap.c |   51 +++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 43 insertions(+), 8 deletions(-)
+ drivers/usb/class/cdc-wdm.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/tty/vt/consolemap.c
-+++ b/drivers/tty/vt/consolemap.c
-@@ -516,6 +516,7 @@ int con_set_unimap(struct vc_data *vc, u
- 	int err = 0, err1, i;
- 	struct uni_pagedir *p, *q;
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -397,7 +397,7 @@ outnl:
+ static ssize_t wdm_read
+ (struct file *file, char __user *buffer, size_t count, loff_t *ppos)
+ {
+-	int rv, cntr = 0;
++	int rv, cntr;
+ 	int i = 0;
+ 	struct wdm_device *desc = file->private_data;
  
-+	/* Save original vc_unipagdir_loc in case we allocate a new one */
- 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
- 	if (p->readonly) return -EIO;
- 	
-@@ -528,26 +529,57 @@ int con_set_unimap(struct vc_data *vc, u
- 		err1 = con_clear_unimap(vc, NULL);
- 		if (err1) return err1;
- 		
-+		/*
-+		 * Since refcount was > 1, con_clear_unimap() allocated a
-+		 * a new uni_pagedir for this vc.  Re: p != q
-+		 */
- 		q = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
--		for (i = 0, l = 0; i < 32; i++)
-+
-+		/*
-+		 * uni_pgdir is a 32*32*64 table with rows allocated
-+		 * when its first entry is added.  The unicode value must
-+		 * still be incremented for empty rows.  We are copying
-+		 * entries from "p" (old) to "q" (new).
-+		 */
-+		l = 0;		/* unicode value */
-+		for (i = 0; i < 32; i++)
- 		if ((p1 = p->uni_pgdir[i]))
- 			for (j = 0; j < 32; j++)
--			if ((p2 = p1[j]))
-+			if ((p2 = p1[j])) {
- 				for (k = 0; k < 64; k++, l++)
- 				if (p2[k] != 0xffff) {
-+					/*
-+					 * Found one, copy entry for unicode
-+					 * l with fontpos value p2[k].
-+					 */
- 					err1 = con_insert_unipair(q, l, p2[k]);
- 					if (err1) {
- 						p->refcount++;
- 						*vc->vc_uni_pagedir_loc = (unsigned long)p;
- 						con_release_unimap(q);
- 						kfree(q);
--						return err1; 
-+						return err1;
- 					}
--              			}
--              	p = q;
--	} else if (p == dflt)
-+				}
-+			} else {
-+				/* Account for row of 64 empty entries */
-+				l += 64;
-+			}
-+		else
-+			/* Account for empty table */
-+			l += 32 * 64;
-+
-+		/*
-+		 * Finished copying font table, set vc_uni_pagedir to new table
-+		 */
-+		p = q;
-+	} else if (p == dflt) {
- 		dflt = NULL;
--	
-+	}
-+
-+	/*
-+	 * Insert user specified unicode pairs into new table.
-+	 */
- 	while (ct--) {
- 		unsigned short unicode, fontpos;
- 		__get_user(unicode, &list->unicode);
-@@ -557,11 +589,14 @@ int con_set_unimap(struct vc_data *vc, u
- 		list++;
+@@ -406,7 +406,8 @@ static ssize_t wdm_read
+ 	if (rv < 0)
+ 		return -ERESTARTSYS;
+ 
+-	if (desc->length == 0) {
++	cntr = ACCESS_ONCE(desc->length);
++	if (cntr == 0) {
+ 		desc->read = 0;
+ retry:
+ 		if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
+@@ -457,25 +458,30 @@ retry:
+ 			goto retry;
+ 		}
+ 		clear_bit(WDM_READ, &desc->flags);
++		cntr = desc->length;
+ 		spin_unlock_irq(&desc->iuspin);
  	}
- 	
-+	/*
-+	 * Merge with fontmaps of any other virtual consoles.
-+	 */
- 	if (con_unify_unimap(vc, p))
- 		return err;
  
- 	for (i = 0; i <= 3; i++)
--		set_inverse_transl(vc, p, i); /* Update all inverse translations */
-+		set_inverse_transl(vc, p, i); /* Update inverse translations */
- 	set_inverse_trans_unicode(vc, p);
-   
- 	return err;
+-	cntr = count > desc->length ? desc->length : count;
++	if (cntr > count)
++		cntr = count;
+ 	rv = copy_to_user(buffer, desc->ubuf, cntr);
+ 	if (rv > 0) {
+ 		rv = -EFAULT;
+ 		goto err;
+ 	}
+ 
++	spin_lock_irq(&desc->iuspin);
++
+ 	for (i = 0; i < desc->length - cntr; i++)
+ 		desc->ubuf[i] = desc->ubuf[i + cntr];
+ 
+-	spin_lock_irq(&desc->iuspin);
+ 	desc->length -= cntr;
+-	spin_unlock_irq(&desc->iuspin);
+ 	/* in case we had outstanding data */
+ 	if (!desc->length)
+ 		clear_bit(WDM_READ, &desc->flags);
++
++	spin_unlock_irq(&desc->iuspin);
++
+ 	rv = cntr;
+ 
+ err:
 
 
