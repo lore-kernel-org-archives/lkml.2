@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816Ab2C3KUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 06:20:38 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:52238 "EHLO
+	id S933838Ab2C3KUr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 06:20:47 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:52218 "EHLO
 	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933141Ab2C3KSv (ORCPT
+	with ESMTP id S932841Ab2C3KSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 06:18:51 -0400
+	Fri, 30 Mar 2012 06:18:49 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 76/76] ACPI throttling: fix endian bug in
- acpi_read_throttling_status()
-Date: Fri, 30 Mar 2012 06:14:19 -0400
-Message-id: <4d809bff31637fd865000cc9a36f6a101f372754.1333101989.git.len.brown@intel.com>
+Subject: [PATCH 63/76] Update documentation for parameter *notrigger* in
+ einj.txt
+Date: Fri, 30 Mar 2012 06:14:06 -0400
+Message-id: <6ef19ab7fa1535d35006535dba6c407dad2d845c.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -26,50 +26,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Chen Gong <gong.chen@linux.intel.com>
 
-Using a u64 here creates an endian bug.  We store a u32 number in the
-top byte which is a larger number than intended on big endian systems.
-There is no reason to use a 64 bit data type here, I guess it was just
-an oversight.
+Add description of parameter notrigger in the einj.txt.
+One can utilize this new parameter to do some SRAR injection
+test. Pay attention, the operation is highly depended on the
+BIOS implementation. If no proper BIOS supports it, even if
+enabling this parameter, expected result will not happen.
 
-I removed the initialization to zero as well.  It's needed with a u64
-but with a u32, the variable gets initialized properly inside the call
-to acpi_os_read_port().
+v2:
+  Update the documentation suggested by Tony
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Suggested-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/processor_throttling.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ Documentation/acpi/apei/einj.txt |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/acpi/processor_throttling.c b/drivers/acpi/processor_throttling.c
-index 605a295..1d02b7b 100644
---- a/drivers/acpi/processor_throttling.c
-+++ b/drivers/acpi/processor_throttling.c
-@@ -769,7 +769,7 @@ static int acpi_read_throttling_status(struct acpi_processor *pr,
- 					u64 *value)
- {
- 	u32 bit_width, bit_offset;
--	u64 ptc_value;
-+	u32 ptc_value;
- 	u64 ptc_mask;
- 	struct acpi_processor_throttling *throttling;
- 	int ret = -1;
-@@ -777,12 +777,11 @@ static int acpi_read_throttling_status(struct acpi_processor *pr,
- 	throttling = &pr->throttling;
- 	switch (throttling->status_register.space_id) {
- 	case ACPI_ADR_SPACE_SYSTEM_IO:
--		ptc_value = 0;
- 		bit_width = throttling->status_register.bit_width;
- 		bit_offset = throttling->status_register.bit_offset;
+diff --git a/Documentation/acpi/apei/einj.txt b/Documentation/acpi/apei/einj.txt
+index e7cc363..e20b6da 100644
+--- a/Documentation/acpi/apei/einj.txt
++++ b/Documentation/acpi/apei/einj.txt
+@@ -53,6 +53,14 @@ directory apei/einj. The following files are provided.
+   This file is used to set the second error parameter value. Effect of
+   parameter depends on error_type specified.
  
- 		acpi_os_read_port((acpi_io_address) throttling->status_register.
--				  address, (u32 *) &ptc_value,
-+				  address, &ptc_value,
- 				  (u32) (bit_width + bit_offset));
- 		ptc_mask = (1 << bit_width) - 1;
- 		*value = (u64) ((ptc_value >> bit_offset) & ptc_mask);
++- notrigger
++  The EINJ mechanism is a two step process. First inject the error, then
++  perform some actions to trigger it. Setting "notrigger" to 1 skips the
++  trigger phase, which *may* allow the user to cause the error in some other
++  context by a simple access to the cpu, memory location, or device that is
++  the target of the error injection. Whether this actually works depends
++  on what operations the BIOS actually includes in the trigger phase.
++
+ BIOS versions based in the ACPI 4.0 specification have limited options
+ to control where the errors are injected.  Your BIOS may support an
+ extension (enabled with the param_extension=1 module parameter, or
 -- 
 1.7.10.rc2.19.gfae9d
 
