@@ -1,80 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935330Ab2C3Wq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:46:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935005Ab2C3VGl (ORCPT
+	id S935094Ab2C3VGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:06:38 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41969 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935005Ab2C3VG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:41 -0400
-Message-Id: <20120330195732.078756898@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:31 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 069/108] UBI: fix error handling in ubi_scan()
-In-Reply-To: <20120330195812.GA31833@kroah.com>
+	Fri, 30 Mar 2012 17:06:28 -0400
+Message-Id: <201203302105.q2UL5AuV006314@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Mar 2012 16:29:06 -0400
+Subject: [PATCH] arch/tile: avoid accidentally unmasking NMI-type interrupt accidentally
+In-Reply-To: <4F761E1C.80808.com>
+References: <4F761E1C.80808.com>
+To: Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 30 Mar 2012 21:05:11.0038 (UTC) FILETIME=[CB4069E0:01CD0EB8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+The return path as we reload registers and core state requires that r30
+hold a boolean indicating whether we are returning from an NMI, but in a
+couple of cases we weren't setting this properly, with the result that we
+could accidentally unmask the NMI interrupt(s), which could cause confusion.
+Now we set r30 in every place where we jump into the interrupt return path.
 
-------------------
-
-From: Richard Weinberger <richard@nod.at>
-
-commit a29852be492d61001d86c6ebf5fff9b93d7b4be9 upstream.
-
-Two bad things can happen in ubi_scan():
-1. If kmem_cache_create() fails we jump to out_si and call
-   ubi_scan_destroy_si() which calls kmem_cache_destroy().
-   But si->scan_leb_slab is NULL.
-2. If process_eb() fails we jump to out_vidh, call
-   kmem_cache_destroy() and ubi_scan_destroy_si() which calls
-   again kmem_cache_destroy().
-
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/mtd/ubi/scan.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/tile/kernel/intvec_32.S |   24 ++++++++++++++++++++----
+ arch/tile/kernel/intvec_64.S |   19 ++++++++++++++++---
+ 2 files changed, 36 insertions(+), 7 deletions(-)
 
---- a/drivers/mtd/ubi/scan.c
-+++ b/drivers/mtd/ubi/scan.c
-@@ -1174,7 +1174,7 @@ struct ubi_scan_info *ubi_scan(struct ub
+diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
+index aecc8ed..5d56a1e 100644
+--- a/arch/tile/kernel/intvec_32.S
++++ b/arch/tile/kernel/intvec_32.S
+@@ -799,6 +799,10 @@ handle_interrupt:
+  * This routine takes a boolean in r30 indicating if this is an NMI.
+  * If so, we also expect a boolean in r31 indicating whether to
+  * re-enable the oprofile interrupts.
++ *
++ * Note that .Lresume_userspace is jumped to directly in several
++ * places, and we need to make sure r30 is set correctly in those
++ * callers as well.
+  */
+ STD_ENTRY(interrupt_return)
+ 	/* If we're resuming to kernel space, don't check thread flags. */
+@@ -1237,7 +1241,10 @@ handle_syscall:
+ 	bzt     r30, 1f
+ 	jal	do_syscall_trace
+ 	FEEDBACK_REENTER(handle_syscall)
+-1:	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++1:	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
  
- 	ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
- 	if (!ech)
--		goto out_slab;
-+		goto out_si;
- 
- 	vidh = ubi_zalloc_vid_hdr(ubi, GFP_KERNEL);
- 	if (!vidh)
-@@ -1235,8 +1235,6 @@ out_vidh:
- 	ubi_free_vid_hdr(ubi, vidh);
- out_ech:
- 	kfree(ech);
--out_slab:
--	kmem_cache_destroy(si->scan_leb_slab);
- out_si:
- 	ubi_scan_destroy_si(si);
- 	return ERR_PTR(err);
-@@ -1325,7 +1323,9 @@ void ubi_scan_destroy_si(struct ubi_scan
- 		}
+ .Linvalid_syscall:
+ 	/* Report an invalid syscall back to the user program */
+@@ -1246,7 +1253,10 @@ handle_syscall:
+ 	 movei  r28, -ENOSYS
  	}
+ 	sw      r29, r28
+-	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
+ 	STD_ENDPROC(handle_syscall)
  
--	kmem_cache_destroy(si->scan_leb_slab);
-+	if (si->scan_leb_slab)
-+		kmem_cache_destroy(si->scan_leb_slab);
-+
- 	kfree(si);
- }
+ 	/* Return the address for oprofile to suppress in backtraces. */
+@@ -1262,7 +1272,10 @@ STD_ENTRY(ret_from_fork)
+ 	jal     sim_notify_fork
+ 	jal     schedule_tail
+ 	FEEDBACK_REENTER(ret_from_fork)
+-	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
+ 	STD_ENDPROC(ret_from_fork)
  
-
+ 	/*
+@@ -1376,7 +1389,10 @@ handle_ill:
+ 
+ 	jal     send_sigtrap    /* issue a SIGTRAP */
+ 	FEEDBACK_REENTER(handle_ill)
+-	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
+ 
+ .Ldispatch_normal_ill:
+ 	{
+diff --git a/arch/tile/kernel/intvec_64.S b/arch/tile/kernel/intvec_64.S
+index 7fa656a..8b5daed 100644
+--- a/arch/tile/kernel/intvec_64.S
++++ b/arch/tile/kernel/intvec_64.S
+@@ -614,6 +614,10 @@ handle_interrupt:
+  * This routine takes a boolean in r30 indicating if this is an NMI.
+  * If so, we also expect a boolean in r31 indicating whether to
+  * re-enable the oprofile interrupts.
++ *
++ * Note that .Lresume_userspace is jumped to directly in several
++ * places, and we need to make sure r30 is set correctly in those
++ * callers as well.
+  */
+ STD_ENTRY(interrupt_return)
+ 	/* If we're resuming to kernel space, don't check thread flags. */
+@@ -1066,7 +1070,10 @@ handle_syscall:
+ 	}
+ 	FEEDBACK_REENTER(handle_syscall)
+ 
+-2:	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++2:	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
+ 
+ .Lcompat_syscall:
+ 	/*
+@@ -1100,7 +1107,10 @@ handle_syscall:
+ 	 movei  r28, -ENOSYS
+ 	}
+ 	st      r29, r28
+-	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
+ 	STD_ENDPROC(handle_syscall)
+ 
+ 	/* Return the address for oprofile to suppress in backtraces. */
+@@ -1116,7 +1126,10 @@ STD_ENTRY(ret_from_fork)
+ 	jal     sim_notify_fork
+ 	jal     schedule_tail
+ 	FEEDBACK_REENTER(ret_from_fork)
+-	j       .Lresume_userspace
++	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
+ 	STD_ENDPROC(ret_from_fork)
+ 
+ /* Various stub interrupt handlers and syscall handlers */
+-- 
+1.6.5.2
 
