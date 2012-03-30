@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965385Ab2C3VQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:16:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S936476Ab2C3WG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:06:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965279Ab2C3VP7 (ORCPT
+	with ESMTP id S965342Ab2C3VQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:15:59 -0400
-Message-Id: <20120330194902.722912295@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:16:05 -0400
+Message-Id: <20120330194903.023849109@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:50 -0700
+Date: Fri, 30 Mar 2012 12:50:52 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Evans <matt@ozlabs.org>,
-        Indan Zupancic <indan@nul.nu>, Eric Dumazet <eric.dumazet@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 137/149] net: bpf_jit: fix BPF_S_LDX_B_MSH compilation
+Subject: [ 139/149] net: fix napi_reuse_skb() skb reserve
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,57 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit dc72d99dabb870ca5bd6d9fff674be853bb4a88d ]
+[ Upstream commit 2a2a459eeeff48640dc557548ce576d666ab06ed ]
 
-Matt Evans spotted that x86 bpf_jit was incorrectly handling negative
-constant offsets in BPF_S_LDX_B_MSH instruction.
+napi->skb is allocated in napi_get_frags() using
+netdev_alloc_skb_ip_align(), with a reserve of NET_SKB_PAD +
+NET_IP_ALIGN bytes.
 
-We need to abort JIT compilation like we do in common_load so that
-filter uses the interpreter code and can call __load_pointer()
+However, when such skb is recycled in napi_reuse_skb(), it ends with a
+reserve of NET_IP_ALIGN which is suboptimal.
 
-Reference: http://lists.openwall.net/netdev/2011/07/19/11
-
-Thanks to Indan Zupancic to bring back this issue.
-
-Reported-by: Matt Evans <matt@ozlabs.org>
-Reported-by: Indan Zupancic <indan@nul.nu>
 Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/x86/net/bpf_jit_comp.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+ net/core/dev.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -475,8 +475,10 @@ void bpf_jit_compile(struct sk_filter *f
- 			case BPF_S_LD_W_ABS:
- 				func = sk_load_word;
- common_load:			seen |= SEEN_DATAREF;
--				if ((int)K < 0)
-+				if ((int)K < 0) {
-+					/* Abort the JIT because __load_pointer() is needed. */
- 					goto out;
-+				}
- 				t_offset = func - (image + addrs[i]);
- 				EMIT1_off32(0xbe, K); /* mov imm32,%esi */
- 				EMIT1_off32(0xe8, t_offset); /* call */
-@@ -489,14 +491,8 @@ common_load:			seen |= SEEN_DATAREF;
- 				goto common_load;
- 			case BPF_S_LDX_B_MSH:
- 				if ((int)K < 0) {
--					if (pc_ret0 > 0) {
--						/* addrs[pc_ret0 - 1] is the start address */
--						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
--						break;
--					}
--					CLEAR_A();
--					EMIT_JMP(cleanup_addr - addrs[i]);
--					break;
-+					/* Abort the JIT because __load_pointer() is needed. */
-+					goto out;
- 				}
- 				seen |= SEEN_DATAREF | SEEN_XREG;
- 				t_offset = sk_load_byte_msh - (image + addrs[i]);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3634,7 +3634,8 @@ EXPORT_SYMBOL(napi_gro_receive);
+ static void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
+ {
+ 	__skb_pull(skb, skb_headlen(skb));
+-	skb_reserve(skb, NET_IP_ALIGN - skb_headroom(skb));
++	/* restore the reserve we had after netdev_alloc_skb_ip_align() */
++	skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN - skb_headroom(skb));
+ 	skb->vlan_tci = 0;
+ 	skb->dev = napi->dev;
+ 	skb->skb_iif = 0;
 
 
