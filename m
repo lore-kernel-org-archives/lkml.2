@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935390Ab2C3Wk4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:40:56 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55577 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935296Ab2C3VIH (ORCPT
+	id S935389Ab2C3Wl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:41:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935282Ab2C3VID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:08:07 -0400
-Message-Id: <20120330195735.913897578@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:08:03 -0400
+Message-Id: <20120330195735.771251249@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:58 -0700
+Date: Fri, 30 Mar 2012 12:58:57 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Benjamin LaHaise <bcrl@kvack.org>,
-        James Chapman <jchapman@katalix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 096/108] Fix pppol2tp getsockname()
+        alan@lxorguk.ukuu.org.uk, Keith Packard <keithp@keithp.com>,
+        Petr Tesarik <kernel@tesarici.cz>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Bojan Smojver <bojan@rexursive.com>,
+        Andreas Hartmann <andihartmann@01019freenet.de>
+Subject: [ 095/108] drm/i915: suspend fbdev device around suspend/hibernate
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dave Airlie <airlied@redhat.com>
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+commit 3fa016a0b5c5237e9c387fc3249592b2cb5391c6 upstream.
 
-[ Upstream commit bbdb32cb5b73597386913d052165423b9d736145 ]
+Looking at hibernate overwriting I though it looked like a cursor,
+so I tracked down this missing piece to stop the cursor blink
+timer. I've no idea if this is sufficient to fix the hibernate
+problems people are seeing, but please test it.
 
-While testing L2TP functionality, I came across a bug in getsockname().  The
-IP address returned within the pppol2tp_addr's addr memember was not being
-set to the IP  address in use.  This bug is caused by using inet_sk() on the
-wrong socket (the L2TP socket rather than the underlying UDP socket), and was
-likely introduced during the addition of L2TPv3 support.
+Both radeon and nouveau have done this for a long time.
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Signed-off-by: James Chapman <jchapman@katalix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+I've run this personally all night hib/resume cycles with no fails.
+
+Reviewed-by: Keith Packard <keithp@keithp.com>
+Reported-by: Petr Tesarik <kernel@tesarici.cz>
+Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reported-by: Lots of misc segfaults after hibernate across the world.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=37142
+Tested-by: Dave Airlie <airlied@redhat.com>
+Tested-by: Bojan Smojver <bojan@rexursive.com>
+Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/l2tp/l2tp_ppp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -908,7 +908,7 @@ static int pppol2tp_getname(struct socke
- 		goto end_put_sess;
- 	}
+---
+ drivers/gpu/drm/i915/i915_drv.c  |    7 +++++++
+ drivers/gpu/drm/i915/intel_drv.h |    2 +-
+ drivers/gpu/drm/i915/intel_fb.c  |   10 ++++++++++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -379,6 +379,10 @@ static int i915_drm_freeze(struct drm_de
+ 	/* Modeset on resume, not lid events */
+ 	dev_priv->modeset_on_lid = 0;
  
--	inet = inet_sk(sk);
-+	inet = inet_sk(tunnel->sock);
- 	if (tunnel->version == 2) {
- 		struct sockaddr_pppol2tp sp;
- 		len = sizeof(sp);
++	console_lock();
++	intel_fbdev_set_suspend(dev, 1);
++	console_unlock();
++
+ 	return 0;
+ }
+ 
+@@ -448,6 +452,9 @@ static int i915_drm_thaw(struct drm_devi
+ 
+ 	dev_priv->modeset_on_lid = 0;
+ 
++	console_lock();
++	intel_fbdev_set_suspend(dev, 0);
++	console_unlock();
+ 	return error;
+ }
+ 
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -330,7 +330,7 @@ extern int intel_framebuffer_init(struct
+ 				  struct drm_i915_gem_object *obj);
+ extern int intel_fbdev_init(struct drm_device *dev);
+ extern void intel_fbdev_fini(struct drm_device *dev);
+-
++extern void intel_fbdev_set_suspend(struct drm_device *dev, int state);
+ extern void intel_prepare_page_flip(struct drm_device *dev, int plane);
+ extern void intel_finish_page_flip(struct drm_device *dev, int pipe);
+ extern void intel_finish_page_flip_plane(struct drm_device *dev, int plane);
+--- a/drivers/gpu/drm/i915/intel_fb.c
++++ b/drivers/gpu/drm/i915/intel_fb.c
+@@ -257,6 +257,16 @@ void intel_fbdev_fini(struct drm_device
+ 	kfree(dev_priv->fbdev);
+ 	dev_priv->fbdev = NULL;
+ }
++
++void intel_fbdev_set_suspend(struct drm_device *dev, int state)
++{
++	drm_i915_private_t *dev_priv = dev->dev_private;
++	if (!dev_priv->fbdev)
++		return;
++
++	fb_set_suspend(dev_priv->fbdev->helper.fbdev, state);
++}
++
+ MODULE_LICENSE("GPL and additional rights");
+ 
+ void intel_fb_output_poll_changed(struct drm_device *dev)
 
 
