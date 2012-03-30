@@ -1,173 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab2C3PRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:17:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48393 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab2C3PRm (ORCPT
+	id S1756171Ab2C3PUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:20:12 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52924 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab2C3PUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:17:42 -0400
-From: Akio Idehara <zbe64533@gmail.com>
-To: mjg59@srcf.ucam.org
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        seth.forshee@canonical.com, Akio Idehara <zbe64533@gmail.com>
-Subject: [PATCH v2] toshiba_acpi: Add support for transflective LCD
-Date: Sat, 31 Mar 2012 00:16:30 +0900
-Message-Id: <1333120590-4868-1-git-send-email-zbe64533@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 30 Mar 2012 11:20:06 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/4] normalize return value of chip->irq_set_affinity()
+Date: Fri, 30 Mar 2012 23:11:32 +0800
+Message-Id: <1333120296-13563-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Toshiba laptops have the transflective LCD and toshset
-can control its backlight state.  I brought this feature to the
-mainline.  To support transflective LCD, it's implemented by
-adding an extra level to the backlight and having 0 change to
-transflective mode.  It was tested on a Toshiba Portege R500.
+On x86 platforms, interrupt controller chip's irq_set_affinity() method
+always copies affinity mask to irq_data->affinity field but still returns
+0(IRQ_SET_MASK_OK). That return value causes the interrupt core logic
+unnecessarily copies the mask to irq_data->affinity field again.
+So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
+the duplicated copy operation.
 
-Signed-off-by: Akio Idehara <zbe64533@gmail.com>
----
- drivers/platform/x86/toshiba_acpi.c |   59 ++++++++++++++++++++++++++++++++--
- 1 files changed, 55 insertions(+), 4 deletions(-)
+This patch also fixes a minor bug in irq_move_masked_irq(), which treats
+return value IRQ_SET_MASK_OK_NOCOPY as error code.
 
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index eef3b53..f4188b0 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -95,6 +95,7 @@ MODULE_LICENSE("GPL");
- 
- /* registers */
- #define HCI_FAN				0x0004
-+#define HCI_TR_BACKLIGHT		0x0005
- #define HCI_SYSTEM_EVENT		0x0016
- #define HCI_VIDEO_OUT			0x001c
- #define HCI_HOTKEY_EVENT		0x001e
-@@ -134,6 +135,7 @@ struct toshiba_acpi_dev {
- 	unsigned int system_event_supported:1;
- 	unsigned int ntfy_supported:1;
- 	unsigned int info_supported:1;
-+	unsigned int tr_backlight_supported:1;
- 
- 	struct mutex mutex;
- };
-@@ -478,6 +480,22 @@ static const struct rfkill_ops toshiba_rfk_ops = {
- 	.poll = bt_rfkill_poll,
- };
- 
-+static int get_tr_backlight_status(struct toshiba_acpi_dev *dev, u32 *status)
-+{
-+	u32 hci_result;
-+
-+	hci_read1(dev, HCI_TR_BACKLIGHT, status, &hci_result);
-+	return hci_result == HCI_SUCCESS ? 0 : -EIO;
-+}
-+
-+static int set_tr_backlight_status(struct toshiba_acpi_dev *dev, int value)
-+{
-+	u32 hci_result;
-+
-+	hci_write1(dev, HCI_TR_BACKLIGHT, value, &hci_result);
-+	return hci_result == HCI_SUCCESS ? 0 : -EIO;
-+}
-+
- static struct proc_dir_entry *toshiba_proc_dir /*= 0*/ ;
- 
- static int get_lcd(struct backlight_device *bd)
-@@ -485,10 +503,22 @@ static int get_lcd(struct backlight_device *bd)
- 	struct toshiba_acpi_dev *dev = bl_get_data(bd);
- 	u32 hci_result;
- 	u32 value;
-+	int tmp = 0;
-+
-+	if (dev->tr_backlight_supported) {
-+		if (!get_tr_backlight_status(dev, &value)) {
-+			if (value)
-+				tmp = 1;
-+			else
-+				return tmp;
-+		} else {
-+			return -EIO;
-+		}
-+	}
- 
- 	hci_read1(dev, HCI_LCD_BRIGHTNESS, &value, &hci_result);
- 	if (hci_result == HCI_SUCCESS)
--		return (value >> HCI_LCD_BRIGHTNESS_SHIFT);
-+		return (value >> HCI_LCD_BRIGHTNESS_SHIFT) + tmp;
- 
- 	return -EIO;
- }
-@@ -497,15 +527,18 @@ static int lcd_proc_show(struct seq_file *m, void *v)
- {
- 	struct toshiba_acpi_dev *dev = m->private;
- 	int value;
-+	int levels = HCI_LCD_BRIGHTNESS_LEVELS;
- 
- 	if (!dev->backlight_dev)
- 		return -ENODEV;
- 
-+	if (dev->tr_backlight_supported)
-+		levels++;
-+
- 	value = get_lcd(dev->backlight_dev);
- 	if (value >= 0) {
- 		seq_printf(m, "brightness:              %d\n", value);
--		seq_printf(m, "brightness_levels:       %d\n",
--			     HCI_LCD_BRIGHTNESS_LEVELS);
-+		seq_printf(m, "brightness_levels:       %d\n", levels);
- 		return 0;
- 	}
- 
-@@ -521,6 +554,13 @@ static int lcd_proc_open(struct inode *inode, struct file *file)
- static int set_lcd(struct toshiba_acpi_dev *dev, int value)
- {
- 	u32 hci_result;
-+	if (dev->tr_backlight_supported) {
-+		int ret = set_tr_backlight_status(dev, !!value);
-+		if (ret)
-+			return ret;
-+		if (value)
-+			value--;
-+	}
- 
- 	value = value << HCI_LCD_BRIGHTNESS_SHIFT;
- 	hci_write1(dev, HCI_LCD_BRIGHTNESS, value, &hci_result);
-@@ -541,6 +581,10 @@ static ssize_t lcd_proc_write(struct file *file, const char __user *buf,
- 	size_t len;
- 	int value;
- 	int ret;
-+	int levels = HCI_LCD_BRIGHTNESS_LEVELS;
-+
-+	if (dev->tr_backlight_supported)
-+		levels++;
- 
- 	len = min(count, sizeof(cmd) - 1);
- 	if (copy_from_user(cmd, buf, len))
-@@ -548,7 +592,7 @@ static ssize_t lcd_proc_write(struct file *file, const char __user *buf,
- 	cmd[len] = '\0';
- 
- 	if (sscanf(cmd, " brightness : %i", &value) == 1 &&
--	    value >= 0 && value < HCI_LCD_BRIGHTNESS_LEVELS) {
-+	    value >= 0 && value < levels) {
- 		ret = set_lcd(dev, value);
- 		if (ret == 0)
- 			ret = count;
-@@ -1104,8 +1148,15 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
- 
- 	mutex_init(&dev->mutex);
- 
-+	/* Determine whether or not BIOS supports transflective backlight */
-+	ret = get_tr_backlight_status(dev, &dummy) ? false : true;
-+	dev->tr_backlight_supported = ret;
-+
- 	props.type = BACKLIGHT_PLATFORM;
- 	props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
-+	/* adding an extra level and having 0 change to transflective mode */
-+	if (dev->tr_backlight_supported)
-+		props.max_brightness++;
- 	dev->backlight_dev = backlight_device_register("toshiba",
- 						       &acpi_dev->dev,
- 						       dev,
+v2/v3: split patches to only do one thing in a patch according to Thomas'
+    suggestion
+
+Jiang Liu (4):
+  IRQ: correctly handle return value from chip->irq_set_affinity() in
+    irq_move_masked_irq()
+  IRQ: introduce irq_do_set_affinity() to reduce duplicated code
+  IRQ,x86: normalize return value of chip->irq_set_affinity() method
+  IRQ,IA64: normalize return value of chip->irq_set_affinity() method
+
+ arch/ia64/kernel/iosapic.c     |    4 +++-
+ arch/ia64/kernel/msi_ia64.c    |    4 ++--
+ arch/ia64/sn/kernel/irq.c      |    2 +-
+ arch/ia64/sn/kernel/msi_sn.c   |    2 +-
+ arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
+ arch/x86/platform/uv/uv_irq.c  |    2 +-
+ kernel/irq/internals.h         |    3 +++
+ kernel/irq/manage.c            |   39 ++++++++++++++++++++++-----------------
+ kernel/irq/migration.c         |    6 +-----
+ 9 files changed, 40 insertions(+), 33 deletions(-)
+
 -- 
-1.7.7.6
+1.7.5.4
 
