@@ -1,65 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760170Ab2C3BSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 21:18:51 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27291 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab2C3BSp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 21:18:45 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6664"; a="174882501"
-Message-ID: <4F7509F4.6010303@codeaurora.org>
-Date: Thu, 29 Mar 2012 18:18:44 -0700
-From: Michael Bohan <mbohan@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1760240Ab2C3BUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 21:20:23 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:35589
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754443Ab2C3BUS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 21:20:18 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zzc89bh1dbaL1432N98dKzz1202hzzz2dh668h839h93fhd25hd2bh)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1OBPO-01-0KC-02
+X-M-MSG: 
+Date: Fri, 30 Mar 2012 09:07:31 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+Message-ID: <20120330010730.GA27346@ladygaga>
+References: <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
+ <Pine.LNX.4.44L0.1203291050580.1417-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: rnayak@ti.com, lrg@ti.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: Regulator supplies when using Device Tree
-References: <4F6BCF47.4090200@codeaurora.org> <20120326130005.GQ3098@opensource.wolfsonmicro.com> <4F726B96.8070508@codeaurora.org> <20120328100957.GD3232@opensource.wolfsonmicro.com> <4F736451.8020900@codeaurora.org> <20120328193341.GD3232@opensource.wolfsonmicro.com> <4F73A798.6030607@codeaurora.org> <20120329111159.GJ3668@opensource.wolfsonmicro.com>
-In-Reply-To: <20120329111159.GJ3668@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1203291050580.1417-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-OriginalArrivalTime: 30 Mar 2012 01:20:05.0241 (UTC) FILETIME=[3CE4D690:01CD0E13]
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/29/2012 4:11 AM, Mark Brown wrote:
-> On Wed, Mar 28, 2012 at 05:06:48PM -0700, Michael Bohan wrote:
->
->> Are you aware of any other examples of submitted drivers with Device
->> Tree support that implement regulator devices that optionally have
->> an upstream supply? I looked at your tree recently and couldn't see
->> any such cases.
->
-> No, pretty much any drivers which optionally have an upstream supply
-> would be buggy and should therefore run into trouble during review.
+On Thu, Mar 29, 2012 at 11:00:18AM -0400, Alan Stern wrote:
+> On Thu, 29 Mar 2012, Aaron Lu wrote:
+> 
+> > >>> @@ -216,6 +244,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+> > >>> � � � unsigned int events;
+> > >>> � � � int ret;
+> > >>>
+> > >>> + � � /* Not necessary to check events if enter ZPODD state */
+> > >>> + � � if (cd->device->power_off &&
+> > >>> + � � � � � � � � � � pm_runtime_suspended(&cd->device->sdev_gendev))
+> > >>> + � � � � � � return 0;
+> > >>
+> > >> The comment is wrong and the new code does the wrong thing. �You _do_
+> > >> have to check for events even in the ZPODD state, which means
+> > >> sr_check_events must power-up the device if necessary.
+> > >> sd_check_events in James Bottomley's scsi-misc tree now does the right
+> > >> thing; see commit 4e2247b2bd289f079349d6c69755f8cff4e31f2b.
+> > >
+> > > The problem is userspace(GNOME, for example) will check for events
+> > > every seconds.
+> > > If sr is power up so frequently then we lost the expected power
+> > > savings from ZPODD.
+> 
+> That's true.  There's nothing you can do about it in the kernel; it's 
+> up to userspace to change the frequency of event polling.
+> 
+> > Agreed.
+> > BTW, it's udevd on my Linux box that changed the default poll msecs kernel param
+> > which caused sr_check_events being called every 2 seconds.
+> 
+> Indeed.
+> 
+> > > There are 2 events:
+> > >
+> > > DISK_EVENT_MEDIA_CHANGE
+> > > DISK_EVENT_EJECT_REQUEST
+> > >
+> > > In current implementation, if sr is in ZPODD state, then it means
+> > > there is no disk in the CDROM.
+> > > So if sr is in ZPODD state, MEDIA_CHANGE would never happen.
+> 
+> Sure it will: when the user inserts a disc.
+> 
+> > > EJECT_REQUEST seems can be ignored, since there is no disk in the CDROM at all.
+> > >
+> > 
+> > For the ODD to be put into suspend state, the conditions should be:
+> > 1 tray closed
+> > 2 no media inside
+> > I think we missed the condition 1 check now.
+> > 
+> > And if we follow the two conditions, the events can be safely ignored.
+> 
+> No, they can't.  Otherwise the device won't power back up when the user 
+> inserts a new disc.
+> 
 
-Can you please elaborate on why this is a bad design? We have always 
-used this model in the past, and the regulator framework is happy to 
-support it.
+The ODD is put to zero power state, so it can't react to the eject
+button without being powered up back first ;-)
+On current implementation, ACPI is used to power back up the ODD like this:
+1 User press the eject button;
+2 A gpe event fired, and ACPI interrupt, and the corresponding gpe
+handler runs and the ODD's ACPI handle is notified about DEVICE_WAKE_UP;
+3 In ODD's acpi notify handler, we power back up it by scsi_autopm_get_device.
+This is handled in the following Lin Ming's patch:
+[PATCH v3 2/7] libata-acpi: add ata port runtime D3Cold support
 
-We have identical hardware blocks that can be positioned to take a 
-supply or not. So are you proposing we copy / paste our driver so that 
-in one case rdesc->supply_name is NULL and the other case a valid supply 
-name? I'm guessing you aren't implying this, but what alternatives do 
-you suggest to support such a model?
+> > What do you think of blocking events for it when going to suspend and unblocking
+> > when resume? This could erase the unnecessary calls of the check events function
+> > when ODD is suspended.
+> > But disk_(un)block_events are not exported and can't be used in sr
+> > module. So I'm
+> > not sure how to do this.
+> > 
+> > Another thing to consider is, user might want to eject the tray by
+> > software like the
+> > eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
+> > thinking how to do this correctly.
+> 
+> What's the problem?  Can't the user already eject the tray via 
+> software?
+> 
 
-In the thread mentioned by Rajendra, part of the motivation for putting 
-the supply_name in the driver struct was 'no code changes in the 
-individual drivers'. But that's exactly what we have here.
+When the ODD is put to zero power state, it will not be able to handle
+commands like CDROMEJECT. We have to power it up first and then handle
+the ioctl request. Currently, we only power back up the ODD when user
+press the eject button as explained above.
 
-http://www.spinics.net/lists/linux-omap/msg58673.html
+> > >>> @@ -260,6 +293,11 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+> > >>> � � � cd->media_present = scsi_status_is_good(ret) ||
+> > >>> � � � � � � � (scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
+> > >>>
+> > >>> + � � if (!cd->media_present && cd->device->power_off && !cd->poweroff_event) {
+> > >>> + � � � � � � scsi_autopm_put_device(cd->device);
+> > >>
+> > >> You can see your mistake here. �You call scsi_autopm_put_device here
+> > >> without calling scsi_autopm_get_device earlier.
+> > >
+> > > Let me check this.
+> > 
+> > I guess the earlier call of get device is this?
+> > 
+> >  869 int scsi_sysfs_add_sdev(struct scsi_device *sdev)
+> > ... ...
+> >  891
+> >  892        /* The following call will keep sdev active indefinitely, until
+> >  893         * its driver does a corresponding scsi_autopm_pm_device().  Only
+> >  894         * drivers supporting autosuspend will do this.
+> >  895         */
+> >  896        scsi_autopm_get_device(sdev);
+> >  897
+> 
+> You have to do this correctly.  Currently sr doesn't support runtime PM 
+> at all.  If you do want to support it, then the driver should call 
+> scsi_autopm_put_device at the end of the probe routine (or whenever it 
+> is ready to allow runtime suspends) and scsi_autopm_get_device at the 
+> start of the remove routine (or whenever it wants to prevent runtime 
+> suspends).
+> 
+> The idea is that the driver is probed with the PM usage counter set to
+> 1, so a runtime suspend won't occur until you do a put.  Similarly, in
+> the remove routine, you must make sure that your gets and puts balance
+> out.
+> 
 
-I was hoping that we could continue to treat regulator supplies as 
-normal supplies, but somehow allow the framework to determine whether a 
-regulator supply exists or not in the Device Tree configuration so the 
-driver doesn't have to.
+Oh, I see, thanks for your clear explanation.
 
-Thanks,
-Mike
+-Aaron
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
