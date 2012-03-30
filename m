@@ -1,84 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734Ab2C3Ut2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:49:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40967 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934521Ab2C3UtQ (ORCPT
+	id S1757062Ab2C3Uvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:51:42 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43112 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab2C3Uvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:49:16 -0400
-Date: Fri, 30 Mar 2012 22:49:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: Sasha Levin <levinsasha928@gmail.com>, arnd@arndb.de,
-        viro@zeniv.linux.org.uk, davej@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
-In-Reply-To: <20120330204235.GA883@kroah.com>
-Message-ID: <alpine.LFD.2.02.1203302247130.2542@ionos>
-References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com> <20120330153013.GC18488@kroah.com> <CA+1xoqdZnxcWNpL-03xsR+RDcz3=aRbx2LbR6mTJ_gCmwp-0Rw@mail.gmail.com> <20120330164913.GA19946@kroah.com> <alpine.LFD.2.02.1203302225420.2542@ionos>
- <20120330204235.GA883@kroah.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 30 Mar 2012 16:51:37 -0400
+Date: Sat, 31 Mar 2012 00:50:19 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20120330205018.GA32753@lizard>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-627557727-1333140552=:2542"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello Linus,
 
---8323328-627557727-1333140552=:2542
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Sorry for the delayed pull request, I hope it's too late though.
+(And my gpg key is still not signed by anyone; couldn't find anyone
+near me, heh.)
 
-On Fri, 30 Mar 2012, Greg KH wrote:
+Anyway, here is the formal pull request:
 
-> On Fri, Mar 30, 2012 at 10:35:46PM +0200, Thomas Gleixner wrote:
-> > On Fri, 30 Mar 2012, Greg KH wrote:
-> > > On Fri, Mar 30, 2012 at 07:37:37PM +0300, Sasha Levin wrote:
-> > > > On Fri, Mar 30, 2012 at 6:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > > > On Fri, Mar 30, 2012 at 01:04:27PM -0400, Sasha Levin wrote:
-> > > > >> There are no size checks in kmsg_write(), and we try allocating enough
-> > > > >> memory to store everything userspace gave us, which may be too much for
-> > > > >> kmalloc to allocate.
-> > > > >
-> > > > > Really?  Have you seen this fail?  As only root can do this, is this
-> > > > > really a problem?
-> > > > 
-> > > > Only root, and a whole bunch of management software that dumps data
-> > > > into /dev/kmsg (systemd and friends).
-> > > 
-> > > Running as root, do any of these cause problems by asking for too much
-> > > memory here? 
-> > 
-> > Running as root is not a guarantee for correctness. So the syscall
-> > should cope with bogus requests from user space and not rely on the
-> > sanity of anything. Looking at the main users which polute dmesg I'm
-> > inclined to assume insanity in the first place.
-> > 
-> > As Sasha pointed out there is either the variant to use vmalloc and
-> > grant any write size or limit the size to something sensible. Though
-> > given the users of this, coming up with something sensible might be a
-> > problem.
-> > 
-> > > Is this something that needs to be addressed now, and in
-> > > stable kernels, or can it wait for 3.5?
-> > 
-> > Yes, it want's to be addressed now and it want's to be in stable as
-> > well. syscalls which have no bound checking are evil, no matter what.
-> 
-> So, should we cap the size at something "super large" then as well?
+The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
 
-I think so. This is an interface to inject stuff into dmesg. Limiting
-that to a reasonable size makes sense. We can probably limit it to
-something small like 1024, but I don't know about the "ideas" of those
-folks who think that it's a great idea to do it at all.
+  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
 
-Thanks,
+are available in the git repository at:
 
-	tglx
---8323328-627557727-1333140552=:2542--
+  git://git.infradead.org/battery-2.6.git tags/for-v3.4-rc1
+
+for you to fetch changes up to 5cdd4d7fa5424f2018193a0c2af3bef9036c973e:
+
+  max17042_battery: Clean up interrupt handling (2012-03-26 20:41:29 +0400)
+
+----------------------------------------------------------------
+Various small bugfixes and enhancements, plus two new drivers:
+
+- A quite complex ab8500 charger driver, submitted by
+  Arun Murthy @ ST-Ericsson;
+- Summit Microelectronics SMB347 Battery Charger, submitted by
+  Bruce E. Robertson and Alan Cox @ Intel.
+
+And that's all.
+
+----------------------------------------------------------------
+Anton Vorontsov (9):
+      ab8500_charger: Convert to the new USB OTG calls
+      ab8500_btemp: Get rid of 'enum adc_therm'
+      ab8500_fg: Get rid of 'struct v_to_cap'
+      ab8500_fg: Get rid of 'struct battery_type'
+      ab8500_fg: Fix copy-paste error
+      ab8500: Turn unneeded global symbols into local ones
+      charger-manager: Simplify charger_get_property(), get rid of a warning
+      ab8500_fg: Fix some build warnings on x86_64
+      Revert "max8998_charger: Include linux/module.h just once"
+
+Arun Murthy (4):
+      abx500-chargalg: Add abx500 charging algorithm
+      ab8500-charger: AB8500 charger driver
+      ab8500-fg: A8500 fuel gauge driver
+      ab8500-btemp: AB8500 battery temperature driver
+
+Axel Lin (6):
+      da9052-battery: Add missing platform_set_drvdata
+      da9052-battery: Fix a memory leak when unload the module
+      da9052-battery: Convert to use module_platform_driver
+      charger-manager: Clean up for better readability
+      lp8727_charger: Add MODULE_DEVICE_TABLE
+      power_supply: Convert i2c drivers to module_i2c_driver
+
+Bruce E. Robertson (1):
+      Add I2C driver for Summit Microelectronics SMB347 Battery Charger.
+
+Dirk Brandewie (2):
+      max17042: Align register definitions with data sheet and init appnote
+      max17042: Change capacity property to use reported SOC register
+
+Felipe Contreras (1):
+      isp1704_charger: Fix probe error path
+
+Jesper Juhl (1):
+      max8998_charger: Include linux/module.h just once
+
+Karol Lewandowski (2):
+      max17042_battery: Use devm_kzalloc() where applicable
+      max17042_battery: Make it possible to instantiate driver from DT
+
+Kim, Milo (6):
+      lp8727_charger: Add company name and description
+      lp8727_charger: Add error check routine on probe()
+      lp8727_charger: Change i2c functions
+      lp8727_charger: Fix wrong code style
+      lp8727_charger: Add description of platform data
+      lp8727_charger: Correct typos on the comment
+
+MyungJoo Ham (1):
+      max17042_battery: Fix CHARGE_FULL representation.
+
+Ramakrishna Pallala (3):
+      max17042: Add POR init procedure from Maxim appnote
+      max17042: Add support for signalling change in SOC
+      max17042_battery: Clean up interrupt handling
+
+ .../bindings/power_supply/max17042_battery.txt     |   18 +
+ drivers/power/Kconfig                              |   21 +-
+ drivers/power/Makefile                             |    2 +
+ drivers/power/ab8500_btemp.c                       | 1124 ++++++++
+ drivers/power/ab8500_charger.c                     | 2789 ++++++++++++++++++++
+ drivers/power/ab8500_fg.c                          | 2637 ++++++++++++++++++
+ drivers/power/abx500_chargalg.c                    | 1921 ++++++++++++++
+ drivers/power/charger-manager.c                    |   67 +-
+ drivers/power/da9052-battery.c                     |   15 +-
+ drivers/power/ds2782_battery.c                     |   13 +-
+ drivers/power/isp1704_charger.c                    |    1 +
+ drivers/power/lp8727_charger.c                     |  131 +-
+ drivers/power/max17040_battery.c                   |   13 +-
+ drivers/power/max17042_battery.c                   |  508 +++-
+ drivers/power/sbs-battery.c                        |   13 +-
+ drivers/power/smb347-charger.c                     | 1294 +++++++++
+ drivers/power/z2_battery.c                         |   14 +-
+ include/linux/lp8727.h                             |   18 +-
+ include/linux/mfd/abx500.h                         |  273 ++
+ include/linux/mfd/abx500/ab8500-bm.h               |  474 ++++
+ include/linux/mfd/abx500/ux500_chargalg.h          |   38 +
+ include/linux/power/max17042_battery.h             |   93 +-
+ include/linux/power/smb347-charger.h               |  117 +
+ 23 files changed, 11388 insertions(+), 206 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/max17042_battery.txt
+ create mode 100644 drivers/power/ab8500_btemp.c
+ create mode 100644 drivers/power/ab8500_charger.c
+ create mode 100644 drivers/power/ab8500_fg.c
+ create mode 100644 drivers/power/abx500_chargalg.c
+ create mode 100644 drivers/power/smb347-charger.c
+ create mode 100644 include/linux/mfd/abx500/ab8500-bm.h
+ create mode 100644 include/linux/mfd/abx500/ux500_chargalg.h
+ create mode 100644 include/linux/power/smb347-charger.h
