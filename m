@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760548Ab2C3JuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 05:50:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41744 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755181Ab2C3Jt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 05:49:59 -0400
-X-IronPort-AV: E=Sophos;i="4.75,343,1330876800"; 
-   d="scan'208";a="4658115"
-Message-ID: <4F7581D4.4040301@cn.fujitsu.com>
-Date: Fri, 30 Mar 2012 17:50:12 +0800
-From: Ren Mingxin <renmx@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20110412 CentOS/3.1.3-1.el6.centos Thunderbird/3.1.3
+	id S1760594Ab2C3JvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 05:51:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53459 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760577Ab2C3JvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 05:51:03 -0400
+Date: Fri, 30 Mar 2012 11:50:24 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        kernel@pengutronix.de, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Lennert Buytenhek <kernel@wantstofly.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>, Barry Song <baohua.song@csr.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-samsung-soc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 03/17] ARM: mark const init data with __initconst instead
+ of __initdata
+Message-ID: <20120330095024.GS15647@pengutronix.de>
+References: <20120329211131.GA31250@pengutronix.de>
+ <1333055554-31300-3-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20120330061134.GD3254@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>,
-        VIRTUAL <virtualization@lists.linux-foundation.org>
-Subject: [PATCH 0/4] block: move sd_format_disk_name() into block core as
- disk_name_format()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-30 17:47:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-30 17:47:41,
-	Serialize complete at 2012-03-30 17:47:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120330061134.GD3254@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Shawn,
 
+On Fri, Mar 30, 2012 at 02:11:36PM +0800, Shawn Guo wrote:
+> On Thu, Mar 29, 2012 at 11:12:20PM +0200, Uwe Kleine-König wrote:
+> ...
+> > diff --git a/arch/arm/mach-imx/imx51-dt.c b/arch/arm/mach-imx/imx51-dt.c
+> > index 5cca573..7e00748 100644
+> > --- a/arch/arm/mach-imx/imx51-dt.c
+> > +++ b/arch/arm/mach-imx/imx51-dt.c
+> > @@ -102,7 +102,7 @@ static struct sys_timer imx51_timer = {
+> >  	.init = imx51_timer_init,
+> >  };
+> >  
+> > -static const char *imx51_dt_board_compat[] __initdata = {
+> > +static const char *imx51_dt_board_compat[] __initconst = {
+> >  	"fsl,imx51-babbage",
+> >  	"fsl,imx51",
+> >  	NULL
+> 
+>   CC      arch/arm/mach-imx/imx51-dt.o
+> arch/arm/mach-imx/imx51-dt.c:105:20: error: imx51_dt_board_compat causes a section type conflict
+> make[2]: *** [arch/arm/mach-imx/imx51-dt.o] Error 1
+> 
+> I do not understand why though.
+that's because the strings are constant, but the array is not. The fix
+is:
 
-This patch series renames "sd_format_disk_name()" to
-"disk_name_format()" and moves it into block core. So
-that who needs formatting disk name can use it, instead
-of duplicating these similar help functions.
+-static const char *imx51_dt_board_compat[] __initconst = {
++static const char *const imx51_dt_board_compat[] __initconst = {
 
-Ren Mingxin (4):
-   block: add function disk_name_format() into block core
-   scsi: replace sd_format_disk_name() to disk_name_format()
-   block: replace rssd_disk_name_format() to disk_name_format()
-   virtio_blk: use disk_name_format() to support mass of disks naming
+or keeping __initdata.
 
-  block/genhd.c                     |   49 ++++++++++++++++++++++++++++++++++++++
-  drivers/block/mtip32xx/mtip32xx.c |   33 -------------------------
-  drivers/block/virtio_blk.c        |   13 ----------
-  drivers/scsi/sd.c                 |   48 -------------------------------------
-  include/linux/genhd.h             |    2 +
-  5 files changed, 54 insertions(+), 91 deletions(-)
+Best regards
+Uwe
 
-Any comment will be appreciated.
-
-Thanks,
-Ren
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
