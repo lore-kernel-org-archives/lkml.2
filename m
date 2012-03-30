@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935389Ab2C3Wl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:41:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S935290Ab2C3VIF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:08:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935282Ab2C3VID (ORCPT
+	with ESMTP id S935273Ab2C3VH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:08:03 -0400
-Message-Id: <20120330195735.771251249@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:07:57 -0400
+Message-Id: <20120330195734.760905604@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:57 -0700
+Date: Fri, 30 Mar 2012 12:58:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Keith Packard <keithp@keithp.com>,
-        Petr Tesarik <kernel@tesarici.cz>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Bojan Smojver <bojan@rexursive.com>,
-        Andreas Hartmann <andihartmann@01019freenet.de>
-Subject: [ 095/108] drm/i915: suspend fbdev device around suspend/hibernate
+        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
+        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 088/108] dm crypt: add missing error handling
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,88 +25,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 3fa016a0b5c5237e9c387fc3249592b2cb5391c6 upstream.
+commit 72c6e7afc43e19f68a31dea204fc366624d6eee9 upstream.
 
-Looking at hibernate overwriting I though it looked like a cursor,
-so I tracked down this missing piece to stop the cursor blink
-timer. I've no idea if this is sufficient to fix the hibernate
-problems people are seeing, but please test it.
+Always set io->error to -EIO when an error is detected in dm-crypt.
 
-Both radeon and nouveau have done this for a long time.
+There were cases where an error code would be set only if we finish
+processing the last sector. If there were other encryption operations in
+flight, the error would be ignored and bio would be returned with
+success as if no error happened.
 
-I've run this personally all night hib/resume cycles with no fails.
+This bug is present in kcryptd_crypt_write_convert, kcryptd_crypt_read_convert
+and kcryptd_async_done.
 
-Reviewed-by: Keith Packard <keithp@keithp.com>
-Reported-by: Petr Tesarik <kernel@tesarici.cz>
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reported-by: Lots of misc segfaults after hibernate across the world.
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=37142
-Tested-by: Dave Airlie <airlied@redhat.com>
-Tested-by: Bojan Smojver <bojan@rexursive.com>
-Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Reviewed-by: Milan Broz <mbroz@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c  |    7 +++++++
- drivers/gpu/drm/i915/intel_drv.h |    2 +-
- drivers/gpu/drm/i915/intel_fb.c  |   10 ++++++++++
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ drivers/md/dm-crypt.c |   28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -379,6 +379,10 @@ static int i915_drm_freeze(struct drm_de
- 	/* Modeset on resume, not lid events */
- 	dev_priv->modeset_on_lid = 0;
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -1045,16 +1045,14 @@ static void kcryptd_queue_io(struct dm_c
+ 	queue_work(cc->io_queue, &io->work);
+ }
  
-+	console_lock();
-+	intel_fbdev_set_suspend(dev, 1);
-+	console_unlock();
+-static void kcryptd_crypt_write_io_submit(struct dm_crypt_io *io,
+-					  int error, int async)
++static void kcryptd_crypt_write_io_submit(struct dm_crypt_io *io, int async)
+ {
+ 	struct bio *clone = io->ctx.bio_out;
+ 	struct crypt_config *cc = io->target->private;
+ 
+-	if (unlikely(error < 0)) {
++	if (unlikely(io->error < 0)) {
+ 		crypt_free_buffer_pages(cc, clone);
+ 		bio_put(clone);
+-		io->error = -EIO;
+ 		crypt_dec_pending(io);
+ 		return;
+ 	}
+@@ -1105,12 +1103,16 @@ static void kcryptd_crypt_write_convert(
+ 		sector += bio_sectors(clone);
+ 
+ 		crypt_inc_pending(io);
 +
- 	return 0;
+ 		r = crypt_convert(cc, &io->ctx);
++		if (r < 0)
++			io->error = -EIO;
++
+ 		crypt_finished = atomic_dec_and_test(&io->ctx.pending);
+ 
+ 		/* Encryption was already finished, submit io now */
+ 		if (crypt_finished) {
+-			kcryptd_crypt_write_io_submit(io, r, 0);
++			kcryptd_crypt_write_io_submit(io, 0);
+ 
+ 			/*
+ 			 * If there was an error, do not try next fragments.
+@@ -1161,11 +1163,8 @@ static void kcryptd_crypt_write_convert(
+ 	crypt_dec_pending(io);
  }
  
-@@ -448,6 +452,9 @@ static int i915_drm_thaw(struct drm_devi
- 
- 	dev_priv->modeset_on_lid = 0;
- 
-+	console_lock();
-+	intel_fbdev_set_suspend(dev, 0);
-+	console_unlock();
- 	return error;
- }
- 
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -330,7 +330,7 @@ extern int intel_framebuffer_init(struct
- 				  struct drm_i915_gem_object *obj);
- extern int intel_fbdev_init(struct drm_device *dev);
- extern void intel_fbdev_fini(struct drm_device *dev);
+-static void kcryptd_crypt_read_done(struct dm_crypt_io *io, int error)
++static void kcryptd_crypt_read_done(struct dm_crypt_io *io)
+ {
+-	if (unlikely(error < 0))
+-		io->error = -EIO;
 -
-+extern void intel_fbdev_set_suspend(struct drm_device *dev, int state);
- extern void intel_prepare_page_flip(struct drm_device *dev, int plane);
- extern void intel_finish_page_flip(struct drm_device *dev, int pipe);
- extern void intel_finish_page_flip_plane(struct drm_device *dev, int plane);
---- a/drivers/gpu/drm/i915/intel_fb.c
-+++ b/drivers/gpu/drm/i915/intel_fb.c
-@@ -257,6 +257,16 @@ void intel_fbdev_fini(struct drm_device
- 	kfree(dev_priv->fbdev);
- 	dev_priv->fbdev = NULL;
+ 	crypt_dec_pending(io);
  }
-+
-+void intel_fbdev_set_suspend(struct drm_device *dev, int state)
-+{
-+	drm_i915_private_t *dev_priv = dev->dev_private;
-+	if (!dev_priv->fbdev)
-+		return;
-+
-+	fb_set_suspend(dev_priv->fbdev->helper.fbdev, state);
-+}
-+
- MODULE_LICENSE("GPL and additional rights");
  
- void intel_fb_output_poll_changed(struct drm_device *dev)
+@@ -1180,9 +1179,11 @@ static void kcryptd_crypt_read_convert(s
+ 			   io->sector);
+ 
+ 	r = crypt_convert(cc, &io->ctx);
++	if (r < 0)
++		io->error = -EIO;
+ 
+ 	if (atomic_dec_and_test(&io->ctx.pending))
+-		kcryptd_crypt_read_done(io, r);
++		kcryptd_crypt_read_done(io);
+ 
+ 	crypt_dec_pending(io);
+ }
+@@ -1203,15 +1204,18 @@ static void kcryptd_async_done(struct cr
+ 	if (!error && cc->iv_gen_ops && cc->iv_gen_ops->post)
+ 		error = cc->iv_gen_ops->post(cc, iv_of_dmreq(cc, dmreq), dmreq);
+ 
++	if (error < 0)
++		io->error = -EIO;
++
+ 	mempool_free(req_of_dmreq(cc, dmreq), cc->req_pool);
+ 
+ 	if (!atomic_dec_and_test(&ctx->pending))
+ 		return;
+ 
+ 	if (bio_data_dir(io->base_bio) == READ)
+-		kcryptd_crypt_read_done(io, error);
++		kcryptd_crypt_read_done(io);
+ 	else
+-		kcryptd_crypt_write_io_submit(io, error, 1);
++		kcryptd_crypt_write_io_submit(io, 1);
+ }
+ 
+ static void kcryptd_crypt(struct work_struct *work)
 
 
