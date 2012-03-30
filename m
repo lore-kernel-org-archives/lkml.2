@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761222Ab2C3RRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:17:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47551 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757512Ab2C3RQ6 (ORCPT
+	id S1761226Ab2C3RTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:19:13 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:55885 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab2C3RTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:16:58 -0400
-Date: Fri, 30 Mar 2012 10:16:44 -0700
-From: tip-bot for Andi Kleen <ak@linux.intel.com>
-Message-ID: <tip-c0e9afc0da6cb0f11497e5ea83377b3c451450e0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        ak@linux.intel.com, stable@vger.kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com, tglx@linutronix.de, stable@vger.kernel.org
-In-Reply-To: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
-References: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Use -mno-avx when available
-Git-Commit-ID: c0e9afc0da6cb0f11497e5ea83377b3c451450e0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 30 Mar 2012 10:16:51 -0700 (PDT)
+	Fri, 30 Mar 2012 13:19:02 -0400
+Message-ID: <1333127955.31910.11.camel@localhost>
+Subject: Re: [PATCH] [RESEND] rlimits: Print more information when limits
+ are exceeded
+From: Arun Raghavan <arun.raghavan@collabora.co.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 30 Mar 2012 22:49:15 +0530
+In-Reply-To: <alpine.LFD.2.02.1203301614310.2542@ionos>
+References: <1330025378-26075-1-git-send-email-arun.raghavan@collabora.co.uk>
+	 <alpine.LFD.2.02.1203301455360.2542@ionos> <4F75BF5B.7000306@canonical.com>
+	 <alpine.LFD.2.02.1203301614310.2542@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c0e9afc0da6cb0f11497e5ea83377b3c451450e0
-Gitweb:     http://git.kernel.org/tip/c0e9afc0da6cb0f11497e5ea83377b3c451450e0
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Wed, 28 Mar 2012 11:51:17 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 30 Mar 2012 10:06:39 -0700
+On Fri, 2012-03-30 at 16:29 +0200, Thomas Gleixner wrote:
+> On Fri, 30 Mar 2012, David Henningsson wrote:
+> > On 03/30/2012 03:39 PM, Thomas Gleixner wrote:
+> > > On Fri, 24 Feb 2012, Arun Raghavan wrote:
+> > > 
+> > > > This dumps some information in logs when a process exceeds its CPU or RT
+> > > > limits (soft and hard). Makes debugging easier when userspace triggers
+> > > > these limits.
+> > > 
+> > > Why do we need to spam the logs with such information?
+> > > 
+> > > SIGXCPU is only ever sent by this code. If there is a signal handler
+> > > in the application it's easy to debug. If not it's even easier, the
+> > > thing will simply be killed and you get the reason printed.
+> > 
+> > I'm not totally sure, but don't we log SIGSEGVs? If so, the same reasoning
+> > would apply to SIGSEGV.
+> 
+> I think so. Dunno why this was added in the first place. core dumps or
+> proper signal handlers are telling you usually more than that single
+> line in dmesg.
+>  
+> > > For the SIGKILL case there only a limited number of reasons why a
+> > > SIGKILL is sent. So no, I rather commit a patch which removes that
+> > > ugly printk which is already there instead of adding more of them.
+> > 
+> > The reason I proposed some kind of printk for SIGKILL, was to get some
+> > diagnostic information out of the SIGKILL. E g, if you have two threads both
+> > running on rtprio rlimits in the same process, it would be very interesting to
+> > know which one of them was causing the kernel to send SIGKILL.
+> 
+> Usually the one which ignored SIGXCPU for quite a while. There is a
+> reason why SIGXCPU can be handled by the application.
 
-x86: Use -mno-avx when available
+In general I agree -- I'm happy to rewrite the patch to drop the printk
+in the SIGXCPU case.
 
-On gccs that support AVX it's a good idea to disable that too, similar to
-how SSE2, SSE1 etc. are already disabled. This prevents the compiler
-from generating AVX ever implicitely.
+In the current situation that I'm debugging, there appears to be a
+kernel fragment that's busy waiting and eventually gets killed (I'll be
+taking up a fix for this separately). In this case, by the time we get
+back control, the hard limit seems to be already hit. Knowing the
+culprit thread in this case does make things simpler for us.
 
-No failure observed, just from review.
+> > Also, it could be useful to know whether the SIGKILL was actually sent by the
+> > kernel, or by some other process feeling evil (e g "kill -9").
+> 
+> Agreed, but instead of adding that printk to the rlimit code I prefer
+> a generic infrastructure which can be used by all call sites which
+> issue SIGKILL. Something like: [__]kill_it(flags, task, "Reason");
 
-[ hpa: Marking this for urgent and stable, simply because the patch
-  will either have absolutely no effect *or* it will avoid potentially
-  very hard to debug failures. ]
+The other paths that call SIGKILL seem to be slightly different (going
+eventually via do_send_sig_info()). Is this actually functionally the
+same? If yes, I'll try to rewrite the patch to consolidate some of these
+paths as you suggest.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1332960678-11879-1-git-send-email-andi@firstfloor.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: <stable@vger.kernel.org>
----
- arch/x86/Makefile |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+-- Arun
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 968dbe2..41a7237 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -129,6 +129,7 @@ KBUILD_CFLAGS += -Wno-sign-compare
- KBUILD_CFLAGS += -fno-asynchronous-unwind-tables
- # prevent gcc from generating any FP code by mistake
- KBUILD_CFLAGS += $(call cc-option,-mno-sse -mno-mmx -mno-sse2 -mno-3dnow,)
-+KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
- 
- KBUILD_CFLAGS += $(mflags-y)
- KBUILD_AFLAGS += $(mflags-y)
