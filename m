@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2C3F0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 01:26:18 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:21991 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2C3F0J (ORCPT
+	id S1752536Ab2C3F0v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 01:26:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62961 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab2C3F0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 01:26:09 -0400
-Date: Fri, 30 Mar 2012 07:26:05 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v3 0/4] tools: Add a toplevel Makefile
-Message-ID: <20120330052605.GA30508@merkur.ravnborg.org>
-References: <1333023957-22746-1-git-send-email-bp@amd64.org>
+	Fri, 30 Mar 2012 01:26:17 -0400
+Date: Thu, 29 Mar 2012 22:26:12 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Jiri Kosina <jkosina@suse.cz>, Mandeep Singh Baines <msb@chromium.org>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup: urgent fix for 3.4-rc1 merge window
+Message-ID: <20120330052612.GA13855@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333023957-22746-1-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 02:25:53PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> 
-> Hi all,
-> 
-> yet another version of the toplevel Makefile integration of tools/.
-> This round gives you the ability to build the tools from the toplevel
-> Makefile (explanation below can be found also in patch 4/4's commit
-> message):
-> 
-> "Now you can do
-> 
-> $ make tools/<toolname>
-Makes sense.
-> 
-> from the toplevel kernel directory and have the respective tool built.
-> 
-> If you want to build and install it, do
-> 
-> $ make tools/<toolname> tinstall
-But this makes no sense.
+Hello, Linus.
 
-It would be better to be consistent - so the user does not need to remember
-when to add a space and when not.
+61d1d219c4 "cgroup: remove extra calls to find_existing_css_set" which
+was part of the rc1 cgroup pull request made writes to cgroup "tasks"
+file return uninitialized retval on success which can cause boot
+failures with systemd.  The change stayed in linux-next for quite some
+time but gcc interestingly failed to emit warning about using
+uninitialized variable and the problem seems to materialize only for
+certain build combinations (probably depends on register allocation).
 
-make tools/<command> where <command> is one of help, install, clean, "nothing"
-make tools/<toolname>
-make tools/<toolname>_<comand> where command is the same set of commands
+It's just missing local variable initialization and the fix is trivial
+& safe.  As the problem is critical when it materializes, I'm
+fast-tracking it.  Also included is Li's email address change in
+MAINTAINERS.
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.4-fixes
 
-then a user could do:
+Li Zefan (1):
+      cgroup: update MAINTAINERS entry
 
-    make tools/clean
-    make tools/perf
-    make tools/perf_install
+Tejun Heo (1):
+      cgroup: cgroup_attach_task() could return -errno after success
 
-or
+Thanks.
+---
+ MAINTAINERS     |    2 +-
+ kernel/cgroup.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-    make tools/clean
-    make tools/
-    make tools/install
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f9faade..3dbf4d1 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1940,7 +1940,7 @@ F:	drivers/connector/
+ 
+ CONTROL GROUPS (CGROUPS)
+ M:	Tejun Heo <tj@kernel.org>
+-M:	Li Zefan <lizf@cn.fujitsu.com>
++M:	Li Zefan <lizefan@huawei.com>
+ L:	containers@lists.linux-foundation.org
+ L:	cgroups@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index f4ea4b6..ed64cca 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1883,7 +1883,7 @@ static void cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+  */
+ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ {
+-	int retval;
++	int retval = 0;
+ 	struct cgroup_subsys *ss, *failed_ss = NULL;
+ 	struct cgroup *oldcgrp;
+ 	struct cgroupfs_root *root = cgrp->root;
 
-
-The install target could implicitly include the build target.
-
-With this scheme the user is up to less suprises.
-
-All the above are only minor adjustments compared to what you already did.
-bt the consistency here is a gain (IMO).
-
-	Sam
+--
+tejun
