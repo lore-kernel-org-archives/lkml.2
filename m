@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964885Ab2C3VMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:12:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S964912Ab2C3VM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:12:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935830Ab2C3VMn (ORCPT
+	with ESMTP id S964894Ab2C3VMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:12:43 -0400
-Message-Id: <20120330194850.981900891@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:12:49 -0400
+Message-Id: <20120330194851.481068037@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:50 -0700
+Date: Fri, 30 Mar 2012 12:49:52 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        alan@lxorguk.ukuu.org.uk, Joern Engel <joern@logfs.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 077/149] target: Dont set WBUS16 or SYNC bits in INQUIRY response
+Subject: [ 079/149] target: prevent NULL pointer dereference in target_report_luns
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>
 
-commit effc6cc8828257c32c37635e737f14fd6e19ecd7 upstream.
+commit 47f1b8803e1e358ebbf4f82bfdb98971c912a2c3 upstream.
 
-SPC-4 says about the WBUS16 and SYNC bits:
+transport_kmap_data_sg can return NULL.  I never saw this trigger, but
+returning -ENOMEM seems better than a crash.  Also removes a pointless
+case while at it.
 
-    The meanings of these fields are specific to SPI-5 (see 6.4.3).
-    For SCSI transport protocols other than the SCSI Parallel
-    Interface, these fields are reserved.
-
-We don't have a SPI fabric module, so we should never set these bits.
-(The comment was misleading, since it only mentioned Sync but the
-actual code set WBUS16 too).
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Joern Engel <joern@logfs.org>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_cdb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_device.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -116,7 +116,7 @@ target_emulate_inquiry_std(struct se_cmd
- 		goto out;
- 	}
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -658,7 +658,9 @@ int target_report_luns(struct se_task *s
+ 	unsigned char *buf;
+ 	u32 cdb_offset = 0, lun_count = 0, offset = 8, i;
  
--	buf[7] = 0x32; /* Sync=1 and CmdQue=1 */
-+	buf[7] = 0x2; /* CmdQue=1 */
+-	buf = (unsigned char *) transport_kmap_data_sg(se_cmd);
++	buf = transport_kmap_data_sg(se_cmd);
++	if (!buf)
++		return -ENOMEM;
  
  	/*
- 	 * Do not include vendor, product, reversion info in INQUIRY
+ 	 * If no struct se_session pointer is present, this struct se_cmd is
 
 
