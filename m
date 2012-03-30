@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757841Ab2C3Hti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 03:49:38 -0400
-Received: from linux-sh.org ([111.68.239.195]:39777 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759331Ab2C3Hta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 03:49:30 -0400
-Date: Fri, 30 Mar 2012 16:48:52 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Michael Neuling <mikey@neuling.org>, David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, arnd@arndb.de, hpa@zytor.com,
-        sfr@canb.auug.org.au
-Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
-Message-ID: <20120330074851.GD26543@linux-sh.org>
-References: <5599.1332958811@redhat.com> <30702.1332989444@neuling.org> <1332994469.3010.7.camel@pasglop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332994469.3010.7.camel@pasglop>
-User-Agent: Mutt/1.4.1i
+	id S1759507Ab2C3H4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 03:56:40 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:56116 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759344Ab2C3H4c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 03:56:32 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] video/console: Clip the right margin clear to the visible region
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4F750970.6040801@gmx.de>
+References: <1332793022-29292-1-git-send-email-chris@chris-wilson.co.uk> <4F750970.6040801@gmx.de>
+Date: Fri, 30 Mar 2012 08:56:10 +0100
+X-Originating-IP: 78.156.66.37
+Message-ID: <1333094186_153174@CP5-2952>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 03:14:29PM +1100, Benjamin Herrenschmidt wrote:
-> > We are currently getting:
-> > kernel/irq/irqdomain.c: In function 'irq_debugfs_init':
-> > kernel/irq/irqdomain.c:698:63: error: 'powerpc_debugfs_root' undeclared (first use in this function)
-> > kernel/irq/irqdomain.c:698:63: note: each undeclared identifier is reported only once for each function it appears in
+On Fri, 30 Mar 2012 01:16:32 +0000, Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+> Hi Chris,
+> 
+> On 03/26/2012 08:17 PM, Chris Wilson wrote:
+> > For some unknown reason, yres_virtual was 2x larger the the size specified
+> > by i915 and so when blit_clear_margins() tried to clear the full virtual
+> > right-hand margin it tried to write far beyond the end of the buffer.
 > > 
-> >   ae3a197 Disintegrate asm/system.h for PowerPC
-> > is conflicting with 
-> >   cc79ca6 irq_domain: Move irq_domain code from powerpc to kernel/irq
-> > from Grant's tree.
+> > This limits the clear to only the visible portion of the right-hand
+> > margin, similar to how the bottom margin is treated.
 > > 
-> > Adding the following patch fixes it for pseries_defconfig, although I'm
-> > not sure it's the right fix.
+> > Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=38138
 > 
-> That will do as a quick fix (Linus, can you take it now ?), however..
-> 
-> > Grant: why does powerpc_debugfs_root appear in generic code?  This seems
-> > very bogus.
-> 
-> Yes, Grant, you should move that to a different (generic) debugfs file,
-> the mapping information is valuable debug data for all architectures
-> that use the remapper, not just powerpc and it's not an ABI (no tool I
-> know of rely on the location of that debugfs file) so feel free to move
-> it around.
-> 
-There is a arch_debugfs_dir defined by linux/debugfs.h, but at the moment
-it's only provided by x86 and sh.
+> as you also found the root of the problem and posted a patch to fix i915
+> (or rather all KMS-based framebuffers) by validating the virtual
+> resolution in check var, I don't see any reason to apply this one. I'm
+> not sure about it, but changing the behaviour of this function might
+> cause some undesired changes in user experience and as there is no
+> problem with this code as is, I'd prefer to not change it.
+
+Ok, thanks for the review. Preventing userspace from programming an
+unhandled value of yres_virtual is definitely the way forward.
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
