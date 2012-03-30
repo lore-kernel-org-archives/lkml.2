@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966040Ab2C3VVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:21:20 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46547 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966004Ab2C3VVE (ORCPT
+	id S966025Ab2C3Vp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:45:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966034Ab2C3VVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:21:04 -0400
-Message-Id: <20120330194841.667568133@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:21:19 -0400
+Message-Id: <20120330194842.880008585@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:50 -0700
+Date: Fri, 30 Mar 2012 12:49:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 085/175] drm/radeon/kms: fix analog load detection on DVI-I connectors
+        alan@lxorguk.ukuu.org.uk, Joern Engel <joern@logfs.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 090/175] target: fix use after free in target_report_luns
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>
 
-commit e00e8b5e760cbbe9067daeae5454d67c44c8d035 upstream.
+commit 382436f8804fe1cb20b9a2a811a10eb2d8554721 upstream.
 
-We digital encoders have a detect function as well (for
-DP to VGA bridges), so we make sure we choose the analog
-one here.
+Fix possible NULL pointer dereference in target_report_luns failure path.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=47007
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Joern Engel <joern@logfs.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/target/target_core_device.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -946,6 +946,10 @@ radeon_dvi_detect(struct drm_connector *
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -695,12 +695,12 @@ int target_report_luns(struct se_task *s
+ 	 * See SPC3 r07, page 159.
+ 	 */
+ done:
+-	transport_kunmap_data_sg(se_cmd);
+ 	lun_count *= 8;
+ 	buf[0] = ((lun_count >> 24) & 0xff);
+ 	buf[1] = ((lun_count >> 16) & 0xff);
+ 	buf[2] = ((lun_count >> 8) & 0xff);
+ 	buf[3] = (lun_count & 0xff);
++	transport_kunmap_data_sg(se_cmd);
  
- 			encoder = obj_to_encoder(obj);
- 
-+			if (encoder->encoder_type != DRM_MODE_ENCODER_DAC ||
-+			    encoder->encoder_type != DRM_MODE_ENCODER_TVDAC)
-+				continue;
-+
- 			encoder_funcs = encoder->helper_private;
- 			if (encoder_funcs->detect) {
- 				if (ret != connector_status_connected) {
+ 	se_task->task_scsi_status = GOOD;
+ 	transport_complete_task(se_task, 1);
 
 
