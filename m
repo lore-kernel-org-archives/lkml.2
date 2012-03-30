@@ -1,34 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760399Ab2C3MQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:16:57 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57797 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab2C3MQu (ORCPT
+	id S1760609Ab2C3MSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:18:24 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:48590 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759370Ab2C3MST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:16:50 -0400
-Message-ID: <4F75A42E.3030704@kernel.org>
-Date: Fri, 30 Mar 2012 08:16:46 -0400
+	Fri, 30 Mar 2012 08:18:19 -0400
 From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 57/76] ACPI / Video: blacklist some samsung laptops
-References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>	<1333102459-23750-1-git-send-email-lenb@kernel.org>	<0e569b120d19c35dcc4f5549956cd884c3241270.1333101989.git.len.brown@intel.com> <CAHR064iEVsoMiP1PYzXeZeZzOFCPTk1YDBty6nHAfzej2qh_qA@mail.gmail.com>
-In-Reply-To: <CAHR064iEVsoMiP1PYzXeZeZzOFCPTk1YDBty6nHAfzej2qh_qA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 20/76] thermal: spear13xx: checking for NULL instead of IS_ERR()
+Date: Fri, 30 Mar 2012 06:13:23 -0400
+Message-id: <03ee62f0b9919535a1be02f72fe8153255a7fda0.1333101989.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
+In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
+In-reply-to: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+Reply-to: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-> Sorry for that but this patch was re-sent recently, and Matthew told
-> me to do that this should be done in samsung-laptop.c instead.
+thermal_zone_device_register() never returns NULL, on error it returns and
+ERR_PTR().
 
-Okay, I'll revert the (soon to be un-necessary) blacklist entries.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
+Reviewed-by: Vincenzo Frascino <vincenzo.frascino@st.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/thermal/spear_thermal.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-thanks,
--Len
+diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
+index be94413..c2e32df 100644
+--- a/drivers/thermal/spear_thermal.c
++++ b/drivers/thermal/spear_thermal.c
+@@ -149,9 +149,9 @@ static int spear_thermal_probe(struct platform_device *pdev)
+ 
+ 	spear_thermal = thermal_zone_device_register("spear_thermal", 0,
+ 				stdev, &ops, 0, 0, 0, 0);
+-	if (!spear_thermal) {
++	if (IS_ERR(spear_thermal)) {
+ 		dev_err(&pdev->dev, "thermal zone device is NULL\n");
+-		ret = -EINVAL;
++		ret = PTR_ERR(spear_thermal);
+ 		goto disable_clk;
+ 	}
+ 
+-- 
+1.7.10.rc2.19.gfae9d
+
