@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936687Ab2C3XFD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 19:05:03 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41983 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934194Ab2C3XE5 (ORCPT
+	id S936764Ab2C3XF1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 19:05:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934802Ab2C3VFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 19:04:57 -0400
-Date: Sat, 31 Mar 2012 01:04:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-In-Reply-To: <20120330221836.GN17822@one.firstfloor.org>
-Message-ID: <alpine.LFD.2.02.1203310044580.2542@ionos>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F7616F5.4070000@zytor.com> <alpine.LFD.2.02.1203302333560.2542@ionos> <20120330221836.GN17822@one.firstfloor.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 30 Mar 2012 17:05:05 -0400
+Message-Id: <20120330195727.684990792@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 30 Mar 2012 12:58:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: [ 039/108] rtc: Disable the alarm in the hardware (v2)
+In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Mar 2012, Andi Kleen wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> > So if a guest exits due to an external event it's easy to inspect the
-> > state of that guest and avoid to schedule away when it was interrupted
-> > in a spinlock held section. That guest/host shared state needs to be
-> 
-> On a large system under high contention sleeping can perform surprisingly
-> well. pthread mutexes have a tendency to beat kernel spinlocks there.
-> So avoiding sleeping locks completely (that is what pv locks are
-> essentially) is not necessarily that good.
+------------------
 
-Care to back that up with numbers and proper trace evidence instead of
-handwaving?
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-I've stared at RT traces and throughput problems on _LARGE_ machines
-long enough to know what I'm talking about and I can provide evidence
-in a split second.
+commit 41c7f7424259ff11009449f87c95656f69f9b186 upstream.
 
-> Your proposal is probably only a good idea on low contention
-> and relatively small systems.
+Currently, the RTC code does not disable the alarm in the hardware.
 
-Sigh, you have really no fcking clue what you are talking about.
+This means that after a sequence such as the one below (the files are in the
+RTC sysfs), the box will boot up after 2 minutes even though we've
+asked for the alarm to be turned off.
 
-On RT we observed scalabilty problems way before hardware was
-available to expose them. So what's your point?
+	# echo $((`cat since_epoch`)+120) > wakealarm
+	# echo 0 > wakealarm
+	# poweroff
 
-Put up or shut up, really!
+Fix this by disabling the alarm when there are no timers to run.
 
-    tglx
+The original version of this patch was reverted. This version
+disables the irq directly instead of setting a disabled timer
+in the future.
+
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+[Merged in the second revision from Rabin]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/rtc/interface.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -762,6 +762,14 @@ static int rtc_timer_enqueue(struct rtc_
+ 	return 0;
+ }
+ 
++static void rtc_alarm_disable(struct rtc_device *rtc)
++{
++	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
++		return;
++
++	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
++}
++
+ /**
+  * rtc_timer_remove - Removes a rtc_timer from the rtc_device timerqueue
+  * @rtc rtc device
+@@ -783,8 +791,10 @@ static void rtc_timer_remove(struct rtc_
+ 		struct rtc_wkalrm alarm;
+ 		int err;
+ 		next = timerqueue_getnext(&rtc->timerqueue);
+-		if (!next)
++		if (!next) {
++			rtc_alarm_disable(rtc);
+ 			return;
++		}
+ 		alarm.time = rtc_ktime_to_tm(next->expires);
+ 		alarm.enabled = 1;
+ 		err = __rtc_set_alarm(rtc, &alarm);
+@@ -846,7 +856,8 @@ again:
+ 		err = __rtc_set_alarm(rtc, &alarm);
+ 		if (err == -ETIME)
+ 			goto again;
+-	}
++	} else
++		rtc_alarm_disable(rtc);
+ 
+ 	mutex_unlock(&rtc->ops_lock);
+ }
+
+
