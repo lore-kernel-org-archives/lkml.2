@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab2C3Jxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 05:53:39 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:18383 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760591Ab2C3Jxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 05:53:33 -0400
-X-IronPort-AV: E=Sophos;i="4.75,343,1330876800"; 
-   d="scan'208";a="4658146"
-Message-ID: <4F7582B0.5010609@cn.fujitsu.com>
-Date: Fri, 30 Mar 2012 17:53:52 +0800
-From: Ren Mingxin <renmx@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20110412 CentOS/3.1.3-1.el6.centos Thunderbird/3.1.3
+	id S932970Ab2C3Jzp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 05:55:45 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60999 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759276Ab2C3Jzh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 05:55:37 -0400
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>,
-        VIRTUAL <virtualization@lists.linux-foundation.org>
-Subject: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass of
- disks naming
-References: <4F7581D4.4040301@cn.fujitsu.com>
-In-Reply-To: <4F7581D4.4040301@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-30 17:51:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-30 17:51:16,
-	Serialize complete at 2012-03-30 17:51:16
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+In-Reply-To: <1332434985-11522-1-git-send-email-colin.king@canonical.com>
+References: <1332434985-11522-1-git-send-email-colin.king@canonical.com>
+Date: Fri, 30 Mar 2012 10:55:36 +0100
+Message-ID: <CAAq6er0DUGcT_PuL3gOBNdcEVDxhW8EuP1dfFa_Sa9vNZmhfQA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Allow pcie_aspm=force to work even when FADT
+ indicates it is unsupported
+From: Andy Whitcroft <robobotbotbot@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Colin King <colin.king@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  The current virtblk's naming algorithm only supports 263  disks.
-If there are mass of virtblks(exceeding 263), there will be disks
-with the same name.
+On Thu, Mar 22, 2012 at 4:49 PM, Colin King <colin.king@canonical.com> wrote:
+> From: Colin Ian King <colin.king@canonical.com>
+>
+> Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
+> ASPM is unsupported.  However, the semantics of force should probably allow
+> for this, especially as they did before the ASPM disable rework with commit
+> 3c076351c4027a56d5005a39a0b518a4ba393ce2
+>
+> This patch just skips the clearing of any ASPM setup that the firmware has
+> carried out on this bus if pcie_aspm=force is being used.
+>
+> BugLink: https://bugs.launchpad.net/ubuntu/+bug/962038
+>
+> Signed-off-by: Colin Ian King <colin.king@canonical.com>
+> ---
+>  drivers/pci/pcie/aspm.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+> index 24f049e..e406429 100644
+> --- a/drivers/pci/pcie/aspm.c
+> +++ b/drivers/pci/pcie/aspm.c
+> @@ -783,6 +783,9 @@ void pcie_clear_aspm(struct pci_bus *bus)
+>  {
+>        struct pci_dev *child;
+>
+> +       if (aspm_force)
+> +               return;
+> +
+>        /*
+>         * Clear any ASPM setup that the firmware has carried out on this bus
+>         */
+> --
+> 1.7.9.1
 
-By renaming "sd_format_disk_name()" to "disk_name_format()"
-and moving it into block core, virtio_blk can use this function to
-support mass of disks.
+Andrew, I believe the above is also needed to fix some additional
+regressions with the new ASPM code.  If you are picking up the one
+below this probably should go with it:
 
-Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
----
-   virtio_blk.c |   13 +------------
-  1 file changed, 1 insertion(+), 12 deletions(-)
+    + aspm-fix-pcie-devices-with-non-pcie-children.patch added to -mm tree
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index c4a60ba..54612c2 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -442,18 +442,7 @@ static int __devinit virtblk_probe(struct 
-virtio_device *vdev)
-
-         q->queuedata = vblk;
-
--       if (index < 26) {
--               sprintf(vblk->disk->disk_name, "vd%c", 'a' + index % 26);
--       } else if (index < (26 + 1) * 26) {
--               sprintf(vblk->disk->disk_name, "vd%c%c",
--                       'a' + index / 26 - 1, 'a' + index % 26);
--       } else {
--               const unsigned int m1 = (index / 26 - 1) / 26 - 1;
--               const unsigned int m2 = (index / 26 - 1) % 26;
--               const unsigned int m3 =  index % 26;
--               sprintf(vblk->disk->disk_name, "vd%c%c%c",
--                       'a' + m1, 'a' + m2, 'a' + m3);
--       }
-+       disk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
-
-         vblk->disk->major = major;
-         vblk->disk->first_minor = index_to_minor(index);
-
+-apw
