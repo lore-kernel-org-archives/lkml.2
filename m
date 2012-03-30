@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760770Ab2C3MW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:22:29 -0400
+	id S1760787Ab2C3MWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:22:52 -0400
 Received: from vms173011pub.verizon.net ([206.46.173.11]:48615 "EHLO
 	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760594Ab2C3MSY (ORCPT
+	with ESMTP id S1760569Ab2C3MSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:18:24 -0400
+	Fri, 30 Mar 2012 08:18:23 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 69/76] ACPI: Fix unprotected smp_processor_id() in
- acpi_processor_cst_has_changed()
-Date: Fri, 30 Mar 2012 06:14:12 -0400
-Message-id: <9505626d7bfeb5bd4b85acb483831ac640b2a5e8.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        stable@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 67/76] PNPACPI: Fix device ref leaking in acpi_pnp_match
+Date: Fri, 30 Mar 2012 06:14:10 -0400
+Message-id: <89e96ada572fb216e582dbe3f64e1a6939a37f74.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -28,41 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-The acpi_processor_cst_has_changed() function is invoked from a
-CPU_ONLINE or CPU_DEAD function, which might well execute on CPU 0
-even though the CPU being hotplugged is some other CPU.  In addition,
-acpi_processor_cst_has_changed() invokes smp_processor_id() without
-protection, resulting in splats when onlining CPUs.
+During testing pci root bus removal, found some root bus bridge is not freed.
+If booting with pnpacpi=off, those hostbridge could be freed without problem.
+It turns out that some devices reference are not released during acpi_pnp_match.
+that match should not hold one device ref during every calling.
+Add pu_device calling before returning.
 
-This commit therefore changes the smp_processor_id() to pr->id, as is
-used elsewhere in the code, for example, in acpi_processor_add().
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@vger.kernel.org
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/processor_idle.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pnp/pnpacpi/core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index 0e8e2de..9e57b06 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1159,8 +1159,7 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 	 * to make the code that updates C-States be called once.
- 	 */
+diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+index b00c176..d21e8f5 100644
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -321,9 +321,14 @@ static int __init acpi_pnp_match(struct device *dev, void *_pnp)
+ {
+ 	struct acpi_device *acpi = to_acpi_device(dev);
+ 	struct pnp_dev *pnp = _pnp;
++	struct device *physical_device;
++
++	physical_device = acpi_get_physical_device(acpi->handle);
++	if (physical_device)
++		put_device(physical_device);
  
--	if (smp_processor_id() == 0 &&
--			cpuidle_get_driver() == &acpi_idle_driver) {
-+	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
+ 	/* true means it matched */
+-	return !acpi_get_physical_device(acpi->handle)
++	return !physical_device
+ 	    && compare_pnp_id(pnp->id, acpi_device_hid(acpi));
+ }
  
- 		cpuidle_pause_and_lock();
- 		/* Protect against cpu-hotplug */
 -- 
 1.7.10.rc2.19.gfae9d
 
