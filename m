@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965985Ab2C3Vqv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:46:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S936315Ab2C3VrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:47:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965992Ab2C3VVA (ORCPT
+	with ESMTP id S935254Ab2C3VUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:21:00 -0400
-Message-Id: <20120330194841.422643699@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:20:54 -0400
+Message-Id: <20120330194839.471870913@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:49 -0700
+Date: Fri, 30 Mar 2012 12:49:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 084/175] drm/radeon: Restrict offset for legacy hardware cursor.
+        alan@lxorguk.ukuu.org.uk, Bernie Thompson <bernie@plugable.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [ 076/175] udlfb: remove sysfs framebuffer device with USB .disconnect()
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,121 +26,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michel Dänzer <michel.daenzer@amd.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
 
-commit c4353016dac10133fa5d8535af83f0c4845a2915 upstream.
+commit ce880cb860f36694d2cdebfac9e6ae18176fe4c4 upstream.
 
-The hardware only takes 27 bits for the offset, so larger offsets are
-truncated, and the hardware cursor shows random bits other than the intended
-ones.
+The USB graphics card driver delays the unregistering of the framebuffer
+device to a workqueue, which breaks the userspace visible remove uevent
+sequence. Recent userspace tools started to support USB graphics card
+hotplug out-of-the-box and rely on proper events sent by the kernel.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=46796
+The framebuffer device is a direct child of the USB interface which is
+removed immediately after the USB .disconnect() callback. But the fb device
+in /sys stays around until its final cleanup, at a time where all the parent
+devices have been removed already.
 
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+To work around that, we remove the sysfs fb device directly in the USB
+.disconnect() callback and leave only the cleanup of the internal fb
+data to the delayed work.
+
+Before:
+ add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
+ add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
+ add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb0 (graphics)
+ remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
+ remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
+ remove   /2-1.2:1.0/graphics/fb0 (graphics)
+
+After:
+ add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
+ add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
+ add      /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb1 (graphics)
+ remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/graphics/fb1 (graphics)
+ remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0 (usb)
+ remove   /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2 (usb)
+
+Tested-by: Bernie Thompson <bernie@plugable.com>
+Acked-by: Bernie Thompson <bernie@plugable.com>
+Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_cursor.c |   13 +++++++++++--
- drivers/gpu/drm/radeon/radeon_object.c |   18 +++++++++++++++++-
- drivers/gpu/drm/radeon/radeon_object.h |    2 ++
- 3 files changed, 30 insertions(+), 3 deletions(-)
+ drivers/video/fbmem.c |   18 +++++++++++++++++-
+ drivers/video/udlfb.c |    2 +-
+ include/linux/fb.h    |    1 +
+ 3 files changed, 19 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_cursor.c
-+++ b/drivers/gpu/drm/radeon/radeon_cursor.c
-@@ -151,7 +151,9 @@ int radeon_crtc_cursor_set(struct drm_cr
- 			   uint32_t height)
- {
- 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
-+	struct radeon_device *rdev = crtc->dev->dev_private;
- 	struct drm_gem_object *obj;
-+	struct radeon_bo *robj;
- 	uint64_t gpu_addr;
- 	int ret;
- 
-@@ -173,7 +175,15 @@ int radeon_crtc_cursor_set(struct drm_cr
- 		return -ENOENT;
- 	}
- 
--	ret = radeon_gem_object_pin(obj, RADEON_GEM_DOMAIN_VRAM, &gpu_addr);
-+	robj = gem_to_radeon_bo(obj);
-+	ret = radeon_bo_reserve(robj, false);
-+	if (unlikely(ret != 0))
-+		goto fail;
-+	/* Only 27 bit offset for legacy cursor */
-+	ret = radeon_bo_pin_restricted(robj, RADEON_GEM_DOMAIN_VRAM,
-+				       ASIC_IS_AVIVO(rdev) ? 0 : 1 << 27,
-+				       &gpu_addr);
-+	radeon_bo_unreserve(robj);
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1665,6 +1665,7 @@ static int do_unregister_framebuffer(str
  	if (ret)
- 		goto fail;
+ 		return -EINVAL;
  
-@@ -181,7 +191,6 @@ int radeon_crtc_cursor_set(struct drm_cr
- 	radeon_crtc->cursor_height = height;
++	unlink_framebuffer(fb_info);
+ 	if (fb_info->pixmap.addr &&
+ 	    (fb_info->pixmap.flags & FB_PIXMAP_DEFAULT))
+ 		kfree(fb_info->pixmap.addr);
+@@ -1672,7 +1673,6 @@ static int do_unregister_framebuffer(str
+ 	registered_fb[i] = NULL;
+ 	num_registered_fb--;
+ 	fb_cleanup_device(fb_info);
+-	device_destroy(fb_class, MKDEV(FB_MAJOR, i));
+ 	event.info = fb_info;
+ 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
  
- 	radeon_lock_cursor(crtc, true);
--	/* XXX only 27 bit offset for legacy cursor */
- 	radeon_set_cursor(crtc, obj, gpu_addr);
- 	radeon_show_cursor(crtc);
- 	radeon_lock_cursor(crtc, false);
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -224,7 +224,8 @@ void radeon_bo_unref(struct radeon_bo **
- 		*bo = NULL;
+@@ -1681,6 +1681,22 @@ static int do_unregister_framebuffer(str
+ 	return 0;
  }
  
--int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr)
-+int radeon_bo_pin_restricted(struct radeon_bo *bo, u32 domain, u64 max_offset,
-+			     u64 *gpu_addr)
- {
- 	int r, i;
- 
-@@ -232,6 +233,7 @@ int radeon_bo_pin(struct radeon_bo *bo,
- 		bo->pin_count++;
- 		if (gpu_addr)
- 			*gpu_addr = radeon_bo_gpu_offset(bo);
-+		WARN_ON_ONCE(max_offset != 0);
- 		return 0;
- 	}
- 	radeon_ttm_placement_from_domain(bo, domain);
-@@ -239,6 +241,15 @@ int radeon_bo_pin(struct radeon_bo *bo,
- 		/* force to pin into visible video ram */
- 		bo->placement.lpfn = bo->rdev->mc.visible_vram_size >> PAGE_SHIFT;
- 	}
-+	if (max_offset) {
-+		u64 lpfn = max_offset >> PAGE_SHIFT;
-+
-+		if (!bo->placement.lpfn)
-+			bo->placement.lpfn = bo->rdev->mc.gtt_size >> PAGE_SHIFT;
-+
-+		if (lpfn < bo->placement.lpfn)
-+			bo->placement.lpfn = lpfn;
-+	}
- 	for (i = 0; i < bo->placement.num_placement; i++)
- 		bo->placements[i] |= TTM_PL_FLAG_NO_EVICT;
- 	r = ttm_bo_validate(&bo->tbo, &bo->placement, false, false, false);
-@@ -252,6 +263,11 @@ int radeon_bo_pin(struct radeon_bo *bo,
- 	return r;
- }
- 
-+int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr)
++int unlink_framebuffer(struct fb_info *fb_info)
 +{
-+	return radeon_bo_pin_restricted(bo, domain, 0, gpu_addr);
-+}
++	int i;
 +
- int radeon_bo_unpin(struct radeon_bo *bo)
++	i = fb_info->node;
++	if (i < 0 || i >= FB_MAX || registered_fb[i] != fb_info)
++		return -EINVAL;
++
++	if (fb_info->dev) {
++		device_destroy(fb_class, MKDEV(FB_MAJOR, i));
++		fb_info->dev = NULL;
++	}
++	return 0;
++}
++EXPORT_SYMBOL(unlink_framebuffer);
++
+ void remove_conflicting_framebuffers(struct apertures_struct *a,
+ 				     const char *name, bool primary)
  {
- 	int r, i;
---- a/drivers/gpu/drm/radeon/radeon_object.h
-+++ b/drivers/gpu/drm/radeon/radeon_object.h
-@@ -118,6 +118,8 @@ extern int radeon_bo_kmap(struct radeon_
- extern void radeon_bo_kunmap(struct radeon_bo *bo);
- extern void radeon_bo_unref(struct radeon_bo **bo);
- extern int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr);
-+extern int radeon_bo_pin_restricted(struct radeon_bo *bo, u32 domain,
-+				    u64 max_offset, u64 *gpu_addr);
- extern int radeon_bo_unpin(struct radeon_bo *bo);
- extern int radeon_bo_evict_vram(struct radeon_device *rdev);
- extern void radeon_bo_force_delete(struct radeon_device *rdev);
+--- a/drivers/video/udlfb.c
++++ b/drivers/video/udlfb.c
+@@ -1739,7 +1739,7 @@ static void dlfb_usb_disconnect(struct u
+ 	for (i = 0; i < ARRAY_SIZE(fb_device_attrs); i++)
+ 		device_remove_file(info->dev, &fb_device_attrs[i]);
+ 	device_remove_bin_file(info->dev, &edid_attr);
+-
++	unlink_framebuffer(info);
+ 	usb_set_intfdata(interface, NULL);
+ 
+ 	/* if clients still have us open, will be freed on last close */
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -1003,6 +1003,7 @@ extern ssize_t fb_sys_write(struct fb_in
+ /* drivers/video/fbmem.c */
+ extern int register_framebuffer(struct fb_info *fb_info);
+ extern int unregister_framebuffer(struct fb_info *fb_info);
++extern int unlink_framebuffer(struct fb_info *fb_info);
+ extern void remove_conflicting_framebuffers(struct apertures_struct *a,
+ 				const char *name, bool primary);
+ extern int fb_prepare_logo(struct fb_info *fb_info, int rotate);
 
 
