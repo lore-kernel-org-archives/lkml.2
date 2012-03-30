@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935810Ab2C3VMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:12:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935690Ab2C3VM2 (ORCPT
+	id S965219Ab2C3WUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:20:41 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52476 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935690Ab2C3VMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:12:28 -0400
-Message-Id: <20120330194849.785993937@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:12:36 -0400
+Message-Id: <20120330194848.839914270@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:45 -0700
+Date: Fri, 30 Mar 2012 12:49:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
-Subject: [ 072/149] md: fix clearing of the changed flags for the bad blocks list.
+        alan@lxorguk.ukuu.org.uk, Mark D Rustad <mark.d.rustad@intel.com>,
+        Kiran Patil <kiran.patil@intel.com>,
+        Robert Love <robert.w.love@intel.com>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 068/149] tcm_fc: Fix fc_exch memory leak in ft_send_resp_status
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,52 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit d0962936bff659d20522555b517582a2715fd23f upstream.
+commit 031ed4d565b31880a4136bb7366bc89f5b1dba7d upstream.
 
-In super_1_sync (the first hunk) we need to clear 'changed' before
-checking read_seqretry(), otherwise we might race with other code
-adding a bad block and so won't retry later.
+This patch fixes a bug in tcm_fc where fc_exch memory from fc_exch_mgr->ep_pool
+is currently being leaked by ft_send_resp_status() usage.  Following current
+code in ft_queue_status() response path, using lport->tt.seq_send() needs to be
+followed by a lport->tt.exch_done() in order to release fc_exch memory back into
+libfc_em kmem_cache.
 
-In md_update_sb (the second hunk), in the case where there is no
-metadata (neither persistent nor external), we treat any bad blocks as
-an error.  However we need to clear the 'changed' flag before calling
-md_ack_all_badblocks, else it won't do anything.
+ft_send_resp_status() code is currently used in pre submit se_cmd ft_send_work()
+error exceptions, TM request setup exceptions, and main TM response callback
+path in ft_queue_tm_resp().  This bugfix addresses the leak in these cases.
 
-This patch is suitable for -stable release 3.0 and later.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Mark D Rustad <mark.d.rustad@intel.com>
+Cc: Kiran Patil <kiran.patil@intel.com>
+Cc: Robert Love <robert.w.love@intel.com>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/tcm_fc/tfc_cmd.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1801,13 +1801,13 @@ retry:
- 						| BB_LEN(internal_bb));
- 				*bbp++ = cpu_to_le64(store_bb);
- 			}
-+			bb->changed = 0;
- 			if (read_seqretry(&bb->lock, seq))
- 				goto retry;
+--- a/drivers/target/tcm_fc/tfc_cmd.c
++++ b/drivers/target/tcm_fc/tfc_cmd.c
+@@ -329,10 +329,12 @@ static void ft_send_resp_status(struct f
  
- 			bb->sector = (rdev->sb_start +
- 				      (int)le32_to_cpu(sb->bblog_offset));
- 			bb->size = le16_to_cpu(sb->bblog_size);
--			bb->changed = 0;
- 		}
- 	}
+ 	fc_fill_reply_hdr(fp, rx_fp, FC_RCTL_DD_CMD_STATUS, 0);
+ 	sp = fr_seq(fp);
+-	if (sp)
++	if (sp) {
+ 		lport->tt.seq_send(lport, sp, fp);
+-	else
++		lport->tt.exch_done(sp);
++	} else {
+ 		lport->tt.frame_send(lport, fp);
++	}
+ }
  
-@@ -2362,6 +2362,7 @@ repeat:
- 			clear_bit(MD_CHANGE_PENDING, &mddev->flags);
- 			list_for_each_entry(rdev, &mddev->disks, same_set) {
- 				if (rdev->badblocks.changed) {
-+					rdev->badblocks.changed = 0;
- 					md_ack_all_badblocks(&rdev->badblocks);
- 					md_error(mddev, rdev);
- 				}
+ /*
 
 
