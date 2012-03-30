@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935079Ab2C3VGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:36 -0400
+	id S935368Ab2C3WrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:47:25 -0400
 Received: from mail-gx0-f174.google.com ([209.85.161.174]:48245 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935042Ab2C3VGZ (ORCPT
+	with ESMTP id S935068Ab2C3VGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:25 -0400
-Message-Id: <20120330195731.343638170@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:06:35 -0400
+Message-Id: <20120330195731.792791775@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:26 -0700
+Date: Fri, 30 Mar 2012 12:58:29 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: [ 064/108] KVM: x86: fix missing checks in syscall emulation
+        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Ben Myers <bpm@sgi.com>
+Subject: [ 067/108] xfs: fix inode lookup race
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,144 +25,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Stephan=20B=C3=A4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit c2226fc9e87ba3da060e47333657cd6616652b84 upstream.
+commit f30d500f809eca67a21704347ab14bb35877b5ee upstream.
 
-On hosts without this patch, 32bit guests will crash (and 64bit guests
-may behave in a wrong way) for example by simply executing following
-nasm-demo-application:
+When we get concurrent lookups of the same inode that is not in the
+per-AG inode cache, there is a race condition that triggers warnings
+in unlock_new_inode() indicating that we are initialising an inode
+that isn't in a the correct state for a new inode.
 
-    [bits 32]
-    global _start
-    SECTION .text
-    _start: syscall
+When we do an inode lookup via a file handle or a bulkstat, we don't
+serialise lookups at a higher level through the dentry cache (i.e.
+pathless lookup), and so we can get concurrent lookups of the same
+inode.
 
-(I tested it with winxp and linux - both always crashed)
+The race condition is between the insertion of the inode into the
+cache in the case of a cache miss and a concurrently lookup:
 
-    Disassembly of section .text:
+Thread 1			Thread 2
+xfs_iget()
+  xfs_iget_cache_miss()
+    xfs_iread()
+    lock radix tree
+    radix_tree_insert()
+				rcu_read_lock
+				radix_tree_lookup
+				lock inode flags
+				XFS_INEW not set
+				igrab()
+				unlock inode flags
+				rcu_read_unlock
+				use uninitialised inode
+				.....
+    lock inode flags
+    set XFS_INEW
+    unlock inode flags
+    unlock radix tree
+  xfs_setup_inode()
+    inode flags = I_NEW
+    unlock_new_inode()
+      WARNING as inode flags != I_NEW
 
-    00000000 <_start>:
-       0:   0f 05                   syscall
+This can lead to inode corruption, inode list corruption, etc, and
+is generally a bad thing to occur.
 
-The reason seems a missing "invalid opcode"-trap (int6) for the
-syscall opcode "0f05", which is not available on Intel CPUs
-within non-longmodes, as also on some AMD CPUs within legacy-mode.
-(depending on CPU vendor, MSR_EFER and cpuid)
+Fix this by setting XFS_INEW before inserting the inode into the
+radix tree. This will ensure any concurrent lookup will find the new
+inode with XFS_INEW set and that forces the lookup to wait until the
+XFS_INEW flag is removed before allowing the lookup to succeed.
 
-Because previous mentioned OSs may not engage corresponding
-syscall target-registers (STAR, LSTAR, CSTAR), they remain
-NULL and (non trapping) syscalls are leading to multiple
-faults and finally crashs.
-
-Depending on the architecture (AMD or Intel) pretended by
-guests, various checks according to vendor's documentation
-are implemented to overcome the current issue and behave
-like the CPUs physical counterparts.
-
-[mtosatti: cleanup/beautify code]
-
-Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_emulate.h |   13 +++++++++
- arch/x86/kvm/emulate.c             |   51 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+)
+ fs/xfs/xfs_iget.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -301,6 +301,19 @@ struct x86_emulate_ctxt {
- #define X86EMUL_MODE_PROT     (X86EMUL_MODE_PROT16|X86EMUL_MODE_PROT32| \
- 			       X86EMUL_MODE_PROT64)
+--- a/fs/xfs/xfs_iget.c
++++ b/fs/xfs/xfs_iget.c
+@@ -356,9 +356,20 @@ xfs_iget_cache_miss(
+ 			BUG();
+ 	}
  
-+/* CPUID vendors */
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx 0x68747541
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx 0x444d4163
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_edx 0x69746e65
-+
-+#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx 0x69444d41
-+#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx 0x21726574
-+#define X86EMUL_CPUID_VENDOR_AMDisbetterI_edx 0x74656273
-+
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_ebx 0x756e6547
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_ecx 0x6c65746e
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_edx 0x49656e69
-+
- enum x86_intercept_stage {
- 	X86_ICTP_NONE = 0,   /* Allow zero-init to not match anything */
- 	X86_ICPT_PRE_EXCEPT,
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1901,6 +1901,51 @@ setup_syscalls_segments(struct x86_emula
- 	ss->p = 1;
- }
- 
-+static bool em_syscall_is_enabled(struct x86_emulate_ctxt *ctxt)
-+{
-+	struct x86_emulate_ops *ops = ctxt->ops;
-+	u32 eax, ebx, ecx, edx;
-+
+-	spin_lock(&pag->pag_ici_lock);
 +	/*
-+	 * syscall should always be enabled in longmode - so only become
-+	 * vendor specific (cpuid) if other modes are active...
++	 * These values must be set before inserting the inode into the radix
++	 * tree as the moment it is inserted a concurrent lookup (allowed by the
++	 * RCU locking mechanism) can find it and that lookup must see that this
++	 * is an inode currently under construction (i.e. that XFS_INEW is set).
++	 * The ip->i_flags_lock that protects the XFS_INEW flag forms the
++	 * memory barrier that ensures this detection works correctly at lookup
++	 * time.
 +	 */
-+	if (ctxt->mode == X86EMUL_MODE_PROT64)
-+		return true;
-+
-+	eax = 0x00000000;
-+	ecx = 0x00000000;
-+	if (ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx)) {
-+		/*
-+		 * Intel ("GenuineIntel")
-+		 * remark: Intel CPUs only support "syscall" in 64bit
-+		 * longmode. Also an 64bit guest with a
-+		 * 32bit compat-app running will #UD !! While this
-+		 * behaviour can be fixed (by emulating) into AMD
-+		 * response - CPUs of AMD can't behave like Intel.
-+		 */
-+		if (ebx == X86EMUL_CPUID_VENDOR_GenuineIntel_ebx &&
-+		    ecx == X86EMUL_CPUID_VENDOR_GenuineIntel_ecx &&
-+		    edx == X86EMUL_CPUID_VENDOR_GenuineIntel_edx)
-+			return false;
-+
-+		/* AMD ("AuthenticAMD") */
-+		if (ebx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx &&
-+		    ecx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx &&
-+		    edx == X86EMUL_CPUID_VENDOR_AuthenticAMD_edx)
-+			return true;
-+
-+		/* AMD ("AMDisbetter!") */
-+		if (ebx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx &&
-+		    ecx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx &&
-+		    edx == X86EMUL_CPUID_VENDOR_AMDisbetterI_edx)
-+			return true;
-+	}
-+
-+	/* default: (not Intel, not AMD), apply Intel's stricter rules... */
-+	return false;
-+}
-+
- static int
- emulate_syscall(struct x86_emulate_ctxt *ctxt, struct x86_emulate_ops *ops)
- {
-@@ -1915,9 +1960,15 @@ emulate_syscall(struct x86_emulate_ctxt
- 	    ctxt->mode == X86EMUL_MODE_VM86)
- 		return emulate_ud(ctxt);
++	ip->i_udquot = ip->i_gdquot = NULL;
++	xfs_iflags_set(ip, XFS_INEW);
  
-+	if (!(em_syscall_is_enabled(ctxt)))
-+		return emulate_ud(ctxt);
-+
- 	ops->get_msr(ctxt, MSR_EFER, &efer);
- 	setup_syscalls_segments(ctxt, ops, &cs, &ss);
+ 	/* insert the new inode */
++	spin_lock(&pag->pag_ici_lock);
+ 	error = radix_tree_insert(&pag->pag_ici_root, agino, ip);
+ 	if (unlikely(error)) {
+ 		WARN_ON(error != -EEXIST);
+@@ -366,11 +377,6 @@ xfs_iget_cache_miss(
+ 		error = EAGAIN;
+ 		goto out_preload_end;
+ 	}
+-
+-	/* These values _must_ be set before releasing the radix tree lock! */
+-	ip->i_udquot = ip->i_gdquot = NULL;
+-	xfs_iflags_set(ip, XFS_INEW);
+-
+ 	spin_unlock(&pag->pag_ici_lock);
+ 	radix_tree_preload_end();
  
-+	if (!(efer & EFER_SCE))
-+		return emulate_ud(ctxt);
-+
- 	ops->get_msr(ctxt, MSR_STAR, &msr_data);
- 	msr_data >>= 32;
- 	cs_sel = (u16)(msr_data & 0xfffc);
 
 
