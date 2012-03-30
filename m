@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934603Ab2C3Pwm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:52:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37473 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934481Ab2C3PuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:50:18 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <linux-i2c@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Jon Hunter <jon-hunter@ti.com>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv3 09/16] I2C: OMAP: Correct I2C revision for OMAP3
-Date: Fri, 30 Mar 2012 21:20:04 +0530
-Message-ID: <1333122611-29953-10-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1333122611-29953-1-git-send-email-shubhrajyoti@ti.com>
-References: <1333122611-29953-1-git-send-email-shubhrajyoti@ti.com>
+	id S934472Ab2C3Pym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:54:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40230 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab2C3Pyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 11:54:33 -0400
+Message-ID: <4F75D734.3090109@wwwdotorg.org>
+Date: Fri, 30 Mar 2012 09:54:28 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alok Chauhan <alokc@nvidia.com>
+CC: khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        swarren@nvidia.com, olof@lixom.net, bones@secretlab.ca,
+        omaplinuxkernel@gmail.com, ccross@android.com, ldewangan@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
+        dgreid@chromium.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: tegra: Add delay before reset the controller
+References: <1333109179-12445-1-git-send-email-alokc@nvidia.com>
+In-Reply-To: <1333109179-12445-1-git-send-email-alokc@nvidia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Hunter <jon-hunter@ti.com>
+On 03/30/2012 06:06 AM, Alok Chauhan wrote:
+> In NACK error condition, I2C controller violates
+> clock-to-data setup time before stop. In Software,
+> because of this reset of controller is happening
+> before I2C controller could complete STOP condition.
 
-The OMAP3530 is based upon the same silicon as the OMAP3430 and so the I2C
-revision is the same for 3430 and 3530. However, the OMAP3630 device has the
-same I2C revision as OMAP4. Correct the revision definition to reflect this.
+I'm not quite sure this description is correct. Surely what's happening
+is simply that the controller raises the NACK interrupt as soon as it
+detects a NACK condition. Then, the controller generates the STOP
+condition on the bus correctly. The issue is that if software resets the
+controller as soon as the NACK interrupt is raised, this will happen
+before the controller has completely delivered the STOP condition onto
+the bus, so we need to pause and wait for that?
 
-This patch is based on work done by Jon Hunter <jon-hunter@ti.com>
-Changes from his patch
-- Update OMAP_I2C_REV_ON_3430 also to reflect that it is same as 3530
+I think the commit description and comment in the code should be
+reworded to describe what I wrote above, assuming it's accurate.
 
-Signed-off-by: Jon Hunter <jon-hunter@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/i2c/busses/i2c-omap.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 1e36507..121b29b 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -50,8 +50,8 @@
- 
- /* I2C controller revisions present on specific hardware */
- #define OMAP_I2C_REV_ON_2430		0x36
--#define OMAP_I2C_REV_ON_3430		0x3C
--#define OMAP_I2C_REV_ON_3530_4430	0x40
-+#define OMAP_I2C_REV_ON_3430_3530	0x3C
-+#define OMAP_I2C_REV_ON_3630_4430	0x40
- 
- /* timeout waiting for the controller to respond */
- #define OMAP_I2C_TIMEOUT (msecs_to_jiffies(1000))
-@@ -298,7 +298,7 @@ static int omap_i2c_reset(struct omap_i2c_dev *dev)
- 			omap_i2c_write_reg(dev, OMAP_I2C_SYSC_REG,
- 					   SYSC_AUTOIDLE_MASK);
- 
--		} else if (dev->rev >= OMAP_I2C_REV_ON_3430) {
-+		} else if (dev->rev >= OMAP_I2C_REV_ON_3430_3530) {
- 			dev->syscstate = SYSC_AUTOIDLE_MASK;
- 			dev->syscstate |= SYSC_ENAWAKEUP_MASK;
- 			dev->syscstate |= (SYSC_IDLEMODE_SMART <<
-@@ -1051,7 +1051,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 
- 	dev->rev = omap_i2c_read_reg(dev, OMAP_I2C_REV_REG) & 0xff;
- 
--	if (dev->rev <= OMAP_I2C_REV_ON_3430)
-+	if (dev->rev <= OMAP_I2C_REV_ON_3430_3530)
- 		dev->errata |= I2C_OMAP3_1P153;
- 
- 	if (!(dev->flags & OMAP_I2C_FLAG_NO_FIFO)) {
-@@ -1069,7 +1069,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 
- 		dev->fifo_size = (dev->fifo_size / 2);
- 
--		if (dev->rev >= OMAP_I2C_REV_ON_3530_4430)
-+		if (dev->rev >= OMAP_I2C_REV_ON_3630_4430)
- 			dev->b_hw = 0; /* Disable hardware fixes */
- 		else
- 			dev->b_hw = 1; /* Enable hardware fixes */
--- 
-1.7.1
-
+Is there really no idle bit we can poll in the I2C controller to
+determine when the STOP has completed, rather than just delaying a
+"hard-coded" time? Can I2C SCL clock-stretching affect the amount of
+time that must be delayed?
