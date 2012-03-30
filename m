@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965733Ab2C3VS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:18:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	id S965751Ab2C3VTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:19:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965677Ab2C3VSw (ORCPT
+	with ESMTP id S965737Ab2C3VS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:18:52 -0400
-Message-Id: <20120330194832.498347252@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:18:58 -0400
+Message-Id: <20120330194832.827875658@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:08 -0700
+Date: Fri, 30 Mar 2012 12:49:10 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        alan@lxorguk.ukuu.org.uk, Ronald Wahl <ronald.wahl@raritan.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 043/175] rtlwifi: rtl8192c_common: rtl8192de: Check for allocation failures
+Subject: [ 045/175] rtlwifi: rtl8192c: Prevent sleeping from invalid context in rtl8192cu
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,91 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 76a92be537f1c8c259e393632301446257ca3ea9 upstream.
+commit ebecdcc12fed5d3c81853dea61a0a78a5aefab52 upstream.
 
-In https://bugzilla.redhat.com/show_bug.cgi?id=771656, a kernel bug was
-triggered due to a failed skb allocation that was not checked. This event
-lead to an audit of all memory allocations in the complete rtlwifi family
-of drivers. This patch fixes the rest.
+When driver rtl8192cu is used with the debug level set to 3 or greater,
+the result is "sleeping function called from invalid context" due to
+an rcu_read_lock() call in the DM refresh routine in driver rtl8192c.
+This lock is not necessary as the USB driver does not use the struct
+being protected, thus the lock is set only when a PCI interface is
+active.
 
+This bug is reported in https://bugzilla.kernel.org/show_bug.cgi?id=42775.
+
+Reported-by: Ronald Wahl <ronald.wahl@raritan.com>
+Tested-by: Ronald Wahl <ronald.wahl@raritan.com>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Ronald Wahl <ronald.wahl@raritan.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/pci.c                |    2 ++
- drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c |    2 ++
- drivers/net/wireless/rtlwifi/rtl8192de/fw.c       |   14 +++++++++-----
- drivers/net/wireless/rtlwifi/usb.c                |   12 +++++++-----
- 4 files changed, 20 insertions(+), 10 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -657,6 +657,8 @@ static void _rtl_receive_one(struct ieee
- 		return;
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+@@ -1219,13 +1219,18 @@ static void rtl92c_dm_refresh_rate_adapt
+ 				 ("PreState = %d, CurState = %d\n",
+ 				  p_ra->pre_ratr_state, p_ra->ratr_state));
  
- 	uskb = dev_alloc_skb(skb->len + 128);
-+	if (!uskb)
-+		return;		/* exit if allocation failed */
- 	memcpy(IEEE80211_SKB_RXCB(uskb), &rx_status, sizeof(rx_status));
- 	pdata = (u8 *)skb_put(uskb, skb->len);
- 	memcpy(pdata, skb->data, skb->len);
---- a/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
-@@ -788,6 +788,8 @@ void rtl92c_set_fw_rsvdpagepkt(struct ie
- 
- 
- 	skb = dev_alloc_skb(totalpacketlen);
-+	if (!skb)
-+		return;
- 	memcpy((u8 *) skb_put(skb, totalpacketlen),
- 	       &reserved_page_packet, totalpacketlen);
- 
---- a/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
-@@ -763,12 +763,16 @@ void rtl92d_set_fw_rsvdpagepkt(struct ie
- 		      "rtl92d_set_fw_rsvdpagepkt(): HW_VAR_SET_TX_CMD: ALL\n",
- 		      u1RsvdPageLoc, 3);
- 	skb = dev_alloc_skb(totalpacketlen);
--	memcpy((u8 *) skb_put(skb, totalpacketlen), &reserved_page_packet,
--		totalpacketlen);
--	rtstatus = _rtl92d_cmd_send_packet(hw, skb);
-+	if (!skb) {
-+		dlok = false;
-+	} else {
-+		memcpy((u8 *) skb_put(skb, totalpacketlen),
-+			&reserved_page_packet, totalpacketlen);
-+		rtstatus = _rtl92d_cmd_send_packet(hw, skb);
- 
--	if (rtstatus)
--		dlok = true;
-+		if (rtstatus)
-+			dlok = true;
-+	}
- 	if (dlok) {
- 		RT_TRACE(rtlpriv, COMP_POWER, DBG_LOUD,
- 			("Set RSVD page location to Fw.\n"));
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -520,12 +520,14 @@ static void _rtl_usb_rx_process_noagg(st
- 			u8 *pdata;
- 
- 			uskb = dev_alloc_skb(skb->len + 128);
--			memcpy(IEEE80211_SKB_RXCB(uskb), &rx_status,
--			       sizeof(rx_status));
--			pdata = (u8 *)skb_put(uskb, skb->len);
--			memcpy(pdata, skb->data, skb->len);
-+			if (uskb) {	/* drop packet on allocation failure */
-+				memcpy(IEEE80211_SKB_RXCB(uskb), &rx_status,
-+				       sizeof(rx_status));
-+				pdata = (u8 *)skb_put(uskb, skb->len);
-+				memcpy(pdata, skb->data, skb->len);
-+				ieee80211_rx_irqsafe(hw, uskb);
+-			rcu_read_lock();
+-			sta = ieee80211_find_sta(mac->vif, mac->bssid);
++			/* Only the PCI card uses sta in the update rate table
++			 * callback routine */
++			if (rtlhal->interface == INTF_PCI) {
++				rcu_read_lock();
++				sta = ieee80211_find_sta(mac->vif, mac->bssid);
 +			}
- 			dev_kfree_skb_any(skb);
--			ieee80211_rx_irqsafe(hw, uskb);
- 		} else {
- 			dev_kfree_skb_any(skb);
+ 			rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
+ 					p_ra->ratr_state);
+ 
+ 			p_ra->pre_ratr_state = p_ra->ratr_state;
+-			rcu_read_unlock();
++			if (rtlhal->interface == INTF_PCI)
++				rcu_read_unlock();
  		}
+ 	}
+ }
 
 
