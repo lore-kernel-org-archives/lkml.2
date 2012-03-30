@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965034Ab2C3WQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:16:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964973Ab2C3VNj (ORCPT
+	id S965022Ab2C3WQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:16:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62819 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964960Ab2C3VNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:13:39 -0400
-Message-Id: <20120330194853.562330757@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:13:37 -0400
+Message-Id: <20120330194854.363795006@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:01 -0700
+Date: Fri, 30 Mar 2012 12:50:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: [ 088/149] KVM: x86: fix missing checks in syscall emulation
+        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@samba.org>,
+        Pavel Shilovsky <piastry@etersoft.ru>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [ 092/149] CIFS: Respect negotiated MaxMpxCount
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,144 +26,198 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Stephan=20B=C3=A4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
-commit c2226fc9e87ba3da060e47333657cd6616652b84 upstream.
+commit 10b9b98e41ba248a899f6175ce96ee91431b6194 upstream.
 
-On hosts without this patch, 32bit guests will crash (and 64bit guests
-may behave in a wrong way) for example by simply executing following
-nasm-demo-application:
+Some servers sets this value less than 50 that was hardcoded and
+we lost the connection if when we exceed this limit. Fix this by
+respecting this value - not sending more than the server allows.
 
-    [bits 32]
-    global _start
-    SECTION .text
-    _start: syscall
-
-(I tested it with winxp and linux - both always crashed)
-
-    Disassembly of section .text:
-
-    00000000 <_start>:
-       0:   0f 05                   syscall
-
-The reason seems a missing "invalid opcode"-trap (int6) for the
-syscall opcode "0f05", which is not available on Intel CPUs
-within non-longmodes, as also on some AMD CPUs within legacy-mode.
-(depending on CPU vendor, MSR_EFER and cpuid)
-
-Because previous mentioned OSs may not engage corresponding
-syscall target-registers (STAR, LSTAR, CSTAR), they remain
-NULL and (non trapping) syscalls are leading to multiple
-faults and finally crashs.
-
-Depending on the architecture (AMD or Intel) pretended by
-guests, various checks according to vendor's documentation
-are implemented to overcome the current issue and behave
-like the CPUs physical counterparts.
-
-[mtosatti: cleanup/beautify code]
-
-Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Reviewed-by: Jeff Layton <jlayton@samba.org>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_emulate.h |   13 +++++++++
- arch/x86/kvm/emulate.c             |   51 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+)
+ fs/cifs/cifsfs.c    |    8 ++++----
+ fs/cifs/cifsglob.h  |   10 +++-------
+ fs/cifs/cifssmb.c   |    9 +++++++--
+ fs/cifs/connect.c   |   11 ++++-------
+ fs/cifs/dir.c       |    6 ++++--
+ fs/cifs/file.c      |    4 ++--
+ fs/cifs/transport.c |    4 ++--
+ 7 files changed, 26 insertions(+), 26 deletions(-)
 
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -300,6 +300,19 @@ struct x86_emulate_ctxt {
- #define X86EMUL_MODE_PROT     (X86EMUL_MODE_PROT16|X86EMUL_MODE_PROT32| \
- 			       X86EMUL_MODE_PROT64)
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -76,7 +76,7 @@ MODULE_PARM_DESC(cifs_min_small, "Small
+ unsigned int cifs_max_pending = CIFS_MAX_REQ;
+ module_param(cifs_max_pending, int, 0444);
+ MODULE_PARM_DESC(cifs_max_pending, "Simultaneous requests to server. "
+-				   "Default: 50 Range: 2 to 256");
++				   "Default: 32767 Range: 2 to 32767.");
+ unsigned short echo_retries = 5;
+ module_param(echo_retries, ushort, 0644);
+ MODULE_PARM_DESC(echo_retries, "Number of echo attempts before giving up and "
+@@ -1116,9 +1116,9 @@ init_cifs(void)
+ 	if (cifs_max_pending < 2) {
+ 		cifs_max_pending = 2;
+ 		cFYI(1, "cifs_max_pending set to min of 2");
+-	} else if (cifs_max_pending > 256) {
+-		cifs_max_pending = 256;
+-		cFYI(1, "cifs_max_pending set to max of 256");
++	} else if (cifs_max_pending > CIFS_MAX_REQ) {
++		cifs_max_pending = CIFS_MAX_REQ;
++		cFYI(1, "cifs_max_pending set to max of %u", CIFS_MAX_REQ);
+ 	}
  
-+/* CPUID vendors */
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx 0x68747541
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx 0x444d4163
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_edx 0x69746e65
-+
-+#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx 0x69444d41
-+#define X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx 0x21726574
-+#define X86EMUL_CPUID_VENDOR_AMDisbetterI_edx 0x74656273
-+
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_ebx 0x756e6547
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_ecx 0x6c65746e
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_edx 0x49656e69
-+
- enum x86_intercept_stage {
- 	X86_ICTP_NONE = 0,   /* Allow zero-init to not match anything */
- 	X86_ICPT_PRE_EXCEPT,
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1877,6 +1877,51 @@ setup_syscalls_segments(struct x86_emula
- 	ss->p = 1;
- }
+ 	rc = cifs_fscache_register();
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -55,14 +55,9 @@
  
-+static bool em_syscall_is_enabled(struct x86_emulate_ctxt *ctxt)
-+{
-+	struct x86_emulate_ops *ops = ctxt->ops;
-+	u32 eax, ebx, ecx, edx;
-+
-+	/*
-+	 * syscall should always be enabled in longmode - so only become
-+	 * vendor specific (cpuid) if other modes are active...
-+	 */
-+	if (ctxt->mode == X86EMUL_MODE_PROT64)
-+		return true;
-+
-+	eax = 0x00000000;
-+	ecx = 0x00000000;
-+	if (ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx)) {
-+		/*
-+		 * Intel ("GenuineIntel")
-+		 * remark: Intel CPUs only support "syscall" in 64bit
-+		 * longmode. Also an 64bit guest with a
-+		 * 32bit compat-app running will #UD !! While this
-+		 * behaviour can be fixed (by emulating) into AMD
-+		 * response - CPUs of AMD can't behave like Intel.
-+		 */
-+		if (ebx == X86EMUL_CPUID_VENDOR_GenuineIntel_ebx &&
-+		    ecx == X86EMUL_CPUID_VENDOR_GenuineIntel_ecx &&
-+		    edx == X86EMUL_CPUID_VENDOR_GenuineIntel_edx)
-+			return false;
-+
-+		/* AMD ("AuthenticAMD") */
-+		if (ebx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx &&
-+		    ecx == X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx &&
-+		    edx == X86EMUL_CPUID_VENDOR_AuthenticAMD_edx)
-+			return true;
-+
-+		/* AMD ("AMDisbetter!") */
-+		if (ebx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx &&
-+		    ecx == X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx &&
-+		    edx == X86EMUL_CPUID_VENDOR_AMDisbetterI_edx)
-+			return true;
-+	}
-+
-+	/* default: (not Intel, not AMD), apply Intel's stricter rules... */
-+	return false;
-+}
-+
- static int em_syscall(struct x86_emulate_ctxt *ctxt)
+ /*
+  * MAX_REQ is the maximum number of requests that WE will send
+- * on one socket concurrently. It also matches the most common
+- * value of max multiplex returned by servers.  We may
+- * eventually want to use the negotiated value (in case
+- * future servers can handle more) when we are more confident that
+- * we will not have problems oveloading the socket with pending
+- * write data.
++ * on one socket concurrently.
+  */
+-#define CIFS_MAX_REQ 50
++#define CIFS_MAX_REQ 32767
+ 
+ #define RFC1001_NAME_LEN 15
+ #define RFC1001_NAME_LEN_WITH_NULL (RFC1001_NAME_LEN + 1)
+@@ -263,6 +258,7 @@ struct TCP_Server_Info {
+ 	bool session_estab; /* mark when very first sess is established */
+ 	u16 dialect; /* dialect index that server chose */
+ 	enum securityEnum secType;
++	bool oplocks:1; /* enable oplocks */
+ 	unsigned int maxReq;	/* Clients should submit no more */
+ 	/* than maxReq distinct unanswered SMBs to the server when using  */
+ 	/* multiplexed reads or writes */
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -458,7 +458,10 @@ CIFSSMBNegotiate(unsigned int xid, struc
+ 			goto neg_err_exit;
+ 		}
+ 		server->sec_mode = (__u8)le16_to_cpu(rsp->SecurityMode);
+-		server->maxReq = le16_to_cpu(rsp->MaxMpxCount);
++		server->maxReq = min_t(unsigned int,
++				       le16_to_cpu(rsp->MaxMpxCount),
++				       cifs_max_pending);
++		server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
+ 		server->maxBuf = le16_to_cpu(rsp->MaxBufSize);
+ 		server->max_vcs = le16_to_cpu(rsp->MaxNumberVcs);
+ 		/* even though we do not use raw we might as well set this
+@@ -564,7 +567,9 @@ CIFSSMBNegotiate(unsigned int xid, struc
+ 
+ 	/* one byte, so no need to convert this or EncryptionKeyLen from
+ 	   little endian */
+-	server->maxReq = le16_to_cpu(pSMBr->MaxMpxCount);
++	server->maxReq = min_t(unsigned int, le16_to_cpu(pSMBr->MaxMpxCount),
++			       cifs_max_pending);
++	server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
+ 	/* probably no need to store and check maxvcs */
+ 	server->maxBuf = le32_to_cpu(pSMBr->MaxBufferSize);
+ 	server->max_rw = le32_to_cpu(pSMBr->MaxRawSize);
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -625,14 +625,10 @@ static void clean_demultiplex_info(struc
+ 	spin_unlock(&GlobalMid_Lock);
+ 	wake_up_all(&server->response_q);
+ 
+-	/*
+-	 * Check if we have blocked requests that need to free. Note that
+-	 * cifs_max_pending is normally 50, but can be set at module install
+-	 * time to as little as two.
+-	 */
++	/* Check if we have blocked requests that need to free. */
+ 	spin_lock(&GlobalMid_Lock);
+-	if (atomic_read(&server->inFlight) >= cifs_max_pending)
+-		atomic_set(&server->inFlight, cifs_max_pending - 1);
++	if (atomic_read(&server->inFlight) >= server->maxReq)
++		atomic_set(&server->inFlight, server->maxReq - 1);
+ 	/*
+ 	 * We do not want to set the max_pending too low or we could end up
+ 	 * with the counter going negative.
+@@ -1890,6 +1886,7 @@ cifs_get_tcp_session(struct smb_vol *vol
+ 	tcp_ses->noautotune = volume_info->noautotune;
+ 	tcp_ses->tcp_nodelay = volume_info->sockopt_tcp_nodelay;
+ 	atomic_set(&tcp_ses->inFlight, 0);
++	tcp_ses->maxReq = 1; /* enough to send negotiate request */
+ 	init_waitqueue_head(&tcp_ses->response_q);
+ 	init_waitqueue_head(&tcp_ses->request_q);
+ 	INIT_LIST_HEAD(&tcp_ses->pending_mid_q);
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -171,7 +171,7 @@ cifs_create(struct inode *inode, struct
+ 	}
+ 	tcon = tlink_tcon(tlink);
+ 
+-	if (enable_oplocks)
++	if (tcon->ses->server->oplocks)
+ 		oplock = REQ_OPLOCK;
+ 
+ 	if (nd)
+@@ -492,7 +492,7 @@ cifs_lookup(struct inode *parent_dir_ino
  {
- 	struct x86_emulate_ops *ops = ctxt->ops;
-@@ -1890,9 +1935,15 @@ static int em_syscall(struct x86_emulate
- 	    ctxt->mode == X86EMUL_MODE_VM86)
- 		return emulate_ud(ctxt);
+ 	int xid;
+ 	int rc = 0; /* to get around spurious gcc warning, set to zero here */
+-	__u32 oplock = enable_oplocks ? REQ_OPLOCK : 0;
++	__u32 oplock;
+ 	__u16 fileHandle = 0;
+ 	bool posix_open = false;
+ 	struct cifs_sb_info *cifs_sb;
+@@ -518,6 +518,8 @@ cifs_lookup(struct inode *parent_dir_ino
+ 	}
+ 	pTcon = tlink_tcon(tlink);
  
-+	if (!(em_syscall_is_enabled(ctxt)))
-+		return emulate_ud(ctxt);
++	oplock = pTcon->ses->server->oplocks ? REQ_OPLOCK : 0;
 +
- 	ops->get_msr(ctxt, MSR_EFER, &efer);
- 	setup_syscalls_segments(ctxt, &cs, &ss);
+ 	/*
+ 	 * Don't allow the separator character in a path component.
+ 	 * The VFS will not allow "/", but "\" is allowed by posix.
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -380,7 +380,7 @@ int cifs_open(struct inode *inode, struc
+ 	cFYI(1, "inode = 0x%p file flags are 0x%x for %s",
+ 		 inode, file->f_flags, full_path);
  
-+	if (!(efer & EFER_SCE))
-+		return emulate_ud(ctxt);
-+
- 	ops->get_msr(ctxt, MSR_STAR, &msr_data);
- 	msr_data >>= 32;
- 	cs_sel = (u16)(msr_data & 0xfffc);
+-	if (enable_oplocks)
++	if (tcon->ses->server->oplocks)
+ 		oplock = REQ_OPLOCK;
+ 	else
+ 		oplock = 0;
+@@ -505,7 +505,7 @@ static int cifs_reopen_file(struct cifsF
+ 	cFYI(1, "inode = 0x%p file flags 0x%x for %s",
+ 		 inode, pCifsFile->f_flags, full_path);
+ 
+-	if (enable_oplocks)
++	if (tcon->ses->server->oplocks)
+ 		oplock = REQ_OPLOCK;
+ 	else
+ 		oplock = 0;
+--- a/fs/cifs/transport.c
++++ b/fs/cifs/transport.c
+@@ -265,12 +265,12 @@ static int wait_for_free_request(struct
+ 
+ 	spin_lock(&GlobalMid_Lock);
+ 	while (1) {
+-		if (atomic_read(&server->inFlight) >= cifs_max_pending) {
++		if (atomic_read(&server->inFlight) >= server->maxReq) {
+ 			spin_unlock(&GlobalMid_Lock);
+ 			cifs_num_waiters_inc(server);
+ 			wait_event(server->request_q,
+ 				   atomic_read(&server->inFlight)
+-				     < cifs_max_pending);
++				     < server->maxReq);
+ 			cifs_num_waiters_dec(server);
+ 			spin_lock(&GlobalMid_Lock);
+ 		} else {
 
 
