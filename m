@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab2C3HtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 03:49:13 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56719 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757682Ab2C3HtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 03:49:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F754963.4080104@kernel.org>
-References: <1333001380-6050-1-git-send-email-ming.m.lin@intel.com>
-	<1333001380-6050-4-git-send-email-ming.m.lin@intel.com>
-	<4F754963.4080104@kernel.org>
-Date: Fri, 30 Mar 2012 15:49:06 +0800
-Message-ID: <CAC=cRTMneWKgH_So+JO6h+w4S-SpgcX=pbY5QeWuFc6HXvCATQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] PM / Runtime: Add may_power_off flag to subsys data
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-acpi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1757841Ab2C3Hti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 03:49:38 -0400
+Received: from linux-sh.org ([111.68.239.195]:39777 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759331Ab2C3Hta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 03:49:30 -0400
+Date: Fri, 30 Mar 2012 16:48:52 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michael Neuling <mikey@neuling.org>, David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paul.gortmaker@windriver.com, arnd@arndb.de, hpa@zytor.com,
+        sfr@canb.auug.org.au
+Subject: Re: [GIT PULL] Disintegrate and kill asm/system.h
+Message-ID: <20120330074851.GD26543@linux-sh.org>
+References: <5599.1332958811@redhat.com> <30702.1332989444@neuling.org> <1332994469.3010.7.camel@pasglop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332994469.3010.7.camel@pasglop>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 1:49 PM, Len Brown <lenb@kernel.org> wrote:
-> Why?
-
-1) To support something like pm-qos.  power off device may have more
-exit.latency than normal low power state (such as D3Hot).  Some device
-may disable may_power_off based on that.  It can be used to implement
-the logic like,  only power off SSD, not HDD.
-
-2) Whether to go to power off should be determined by leaf device
-(such as SATA disk), but that may be done by its parent device (such
-as SATA port).  It's a way for leaf device to tell its parent device
-whether it want to go to power off.
-
-Best Regards,
-Huang Ying
+On Thu, Mar 29, 2012 at 03:14:29PM +1100, Benjamin Herrenschmidt wrote:
+> > We are currently getting:
+> > kernel/irq/irqdomain.c: In function 'irq_debugfs_init':
+> > kernel/irq/irqdomain.c:698:63: error: 'powerpc_debugfs_root' undeclared (first use in this function)
+> > kernel/irq/irqdomain.c:698:63: note: each undeclared identifier is reported only once for each function it appears in
+> > 
+> >   ae3a197 Disintegrate asm/system.h for PowerPC
+> > is conflicting with 
+> >   cc79ca6 irq_domain: Move irq_domain code from powerpc to kernel/irq
+> > from Grant's tree.
+> > 
+> > Adding the following patch fixes it for pseries_defconfig, although I'm
+> > not sure it's the right fix.
+> 
+> That will do as a quick fix (Linus, can you take it now ?), however..
+> 
+> > Grant: why does powerpc_debugfs_root appear in generic code?  This seems
+> > very bogus.
+> 
+> Yes, Grant, you should move that to a different (generic) debugfs file,
+> the mapping information is valuable debug data for all architectures
+> that use the remapper, not just powerpc and it's not an ABI (no tool I
+> know of rely on the location of that debugfs file) so feel free to move
+> it around.
+> 
+There is a arch_debugfs_dir defined by linux/debugfs.h, but at the moment
+it's only provided by x86 and sh.
