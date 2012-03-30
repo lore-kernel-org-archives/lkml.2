@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934202Ab2C3L3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 07:29:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50401 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933785Ab2C3L26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 07:28:58 -0400
-Date: Fri, 30 Mar 2012 13:28:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Borislav Petkov <bp@alien8.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: menuconfig looks funny since recently, i.e. USB gains on importance
- :)
-In-Reply-To: <20120330100056.GA27427@x1.osrc.amd.com>
-Message-ID: <alpine.LRH.2.00.1203301328330.22234@twin.jikos.cz>
-References: <20120330100056.GA27427@x1.osrc.amd.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S934231Ab2C3Lhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 07:37:46 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:33805 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933561Ab2C3Lhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 07:37:39 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Anatolij Gustschin <agust@denx.de>,
+        Andreas Koensgen <ajk@comnets.uni-bremen.de>,
+        Andrew Lunn <andrew@lunn.ch>, Andrew Victor <linux@maxim.org.za>,
+        Arnd Bergmann <arnd@arndb.de>, Barry Song <baohua.song@csr.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, cbe-oss-dev@lists.ozlabs.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Eric Miao <eric.y.miao@gmail.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Grant@igel.home, "Likely <gran"@igel.home
+Subject: Re: [PATCH 00/17] mark const init data with __initconst instead of __initdata
+References: <20120329211131.GA31250@pengutronix.de>
+	<20120330095859.GT15647@pengutronix.de>
+X-Yow: Tex SEX!  The HOME of WHEELS!  The dripping of COFFEE!!  Take me
+ to Minnesota but don't EMBARRASS me!!
+Date: Fri, 30 Mar 2012 13:37:26 +0200
+In-Reply-To: <20120330095859.GT15647@pengutronix.de> ("Uwe =?utf-8?Q?Klein?=
+ =?utf-8?Q?e-K=C3=B6nig=22's?=
+	message of "Fri, 30 Mar 2012 11:59:00 +0200")
+Message-ID: <m2bone7215.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.94 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012, Borislav Petkov wrote:
+Uwe Kleine-König <u.kleine-koenig@pengutronix.de> writes:
 
-> Hi guys,
-> 
-> Linus tree from today gives the following in menuconfig:
-> 
-> 
-> ...
->   │ │                            Graphics support  --->
->   │ │                        < > Sound card support  --->
->   │ │                        [*] HID Devices  --->
->   │ │                        [*] USB support  --->
->   │ │                        <*> Support for Host-side USB
->   │ │                        [ ]   USB verbose debug messages
->   │ │                        [*]   USB announce new devices
->   │ │                              *** Miscellaneous USB options ***
->   │ │                        [ ]   USB device filesystem (DEPRECATED)
->   │ │                        [ ]   USB device class-devices (DEPRECATED)
->   │ │                        [ ]   Dynamic USB minor allocation
->   │ │                        [*]   USB runtime power management (autosuspend) and wakeup
->   │ │                        [ ]     OTG support
->   │ │                        <*> USB Monitor
->   │ │                        < > Support WUSB Cable Based Association (CBA)
->   │ │                            *** USB Host Controller Drivers ***
->   │ │                        < > Cypress C67x00 HCD support
->   │ │                        <M> xHCI HCD (USB 3.0) support (EXPERIMENTAL)
->   │ │                        [ ]   Debugging for the xHCI host controller
->   │ │                        <M> EHCI HCD (USB 2.0) support
->   │ │
->   │ │                        [ ]   Root Hub Transaction Translators
->   │ │                        [ ]   Improved Transaction Translator scheduling
->   │ │                        < > OXU210HP HCD support
->   │ │                        < > ISP116X HCD support
->   │ │                        < > ISP 1760 HCD support
->   │ │                        < > ISP1362 HCD support
->   │ │                        <M> OHCI HCD support
-> ...
-> 
-> This is the "Device Drivers" menu and all the USB-related options should
-> appear in the submenu "USB support" but they're merged with the "Device
-> Drivers" menu. Looks like someone funnied up Kconfig somewhere...
+> After a question by Shawn Guo I noticed that my command to do the changes
+> was to lax and changed things that must not be changed (at least not
+> with further care). Affected are lines like:
+>
+> 	static const char *at91_dt_board_compat[] __initconst = {
+>
+> While at91_dt_board_compat[0] is const, at91_dt_board_compat is not.
 
-Caued by 53c6bc24fdc, adding David Daney.
+Though it looks like at91_dt_board_compat should really be const (it is
+assigned to a const pointer, likewise for all other uses of struct
+machine_desc.dt_compat).
+
+Andreas.
 
 -- 
-Jiri Kosina
-SUSE Labs
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
