@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965908Ab2C3VUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:20:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
+	id S936304Ab2C3Vtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:49:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935988Ab2C3VUO (ORCPT
+	with ESMTP id S965898Ab2C3VUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:20:14 -0400
-Message-Id: <20120330194837.697126833@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:20:20 -0400
+Message-Id: <20120330194836.998544961@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:34 -0700
+Date: Fri, 30 Mar 2012 12:49:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 069/175] tcm_loop: Set residual field for SCSI commands
+        alan@lxorguk.ukuu.org.uk,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>
+Subject: [ 066/175] hugetlbfs: avoid taking i_mutex from hugetlbfs_read()
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +28,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 6cf3fa6918baab0c447f1206f1cef9166ad04864 upstream.
+commit a05b0855fd15504972dba2358e5faa172a1e50ba upstream.
 
-If the target core signals an over- or under-run, tcm_loop should call
-scsi_set_resid() to tell the SCSI midlayer about the residual data length.
+Taking i_mutex in hugetlbfs_read() can result in deadlock with mmap as
+explained below
 
-The difference can be seen by doing something like
+ Thread A:
+  read() on hugetlbfs
+   hugetlbfs_read() called
+    i_mutex grabbed
+     hugetlbfs_read_actor() called
+      __copy_to_user() called
+       page fault is triggered
+ Thread B, sharing address space with A:
+  mmap() the same file
+   ->mmap_sem is grabbed on task_B->mm->mmap_sem
+    hugetlbfs_file_mmap() is called
+     attempt to grab ->i_mutex and block waiting for A to give it up
+ Thread A:
+  pagefault handled blocked on attempt to grab task_A->mm->mmap_sem,
+ which happens to be the same thing as task_B->mm->mmap_sem.  Block waiting
+ for B to give it up.
 
-    strace -eioctl sg_raw -r 1024 /dev/sda 8 0 0 0 1 0 > /dev/null
+AFAIU the i_mutex locking was added to hugetlbfs_read() as per
+http://lkml.indiana.edu/hypermail/linux/kernel/0707.2/3066.html to take
+care of the race between truncate and read.  This patch fixes this by
+looking at page->mapping under lock_page() (find_lock_page()) to ensure
+that the inode didn't get truncated in the range during a parallel read.
 
-and looking at the "resid=" part of the SG_IO ioctl -- after this patch,
-the field is correctly reported as 512.
+Ideally we can extend the patch to make sure we don't increase i_size in
+mmap.  But that will break userspace, because applications will now have
+to use truncate(2) to increase i_size in hugetlbfs.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Based on the original patch from Hillf Danton.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/loopback/tcm_loop.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/hugetlbfs/inode.c |   25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -855,6 +855,9 @@ static int tcm_loop_queue_data_in(struct
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -238,17 +238,10 @@ static ssize_t hugetlbfs_read(struct fil
+ 	loff_t isize;
+ 	ssize_t retval = 0;
  
- 	sc->result = SAM_STAT_GOOD;
- 	set_host_byte(sc, DID_OK);
-+	if ((se_cmd->se_cmd_flags & SCF_OVERFLOW_BIT) ||
-+	    (se_cmd->se_cmd_flags & SCF_UNDERFLOW_BIT))
-+		scsi_set_resid(sc, se_cmd->residual_count);
- 	sc->scsi_done(sc);
- 	return 0;
- }
-@@ -880,6 +883,9 @@ static int tcm_loop_queue_status(struct
- 		sc->result = se_cmd->scsi_status;
+-	mutex_lock(&inode->i_mutex);
+-
+ 	/* validate length */
+ 	if (len == 0)
+ 		goto out;
  
- 	set_host_byte(sc, DID_OK);
-+	if ((se_cmd->se_cmd_flags & SCF_OVERFLOW_BIT) ||
-+	    (se_cmd->se_cmd_flags & SCF_UNDERFLOW_BIT))
-+		scsi_set_resid(sc, se_cmd->residual_count);
- 	sc->scsi_done(sc);
- 	return 0;
+-	isize = i_size_read(inode);
+-	if (!isize)
+-		goto out;
+-
+-	end_index = (isize - 1) >> huge_page_shift(h);
+ 	for (;;) {
+ 		struct page *page;
+ 		unsigned long nr, ret;
+@@ -256,18 +249,21 @@ static ssize_t hugetlbfs_read(struct fil
+ 
+ 		/* nr is the maximum number of bytes to copy from this page */
+ 		nr = huge_page_size(h);
++		isize = i_size_read(inode);
++		if (!isize)
++			goto out;
++		end_index = (isize - 1) >> huge_page_shift(h);
+ 		if (index >= end_index) {
+ 			if (index > end_index)
+ 				goto out;
+ 			nr = ((isize - 1) & ~huge_page_mask(h)) + 1;
+-			if (nr <= offset) {
++			if (nr <= offset)
+ 				goto out;
+-			}
+ 		}
+ 		nr = nr - offset;
+ 
+ 		/* Find the page */
+-		page = find_get_page(mapping, index);
++		page = find_lock_page(mapping, index);
+ 		if (unlikely(page == NULL)) {
+ 			/*
+ 			 * We have a HOLE, zero out the user-buffer for the
+@@ -279,17 +275,18 @@ static ssize_t hugetlbfs_read(struct fil
+ 			else
+ 				ra = 0;
+ 		} else {
++			unlock_page(page);
++
+ 			/*
+ 			 * We have the page, copy it to user space buffer.
+ 			 */
+ 			ra = hugetlbfs_read_actor(page, offset, buf, len, nr);
+ 			ret = ra;
++			page_cache_release(page);
+ 		}
+ 		if (ra < 0) {
+ 			if (retval == 0)
+ 				retval = ra;
+-			if (page)
+-				page_cache_release(page);
+ 			goto out;
+ 		}
+ 
+@@ -299,16 +296,12 @@ static ssize_t hugetlbfs_read(struct fil
+ 		index += offset >> huge_page_shift(h);
+ 		offset &= ~huge_page_mask(h);
+ 
+-		if (page)
+-			page_cache_release(page);
+-
+ 		/* short read or no more work */
+ 		if ((ret != nr) || (len == 0))
+ 			break;
+ 	}
+ out:
+ 	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
+-	mutex_unlock(&inode->i_mutex);
+ 	return retval;
  }
+ 
 
 
