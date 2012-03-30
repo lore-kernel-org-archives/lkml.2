@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760710Ab2C3MTz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:19:55 -0400
+	id S933914Ab2C3MUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:20:38 -0400
 Received: from vms173011pub.verizon.net ([206.46.173.11]:48688 "EHLO
 	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760581Ab2C3MSu (ORCPT
+	with ESMTP id S1760712Ab2C3MSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:18:50 -0400
+	Fri, 30 Mar 2012 08:18:48 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Bob Moore <robert.moore@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 37/76] ACPICA: Sleep/Wake interfaces: optionally execute _GTS
- and _BFS
-Date: Fri, 30 Mar 2012 06:13:40 -0400
-Message-id: <8a73b17e4c0e09cb5b80deee5451e29b830df4cc.1333101989.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
+        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 44/76] ACPICA: Object repair code: Support to add Package
+ wrappers
+Date: Fri, 30 Mar 2012 06:13:47 -0400
+Message-id: <6a99b1c94d053b3420eaa4a4bc8b2883dd90a2f9.1333101989.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.10.rc2.19.gfae9d
 In-reply-to: <1333102459-23750-1-git-send-email-lenb@kernel.org>
 References: <1333102459-23750-1-git-send-email-lenb@kernel.org>
@@ -26,456 +26,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Bob Moore <robert.moore@intel.com>
 
-Enhanced the sleep/wake interfaces to optionally execute the
-_GTS method (Going To Sleep), and the _BFS method (Back From
-Sleep).  Windows apparently does not execute these methods, and
-therefore these methods are often untested. It has been seen on
-some systems where the execution of these methods causes errors
-and also prevents the machine from entering S5. It is therefore
-suggested that host operating systems do not execute these methods
-by default. In the future, perhaps these methods can be optionally
-executed based on the age of the system and/or what is the newest
-version of Windows that the BIOS asks for via _OSI.
+Repair a common problem with objects that are defined to return
+a variable-length Package of sub-objects. If there is only one
+sub-object, some BIOS code mistakenly simply declares the single
+object instead of a Package with one sub-object.  This function
+attempts to repair this error by wrapping a Package object around
+the original object, creating the correct and expected Package
+with one sub-object.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/achware.h   |   12 ++++++------
- drivers/acpi/acpica/hwesleep.c  |   21 +++++++++++++++------
- drivers/acpi/acpica/hwsleep.c   |   21 +++++++++++++++------
- drivers/acpi/acpica/hwxfsleep.c |   35 ++++++++++++++++++++---------------
- drivers/acpi/sleep.c            |   13 +++++++------
- include/acpi/acpixf.h           |    4 ++--
- include/acpi/actypes.h          |    9 ++++++++-
- 7 files changed, 73 insertions(+), 42 deletions(-)
+ drivers/acpi/acpica/aclocal.h  |    1 +
+ drivers/acpi/acpica/acnamesp.h |    5 +-
+ drivers/acpi/acpica/nspredef.c |    4 +-
+ drivers/acpi/acpica/nsrepair.c |  159 +++++++++++++++-------------------------
+ 4 files changed, 64 insertions(+), 105 deletions(-)
 
-diff --git a/drivers/acpi/acpica/achware.h b/drivers/acpi/acpica/achware.h
-index 5de4ec7..5ccb99a 100644
---- a/drivers/acpi/acpica/achware.h
-+++ b/drivers/acpi/acpica/achware.h
-@@ -83,22 +83,22 @@ acpi_status acpi_hw_clear_acpi_status(void);
- /*
-  * hwsleep - sleep/wake support (Legacy sleep registers)
-  */
--acpi_status acpi_hw_legacy_sleep(u8 sleep_state);
-+acpi_status acpi_hw_legacy_sleep(u8 sleep_state, u8 flags);
+diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
+index 3f24068..e3922ca 100644
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -370,6 +370,7 @@ struct acpi_predefined_data {
+ /* Defines for Flags field above */
  
--acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state);
-+acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state, u8 flags);
- 
--acpi_status acpi_hw_legacy_wake(u8 sleep_state);
-+acpi_status acpi_hw_legacy_wake(u8 sleep_state, u8 flags);
+ #define ACPI_OBJECT_REPAIRED    1
++#define ACPI_OBJECT_WRAPPED     2
  
  /*
-  * hwesleep - sleep/wake support (Extended FADT-V5 sleep registers)
-  */
- void acpi_hw_execute_sleep_method(char *method_name, u32 integer_argument);
+  * Bitmapped return value types
+diff --git a/drivers/acpi/acpica/acnamesp.h b/drivers/acpi/acpica/acnamesp.h
+index 2c9e0f0..9b19d4b 100644
+--- a/drivers/acpi/acpica/acnamesp.h
++++ b/drivers/acpi/acpica/acnamesp.h
+@@ -283,8 +283,9 @@ acpi_ns_repair_object(struct acpi_predefined_data *data,
+ 		      union acpi_operand_object **return_object_ptr);
  
--acpi_status acpi_hw_extended_sleep(u8 sleep_state);
-+acpi_status acpi_hw_extended_sleep(u8 sleep_state, u8 flags);
+ acpi_status
+-acpi_ns_repair_package_list(struct acpi_predefined_data *data,
+-			    union acpi_operand_object **obj_desc_ptr);
++acpi_ns_wrap_with_package(struct acpi_predefined_data *data,
++			  union acpi_operand_object *original_object,
++			  union acpi_operand_object **obj_desc_ptr);
  
--acpi_status acpi_hw_extended_wake_prep(u8 sleep_state);
-+acpi_status acpi_hw_extended_wake_prep(u8 sleep_state, u8 flags);
+ acpi_status
+ acpi_ns_repair_null_element(struct acpi_predefined_data *data,
+diff --git a/drivers/acpi/acpica/nspredef.c b/drivers/acpi/acpica/nspredef.c
+index bbe46a4..23ce096 100644
+--- a/drivers/acpi/acpica/nspredef.c
++++ b/drivers/acpi/acpica/nspredef.c
+@@ -638,8 +638,8 @@ acpi_ns_check_package(struct acpi_predefined_data *data,
+ 			/* Create the new outer package and populate it */
  
--acpi_status acpi_hw_extended_wake(u8 sleep_state);
-+acpi_status acpi_hw_extended_wake(u8 sleep_state, u8 flags);
- 
- /*
-  * hwvalid - Port I/O with validation
-diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
-index 6cbc4e1..1c409e8 100644
---- a/drivers/acpi/acpica/hwesleep.c
-+++ b/drivers/acpi/acpica/hwesleep.c
-@@ -103,6 +103,7 @@ void acpi_hw_execute_sleep_method(char *method_pathname, u32 integer_argument)
-  * FUNCTION:    acpi_hw_extended_sleep
+ 			status =
+-			    acpi_ns_repair_package_list(data,
+-							return_object_ptr);
++			    acpi_ns_wrap_with_package(data, *elements,
++						      return_object_ptr);
+ 			if (ACPI_FAILURE(status)) {
+ 				return (status);
+ 			}
+diff --git a/drivers/acpi/acpica/nsrepair.c b/drivers/acpi/acpica/nsrepair.c
+index 9c35d20..5519a64 100644
+--- a/drivers/acpi/acpica/nsrepair.c
++++ b/drivers/acpi/acpica/nsrepair.c
+@@ -71,11 +71,10 @@ ACPI_MODULE_NAME("nsrepair")
+  * Buffer  -> String
+  * Buffer  -> Package of Integers
+  * Package -> Package of one Package
++ * An incorrect standalone object is wrapped with required outer package
   *
-  * PARAMETERS:  sleep_state         - Which sleep state to enter
-+ *              Flags               - ACPI_EXECUTE_GTS to run optional method
-  *
-  * RETURN:      Status
-  *
-@@ -112,7 +113,7 @@ void acpi_hw_execute_sleep_method(char *method_pathname, u32 integer_argument)
+  * Additional possible repairs:
+- *
+  * Required package elements that are NULL replaced by Integer/String/Buffer
+- * Incorrect standalone package wrapped with required outer package
   *
   ******************************************************************************/
+ /* Local prototypes */
+@@ -91,10 +90,6 @@ static acpi_status
+ acpi_ns_convert_to_buffer(union acpi_operand_object *original_object,
+ 			  union acpi_operand_object **return_object);
  
--acpi_status acpi_hw_extended_sleep(u8 sleep_state)
-+acpi_status acpi_hw_extended_sleep(u8 sleep_state, u8 flags)
- {
- 	acpi_status status;
- 	u8 sleep_type_value;
-@@ -136,9 +137,11 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
- 
- 	acpi_gbl_system_awake_and_running = FALSE;
- 
--	/* Execute the _GTS method (Going To Sleep) */
-+	/* Optionally execute _GTS (Going To Sleep) */
- 
--	acpi_hw_execute_sleep_method(METHOD_PATHNAME__GTS, sleep_state);
-+	if (flags & ACPI_EXECUTE_GTS) {
-+		acpi_hw_execute_sleep_method(METHOD_PATHNAME__GTS, sleep_state);
-+	}
- 
- 	/* Flush caches, as per ACPI specification */
- 
-@@ -181,6 +184,7 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
-  * FUNCTION:    acpi_hw_extended_wake_prep
+-static acpi_status
+-acpi_ns_convert_to_package(union acpi_operand_object *original_object,
+-			   union acpi_operand_object **return_object);
+-
+ /*******************************************************************************
   *
-  * PARAMETERS:  sleep_state         - Which sleep state we just exited
-+ *              Flags               - ACPI_EXECUTE_BFS to run optional method
-  *
-  * RETURN:      Status
-  *
-@@ -189,7 +193,7 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
-  *
-  ******************************************************************************/
- 
--acpi_status acpi_hw_extended_wake_prep(u8 sleep_state)
-+acpi_status acpi_hw_extended_wake_prep(u8 sleep_state, u8 flags)
- {
- 	acpi_status status;
- 	u8 sleep_type_value;
-@@ -208,7 +212,11 @@ acpi_status acpi_hw_extended_wake_prep(u8 sleep_state)
- 				 &acpi_gbl_FADT.sleep_control);
+  * FUNCTION:    acpi_ns_repair_object
+@@ -151,9 +146,24 @@ acpi_ns_repair_object(struct acpi_predefined_data *data,
+ 		}
  	}
- 
--	acpi_hw_execute_sleep_method(METHOD_PATHNAME__BFS, sleep_state);
-+	/* Optionally execute _BFS (Back From Sleep) */
-+
-+	if (flags & ACPI_EXECUTE_BFS) {
-+		acpi_hw_execute_sleep_method(METHOD_PATHNAME__BFS, sleep_state);
-+	}
- 	return_ACPI_STATUS(AE_OK);
- }
- 
-@@ -217,6 +225,7 @@ acpi_status acpi_hw_extended_wake_prep(u8 sleep_state)
-  * FUNCTION:    acpi_hw_extended_wake
-  *
-  * PARAMETERS:  sleep_state         - Which sleep state we just exited
-+ *              Flags               - Reserved, set to zero
-  *
-  * RETURN:      Status
-  *
-@@ -225,7 +234,7 @@ acpi_status acpi_hw_extended_wake_prep(u8 sleep_state)
-  *
-  ******************************************************************************/
- 
--acpi_status acpi_hw_extended_wake(u8 sleep_state)
-+acpi_status acpi_hw_extended_wake(u8 sleep_state, u8 flags)
- {
- 	ACPI_FUNCTION_TRACE(hw_extended_wake);
- 
-diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
-index aba3634..8ab325c 100644
---- a/drivers/acpi/acpica/hwsleep.c
-+++ b/drivers/acpi/acpica/hwsleep.c
-@@ -56,6 +56,7 @@ ACPI_MODULE_NAME("hwsleep")
-  * FUNCTION:    acpi_hw_legacy_sleep
-  *
-  * PARAMETERS:  sleep_state         - Which sleep state to enter
-+ *              Flags               - ACPI_EXECUTE_GTS to run optional method
-  *
-  * RETURN:      Status
-  *
-@@ -63,7 +64,7 @@ ACPI_MODULE_NAME("hwsleep")
-  *              THIS FUNCTION MUST BE CALLED WITH INTERRUPTS DISABLED
-  *
-  ******************************************************************************/
--acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
-+acpi_status acpi_hw_legacy_sleep(u8 sleep_state, u8 flags)
- {
- 	struct acpi_bit_register_info *sleep_type_reg_info;
- 	struct acpi_bit_register_info *sleep_enable_reg_info;
-@@ -121,9 +122,11 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
- 		return_ACPI_STATUS(status);
- 	}
- 
--	/* Execute the _GTS method (Going To Sleep) */
-+	/* Optionally execute _GTS (Going To Sleep) */
- 
--	acpi_hw_execute_sleep_method(METHOD_PATHNAME__GTS, sleep_state);
-+	if (flags & ACPI_EXECUTE_GTS) {
-+		acpi_hw_execute_sleep_method(METHOD_PATHNAME__GTS, sleep_state);
-+	}
- 
- 	/* Get current value of PM1A control */
- 
-@@ -219,6 +222,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
-  * FUNCTION:    acpi_hw_legacy_wake_prep
-  *
-  * PARAMETERS:  sleep_state         - Which sleep state we just exited
-+ *              Flags               - ACPI_EXECUTE_BFS to run optional method
-  *
-  * RETURN:      Status
-  *
-@@ -228,7 +232,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
-  *
-  ******************************************************************************/
- 
--acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
-+acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state, u8 flags)
- {
- 	acpi_status status;
- 	struct acpi_bit_register_info *sleep_type_reg_info;
-@@ -279,7 +283,11 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
+ 	if (expected_btypes & ACPI_RTYPE_PACKAGE) {
+-		status = acpi_ns_convert_to_package(return_object, &new_object);
++		/*
++		 * A package is expected. We will wrap the existing object with a
++		 * new package object. It is often the case that if a variable-length
++		 * package is required, but there is only a single object needed, the
++		 * BIOS will return that object instead of wrapping it with a Package
++		 * object. Note: after the wrapping, the package will be validated
++		 * for correct contents (expected object type or types).
++		 */
++		status =
++		    acpi_ns_wrap_with_package(data, return_object, &new_object);
+ 		if (ACPI_SUCCESS(status)) {
+-			goto object_repaired;
++			/*
++			 * The original object just had its reference count
++			 * incremented for being inserted into the new package.
++			 */
++			*return_object_ptr = new_object;	/* New Package object */
++			data->flags |= ACPI_OBJECT_REPAIRED;
++			return (AE_OK);
  		}
  	}
  
--	acpi_hw_execute_sleep_method(METHOD_PATHNAME__BFS, sleep_state);
-+	/* Optionally execute _BFS (Back From Sleep) */
-+
-+	if (flags & ACPI_EXECUTE_BFS) {
-+		acpi_hw_execute_sleep_method(METHOD_PATHNAME__BFS, sleep_state);
-+	}
- 	return_ACPI_STATUS(status);
- }
+@@ -165,22 +175,27 @@ acpi_ns_repair_object(struct acpi_predefined_data *data,
  
-@@ -288,6 +296,7 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
-  * FUNCTION:    acpi_hw_legacy_wake
+ 	/* Object was successfully repaired */
+ 
+-	/*
+-	 * If the original object is a package element, we need to:
+-	 * 1. Set the reference count of the new object to match the
+-	 *    reference count of the old object.
+-	 * 2. Decrement the reference count of the original object.
+-	 */
+ 	if (package_index != ACPI_NOT_PACKAGE_ELEMENT) {
+-		new_object->common.reference_count =
+-		    return_object->common.reference_count;
++		/*
++		 * The original object is a package element. We need to
++		 * decrement the reference count of the original object,
++		 * for removing it from the package.
++		 *
++		 * However, if the original object was just wrapped with a
++		 * package object as part of the repair, we don't need to
++		 * change the reference count.
++		 */
++		if (!(data->flags & ACPI_OBJECT_WRAPPED)) {
++			new_object->common.reference_count =
++			    return_object->common.reference_count;
+ 
+-		if (return_object->common.reference_count > 1) {
+-			return_object->common.reference_count--;
++			if (return_object->common.reference_count > 1) {
++				return_object->common.reference_count--;
++			}
+ 		}
+ 
+ 		ACPI_DEBUG_PRINT((ACPI_DB_REPAIR,
+-				  "%s: Converted %s to expected %s at index %u\n",
++				  "%s: Converted %s to expected %s at Package index %u\n",
+ 				  data->pathname,
+ 				  acpi_ut_get_object_type_name(return_object),
+ 				  acpi_ut_get_object_type_name(new_object),
+@@ -453,65 +468,6 @@ acpi_ns_convert_to_buffer(union acpi_operand_object *original_object,
+ 
+ /*******************************************************************************
   *
-  * PARAMETERS:  sleep_state         - Which sleep state we just exited
-+ *              Flags               - Reserved, set to zero
-  *
-  * RETURN:      Status
-  *
-@@ -296,7 +305,7 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
-  *
-  ******************************************************************************/
- 
--acpi_status acpi_hw_legacy_wake(u8 sleep_state)
-+acpi_status acpi_hw_legacy_wake(u8 sleep_state, u8 flags)
- {
- 	acpi_status status;
- 
-diff --git a/drivers/acpi/acpica/hwxfsleep.c b/drivers/acpi/acpica/hwxfsleep.c
-index cf0168e..762d059 100644
---- a/drivers/acpi/acpica/hwxfsleep.c
-+++ b/drivers/acpi/acpica/hwxfsleep.c
-@@ -49,15 +49,16 @@
- ACPI_MODULE_NAME("hwxfsleep")
- 
- /* Local prototypes */
--static acpi_status acpi_hw_sleep_dispatch(u8 sleep_state, u32 function_id);
-+static acpi_status
-+acpi_hw_sleep_dispatch(u8 sleep_state, u8 flags, u32 function_id);
- 
- /*
-  * Dispatch table used to efficiently branch to the various sleep
-  * functions.
-  */
--#define ACPI_SLEEP_FUNCTION         0
--#define ACPI_WAKE_PREP_FUNCTION     1
--#define ACPI_WAKE_FUNCTION          2
-+#define ACPI_SLEEP_FUNCTION_ID         0
-+#define ACPI_WAKE_PREP_FUNCTION_ID     1
-+#define ACPI_WAKE_FUNCTION_ID          2
- 
- /* Legacy functions are optional, based upon ACPI_REDUCED_HARDWARE */
- 
-@@ -233,7 +234,8 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state_s4bios)
-  *              function.
-  *
-  ******************************************************************************/
--static acpi_status acpi_hw_sleep_dispatch(u8 sleep_state, u32 function_id)
-+static acpi_status
-+acpi_hw_sleep_dispatch(u8 sleep_state, u8 flags, u32 function_id)
- {
- 	acpi_status status;
- 	struct acpi_sleep_functions *sleep_functions =
-@@ -246,11 +248,11 @@ static acpi_status acpi_hw_sleep_dispatch(u8 sleep_state, u32 function_id)
- 	 * use the extended sleep registers
- 	 */
- 	if (acpi_gbl_reduced_hardware || acpi_gbl_FADT.sleep_control.address) {
--		status = sleep_functions->extended_function(sleep_state);
-+		status = sleep_functions->extended_function(sleep_state, flags);
- 	} else {
- 		/* Legacy sleep */
- 
--		status = sleep_functions->legacy_function(sleep_state);
-+		status = sleep_functions->legacy_function(sleep_state, flags);
- 	}
- 
- 	return (status);
-@@ -260,7 +262,7 @@ static acpi_status acpi_hw_sleep_dispatch(u8 sleep_state, u32 function_id)
- 	 * For the case where reduced-hardware-only code is being generated,
- 	 * we know that only the extended sleep registers are available
- 	 */
--	status = sleep_functions->extended_function(sleep_state);
-+	status = sleep_functions->extended_function(sleep_state, flags);
- 	return (status);
- 
- #endif				/* !ACPI_REDUCED_HARDWARE */
-@@ -290,8 +292,6 @@ acpi_status acpi_enter_sleep_state_prep(u8 sleep_state)
- 
- 	ACPI_FUNCTION_TRACE(acpi_enter_sleep_state_prep);
- 
--	/* _PSW methods could be run here to enable wake-on keyboard, LAN, etc. */
+- * FUNCTION:    acpi_ns_convert_to_package
+- *
+- * PARAMETERS:  original_object     - Object to be converted
+- *              return_object       - Where the new converted object is returned
+- *
+- * RETURN:      Status. AE_OK if conversion was successful.
+- *
+- * DESCRIPTION: Attempt to convert a Buffer object to a Package. Each byte of
+- *              the buffer is converted to a single integer package element.
+- *
+- ******************************************************************************/
 -
- 	status = acpi_get_sleep_type_data(sleep_state,
- 					  &acpi_gbl_sleep_type_a,
- 					  &acpi_gbl_sleep_type_b);
-@@ -349,6 +349,7 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state_prep)
-  * FUNCTION:    acpi_enter_sleep_state
+-static acpi_status
+-acpi_ns_convert_to_package(union acpi_operand_object *original_object,
+-			   union acpi_operand_object **return_object)
+-{
+-	union acpi_operand_object *new_object;
+-	union acpi_operand_object **elements;
+-	u32 length;
+-	u8 *buffer;
+-
+-	switch (original_object->common.type) {
+-	case ACPI_TYPE_BUFFER:
+-
+-		/* Buffer-to-Package conversion */
+-
+-		length = original_object->buffer.length;
+-		new_object = acpi_ut_create_package_object(length);
+-		if (!new_object) {
+-			return (AE_NO_MEMORY);
+-		}
+-
+-		/* Convert each buffer byte to an integer package element */
+-
+-		elements = new_object->package.elements;
+-		buffer = original_object->buffer.pointer;
+-
+-		while (length--) {
+-			*elements =
+-			    acpi_ut_create_integer_object((u64) *buffer);
+-			if (!*elements) {
+-				acpi_ut_remove_reference(new_object);
+-				return (AE_NO_MEMORY);
+-			}
+-			elements++;
+-			buffer++;
+-		}
+-		break;
+-
+-	default:
+-		return (AE_AML_OPERAND_TYPE);
+-	}
+-
+-	*return_object = new_object;
+-	return (AE_OK);
+-}
+-
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_ns_repair_null_element
   *
-  * PARAMETERS:  sleep_state         - Which sleep state to enter
-+ *              Flags               - ACPI_EXECUTE_GTS to run optional method
+  * PARAMETERS:  Data                - Pointer to validation data structure
+@@ -677,55 +633,56 @@ acpi_ns_remove_null_elements(struct acpi_predefined_data *data,
+ 
+ /*******************************************************************************
   *
-  * RETURN:      Status
+- * FUNCTION:    acpi_ns_repair_package_list
++ * FUNCTION:    acpi_ns_wrap_with_package
   *
-@@ -356,7 +357,7 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state_prep)
-  *              THIS FUNCTION MUST BE CALLED WITH INTERRUPTS DISABLED
+  * PARAMETERS:  Data                - Pointer to validation data structure
+- *              obj_desc_ptr        - Pointer to the object to repair. The new
+- *                                    package object is returned here,
+- *                                    overwriting the old object.
++ *              original_object     - Pointer to the object to repair.
++ *              obj_desc_ptr        - The new package object is returned here
+  *
+  * RETURN:      Status, new object in *obj_desc_ptr
+  *
+- * DESCRIPTION: Repair a common problem with objects that are defined to return
+- *              a variable-length Package of Packages. If the variable-length
+- *              is one, some BIOS code mistakenly simply declares a single
+- *              Package instead of a Package with one sub-Package. This
+- *              function attempts to repair this error by wrapping a Package
+- *              object around the original Package, creating the correct
+- *              Package with one sub-Package.
++ * DESCRIPTION: Repair a common problem with objects that are defined to
++ *              return a variable-length Package of sub-objects. If there is
++ *              only one sub-object, some BIOS code mistakenly simply declares
++ *              the single object instead of a Package with one sub-object.
++ *              This function attempts to repair this error by wrapping a
++ *              Package object around the original object, creating the
++ *              correct and expected Package with one sub-object.
+  *
+  *              Names that can be repaired in this manner include:
+- *              _ALR, _CSD, _HPX, _MLS, _PRT, _PSS, _TRT, TSS
++ *              _ALR, _CSD, _HPX, _MLS, _PLD, _PRT, _PSS, _TRT, _TSS,
++ *              _BCL, _DOD, _FIX, _Sx
   *
   ******************************************************************************/
--acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
-+acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state, u8 flags)
- {
- 	acpi_status status;
  
-@@ -369,7 +370,8 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
- 		return_ACPI_STATUS(AE_AML_OPERAND_VALUE);
+ acpi_status
+-acpi_ns_repair_package_list(struct acpi_predefined_data *data,
+-			    union acpi_operand_object **obj_desc_ptr)
++acpi_ns_wrap_with_package(struct acpi_predefined_data *data,
++			  union acpi_operand_object *original_object,
++			  union acpi_operand_object **obj_desc_ptr)
+ {
+ 	union acpi_operand_object *pkg_obj_desc;
+ 
+-	ACPI_FUNCTION_NAME(ns_repair_package_list);
++	ACPI_FUNCTION_NAME(ns_wrap_with_package);
+ 
+ 	/*
+ 	 * Create the new outer package and populate it. The new package will
+-	 * have a single element, the lone subpackage.
++	 * have a single element, the lone sub-object.
+ 	 */
+ 	pkg_obj_desc = acpi_ut_create_package_object(1);
+ 	if (!pkg_obj_desc) {
+ 		return (AE_NO_MEMORY);
  	}
  
--	status = acpi_hw_sleep_dispatch(sleep_state, ACPI_SLEEP_FUNCTION);
-+	status =
-+	    acpi_hw_sleep_dispatch(sleep_state, flags, ACPI_SLEEP_FUNCTION_ID);
- 	return_ACPI_STATUS(status);
- }
- 
-@@ -380,6 +382,7 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state)
-  * FUNCTION:    acpi_leave_sleep_state_prep
-  *
-  * PARAMETERS:  sleep_state         - Which sleep state we are exiting
-+ *              Flags               - ACPI_EXECUTE_BFS to run optional method
-  *
-  * RETURN:      Status
-  *
-@@ -388,13 +391,15 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state)
-  *              Called with interrupts DISABLED.
-  *
-  ******************************************************************************/
--acpi_status acpi_leave_sleep_state_prep(u8 sleep_state)
-+acpi_status acpi_leave_sleep_state_prep(u8 sleep_state, u8 flags)
- {
- 	acpi_status status;
- 
- 	ACPI_FUNCTION_TRACE(acpi_leave_sleep_state_prep);
- 
--	status = acpi_hw_sleep_dispatch(sleep_state, ACPI_WAKE_PREP_FUNCTION);
-+	status =
-+	    acpi_hw_sleep_dispatch(sleep_state, flags,
-+				   ACPI_WAKE_PREP_FUNCTION_ID);
- 	return_ACPI_STATUS(status);
- }
- 
-@@ -419,7 +424,7 @@ acpi_status acpi_leave_sleep_state(u8 sleep_state)
- 	ACPI_FUNCTION_TRACE(acpi_leave_sleep_state);
- 
- 
--	status = acpi_hw_sleep_dispatch(sleep_state, ACPI_WAKE_FUNCTION);
-+	status = acpi_hw_sleep_dispatch(sleep_state, 0, ACPI_WAKE_FUNCTION_ID);
- 	return_ACPI_STATUS(status);
- }
- 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index 4fda549..8f1fb45 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -250,7 +250,8 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- 	switch (acpi_state) {
- 	case ACPI_STATE_S1:
- 		barrier();
--		status = acpi_enter_sleep_state(acpi_state);
-+		status = acpi_enter_sleep_state(acpi_state,
-+				ACPI_NO_OPTIONAL_METHODS);
- 		break;
- 
- 	case ACPI_STATE_S3:
-@@ -265,7 +266,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- 	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
- 
- 	/* Reprogram control registers and execute _BFS */
--	acpi_leave_sleep_state_prep(acpi_state);
-+	acpi_leave_sleep_state_prep(acpi_state, ACPI_NO_OPTIONAL_METHODS);
- 
- 	/* ACPI 3.0 specs (P62) says that it's the responsibility
- 	 * of the OSPM to clear the status bit [ implying that the
-@@ -534,9 +535,9 @@ static int acpi_hibernation_enter(void)
- 	ACPI_FLUSH_CPU_CACHE();
- 
- 	/* This shouldn't return.  If it returns, we have a problem */
--	status = acpi_enter_sleep_state(ACPI_STATE_S4);
-+	status = acpi_enter_sleep_state(ACPI_STATE_S4, ACPI_NO_OPTIONAL_METHODS);
- 	/* Reprogram control registers and execute _BFS */
--	acpi_leave_sleep_state_prep(ACPI_STATE_S4);
-+	acpi_leave_sleep_state_prep(ACPI_STATE_S4, ACPI_NO_OPTIONAL_METHODS);
- 
- 	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
- }
-@@ -549,7 +550,7 @@ static void acpi_hibernation_leave(void)
- 	 */
- 	acpi_enable();
- 	/* Reprogram control registers and execute _BFS */
--	acpi_leave_sleep_state_prep(ACPI_STATE_S4);
-+	acpi_leave_sleep_state_prep(ACPI_STATE_S4, ACPI_NO_OPTIONAL_METHODS);
- 	/* Check the hardware signature */
- 	if (facs && s4_hardware_signature != facs->hardware_signature) {
- 		printk(KERN_EMERG "ACPI: Hardware changed while hibernated, "
-@@ -773,7 +774,7 @@ static void acpi_power_off(void)
- 	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
- 	printk(KERN_DEBUG "%s called\n", __func__);
- 	local_irq_disable();
--	acpi_enter_sleep_state(ACPI_STATE_S5);
-+	acpi_enter_sleep_state(ACPI_STATE_S5, ACPI_NO_OPTIONAL_METHODS);
- }
- 
- /*
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index fb8a238..488c986 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -486,11 +486,11 @@ acpi_get_sleep_type_data(u8 sleep_state, u8 * slp_typ_a, u8 * slp_typ_b);
- 
- acpi_status acpi_enter_sleep_state_prep(u8 sleep_state);
- 
--acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state);
-+acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state, u8 flags);
- 
- ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status asmlinkage acpi_enter_sleep_state_s4bios(void))
- 
--acpi_status acpi_leave_sleep_state_prep(u8 sleep_state);
-+acpi_status acpi_leave_sleep_state_prep(u8 sleep_state, u8 flags);
- 
- acpi_status acpi_leave_sleep_state(u8 sleep_state);
- 
-diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-index 3496158..eba6604 100644
---- a/include/acpi/actypes.h
-+++ b/include/acpi/actypes.h
-@@ -518,6 +518,13 @@ typedef u64 acpi_integer;
- #define ACPI_SLEEP_TYPE_INVALID         0xFF
- 
- /*
-+ * Sleep/Wake flags
-+ */
-+#define ACPI_NO_OPTIONAL_METHODS        0x00	/* Do not execute any optional methods */
-+#define ACPI_EXECUTE_GTS                0x01	/* For enter sleep interface */
-+#define ACPI_EXECUTE_BFS                0x02	/* For leave sleep prep interface */
+-	pkg_obj_desc->package.elements[0] = *obj_desc_ptr;
++	pkg_obj_desc->package.elements[0] = original_object;
 +
-+/*
-  * Standard notify values
-  */
- #define ACPI_NOTIFY_BUS_CHECK           (u8) 0x00
-@@ -790,7 +797,7 @@ typedef u8 acpi_adr_space_type;
++	ACPI_DEBUG_PRINT((ACPI_DB_REPAIR,
++			  "%s: Wrapped %s with expected Package object\n",
++			  data->pathname,
++			  acpi_ut_get_object_type_name(original_object)));
  
- /* Sleep function dispatch */
+ 	/* Return the new object in the object pointer */
  
--typedef acpi_status(*ACPI_SLEEP_FUNCTION) (u8 sleep_state);
-+typedef acpi_status(*ACPI_SLEEP_FUNCTION) (u8 sleep_state, u8 flags);
- 
- struct acpi_sleep_functions {
- 	ACPI_SLEEP_FUNCTION legacy_function;
+ 	*obj_desc_ptr = pkg_obj_desc;
+-	data->flags |= ACPI_OBJECT_REPAIRED;
+-
+-	ACPI_DEBUG_PRINT((ACPI_DB_REPAIR,
+-			  "%s: Repaired incorrectly formed Package\n",
+-			  data->pathname));
+-
++	data->flags |= ACPI_OBJECT_REPAIRED | ACPI_OBJECT_WRAPPED;
+ 	return (AE_OK);
+ }
 -- 
 1.7.10.rc2.19.gfae9d
 
