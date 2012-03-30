@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760156Ab2C3CH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Mar 2012 22:07:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44782 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759464Ab2C3CHX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Mar 2012 22:07:23 -0400
-Message-ID: <1333073233.4912.44.camel@smoke>
-Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
-From: Geoff Levand <geoff@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        linaro-sched-sig@lists.linaro.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Ingo Molnar <mingo@kernel.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Max Krasnyansky <maxk@qualcomm.com>, Zen Lin <zen@openhuawei.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 29 Mar 2012 19:07:13 -0700
-In-Reply-To: <20120330004527.GB2571@somewhere.redhat.com>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
-	 <87r4wbhqqd.fsf@ti.com> <20120330004527.GB2571@somewhere.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
+	id S1760318Ab2C3CNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Mar 2012 22:13:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27619 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759830Ab2C3CNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Mar 2012 22:13:12 -0400
+Message-ID: <4F7516B3.8070505@redhat.com>
+Date: Thu, 29 Mar 2012 23:13:07 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+MIME-Version: 1.0
+To: Greg K H <gregkh@linuxfoundation.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/14] edac: rewrite the sysfs code to use struct device
+References: <1333040821-6253-1-git-send-email-mchehab@redhat.com> <1333040821-6253-2-git-send-email-mchehab@redhat.com> <20120329220300.GA16491@kroah.com> <4F74EDEC.5020804@redhat.com> <20120329234037.GA16094@kroah.com>
+In-Reply-To: <20120329234037.GA16094@kroah.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-
-On Fri, 2012-03-30 at 02:45 +0200, Frederic Weisbecker wrote:
-> On Thu, Mar 29, 2012 at 05:33:46PM -0700, Kevin Hilman wrote:
-> > For anyone interested in collaborating on ARM support, my
-> > work-in-progress branch is below[1] based on Frederic's cpuset-v2
-> > branch.  Patches and testing welcome.
-> > 
-> > [1] git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux.git wip/arm-nohz-cpusets
+Em 29-03-2012 20:40, Greg K H escreveu:
+> On Thu, Mar 29, 2012 at 08:19:08PM -0300, Mauro Carvalho Chehab wrote:
+>>> Sweet, as per the documentation in the Documentation/kobjects.txt file,
+>>> I get to publically mock you for thinking you are smarter than the
+>>> kernel and this is an acceptable way to "outwhit" the driver core from
+>>> spitting errors at you when the kobject is released.
+>>
+>> There's nothing there to free: all EDAC structures are allocated once
+>> (see edac_mc_alloc() and edac_align_ptr() logic, at drivers/edac/edac_mc.c).
+>>
+>> Even the struct device for all csrows/channels/mcu is done on a single alloc
+>> there. Trying to free it earlier would cause a segfault.
 > 
-> Nice! Thanks for working on this. You may want to work with Geoff Levand who's working
-> on the ARM port too.
+> That's wrong then, these are multiple struct devices, all with their own
+> reference counts, you can't just treat them all as the same thing, even
+> if it happens to line up with the module reference count.
+> 
+>> I didn't wrote that logic, nor I was tempted to change it: as this subsystem 
+>> is focused on memory error detection, having every data structure used there
+>> on a single page helps to minimize the probability of having an error at the 
+>> memory used to store the EDAC data.
+> 
+> Possibly, but again, you have multiple reference counts, you can't just
+> wave them off as being inconvenient.  Please read the documentation for
+> more details why.
 
-You can see my work here:
+This is there since the beginning. The current kobj's have this issue. Those
+patchsets are not making it better or worse, as the EDAC csrow kobj's are
+already there at the current approach: all of them are allocated together
+with the mci kobj.
 
-  http://git.kernel.org/?p=linux/kernel/git/geoff/nohz.git
+On the other hand, I'm working on this patch series in order to correct a 
+serious bug at the EDAC API almost all days during the last 2 months, as
+nobody ever cared enough to address this serious issue.
 
-I also put a simple test I got from Frederic here:
+However, every time this patch series is submitted, someone come up with a 
+bright idea to ask me to add more work to the scope, delaying its addition 
+forever.
 
-  http://git.kernel.org/?p=linux/kernel/git/geoff/nohz-tests.git
+While I'm not convinced that moving from a single memory allocation into a 
+series of k*alloc is a good thing for a subsystem that is there to detect
+memory errors (as having everything altogether into a single page can
+reduce the chances of errors at the EDAC data), I can work latter on a 
+patchset to fix this issue for EDAC MC, but I'll do it only after merging 
+this series, as it is counter-productive to do it otherwise, having to 
+repeat the same set of tests on 10 machines (and compile the entire series 
+of patches on 8 different archs/sub-archs).
 
-Feel free to expand on either!
+So, I really want to move this ahead. So, please, first things first: let's
+first fix the more serious bug. Then, we can fix the other minor stuff
+that aren't so far causing any noticeable harm.
 
-Kevin, I'll take a look at your work, I guess it has the same things as
-mine.  Will you be at the Collaboration Summit next week?
-
--Geoff
-
-
-
+Regards,
+Mauro
 
 
