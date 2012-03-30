@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965947Ab2C3VUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:20:34 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62781 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935988Ab2C3VUa (ORCPT
+	id S965962Ab2C3VUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:20:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965783Ab2C3VUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:20:30 -0400
-Message-Id: <20120330194838.995447791@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:20:35 -0400
+Message-Id: <20120330194838.254761488@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:39 -0700
+Date: Fri, 30 Mar 2012 12:49:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [ 074/175] usb gadget: fix a section mismatch when compiling g_ffs with CONFIG_USB_FUNCTIONFS_ETH
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 071/175] iscsi-target: Fix iscsit_alloc_buffs() failure cases
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,184 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lothar Waßmann <LW@KARO-electronics.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 8d0698428822ce63f7269e7fe81fc4580807b9ac upstream.
+commit d335e6054db616bce3f040e659fa38440518ad1d upstream.
 
- commit 28824b18ac4705e876a282a15ea0de8fc957551f:
- |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
- |Date:   Wed May 5 12:53:13 2010 +0200
- |
- |    USB: gadget: __init and __exit tags removed
- |
- |    __init, __initdata and __exit tags have have been removed from
- |    various files to make it possible for gadgets that do not use
- |    the __init/__exit tags to use those.
- obviously missed (at least) this case leading to a section mismatch in
- g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
+Make iscsit_alloc_buffs() failure case for page_alloc_failed use correct
+__free_page() SGL pointer, and return -ENOMEM for iscsit_allocate_iovecs
+failure to push se_cmd->t_mem_sg release into iscsit_release_cmd()
+callback during iscsit_add_reject_from_cmd() connection reset.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Also drop cmd->t_mem_sg = NULL assignment from page_alloc_failed
+failure case.
+
+Reported-by: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_subset.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/gadget/f_subset.c
-+++ b/drivers/usb/gadget/f_subset.c
-@@ -74,7 +74,7 @@ static inline struct f_gether *func_to_g
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -780,7 +780,7 @@ static int iscsit_alloc_buffs(struct isc
+ 	struct scatterlist *sgl;
+ 	u32 length = cmd->se_cmd.data_length;
+ 	int nents = DIV_ROUND_UP(length, PAGE_SIZE);
+-	int i = 0, ret;
++	int i = 0, j = 0, ret;
+ 	/*
+ 	 * If no SCSI payload is present, allocate the default iovecs used for
+ 	 * iSCSI PDU Header
+@@ -821,17 +821,15 @@ static int iscsit_alloc_buffs(struct isc
+ 	 */
+         ret = iscsit_allocate_iovecs(cmd);
+         if (ret < 0)
+-		goto page_alloc_failed;
++		return -ENOMEM;
  
- /* interface descriptor: */
+ 	return 0;
  
--static struct usb_interface_descriptor subset_data_intf __initdata = {
-+static struct usb_interface_descriptor subset_data_intf = {
- 	.bLength =		sizeof subset_data_intf,
- 	.bDescriptorType =	USB_DT_INTERFACE,
+ page_alloc_failed:
+-	while (i >= 0) {
+-		__free_page(sg_page(&sgl[i]));
+-		i--;
+-	}
+-	kfree(cmd->t_mem_sg);
+-	cmd->t_mem_sg = NULL;
++	while (j < i)
++		__free_page(sg_page(&sgl[j++]));
++
++	kfree(sgl);
+ 	return -ENOMEM;
+ }
  
-@@ -87,7 +87,7 @@ static struct usb_interface_descriptor s
- 	/* .iInterface = DYNAMIC */
- };
- 
--static struct usb_cdc_header_desc mdlm_header_desc __initdata = {
-+static struct usb_cdc_header_desc mdlm_header_desc = {
- 	.bLength =		sizeof mdlm_header_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
-@@ -95,7 +95,7 @@ static struct usb_cdc_header_desc mdlm_h
- 	.bcdCDC =		cpu_to_le16(0x0110),
- };
- 
--static struct usb_cdc_mdlm_desc mdlm_desc __initdata = {
-+static struct usb_cdc_mdlm_desc mdlm_desc = {
- 	.bLength =		sizeof mdlm_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_MDLM_TYPE,
-@@ -111,7 +111,7 @@ static struct usb_cdc_mdlm_desc mdlm_des
-  * can't really use its struct.  All we do here is say that we're using
-  * the submode of "SAFE" which directly matches the CDC Subset.
-  */
--static u8 mdlm_detail_desc[] __initdata = {
-+static u8 mdlm_detail_desc[] = {
- 	6,
- 	USB_DT_CS_INTERFACE,
- 	USB_CDC_MDLM_DETAIL_TYPE,
-@@ -121,7 +121,7 @@ static u8 mdlm_detail_desc[] __initdata
- 	0,	/* network data capabilities ("raw" encapsulation) */
- };
- 
--static struct usb_cdc_ether_desc ether_desc __initdata = {
-+static struct usb_cdc_ether_desc ether_desc = {
- 	.bLength =		sizeof ether_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_ETHERNET_TYPE,
-@@ -136,7 +136,7 @@ static struct usb_cdc_ether_desc ether_d
- 
- /* full speed support: */
- 
--static struct usb_endpoint_descriptor fs_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor fs_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -144,7 +144,7 @@ static struct usb_endpoint_descriptor fs
- 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
- };
- 
--static struct usb_endpoint_descriptor fs_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor fs_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -152,7 +152,7 @@ static struct usb_endpoint_descriptor fs
- 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
- };
- 
--static struct usb_descriptor_header *fs_eth_function[] __initdata = {
-+static struct usb_descriptor_header *fs_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -165,7 +165,7 @@ static struct usb_descriptor_header *fs_
- 
- /* high speed support: */
- 
--static struct usb_endpoint_descriptor hs_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor hs_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -173,7 +173,7 @@ static struct usb_endpoint_descriptor hs
- 	.wMaxPacketSize =	cpu_to_le16(512),
- };
- 
--static struct usb_endpoint_descriptor hs_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor hs_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -181,7 +181,7 @@ static struct usb_endpoint_descriptor hs
- 	.wMaxPacketSize =	cpu_to_le16(512),
- };
- 
--static struct usb_descriptor_header *hs_eth_function[] __initdata = {
-+static struct usb_descriptor_header *hs_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -194,7 +194,7 @@ static struct usb_descriptor_header *hs_
- 
- /* super speed support: */
- 
--static struct usb_endpoint_descriptor ss_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor ss_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -202,7 +202,7 @@ static struct usb_endpoint_descriptor ss
- 	.wMaxPacketSize =	cpu_to_le16(1024),
- };
- 
--static struct usb_endpoint_descriptor ss_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor ss_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -210,7 +210,7 @@ static struct usb_endpoint_descriptor ss
- 	.wMaxPacketSize =	cpu_to_le16(1024),
- };
- 
--static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc __initdata = {
-+static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc = {
- 	.bLength =		sizeof ss_subset_bulk_comp_desc,
- 	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
- 
-@@ -219,7 +219,7 @@ static struct usb_ss_ep_comp_descriptor
- 	/* .bmAttributes =	0, */
- };
- 
--static struct usb_descriptor_header *ss_eth_function[] __initdata = {
-+static struct usb_descriptor_header *ss_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -290,7 +290,7 @@ static void geth_disable(struct usb_func
- 
- /* serial function driver setup/binding */
- 
--static int __init
-+static int
- geth_bind(struct usb_configuration *c, struct usb_function *f)
- {
- 	struct usb_composite_dev *cdev = c->cdev;
-@@ -404,7 +404,7 @@ geth_unbind(struct usb_configuration *c,
-  * Caller must have called @gether_setup().  Caller is also responsible
-  * for calling @gether_cleanup() before module unload.
-  */
--int __init geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
-+int geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
- {
- 	struct f_gether	*geth;
- 	int		status;
 
 
