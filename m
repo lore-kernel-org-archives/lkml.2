@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761256Ab2C3R34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 13:29:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:65310 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758413Ab2C3R3s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 13:29:48 -0400
+	id S1761241Ab2C3Ra4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 13:30:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30664 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756560Ab2C3Rav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 13:30:51 -0400
+Message-ID: <4F75EDC3.7050104@redhat.com>
+Date: Fri, 30 Mar 2012 13:30:43 -0400
+From: Larry Woodman <lwoodman@redhat.com>
+Reply-To: lwoodman@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20120330100742.GB21950@opensource.wolfsonmicro.com>
-References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
- <1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
- <1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com>
- <20120309124119.GV3273@opensource.wolfsonmicro.com> <CACSP8ShU5tu=9N53PtYMLyFVFMS9whNRhMvu7nu8rBoPuVCy+Q@mail.gmail.com>
- <20120330100742.GB21950@opensource.wolfsonmicro.com>
-From: Erik Gilling <konkers@google.com>
-Date: Fri, 30 Mar 2012 10:29:27 -0700
-Message-ID: <CACSP8SjhOZcXZa2hCNsH8zS+hm8X-i9uNm50UH=_VwOV=BJGmA@mail.gmail.com>
-Subject: Re: [PATCH v6 1/5] Extcon (external connector): import Android's
- switch class and modify.
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        NeilBrown <neilb@suse.de>, gregkh@linuxfoundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        myungjoo.ham@gmail.com, John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mike Lockwood <lockwood@android.com>, Dima Zavin <dmitriyz@google.com>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Christoph Lameter <cl@linux.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Motohiro Kosaki <mkosaki@redhat.com>
+Subject: Re: [PATCH -mm] do_migrate_pages() calls migrate_to_node() even if
+ task is already on a correct node
+References: <4F6B6BFF.1020701@redhat.com> <4F6B7358.60800@gmail.com> <alpine.DEB.2.00.1203221348470.25011@router.home> <4F6B7854.1040203@redhat.com> <alpine.DEB.2.00.1203221421570.25011@router.home> <4F74A344.7070805@redhat.com> <4F74BB67.30703@gmail.com> <alpine.DEB.2.00.1203301113530.22502@router.home>
+In-Reply-To: <alpine.DEB.2.00.1203301113530.22502@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 3:07 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Mar 29, 2012 at 03:27:01PM -0700, Erik Gilling wrote:
->> On Fri, Mar 9, 2012 at 4:41 AM, Mark Brown
+On 03/30/2012 12:15 PM, Christoph Lameter wrote:
+> On Thu, 29 Mar 2012, KOSAKI Motohiro wrote:
 >
->> > This seems somewhat sad - if ANDROID is turned on the standard ABI
->> > vanishes.  It'd be much nicer to do this with a symlink (or with
->> > symlinks within the android directory if the driver core doesn't support
->> > that).  That way userspace code can be written to the new ABI and will
->> > work on Android systems without ifdefery.
->
->> This won't work if userspace code is receiving uevents through netlink
->> and comparing based on the device name which it does in android.  Why
->
-> That's not really the point here - the point is that the new ABI
-> vanishes as soon as you turn on the legacy Android ABI.  You're right
-> that the particular fix I suggested has issues but the overall problem
-> exists and should be dealt with more sensibly.
+>>> 		for_each_node_mask(s, tmp) {
+>>> +
+>>> +			/* IFF there is an equal number of source and
+>>> +			 * destination nodes, maintain relative node distance
+>>> +			 * even when source and destination nodes overlap.
+>>> +			 * However, when the node weight is unequal, never
+>>> move
+>>> +			 * memory out of any destination nodes */
+>>> +			if ((nodes_weight(*from_nodes) !=
+>>> nodes_weight(*to_nodes))&&
+>>> +						(node_isset(s, *to_nodes)))
+>>> +				continue;
+>>> +
+>>> 			d = node_remap(s, *from_nodes, *to_nodes);
+>>> 			if (s == d)
+>>> 				continue;
+>> I'm confused. Could you please explain why you choose nodes_weight()? On my
+>> first impression,
+>> it seems almostly unrelated factor.
+> Isnt this the original code by Paul?
+No, I added the test to see if the source and destination has the same 
+number of nodes.
+>   I would think that the 1-1 movement
+> is only useful to do if the number of nodes in both the destination and
+> the source is the same.
+Agreed, thats exactly what this patch does.  are you OK with this change 
+then???
 
-I'm also not in favor of having functionality conditionally compiled
-based on CONFIG_ANDROID.  If fact, going through the patch stack
-there's much more that changes the ABI from the switch driver than
-just the name.  Android asumes that there is a single "switch" for
-each logical entity (called cable types in extcon) each with a binary
-state (0,1).  Here things have changed to have a single extcon
-instance that can have a bitmask of states which are sent as strings
-in the uevent.
+Larry
 
-As it stands, this patch does not solve the cases where we use switch
-today and we'll probably continue to carry the switch driver in the
-common android tree.  If, instead, we got rid of the idea of multiple
-states and mutual exclusivity and relied on the driver that uses
-extcon to have multiple instances for each logical entity and deal
-with mutual exclusion itself, we'd have a driver that would be pretty
-easy to support in android.
 
--Erik
