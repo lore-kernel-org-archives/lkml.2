@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871Ab2C3V4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:56:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54199 "EHLO
+	id S936360Ab2C3V5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:57:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965658Ab2C3VSe (ORCPT
+	with ESMTP id S965648Ab2C3VSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:18:34 -0400
-Message-Id: <20120330194831.492878639@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:18:31 -0400
+Message-Id: <20120330194830.490342702@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:02 -0700
+Date: Fri, 30 Mar 2012 12:48:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 037/175] USB: ums_realtek: do not use stack memory for DMA in __do_config_autodelink
+        alan@lxorguk.ukuu.org.uk, Liz Clark <liz.clark@hp.com>
+Subject: [ 031/175] TTY: Wrong unicode value copied in con_set_unimap()
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,48 +24,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Liz Clark <liz.clark@hp.com>
 
-commit 4898e07174b79013afd2b422ef6c4336ef8e6783 upstream.
+commit 4a4c61b7ce26bfc9d49ea4bd121d52114bad9f99 upstream.
 
-__do_config_autodelink passes the data variable to the transport function.
-If the calling functions pass a stack variable, this will eventually trigger
-a DMA-API debug backtrace for mapping stack memory in the DMA buffer.  Fix
-this by calling kmemdup for the passed data instead.
+Bugzilla 40012: PIO_UNIMAP bug: error updating Unicode-to-font map
+https://bugzilla.kernel.org/show_bug.cgi?id=40012
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+The unicode font map for the virtual console is a 32x32x64 table which
+allocates rows dynamically as entries are added.  The unicode value
+increases sequentially and should count all entries even in empty
+rows.  The defect is when copying the unicode font map in con_set_unimap(),
+the unicode value is not incremented properly.  The wrong unicode value
+is entered in the new font map.
+
+Signed-off-by: Liz Clark <liz.clark@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/realtek_cr.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/tty/vt/consolemap.c |   51 +++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 43 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/storage/realtek_cr.c
-+++ b/drivers/usb/storage/realtek_cr.c
-@@ -507,9 +507,14 @@ static int __do_config_autodelink(struct
- {
- 	int retval;
- 	u8 cmnd[12] = {0};
-+	u8 *buf;
+--- a/drivers/tty/vt/consolemap.c
++++ b/drivers/tty/vt/consolemap.c
+@@ -516,6 +516,7 @@ int con_set_unimap(struct vc_data *vc, u
+ 	int err = 0, err1, i;
+ 	struct uni_pagedir *p, *q;
  
- 	US_DEBUGP("%s, addr = 0xfe47, len = %d\n", __FUNCTION__, len);
- 
-+	buf = kmemdup(data, len, GFP_NOIO);
-+	if (!buf)
-+		return USB_STOR_TRANSPORT_ERROR;
++	/* Save original vc_unipagdir_loc in case we allocate a new one */
+ 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+ 	if (p->readonly) return -EIO;
+ 	
+@@ -528,26 +529,57 @@ int con_set_unimap(struct vc_data *vc, u
+ 		err1 = con_clear_unimap(vc, NULL);
+ 		if (err1) return err1;
+ 		
++		/*
++		 * Since refcount was > 1, con_clear_unimap() allocated a
++		 * a new uni_pagedir for this vc.  Re: p != q
++		 */
+ 		q = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
+-		for (i = 0, l = 0; i < 32; i++)
 +
- 	cmnd[0] = 0xF0;
- 	cmnd[1] = 0x0E;
- 	cmnd[2] = 0xfe;
-@@ -517,7 +522,8 @@ static int __do_config_autodelink(struct
- 	cmnd[4] = (u8)(len >> 8);
- 	cmnd[5] = (u8)len;
- 
--	retval = rts51x_bulk_transport_special(us, 0, cmnd, 12, data, len, DMA_TO_DEVICE, NULL);
-+	retval = rts51x_bulk_transport_special(us, 0, cmnd, 12, buf, len, DMA_TO_DEVICE, NULL);
-+	kfree(buf);
- 	if (retval != USB_STOR_TRANSPORT_GOOD) {
- 		return -EIO;
++		/*
++		 * uni_pgdir is a 32*32*64 table with rows allocated
++		 * when its first entry is added.  The unicode value must
++		 * still be incremented for empty rows.  We are copying
++		 * entries from "p" (old) to "q" (new).
++		 */
++		l = 0;		/* unicode value */
++		for (i = 0; i < 32; i++)
+ 		if ((p1 = p->uni_pgdir[i]))
+ 			for (j = 0; j < 32; j++)
+-			if ((p2 = p1[j]))
++			if ((p2 = p1[j])) {
+ 				for (k = 0; k < 64; k++, l++)
+ 				if (p2[k] != 0xffff) {
++					/*
++					 * Found one, copy entry for unicode
++					 * l with fontpos value p2[k].
++					 */
+ 					err1 = con_insert_unipair(q, l, p2[k]);
+ 					if (err1) {
+ 						p->refcount++;
+ 						*vc->vc_uni_pagedir_loc = (unsigned long)p;
+ 						con_release_unimap(q);
+ 						kfree(q);
+-						return err1; 
++						return err1;
+ 					}
+-              			}
+-              	p = q;
+-	} else if (p == dflt)
++				}
++			} else {
++				/* Account for row of 64 empty entries */
++				l += 64;
++			}
++		else
++			/* Account for empty table */
++			l += 32 * 64;
++
++		/*
++		 * Finished copying font table, set vc_uni_pagedir to new table
++		 */
++		p = q;
++	} else if (p == dflt) {
+ 		dflt = NULL;
+-	
++	}
++
++	/*
++	 * Insert user specified unicode pairs into new table.
++	 */
+ 	while (ct--) {
+ 		unsigned short unicode, fontpos;
+ 		__get_user(unicode, &list->unicode);
+@@ -557,11 +589,14 @@ int con_set_unimap(struct vc_data *vc, u
+ 		list++;
  	}
+ 	
++	/*
++	 * Merge with fontmaps of any other virtual consoles.
++	 */
+ 	if (con_unify_unimap(vc, p))
+ 		return err;
+ 
+ 	for (i = 0; i <= 3; i++)
+-		set_inverse_transl(vc, p, i); /* Update all inverse translations */
++		set_inverse_transl(vc, p, i); /* Update inverse translations */
+ 	set_inverse_trans_unicode(vc, p);
+   
+ 	return err;
 
 
