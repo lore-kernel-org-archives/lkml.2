@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761598Ab2C3VEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:04:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	id S934623Ab2C3VER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:04:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37370 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761568Ab2C3VED (ORCPT
+	with ESMTP id S1761568Ab2C3VEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:04:03 -0400
-Message-Id: <20120330195724.981284809@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:04:10 -0400
+Message-Id: <20120330195724.429974046@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:57:42 -0700
+Date: Fri, 30 Mar 2012 12:57:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [ 020/108] cdc-wdm: Fix more races on the read path
+        alan@lxorguk.ukuu.org.uk, Masami Ichikawa <masami256@gmail.com>
+Subject: [ 016/108] sysfs: Fix memory leak in sysfs_sd_setsecdata().
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,82 +24,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Masami Ichikawa <masami256@gmail.com>
 
-commit 711c68b3c0f7a924ffbee4aa962d8f62b85188ff upstream.
+commit 93518dd2ebafcc761a8637b2877008cfd748c202 upstream.
 
-We must not allow the input buffer length to change while we're
-shuffling the buffer contents.  We also mustn't clear the WDM_READ
-flag after more data might have arrived.  Therefore move both of these
-into the spinlocked region at the bottom of wdm_read().
+This patch fixies follwing two memory leak patterns that reported by kmemleak.
+sysfs_sd_setsecdata() is called during sys_lsetxattr() operation.
+It checks sd->s_iattr is NULL or not. Then if it is NULL, it calls
+sysfs_init_inode_attrs() to allocate memory.
+That code is this.
 
-When reading desc->length without holding the iuspin lock, use
-ACCESS_ONCE() to ensure the compiler doesn't re-read it with
-inconsistent results.
+iattrs = sd->s_iattr;
+if (!iattrs)
+                iattrs = sysfs_init_inode_attrs(sd);
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Tested-by: Bjørn Mork <bjorn@mork.no>
-Cc: Oliver Neukum <oliver@neukum.org>
+The iattrs recieves sysfs_init_inode_attrs()'s result,  but sd->s_iattr
+doesn't know the address. so it needs to set correct address to
+sd->s_iattr to free memory in other function.
+
+unreferenced object 0xffff880250b73e60 (size 32):
+  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
+  hex dump (first 32 bytes):
+    73 79 73 74 65 6d 5f 75 3a 6f 62 6a 65 63 74 5f  system_u:object_
+    72 3a 73 79 73 66 73 5f 74 3a 73 30 00 00 00 00  r:sysfs_t:s0....
+  backtrace:
+    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
+    [<ffffffff811270ab>] __kmalloc+0x100/0x12c
+    [<ffffffff8120775a>] context_struct_to_string+0x106/0x210
+    [<ffffffff81207cc1>] security_sid_to_context_core+0x10b/0x129
+    [<ffffffff812090ef>] security_sid_to_context+0x10/0x12
+    [<ffffffff811fb0da>] selinux_inode_getsecurity+0x7d/0xa8
+    [<ffffffff811fb127>] selinux_inode_getsecctx+0x22/0x2e
+    [<ffffffff811f4d62>] security_inode_getsecctx+0x16/0x18
+    [<ffffffff81191dad>] sysfs_setxattr+0x96/0x117
+    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
+    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
+    [<ffffffff811544c6>] setxattr+0xcf/0x101
+    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
+    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
+unreferenced object 0xffff88024163c5a0 (size 96):
+  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
+  hex dump (first 32 bytes):
+    00 00 00 00 ed 41 00 00 00 00 00 00 00 00 00 00  .....A..........
+    00 00 00 00 00 00 00 00 0c 64 42 4f 00 00 00 00  .........dBO....
+  backtrace:
+    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
+    [<ffffffff81127402>] kmem_cache_alloc_trace+0xc4/0xee
+    [<ffffffff81191cbe>] sysfs_init_inode_attrs+0x2a/0x83
+    [<ffffffff81191dd6>] sysfs_setxattr+0xbf/0x117
+    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
+    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
+    [<ffffffff811544c6>] setxattr+0xcf/0x101
+    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
+    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
+`
+
+Signed-off-by: Masami Ichikawa <masami256@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ fs/sysfs/inode.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -397,7 +397,7 @@ outnl:
- static ssize_t wdm_read
- (struct file *file, char __user *buffer, size_t count, loff_t *ppos)
- {
--	int rv, cntr = 0;
-+	int rv, cntr;
- 	int i = 0;
- 	struct wdm_device *desc = file->private_data;
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -136,12 +136,13 @@ static int sysfs_sd_setsecdata(struct sy
+ 	void *old_secdata;
+ 	size_t old_secdata_len;
  
-@@ -406,7 +406,8 @@ static ssize_t wdm_read
- 	if (rv < 0)
- 		return -ERESTARTSYS;
+-	iattrs = sd->s_iattr;
+-	if (!iattrs)
+-		iattrs = sysfs_init_inode_attrs(sd);
+-	if (!iattrs)
+-		return -ENOMEM;
++	if (!sd->s_iattr) {
++		sd->s_iattr = sysfs_init_inode_attrs(sd);
++		if (!sd->s_iattr)
++			return -ENOMEM;
++	}
  
--	if (desc->length == 0) {
-+	cntr = ACCESS_ONCE(desc->length);
-+	if (cntr == 0) {
- 		desc->read = 0;
- retry:
- 		if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
-@@ -457,25 +458,30 @@ retry:
- 			goto retry;
- 		}
- 		clear_bit(WDM_READ, &desc->flags);
-+		cntr = desc->length;
- 		spin_unlock_irq(&desc->iuspin);
- 	}
++	iattrs = sd->s_iattr;
+ 	old_secdata = iattrs->ia_secdata;
+ 	old_secdata_len = iattrs->ia_secdata_len;
  
--	cntr = count > desc->length ? desc->length : count;
-+	if (cntr > count)
-+		cntr = count;
- 	rv = copy_to_user(buffer, desc->ubuf, cntr);
- 	if (rv > 0) {
- 		rv = -EFAULT;
- 		goto err;
- 	}
- 
-+	spin_lock_irq(&desc->iuspin);
-+
- 	for (i = 0; i < desc->length - cntr; i++)
- 		desc->ubuf[i] = desc->ubuf[i + cntr];
- 
--	spin_lock_irq(&desc->iuspin);
- 	desc->length -= cntr;
--	spin_unlock_irq(&desc->iuspin);
- 	/* in case we had outstanding data */
- 	if (!desc->length)
- 		clear_bit(WDM_READ, &desc->flags);
-+
-+	spin_unlock_irq(&desc->iuspin);
-+
- 	rv = cntr;
- 
- err:
 
 
