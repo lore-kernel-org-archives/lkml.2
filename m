@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936422Ab2C3WBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:01:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935969Ab2C3VRT (ORCPT
+	id S935966Ab2C3VRS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:17:18 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58278 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935947Ab2C3VRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:17:19 -0400
-Message-Id: <20120330194827.774352269@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:17:10 -0400
+Message-Id: <20120330194827.325662793@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:48:39 -0700
+Date: Fri, 30 Mar 2012 12:48:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shengzhou Liu <Shengzhou.Liu@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 014/175] powerpc/usb: fix bug of kernel hang when initializing usb
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Micha=C5=82=20Wr=C3=B3bel?= <michal.wrobel@flytronic.pl>
+Subject: [ 011/175] USB: ftdi_sio: new PID: Distortec JTAG-lock-pick
 In-Reply-To: <20120330195801.GA31806@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shengzhou Liu <Shengzhou.Liu@freescale.com>
+From: Michał Wróbel <michal.wrobel@flytronic.pl>
 
-commit 28c56ea1431421dec51b7b229369e991481453df upstream.
+commit 47594d5528f28a4c025c2955c68104c75815637c upstream.
 
-If USB UTMI PHY is not enable, writing to portsc register will lead to
-kernel hang during boot up.
-
-Signed-off-by: Shengzhou Liu <Shengzhou.Liu@freescale.com>
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Michał Wróbel <michal.wrobel@flytronic.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-fsl.c |    4 ++++
- drivers/usb/host/ehci-fsl.h |    1 +
- 2 files changed, 5 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -216,6 +216,8 @@ static void ehci_fsl_setup_phy(struct eh
- 			       unsigned int port_offset)
- {
- 	u32 portsc;
-+	struct usb_hcd *hcd = ehci_to_hcd(ehci);
-+	void __iomem *non_ehci = hcd->regs;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -846,6 +846,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
++	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -97,6 +97,8 @@
+ #define FTDI_TACTRIX_OPENPORT_13S_PID	0xCC49	/* OpenPort 1.3 Subaru */
+ #define FTDI_TACTRIX_OPENPORT_13U_PID	0xCC4A	/* OpenPort 1.3 Universal */
  
- 	portsc = ehci_readl(ehci, &ehci->regs->port_status[port_offset]);
- 	portsc &= ~(PORT_PTS_MSK | PORT_PTS_PTW);
-@@ -231,6 +233,8 @@ static void ehci_fsl_setup_phy(struct eh
- 		portsc |= PORT_PTS_PTW;
- 		/* fall through */
- 	case FSL_USB2_PHY_UTMI:
-+		/* enable UTMI PHY */
-+		setbits32(non_ehci + FSL_SOC_USB_CTRL, CTRL_UTMI_PHY_EN);
- 		portsc |= PORT_PTS_UTMI;
- 		break;
- 	case FSL_USB2_PHY_NONE:
---- a/drivers/usb/host/ehci-fsl.h
-+++ b/drivers/usb/host/ehci-fsl.h
-@@ -45,5 +45,6 @@
- #define FSL_SOC_USB_PRICTRL	0x40c	/* NOTE: big-endian */
- #define FSL_SOC_USB_SICTRL	0x410	/* NOTE: big-endian */
- #define FSL_SOC_USB_CTRL	0x500	/* NOTE: big-endian */
-+#define CTRL_UTMI_PHY_EN	(1<<9)
- #define SNOOP_SIZE_2GB		0x1e
- #endif				/* _EHCI_FSL_H */
++#define FTDI_DISTORTEC_JTAG_LOCK_PICK_PID	0xCFF8
++
+ /* SCS HF Radio Modems PID's (http://www.scs-ptc.com) */
+ /* the VID is the standard ftdi vid (FTDI_VID) */
+ #define FTDI_SCS_DEVICE_0_PID 0xD010    /* SCS PTC-IIusb */
 
 
