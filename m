@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934958Ab2C3VGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S935045Ab2C3VG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:06:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934914Ab2C3VFm (ORCPT
+	with ESMTP id S935011Ab2C3VGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:05:42 -0400
-Message-Id: <20120330195729.446369560@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:06:16 -0400
+Message-Id: <20120330195730.895811790@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:58:13 -0700
+Date: Fri, 30 Mar 2012 12:58:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ray Morris <support@bettercgi.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [ 051/108] md/raid1,raid10: avoid deadlock during resync/recovery.
+        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 061/108] firewire: ohci: fix too-early completion of IR multichannel buffers
 In-Reply-To: <20120330195812.GA31833@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,92 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit d6b42dcb995e6acd7cc276774e751ffc9f0ef4bf upstream.
+commit 0c0efbacab8d70700d13301e0ae7975783c0cb0a upstream.
 
-If RAID1 or RAID10 is used under LVM or some other stacking
-block device, it is possible to enter a deadlock during
-resync or recovery.
-This can happen if the upper level block device creates
-two requests to the RAID1 or RAID10.  The first request gets
-processed, blocks recovery and queue requests for underlying
-requests in current->bio_list.  A resync request then starts
-which will wait for those requests and block new IO.
+handle_ir_buffer_fill() assumed that a completed descriptor would be
+indicated by a non-zero transfer_status (as in most other descriptors).
+However, this field is written by the controller as soon as (the end of)
+the first packet has been written into the buffer.  As a consequence, if
+we happen to run into such a descriptor when the interrupt handler is
+executed after such a packet has completed, the descriptor would be
+taken out of the list of active descriptors as soon as the buffer had
+been partially filled, so the event for the buffer being completely
+filled would never be sent.
 
-But then the second request to the RAID1/10 will be attempted
-and it cannot progress until the resync request completes,
-which cannot progress until the underlying device requests complete,
-which are on a queue behind that second request.
+To fix this, handle descriptors only when they have been completely
+filled, i.e., when res_count == 0.  (This also matches the condition
+that is reported by the controller with an interrupt.)
 
-So allow that second request to proceed even though there is
-a resync request about to start.
-
-This is suitable for any -stable kernel.
-
-Reported-by: Ray Morris <support@bettercgi.com>
-Tested-by: Ray Morris <support@bettercgi.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c  |   17 +++++++++++++++--
- drivers/md/raid10.c |   17 +++++++++++++++--
- 2 files changed, 30 insertions(+), 4 deletions(-)
+ drivers/firewire/ohci.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -614,9 +614,22 @@ static void wait_barrier(conf_t *conf)
- 	spin_lock_irq(&conf->resync_lock);
- 	if (conf->barrier) {
- 		conf->nr_waiting++;
--		wait_event_lock_irq(conf->wait_barrier, !conf->barrier,
-+		/* Wait for the barrier to drop.
-+		 * However if there are already pending
-+		 * requests (preventing the barrier from
-+		 * rising completely), and the
-+		 * pre-process bio queue isn't empty,
-+		 * then don't wait, as we need to empty
-+		 * that queue to get the nr_pending
-+		 * count down.
-+		 */
-+		wait_event_lock_irq(conf->wait_barrier,
-+				    !conf->barrier ||
-+				    (conf->nr_pending &&
-+				     current->bio_list &&
-+				     !bio_list_empty(current->bio_list)),
- 				    conf->resync_lock,
--				    );
-+			);
- 		conf->nr_waiting--;
- 	}
- 	conf->nr_pending++;
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -667,9 +667,22 @@ static void wait_barrier(conf_t *conf)
- 	spin_lock_irq(&conf->resync_lock);
- 	if (conf->barrier) {
- 		conf->nr_waiting++;
--		wait_event_lock_irq(conf->wait_barrier, !conf->barrier,
-+		/* Wait for the barrier to drop.
-+		 * However if there are already pending
-+		 * requests (preventing the barrier from
-+		 * rising completely), and the
-+		 * pre-process bio queue isn't empty,
-+		 * then don't wait, as we need to empty
-+		 * that queue to get the nr_pending
-+		 * count down.
-+		 */
-+		wait_event_lock_irq(conf->wait_barrier,
-+				    !conf->barrier ||
-+				    (conf->nr_pending &&
-+				     current->bio_list &&
-+				     !bio_list_empty(current->bio_list)),
- 				    conf->resync_lock,
--				    );
-+			);
- 		conf->nr_waiting--;
- 	}
- 	conf->nr_pending++;
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2558,15 +2558,14 @@ static int handle_ir_buffer_fill(struct
+ 	struct iso_context *ctx =
+ 		container_of(context, struct iso_context, context);
+ 
+-	if (!last->transfer_status)
++	if (last->res_count != 0)
+ 		/* Descriptor(s) not done yet, stop iteration */
+ 		return 0;
+ 
+ 	if (le16_to_cpu(last->control) & DESCRIPTOR_IRQ_ALWAYS)
+ 		ctx->base.callback.mc(&ctx->base,
+ 				      le32_to_cpu(last->data_address) +
+-				      le16_to_cpu(last->req_count) -
+-				      le16_to_cpu(last->res_count),
++				      le16_to_cpu(last->req_count),
+ 				      ctx->base.callback_data);
+ 
+ 	return 1;
 
 
