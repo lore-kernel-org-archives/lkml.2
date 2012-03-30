@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab2C3HMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 03:12:15 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:46452 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab2C3HLr (ORCPT
+	id S1757375Ab2C3HOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 03:14:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46481 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250Ab2C3HOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 03:11:47 -0400
-Message-ID: <4F755CAC.9070209@kernel.org>
-Date: Fri, 30 Mar 2012 03:11:40 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+	Fri, 30 Mar 2012 03:14:36 -0400
+Message-ID: <4F755D53.1070102@gmail.com>
+Date: Fri, 30 Mar 2012 15:14:27 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Bob Moore <robert.moore@intel.com>
-CC: Jesper Juhl <jj@chaosbits.net>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [PATCH] ACPI, psargs: Fix small mem leaks on error paths
-References: <alpine.LNX.2.00.1202050210060.30244@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1202050210060.30244@swampdragon.chaosbits.net>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] btrfs/ctree.c: remove the unnecessary 'return -1;' at the
+ end of bin_search
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bob?
+The code path should not reach there. Remove it.
 
-On 02/04/2012 08:12 PM, Jesper Juhl wrote:
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ fs/btrfs/ctree.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-> As far as I can see, there are two small mem leaks in error paths of
-> 'acpi_ps_get_next_field()' where we neglect to free the memory
-> previously allocated to 'field'.
-> 
-> I believe this patch should fix the leaks.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/acpi/acpica/psargs.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
->  Note: Compile tested only.
-> 
-> diff --git a/drivers/acpi/acpica/psargs.c b/drivers/acpi/acpica/psargs.c
-> index 5ac36ab..a683d66 100644
-> --- a/drivers/acpi/acpica/psargs.c
-> +++ b/drivers/acpi/acpica/psargs.c
-> @@ -618,6 +618,7 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
->  
->  				arg = acpi_ps_alloc_op(AML_INT_BYTELIST_OP);
->  				if (!arg) {
-> +					acpi_ps_free_op(field);
->  					return_PTR(NULL);
->  				}
->  
-> @@ -662,6 +663,7 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
->  		} else {
->  			arg = acpi_ps_alloc_op(AML_INT_NAMEPATH_OP);
->  			if (!arg) {
-> +				acpi_ps_free_op(field);
->  				return_PTR(NULL);
->  			}
->  
+diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
+index 0639a55..c1be2da 100644
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -829,20 +829,18 @@ static noinline int generic_bin_search(struct extent_buffer *eb,
+ static int bin_search(struct extent_buffer *eb, struct btrfs_key *key,
+ 		      int level, int *slot)
+ {
+-	if (level == 0) {
++	if (level == 0)
+ 		return generic_bin_search(eb,
+ 					  offsetof(struct btrfs_leaf, items),
+ 					  sizeof(struct btrfs_item),
+ 					  key, btrfs_header_nritems(eb),
+ 					  slot);
+-	} else {
++	else
+ 		return generic_bin_search(eb,
+ 					  offsetof(struct btrfs_node, ptrs),
+ 					  sizeof(struct btrfs_key_ptr),
+ 					  key, btrfs_header_nritems(eb),
+ 					  slot);
+-	}
+-	return -1;
+ }
+ 
+ int btrfs_bin_search(struct extent_buffer *eb, struct btrfs_key *key,
+-- 
+1.7.1
+
 
 
