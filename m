@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab2C3F0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 01:26:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62961 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab2C3F0R (ORCPT
+	id S1752689Ab2C3FoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 01:44:17 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33922 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2C3FoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 01:26:17 -0400
-Date: Thu, 29 Mar 2012 22:26:12 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Jiri Kosina <jkosina@suse.cz>, Mandeep Singh Baines <msb@chromium.org>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup: urgent fix for 3.4-rc1 merge window
-Message-ID: <20120330052612.GA13855@dhcp-172-17-108-109.mtv.corp.google.com>
+	Fri, 30 Mar 2012 01:44:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1203161522570.13465@axis700.grange>
+References: <1331101687.24656.319.camel@vkoul-udesk3>
+	<20120307162755.GB18787@n2100.arm.linux.org.uk>
+	<Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+	<1331188201.4657.51.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+	<1331204128.4657.54.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+	<1331206459.4657.59.camel@vkoul-udesk3>
+	<1331211513.4657.67.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203081412550.29847@axis700.grange>
+	<1331284918.4657.69.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203091022200.7852@axis700.grange>
+	<1331285959.4657.76.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203091049060.7852@axis700.grange>
+	<1331520476.4657.79.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203161029490.13465@axis700.grange>
+	<CACRpkdYiuERV08=UhBRnj2AjC_RxF+EY+zHAtEp6KYf2W10C_Q@mail.gmail.com>
+	<Pine.LNX.4.64.1203161128120.13465@axis700.grange>
+	<CACRpkdY7ApBc-gbSdf+=7PLtKSMvzYuBi7RNnVgi=vjcd-KvhQ@mail.gmail.com>
+	<Pine.LNX.4.64.1203161522570.13465@axis700.grange>
+Date: Fri, 30 Mar 2012 07:44:09 +0200
+Message-ID: <CACRpkdbp3EfF-4z2uuy+gLdXvHqUqj+Zmp-GZxhaHv_RxxRKHQ@mail.gmail.com>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Jassi Brar <jassisinghbrar@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Fri, Mar 16, 2012 at 3:28 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> On Fri, 16 Mar 2012, Linus Walleij wrote:
 
-61d1d219c4 "cgroup: remove extra calls to find_existing_css_set" which
-was part of the rc1 cgroup pull request made writes to cgroup "tasks"
-file return uninitialized retval on success which can cause boot
-failures with systemd.  The change stayed in linux-next for quite some
-time but gcc interestingly failed to emit warning about using
-uninitialized variable and the problem seems to materialize only for
-certain build combinations (probably depends on register allocation).
+>> Oh I was not thinking of relying on config to sort out channels.
+>>
+>> I was thinking of internalizing the dma_filter_fn and make it an
+>> (optional, maybe?) part of dmaengine.
+>
+> Yessss!!! Let's do that! :-D Now, you're proposing exactly the same, as
+> what I was proposing! :-)
 
-It's just missing local variable initialization and the fix is trivial
-& safe.  As the problem is critical when it materializes, I'm
-fast-tracking it.  Also included is Li's email address change in
-MAINTAINERS.
+No.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.4-fixes
+> Now you just have to remove the filter function
+> parameter from dma_request_channel() - it is anyway the same for all and
+> implemented in the dmaengine core - and you get
+>
+> dma_request_channel(mask, slave_desc)
 
-Li Zefan (1):
-      cgroup: update MAINTAINERS entry
+What is the point of mask on slave channels?
+I was more thinking introduce a new call:
 
-Tejun Heo (1):
-      cgroup: cgroup_attach_task() could return -errno after success
+dma_request_slave_channel(struct device *dev);
 
-Thanks.
----
- MAINTAINERS     |    2 +-
- kernel/cgroup.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+>From this the core looks up a suitable channel for that device.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index f9faade..3dbf4d1 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1940,7 +1940,7 @@ F:	drivers/connector/
- 
- CONTROL GROUPS (CGROUPS)
- M:	Tejun Heo <tj@kernel.org>
--M:	Li Zefan <lizf@cn.fujitsu.com>
-+M:	Li Zefan <lizefan@huawei.com>
- L:	containers@lists.linux-foundation.org
- L:	cgroups@vger.kernel.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index f4ea4b6..ed64cca 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1883,7 +1883,7 @@ static void cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
-  */
- int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- {
--	int retval;
-+	int retval = 0;
- 	struct cgroup_subsys *ss, *failed_ss = NULL;
- 	struct cgroup *oldcgrp;
- 	struct cgroupfs_root *root = cgrp->root;
+However you're right (in some later mail) that we need to distinguish
+between RX/TX channels at this point, so I can agree we need some
+additional parameter, but that should be very abstract, not containing
+any custom stuff or any void * or something like that.
 
---
-tejun
+If the device and direction is really all we need to distinguish a suitable
+channel (which I imagine) the signature may very well be:
+
+dma_request_slave_channel(struct device *dev, enum dma_transfer_direction dir);
+
+But I'm not sure. (Keep beating me about it... but at this point
+I think code speaks more than words.)
+
+> which is exactly what I was proposing! :-)
+
+Sorry, not at all AFAICT.
+
+Yours,
+Linus Walleij
