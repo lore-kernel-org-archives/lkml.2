@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935642Ab2C3Waq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 18:30:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40131 "EHLO
+	id S935823Ab2C3WbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 18:31:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935585Ab2C3VKU (ORCPT
+	with ESMTP id S935568Ab2C3VKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:10:20 -0400
-Message-Id: <20120330194839.965117114@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:10:14 -0400
+Message-Id: <20120330194839.400452906@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:49:04 -0700
+Date: Fri, 30 Mar 2012 12:49:02 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 031/149] USB: ums_realtek: do not use stack memory for DMA in __do_config_autodelink
+        alan@lxorguk.ukuu.org.uk, Peter Chen <peter.chen@freescale.com>,
+        Li Yang <leoli@freescale.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 029/149] usb: fsl_udc_core: Fix scheduling while atomic dump message
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,48 +25,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 4898e07174b79013afd2b422ef6c4336ef8e6783 upstream.
+commit c5cc5ed86667d4ae74fe40ee4ed893f4b46aba05 upstream.
 
-__do_config_autodelink passes the data variable to the transport function.
-If the calling functions pass a stack variable, this will eventually trigger
-a DMA-API debug backtrace for mapping stack memory in the DMA buffer.  Fix
-this by calling kmemdup for the passed data instead.
+When loading g_ether gadget, there is below message:
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Backtrace:
+[<80012248>] (dump_backtrace+0x0/0x10c) from [<803cb42c>] (dump_stack+0x18/0x1c)
+r7:00000000 r6:80512000 r5:8052bef8 r4:80513f30
+[<803cb414>] (dump_stack+0x0/0x1c) from [<8000feb4>] (show_regs+0x44/0x50)
+[<8000fe70>] (show_regs+0x0/0x50) from [<8004c840>] (__schedule_bug+0x68/0x84)
+r5:8052bef8 r4:80513f30
+[<8004c7d8>] (__schedule_bug+0x0/0x84) from [<803cd0e4>] (__schedule+0x4b0/0x528)
+r5:8052bef8 r4:809aad00
+[<803ccc34>] (__schedule+0x0/0x528) from [<803cd214>] (_cond_resched+0x44/0x58)
+[<803cd1d0>] (_cond_resched+0x0/0x58) from [<800a9488>] (dma_pool_alloc+0x184/0x250)
+ r5:9f9b4000 r4:9fb4fb80
+ [<800a9304>] (dma_pool_alloc+0x0/0x250) from [<802a8ad8>] (fsl_req_to_dtd+0xac/0x180)
+[<802a8a2c>] (fsl_req_to_dtd+0x0/0x180) from [<802a8ce4>] (fsl_ep_queue+0x138/0x274)
+[<802a8bac>] (fsl_ep_queue+0x0/0x274) from [<7f004328>] (composite_setup+0x2d4/0xfac [g_ether])
+[<7f004054>] (composite_setup+0x0/0xfac [g_ether]) from [<802a9bb4>] (fsl_udc_irq+0x8dc/0xd38)
+[<802a92d8>] (fsl_udc_irq+0x0/0xd38) from [<800704f8>] (handle_irq_event_percpu+0x54/0x188)
+[<800704a4>] (handle_irq_event_percpu+0x0/0x188) from [<80070674>] (handle_irq_event+0x48/0x68)
+[<8007062c>] (handle_irq_event+0x0/0x68) from [<800738ec>] (handle_level_irq+0xb4/0x138)
+ r5:80514f94 r4:80514f40
+ [<80073838>] (handle_level_irq+0x0/0x138) from [<8006ffa4>] (generic_handle_irq+0x38/0x44)
+ r7:00000012 r6:80510b1c r5:80529860 r4:80512000
+ [<8006ff6c>] (generic_handle_irq+0x0/0x44) from [<8000f4c4>] (handle_IRQ+0x54/0xb4)
+[<8000f470>] (handle_IRQ+0x0/0xb4) from [<800085b8>] (tzic_handle_irq+0x64/0x94)
+ r9:412fc085 r8:00000000 r7:80513f30 r6:00000001 r5:00000000
+ r4:00000000
+ [<80008554>] (tzic_handle_irq+0x0/0x94) from [<8000e680>] (__irq_svc+0x40/0x60)
+
+The reason of above dump message is calling dma_poll_alloc with can-schedule
+mem_flags at atomic context.
+
+To fix this problem, below changes are made:
+- fsl_req_to_dtd doesn't need to be protected by spin_lock_irqsave,
+as struct usb_request can be access at process context. Move lock
+to beginning of hardware visit (fsl_queue_td).
+- Change the memory flag which using to allocate dTD descriptor buffer,
+the memory flag can be from gadget layer.
+
+It is tested at i.mx51 bbg board with g_mass_storage, g_ether, g_serial.
+
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/realtek_cr.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/fsl_udc_core.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/storage/realtek_cr.c
-+++ b/drivers/usb/storage/realtek_cr.c
-@@ -509,9 +509,14 @@ static int __do_config_autodelink(struct
- 	int retval;
- 	u16 addr = 0xFE47;
- 	u8 cmnd[12] = {0};
-+	u8 *buf;
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -768,7 +768,7 @@ static void fsl_queue_td(struct fsl_ep *
+  * @is_last: return flag if it is the last dTD of the request
+  * return: pointer to the built dTD */
+ static struct ep_td_struct *fsl_build_dtd(struct fsl_req *req, unsigned *length,
+-		dma_addr_t *dma, int *is_last)
++		dma_addr_t *dma, int *is_last, gfp_t gfp_flags)
+ {
+ 	u32 swap_temp;
+ 	struct ep_td_struct *dtd;
+@@ -777,7 +777,7 @@ static struct ep_td_struct *fsl_build_dt
+ 	*length = min(req->req.length - req->req.actual,
+ 			(unsigned)EP_MAX_LENGTH_TRANSFER);
  
- 	US_DEBUGP("%s, addr = 0x%x, len = %d\n", __FUNCTION__, addr, len);
+-	dtd = dma_pool_alloc(udc_controller->td_pool, GFP_KERNEL, dma);
++	dtd = dma_pool_alloc(udc_controller->td_pool, gfp_flags, dma);
+ 	if (dtd == NULL)
+ 		return dtd;
  
-+	buf = kmemdup(data, len, GFP_NOIO);
-+	if (!buf)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
- 	cmnd[0] = 0xF0;
- 	cmnd[1] = 0x0E;
- 	cmnd[2] = (u8)(addr >> 8);
-@@ -519,7 +524,8 @@ static int __do_config_autodelink(struct
- 	cmnd[4] = (u8)(len >> 8);
- 	cmnd[5] = (u8)len;
+@@ -827,7 +827,7 @@ static struct ep_td_struct *fsl_build_dt
+ }
  
--	retval = rts51x_bulk_transport_special(us, 0, cmnd, 12, data, len, DMA_TO_DEVICE, NULL);
-+	retval = rts51x_bulk_transport_special(us, 0, cmnd, 12, buf, len, DMA_TO_DEVICE, NULL);
-+	kfree(buf);
- 	if (retval != USB_STOR_TRANSPORT_GOOD) {
- 		return -EIO;
+ /* Generate dtd chain for a request */
+-static int fsl_req_to_dtd(struct fsl_req *req)
++static int fsl_req_to_dtd(struct fsl_req *req, gfp_t gfp_flags)
+ {
+ 	unsigned	count;
+ 	int		is_last;
+@@ -836,7 +836,7 @@ static int fsl_req_to_dtd(struct fsl_req
+ 	dma_addr_t dma;
+ 
+ 	do {
+-		dtd = fsl_build_dtd(req, &count, &dma, &is_last);
++		dtd = fsl_build_dtd(req, &count, &dma, &is_last, gfp_flags);
+ 		if (dtd == NULL)
+ 			return -ENOMEM;
+ 
+@@ -910,13 +910,11 @@ fsl_ep_queue(struct usb_ep *_ep, struct
+ 	req->req.actual = 0;
+ 	req->dtd_count = 0;
+ 
+-	spin_lock_irqsave(&udc->lock, flags);
+-
+ 	/* build dtds and push them to device queue */
+-	if (!fsl_req_to_dtd(req)) {
++	if (!fsl_req_to_dtd(req, gfp_flags)) {
++		spin_lock_irqsave(&udc->lock, flags);
+ 		fsl_queue_td(ep, req);
+ 	} else {
+-		spin_unlock_irqrestore(&udc->lock, flags);
+ 		return -ENOMEM;
  	}
+ 
+@@ -1295,7 +1293,7 @@ static int ep0_prime_status(struct fsl_u
+ 			ep_is_in(ep) ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+ 	req->mapped = 1;
+ 
+-	if (fsl_req_to_dtd(req) == 0)
++	if (fsl_req_to_dtd(req, GFP_ATOMIC) == 0)
+ 		fsl_queue_td(ep, req);
+ 	else
+ 		return -ENOMEM;
+@@ -1379,7 +1377,7 @@ static void ch9getstatus(struct fsl_udc
+ 	req->mapped = 1;
+ 
+ 	/* prime the data phase */
+-	if ((fsl_req_to_dtd(req) == 0))
++	if ((fsl_req_to_dtd(req, GFP_ATOMIC) == 0))
+ 		fsl_queue_td(ep, req);
+ 	else			/* no mem */
+ 		goto stall;
 
 
