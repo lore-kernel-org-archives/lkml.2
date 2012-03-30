@@ -1,154 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934382Ab2C3MA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 08:00:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60481 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934380Ab2C3MAu (ORCPT
+	id S934392Ab2C3MBF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 08:01:05 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53138 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934174Ab2C3MAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 08:00:50 -0400
-From: Bryan Wu <bryan.wu@canonical.com>
-To: tony@atomide.com, linux@arm.linux.org.uk, rpurdie@rpsys.net,
-        manuel.lauss@gmail.com, cjb@laptop.org, cbou@mail.ru,
-        dwmw2@infradead.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, akpm@linux-foundation.org
-Subject: [PATCH 10/18] ARM: mach-ebsa110: retire custom LED code
-Date: Fri, 30 Mar 2012 19:58:25 +0800
-Message-Id: <1333108713-12707-11-git-send-email-bryan.wu@canonical.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
-References: <1333108713-12707-1-git-send-email-bryan.wu@canonical.com>
+	Fri, 30 Mar 2012 08:00:51 -0400
+Message-ID: <4F75A070.9020008@kernel.org>
+Date: Fri, 30 Mar 2012 08:00:48 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/5] ACPI: Do cpufreq clamping for throttling per package
+ v2
+References: <1328545032-21373-1-git-send-email-andi@firstfloor.org> <1328545032-21373-5-git-send-email-andi@firstfloor.org> <4F758569.9080608@kernel.org> <20120330114633.GA16502@srcf.ucam.org>
+In-Reply-To: <20120330114633.GA16502@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
----
- arch/arm/mach-ebsa110/Makefile |    4 +--
- arch/arm/mach-ebsa110/leds.c   |   79 ++++++++++++++++++++++++----------------
- 2 files changed, 49 insertions(+), 34 deletions(-)
+On 03/30/2012 07:46 AM, Matthew Garrett wrote:
 
-diff --git a/arch/arm/mach-ebsa110/Makefile b/arch/arm/mach-ebsa110/Makefile
-index 6520ac8..935e4af 100644
---- a/arch/arm/mach-ebsa110/Makefile
-+++ b/arch/arm/mach-ebsa110/Makefile
-@@ -4,9 +4,7 @@
- 
- # Object file lists.
- 
--obj-y			:= core.o io.o
-+obj-y			:= core.o io.o leds.o
- obj-m			:=
- obj-n			:=
- obj-			:=
--
--obj-$(CONFIG_LEDS)	+= leds.o
-diff --git a/arch/arm/mach-ebsa110/leds.c b/arch/arm/mach-ebsa110/leds.c
-index 99e14e3..b7dd0a5 100644
---- a/arch/arm/mach-ebsa110/leds.c
-+++ b/arch/arm/mach-ebsa110/leds.c
-@@ -1,52 +1,69 @@
- /*
-- *  linux/arch/arm/mach-ebsa110/leds.c
-+ * Driver for the LED found on the EBSA110 machine
-+ * Based on Versatile and RealView machine LED code
-  *
-- *  Copyright (C) 1998 Russell King
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- *  EBSA-110 LED control routines.  We use the led as follows:
-- *
-- *   - Red - toggles state every 50 timer interrupts
-+ * License terms: GNU General Public License (GPL) version 2
-+ * Author: Bryan Wu <bryan.wu@canonical.com>
-  */
--#include <linux/module.h>
--#include <linux/spinlock.h>
-+#include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/leds.h>
- 
--#include <mach/hardware.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- 
- #include "core.h"
- 
--static spinlock_t leds_lock;
--
--static void ebsa110_leds_event(led_event_t ledevt)
-+static void ebsa110_led_set(struct led_classdev *cdev,
-+			      enum led_brightness b)
- {
--	unsigned long flags;
-+	u8 reg = __raw_readb(SOFT_BASE);
- 
--	spin_lock_irqsave(&leds_lock, flags);
-+	if (b != LED_OFF)
-+		reg |= 0x80;
-+	else
-+		reg &= ~0x80;
- 
--	switch(ledevt) {
--	case led_timer:
--		*(volatile unsigned char *)SOFT_BASE ^= 128;
--		break;
-+	__raw_writeb(reg, SOFT_BASE);
-+}
- 
--	default:
--		break;
--	}
-+static enum led_brightness ebsa110_led_get(struct led_classdev *cdev)
-+{
-+	u8 reg = __raw_readb(SOFT_BASE);
- 
--	spin_unlock_irqrestore(&leds_lock, flags);
-+	return (reg & 0x80) ? LED_FULL : LED_OFF;
- }
- 
--static int __init leds_init(void)
-+static int __init ebsa110_leds_init(void)
- {
--	if (machine_is_ebsa110())
--		leds_event = ebsa110_leds_event;
-+
-+	struct led_classdev *cdev;
-+	int ret;
-+
-+	if (!machine_is_ebsa110())
-+		return -ENODEV;
-+
-+	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
-+	if (!cdev)
-+		return -ENOMEM;
-+
-+	cdev->name = "ebsa110:0";
-+	cdev->brightness_set = ebsa110_led_set;
-+	cdev->brightness_get = ebsa110_led_get;
-+	cdev->default_trigger = "heartbeat";
-+
-+	ret = led_classdev_register(NULL, cdev);
-+	if (ret	< 0) {
-+		kfree(cdev);
-+		return ret;
-+	}
- 
- 	return 0;
- }
- 
--__initcall(leds_init);
-+/*
-+ * Since we may have triggers on any subsystem, defer registration
-+ * until after subsystem_init.
-+ */
-+fs_initcall(ebsa110_leds_init);
--- 
-1.7.9.1
+> On Fri, Mar 30, 2012 at 06:05:29AM -0400, Len Brown wrote:
+>> Andi,
+>> Can you re-base this on top of my release tree?
+>>
+>> Your fix is important, but conflicted with mjg's
+>> more invasive percentage -> frequency change.
+> 
+> Sorry, I think it's probably better not to take my patch here - the spec 
+> uses percentages rather than frequencies. I'm not convinced that that 
+> makes sense, but there's some chance that some behaviour may end up 
+> depending on that.
+> 
 
+
+Ok Matthew, I've dropped your patch and pulled in Andi's.
+
+thanks,
+-Len
