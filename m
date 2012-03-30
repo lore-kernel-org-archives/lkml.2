@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761100Ab2C3QtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 12:49:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45419 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab2C3QtR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 12:49:17 -0400
-Date: Fri, 30 Mar 2012 09:49:13 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: arnd@arndb.de, viro@zeniv.linux.org.uk, davej@redhat.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
-Message-ID: <20120330164913.GA19946@kroah.com>
-References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com>
- <20120330153013.GC18488@kroah.com>
- <CA+1xoqdZnxcWNpL-03xsR+RDcz3=aRbx2LbR6mTJ_gCmwp-0Rw@mail.gmail.com>
+	id S1761094Ab2C3QvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 12:51:00 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:51010 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756228Ab2C3Qu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 12:50:56 -0400
+Message-ID: <4F75E46E.2000503@msgid.tls.msk.ru>
+Date: Fri, 30 Mar 2012 20:50:54 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111120 Icedove/8.0
 MIME-Version: 1.0
-In-Reply-To: <CA+1xoqdZnxcWNpL-03xsR+RDcz3=aRbx2LbR6mTJ_gCmwp-0Rw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: dramatic I/O slowdown after upgrading 2.6.32->3.0
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 07:37:37PM +0300, Sasha Levin wrote:
-> On Fri, Mar 30, 2012 at 6:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, Mar 30, 2012 at 01:04:27PM -0400, Sasha Levin wrote:
-> >> There are no size checks in kmsg_write(), and we try allocating enough
-> >> memory to store everything userspace gave us, which may be too much for
-> >> kmalloc to allocate.
-> >
-> > Really?  Have you seen this fail?  As only root can do this, is this
-> > really a problem?
-> 
-> Only root, and a whole bunch of management software that dumps data
-> into /dev/kmsg (systemd and friends).
+Hello.
 
-Running as root, do any of these cause problems by asking for too much
-memory here?  Is this something that needs to be addressed now, and in
-stable kernels, or can it wait for 3.5?
+I'm observing a dramatic slowdown of several hosts after upgrading
+from 2.6.32.y to 3.0.x i686 kernels (in both cases from kernel.org,
+on both cases the last version is relatively latest).
 
-> >> One option would be to limit it to something, but we can't come up with
-> >> a number that would make sense.
-> >>
-> >> Instead, just use vmalloc so that nothing would break with large amounts
-> >> of data.
-> >
-> > Are you sure this will work properly?  Have you tested it with large
-> > amounts of data?
-> 
-> My test was dumping 800mb of data into it, if there's anything else I
-> should try please let me know.
+On 2.6.32 everything is fast.  On 3.0 the same operations which goes
+instantly takes ages to complete.
 
-Did that fail before and now it works properly?
+For example, out of observed actual differences, munin-graph process
+on 2.6.32 completes in a few secs writing to a ext4 /var filesystem.
+On 3.0, the same process takes about a minute and keeps all 5 hard
+drives (md raid5) 99% busy all this time.
 
-thanks,
+apt-get upgrade (from debian/ubuntu) first reads current package
+status database.  This process takes about 3 secs on a freshly
+booted 2.6.32, and about 40 seconds on a freshly booted 3.0,
+again, keeping all 5 hdds 99% busy (according to iostat).
 
-greg k-h
+Only the kernel is different, all the rest is exactly the same.
+I can reboot into 2.6.32 again after running 3.0, and the system
+is fast again.
+
+The machine is relatively old, it is an IBM xSeries 345 server
+with some 2.66GHz Xeon (stepping 9) CPU, a Broadcom chipset, an
+LSI Logic / Symbios Logic 53c1030 PCI-X Fusion-MPT Dual Ultra320
+SCSI controller and 5x74Gb pSCSI drives.  But it is obviously not
+a reason for it to run _this_ slow... ;)
+
+There's another machine here, with an AMD BE-2400 CPU, nVidia MCP55
+chipset, AHA-3940U2x pSCSI controller and a set of 74Gb HDDs.  It
+shows similar sympthoms after upgrading from 2.6.32 to 3.0 -- every
+I/O becomes very slow with all HDDs being busy for long periods.
+
+What's the way to debug this issue?
+
+Thank you!
+
+/mjt
