@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab2C3Jzp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 05:55:45 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60999 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759276Ab2C3Jzh convert rfc822-to-8bit (ORCPT
+	id S1760603Ab2C3J41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 05:56:27 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47004 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755181Ab2C3J4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 05:55:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1332434985-11522-1-git-send-email-colin.king@canonical.com>
-References: <1332434985-11522-1-git-send-email-colin.king@canonical.com>
-Date: Fri, 30 Mar 2012 10:55:36 +0100
-Message-ID: <CAAq6er0DUGcT_PuL3gOBNdcEVDxhW8EuP1dfFa_Sa9vNZmhfQA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Allow pcie_aspm=force to work even when FADT
- indicates it is unsupported
-From: Andy Whitcroft <robobotbotbot@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Garrett <mjg@redhat.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Colin King <colin.king@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Mar 2012 05:56:20 -0400
+Message-ID: <1333101375.2833.34.camel@dabdike>
+Subject: Re: [PATCH 0/4] block: move sd_format_disk_name() into block core
+ as disk_name_format()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Ren Mingxin <renmx@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Date: Fri, 30 Mar 2012 10:56:15 +0100
+In-Reply-To: <4F7581D4.4040301@cn.fujitsu.com>
+References: <4F7581D4.4040301@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 4:49 PM, Colin King <colin.king@canonical.com> wrote:
-> From: Colin Ian King <colin.king@canonical.com>
->
-> Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
-> ASPM is unsupported.  However, the semantics of force should probably allow
-> for this, especially as they did before the ASPM disable rework with commit
-> 3c076351c4027a56d5005a39a0b518a4ba393ce2
->
-> This patch just skips the clearing of any ASPM setup that the firmware has
-> carried out on this bus if pcie_aspm=force is being used.
->
-> BugLink: https://bugs.launchpad.net/ubuntu/+bug/962038
->
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> ---
->  drivers/pci/pcie/aspm.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-> index 24f049e..e406429 100644
-> --- a/drivers/pci/pcie/aspm.c
-> +++ b/drivers/pci/pcie/aspm.c
-> @@ -783,6 +783,9 @@ void pcie_clear_aspm(struct pci_bus *bus)
->  {
->        struct pci_dev *child;
->
-> +       if (aspm_force)
-> +               return;
-> +
->        /*
->         * Clear any ASPM setup that the firmware has carried out on this bus
->         */
-> --
-> 1.7.9.1
+On Fri, 2012-03-30 at 17:50 +0800, Ren Mingxin wrote:
+> 
+> This patch series renames "sd_format_disk_name()" to
+> "disk_name_format()" and moves it into block core. So
+> that who needs formatting disk name can use it, instead
+> of duplicating these similar help functions.
+> 
+> Ren Mingxin (4):
+>    block: add function disk_name_format() into block core
+>    scsi: replace sd_format_disk_name() to disk_name_format()
 
-Andrew, I believe the above is also needed to fix some additional
-regressions with the new ASPM code.  If you are picking up the one
-below this probably should go with it:
+These two should be a single patch so it makes it obvious to anyone
+looking through the change sets that the code is merely being moved.
 
-    + aspm-fix-pcie-devices-with-non-pcie-children.patch added to -mm tree
+Other than that, everything looks fine to me.
 
--apw
+James
+
+
