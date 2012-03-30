@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761365Ab2C3U3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 16:29:09 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56140 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759571Ab2C3U3H (ORCPT
+	id S1761399Ab2C3Ufx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 16:35:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40921 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756964Ab2C3Ufw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 16:29:07 -0400
-Date: Fri, 30 Mar 2012 22:29:00 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Denis Kuzmenko <linux@solonet.org.ua>,
-        Dong Aisheng-B29396 <B29396@freescale.com>
-Subject: Re: [PATCH RESEND] gpio: add flags to export GPIOs when requesting
-Message-ID: <20120330202900.GA15083@pengutronix.de>
-References: <1323797641-7277-1-git-send-email-w.sang@pengutronix.de>
- <20120106152741.GE2610@pengutronix.de>
- <20120116163154.GF4223@ponder.secretlab.ca>
+	Fri, 30 Mar 2012 16:35:52 -0400
+Date: Fri, 30 Mar 2012 22:35:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: Sasha Levin <levinsasha928@gmail.com>, arnd@arndb.de,
+        viro@zeniv.linux.org.uk, davej@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kmsg: Use vmalloc instead of kmalloc when writing
+In-Reply-To: <20120330164913.GA19946@kroah.com>
+Message-ID: <alpine.LFD.2.02.1203302225420.2542@ionos>
+References: <1333127067-2043-1-git-send-email-levinsasha928@gmail.com> <20120330153013.GC18488@kroah.com> <CA+1xoqdZnxcWNpL-03xsR+RDcz3=aRbx2LbR6mTJ_gCmwp-0Rw@mail.gmail.com> <20120330164913.GA19946@kroah.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <20120116163154.GF4223@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1171010687-1333139747=:2542"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--8323328-1171010687-1333139747=:2542
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-On Mon, Jan 16, 2012 at 09:31:54AM -0700, Grant Likely wrote:
-> On Fri, Jan 06, 2012 at 04:27:41PM +0100, Wolfram Sang wrote:
-> > On Tue, Dec 13, 2011 at 06:34:01PM +0100, Wolfram Sang wrote:
-> > > Introduce new flags to automatically export GPIOs when using the conv=
-enience
-> > > functions gpio_request_one() or gpio_request_array(). This eases supp=
-ort for
-> > > custom boards where lots of GPIOs need to be exported for customer
-> > > applications.
-> > >=20
-> > > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> > > ---
-> > >=20
-> > > Based on 3.2-rc5. Previous discussion (with kind of acks) can be foun=
-d here
-> > >=20
-> > > http://lkml.org/lkml/2011/11/15/378
-> >=20
-> > Ping. I am using this patch with v3.2 right now and it is really useful
-> > (and no build failure this time (I owe you a drink for my last patch!))
->=20
-> Applied, thanks.
+On Fri, 30 Mar 2012, Greg KH wrote:
+> On Fri, Mar 30, 2012 at 07:37:37PM +0300, Sasha Levin wrote:
+> > On Fri, Mar 30, 2012 at 6:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > On Fri, Mar 30, 2012 at 01:04:27PM -0400, Sasha Levin wrote:
+> > >> There are no size checks in kmsg_write(), and we try allocating enough
+> > >> memory to store everything userspace gave us, which may be too much for
+> > >> kmalloc to allocate.
+> > >
+> > > Really?  Have you seen this fail?  As only root can do this, is this
+> > > really a problem?
+> > 
+> > Only root, and a whole bunch of management software that dumps data
+> > into /dev/kmsg (systemd and friends).
+> 
+> Running as root, do any of these cause problems by asking for too much
+> memory here? 
 
-Has it been missed? I don't see it in linus-tree or your gpio-next?
+Running as root is not a guarantee for correctness. So the syscall
+should cope with bogus requests from user space and not rely on the
+sanity of anything. Looking at the main users which polute dmesg I'm
+inclined to assume insanity in the first place.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+As Sasha pointed out there is either the variant to use vmalloc and
+grant any write size or limit the size to something sensible. Though
+given the users of this, coming up with something sensible might be a
+problem.
 
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Is this something that needs to be addressed now, and in
+> stable kernels, or can it wait for 3.5?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Yes, it want's to be addressed now and it want's to be in stable as
+well. syscalls which have no bound checking are evil, no matter what.
+ 
+Thanks,
 
-iEYEARECAAYFAk92F4wACgkQD27XaX1/VRucBwCdGRbkDV45TSvQJ7E7YGX3hUi/
-H0EAni3spRlCwoPf0ukYQWvKuFcsFAWd
-=olvM
------END PGP SIGNATURE-----
-
---FCuugMFkClbJLl1L--
+	tglx
+--8323328-1171010687-1333139747=:2542--
