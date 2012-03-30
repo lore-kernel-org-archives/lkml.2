@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965472Ab2C3VQX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:16:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:32965 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965435Ab2C3VQL (ORCPT
+	id S935886Ab2C3VQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 17:16:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965470Ab2C3VQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:16:11 -0400
-Message-Id: <20120330194902.593145600@linuxfoundation.org>
+	Fri, 30 Mar 2012 17:16:23 -0400
+Message-Id: <20120330194903.915982968@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 30 Mar 2012 12:50:49 -0700
+Date: Fri, 30 Mar 2012 12:50:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gao feng <gaofeng@cn.fujitsu.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 136/149] ipv6: fix incorrent ipv6 ipsec packet fragment
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 145/149] x86, tls: Off by one limit check
 In-Reply-To: <20120330195823.GA31857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+commit 8f0750f19789cf352d7e24a6cc50f2ab1b4f1372 upstream.
 
-[ Upstream commit 1f85851e17b64cabd089a8a8839dddebc627948c ]
+These are used as offsets into an array of GDT_ENTRY_TLS_ENTRIES members
+so GDT_ENTRY_TLS_ENTRIES is one past the end of the array.
 
-Since commit 299b0767(ipv6: Fix IPsec slowpath fragmentation problem)
-In func ip6_append_data,after call skb_put(skb, fraglen + dst_exthdrlen)
-the skb->len contains dst_exthdrlen,and we don't reduce dst_exthdrlen at last
-This will make fraggap>0 in next "while cycle",and cause the size of skb incorrent
-
-Fix this by reserve headroom for dst_exthdrlen.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Link: http://lkml.kernel.org/r/20120324075250.GA28258@elgon.mountain
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_output.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1411,8 +1411,9 @@ alloc_new_skb:
- 			 */
- 			skb->ip_summed = csummode;
- 			skb->csum = 0;
--			/* reserve for fragmentation */
--			skb_reserve(skb, hh_len+sizeof(struct frag_hdr));
-+			/* reserve for fragmentation and ipsec header */
-+			skb_reserve(skb, hh_len + sizeof(struct frag_hdr) +
-+				    dst_exthdrlen);
+---
+ arch/x86/kernel/tls.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -163,7 +163,7 @@ int regset_tls_get(struct task_struct *t
+ {
+ 	const struct desc_struct *tls;
  
- 			if (sk->sk_type == SOCK_DGRAM)
- 				skb_shinfo(skb)->tx_flags = tx_flags;
-@@ -1420,9 +1421,9 @@ alloc_new_skb:
- 			/*
- 			 *	Find where to start putting bytes
- 			 */
--			data = skb_put(skb, fraglen + dst_exthdrlen);
--			skb_set_network_header(skb, exthdrlen + dst_exthdrlen);
--			data += fragheaderlen + dst_exthdrlen;
-+			data = skb_put(skb, fraglen);
-+			skb_set_network_header(skb, exthdrlen);
-+			data += fragheaderlen;
- 			skb->transport_header = (skb->network_header +
- 						 fragheaderlen);
- 			if (fraggap) {
+-	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
++	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+ 	    (count % sizeof(struct user_desc)) != 0)
+ 		return -EINVAL;
+@@ -198,7 +198,7 @@ int regset_tls_set(struct task_struct *t
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
+ 
+-	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
++	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+ 	    (count % sizeof(struct user_desc)) != 0)
+ 		return -EINVAL;
 
 
