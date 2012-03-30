@@ -1,137 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760915Ab2C3OMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 10:12:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32961 "EHLO
+	id S1760945Ab2C3OMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 10:12:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32969 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759684Ab2C3OM3 (ORCPT
+	with ESMTP id S1759684Ab2C3OMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 10:12:29 -0400
-Date: Fri, 30 Mar 2012 09:12:19 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [rfc] fcntl: Add F_GETOWNER_UIDS option
-Message-ID: <20120330141219.GC3693@sergelap>
-References: <20120328064838.GA2286@moon>
- <m1k425mae1.fsf@fess.ebiederm.org>
- <20120328075549.GA2204@moon>
- <20120328081639.GB2286@moon>
- <20120328194312.GA22211@mail.hallyn.com>
- <20120328194613.GA3678@redhat.com>
- <20120328213044.GA26190@peqn>
- <20120328213736.GM2204@moon>
- <20120329023053.GA10187@mail.hallyn.com>
- <20120330123122.GB2024@moon>
+	Fri, 30 Mar 2012 10:12:44 -0400
+Message-ID: <4F75BF5B.7000306@canonical.com>
+Date: Fri, 30 Mar 2012 16:12:43 +0200
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120330123122.GB2024@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] [RESEND] rlimits: Print more information when limits
+ are exceeded
+References: <1330025378-26075-1-git-send-email-arun.raghavan@collabora.co.uk> <alpine.LFD.2.02.1203301455360.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1203301455360.2542@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> On Thu, Mar 29, 2012 at 02:30:53AM +0000, Serge E. Hallyn wrote:
-> > Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> > > On Wed, Mar 28, 2012 at 04:30:44PM -0500, Serge Hallyn wrote:
-> > > > Quoting Oleg Nesterov (oleg@redhat.com):
-> > > > > On 03/28, Serge E. Hallyn wrote:
-> > > > > >
-> > > > > > If you want to
-> > > > > > just add the struct cred to the f_owner and do proper uid conversion,
-> > > > > > I'll support that too.  (Just grab a ref to the cred in
-> > > > > > fs/fcntl.c:f_modown(), and drop the ref in fs/file_table.c:__fput() ).
-> > > > > 
-> > > > > In this case f_owner.*uid should go away, I guess.
-> > > > 
-> > > > Yup.
-> > > > 
-> > > > Which I guess is all the more reason *not* to do this unless we end up
-> > > > not going with Eric's userns mapping patchset (which is unlikely).
-> > > > 
-> > > > > And sigio_perm()
-> > > > > should be unified with kill_ok_by_cred() somehow (modulo
-> > > > > security_file_send_sigiotask).
-> > > > > 
-> > > > > Right?
-> > > > 
-> > > > Maybe, but other differences include current being the signal sender in
-> > > > one and recipient in the other, and CAP_KILL being relevent in only
-> > > > one.
-> > > 
-> > > Hi Serge, thanks a lot for comments! Replying to prev email --
-> > > I've skipped cred part intentionally, I guess we need to wait
-> > > until Eric's patches hit LKML (if I understand all right) then
-> > > I'll expand the patch. I'll think a bit more tomorrow, ok?
-> > 
-> > Sure.
-> > 
-> > Thinking about it, the cred being stored right now is the cred in the
-> > container.  That's what you want for checkpoint, right?  So if someone
-> 
-> Hi Serge, sorry for delay, the stored creds are the ones a task has
-> at checkpoint time (we parse /proc/pid/status), and the dumper/restorer
-> works with root privileges so they should be able to change creds to
-> the former values on restore procedure.
-> 
-> > with the privs to do it checkpoints a task in a child userns, and restarts
-> > that without doing so in a child user ns, he should be allowed to do so.
-> 
-> I think so. Basically we require both checkpointer and restorer
-> to have admin rights before they do c/r (it might be relaxed in
-> future probably) and actually I think we're more oriented to
-> achieve stable c/r from init-namespace first (once this accomplished
-> then c/r from inside nested namespaces could be considered).
+On 03/30/2012 03:39 PM, Thomas Gleixner wrote:
+> On Fri, 24 Feb 2012, Arun Raghavan wrote:
+>
+>> This dumps some information in logs when a process exceeds its CPU or RT
+>> limits (soft and hard). Makes debugging easier when userspace triggers
+>> these limits.
+>
+> Why do we need to spam the logs with such information?
+>
+> SIGXCPU is only ever sent by this code. If there is a signal handler
+> in the application it's easy to debug. If not it's even easier, the
+> thing will simply be killed and you get the reason printed.
 
-Sounds good.
+I'm not totally sure, but don't we log SIGSEGVs? If so, the same 
+reasoning would apply to SIGSEGV.
 
-> > So what I'm saying is that it's not in-defensible to just not change
-> > anything in your original patch until we can discuss Eric's set.
-> > 
-> 
-> Yes, I wanna take a look on Eric's set first just to get right
-> "picture" of everything. And I wanted to find a minimal solution
-> with current kernel code base which could be extended in future.
-> 
-> That said I guess the current init-ns-only approach should do the
-> trick for a while. And (thanks for pointing) I need to add a test
-> if a caller which tries to obtain uids has enought credentials
-> for that (probably CAP_FOWNER), right?
+> For the SIGKILL case there only a limited number of reasons why a
+> SIGKILL is sent. So no, I rather commit a patch which removes that
+> ugly printk which is already there instead of adding more of them.
 
-Sorry, I'm not sure which caller you mean.  Neither f_setown nor
-f_getown require privilege right now.  Oh, you mean at restart?
-f_setown to someone else's uid/pid means you may cause a signal to
-be sent to them.  So CAP_KILL might be good?  You do through that
-signal get *some* info about the file writes, though not contents.
-So yeah, maybe (CAP_KILL|CAP_FOWNER).
+The reason I proposed some kind of printk for SIGKILL, was to get some 
+diagnostic information out of the SIGKILL. E g, if you have two threads 
+both running on rtprio rlimits in the same process, it would be very 
+interesting to know which one of them was causing the kernel to send 
+SIGKILL.
 
-> > If we were to *not* go with Eric's set, then when using your proposed
-> > patch for debugging purposes, would we want to show a list of uids,
-> > starting with the uid in the reader's user namespace, up to the
-> > container being investigated?  So for instance if init_user_ns spawned
-> > userns1, and that spawned userns2, and root in userns1 is seeking this
-> > info for a f_owner in userns2, then he should see two userids, the one
-> > mapped into usern1, and the one in userns2.
-> > 
-> > In Eric's set, we may want to show only the kuid (since the mapped
-> > userid can be found other ways), or for convenience we may want to show
-> > both the kuid and the mapped uid.
-> 
-> I suspect operating with kuid's will be a way more easier.
+Also, it could be useful to know whether the SIGKILL was actually sent 
+by the kernel, or by some other process feeling evil (e g "kill -9").
 
-Yeah, I keep going back and forth on which makes more sense.  But
-kuid's probably make more sense, even though they aren't what
-userspace in container will see.  When you restore, the mapping
-will give userspace what it expects;  and if you're going to
-restart in a container with a different mapping, then you'll
-have to convert the filesystem as well since its inodes will
-store kuids, so may as well also convert the kuids in the
-checkpoint image then.
-
--serge
+-- 
+David Henningsson, Canonical Ltd.
+http://launchpad.net/~diwic
