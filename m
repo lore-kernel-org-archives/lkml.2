@@ -1,107 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760382Ab2C3PAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 11:00:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52131 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab2C3PAa convert rfc822-to-8bit (ORCPT
+	id S1760973Ab2C3PBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 11:01:09 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:33445 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760504Ab2C3PBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 11:00:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F75BED4.9050005@linux.vnet.ibm.com>
-References: <CA+1xoqcf6qJOouKXGEHsjWSBJdA7qtMnuVopq+hoHS+TX8fvSg@mail.gmail.com>
- <CA+1xoqcJAwgTgQG=nZPsH_SLkPFkGt2rUiVWGn5SO5JOAC1RAA@mail.gmail.com> <4F75BED4.9050005@linux.vnet.ibm.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 30 Mar 2012 18:00:09 +0300
-Message-ID: <CA+1xoqcS1XXFJ8Dxru0+2ECW-wOPVNiEOzsPgBQZMa5MUYXRfg@mail.gmail.com>
-Subject: Re: sched: WARNING: at include/linux/cpumask.h:108 select_fallback_rq+0x241/0x280()
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, a.p.zijlstra@chello.nl,
-        mingo@kernel.org, "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        vapier@gentoo.org, rusty@rustcorp.com.au
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Mar 2012 11:01:00 -0400
+Message-ID: <1333119656.2228.2.camel@lorien2>
+Subject: Re: [PATCHv2] LEDS-One-Shot-Timer-Trigger-implementation
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: NeilBrown <neilb@suse.de>, rpurdie@rpsys.net
+Cc: shuahkhan@gmail.com, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 30 Mar 2012 09:00:56 -0600
+In-Reply-To: <1332977317.2869.7.camel@lorien2>
+References: <1332861697.2834.9.camel@lorien2>
+	 <20120328104544.593f3d1a@notabene.brown> <1332950949.2305.10.camel@lorien2>
+	 <20120329081109.5e8bbd59@notabene.brown> <1332977317.2869.7.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 5:10 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 03/30/2012 02:02 AM, Sasha Levin wrote:
->
->> (and now with lkml)
->>
->> Hi all,
->>
->> I got the following spew using trinity in a kvm tools guest on the
->> latest linux-next kernel.
->>
->> This is the result of trying to offline CPU1. I'm not sure how to
->> reproduce it easily besides putting some pressure on the system and
->> shutting down CPUs until it happens.
->>
->> [  317.238839] Cannot set affinity for irq 0
->> [  317.238839] ------------[ cut here ]------------
->> [  317.238839] WARNING: at include/linux/cpumask.h:108
->> select_fallback_rq+0x241/0x280()
->> [  317.238839] Pid: 13, comm: migration/1 Not tainted
->> 3.3.0-next-20120329-sasha #4
->> [  317.238839] Call Trace:
->> [  317.238839]  [<ffffffff810b26b5>] warn_slowpath_common+0x75/0xb0
->> [  317.238839]  [<ffffffff810b2705>] warn_slowpath_null+0x15/0x20
->> [  317.238839]  [<ffffffff810e5991>] select_fallback_rq+0x241/0x280
->> [  317.238839]  [<ffffffff810f1a40>] ? dequeue_task_fair+0x100/0x100
->> [  317.238839]  [<ffffffff810f1a40>] ? dequeue_task_fair+0x100/0x100
->> [  317.238839]  [<ffffffff810ecd20>] migrate_tasks+0x80/0xf0
->> [  317.238839]  [<ffffffff826fe03a>] ? migration_call+0xae/0x16b
->> [  317.238839]  [<ffffffff826fe073>] migration_call+0xe7/0x16b
->> [  317.238839]  [<ffffffff810ddebf>] notifier_call_chain+0x5f/0x150
->> [  317.238839]  [<ffffffff810ddfb9>] __raw_notifier_call_chain+0x9/0x10
->> [  317.238839]  [<ffffffff810b489b>] __cpu_notify+0x1b/0x30
->> [  317.238839]  [<ffffffff826c3fbd>] take_cpu_down+0x2d/0x40
->> [  317.238839]  [<ffffffff811357fa>] stop_machine_cpu_stop+0xda/0x1a0
->> [  317.238839]  [<ffffffff81135720>] ? queue_stop_cpus_work+0x190/0x190
->> [  317.238839]  [<ffffffff811352ae>] cpu_stopper_thread+0xee/0x200
->> [  317.238839]  [<ffffffff82705c1a>] ? __schedule+0x49a/0x860
->> [  317.238839]  [<ffffffff811351c0>] ? res_counter_init+0x50/0x50
->> [  317.238839]  [<ffffffff810d715e>] kthread+0xbe/0xd0
->> [  317.238839]  [<ffffffff82709e74>] kernel_thread_helper+0x4/0x10
->> [  317.238839]  [<ffffffff810e3ee0>] ? finish_task_switch+0x80/0x110
->> [  317.238839]  [<ffffffff82708174>] ? retint_restore_args+0x13/0x13
->> [  317.238839]  [<ffffffff810d70a0>] ? __init_kthread_worker+0x70/0x70
->> [  317.238839]  [<ffffffff82709e70>] ? gs_change+0x13/0x13
->> [  317.238839] ---[ end trace 79079cf527253aab ]---
->> [  317.250645] [sched_delayed] process 2267 (trinity) no longer affine to cpu1
->> [  317.323711] CPU 1 is now offline
->> [  317.591059] [sched_delayed] process 1956 (trinity) no longer affine to cpu1
->> [  317.812110] [sched_delayed] process 2004 (trinity) no longer affine to cpu1
->> [  318.401016] [sched_delayed] process 2228 (trinity) no longer affine to cpu1
->> [  318.581015] [sched_delayed] process 2099 (trinity) no longer affine to cpu1
->> --
->
->
->
-> Does this patch help?
->
-> ---
->
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: sched: Fix incorrect usage of for_each_cpu_mask() in select_fallback_rq()
->
-> The function for_each_cpu_mask() expects a *pointer* to struct cpumask
-> as its second argument, whereas select_fallback_rq() passes the value
-> itself. And moreover, for_each_cpu_mask() has been marked as obselete
-> in include/linux/cpumask.h. So move to the more appropriate for_each_cpu()
-> variant.
->
-> Reported-by: Sasha Levin <levinsasha928@gmail.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
+Neil, Richard,
 
-Works for me.
+How about this patch? Does this good now? Anything else that 
+needs attention?
 
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Thanks,
+-- Shuah 
+
+On Wed, 2012-03-28 at 17:28 -0600, Shuah Khan wrote:
+> Neil,
+> 
+> I also added documentation file in this second version. Thanks again for
+> brainstorming ideas and reviews. Leaving the subject line unchanged to
+> avoid confusion, and the documentation and code are updated to change
+> one-shot-timer to timer-no-default.
+> 
+> > 
+> > A separate patch is certainly a good idea.
+> > I would do the clean-up patches first, and then have the big change at the
+> > end of the series.  That way checkpatch won't complain about anything in your
+> > change.
+> > But you should do what you are most comfortable with.
+> 
+> Decided to do the simple_strtoul() cleanup patch later - after this one
+> goes through.
+> > 
+> > > 
+> > > > 
+> > > > > +	
+> > > > 
+> > > > Do you need to led_trigger_unregister(&timer_led_trigger) if the registration
+> > > > of one_shot_timer_led_trigger fails?
+> > > 
+> > > Yes, considered that while I was changing this routine, and thought
+> > > might be better to leave the registered timer alone when the second
+> > > registration fails. I can go either way.
+> > 
+> > The important point is that if timer_trig_init fails, then timer_trig_exit
+> > will never be called.
+> > So when timer_trig_init fails, it must ensure that it has un-done any bits
+> > that it successfully did.
+> 
+> Fixed.
+> 
+> -- Shuah
+> 
+> LED infrastructure lacks support for timer-no-default trigger and activation.
+> The current support allows for setting two timers, one for specifying how 
+> long a state to be on, and the second for how long the state to be off. For
+> example, delay_on value specifies the time period an LED should stay in on
+> state, followed by a delay_off value that specifies how long the LED should
+> stay in off state. The on and off cycle repeats until the trigger gets 
+> deactivated. There is no provision for one time activation to implement
+> features that require an on or off state to be held just once and then stay
+> in the original state forever.
+> 
+> This feature will help implement vibrate functionality which requires one
+> time activation of vibrate mode without a continuous vibrate on/off cycles.
+> 
+> This patch implements the timer-no-default trigger support by enhancing the
+> current led-class, led-core, and ledtrig-timer drivers to
+> 
+> 1. Add support for forever timer case. forever tag can be written to delay_on
+> or delay_off files. Internally forever is mapped to ULONG_MAX with no timer
+> associated with it.
+> 
+> 2. The led_blink_set() which takes two pointers to times one each for delay_on
+> and delay_off has been extended so that a NULL instead of a pointer means 
+> "forever".
+> 
+> 3. Add a new timer-no-default trigger to ledtrig-timer
+> 
+> 
+> The above enhancements support the following use-cases:
+> 
+> use-case 1:
+> echo timer-no-default > /sys/class/leds/SOMELED/trigger
+> echo forever > /sys/class/leds/SOMELED/delay_off
+> echo 2000 > /sys/class/leds/SOMELED/delay_on
+> 
+> When timer-no-default is activated in step1, unlike the timer trigger case,
+> timer-no-default activate routine activates the trigger without starting
+> any timers. The default 1 HZ delay_on and delay_off timers won't be started
+> like in the case of timer trigger activation. Not starting timers ensures 
+> that the one time state isn't stuck if some error occurs before actual timer
+> periods are specified. delay_on and delay_off files get created with 0
+> values. Please note that it is important to set delay_off to forever prior
+> to setting delay_on value. If the order is reversed, the LED will be turned
+> on, with no timer set to turn it off.
+> 
+> When delay_off value is specified in step 2, delay_off_store recognizes the
+> special forever tag and records it and returns without starting any timer.
+> Internally forever maps to ULONG_MAX. The led_blink_set() which takes
+> two pointers to times one each for delay_on and delay_off has been extended so
+> that a NULL instead of a pointer means "forever".
+> 
+> When delay_on value is specified in step 3, a timer gets started for delay_on
+> period, and delay_off stays at ULONG_MAX with no timer associated with it. 
+> 
+> use-case 2:
+> echo timer-no-default > /sys/class/leds/SOMELED/trigger
+> echo forever > /sys/class/leds/SOMELED/delay_on
+> echo 2000 > /sys/class/leds/SOMELED/delay_off
+> 
+> When timer-no-default is activated in step1, unlike the timer trigger case,
+> timer-no-default activate routine activates the trigger without starting
+> any timers. The default 1 HZ delay_on and delay_off timers won't be started
+> like in the case of timer trigger activation. Not starting timers ensures 
+> that the one time state isn't stuck if some error occurs before actual timer
+> periods are specified. delay_on and delay_off files get created with 0
+> values. Please note that it is important to set delay_on to forever prior
+> to setting delay_off value. If the order is reversed, the LED will be turned
+> off, with no timer set to turn it back on.
+> 
+> When delay_on value is specified in step 2, delay_on_store recognizes the
+> special forever tag and records it and returns without starting any timer. 
+> Internally forever maps to ULONG_MAX.
+> 
+> When delay_off value is specified in step 3, a timer gets started for delay_off
+> period, and delay_on stays at ULONG_MAX with no timer associated with it. 
+> 
+> From f7e8a55fb9ffa10daad1bbb80f2e9e0d81ad359f Mon Sep 17 00:00:00 2001
+> From: Shuah Khan <shuahkhan@gmail.com>
+> Date: Wed, 28 Mar 2012 15:40:33 -0600
+> Subject: [PATCH] LEDS-timer-no-default-implementation
+> 
+> 
+> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+> ---
+>  .../leds/leds-timer_no_default_trigger.txt         |   79 +++++++++++++++
+>  drivers/leds/led-class.c                           |    4 +-
+>  drivers/leds/led-core.c                            |   26 ++++-
+>  drivers/leds/leds.h                                |    2 +
+>  drivers/leds/ledtrig-timer.c                       |  104 ++++++++++++++------
+>  5 files changed, 180 insertions(+), 35 deletions(-)
+>  create mode 100644 Documentation/leds/leds-timer_no_default_trigger.txt
+> 
+> diff --git a/Documentation/leds/leds-timer_no_default_trigger.txt b/Documentation/leds/leds-timer_no_default_trigger.txt
+> new file mode 100644
+> index 0000000..ff3fdad
+> --- /dev/null
+> +++ b/Documentation/leds/leds-timer_no_default_trigger.txt
+> @@ -0,0 +1,79 @@
+> +
+> +LED timer no default trigger feature (one shot timer)
+> +=====================================================
+> +
+> +LED infrastructure lacks support for timer-no-default trigger and activation.
+> +The current support allows for setting two timers, one for specifying how
+> +long a state to be on, and the second for how long the state to be off. For
+> +example, delay_on value specifies the time period an LED should stay in on
+> +state, followed by a delay_off value that specifies how long the LED should
+> +stay in off state. The on and off cycle repeats until the trigger gets
+> +deactivated. There is no provision for one time activation to implement
+> +features that require an on or off state to be held just once and then stay
+> +in the original state forever.
+> +
+> +This feature will help implement vibrate functionality which requires one
+> +time activation of vibrate mode without a continuous vibrate on/off cycles.
+> +
+> +This patch implements the timer-no-default trigger support by enhancing the
+> +current led-class, led-core, and ledtrig-timer drivers to:
+> +
+> +- Add support for forever timer case. forever tag can be written to delay_on
+> +  or delay_off files. Internally forever is mapped to ULONG_MAX with no timer
+> +  associated with it.
+> +
+> +- The led_blink_set() which takes two pointers to times one each for delay_on
+> +  and delay_off has been extended so that a NULL instead of a pointer means
+> +  "forever".
+> +
+> +- Add a new timer-no-default trigger to ledtrig-timer
+> +
+> +The above enhancements support the following use-cases:
+> +
+> +use-case 1:
+> +echo timer-no-default > /sys/class/leds/SOMELED/trigger
+> +echo forever > /sys/class/leds/SOMELED/delay_off
+> +echo 2000 > /sys/class/leds/SOMELED/delay_on
+> +
+> +When timer-no-default is activated in step1, unlike the timer trigger case,
+> +timer-no-default activate routine activates the trigger without starting
+> +any timers. The default 1 HZ delay_on and delay_off timers won't be started
+> +like in the case of timer trigger activation. Not starting timers ensures
+> +that the one time state isn't stuck if some error occurs before actual timer
+> +periods are specified. delay_on and delay_off files get created with 0
+> +values. Please note that it is important to set delay_off to forever prior
+> +to setting delay_on value. If the order is reversed, the LED will be turned
+> +on, with no timer set to turn it off.
+> +
+> +When delay_off value is specified in step 2, delay_off_store recognizes the
+> +special forever tag and records it and returns without starting any timer.
+> +Internally forever maps to ULONG_MAX. The led_blink_set() which takes
+> +two pointers to times one each for delay_on and delay_off has been extended
+> +so that a NULL instead of a pointer means "forever".
+> +
+> +When delay_on value is specified in step 3, a timer gets started for
+> +delay_on period, and delay_off stays at ULONG_MAX with no timer associated
+> +with it.
+> +
+> +use-case 2:
+> +echo timer-no-default > /sys/class/leds/SOMELED/trigger
+> +echo forever > /sys/class/leds/SOMELED/delay_on
+> +echo 2000 > /sys/class/leds/SOMELED/delay_off
+> +
+> +When timer-no-default is activated in step1, unlike the timer trigger case,
+> +timer-no-default activate routine activates the trigger without starting
+> +any timers. The default 1 HZ delay_on and delay_off timers won't be started
+> +like in the case of timer trigger activation. Not starting timers ensures
+> +that the one time state isn't stuck if some error occurs before actual timer
+> +periods are specified. delay_on and delay_off files get created with 0
+> +values. Please note that it is important to set delay_on to forever prior
+> +to setting delay_off value. If the order is reversed, the LED will be turned
+> +off, with no timer set to turn it back on.
+> +
+> +When delay_on value is specified in step 2, delay_on_store recognizes the
+> +special forever tag and records it and returns without starting any timer.
+> +Internally forever maps to ULONG_MAX.
+> +
+> +When delay_off value is specified in step 3, a timer gets started for
+> +delay_off period, and delay_on stays at ULONG_MAX with no timer associated
+> +with it.
+> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+> index 5bff843..ed123ba 100644
+> --- a/drivers/leds/led-class.c
+> +++ b/drivers/leds/led-class.c
+> @@ -107,7 +107,9 @@ static void led_timer_function(unsigned long data)
+>  
+>  	led_set_brightness(led_cdev, brightness);
+>  
+> -	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
+> +	if (delay != LED_TIMER_FOREVER)
+> +		mod_timer(&led_cdev->blink_timer,
+> +			jiffies + msecs_to_jiffies(delay));
+>  }
+>  
+>  /**
+> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+> index d686004..419b0bc 100644
+> --- a/drivers/leds/led-core.c
+> +++ b/drivers/leds/led-core.c
+> @@ -72,17 +72,35 @@ void led_blink_set(struct led_classdev *led_cdev,
+>  		   unsigned long *delay_on,
+>  		   unsigned long *delay_off)
+>  {
+> +	unsigned long val_on;
+> +	unsigned long val_off;
+> +
+>  	del_timer_sync(&led_cdev->blink_timer);
+>  
+> -	if (led_cdev->blink_set &&
+> +	if (delay_on && delay_off && led_cdev->blink_set &&
+>  	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+>  		return;
+>  
+> +	/* if delay_on is null, leave it on forever after delay_off period
+> +	   if delay_off is null, leave it off forever after delay on period */
+> +	if (!delay_on)
+> +		val_on = LED_TIMER_FOREVER;
+> +	else
+> +		val_on = *delay_on;
+> +
+> +	if (!delay_off)
+> +		val_off = LED_TIMER_FOREVER;
+> +	else
+> +		val_off = *delay_off;
+> +
+>  	/* blink with 1 Hz as default if nothing specified */
+> -	if (!*delay_on && !*delay_off)
+> -		*delay_on = *delay_off = 500;
+> +	if (!val_on && !val_off) {
+> +		val_on = val_off = 500;
+> +		*delay_on = 500;
+> +		*delay_off = 500;
+> +	}
+>  
+> -	led_set_software_blink(led_cdev, *delay_on, *delay_off);
+> +	led_set_software_blink(led_cdev, val_on, val_off);
+>  }
+>  EXPORT_SYMBOL(led_blink_set);
+>  
+> diff --git a/drivers/leds/leds.h b/drivers/leds/leds.h
+> index e77c7f8..b2cda9f 100644
+> --- a/drivers/leds/leds.h
+> +++ b/drivers/leds/leds.h
+> @@ -17,6 +17,8 @@
+>  #include <linux/rwsem.h>
+>  #include <linux/leds.h>
+>  
+> +#define LED_TIMER_FOREVER ULONG_MAX
+> +
+>  static inline void led_set_brightness(struct led_classdev *led_cdev,
+>  					enum led_brightness value)
+>  {
+> diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
+> index 328c64c..e323cf2 100644
+> --- a/drivers/leds/ledtrig-timer.c
+> +++ b/drivers/leds/ledtrig-timer.c
+> @@ -24,6 +24,9 @@ static ssize_t led_delay_on_show(struct device *dev,
+>  {
+>  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+>  
+> +	if (led_cdev->blink_delay_on == LED_TIMER_FOREVER)
+> +		return sprintf(buf, "forever\n");
+> +
+>  	return sprintf(buf, "%lu\n", led_cdev->blink_delay_on);
+>  }
+>  
+> @@ -32,17 +35,25 @@ static ssize_t led_delay_on_store(struct device *dev,
+>  {
+>  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+>  	int ret = -EINVAL;
+> -	char *after;
+> -	unsigned long state = simple_strtoul(buf, &after, 10);
+> -	size_t count = after - buf;
+> -
+> -	if (isspace(*after))
+> -		count++;
+>  
+> -	if (count == size) {
+> -		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
+> -		led_cdev->blink_delay_on = state;
+> -		ret = count;
+> +	if (strncmp(buf, "forever", 7) == 0) {
+> +		led_blink_set(led_cdev, NULL, &led_cdev->blink_delay_off);
+> +		led_cdev->blink_delay_on = LED_TIMER_FOREVER;
+> +		ret = size;
+> +	} else {
+> +		char *after;
+> +		unsigned long state = simple_strtoul(buf, &after, 10);
+> +		size_t count = after - buf;
+> +
+> +		if (isspace(*after))
+> +			count++;
+> +
+> +		if (count == size) {
+> +			led_blink_set(led_cdev, &state,
+> +				&led_cdev->blink_delay_off);
+> +			led_cdev->blink_delay_on = state;
+> +			ret = count;
+> +		}
+>  	}
+>  
+>  	return ret;
+> @@ -53,6 +64,9 @@ static ssize_t led_delay_off_show(struct device *dev,
+>  {
+>  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+>  
+> +	if (led_cdev->blink_delay_off == LED_TIMER_FOREVER)
+> +		return sprintf(buf, "forever\n");
+> +
+>  	return sprintf(buf, "%lu\n", led_cdev->blink_delay_off);
+>  }
+>  
+> @@ -61,17 +75,24 @@ static ssize_t led_delay_off_store(struct device *dev,
+>  {
+>  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+>  	int ret = -EINVAL;
+> -	char *after;
+> -	unsigned long state = simple_strtoul(buf, &after, 10);
+> -	size_t count = after - buf;
+>  
+> -	if (isspace(*after))
+> -		count++;
+> -
+> -	if (count == size) {
+> -		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
+> -		led_cdev->blink_delay_off = state;
+> -		ret = count;
+> +	if (strncmp(buf, "forever", 7) == 0) {
+> +		led_blink_set(led_cdev, &led_cdev->blink_delay_on, NULL);
+> +		led_cdev->blink_delay_off = LED_TIMER_FOREVER;
+> +	} else {
+> +		char *after;
+> +		unsigned long state = simple_strtoul(buf, &after, 10);
+> +		size_t count = after - buf;
+> +
+> +		if (isspace(*after))
+> +			count++;
+> +
+> +		if (count == size) {
+> +			led_blink_set(led_cdev, &led_cdev->blink_delay_on,
+> +				&state);
+> +			led_cdev->blink_delay_off = state;
+> +			ret = count;
+> +		}
+>  	}
+>  
+>  	return ret;
+> @@ -80,7 +101,7 @@ static ssize_t led_delay_off_store(struct device *dev,
+>  static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
+>  static DEVICE_ATTR(delay_off, 0644, led_delay_off_show, led_delay_off_store);
+>  
+> -static void timer_trig_activate(struct led_classdev *led_cdev)
+> +static void timer_trig_activate_common(struct led_classdev *led_cdev)
+>  {
+>  	int rc;
+>  
+> @@ -91,17 +112,24 @@ static void timer_trig_activate(struct led_classdev *led_cdev)
+>  		return;
+>  	rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
+>  	if (rc)
+> -		goto err_out_delayon;
+> -
+> -	led_blink_set(led_cdev, &led_cdev->blink_delay_on,
+> -		      &led_cdev->blink_delay_off);
+> +		device_remove_file(led_cdev->dev, &dev_attr_delay_on);
+>  
+> -	led_cdev->trigger_data = (void *)1;
+> +	else
+> +		led_cdev->trigger_data = (void *)1;
+> +}
+>  
+> -	return;
+> +static void timer_trig_activate_timer_no_default(struct led_classdev *led_cdev)
+> +{
+> +	timer_trig_activate_common(led_cdev);
+> +}
+>  
+> -err_out_delayon:
+> -	device_remove_file(led_cdev->dev, &dev_attr_delay_on);
+> +static void timer_trig_activate(struct led_classdev *led_cdev)
+> +{
+> +	timer_trig_activate_common(led_cdev);
+> +	if (led_cdev->trigger_data) {
+> +		led_blink_set(led_cdev, &led_cdev->blink_delay_on,
+> +		      &led_cdev->blink_delay_off);
+> +	}
+>  }
+>  
+>  static void timer_trig_deactivate(struct led_classdev *led_cdev)
+> @@ -121,14 +149,30 @@ static struct led_trigger timer_led_trigger = {
+>  	.deactivate = timer_trig_deactivate,
+>  };
+>  
+> +static struct led_trigger timer_no_default_led_trigger = {
+> +	.name     = "timer-no-default",
+> +	.activate = timer_trig_activate_timer_no_default,
+> +	.deactivate = timer_trig_deactivate,
+> +};
+> +
+>  static int __init timer_trig_init(void)
+>  {
+> -	return led_trigger_register(&timer_led_trigger);
+> +	int rc = 0;
+> +
+> +	rc = led_trigger_register(&timer_led_trigger);
+> +	if (!rc) {
+> +		rc = led_trigger_register(&timer_no_default_led_trigger);
+> +		if (rc)
+> +			led_trigger_unregister(&timer_led_trigger);
+> +	}
+> +
+> +	return rc;
+>  }
+>  
+>  static void __exit timer_trig_exit(void)
+>  {
+>  	led_trigger_unregister(&timer_led_trigger);
+> +	led_trigger_unregister(&timer_no_default_led_trigger);
+>  }
+>  
+>  module_init(timer_trig_init);
+
+
