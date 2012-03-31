@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab2CaVbj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 17:31:39 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57338 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751977Ab2CaVbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 17:31:38 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18+Q4FK9+w+B3SWQVWM3zUAsw74QUdUh4/tXoaDw2
-	Cl1HkxAkTjNklp
-Message-ID: <4F77779F.3010607@gmx.de>
-Date: Sat, 31 Mar 2012 21:31:11 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
+	id S1753219Ab2CaVfR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 17:35:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52464 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752927Ab2CaVfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 17:35:14 -0400
+Date: Sat, 31 Mar 2012 23:34:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
+Message-ID: <20120331213423.GA21219@redhat.com>
+References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com> <1333227549.2325.4051.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Wang YanQing <udknight@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spock@gentoo.org
-Subject: Re: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute NX-protected
- page
-References: <20120327100136.GA3829@udknight> <20120327143243.015ecff6@pyramind.ukuu.org.uk>
-In-Reply-To: <20120327143243.015ecff6@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333227549.2325.4051.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2012 01:32 PM, Alan Cox wrote:
-> On Tue, 27 Mar 2012 18:01:36 +0800
-> Wang YanQing <udknight@gmail.com> wrote:
-> 
->>
->> Ok! I try to check pcibios_enabled first, but get some opposition by Alan Cox,
->> but I want to make thing work and fix the oops, so I choice the simple way to
->> check the (__supported_pte_mask & _PAGE_NX) instead of to check this variable plus
->> pci kernel boot parameter, pci mmconfig works or not, and more, and more. It is not
->> the best method, but it works and maybe all will feel happy.
+On 03/31, Eric Dumazet wrote:
+>
+> On Sat, 2012-03-31 at 19:51 +0200, Sasha Levin wrote:
+> > Hi all,
+> >
+> > It appears that a hang may occur when destroying an ipv6 tunnel, which
+> > I've reproduced several times in a KVM vm.
 
-Wang, could you please write a better commit message, at least you could
-include the oops that your patch fixes.
+kernel version?
 
-> Apart from adding a helper in the includes for the arch code of
-> 
-> 	static inline is_nx_enabled(void)
-> 	{
-> 		return !!(__supported_pte_mask & _PAGE_NX);
-> 	}
+> > [ 1561.564172] INFO: task kworker/u:2:3140 blocked for more than 120 seconds.
 
-As this check is already done in a few other places I think there should
-be a separate patch that adds this helper and ports all existing code to
-use it.
+And nobody else?
 
-So, does anyone have any objection against me taking this patch as is?
+It would be nice to know what sysrq-t says, in particular the trace
+of khelper thread is interesting.
 
+> Something is wrong here, call_usermodehelper_exec ( ... UMH_WAIT_EXEC)
+> should not block forever.
 
-Thanks,
+Yes, unless it triggers another request_module()...
 
-Florian Tobias Schandinat
+Tetsuo, could you please take a look? Unlikely, but may be this
+is fixed by your kmod-avoid-deadlock-by-recursive-kmod-call.patch
+in -mm ?
+
+Oleg.
+
