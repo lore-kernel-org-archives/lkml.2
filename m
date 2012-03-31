@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab2CaAv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 20:51:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:57662 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab2CaAvZ (ORCPT
+	id S1759438Ab2CaAwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 20:52:24 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:38534 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759237Ab2CaAwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 20:51:25 -0400
-Date: Fri, 30 Mar 2012 20:51:20 -0400 (EDT)
-Message-Id: <20120330.205120.2221145622131588797.davem@davemloft.net>
-To: drepper@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: sendmmsg: put_user vs __put_user
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAOPLpQf2bmj+i_zYtsS8JNzTDuBxCO5ByNRRqwv0kxaDBFdezg@mail.gmail.com>
-References: <CAOPLpQf2bmj+i_zYtsS8JNzTDuBxCO5ByNRRqwv0kxaDBFdezg@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 30 Mar 2012 20:52:02 -0400
+Message-ID: <4F765503.9040801@linux.vnet.ibm.com>
+Date: Sat, 31 Mar 2012 06:21:15 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F7616F5.4070000@zytor.com>
+In-Reply-To: <4F7616F5.4070000@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 30 Mar 2012 17:51:23 -0700 (PDT)
+x-cbid: 12033014-1618-0000-0000-000001321A4D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Fri, 30 Mar 2012 09:36:11 -0400
+On 03/31/2012 01:56 AM, H. Peter Anvin wrote:
+> What is the current status of this patchset?  I haven't looked at it too
+> closely because I have been focused on 3.4 up until now...
+>
 
-> Shouldn't the compat code in the sendmmsg implementation use the same
-> code as the normal code?  In which case you probably want something
-> like this:
+Thanks Peter,
 
-Compat processes are not able to generate virtual addresses anywhere
-near the range where the kernel resides, so the address range
-verification done by put_user() is completely superfluous and
-therefore not necessary.  The normal exception handling done by the
-access is completely sufficient.
+Currently targeting the patchset for next merge window. IMO These
+patches are in good shape now. I' ll rebase these patches and send it
+ASAP. It needs "jumplabel split patch" (from Andrew Jones) as
+dependency, I would fold that patch (got ok from him for that) also
+into series, and send them ASAP.
+
+  - Raghu
+
+
+
+
+
