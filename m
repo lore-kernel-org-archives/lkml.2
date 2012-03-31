@@ -1,105 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab2CaE6v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 00:58:51 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:45180 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab2CaE6t (ORCPT
+	id S1751763Ab2CaFTN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 01:19:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46964 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab2CaFTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 00:58:49 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Sat, 31 Mar 2012 00:58:47 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: error: 'SEGMENT_SIZE' undeclared with arm-eabi-gcc toolchain
-In-reply-to: <4F7638C3.4060301@samsung.com>
-Message-id: <alpine.LFD.2.02.1203310017440.24151@xanadu.home>
-References: <4F7638C3.4060301@samsung.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sat, 31 Mar 2012 01:19:10 -0400
+Date: Sat, 31 Mar 2012 06:19:06 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs part 2
+Message-ID: <20120331051906.GU6589@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012, Kukjin Kim wrote:
+	Miklos' first series (with do_lookup() rewrite split into edible
+chunks) + assorted bits and pieces.
+Please, pull from
+git:git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-> Hi all,
-> 
-> Occurs following error with arm-eabi-gcc toolchain (gcc version 4.4.3 -
-> GCC). But there is no error with arm-none-linux-gnueabi-gcc toolchain
-> (gcc version 4.4.1 - Sourcery G++ Lite 2009q3)...
-> 
-> fs/binfmt_aout.c: In function 'load_aout_binary':
-> fs/binfmt_aout.c:255: error: 'SEGMENT_SIZE' undeclared (first use in
-> this function)
-> fs/binfmt_aout.c:255: error: (Each undeclared identifier is reported
-> only once
-> fs/binfmt_aout.c:255: error: for each function it appears in.)
-> make[2]: *** [fs/binfmt_aout.o] Error 1
-> make[2]: *** Waiting for unfinished jobs....
-> make[1]: *** [fs] Error 2
-> 
-> Any idea?
+Shortlog:
+Al Viro (18):
+      selinuxfs: merge dentry allocation into sel_make_dir()
+      aio: merge aio_cancel_all() with wait_for_all_aios()
+      aio: take final put_ioctx() into callers of io_destroy()
+      pstore: trim pstore_get_inode()
+      mtdchar: kill persistently held vfsmount
+      get rid of pointless includes of ext2_fs.h
+      new helper: ext2_image_size()
+      migrate ext2_fs.h guts to fs/ext2/ext2.h
+      ext3: move headers to fs/ext3/
+      untangling do_lookup(), part 1
+      untangling do_lookup(), part 2
+      untangling do_lookup(), part 3
+      untangling do_lookup(), part 4
+      untangling do_lookup(), part 5
+      untangling do_lookup(), part 6
+      untangling do_lookup(), part 7
+      untangling do_lookup(), part 8
+      untangling do_lookup(), part 9
 
-Yes.  This comes from the N_DATADDR() macro, defined in 
-include/linux/a.out.h as follows:
+J. Bruce Fields (1):
+      vfs: fix out-of-date dentry_unhash() comment
 
-|#define N_DATADDR(x) \
-|    (N_MAGIC(x)==OMAGIC? (_N_TXTENDADDR(x)) \
-|     : (_N_SEGMENT_ROUND (_N_TXTENDADDR(x))))
+Miklos Szeredi (4):
+      vfs: fix d_need_lookup/d_revalidate order in do_lookup
+      vfs: don't revalidate just looked up dentry
+      vfs: move MAY_EXEC check from __lookup_hash()
+      vfs: split __lookup_hash
 
-Then, looking at _N_SEGMENT_ROUND() in the same file:
+Thierry Reding (1):
+      ext2: No longer export ext2_fs.h to user space
 
-|#define _N_SEGMENT_ROUND(x) ALIGN(x, SEGMENT_SIZE)
-
-Here it is.  Now, why isn't SEGMENT_SIZE defined?  Well that's where 
-things get way more hairy than they are already (caution, barf bag 
-recommended):
-
-|/* Address of data segment in memory after it is loaded.
-|   Note that it is up to you to define SEGMENT_SIZE
-|   on machines not listed here.  */
-|#if defined(vax) || defined(hp300) || defined(pyr)
-|#define SEGMENT_SIZE page_size
-|#endif
-|#ifdef	sony
-|#define	SEGMENT_SIZE	0x2000
-|#endif	/* Sony.  */
-|#ifdef is68k
-|#define SEGMENT_SIZE 0x20000
-|#endif
-|#if defined(m68k) && defined(PORTAR)
-|#define PAGE_SIZE 0x400
-|#define SEGMENT_SIZE PAGE_SIZE
-|#endif
-|
-|#ifdef linux
-|#ifdef __KERNEL__
-|#include <asm/page.h>
-|#else
-|#include <unistd.h>
-|#endif
-|#if defined(__i386__) || defined(__mc68000__)
-|#define SEGMENT_SIZE	1024
-|#else
-|#ifndef SEGMENT_SIZE
-|#ifdef __KERNEL__
-|#define SEGMENT_SIZE	PAGE_SIZE
-|#else
-|#define SEGMENT_SIZE   getpagesize()
-|#endif
-|#endif
-|#endif
-|#endif
-
-So the clue you're looking for is probably on the 18th line above.
-
-BTW, no one is using a.out on ARM anymore.  You should really consider 
-removing CONFIG_BINFMT_AOUT from your config.
-
-
-Nicolas
+Diffstat:
+ arch/blackfin/kernel/setup.c              |    7 +-
+ drivers/mtd/mtdchar.c                     |   53 +--
+ fs/aio.c                                  |   32 +-
+ fs/ext2/ext2.h                            |  631 +++++++++++++++++++++++++++++
+ fs/ext2/xattr_security.c                  |    5 +-
+ fs/ext2/xattr_trusted.c                   |    5 +-
+ fs/ext2/xip.c                             |    2 -
+ fs/ext3/acl.c                             |    8 +-
+ fs/ext3/balloc.c                          |   10 +-
+ fs/ext3/bitmap.c                          |    4 +-
+ fs/ext3/dir.c                             |    7 +-
+ include/linux/ext3_fs.h => fs/ext3/ext3.h |  488 +++++++++++++++++++----
+ fs/ext3/ext3_jbd.c                        |    2 +-
+ fs/ext3/file.c                            |    6 +-
+ fs/ext3/fsync.c                           |    8 +-
+ fs/ext3/hash.c                            |    4 +-
+ fs/ext3/ialloc.c                          |   13 +-
+ fs/ext3/inode.c                           |   12 +-
+ fs/ext3/ioctl.c                           |    7 +-
+ fs/ext3/namei.c                           |   14 +-
+ fs/ext3/resize.c                          |    5 +-
+ fs/ext3/super.c                           |   18 +-
+ fs/ext3/symlink.c                         |    4 +-
+ fs/ext3/xattr.c                           |    7 +-
+ fs/ext3/xattr_security.c                  |    6 +-
+ fs/ext3/xattr_trusted.c                   |    6 +-
+ fs/ext3/xattr_user.c                      |    5 +-
+ fs/gfs2/file.c                            |    1 -
+ fs/namei.c                                |  195 ++++------
+ fs/ocfs2/ioctl.c                          |    2 -
+ fs/pstore/inode.c                         |   26 +-
+ include/linux/Kbuild                      |    1 -
+ include/linux/ext2_fs.h                   |  569 +-------------------------
+ include/linux/ext2_fs_sb.h                |  126 ------
+ include/linux/ext3_fs_i.h                 |  151 -------
+ include/linux/ext3_fs_sb.h                |   91 -----
+ include/linux/ext3_jbd.h                  |  229 -----------
+ init/do_mounts_initrd.c                   |    1 -
+ init/do_mounts_rd.c                       |    9 +-
+ security/selinux/hooks.c                  |    9 +-
+ security/selinux/selinuxfs.c              |  108 ++---
+ 41 files changed, 1248 insertions(+), 1639 deletions(-)
+ rename include/linux/ext3_fs.h => fs/ext3/ext3.h (67%)
+ delete mode 100644 include/linux/ext2_fs_sb.h
+ delete mode 100644 include/linux/ext3_fs_i.h
+ delete mode 100644 include/linux/ext3_fs_sb.h
+ delete mode 100644 include/linux/ext3_jbd.h
