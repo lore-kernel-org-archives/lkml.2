@@ -1,122 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2CaHcV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 03:32:21 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:49733 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751274Ab2CaHcR (ORCPT
+	id S1753967Ab2CaHch (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 03:32:37 -0400
+Received: from szxga03-in.huawei.com ([58.251.152.66]:35796 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108Ab2CaHcf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 03:32:17 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz1dbaL1432N98dKzz1202hzz8275bh8275dhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1QNLJ-02-AGS-02
-X-M-MSG: 
-Date: Sat, 31 Mar 2012 23:31:55 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alan Stern <stern@rowland.harvard.edu>, <linux-acpi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/3] ACPI: Introduce ACPI D3_COLD state support
-Message-ID: <20120331153155.GA8169@localhost.amd.com>
-References: <1333001380-6050-1-git-send-email-ming.m.lin@intel.com>
- <1333001380-6050-2-git-send-email-ming.m.lin@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1333001380-6050-2-git-send-email-ming.m.lin@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 31 Mar 2012 07:32:02.0123 (UTC) FILETIME=[5D3489B0:01CD0F10]
-X-OriginatorOrg: amd.com
+	Sat, 31 Mar 2012 03:32:35 -0400
+Date: Sat, 31 Mar 2012 15:29:53 +0800
+From: "Peter Huang (Peng)" <peter.huangpeng@huawei.com>
+Subject: =?UTF-8?Q?=E7=AD=94=E5=A4=8D:_=E7=AD=94=E5=A4=8D:_=E7=AD=94=E5=A4=8D:?=
+	=?UTF-8?Q?_=E7=AD=94=E5=A4=8D:_=5BPATCH=5D_set_fake=5Frtable's_d?=
+	=?UTF-8?Q?st_to_NULL_to_avoid_kernel_Oops.?=
+In-reply-to: <1333172486.2325.3101.camel@edumazet-glaptop>
+X-Originating-IP: [10.166.90.174]
+To: "'Eric Dumazet'" <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, harry.majun@huawei.com, zhoukang7@huawei.com,
+        "'netdev'" <netdev@vger.kernel.org>
+Message-id: <005401cd0f10$10dd14b0$32973e10$%huangpeng@huawei.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=UTF-8
+Content-language: zh-cn
+Content-transfer-encoding: 8BIT
+Thread-index: Ac0PAO8h/qvU11XPRpG8NOCNXvXmxgADxmKA
+X-CFilter-Loop: Reflected
+References: <002501cd0d74$317fd100$947f7300$%huangpeng@huawei.com>
+ <1333002975.2325.82.camel@edumazet-glaptop>
+ <002601cd0d76$c4987440$4dc95cc0$%huangpeng@huawei.com>
+ <1333011120.2325.354.camel@edumazet-glaptop>
+ <004501cd0d8f$c4e133b0$4ea39b10$%huangpeng@huawei.com>
+ <1333020682.2325.517.camel@edumazet-glaptop>
+ <004d01cd0edd$593f3bd0$0bbdb370$%huangpeng@huawei.com>
+ <1333172486.2325.3101.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, Eric
 
-On Thu, Mar 29, 2012 at 02:09:38PM +0800, Lin Ming wrote:
-> From: Zhang Rui <rui.zhang@intel.com>
+Thanks very much for your reply.
+I will refine this patch and send it out later.
+
+--------------------------------
+Peter Huang(peng)
+
+
+> -----邮件原件-----
+> 发件人: Eric Dumazet [mailto:eric.dumazet@gmail.com]
+> 发送时间: 2012年3月31日 13:41
+> 收件人: Peter Huang (Peng)
+> 抄送: linux-kernel@vger.kernel.org; harry.majun@huawei.com; zhoukang7@huawei.com; 'netdev'
+> 主题: Re: 答复: 答复: 答复: [PATCH] set fake_rtable's dst to NULL to avoid kernel Oops.
 > 
-> If a device has _PR3, it means the device supports D3_COLD.
-> Add the ability to validate and enter D3_COLD state in ACPI.
-
-Since we are going to support two D3 states, I think maybe we should
-clear their meanings in Linux. So D3 means D3 hot, right?
-
-If so, I think the following code has problems:
-
-static int acpi_bus_get_power_flags(struct acpi_device *device)
-{
-	... ...
-
-	/* Set defaults for D0 and D3 states (always valid) */
-	device->power.states[ACPI_STATE_D0].flags.valid = 1;
-	device->power.states[ACPI_STATE_D0].power = 100;
-	device->power.states[ACPI_STATE_D3].flags.valid = 1;
-	device->power.states[ACPI_STATE_D3].power = 0;
-}
-
-The problem is, D3's valid flag shouldn't be set and its power shouldn't
-be 0 since it's D3 hot. It feels like D3_COLD should be used instead.
-
-What do you think? Thanks.
-
--Aaron
-
+> On Sat, 2012-03-31 at 09:26 +0800, Peter Huang (Peng) wrote:
+> > > > >Check net/bridge/br_netfilter.c and commits e688a6048076 (net: introduce
+> > > > >DST_NOPEER dst flag )  4adf0af6818f3ea5 (bridge: send correct MTU value
+> > > > >in PMTU (revised))
+> >
+> > Hi, Eric
+> >
+> > I confirmed the patch contents again.
+> > For our case, NF_INET_PRE_ROUTING is involved, not NF_BR_LOCAL_IN.
+> > It seems pre-routing is not included in the patch you mentioned.
+> > BTW, our pkts are all ipv6 DHCP pkts(with MAC 33 33 00 01 00 02).
+> >
+> > We verified the patch bellow, and this works fine, no WARN_ON happened.
 > 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  drivers/acpi/power.c |    4 ++--
->  drivers/acpi/scan.c  |    7 +++++++
->  2 files changed, 9 insertions(+), 2 deletions(-)
+> Hi Peter
 > 
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 9ac2a9f..0d681fb 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
->  {
->  	int result;
->  
-> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
-> +	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
->  		return -EINVAL;
->  
->  	if (device->power.state == state)
->  		return 0;
->  
->  	if ((device->power.state < ACPI_STATE_D0)
-> -	    || (device->power.state > ACPI_STATE_D3))
-> +	    || (device->power.state > ACPI_STATE_D3_COLD))
->  		return -ENODEV;
->  
->  	/* TBD: Resources must be ordered. */
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 8ab80ba..571396c 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -885,6 +885,13 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->  				acpi_bus_add_power_resource(ps->resources.handles[j]);
->  		}
->  
-> +		/* The exist of _PR3 indicates D3Cold support */
-> +		if (i == ACPI_STATE_D3) {
-> +			status = acpi_get_handle(device->handle, object_name, &handle);
-> +			if (ACPI_SUCCESS(status))
-> +				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> +		}
-> +
->  		/* Evaluate "_PSx" to see if we can do explicit sets */
->  		object_name[2] = 'S';
->  		status = acpi_get_handle(device->handle, object_name, &handle);
-> -- 
-> 1.7.2.5
+> I claim that your patch is not the good one and you need to refine it.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> First, code is not needed if CONFIG_BRIDGE_NETFILTER is not set.
 > 
+> In fact, if CONFIG_BRIDGE_NETFILTER is not set, compilation will fail
+> since fake_rtable doesnt exist in "struct net_bridge", so you fix a bug
+> and introduce a new one.
+> 
+>   CC [M]  net/bridge/br_forward.o
+> net/bridge/br_forward.c: In function ‘__br_forward’:
+> net/bridge/br_forward.c:94: error: ‘struct sk_buff’ has no member named ‘_skb_dst’
+> net/bridge/br_forward.c:94: error: ‘struct net_bridge’ has no member named ‘fake_rtable’
+> make[1]: *** [net/bridge/br_forward.o] Error 1
+> make: *** [_module_net/bridge] Error 2
+> 
+> 
+> Then, the test is using obsolete dst internals and cast that should not
+> be in a C file. :
+> 
+> if (skb->_skb_dst == (unsigned long)&to->br->fake_rtable)
+> 
+> So I suggested you take a look at net/bridge/br_netfilter.c code to see
+> how this can be done properly. Maybe you need to add a helper in an
+> include file to make this proper.
+> 
+> I hope this is now clear to you, because your initial patch cannot be
+> applied as is. If you want full credit for this work, you must go a step
+> forward, or else another guy will finish the job.
+> 
+> Thanks
+
 
