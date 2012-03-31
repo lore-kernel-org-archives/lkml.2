@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2CaUpI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 16:45:08 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:45285 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab2CaUpG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 16:45:06 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 31 Mar 2012 22:44:52 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: On patch "Remove all #inclusions of asm/system.h"
-Message-ID: <20120331224452.1862a2b4@stein>
-In-Reply-To: <31597.1333222293@redhat.com>
-References: <20120329153409.7295eda9@stein>
-	<31597.1333222293@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752866Ab2CaUpP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 16:45:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752139Ab2CaUpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 16:45:11 -0400
+Date: Sat, 31 Mar 2012 22:45:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: syscall_regfunc() && TIF_SYSCALL_TRACEPOINT
+Message-ID: <20120331204501.GA18572@redhat.com>
+References: <20120330183104.GA12927@redhat.com> <1333134131.23924.191.camel@gandalf.stny.rr.com> <20120330201550.GA16628@redhat.com> <1333152806.23924.196.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333152806.23924.196.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 31 David Howells wrote:
-> Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
-> > For example, drivers/firewire/{core-device,core-topology,ohci,sbp2}.c use
-> > smp_rmb()¹ and used to include asm/system.h.  Now they do not include
-> > asm/barrier.h.  Is this by mistake or on purpose?
-> 
-> I tried to make sure allyesconfig worked for x86_64 and a bunch of defconfigs
-> worked.  I can't guarantee that that got 100% coverage.  I also knew there
-> would be some breakage from the base Linux kernel having moved on by the time
-> Linus pulled myu patches - though I don't know if this is the case here (I
-> suspect not).
+On 03/30, Steven Rostedt wrote:
+>
+> On Fri, 2012-03-30 at 22:15 +0200, Oleg Nesterov wrote:
+>
+> > But I don't really understand why do you think that "clear" is more
+> > important.
+>
+> They are both important. But as I tend to consider performance when
+> tracing is off as critical, I'm more concerned about that. But both must
+> be fixed, because not reporting traces can confuse a developer.
 
-It's not a problem; they now get barrier.h via spinlock.h.  I just
-wondered whether absence of #include <asm/barrier.h> in those files had a
-deeper non-obvious meaning.  Since it doesn't I will just put that include
-in them next time around when I do some housekeeping there.
--- 
-Stefan Richter
--=====-===-- --== =====
-http://arcgraph.de/sr/
+Ah, got it, thanks.
+
+I was going to send the simple patch we discussed, but suddenly I
+realized that I have another question.
+
+Why do we want to filter out the kernel threads in syscall_regfunc?
+
+>From cc3b13c1 "tracing: Don't trace kernel thread syscalls"
+
+	 then it has no effect to trace the kernel thread calls
+	 to syscalls in that path.
+	 Setting the TIF_SYSCALL_TRACEPOINT flag is then useless for these.
+
+OK, but then it doesn't hurt? Or is there another reason why
+TIF_SYSCALL_TRACEPOINT is not desirable on kthread?
+
+The problem is ____call_usermodehelper() which execs the user-space
+task. This clears PF_KTHREAD (sets ->mm), but obviously if
+sys_tracepoint_refcount != 0 this is too late.
+
+So what do you think we should do,
+
+	- keep this check
+
+	- remove it
+
+	- remove it in a separate patch
+
+	- add the "sync with sys_tracepoint_refcount" hook
+	  before kernel_execve()
+
+?
+
+Oleg.
+
