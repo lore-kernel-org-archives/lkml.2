@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab2CaTsr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 15:48:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43238 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab2CaTsp convert rfc822-to-8bit (ORCPT
+	id S1752599Ab2CaUBv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 16:01:51 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52186 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab2CaUBt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 15:48:45 -0400
+	Sat, 31 Mar 2012 16:01:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120331193913.GX6589@ZenIV.linux.org.uk>
-References: <20120331051906.GU6589@ZenIV.linux.org.uk> <CA+55aFxmOEUCXeHtSAN+g3cSpFVvf5vPTSzZDtXdJs0Hq1rVZw@mail.gmail.com>
- <CA+55aFztRQHX+3KET_xdQd9TuEEuuGS6ogrKAEYGaWfd6m9rDA@mail.gmail.com>
- <20120331185738.GW6589@ZenIV.linux.org.uk> <CA+55aFxtN9j5j6XC9nDf+mNJ06ipgD4cbW6hrZw6+3KfvDSuww@mail.gmail.com>
- <20120331193913.GX6589@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 31 Mar 2012 12:48:22 -0700
-X-Google-Sender-Auth: 2QLYB_B4pOqI3TQ5uahf1SxsMGg
-Message-ID: <CA+55aFwbHtLuo4yuDnWO-UgH5p7JThhG6uppX9hvQAXic9MS2w@mail.gmail.com>
-Subject: Re: [git pull] vfs part 2
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <31523.1333222099@redhat.com>
+References: <1333086729-14263-1-git-send-email-gerg@uclinux.org>
+	<31523.1333222099@redhat.com>
+Date: Sat, 31 Mar 2012 22:01:48 +0200
+X-Google-Sender-Auth: 7AMM6scpP_CDRASBZmENpOKYdjc
+Message-ID: <CAMuHMdWmq9LagZ4FydtUesq8088aWpQ29s54+4srEW5_jJy8vQ@mail.gmail.com>
+Subject: Re: [PATCH] m68k: include asm/cmpxchg.h in our m68k atomic.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Howells <dhowells@redhat.com>
+Cc: gerg@uclinux.org, linux-m68k@vger.kernel.org, uclinux-dev@uclinux.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 12:39 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Sat, Mar 31, 2012 at 21:28, David Howells <dhowells@redhat.com> wrote:
+> <gerg@uclinux.org> wrote:
 >
-> Variants:
-> � � � �1) drop that commit, fold obvious fix into it, leave it for for-next
-> once -rc1 is there; ask you to pull the branch with that sucker excluded
-> � � � �2) fold the fix into commit, ask you to pull the resulting branch
-> � � � �3) add fix to the end of existing branch, ask to pull
+>> From: Greg Ungerer <gerg@uclinux.org>
+>>
+>> After commit 9ffc93f203c18a70623f21950f1dd473c9ec48cd ("Remove all
+>>
+>>   CC      init/main.o
+>> In file included from include/linux/mm.h:15:0,
+>>                  from include/linux/ring_buffer.h:5,
+>>                  from include/linux/ftrace_event.h:4,
+>>                  from include/trace/syscall.h:6,
+>>                  from include/linux/syscalls.h:78,
+>>                  from init/main.c:16:
+>> include/linux/debug_locks.h: In function ‘__debug_locks_off’:
+>> include/linux/debug_locks.h:16:2: error: implicit declaration of function ‘xchg’
+>>
+>> There is no indirect inclusions of the new asm/cmpxchg.h for m68k here.
+>> Looking at most other architectures they include asm/cmpxchg.h in their
+>> asm/atomic.h. M68k currently does not do this. Including this in atomic.h
+>> fixes all m68k build problems.
+>>
+>> Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+>
+> Acked-by: David Howells <dhowells@redhat.com>
 
-Let's go for (2). I'll take a new look after the pull request, but no
-guarantees that I'll then pull it.
+Thanks! I hope to create for-3.4 and for-3.5 branches tomorrow.
 
-Btw, I liked the do_lookup cleanups, but nicer commit logs would have
-been good. Especially the first lines. The whole
+Gr{oetje,eeting}s,
 
-     untangling do_lookup(), part 1
-     untangling do_lookup(), part 2
-     untangling do_lookup(), part 3
-     untangling do_lookup(), part 4
-     untangling do_lookup(), part 5
-     untangling do_lookup(), part 6
-     untangling do_lookup(), part 7
-     untangling do_lookup(), part 8
-     untangling do_lookup(), part 9
+                        Geert
 
-in shortlogs (and gitk!) does turn me off. So since you have to redo
-the series anyway, can I ask you to perhaps try to make it a bit more
-descriptive?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-                       Linus
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
