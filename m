@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117Ab2CaDdR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 23:33:17 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54877 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2CaDdM (ORCPT
+	id S1752676Ab2CaDzB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 23:55:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10378 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab2CaDy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 23:33:12 -0400
-Date: Fri, 30 Mar 2012 22:33:06 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [ 06/41] PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
-Message-ID: <20120331033306.GA2475@burratino>
-References: <20120316233829.GA14022@kroah.com>
- <20120316233811.136320350@linuxfoundation.org>
- <20120331032356.GA6664@milliways>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120331032356.GA6664@milliways>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Mar 2012 23:54:59 -0400
+X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=bbdwcUTO14bGI6IewX0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1333166096.23924.198.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.26-rt45
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Fri, 30 Mar 2012 23:54:56 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ken,
 
-Ken Moffat wrote:
+Dear RT Folks,
 
->                                                   Long story short -
-> 3.2.9 was adequate, 3.3.0 crashes early in boot (before switching
-> from the 80x25 console to kms).
-[...]
->  I then reverted this commit from 3.3.0
+I'm pleased to announce the 3.0.26-rt45 stable release.
 
-You might enjoy the following patch:
 
- http://thread.gmane.org/gmane.linux.kernel.pci/14503
+This release is just an update to the new stable 3.0.26 version
+and no RT specific changes have been made.
 
-Hope that helps,
-Jonathan
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 35c675f3661f5d8ebe9a0787c181cdcaff307e95
+
+
+Or to build 3.0.26-rt45 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.26.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.26-rt45.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
