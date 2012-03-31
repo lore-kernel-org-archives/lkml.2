@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759360Ab2CaMCA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 08:02:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60009 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757391Ab2CaMB6 (ORCPT
+	id S1759378Ab2CaMCs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 08:02:48 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:49908 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757391Ab2CaMCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 08:01:58 -0400
+	Sat, 31 Mar 2012 08:02:46 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+To: Michal Simek <monstr@monstr.eu>
+Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
         Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 05/19 v2] mn10300/mm/fault.c: Port OOM changes to do_page_fault
-Date: Sat, 31 Mar 2012 08:01:33 -0400
-Message-Id: <1333195293-5081-1-git-send-email-consul.kautuk@gmail.com>
+Subject: [PATCH 06/19 v2] microblaze/mm/fault.c: Port OOM changes to do_page_fault
+Date: Sat, 31 Mar 2012 08:02:01 -0400
+Message-Id: <1333195321-5115-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,57 +30,40 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to mn10300.
+Port these changes to microblaze.
 
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+Acked-by: Michal Simek <monstr@monstr.eu>
 ---
- arch/mn10300/mm/fault.c |   33 +++++++++++++++++++++++++--------
- 1 files changed, 25 insertions(+), 8 deletions(-)
+ arch/microblaze/mm/fault.c |   32 +++++++++++++++++++++++++++-----
+ 1 files changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/arch/mn10300/mm/fault.c b/arch/mn10300/mm/fault.c
-index 90f346f..d48a84f 100644
---- a/arch/mn10300/mm/fault.c
-+++ b/arch/mn10300/mm/fault.c
-@@ -123,7 +123,8 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long fault_code,
- 	struct mm_struct *mm;
- 	unsigned long page;
- 	siginfo_t info;
--	int write, fault;
-+	int fault;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+diff --git a/arch/microblaze/mm/fault.c b/arch/microblaze/mm/fault.c
+index c38a265..5f8b6fa0 100644
+--- a/arch/microblaze/mm/fault.c
++++ b/arch/microblaze/mm/fault.c
+@@ -92,6 +92,8 @@ void do_page_fault(struct pt_regs *regs, unsigned long address,
+ 	int code = SEGV_MAPERR;
+ 	int is_write = error_code & ESR_S;
+ 	int fault;
++	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++			      (is_write ? FAULT_FLAG_WRITE : 0));
  
- #ifdef CONFIG_GDBSTUB
- 	/* handle GDB stub causing a fault */
-@@ -170,6 +171,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long fault_code,
- 	if (in_atomic() || !mm)
- 		goto no_context;
+ 	regs->ear = address;
+ 	regs->esr = error_code;
+@@ -138,6 +140,7 @@ void do_page_fault(struct pt_regs *regs, unsigned long address,
+ 		if (kernel_mode(regs) && !search_exception_tables(regs->pc))
+ 			goto bad_area_nosemaphore;
  
 +retry:
- 	down_read(&mm->mmap_sem);
+ 		down_read(&mm->mmap_sem);
+ 	}
  
- 	vma = find_vma(mm, address);
-@@ -220,7 +222,6 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long fault_code,
-  */
- good_area:
- 	info.si_code = SEGV_ACCERR;
--	write = 0;
- 	switch (fault_code & (MMUFCR_xFC_PGINVAL|MMUFCR_xFC_TYPE)) {
- 	default:	/* 3: write, present */
- 	case MMUFCR_xFC_TYPE_WRITE:
-@@ -232,7 +233,7 @@ good_area:
- 	case MMUFCR_xFC_PGINVAL | MMUFCR_xFC_TYPE_WRITE:
- 		if (!(vma->vm_flags & VM_WRITE))
- 			goto bad_area;
--		write++;
-+		flags |= FAULT_FLAG_WRITE;
- 		break;
- 
- 		/* read from protected page */
-@@ -251,7 +252,11 @@ good_area:
+@@ -210,7 +213,11 @@ good_area:
  	 * make sure we exit gracefully rather than endlessly redo
  	 * the fault.
  	 */
--	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
+-	fault = handle_mm_fault(mm, vma, address, is_write ? FAULT_FLAG_WRITE : 0);
 +	fault = handle_mm_fault(mm, vma, address, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
@@ -90,16 +72,17 @@ index 90f346f..d48a84f 100644
  	if (unlikely(fault & VM_FAULT_ERROR)) {
  		if (fault & VM_FAULT_OOM)
  			goto out_of_memory;
-@@ -259,10 +264,22 @@ good_area:
+@@ -218,11 +225,26 @@ good_area:
  			goto do_sigbus;
  		BUG();
  	}
--	if (fault & VM_FAULT_MAJOR)
+-	if (unlikely(fault & VM_FAULT_MAJOR))
 -		current->maj_flt++;
 -	else
 -		current->min_flt++;
++
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR)
++		if (unlikely(fault & VM_FAULT_MAJOR))
 +			current->maj_flt++;
 +		else
 +			current->min_flt++;
@@ -114,9 +97,12 @@ index 90f346f..d48a84f 100644
 +			goto retry;
 +		}
 +	}
- 
++
  	up_read(&mm->mmap_sem);
- 	return;
++
+ 	/*
+ 	 * keep track of tlb+htab misses that are good addrs but
+ 	 * just need pte's created via handle_mm_fault()
 -- 
 1.7.5.4
 
