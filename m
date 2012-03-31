@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab2CaAwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 20:52:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38856 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759160Ab2CaAv3 (ORCPT
+	id S1759112Ab2CaAv1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 20:51:27 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:57662 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab2CaAvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 20:51:29 -0400
-Date: Fri, 30 Mar 2012 17:55:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Phillip Lougher <plougher@redhat.com>, linux-kernel@vger.kernel.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Eugene Teo <eteo@redhat.com>,
-        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] sysctl: fix restrict write access to dmesg_restrict
-Message-Id: <20120330175525.eaef1ece.akpm@linux-foundation.org>
-In-Reply-To: <4F7646DC.8090802@nod.at>
-References: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
-	<4F7646DC.8090802@nod.at>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Fri, 30 Mar 2012 20:51:25 -0400
+Date: Fri, 30 Mar 2012 20:51:20 -0400 (EDT)
+Message-Id: <20120330.205120.2221145622131588797.davem@davemloft.net>
+To: drepper@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: sendmmsg: put_user vs __put_user
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAOPLpQf2bmj+i_zYtsS8JNzTDuBxCO5ByNRRqwv0kxaDBFdezg@mail.gmail.com>
+References: <CAOPLpQf2bmj+i_zYtsS8JNzTDuBxCO5ByNRRqwv0kxaDBFdezg@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 30 Mar 2012 17:51:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Mar 2012 01:50:52 +0200 Richard Weinberger <richard@nod.at> wrote:
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Fri, 30 Mar 2012 09:36:11 -0400
 
-> Am 31.03.2012 01:43, schrieb Phillip Lougher:
-> > Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
-> > however, it incorrectly alters kptr_restrict rather than
-> > dmesg_restrict.
-> > 
-> > The original patch from Richard Weinberger
-> > (https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
-> > expected, and so the patch seems to have been misapplied.
-> > 
-> 
-> Hmm, indeed.
-> Any idea how this could happen, Andrew?
+> Shouldn't the compat code in the sendmmsg implementation use the same
+> code as the normal code?  In which case you probably want something
+> like this:
 
-Presumably someone else fiddled with the file, patch(1) misapplied the
-hunk and I didn't notice.
-
-Send a fix?
+Compat processes are not able to generate virtual addresses anywhere
+near the range where the kernel resides, so the address range
+verification done by put_user() is completely superfluous and
+therefore not necessary.  The normal exception handling done by the
+access is completely sufficient.
