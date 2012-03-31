@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab2CaIKt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 04:10:49 -0400
-Received: from claw.goop.org ([74.207.240.146]:43600 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab2CaIKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 04:10:35 -0400
-X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Mar 2012 04:10:35 EDT
-Message-ID: <4F76BA40.90108@goop.org>
-Date: Sat, 31 Mar 2012 01:03:12 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1755648Ab2CaIMH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 04:12:07 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47204 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab2CaIL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 04:11:58 -0400
+Date: Sat, 31 Mar 2012 10:11:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+Message-ID: <20120331081152.GB15958@gmail.com>
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
+ <4F7616F5.4070000@zytor.com>
+ <alpine.LFD.2.02.1203302333560.2542@ionos>
+ <20120330221836.GN17822@one.firstfloor.org>
+ <alpine.LFD.2.02.1203310044580.2542@ionos>
+ <20120331000843.GO17822@one.firstfloor.org>
 MIME-Version: 1.0
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-CC: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] HID #2
-References: <alpine.LNX.2.00.1201091248360.24984@pobox.suse.cz> <4F71D9C5.9040301@canonical.com> <alpine.LNX.2.00.1203271952580.25526@pobox.suse.cz> <4F75EB05.7000805@canonical.com>
-In-Reply-To: <4F75EB05.7000805@canonical.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120331000843.GO17822@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2012 10:19 AM, Joseph Salisbury wrote:
->
-> Thanks for the feedback, Jiri.
->
-> I was interested in the following commit for linux-stable for support of
-> Apple bluetooth Keyboard(USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI
-> 0x0255):
-> 652aa6a9ac4a5f8d3e1fa3f6466646519e83c01e hid-input/battery: add FEATURE
-> quirk
->
-> Jeremy, do you happen to know if this patch can be applied without the
-> needing the other 9 patches you provided in this commit?
 
-There's no point; it only relates to getting the keyboard battery level,
-which is what the rest of the series does.  It shouldn't make any
-functional difference to the keyboard itself.
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-    J
+> > Care to back that up with numbers and proper trace evidence 
+> > instead of handwaving?
+> 
+> E.g. my plumbers presentations on lock and mm scalability from 
+> last year has some graphs that show this very clearly, plus 
+> some additional data on the mutexes. This compares to the 
+> glibc futex locks, which perform much better than the kernel 
+> mutex locks on larger systems under higher contention
+
+If you mean these draft slides:
+
+  http://www.halobates.de/plumbers-fork-locks_v2.pdf
+
+it has very little verifiable information in it. It just 
+cryptically says lock hold time "microbenchmark", which might or 
+might not be a valid measurement.
+
+You could have been honest and straightforward in your first 
+mail:
+
+ "I ran workload X on machine Y, and got results Z."
+
+Instead you are *hindering* the discussion:
+
+> Given your tone I will not supply an URL. [...]
+
+If you meant the above URL then it's not the proper numbers 
+Thomas asked for, just some vague slides. If you meant something 
+else then put up or shut up.
+
+Thanks,
+
+	Ingo
