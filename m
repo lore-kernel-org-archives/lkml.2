@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759532Ab2CaMEA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 08:04:00 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:36111 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757416Ab2CaMD5 (ORCPT
+	id S1759564Ab2CaMER (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 08:04:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62848 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759272Ab2CaMEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 08:03:57 -0400
+	Sat, 31 Mar 2012 08:04:14 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Richard Kuo <rkuo@codeaurora.org>, Linas Vepstas <linas@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
         Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 09/19 v2] ia64/mm/fault.c: Port OOM changes to ia64_do_page_fault
-Date: Sat, 31 Mar 2012 08:03:32 -0400
-Message-Id: <1333195412-5217-1-git-send-email-consul.kautuk@gmail.com>
+Subject: [PATCH 10/19 v2] hexagon/mm/vm_fault.c: Port OOM changes to do_page_fault
+Date: Sat, 31 Mar 2012 08:03:59 -0400
+Message-Id: <1333195439-5251-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,90 +31,64 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to ia64.
+Port these changes to hexagon.
 
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
 ---
- arch/ia64/mm/fault.c |   38 ++++++++++++++++++++++++++++++--------
- 1 files changed, 30 insertions(+), 8 deletions(-)
+ arch/hexagon/mm/vm_fault.c |   22 +++++++++++++++++-----
+ 1 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/arch/ia64/mm/fault.c b/arch/ia64/mm/fault.c
-index 02d29c2..b0c3b29 100644
---- a/arch/ia64/mm/fault.c
-+++ b/arch/ia64/mm/fault.c
-@@ -81,6 +81,12 @@ ia64_do_page_fault (unsigned long address, unsigned long isr, struct pt_regs *re
- 	struct siginfo si;
- 	unsigned long mask;
+diff --git a/arch/hexagon/mm/vm_fault.c b/arch/hexagon/mm/vm_fault.c
+index c10b76f..06695cc 100644
+--- a/arch/hexagon/mm/vm_fault.c
++++ b/arch/hexagon/mm/vm_fault.c
+@@ -53,6 +53,8 @@ void do_page_fault(unsigned long address, long cause, struct pt_regs *regs)
+ 	int si_code = SEGV_MAPERR;
  	int fault;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
-+
-+	mask = ((((isr >> IA64_ISR_X_BIT) & 1UL) << VM_EXEC_BIT)
-+		| (((isr >> IA64_ISR_W_BIT) & 1UL) << VM_WRITE_BIT));
-+
-+	flags |= ((mask & VM_WRITE) ? FAULT_FLAG_WRITE : 0);
+ 	const struct exception_table_entry *fixup;
++	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++			      (cause > 0 ? FAULT_FLAG_WRITE : 0));
  
- 	/* mmap_sem is performance critical.... */
- 	prefetchw(&mm->mmap_sem);
-@@ -109,6 +115,7 @@ ia64_do_page_fault (unsigned long address, unsigned long isr, struct pt_regs *re
- 	if (notify_page_fault(regs, TRAP_BRKPT))
- 		return;
+ 	/*
+ 	 * If we're in an interrupt or have no user context,
+@@ -63,6 +65,7 @@ void do_page_fault(unsigned long address, long cause, struct pt_regs *regs)
+ 
+ 	local_irq_enable();
  
 +retry:
  	down_read(&mm->mmap_sem);
+ 	vma = find_vma(mm, address);
+ 	if (!vma)
+@@ -96,14 +99,23 @@ good_area:
+ 		break;
+ 	}
  
- 	vma = find_vma_prev(mm, address, &prev_vma);
-@@ -142,9 +149,6 @@ ia64_do_page_fault (unsigned long address, unsigned long isr, struct pt_regs *re
- 	if (((isr >> IA64_ISR_R_BIT) & 1UL) && (!(vma->vm_flags & (VM_READ | VM_WRITE))))
- 		goto bad_area;
- 
--	mask = (  (((isr >> IA64_ISR_X_BIT) & 1UL) << VM_EXEC_BIT)
--		| (((isr >> IA64_ISR_W_BIT) & 1UL) << VM_WRITE_BIT));
--
- 	if ((vma->vm_flags & mask) != mask)
- 		goto bad_area;
- 
-@@ -153,7 +157,11 @@ ia64_do_page_fault (unsigned long address, unsigned long isr, struct pt_regs *re
- 	 * sure we exit gracefully rather than endlessly redo the
- 	 * fault.
- 	 */
--	fault = handle_mm_fault(mm, vma, address, (mask & VM_WRITE) ? FAULT_FLAG_WRITE : 0);
+-	fault = handle_mm_fault(mm, vma, address, (cause > 0));
 +	fault = handle_mm_fault(mm, vma, address, flags);
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
 +		return;
-+
- 	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		/*
- 		 * We ran out of memory, or some other thing happened
-@@ -168,10 +176,24 @@ ia64_do_page_fault (unsigned long address, unsigned long isr, struct pt_regs *re
- 		}
- 		BUG();
- 	}
--	if (fault & VM_FAULT_MAJOR)
--		current->maj_flt++;
--	else
--		current->min_flt++;
-+
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR)
-+			current->maj_flt++;
-+		else
-+			current->min_flt++;
-+		if (fault & VM_FAULT_RETRY) {
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+			 /* No need to up_read(&mm->mmap_sem) as we would
-+			 * have already released it in __lock_page_or_retry
-+			 * in mm/filemap.c.
-+			 */
-+
-+			goto retry;
-+		}
-+	}
-+
- 	up_read(&mm->mmap_sem);
- 	return;
  
+ 	/* The most common case -- we are done. */
+ 	if (likely(!(fault & VM_FAULT_ERROR))) {
+-		if (fault & VM_FAULT_MAJOR)
+-			current->maj_flt++;
+-		else
+-			current->min_flt++;
++		if (flags & FAULT_FLAG_ALLOW_RETRY) {
++			if (fault & VM_FAULT_MAJOR)
++				current->maj_flt++;
++			else
++				current->min_flt++;
++			if (fault & VM_FAULT_RETRY) {
++				flags &= ~FAULT_FLAG_ALLOW_RETRY;
++				goto retry;
++			}
++		}
+ 
+ 		up_read(&mm->mmap_sem);
+ 		return;
 -- 
 1.7.5.4
 
