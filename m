@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab2CaJYb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 05:24:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60093 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab2CaJY1 (ORCPT
+	id S1755241Ab2CaJZs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 05:25:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49453 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2CaJZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 05:24:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Zach Pfeffer <zach.pfeffer@linaro.org>
-Subject: Re: swap on eMMC and other flash
-Date: Sat, 31 Mar 2012 09:24:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linaro-kernel@lists.linaro.org, linux-mm@kvack.org,
-        Alex Lemberg <alex.lemberg@sandisk.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Hyojin Jeong <syr.jeong@samsung.com>,
-        "Luca Porzio (lporzio)" <lporzio@micron.com>, kernel-team@android.com,
-        Yejin Moon <yejin.moon@samsung.com>
-References: <201203301744.16762.arnd@arndb.de> <201203301850.22784.arnd@arndb.de> <CAJN=5gDBQJc_KXUadqtzmxPqPF71PDcToGo_T-agNey9eN2MQA@mail.gmail.com>
-In-Reply-To: <CAJN=5gDBQJc_KXUadqtzmxPqPF71PDcToGo_T-agNey9eN2MQA@mail.gmail.com>
+	Sat, 31 Mar 2012 05:25:45 -0400
+Subject: [PATCH 0/7] mm: vma->vm_flags diet
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 31 Mar 2012 13:25:36 +0400
+Message-ID: <20120331091049.19373.28994.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203310924.19708.arnd@arndb.de>
-X-Provags-ID: V02:K0:DWmoYYWCqt7yqv8pNhCWNiys2XKLnz0rA3TRwRxtYwm
- daqrQO6WTZekjj5m8ORUlsuX1tdnlWS09eFtRq50hZ07gRBXcZ
- jl7ZRmbPSkeDmv0jPFmb1GOJ93e7DuQUbTakQZ8oJJiHa+Aezs
- iOxusC4CoW+WOic/2Jtz8rrQwo6YQt5Xu0fYGzDvV7cmi3gcTk
- oaSCZ+6yCd+1CB6Ly6Dd3n1X+QkKDazGH4+Jfy0s5fQ61JINIZ
- XkmcZkBVcW2y83lL+SZFOWcwk4PXFRCdnpI/BTkzAqVNbToOHm
- 5Ob+0qg3LeTAaGkh78Nd0JOk8U+hzgMugibafnvxV133F8i5NF
- ROr/fwyv9ZNxc6UyKeow=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 30 March 2012, Zach Pfeffer wrote:
-> Last I read Transparent Huge Pages are still paged in and out a page
-> at a time, is this or was this ever the case? If it is the case should
-> the paging system be extended to support THP which would take care of
-> the big block issues with flash media?
-> 
+This patch-set moves/kills some VM_* flags in vma->vm_flags bit-field,
+as result there appears four free bits.
 
-I don't think we ever want to get /that/ big. As I mentioned, going
-beyond 64kb does not improve throughput on most flash media. However,
-paging out 16MB causes a very noticeable delay of up to a few seconds
-on slow drives, which would be inacceptable to users.
+Also I'm working on VM_RESERVED reorganization, probably it also can be killed.
+It lost original swapout-protection sense in 2.6 and now is used for other purposes.
 
-Also, that would only deal with the rare case where the data you
-want to page out is actually in huge pages, not the common case.
+---
 
-	Arnd
+Konstantin Khlebnikov (7):
+      mm, x86, PAT: rework linear pfn-mmap tracking
+      mm: introduce vma flag VM_ARCH_1
+      mm: kill vma flag VM_CAN_NONLINEAR
+      mm: kill vma flag VM_INSERTPAGE
+      mm, drm/udl: fixup vma flags on mmap
+      mm: kill vma flag VM_EXECUTABLE
+      mm: move madvise vma flags to the end
+
+
+ arch/powerpc/oprofile/cell/spu_task_sync.c |   15 ++----
+ arch/tile/mm/elf.c                         |   12 ++---
+ arch/x86/mm/pat.c                          |   25 +++++++---
+ drivers/gpu/drm/udl/udl_drv.c              |    2 -
+ drivers/gpu/drm/udl/udl_drv.h              |    1 
+ drivers/gpu/drm/udl/udl_gem.c              |   14 ++++++
+ drivers/oprofile/buffer_sync.c             |   17 +------
+ drivers/staging/android/ashmem.c           |    1 
+ fs/9p/vfs_file.c                           |    1 
+ fs/btrfs/file.c                            |    2 -
+ fs/ceph/addr.c                             |    2 -
+ fs/cifs/file.c                             |    1 
+ fs/ecryptfs/file.c                         |    1 
+ fs/ext4/file.c                             |    2 -
+ fs/fuse/file.c                             |    1 
+ fs/gfs2/file.c                             |    2 -
+ fs/nfs/file.c                              |    1 
+ fs/nilfs2/file.c                           |    2 -
+ fs/ocfs2/mmap.c                            |    2 -
+ fs/ubifs/file.c                            |    1 
+ fs/xfs/xfs_file.c                          |    2 -
+ include/asm-generic/pgtable.h              |    4 +-
+ include/linux/fs.h                         |    2 +
+ include/linux/mm.h                         |   69 ++++++++++++----------------
+ include/linux/mm_types.h                   |    1 
+ include/linux/mman.h                       |    1 
+ kernel/auditsc.c                           |   17 +------
+ kernel/fork.c                              |   29 ++----------
+ mm/filemap.c                               |    2 -
+ mm/filemap_xip.c                           |    3 +
+ mm/fremap.c                                |   14 +++---
+ mm/huge_memory.c                           |   10 ++--
+ mm/ksm.c                                   |    9 +++-
+ mm/memory.c                                |   29 ++++++++----
+ mm/mmap.c                                  |   32 +++----------
+ mm/nommu.c                                 |   19 ++++----
+ mm/shmem.c                                 |    3 -
+ security/tomoyo/util.c                     |   14 +-----
+ 38 files changed, 158 insertions(+), 207 deletions(-)
+
+-- 
+Signature
