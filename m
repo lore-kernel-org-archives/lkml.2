@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2CaD5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 23:57:16 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:56461 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab2CaD5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 23:57:13 -0400
-Date: Fri, 30 Mar 2012 20:54:42 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH v2 05/15] hwmon: mark const init data with __initconst
- instead of __initdata
-Message-ID: <20120331035442.GA23851@ericsson.com>
-References: <20120330200358.GV15647@pengutronix.de>
- <1333137905-13809-5-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1751552Ab2CaEID (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 00:08:03 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41354 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab2CaEIB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 00:08:01 -0400
+Date: Sat, 31 Mar 2012 09:37:45 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+Message-ID: <20120331040745.GC14030@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
+ <4F7616F5.4070000@zytor.com>
+ <alpine.LFD.2.02.1203302333560.2542@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1333137905-13809-5-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <alpine.LFD.2.02.1203302333560.2542@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12033104-5816-0000-0000-000001F950B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 04:04:55PM -0400, Uwe Kleine-König wrote:
-> As long as there is no other non-const variable marked __initdata in the
-> same compilation unit it doesn't hurt. If there were one however
-> compilation would fail with
-> 
-> 	error: $variablename causes a section type conflict
-> 
-> because a section containing const variables is marked read only and so
-> cannot contain non-const variables.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-> Cc: lm-sensors@lm-sensors.org
-> ---
-> changes since (implicit) v1:
->  - drop wrong changes to drivers/hwmon/w83627hf.c
-> 
->  drivers/hwmon/w83627ehf.c |   18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-> index a25350c..54922ed 100644
-> --- a/drivers/hwmon/w83627ehf.c
-> +++ b/drivers/hwmon/w83627ehf.c
-> @@ -2619,15 +2619,15 @@ static struct platform_driver w83627ehf_driver = {
->  static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
->  				 struct w83627ehf_sio_data *sio_data)
->  {
-> -	static const char __initdata sio_name_W83627EHF[] = "W83627EHF";
-> -	static const char __initdata sio_name_W83627EHG[] = "W83627EHG";
-> -	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
-> -	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
-> -	static const char __initdata sio_name_W83627UHG[] = "W83627UHG";
-> -	static const char __initdata sio_name_W83667HG[] = "W83667HG";
-> -	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
-> -	static const char __initdata sio_name_NCT6775[] = "NCT6775F";
-> -	static const char __initdata sio_name_NCT6776[] = "NCT6776F";
-> +	static const char sio_name_W83627EHF[] __initconst = "W83627EHF";
-> +	static const char sio_name_W83627EHG[] __initconst = "W83627EHG";
-> +	static const char sio_name_W83627DHG[] __initconst = "W83627DHG";
-> +	static const char sio_name_W83627DHG_P[] __initconst = "W83627DHG-P";
-> +	static const char sio_name_W83627UHG[] __initconst = "W83627UHG";
-> +	static const char sio_name_W83667HG[] __initconst = "W83667HG";
-> +	static const char sio_name_W83667HG_B[] __initconst = "W83667HG-B";
-> +	static const char sio_name_NCT6775[] __initconst = "NCT6775F";
-> +	static const char sio_name_NCT6776[] __initconst = "NCT6776F";
->  
-Applied.
+* Thomas Gleixner <tglx@linutronix.de> [2012-03-31 00:07:58]:
 
-Just wondering: Why not the following ?
+> I know that Peter is going to go berserk on me, but if we are running
+> a paravirt guest then it's simple to provide a mechanism which allows
+> the host (aka hypervisor) to check that in the guest just by looking
+> at some global state.
+> 
+> So if a guest exits due to an external event it's easy to inspect the
+> state of that guest and avoid to schedule away when it was interrupted
+> in a spinlock held section. That guest/host shared state needs to be
+> modified to indicate the guest to invoke an exit when the last nested
+> lock has been released.
 
-> +	static const char __initconst sio_name_NCT6776[] = "NCT6776F";
+I had attempted something like that long back:
 
-It does not make a difference in the generated code, and appears to be
-less confusing, at least to me.
+http://lkml.org/lkml/2010/6/3/4
 
-Thanks,
-Guenter
+The issue is with ticketlocks though. VCPUs could go into a spin w/o
+a lock being held by anybody. Say VCPUs 1-99 try to grab a lock in
+that order (on a host with one cpu). VCPU1 wins (after VCPU0 releases it)
+and releases the lock. VCPU1 is next eligible to take the lock. If 
+that is not scheduled early enough by host, then remaining vcpus would keep 
+spinning (even though lock is technically not held by anybody) w/o making 
+forward progress.
+
+In that situation, what we really need is for the guest to hint to host
+scheduler to schedule VCPU1 early (via yield_to or something similar). 
+
+The current pv-spinlock patches however does not track which vcpu is
+spinning at what head of the ticketlock. I suppose we can consider 
+that optimization in future and see how much benefit it provides (over
+plain yield/sleep the way its done now).
+
+Do you see any issues if we take in what we have today and address the
+finer-grained optimization as next step?
+
+- vatsa 
+
