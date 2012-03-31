@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab2CaHch (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 03:32:37 -0400
-Received: from szxga03-in.huawei.com ([58.251.152.66]:35796 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab2CaHcf convert rfc822-to-8bit (ORCPT
+	id S1753833Ab2CaHgW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 03:36:22 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49452 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274Ab2CaHgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 03:32:35 -0400
-Date: Sat, 31 Mar 2012 15:29:53 +0800
-From: "Peter Huang (Peng)" <peter.huangpeng@huawei.com>
-Subject: =?UTF-8?Q?=E7=AD=94=E5=A4=8D:_=E7=AD=94=E5=A4=8D:_=E7=AD=94=E5=A4=8D:?=
-	=?UTF-8?Q?_=E7=AD=94=E5=A4=8D:_=5BPATCH=5D_set_fake=5Frtable's_d?=
-	=?UTF-8?Q?st_to_NULL_to_avoid_kernel_Oops.?=
-In-reply-to: <1333172486.2325.3101.camel@edumazet-glaptop>
-X-Originating-IP: [10.166.90.174]
-To: "'Eric Dumazet'" <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, harry.majun@huawei.com, zhoukang7@huawei.com,
-        "'netdev'" <netdev@vger.kernel.org>
-Message-id: <005401cd0f10$10dd14b0$32973e10$%huangpeng@huawei.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=UTF-8
-Content-language: zh-cn
-Content-transfer-encoding: 8BIT
-Thread-index: Ac0PAO8h/qvU11XPRpG8NOCNXvXmxgADxmKA
-X-CFilter-Loop: Reflected
-References: <002501cd0d74$317fd100$947f7300$%huangpeng@huawei.com>
- <1333002975.2325.82.camel@edumazet-glaptop>
- <002601cd0d76$c4987440$4dc95cc0$%huangpeng@huawei.com>
- <1333011120.2325.354.camel@edumazet-glaptop>
- <004501cd0d8f$c4e133b0$4ea39b10$%huangpeng@huawei.com>
- <1333020682.2325.517.camel@edumazet-glaptop>
- <004d01cd0edd$593f3bd0$0bbdb370$%huangpeng@huawei.com>
- <1333172486.2325.3101.camel@edumazet-glaptop>
+	Sat, 31 Mar 2012 03:36:21 -0400
+Message-ID: <1333179378.2994.18.camel@dabdike.sthat4.btopenzone.com>
+Subject: [GIT PULL] parisc updates for the 3.3+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 31 Mar 2012 08:36:18 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Eric
+This is a couple of minor updates (fixing lws futex locking and removing
+some obsolete cpu_*_map calls).
 
-Thanks very much for your reply.
-I will refine this patch and send it out later.
+The update is available here:
 
---------------------------------
-Peter Huang(peng)
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git parisc-misc
 
+The short changelog is:
 
-> -----邮件原件-----
-> 发件人: Eric Dumazet [mailto:eric.dumazet@gmail.com]
-> 发送时间: 2012年3月31日 13:41
-> 收件人: Peter Huang (Peng)
-> 抄送: linux-kernel@vger.kernel.org; harry.majun@huawei.com; zhoukang7@huawei.com; 'netdev'
-> 主题: Re: 答复: 答复: 答复: [PATCH] set fake_rtable's dst to NULL to avoid kernel Oops.
-> 
-> On Sat, 2012-03-31 at 09:26 +0800, Peter Huang (Peng) wrote:
-> > > > >Check net/bridge/br_netfilter.c and commits e688a6048076 (net: introduce
-> > > > >DST_NOPEER dst flag )  4adf0af6818f3ea5 (bridge: send correct MTU value
-> > > > >in PMTU (revised))
-> >
-> > Hi, Eric
-> >
-> > I confirmed the patch contents again.
-> > For our case, NF_INET_PRE_ROUTING is involved, not NF_BR_LOCAL_IN.
-> > It seems pre-routing is not included in the patch you mentioned.
-> > BTW, our pkts are all ipv6 DHCP pkts(with MAC 33 33 00 01 00 02).
-> >
-> > We verified the patch bellow, and this works fine, no WARN_ON happened.
-> 
-> Hi Peter
-> 
-> I claim that your patch is not the good one and you need to refine it.
-> 
-> First, code is not needed if CONFIG_BRIDGE_NETFILTER is not set.
-> 
-> In fact, if CONFIG_BRIDGE_NETFILTER is not set, compilation will fail
-> since fake_rtable doesnt exist in "struct net_bridge", so you fix a bug
-> and introduce a new one.
-> 
->   CC [M]  net/bridge/br_forward.o
-> net/bridge/br_forward.c: In function ‘__br_forward’:
-> net/bridge/br_forward.c:94: error: ‘struct sk_buff’ has no member named ‘_skb_dst’
-> net/bridge/br_forward.c:94: error: ‘struct net_bridge’ has no member named ‘fake_rtable’
-> make[1]: *** [net/bridge/br_forward.o] Error 1
-> make: *** [_module_net/bridge] Error 2
-> 
-> 
-> Then, the test is using obsolete dst internals and cast that should not
-> be in a C file. :
-> 
-> if (skb->_skb_dst == (unsigned long)&to->br->fake_rtable)
-> 
-> So I suggested you take a look at net/bridge/br_netfilter.c code to see
-> how this can be done properly. Maybe you need to add a helper in an
-> include file to make this proper.
-> 
-> I hope this is now clear to you, because your initial patch cannot be
-> applied as is. If you want full credit for this work, you must go a step
-> forward, or else another guy will finish the job.
-> 
-> Thanks
+John David Anglin (1):
+      [PARISC] futex: Use same lock set as lws calls
+
+Rusty Russell (1):
+      [PARISC] remove references to cpu_*_map.
+
+And the diffstat:
+
+ arch/parisc/include/asm/futex.h |   31 +++++++++++++++++++++++++++----
+ arch/parisc/kernel/smp.c        |    3 +--
+ 2 files changed, 28 insertions(+), 6 deletions(-)
+
+James
 
 
