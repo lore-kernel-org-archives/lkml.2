@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab2CaEKH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 00:10:07 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:40959 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab2CaEKB (ORCPT
+	id S1751867Ab2CaEmD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 00:42:03 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62200 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab2CaEl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 00:10:01 -0400
-Date: Sat, 31 Mar 2012 09:39:15 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-Message-ID: <20120331040915.GF13345@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
- <4F7616F5.4070000@zytor.com>
- <alpine.LFD.2.02.1203302333560.2542@ionos>
- <20120331040745.GC14030@linux.vnet.ibm.com>
+	Sat, 31 Mar 2012 00:41:59 -0400
+Date: Sat, 31 Mar 2012 08:40:33 +0400
+From: Vladimir Murzin <murzin.v@gmail.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org
+Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
+Message-ID: <20120331044030.GB3077@pinguin>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+ <1333051320-30872-9-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=koi8-r
 Content-Disposition: inline
-In-Reply-To: <20120331040745.GC14030@linux.vnet.ibm.com>
+In-Reply-To: <1333051320-30872-9-git-send-email-wad@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12033018-6102-0000-0000-0000012529DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2012-03-31 09:37:45]:
+Hi Will,
 
-> The issue is with ticketlocks though. VCPUs could go into a spin w/o
-> a lock being held by anybody. Say VCPUs 1-99 try to grab a lock in
-> that order (on a host with one cpu). VCPU1 wins (after VCPU0 releases it)
-> and releases the lock. VCPU1 is next eligible to take the lock. If 
+On Thu, Mar 29, 2012 at 03:01:53PM -0500, Will Drewry wrote:
 
-Sorry I meant to say "VCPU2 is next eligible ..."
+snipped
 
-> that is not scheduled early enough by host, then remaining vcpus would keep 
-> spinning (even though lock is technically not held by anybody) w/o making 
-> forward progress.
-> 
-> In that situation, what we really need is for the guest to hint to host
-> scheduler to schedule VCPU1 early (via yield_to or something similar). 
+> +
+> +/* Limit any path through the tree to 256KB worth of instructions. */
+> +#define MAX_INSNS_PER_PATH ((1 << 18) / sizeof(struct sock_filter))
+> +
+> +static void seccomp_filter_log_failure(int syscall)
+> +{
+> +	int compat = 0;
+> +#ifdef CONFIG_COMPAT
+> +	compat = is_compat_task();
+> +#endif
+> +	pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
+> +		current->comm, task_pid_nr(current),
+> +		(compat ? "compat " : ""),
+> +		syscall, KSTK_EIP(current));
+> +}
 
-s/VCPU1/VCPU2 ..
+snipped
 
-- vatsa
+> +/**
+> + * seccomp_attach_user_filter - attaches a user-supplied sock_fprog
+> + * @user_filter: pointer to the user data containing a sock_fprog.
+> + *
+> + * Returns 0 on success and non-zero otherwise.
+> + */
+> +long seccomp_attach_user_filter(char __user *user_filter)
+> +{
+> +	struct sock_fprog fprog;
+> +	long ret = -EFAULT;
+> +
+> +#ifdef CONFIG_COMPAT
+> +	if (is_compat_task()) {
+> +		struct compat_sock_fprog fprog32;
+> +		if (copy_from_user(&fprog32, user_filter, sizeof(fprog32)))
+> +			goto out;
+> +		fprog.len = fprog32.len;
+> +		fprog.filter = compat_ptr(fprog32.filter);
+> +	} else /* falls through to the if below. */
+> +#endif
+> +	if (copy_from_user(&fprog, user_filter, sizeof(fprog)))
+> +		goto out;
+> +	ret = seccomp_attach_filter(&fprog);
+> +out:
+> +	return ret;
+> +}
+
+Do we really need to surround is_compat_task() with CNFIG_COMPAT?
+It seems that this case has already handled in compat.h [1]
+
+[1] http://lxr.linux.no/#linux+v3.3/include/linux/compat.h#L566
+
+Best wishes
+Vladimir Murzin
 
