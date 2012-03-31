@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2CaM4v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 08:56:51 -0400
-Received: from szxga04-in.huawei.com ([58.251.152.67]:45041 "EHLO
-	szxga04-in.huawei.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752695Ab2CaM4p (ORCPT
+	id S1756896Ab2CaNND (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 09:13:03 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:52640 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035Ab2CaNNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 08:56:45 -0400
-Date: Sat, 31 Mar 2012 20:56:36 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
-In-reply-to: <20120330154246.GE28934@google.com>
-X-Originating-IP: [10.166.88.150]
-To: Tejun Heo <tj@kernel.org>
-Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com
-Message-id: <4F76FF04.40007@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
- Thunderbird/11.0
-X-CFilter-Loop: Reflected
-References: <1332368265-21586-1-git-send-email-tj@kernel.org>
- <4F75AA1F.9020007@huawei.com> <20120330154246.GE28934@google.com>
+	Sat, 31 Mar 2012 09:13:00 -0400
+Message-ID: <4F7702CB.4050704@linux.vnet.ibm.com>
+Date: Sat, 31 Mar 2012 21:12:43 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F7436FB.9000004@redhat.com> <4F744A43.4060600@linux.vnet.ibm.com> <4F745C4F.4060404@redhat.com> <4F757A7C.6020109@linux.vnet.ibm.com>
+In-Reply-To: <4F757A7C.6020109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12033113-2674-0000-0000-000003E60273
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
+On 03/30/2012 05:18 PM, Xiao Guangrong wrote:
 
-> Hey, Li.
+> On 03/29/2012 08:57 PM, Avi Kivity wrote:
 > 
-> On Fri, Mar 30, 2012 at 08:42:07PM +0800, Li Zefan wrote:
->>> This patch replaces cgroup file interface with cftype based one which
->>> allows dynamic additions and removals of cftype arrays whether the
->>> target subsystem is attached or not.  This can be used to make subsys
->>> rebinding via remount work properly but I intentionally avoided doing
->>> that at the moment.
+>> On 03/29/2012 01:40 PM, Xiao Guangrong wrote:
+>>>>> * Implementation
+>>>>> We can freely walk the page between walk_shadow_page_lockless_begin and
+>>>>> walk_shadow_page_lockless_end, it can ensure all the shadow page is valid.
+>>>>>
+>>>>> In the most case, cmpxchg is fair enough to change the access bit of spte,
+>>>>> but the write-protect path on softmmu/nested mmu is a especial case: it is
+>>>>> a read-check-modify path: read spte, check W bit, then clear W bit.
+>>>>
+>>>> We also set gpte.D and gpte.A, no? How do you handle that?
+>>>>
+>>>
+>>>
+>>> We still need walk gust page table before fast page fault to check
+>>> whether the access is valid.
 >>
->> What's the problem with remount?
-> 
-> Subsys can't be changed if any non-root cgroup exists.
-> 
-
-
-Ah, this is a long-standing defect, which is documented in Doc/../cgroups.txt.
-It's not trivial to fix it, and I never heard someone request it to be fixed.
-
->> and is it important enough that it should be fixed even the feature
->> is marked as deprecated?
-> 
-> I'm not sure.  We *might* need it during multi-mount -> single-mount
-> transition depending on how that's implemented, so the "at the moment"
-> qualifier.  It probably won't be fixed but I'm not fully sure.
-> 
-
-
-fine.
-
->>> This makes cgroup population simpler for controllers and will be used
->>> to allow controllers to be more dynamic.  e.g. blkio subsys has
->>> sub-policies which may come and go while blkio subsys is attached and
->>> it currently uses fixed set of files which stays blank if not in use.
+>> Ok.  But that's outside the mmu lock.
 >>
->> Dynamic cgroup files was mentioned before. The scenario in mind was blkio
->> control files can be added/removed automatically as devices come and ago.
+>> We can also skip that: if !sp->unsync, copy access rights and gpte.A/D
+>> into spare bits in the spte, and use that to check.
 >>
->> So this time blkio subsystem is really going to be made more dynamic
->> soon?
 > 
-> Patchset already posted.
 > 
->   http://thread.gmane.org/gmane.linux.kernel.cgroups/1376
+> Great!
+> 
+> gpte.A need not be copied into spte since EFEC.P = 1 means the shadow page
+> table is present, gpte.A must be set in this case.
+> 
+> And, we do not need to cache gpte access rights into spte, instead of it,
+> we can atomicly read gpte to get these information (anyway, we need read gpte
+> to get the gfn.)
 > 
 
 
-Thanks!
+It needs more thinking, we can excellent improvement for dirty page logged in
+this idea, but i am not sure we can gain the performance in the below case:
+
+- the page fault is trigged by the invalid access from guest
+  in the origin way, it is fixed on the FNAME(walk_addr) path which walk guest page
+  table, we way need call gfn_to_pfn (it is fast since the page is always not
+  swap out). After the idea, it is fixed on fast page fault path which walk shadow
+  page table with RCU locked, the preemption is disabled.
+
+  They are not too different i think.
+
+- the page fault is caused by host, but we can not quickly check the page writable
+  since gfn is unknown, then after shadow page walking we get the gfn (read gpte),
+  what will we do if gfn is write-protect?
+
+  - if the page is write-protected by the host (!spte.SPTE_HOST_WRITEABLE), we have
+    no choice, just call gfn_to_pfn and waiting the page cowed.
+
+    Comparing with the origin way, the time costed on shadow page table walking is
+    wasted, unfortunately, it is triggered really frequently if KSM is enabled. It
+    may be a regression.
+
+  - if the write-protect is caused by page table protected, we have two choice:
+    - call slow page fault path. It is unacceptable, since the number of this kind
+      of page fault is very large. We may wast many CPU time.
+
+    - hold mmu-lock and fix it in the last spte. It is OK but makes thing little
+      complex, i am not sure if you agree with this. :)
+
+
+
+
