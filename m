@@ -1,34 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332Ab2CaRUe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 13:20:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60359 "EHLO
+	id S1751275Ab2CaRVI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 13:21:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60379 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab2CaRUb (ORCPT
+	with ESMTP id S1750808Ab2CaRVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 13:20:31 -0400
-Date: Sat, 31 Mar 2012 10:19:59 -0700
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-682968e0c425c60f0dde37977e5beb2b12ddc4cc@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        anton@redhat.com, rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com, linux-mm@kvack.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, hch@infradead.org,
-        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        srikar@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, anton@redhat.com, rostedt@goodmis.org,
-        jkenisto@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com,
-        linux-mm@kvack.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, hch@infradead.org, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        srikar@linux.vnet.ibm.com
-In-Reply-To: <20120330182646.10018.85805.sendpatchset@srdronam.in.ibm.com>
-References: <20120330182646.10018.85805.sendpatchset@srdronam.in.ibm.com>
+	Sat, 31 Mar 2012 13:21:06 -0400
+Date: Sat, 31 Mar 2012 10:20:48 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-6308191f6f55d3629c7dbe72dfb856ad9fa560fd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, rostedt@goodmis.org, dvlasenk@redhat.com,
+        tglx@linutronix.de, oleg@redhat.com, dsmith@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, rostedt@goodmis.org, dvlasenk@redhat.com,
+        tglx@linutronix.de, oleg@redhat.com, dsmith@redhat.com
+In-Reply-To: <20120330162636.GA4857@redhat.com>
+References: <20120330162636.GA4857@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/uprobes] uprobes/core:
-  Optimize probe hits with the help of a counter
-Git-Commit-ID: 682968e0c425c60f0dde37977e5beb2b12ddc4cc
+Subject: [tip:perf/urgent] tracing, sched, vfs: Fix 'old_pid'
+  usage in trace_sched_process_exec()
+Git-Commit-ID: 6308191f6f55d3629c7dbe72dfb856ad9fa560fd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,339 +30,87 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 31 Mar 2012 10:20:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 31 Mar 2012 10:20:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  682968e0c425c60f0dde37977e5beb2b12ddc4cc
-Gitweb:     http://git.kernel.org/tip/682968e0c425c60f0dde37977e5beb2b12ddc4cc
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Fri, 30 Mar 2012 23:56:46 +0530
+Commit-ID:  6308191f6f55d3629c7dbe72dfb856ad9fa560fd
+Gitweb:     http://git.kernel.org/tip/6308191f6f55d3629c7dbe72dfb856ad9fa560fd
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Fri, 30 Mar 2012 18:26:36 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 31 Mar 2012 11:50:02 +0200
+CommitDate: Sat, 31 Mar 2012 11:53:22 +0200
 
-uprobes/core: Optimize probe hits with the help of a counter
+tracing, sched, vfs: Fix 'old_pid' usage in trace_sched_process_exec()
 
-Maintain a per-mm counter: number of uprobes that are inserted
-on this process address space.
+1. TRACE_EVENT(sched_process_exec) forgets to actually use the
+   old pid argument, it sets ->old_pid = p->pid.
 
-This counter can be used at probe hit time to determine if we
-need a lookup in the uprobes rbtree. Everytime a probe gets
-inserted successfully, the probe count is incremented and
-everytime a probe gets removed, the probe count is decremented.
+2. search_binary_handler() uses the wrong pid number. tracepoint
+   needs the global pid_t from the root namespace, while old_pid
+   is the virtual pid number as it seen by the tracer/parent.
 
-The new uprobe_munmap hook ensures the count is correct on a
-unmap or remap of a region. We expect that once a
-uprobe_munmap() is called, the vma goes away.  So
-uprobe_unregister() finding a probe to unregister would either
-mean unmap event hasnt occurred yet or a mmap event on the same
-executable file occured after a unmap event.
+With this patch we have two pid_t's in search_binary_handler(),
+not really nice. Perhaps we should switch to "struct pid*", but
+in this case it would be better to cleanup the current code
+first and move the "depth == 0" code outside.
 
-Additionally, uprobe_mmap hook now also gets called:
-
- a. on every executable vma that is COWed at fork.
- b. a vma of interest is newly mapped; breakpoint insertion also
-    happens at the required address.
-
-On process creation, make sure the probes count in the child is
-set correctly.
-
-Special cases that are taken care include:
-
- a. mremap
- b. VM_DONTCOPY vmas on fork()
- c. insertion/removal races in the parent during fork().
-
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Linux-mm <linux-mm@kvack.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: David Smith <dsmith@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120330182646.10018.85805.sendpatchset@srdronam.in.ibm.com
+Cc: Denys Vlasenko <dvlasenk@redhat.com>
+Link: http://lkml.kernel.org/r/20120330162636.GA4857@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/uprobes.h |    5 ++
- kernel/events/uprobes.c |  119 +++++++++++++++++++++++++++++++++++++++++++---
- kernel/fork.c           |    3 +
- mm/mmap.c               |   10 ++++-
- 4 files changed, 128 insertions(+), 9 deletions(-)
+ fs/exec.c                    |    7 ++++---
+ include/trace/events/sched.h |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index a111460..d594d3b 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -99,6 +99,7 @@ struct xol_area {
+diff --git a/fs/exec.c b/fs/exec.c
+index 23559c2..644f6c4 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1370,7 +1370,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	unsigned int depth = bprm->recursion_depth;
+ 	int try,retval;
+ 	struct linux_binfmt *fmt;
+-	pid_t old_pid;
++	pid_t old_pid, old_vpid;
  
- struct uprobes_state {
- 	struct xol_area		*xol_area;
-+	atomic_t		count;
- };
- extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
- extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
-@@ -106,6 +107,7 @@ extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
- extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern int uprobe_mmap(struct vm_area_struct *vma);
-+extern void uprobe_munmap(struct vm_area_struct *vma);
- extern void uprobe_free_utask(struct task_struct *t);
- extern void uprobe_copy_process(struct task_struct *t);
- extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
-@@ -132,6 +134,9 @@ static inline int uprobe_mmap(struct vm_area_struct *vma)
- {
- 	return 0;
- }
-+static inline void uprobe_munmap(struct vm_area_struct *vma)
-+{
-+}
- static inline void uprobe_notify_resume(struct pt_regs *regs)
- {
- }
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index b395edb..29e881b 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -642,6 +642,29 @@ copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
- 	return __copy_insn(mapping, vma, uprobe->arch.insn, bytes, uprobe->offset);
- }
+ 	retval = security_bprm_check(bprm);
+ 	if (retval)
+@@ -1381,8 +1381,9 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 		return retval;
  
-+/*
-+ * How mm->uprobes_state.count gets updated
-+ * uprobe_mmap() increments the count if
-+ * 	- it successfully adds a breakpoint.
-+ * 	- it cannot add a breakpoint, but sees that there is a underlying
-+ * 	  breakpoint (via a is_swbp_at_addr()).
-+ *
-+ * uprobe_munmap() decrements the count if
-+ * 	- it sees a underlying breakpoint, (via is_swbp_at_addr)
-+ * 	  (Subsequent uprobe_unregister wouldnt find the breakpoint
-+ * 	  unless a uprobe_mmap kicks in, since the old vma would be
-+ * 	  dropped just after uprobe_munmap.)
-+ *
-+ * uprobe_register increments the count if:
-+ * 	- it successfully adds a breakpoint.
-+ *
-+ * uprobe_unregister decrements the count if:
-+ * 	- it sees a underlying breakpoint and removes successfully.
-+ * 	  (via is_swbp_at_addr)
-+ * 	  (Subsequent uprobe_munmap wouldnt find the breakpoint
-+ * 	  since there is no underlying breakpoint after the
-+ * 	  breakpoint removal.)
-+ */
- static int
- install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 			struct vm_area_struct *vma, loff_t vaddr)
-@@ -675,7 +698,19 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 	/* Need to fetch pid before load_binary changes it */
++	old_pid = current->pid;
+ 	rcu_read_lock();
+-	old_pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
++	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
+ 	rcu_read_unlock();
  
- 		uprobe->flags |= UPROBE_COPY_INSN;
- 	}
-+
-+	/*
-+	 * Ideally, should be updating the probe count after the breakpoint
-+	 * has been successfully inserted. However a thread could hit the
-+	 * breakpoint we just inserted even before the probe count is
-+	 * incremented. If this is the first breakpoint placed, breakpoint
-+	 * notifier might ignore uprobes and pass the trap to the thread.
-+	 * Hence increment before and decrement on failure.
-+	 */
-+	atomic_inc(&mm->uprobes_state.count);
- 	ret = set_swbp(&uprobe->arch, mm, addr);
-+	if (ret)
-+		atomic_dec(&mm->uprobes_state.count);
+ 	retval = -ENOENT;
+@@ -1405,7 +1406,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			if (retval >= 0) {
+ 				if (depth == 0) {
+ 					trace_sched_process_exec(current, old_pid, bprm);
+-					ptrace_event(PTRACE_EVENT_EXEC, old_pid);
++					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+ 				}
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index fbc7b1a..ea7a203 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -295,7 +295,7 @@ TRACE_EVENT(sched_process_exec,
+ 	TP_fast_assign(
+ 		__assign_str(filename, bprm->filename);
+ 		__entry->pid		= p->pid;
+-		__entry->old_pid	= p->pid;
++		__entry->old_pid	= old_pid;
+ 	),
  
- 	return ret;
- }
-@@ -683,7 +718,8 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- static void
- remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
- {
--	set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true);
-+	if (!set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true))
-+		atomic_dec(&mm->uprobes_state.count);
- }
- 
- /*
-@@ -1009,7 +1045,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	struct list_head tmp_list;
- 	struct uprobe *uprobe, *u;
- 	struct inode *inode;
--	int ret;
-+	int ret, count;
- 
- 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
- 		return 0;
-@@ -1023,6 +1059,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	build_probe_list(inode, &tmp_list);
- 
- 	ret = 0;
-+	count = 0;
- 
- 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
- 		loff_t vaddr;
-@@ -1030,21 +1067,85 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 		list_del(&uprobe->pending_list);
- 		if (!ret) {
- 			vaddr = vma_address(vma, uprobe->offset);
--			if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
--				ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
--				/* Ignore double add: */
--				if (ret == -EEXIST)
--					ret = 0;
-+
-+			if (vaddr < vma->vm_start || vaddr >= vma->vm_end) {
-+				put_uprobe(uprobe);
-+				continue;
- 			}
-+
-+			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
-+
-+			/* Ignore double add: */
-+			if (ret == -EEXIST) {
-+				ret = 0;
-+
-+				if (!is_swbp_at_addr(vma->vm_mm, vaddr))
-+					continue;
-+
-+				/*
-+				 * Unable to insert a breakpoint, but
-+				 * breakpoint lies underneath. Increment the
-+				 * probe count.
-+				 */
-+				atomic_inc(&vma->vm_mm->uprobes_state.count);
-+			}
-+
-+			if (!ret)
-+				count++;
- 		}
- 		put_uprobe(uprobe);
- 	}
- 
- 	mutex_unlock(uprobes_mmap_hash(inode));
- 
-+	if (ret)
-+		atomic_sub(count, &vma->vm_mm->uprobes_state.count);
-+
- 	return ret;
- }
- 
-+/*
-+ * Called in context of a munmap of a vma.
-+ */
-+void uprobe_munmap(struct vm_area_struct *vma)
-+{
-+	struct list_head tmp_list;
-+	struct uprobe *uprobe, *u;
-+	struct inode *inode;
-+
-+	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-+		return;
-+
-+	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
-+		return;
-+
-+	inode = vma->vm_file->f_mapping->host;
-+	if (!inode)
-+		return;
-+
-+	INIT_LIST_HEAD(&tmp_list);
-+	mutex_lock(uprobes_mmap_hash(inode));
-+	build_probe_list(inode, &tmp_list);
-+
-+	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-+		loff_t vaddr;
-+
-+		list_del(&uprobe->pending_list);
-+		vaddr = vma_address(vma, uprobe->offset);
-+
-+		if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
-+			/*
-+			 * An unregister could have removed the probe before
-+			 * unmap. So check before we decrement the count.
-+			 */
-+			if (is_swbp_at_addr(vma->vm_mm, vaddr) == 1)
-+				atomic_dec(&vma->vm_mm->uprobes_state.count);
-+		}
-+		put_uprobe(uprobe);
-+	}
-+	mutex_unlock(uprobes_mmap_hash(inode));
-+}
-+
- /* Slot allocation for XOL */
- static int xol_add_vma(struct xol_area *area)
- {
-@@ -1150,6 +1251,7 @@ void uprobe_clear_state(struct mm_struct *mm)
- void uprobe_reset_state(struct mm_struct *mm)
- {
- 	mm->uprobes_state.xol_area = NULL;
-+	atomic_set(&mm->uprobes_state.count, 0);
- }
- 
- /*
-@@ -1504,7 +1606,8 @@ int uprobe_pre_sstep_notifier(struct pt_regs *regs)
- {
- 	struct uprobe_task *utask;
- 
--	if (!current->mm)
-+	if (!current->mm || !atomic_read(&current->mm->uprobes_state.count))
-+		/* task is currently not uprobed */
- 		return 0;
- 
- 	utask = current->utask;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3133b9d..26a8f5c 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -421,6 +421,9 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 
- 		if (retval)
- 			goto out;
-+
-+		if (file && uprobe_mmap(tmp))
-+			goto out;
- 	}
- 	/* a new mm has just been created */
- 	arch_dup_mmap(oldmm, mm);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 5a863d3..7c112fb 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -218,6 +218,7 @@ void unlink_file_vma(struct vm_area_struct *vma)
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		__remove_shared_vm_struct(vma, file, mapping);
- 		mutex_unlock(&mapping->i_mmap_mutex);
-+		uprobe_munmap(vma);
- 	}
- }
- 
-@@ -546,8 +547,14 @@ again:			remove_next = 1 + (end > next->vm_end);
- 
- 	if (file) {
- 		mapping = file->f_mapping;
--		if (!(vma->vm_flags & VM_NONLINEAR))
-+		if (!(vma->vm_flags & VM_NONLINEAR)) {
- 			root = &mapping->i_mmap;
-+			uprobe_munmap(vma);
-+
-+			if (adjust_next)
-+				uprobe_munmap(next);
-+		}
-+
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		if (insert) {
- 			/*
-@@ -626,6 +633,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 
- 	if (remove_next) {
- 		if (file) {
-+			uprobe_munmap(next);
- 			fput(file);
- 			if (next->vm_flags & VM_EXECUTABLE)
- 				removed_exe_file_vma(mm);
+ 	TP_printk("filename=%s pid=%d old_pid=%d", __get_str(filename),
