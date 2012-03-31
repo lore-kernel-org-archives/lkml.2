@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2CaTSJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 15:18:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42765 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2CaTSH (ORCPT
+	id S1752216Ab2CaTXJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 15:23:09 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55106 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab2CaTXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 15:18:07 -0400
+	Sat, 31 Mar 2012 15:23:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120331081407.GC15958@gmail.com>
-References: <1333133228-3134-1-git-send-email-suresh.b.siddha@intel.com>
-	<20120331081407.GC15958@gmail.com>
-Date: Sat, 31 Mar 2012 12:18:06 -0700
-X-Google-Sender-Auth: -oeoA7VukP41ubt6MoCtWOafiCc
-Message-ID: <CAE9FiQV-7rnVH1no3wbCJMq0L-FfbAEBh4+XDrnD93X_bK3HvA@mail.gmail.com>
-Subject: Re: [PATCH 00/10] vt-d irq_remap_ops patchset
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Joerg Roedel <joerg.roedel@amd.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alex Williamson <alex.williamson@redhat.com>
+In-Reply-To: <1333221304.30812.5.camel@obelisk.thedillows.org>
+References: <CA+ekxPWHbOsa1BChpPvr4Bzj=8YixLDWA2TWtRyHSQ43QqVdqw@mail.gmail.com>
+	<1333221304.30812.5.camel@obelisk.thedillows.org>
+Date: Sat, 31 Mar 2012 13:23:07 -0600
+Message-ID: <CA+ekxPUP+6DbYS6u-fvrKB0awiaL=WQBW7TF5u-XFSehWuM7Ag@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Linux hits 20 Gb/s stream to disk levels over Infiniband
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: David Dillow <dave@thedillows.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 1:14 AM, Ingo Molnar <mingo@kernel.org> wrote:
+On 3/31/12, David Dillow <dave@thedillows.org> wrote:
+> On Sat, 2012-03-31 at 11:28 -0600, Jeffrey Merkey wrote:
+>> Made it to 20 Gb/s network packet capture stream to disk performance
+>> levels over Infiniband fabrics on Linux.
 >
-> * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> I'm assuming that the interesting part is the 20 Gbits/s capture? And at
+> minimum packet sizes, I'd hope. Linux has been able to stream more than
+> 5 GBytes/s (40 Gbits/s) to disk for several years now over SRP.
+
+Network Capture while being routed and regenerated and piped through
+apps at the same time from live network traffic.  Most of the other
+vendors tout 10 Gb/s stream to disk but only Solera really can do it.
+All of them except Niksun are Linux and I think they moved some of
+their stuff to it.  So hitting 20 Gb/s is a big deal right now.  With
+Intel's push in IB/Ethernet, this is where the next thing is going.
+3D Torus stuff is totally cool.  You can actually store data in the
+network itself.  Talk about a challenge for Network security.
+
+The next class of malicious programs may be adapted to live within
+fabrics and require new methods to detect and remove them.
+
 >
->> Ingo,
->>
->> Here is the Joerg's irq_remap_ops patchset updated for the latest -tip.
->> Simplified some of the naming conventions to follow the irq_remapping
->> terminology. There are still some "if (irq_remapping_enabled)" checks in
->> io_apic.c that I would like to roll into the new io_apic_ops. I will
->> look into that shortly.
+>>  Will be trying this on 3.0
+>> after I work through the OFED issues (long list).  Post the results
+>> from 3.0.  These are from 2.6.XX series kernels.
 >
-> Just wondering, has this been tested on affected hardware, on
-> top of latest -tip or so? I realize that most of these are
-> clean-ups so they should not break anything, but checking would
-> be worth it nevertheless.
+> You may find it easier to use a recent RedHat or SUSE with an upstream
+> kernel. I know that RHEL6 userland is compatible with the upstream
+> kernel's Infiniband, and OFED is moving its kernel work to a "backport
+> upstream" model for OFED 3.2.
+>
 
-Yes, I tested those patches on my setups with Nehalem, Westmere, and Sandbridge.
 
-the last two are related to renaming only.
+I've got RH6 done, but OFED was down on the list and SLES was ahead
+of.it.  No rest for the weary.
 
-Thanks
+Jeff
 
-Yinghai
+>> Linux f_cking ROCKS!!!
+>
+> Indeed it does.
+>
+>
