@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab2CaStL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 14:49:11 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:35547 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab2CaStJ (ORCPT
+	id S1752036Ab2CaS5n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 14:57:43 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41222 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab2CaS5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 14:49:09 -0400
-Date: Sat, 31 Mar 2012 20:49:06 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/4] tools: Add a toplevel Makefile
-Message-ID: <20120331184906.GA25809@merkur.ravnborg.org>
-References: <1333023957-22746-1-git-send-email-bp@amd64.org> <20120330052605.GA30508@merkur.ravnborg.org> <20120330161526.GE30876@aftab> <20120331084908.GA14149@gmail.com>
+	Sat, 31 Mar 2012 14:57:40 -0400
+Date: Sat, 31 Mar 2012 19:57:38 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs part 2
+Message-ID: <20120331185738.GW6589@ZenIV.linux.org.uk>
+References: <20120331051906.GU6589@ZenIV.linux.org.uk>
+ <CA+55aFxmOEUCXeHtSAN+g3cSpFVvf5vPTSzZDtXdJs0Hq1rVZw@mail.gmail.com>
+ <CA+55aFztRQHX+3KET_xdQd9TuEEuuGS6ogrKAEYGaWfd6m9rDA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120331084908.GA14149@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFztRQHX+3KET_xdQd9TuEEuuGS6ogrKAEYGaWfd6m9rDA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 31, 2012 at 11:31:58AM -0700, Linus Torvalds wrote:
+> On Sat, Mar 31, 2012 at 11:28 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > It may be some other change than your pull... I will explore more, but
+> > I thought I'd let you know that it's the prime suspect right now.
 > 
-> One question. Instead of:
-> 
->   make tools/perf_install
-> 
-> Couldnt we beat kbuild into submission to allow the much more 
-> obvious:
-> 
->   make tools/perf install
-> 
-> ?
-It is more obvious if you look at it alone.
-But when you look at it with the other commands then you suddenly
-end up confused when you need to specify the command as a
-separate target "tools/perf install - and when it is just
-one target "tools/perf_install".
+> Verified. My tree just before the pull works fine (current tip plus a
+> couple of my pending selinux avc optimizations). So it's your pull.
 
-> 
-> I don't think anyone would expect the *kernel* to be installed 
-> in such a circumstance - so it's only a question of making the 
-> Makefile understand it, right?
-Make will try to update the two targets "tools/perf" and "install"
-in parallel. And it does not look easy to teach make that when you
-specify the target "tools/*" then the install target should just
-be ignored and passed down to the sub-make.
-
-Anything that adds more complexity to the top-level Makefile should
-be avoided if at all possible. It is un-maintainable as-is.
-And the consistency issue is also important.
-
-I know that if I do "make install" the kernel will be installed.
-So one could argue that the same should apply to
-the targets below tools/.
-But then this should be for all targets and not just install.
-If someone come up with a clean way to do so it is fine.
-but the original proposal with "tinstall" just do not cut it.
-
-	Sam
+Works here...  OK, that makes selinuxfs one the most likely suspect; let
+me check if I can reproduce any crap with that...  Do you see anything
+selinux-related in the call chain, BTW?
