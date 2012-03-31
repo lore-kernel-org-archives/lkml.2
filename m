@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2CaUVd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 16:21:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32870 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab2CaUVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 16:21:30 -0400
-Date: Sat, 31 Mar 2012 22:21:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Andreas Hartmann <andihartmann@01019freenet.de>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: Corrupted files after suspend to disk
-In-Reply-To: <alpine.LNX.2.00.1203291723040.25526@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1203312219560.25526@pobox.suse.cz>
-References: <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de> <jj684d$6ng$1@ID-44327.news.uni-berlin.de> <CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com> <4F574113.8030906@01019freenet.de> <alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
- <CAFLxGvwv159LHtyKdrF1DQZ-vQyagLJ9nNkcAZzkY4O9F-MwNg@mail.gmail.com> <alpine.LNX.2.00.1203121329430.18356@pobox.suse.cz> <CAFLxGvyXwFwLRYw7=eHGLZsiAB9Adcu16z=UPhLtL_Ze3bF-9g@mail.gmail.com> <alpine.LNX.2.00.1203121402460.18356@pobox.suse.cz>
- <4F5DF8F0.5010801@01019freenet.de> <20120312214914.GA8628@redhat.com> <alpine.LNX.2.00.1203290011230.25526@pobox.suse.cz> <868vikwdc9.fsf@sumi.keithp.com> <alpine.LNX.2.00.1203291723040.25526@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752652Ab2CaUZN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 16:25:13 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:51588 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752053Ab2CaUZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 16:25:09 -0400
+Message-ID: <4F77681E.5010608@xenotime.net>
+Date: Sat, 31 Mar 2012 13:25:02 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linas Vepstas <linasvepstas@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-hexagon@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-mips@linux-mips.org,
+        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        tglx@linutronix.de, linux@arm.linux.org.uk, dhowells@redhat.com,
+        jejb@parisc-linux.org, linux390@de.ibm.com, x86@kernel.org,
+        cmetcalf@tilera.com
+Subject: Re: [PATCH RFC] Simplify the Linux kernel by reducing its state space
+References: <20120331163321.GA15809@linux.vnet.ibm.com> <20120331201500.GA27640@linas.org>
+In-Reply-To: <20120331201500.GA27640@linas.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012, Jiri Kosina wrote:
+On 03/31/2012 01:15 PM, Linas Vepstas wrote:
 
-> > > So this keeps happening to me on almost every resume still ... Keith, is 
-> > > there any way I could help you debug this?
-> > 
-> > Let me know what you find with Dave's patch -- it's the most promising
-> > lead we've had. We've had no luck reproducing this at Intel, though a
-> > couple of engineers have been trying to make it happen for several days
-> > now...
 > 
-> Running with it now, will let you know in a couple of days to be 
-> reasonably certain about the outcome.
+> Hi,
+> 
+> I didn't actually try to compile the patch below; it didn't look like
+> C code so I wasn't sure what compiler to run it through.  I guess maybe
+> its python?  However, I'm very sure that the patches are completely
+> correct, because I read them, and I also know Paul.  And I've heard of
+> Thomas Gleixner.
 
-Okay, it seems to fix the issues I have been seeing on my system.
 
-FWIW,
+x86_64 defconfig has many build errors and warnings.  :(
 
-	Tested-by: Jiri Kosina <jkosina@suse.cz>
-
-Thanks,
+back to my abacus.
 
 -- 
-Jiri Kosina
-SUSE Labs
+~Randy
