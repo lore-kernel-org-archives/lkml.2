@@ -1,25 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab2CaU7R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 16:59:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60909 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab2CaU7O (ORCPT
+	id S1752951Ab2CaVAV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 17:00:21 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48936 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab2CaVAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 16:59:14 -0400
-Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
+	Sat, 31 Mar 2012 17:00:15 -0400
+Subject: Re: [PATCH RFC] Simplify the Linux kernel by reducing its state
+ space
 From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, Patrick McHardy <kaber@trash.net>,
-        netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
-References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-hexagon@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-mips@linux-mips.org,
+        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        tglx@linutronix.de, linux@arm.linux.org.uk, dhowells@redhat.com,
+        jejb@parisc-linux.org, linux390@de.ibm.com, x86@kernel.org,
+        cmetcalf@tilera.com
+In-Reply-To: <20120331163321.GA15809@linux.vnet.ibm.com>
+References: <20120331163321.GA15809@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 31 Mar 2012 22:59:09 +0200
-Message-ID: <1333227549.2325.4051.camel@edumazet-glaptop>
+Date: Sat, 31 Mar 2012 23:00:08 +0200
+Message-ID: <1333227608.2325.4054.camel@edumazet-glaptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -27,89 +34,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-31 at 19:51 +0200, Sasha Levin wrote:
-> Hi all,
+On Sun, 2012-04-01 at 00:33 +0800, Paul E. McKenney wrote:
+> Although there have been numerous complaints about the complexity of
+> parallel programming (especially over the past 5-10 years), the plain
+> truth is that the incremental complexity of parallel programming over
+> that of sequential programming is not as large as is commonly believed.
+> Despite that you might have heard, the mind-numbing complexity of modern
+> computer systems is not due so much to there being multiple CPUs, but
+> rather to there being any CPUs at all.  In short, for the ultimate in
+> computer-system simplicity, the optimal choice is NR_CPUS=0.
 > 
-> It appears that a hang may occur when destroying an ipv6 tunnel, which
-> I've reproduced several times in a KVM vm.
+> This commit therefore limits kernel builds to zero CPUs.  This change
+> has the beneficial side effect of rendering all kernel bugs harmless.
+> Furthermore, this commit enables additional beneficial changes, for
+> example, the removal of those parts of the kernel that are not needed
+> when there are zero CPUs.
 > 
-> The pattern in the stack dump below is consistent with unregistering a
-> kobject when holding multiple locks. Unregistering a kobject usually
-> leads to an exit back to userspace with call_usermodehelper_exec().
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
 
-Yes but this userspace call is done asynchronously and we dont have to
-wait its done.
+Hmm... I believe you could go one step forward and allow negative values
+as well. Antimatter was proven to exist after all.
 
-> The userspace code may access sysfs files which in turn will require
-> locking within the kernel, leading to a deadlock since those locks are
-> already held by kernel.
+Hint : nr_cpu_ids is an "int", not an "unsigned int"
 
+Bonus: Existing bugs become "must have" features.
 
-> 
-> [ 1561.564172] INFO: task kworker/u:2:3140 blocked for more than 120 seconds.
-> [ 1561.566945] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-> [ 1561.570062] kworker/u:2     D ffff88006ee63000  4504  3140      2 0x00000000
-> [ 1561.572968]  ffff88006ed9f7e0 0000000000000082 ffff88006ed9f790
-> ffffffff8107d346
-> [ 1561.575680]  ffff88006ed9ffd8 00000000001d4580 ffff88006ed9e010
-> 00000000001d4580
-> [ 1561.578601]  00000000001d4580 00000000001d4580 ffff88006ed9ffd8
-> 00000000001d4580
-> [ 1561.581697] Call Trace:
-> [ 1561.582650]  [<ffffffff8107d346>] ? kvm_clock_read+0x46/0x80
-> [ 1561.584543]  [<ffffffff827063d4>] schedule+0x24/0x70
-> [ 1561.586231]  [<ffffffff82704025>] schedule_timeout+0x245/0x2c0
-> [ 1561.588508]  [<ffffffff81117c9a>] ? mark_held_locks+0x7a/0x120
-> [ 1561.590858]  [<ffffffff81119bbd>] ? __lock_release+0x8d/0x1d0
-> [ 1561.593162]  [<ffffffff82707e6b>] ? _raw_spin_unlock_irq+0x2b/0x70
-> [ 1561.595394]  [<ffffffff810e36d1>] ? get_parent_ip+0x11/0x50
-> [ 1561.597403]  [<ffffffff82705919>] wait_for_common+0x119/0x190
-> [ 1561.599707]  [<ffffffff810ed1b0>] ? try_to_wake_up+0x2c0/0x2c0
-> [ 1561.601758]  [<ffffffff82705a38>] wait_for_completion+0x18/0x20
+Of course there is no hurry and this can wait 365 days.
 
-Something is wrong here, call_usermodehelper_exec ( ... UMH_WAIT_EXEC)
-should not block forever. Its not like UMH_WAIT_PROC
-
-Cc Oleg Nesterov <oleg@redhat.com>
-
-> [ 1561.603843]  [<ffffffff810cdcd8>] call_usermodehelper_exec+0x228/0x240
-> [ 1561.606059]  [<ffffffff82705844>] ? wait_for_common+0x44/0x190
-> [ 1561.608352]  [<ffffffff81878445>] kobject_uevent_env+0x615/0x650
-> [ 1561.610908]  [<ffffffff810e36d1>] ? get_parent_ip+0x11/0x50
-> [ 1561.613146]  [<ffffffff8187848b>] kobject_uevent+0xb/0x10
-> [ 1561.615312]  [<ffffffff81876f5a>] kobject_cleanup+0xca/0x1b0
-> [ 1561.617509]  [<ffffffff8187704d>] kobject_release+0xd/0x10
-> [ 1561.619334]  [<ffffffff81876d9c>] kobject_put+0x2c/0x60
-> [ 1561.621117]  [<ffffffff8226ea80>] net_rx_queue_update_kobjects+0xa0/0xf0
-> [ 1561.623421]  [<ffffffff8226ec87>] netdev_unregister_kobject+0x37/0x70
-> [ 1561.625979]  [<ffffffff82253e26>] rollback_registered_many+0x186/0x260
-> [ 1561.628526]  [<ffffffff82253f14>] unregister_netdevice_many+0x14/0x60
-> [ 1561.631064]  [<ffffffff8243922e>] ip6_tnl_destroy_tunnels+0xee/0x160
-> [ 1561.633549]  [<ffffffff8243b8f3>] ip6_tnl_exit_net+0xd3/0x1c0
-> [ 1561.635843]  [<ffffffff8243b820>] ? ip6_tnl_ioctl+0x550/0x550
-> [ 1561.637972]  [<ffffffff81259c86>] ? proc_net_remove+0x16/0x20
-> [ 1561.639881]  [<ffffffff8224f119>] ops_exit_list+0x39/0x60
-> [ 1561.641666]  [<ffffffff8224f72b>] cleanup_net+0xfb/0x1a0
-> [ 1561.643528]  [<ffffffff810ce97d>] process_one_work+0x1cd/0x460
-> [ 1561.645828]  [<ffffffff810ce91c>] ? process_one_work+0x16c/0x460
-> [ 1561.648180]  [<ffffffff8224f630>] ? net_drop_ns+0x40/0x40
-> [ 1561.650285]  [<ffffffff810d1e76>] worker_thread+0x176/0x3b0
-> [ 1561.652460]  [<ffffffff810d1d00>] ? manage_workers+0x120/0x120
-> [ 1561.654734]  [<ffffffff810d727e>] kthread+0xbe/0xd0
-> [ 1561.656656]  [<ffffffff8270a134>] kernel_thread_helper+0x4/0x10
-> [ 1561.658881]  [<ffffffff810e3fe0>] ? finish_task_switch+0x80/0x110
-> [ 1561.660828]  [<ffffffff82708434>] ? retint_restore_args+0x13/0x13
-> [ 1561.662795]  [<ffffffff810d71c0>] ? __init_kthread_worker+0x70/0x70
-> [ 1561.664932]  [<ffffffff8270a130>] ? gs_change+0x13/0x13
-> [ 1561.667001] 4 locks held by kworker/u:2/3140:
-> [ 1561.667599]  #0:  (netns){.+.+.+}, at: [<ffffffff810ce91c>]
-> process_one_work+0x16c/0x460
-> [ 1561.668758]  #1:  (net_cleanup_work){+.+.+.}, at:
-> [<ffffffff810ce91c>] process_one_work+0x16c/0x460
-> [ 1561.670002]  #2:  (net_mutex){+.+.+.}, at: [<ffffffff8224f6b0>]
-> cleanup_net+0x80/0x1a0
-> [ 1561.671700]  #3:  (rtnl_mutex){+.+.+.}, at: [<ffffffff82267f02>]
-> rtnl_lock+0x12/0x20
-> --
 
