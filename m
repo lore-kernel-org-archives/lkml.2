@@ -1,106 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2CaX1Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 19:27:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38384 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab2CaX1N (ORCPT
+	id S1753921Ab2CaX7A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 19:59:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33530 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab2CaX65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 19:27:13 -0400
+	Sat, 31 Mar 2012 19:58:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com>
-References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
- <1333227549.2325.4051.camel@edumazet-glaptop> <20120331213423.GA21219@redhat.com>
- <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sun, 1 Apr 2012 01:26:52 +0200
-Message-ID: <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
-Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 31 Mar 2012 16:58:35 -0700
+X-Google-Sender-Auth: ZZz1n_n_v1LrJXcp18ziuvfgqSY
+Message-ID: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
+Subject: Linux 3.4-rc1
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 11:43 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Sat, Mar 31, 2012 at 11:34 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 03/31, Eric Dumazet wrote:
->>>
->>> On Sat, 2012-03-31 at 19:51 +0200, Sasha Levin wrote:
->>> > Hi all,
->>> >
->>> > It appears that a hang may occur when destroying an ipv6 tunnel, which
->>> > I've reproduced several times in a KVM vm.
->>
->> kernel version?
->
-> latest linux-next
->
->>> > [ 1561.564172] INFO: task kworker/u:2:3140 blocked for more than 120 seconds.
->>
->> And nobody else?
->
-> Some more messages follow a bit later which get stuck in vfs related code.
->
->> It would be nice to know what sysrq-t says, in particular the trace
->> of khelper thread is interesting.
->
-> Sure, I'll get one when it happens again.
+Ok, it's been two weeks, and the merge window is over. Linux 3.4-rc1
+has been pushed out to the git servers, and the tar-ball and patches
+are going out as I type this (probably done by the time I'm done).
 
-So here's the stack of the usermode thread:
+And yes, if you actually counted, it has only been 13 days. And if
+somebody delayed their pull request until the last day of the merge
+window, I'm sure they'll be even happier to delay it another two
+months until the next merge window. Yay!
 
-[  336.614015] kworker/u:2     S ffff880062c13000  5176  4539   3031 0x00000000
-[  336.614015]  ffff880062fb38d0 0000000000000082 ffff880062fb3860
-0000000000000001
-[  336.614015]  ffff880062fb3fd8 00000000001d4580 ffff880062fb2010
-00000000001d4580
-[  336.614015]  00000000001d4580 00000000001d4580 ffff880062fb3fd8
-00000000001d4580
-[  336.614015] Call Trace:
-[  336.614015]  [<ffffffff826a8e54>] schedule+0x24/0x70
-[  336.614015]  [<ffffffff825fd66d>] p9_client_rpc+0x13d/0x360
-[  336.614015]  [<ffffffff810d7850>] ? wake_up_bit+0x40/0x40
-[  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
-[  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
-[  336.614015]  [<ffffffff825ff5ff>] p9_client_walk+0x8f/0x220
-[  336.614015]  [<ffffffff815a8e3b>] v9fs_vfs_lookup+0xab/0x1c0
-[  336.614015]  [<ffffffff811ee0c0>] d_alloc_and_lookup+0x40/0x80
-[  336.614015]  [<ffffffff811fdea0>] ? d_lookup+0x30/0x50
-[  336.614015]  [<ffffffff811f0aea>] do_lookup+0x28a/0x3b0
-[  336.614015]  [<ffffffff817c9117>] ? security_inode_permission+0x17/0x20
-[  336.614015]  [<ffffffff811f1c07>] link_path_walk+0x167/0x420
-[  336.614015]  [<ffffffff811ee630>] ? generic_readlink+0xb0/0xb0
-[  336.614015]  [<ffffffff81896d88>] ? __raw_spin_lock_init+0x38/0x70
-[  336.614015]  [<ffffffff811f24da>] path_openat+0xba/0x500
-[  336.614015]  [<ffffffff81057253>] ? sched_clock+0x13/0x20
-[  336.614015]  [<ffffffff810ed805>] ? sched_clock_local+0x25/0x90
-[  336.614015]  [<ffffffff810ed940>] ? sched_clock_cpu+0xd0/0x120
-[  336.614015]  [<ffffffff811f2a34>] do_filp_open+0x44/0xa0
-[  336.614015]  [<ffffffff81119acd>] ? __lock_release+0x8d/0x1d0
-[  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
-[  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
-[  336.614015]  [<ffffffff826aa7f0>] ? _raw_spin_unlock+0x30/0x60
-[  336.614015]  [<ffffffff811ea74d>] open_exec+0x2d/0xf0
-[  336.614015]  [<ffffffff811eb888>] do_execve_common+0x128/0x320
-[  336.614015]  [<ffffffff811ebb05>] do_execve+0x35/0x40
-[  336.614015]  [<ffffffff810589e5>] sys_execve+0x45/0x70
-[  336.614015]  [<ffffffff826acc28>] kernel_execve+0x68/0xd0
-[  336.614015]  [<ffffffff810cd6a6>] ? ____call_usermodehelper+0xf6/0x130
-[  336.614015]  [<ffffffff810cd6f9>] call_helper+0x19/0x20
-[  336.614015]  [<ffffffff826acbb4>] kernel_thread_helper+0x4/0x10
-[  336.614015]  [<ffffffff810e3f80>] ? finish_task_switch+0x80/0x110
-[  336.614015]  [<ffffffff826aaeb4>] ? retint_restore_args+0x13/0x13
-[  336.614015]  [<ffffffff810cd6e0>] ? ____call_usermodehelper+0x130/0x130
-[  336.614015]  [<ffffffff826acbb0>] ? gs_change+0x13/0x13
+That said, there are four pull requests in my mailbox that weren't
+delayed, and that I will (probably) still pull, but that I wanted to
+get extra confirmation from *other* maintainers from first. So they
+were sent in time, I just decided that I can make the actual pull
+choice a bit later.
 
-While it seems that 9p is the culprit, I have to point out that this
-bug is easily reproducible, and it happens each time due to a
-call_usermode_helper() call. Other than that 9p behaves perfectly and
-I'd assume that I'd be seeing other things break besides
-call_usermode_helper() related ones.
+The four remaining pull requests (and the people I want comments from) are:
+
+ - HSI (High Speed Synchronous Serial Interface) framework. I'm
+planning on pulling this into 3.4, it's in my queue, but I wanted to
+bring it up one more time in case somebody has issues with it. Ping?
+
+ - pohmelfs. The old pohmelfs got deleted from staging, there's an
+all-new one waiting in the sidelines. Al was a bit unhappy about some
+of it, Evgeniy fixed it up some, and then the discussion died. Again,
+I'm likely to pull this, but I wanted more commentary on it.
+
+ - drm dma-buf prime support. Dave Airlie sent me the pull request but
+didn't push very hard for it, it's in my "ok, I can still pull it for
+3.4 if individual DRM driver people tell me that it will make their
+lives easier." So this is in limbo - I have nothing against it, but I
+won't pull unless I get a few people say "yes, please".
+
+ - DMA-mapping framework. The tree now has a few more acks from
+people, and it's largely in the same situation as HSI is: I'll
+probably pull, but I really wanted the users who are impacted to
+actually talk to me about it.
+
+And that's it. So there's four more pulls pending, and likely, but
+other than that we're done (unless you can show that you actually did
+email me, but because of some cosmic mistake - probably involving my
+incompetence - I've overlooked it. Hey, it happens).
+
+Anyway, enough about the "what's still possibly pending". If you want
+to see what actually went in, one fairly readable approach is to do
+this:
+
+    git log --merges --author=Torvalds v3.3..
+
+because I really tried pretty hard to make readable merge messages if
+I got any information at all from the submaintainer. And a lot of you
+did send that in - thanks.  I've tried to distill most of that into
+the appended "shortmerge" format (which is just me grepping for my
+one-liner "pull what from whom" details).
+
+One thing worth pointing out is that the header file cleanups were
+nice, but let's never do them again. Or at least not for a release or
+two. They caused a lot of merge conflicts and small annoyances, and
+while I'm ok with resolving merges, it was annoying enough that I
+don't want to go through that immediately again. I know they also
+annoyed some submaintainers that were complaining to me about the
+pain.
+
+That said, I do think they helped. The <asm/system.h> disintegration
+(and to a smaller degree the bug.h cleanups) may have been painful,
+but it definitely cleaned things up. So I guess we *will* do things
+like this in the future again, I just want to forget about the pain
+before we embark on this next time. Ok?
+
+Anyway, please do test and report any regressions.
+
+                                    Linus
+
+---
+
+Not necessarily exhaustive list of pulls I did during the merge window:
+
+ - core/iommu changes for v3.4 from Ingo Molnar
+ - core/locking changes for v3.4 from Ingo Molnar
+ - RCU changes for v3.4 from Ingo Molnar.
+ - irq/core changes for v3.4 from Ingo Molnar
+ - perf events changes for v3.4 from Ingo Molnar
+ - scheduler changes for v3.4 from Ingo Molnar
+ - timer changes for v3.4 from Ingo Molnar
+ - char and misc patches for 3.4-rc1 from Greg KH
+ - driver core patches for 3.4-rc1 from Greg KH
+ - big staging driver updates from Greg KH
+ - TTY/serial patches from Greg KH
+ - USB merge for 3.4-rc1 from Greg KH
+ - cgroup changes from Tejun Heo
+ - workqueue changes from Tejun Heo
+ - networking merge from David Miller
+ - HID updates from Jiri Kosina
+ - trivial tree from Jiri Kosina
+ - kmap_atomic cleanup from Cong Wang
+ - power management updates for 3.4 from Rafael Wysocki
+ - irq_domain support for all architectures from Grant Likely
+ - core device tree changes for Linux v3.4 from Grant Likely
+ - SPI changes for v3.4 from Grant Likely
+ - InfiniBand/RDMA changes for the 3.4 merge window from Roland Dreier
+ - regulator updates for 3.4 from Mark Brown
+ - hwmon changes for v3.4 from Guenter Roeck
+ - crypto update from Herbert Xu
+ - security subsystem updates for 3.4 from James Morris
+ - munmap/truncate race fixes from Al Viro
+ - vfs pile 1 from Al Viro
+ - dlm updates for 3.4 from David Teigland
+ - gfs2 changes from Steven Whitehouse
+ - m68knommu arch updates from Greg Ungerer
+ - powerpc merge from Benjamin Herrenschmidt
+ - x86/asm changes from Ingo Molnar
+ - x86/atomic changes from Ingo Molnar
+ - trivial x86 branches from Ingo Molnar
+ - x86/debug changes from Ingo Molnar
+ - x86/eficross (booting 32/64-bit kernel from 64/32-bit EFI) from Ingo Molnar
+ - x86/build changes from Ingo Molnar
+ - x86/fpu changes from Ingo Molnar
+ - MCE changes from Ingo Molnar
+ - x86 platform changes from Ingo Molnar
+ - x86 "urgent" leftovers from Ingo Molnar
+ - md updates for 3.4 from Neil Brown
+ - SCSI target updates from Nicholas Bellinger
+ - updates of sound stuff from Takashi Iwai
+ - drm main changes from Dave Airlie
+ - radeon southern islands / trinity support from Dave Airlie
+ - nouveau destaging + Kelper modesetting support from Dave Airlie
+ - s390 patches from Martin Schwidefsky
+ - blackfin updates from Bob Liu
+ - cleancache changes from Konrad Rzeszutek Wilk
+ - xen updates from Konrad Rzeszutek Wilk
+ - crypto fixes from Herbert Xu
+ - input subsystem updates from Dmitry Torokhov
+ - libata updates from Jeff Garzik
+ - pinctrl updates for v3.4 from Linus Walleij
+ - IEEE 1394 (FireWire) subsystem updates post v3.3 from Stefan Richter
+ - regmap updates from Mark Brown
+ - fbdev updates for 3.4 from Florian Tobias Schandinat
+ - NFS client updates for Linux 3.4 from Trond Myklebust
+ - CIFS fixes from Steve French
+ - XFS updates from Ben Myers
+ - one pstore patch from Tony Luck
+ - UBI changes from Artem Bityutskiy
+ - UBIFS changes from Artem Bityutskiy
+ - ktest changes from Steven Rostedt
+ - KGDB/KDB updates from Jason Wessel
+ - networking fixes from David Miller
+ - PCI changes (including maintainer change) from Jesse Barnes
+ - i2c embedded updates from Wolfram Sang
+ - IOMMU updates from Joerg Roedel
+ - hwmon updates from Jean Delvare
+ - media updates from Mauro Carvalho Chehab
+ - additional x86 fixes from Peter Anvin
+ - miscellaneous Itanium patches from Tony Luck
+ - OpenRISC changes for 3.4 from Jonas Bonn
+ - #1 ARM updates from Russell King
+ - #2 ARM updates from Russell King
+ - #3 ARM updates from Russell King
+ - cpufreq fixes from Dave Jones
+ - cpufreq updates for 3.4 from Dave Jones: new drivers and some fixes
+ - AMD64 EDAC fixes from Borislav Petkov
+ - sysctl updates from Eric Biederman
+ - <linux/bug.h> cleanup from Paul Gortmaker
+ - cleanup of fs/ and lib/ users of module.h from Paul Gortmaker
+ - <linux/device.h> avoidance patches from Paul Gortmaker
+ - more xen updates from Konrad Rzeszutek Wilk
+ - "ARM: Non-critical bug fixes" from Ardn Bergmann
+ - "ARM: subarch maintainer updates" from Arnd Bergmann
+ - "ARM: global cleanups" from Arnd Bergmann
+ - "ARM: timer cleanup work" from Arnd Bergmann
+ - "ARM: SoC specific updates" from Arnd Bergmann
+ - "ARM: board specific updates" from Arnd Bergmann/Olof Johansson
+ - "remoteproc/rpmsg: new subsystem" from Arnd Bergmann
+ - "ARM: driver specific updates" from Arnd Bergmann
+ - "ARM: device tree work" from Arnd Bergmann
+ - networking fixes from David Miller
+ - ARM platform updates from Russell King
+ - arch/microblaze fixes from Michal Simek
+ - UML changes from Richard Weinberger
+ - s390 patches part 2 from Martin Schwidefsky
+ - 9p changes for the 3.4 merge window from Eric Van Hensbergen
+ - ext3, UDF, and quota fixes from Jan Kara
+ - Ceph updates for 3.4-rc1 from Sage Weil
+ - ext4 updates for 3.4 from Ted Ts'o
+ - trivial writeback fixes from Wu Fengguang
+ - "ARM: More SoC driver updates" from Olof Johansson
+ - "ARM: More SoC support updates" from Olof Johansson
+ - "ARM: More device tree support updates" from Olof Johansson
+ - "drivers/clk: common clock framework" from Olof Johansson
+ - drm fixes from Dave Airlie
+ - device-mapper changes for 3.4 from Alasdair Kergon
+ - watchdog updates from Wim Van Sebroeck
+ - MFD changes from Samuel Ortiz
+ - GPIO changes for v3.4 from Grant Likely
+ - i2c updates from Jean Delvare
+ - x86 platform driver updates from Matthew Garrett
+ - EDAC fixes from Mauro Carvalho Chehab
+ - an Apparmor bugfix from James Morris
+ - module and param updates from Rusty Russell
+ - kvm updates from Avi Kivity
+ - a few more things for powerpc by Benjamin Herrenschmidt
+ - dma-buf updates from Sumit Semwal
+ - SLAB changes from Pekka Enberg
+ - XFS update (part 2) from Ben Myers
+ - "Disintegrate and delete asm/system.h" from David Howells
+ - squashfs updates from Phillip Lougher
+ - NFS client bugfixes for Linux 3.4 from Trond Myklebust
+ - trivial exofs changes from Boaz Harrosh
+ - MMC updates from Chris Ball
+ - the intel i915 hibernation memory corruption fix from Dave Airlie
+ - the code to generalize the powerpc VIRQ_DEBUG code from Grant Likely
+ - timer core updates from Thomas Gleixner
+ - x86 updates from Ingo Molnar
+ - scheduler fixes from Ingo Molnar
+ - arch/tile (really asm-generic) update from Chris Metcalf
+ - nfsd changes from Bruce Fields
+ - slave-dmaengine update from Vinod Koul
+ - a few PCMCIA updates from Dominik Brodowski
+ - cpupower updates from Dominik Brodowski
+ - more ARM updates from Russell King
+ - "ARM: cleanups of io includes" from Olof Johansson
+ - x32 support for x86-64 from Ingo Molnar
+ - x86 cleanups from Peter Anvin
+ - devicetree documentation update from Grant Likely
+ - arm-soc fixes from Olof Johansson
+ - urgent cgroup fix from Tejun Heo
+ - 2nd round of input updates from Dmitry Torokhov
+ - SuperH updates from Paul Mundt
+ - minor Sparc fixes from David Miller
+ - s390 build fixes from Martin Schwidefsky
+ - sound fixes from Takashi Iwai
+ - btrfs fixes and features from Chris Mason
+ - battery updates from Anton Vorontsov
+ - cifs fixes from Steve French
+ - ACPI & Power Management changes from Len Brown
+ - a few more ARM platform fixes from Olof Johansson
+ - MTD changes from David Woodhouse
+ - core locking updates from Thomas Gleixner
+ - genirq updates from Thomas Gleixner
+ - kconfig bits from Michal Marek
+ - non-critical part of kbuild from Michal Marek
+ - kbuild changes from Michal Marek
+ - Sam Ravnborg's sparc32 build fixes from David Miller
+ - SCSI updates from James Bottomley
+ - PARISC misc updates from James Bottomley
+ - perf updates and fixes from Ingo Molnar
+ - scheduler fixes from Ingo Molnar
+ - second try at vfs part d#2 from Al Viro
+ - virtio S3 support patches from Amit Shah
