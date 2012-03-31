@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759892Ab2CaNzC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 09:55:02 -0400
-Received: from nm9-vm4.bullet.mail.ne1.yahoo.com ([98.138.91.169]:37671 "HELO
-	nm9-vm4.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754746Ab2CaNy7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 09:54:59 -0400
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Mar 2012 09:54:59 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 805906.23743.bm@omp1066.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=grR0kS7CBq0FPWdqc9wdLO5cL7s58/m5CAbOmJxKE45qdQZUD3clHGzTtMkYiIlWR6H5MKu9oyPMxW2mxgR+E0SGedK250qzjdDTExger5rwl2UEGOG0OEHOl4/lsl6eLRELshFSyxXd1fxpg5ImvWa4EeRRN3R57ii94IZjwXI=;
-X-YMail-OSG: _ml1_0EVM1lUwndi_fQPXkAzoWlrJVqTP4uPoU1GdpOM3I_
- 6YzfX1khu9ltTekO3M4Mp_bn6LShiwfQVZvodjHhQCF5eP_Pv0tzO0dCqwqE
- b.CCPE4AHswMrIvjjebzJ5p6nt8Ym.SYtLfo_NkN6Emx_CKMG6h.JIXiiy.Q
- RzUty_RHz5bkD84xdh_W4IU85KYW9gxnro853Uf4VyF.j2xiRBpxzw_2JiIx
- bkWqc1h_0qQxrCkW4w5YvTw0KJkGSM2iUphVVom86F393Ecdq_sFnTZVUZto
- kFGcRub4kkKHI1nDx7FDVD24T_9jJi8uVwwtz21ibq.Kbx6PM5sTR9DGqkgH
- 7ObiK3JTVmfwW2VK.i1L.O3_c5DkxhPpLo9JWdFC4Tr2c5OThOeHzkw7heXh
- rlw5aU48sVrMTyi7.zYfTZVab7GSnCl.92X.G4f6JArQcyOJzMGAQxMt1EZz
- JSrQv13eSS5rBR1naTVKv80Cs2sdDG5NwCBeuMGFSEJ0y3Dr4XwRXChceWi3
- wGtTZIlt4vGZ.dUX9_H7oQbgahlNI2MKspBh1GxI-
-X-Mailer: YahooMailWebService/0.8.117.340979
-References: <20120330113915.GE9075@marvin.atrad.com.au>
-Message-ID: <1333201767.36239.YahooMailNeo@web121005.mail.ne1.yahoo.com>
-Date: Sat, 31 Mar 2012 06:49:27 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Reply-To: Alex Dubov <oakad@yahoo.com>
-Subject: Re: Possible issue with tifm_7xx1 and interrupt latency
-To: Jonathan Woithe <jwoithe@just42.net>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20120330113915.GE9075@marvin.atrad.com.au>
+	id S1759974Ab2CaNzj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 09:55:39 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54922 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212Ab2CaNzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 09:55:36 -0400
+Date: Sat, 31 Mar 2012 17:55:20 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Valdis.Kletnieks@vt.edu,
+        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH] proc: reset mount options after the last procfs umount
+Message-ID: <20120331135520.GB2845@albatros>
+References: <201203220903.15360.a.miskiewicz@gmail.com>
+ <20120323171058.GA3279@albatros>
+ <20120323161504.dced28b9.akpm@linux-foundation.org>
+ <201203250924.06908.a.miskiewicz@gmail.com>
+ <20120325153612.GC4391@albatros>
+ <97428.1332714196@turing-police.cc.vt.edu>
+ <20120326153738.aa728115.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120326153738.aa728115.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-
-
------ Original Message -----
-> From: Jonathan Woithe <jwoithe@just42.net>
+On Mon, Mar 26, 2012 at 15:37 -0700, Andrew Morton wrote:
+> On Sun, 25 Mar 2012 18:23:16 -0400
+> Valdis.Kletnieks@vt.edu wrote:
 > 
-> Although somewhat circumstancial, during the debugging of a FFADO issue with
-> a user it seemed possible that the tifm_7xx1 module may have been switching
-> interrupts off for long periods of time.  For a full history of the problem
-> please refer to
+> > Yes, it may be what the code actually *does*, but it certainly violates
+> > the Principle of Least Surprise...
 > 
->   http://subversion.ffado.org/ticket/250
+> It surprises me ;)  I never noticed that before.
 > 
-> Unfortunately the original reporter no longer has access to the hardware
-> concerned and the report itself dates from 2 years ago (I kept forgetting
-> to report it).  However, it may be useful none-the-less.
+> It does seem pretty insane.  I wonder how much downstream damage would
+> result from fixing it.
 
-Unfortunately, I don't have access to that hardware either.
+Resetting options on each mount is implemented in the following patch.
+However, I'm stuck with searching a race-free way to learn current
+mounts count of this procfs sb.  sget() + atomic_read() is racy:
 
-However, there are really only few operations in that driver between "irqsave"
-and "irqrestore", unless PIO mode is used (which may, ostensibly, cause this
-sort of interrupt delays). On the other hand, PIO mode there is purely intended
-for troubleshooting purposes and can only be enabled through special module
-parameter by an adventurous user.
+	(A)				(B)
+	mount -t proc			mount -t proc
 
-> 
-> Please CC me any replies.
-> 
-> Thanks
->   jonathan
+	sget()				|
+	|				sget()
+	atomic_read(&sb->s_active)	|
+	|				atomic_read(&sb->s_active)
 
-Regards,
-Alex
+So, it has a theoretical race of reading sb->s_active with 2+ parallel
+mounts and both reads will get 3 instead of 2.  Consequently, neither of
+mounts will reset mount options.
 
+I wonder whether anybody will try to do such parallel type of things
+in reality (IOW, is it OK to leave this race?)
+
+--------------
+From: Vasiliy Kulikov <segoon@openwall.com>
+Subject: [PATCH] proc: reset mount options after the last procfs umount
+
+The following command sequence leads to wrong mount options setting:
+
+  mount -t proc -o hidepid=1 none /proc
+  umount /proc
+  mount -t proc none /proc
+
+The second "mount" mounts procfs with old options from the first "mount",
+but should use no options.
+
+Fix that by resetting mount options in pid_namespace each time procfs
+is mounted in a pid namespace without other procfs mount points.
+
+Note that if one creates second procfs mount point, it should use old
+mount options (IOW, reuse first mount point's options).
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+
+--
+ fs/proc/root.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+---
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index eed44bf..7067a5c 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -47,6 +47,12 @@ static const match_table_t tokens = {
+ 	{Opt_err, NULL},
+ };
+ 
++static void proc_reset_options(struct pid_namespace *pid)
++{
++	pid->pid_gid = 0;
++	pid->hide_pid = 0;
++}
++
+ static int proc_parse_options(char *options, struct pid_namespace *pid)
+ {
+ 	char *p;
+@@ -115,6 +121,9 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	if (IS_ERR(sb))
+ 		return ERR_CAST(sb);
+ 
++	if (atomic_read(&sb->s_active) <= 2)
++		proc_reset_options(ns);
++
+ 	if (!proc_parse_options(options, ns)) {
+ 		deactivate_locked_super(sb);
+ 		return ERR_PTR(-EINVAL);
+--
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
