@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2CaWed (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 18:34:33 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:54912 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab2CaWe2 (ORCPT
+	id S1753947Ab2CaX1Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 19:27:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38384 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab2CaX1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 18:34:28 -0400
-Date: Sat, 31 Mar 2012 15:34:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lorenz Kolb <linuxppcemb@lkmail.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-m32r-ja@ml.linux-m32r.org,
-        linux-mips@linux-mips.org, linux-ia64@vger.kernel.org,
-        linux-sh@vger.kernel.org, dhowells@redhat.com,
-        sparclinux@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-am33-list@redhat.com, linux@arm.linux.org.uk,
-        linux-hexagon@vger.kernel.org, x86@kernel.org, jejb@parisc-linux.org,
-        cmetcalf@tilera.com, uclinux-dist-devel@blackfin.uclinux.org,
-        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-m32r@ml.linux-m32r.org, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-        linux390@de.ibm.com, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH RFC] Simplify the Linux kernel by reducing its state space
-Message-ID: <20120331223409.GM2450@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120331163321.GA15809@linux.vnet.ibm.com>
- <1333227608.2325.4054.camel@edumazet-glaptop>
- <20120331212149.GI2450@linux.vnet.ibm.com>
- <4F7782ED.7050407@lkmail.de>
+	Sat, 31 Mar 2012 19:27:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7782ED.7050407@lkmail.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12033122-2398-0000-0000-0000057B7437
+In-Reply-To: <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com>
+References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
+ <1333227549.2325.4051.camel@edumazet-glaptop> <20120331213423.GA21219@redhat.com>
+ <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sun, 1 Apr 2012 01:26:52 +0200
+Message-ID: <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
+Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 12:19:25AM +0200, Lorenz Kolb wrote:
-> With that patchset in mind, I am working on a really huge patch,
-> which will greatly simplify the Linux kernel  for the real problem
-> of having that number of CPUs.
-> 
-> That patch will have a lot of changes all over the architectures, so
-> what will be the best way to post it? Should I split it architecture
-> dependend and into one generic part.
-> 
-> Currently it is a large blob of millions of changes, but will
-> greatly simplify the Linux kernel.
+On Sat, Mar 31, 2012 at 11:43 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On Sat, Mar 31, 2012 at 11:34 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 03/31, Eric Dumazet wrote:
+>>>
+>>> On Sat, 2012-03-31 at 19:51 +0200, Sasha Levin wrote:
+>>> > Hi all,
+>>> >
+>>> > It appears that a hang may occur when destroying an ipv6 tunnel, which
+>>> > I've reproduced several times in a KVM vm.
+>>
+>> kernel version?
+>
+> latest linux-next
+>
+>>> > [ 1561.564172] INFO: task kworker/u:2:3140 blocked for more than 120 seconds.
+>>
+>> And nobody else?
+>
+> Some more messages follow a bit later which get stuck in vfs related code.
+>
+>> It would be nice to know what sysrq-t says, in particular the trace
+>> of khelper thread is interesting.
+>
+> Sure, I'll get one when it happens again.
 
-Perhaps a branch on a public git tree?  If you are doing what I suspect
-you are, you will end up with a very large patch set.  ;-)
+So here's the stack of the usermode thread:
 
-							Thanx, Paul
+[  336.614015] kworker/u:2     S ffff880062c13000  5176  4539   3031 0x00000000
+[  336.614015]  ffff880062fb38d0 0000000000000082 ffff880062fb3860
+0000000000000001
+[  336.614015]  ffff880062fb3fd8 00000000001d4580 ffff880062fb2010
+00000000001d4580
+[  336.614015]  00000000001d4580 00000000001d4580 ffff880062fb3fd8
+00000000001d4580
+[  336.614015] Call Trace:
+[  336.614015]  [<ffffffff826a8e54>] schedule+0x24/0x70
+[  336.614015]  [<ffffffff825fd66d>] p9_client_rpc+0x13d/0x360
+[  336.614015]  [<ffffffff810d7850>] ? wake_up_bit+0x40/0x40
+[  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
+[  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
+[  336.614015]  [<ffffffff825ff5ff>] p9_client_walk+0x8f/0x220
+[  336.614015]  [<ffffffff815a8e3b>] v9fs_vfs_lookup+0xab/0x1c0
+[  336.614015]  [<ffffffff811ee0c0>] d_alloc_and_lookup+0x40/0x80
+[  336.614015]  [<ffffffff811fdea0>] ? d_lookup+0x30/0x50
+[  336.614015]  [<ffffffff811f0aea>] do_lookup+0x28a/0x3b0
+[  336.614015]  [<ffffffff817c9117>] ? security_inode_permission+0x17/0x20
+[  336.614015]  [<ffffffff811f1c07>] link_path_walk+0x167/0x420
+[  336.614015]  [<ffffffff811ee630>] ? generic_readlink+0xb0/0xb0
+[  336.614015]  [<ffffffff81896d88>] ? __raw_spin_lock_init+0x38/0x70
+[  336.614015]  [<ffffffff811f24da>] path_openat+0xba/0x500
+[  336.614015]  [<ffffffff81057253>] ? sched_clock+0x13/0x20
+[  336.614015]  [<ffffffff810ed805>] ? sched_clock_local+0x25/0x90
+[  336.614015]  [<ffffffff810ed940>] ? sched_clock_cpu+0xd0/0x120
+[  336.614015]  [<ffffffff811f2a34>] do_filp_open+0x44/0xa0
+[  336.614015]  [<ffffffff81119acd>] ? __lock_release+0x8d/0x1d0
+[  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
+[  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
+[  336.614015]  [<ffffffff826aa7f0>] ? _raw_spin_unlock+0x30/0x60
+[  336.614015]  [<ffffffff811ea74d>] open_exec+0x2d/0xf0
+[  336.614015]  [<ffffffff811eb888>] do_execve_common+0x128/0x320
+[  336.614015]  [<ffffffff811ebb05>] do_execve+0x35/0x40
+[  336.614015]  [<ffffffff810589e5>] sys_execve+0x45/0x70
+[  336.614015]  [<ffffffff826acc28>] kernel_execve+0x68/0xd0
+[  336.614015]  [<ffffffff810cd6a6>] ? ____call_usermodehelper+0xf6/0x130
+[  336.614015]  [<ffffffff810cd6f9>] call_helper+0x19/0x20
+[  336.614015]  [<ffffffff826acbb4>] kernel_thread_helper+0x4/0x10
+[  336.614015]  [<ffffffff810e3f80>] ? finish_task_switch+0x80/0x110
+[  336.614015]  [<ffffffff826aaeb4>] ? retint_restore_args+0x13/0x13
+[  336.614015]  [<ffffffff810cd6e0>] ? ____call_usermodehelper+0x130/0x130
+[  336.614015]  [<ffffffff826acbb0>] ? gs_change+0x13/0x13
 
-> Regards,
-> 
-> Lorenz Kolb
-> 
-> Am 31.03.2012 23:21, schrieb Paul E. McKenney:
-> >On Sat, Mar 31, 2012 at 11:00:08PM +0200, Eric Dumazet wrote:
-> >>On Sun, 2012-04-01 at 00:33 +0800, Paul E. McKenney wrote:
-> >>>Although there have been numerous complaints about the complexity of
-> >>>parallel programming (especially over the past 5-10 years), the plain
-> >>>truth is that the incremental complexity of parallel programming over
-> >>>that of sequential programming is not as large as is commonly believed.
-> >>>Despite that you might have heard, the mind-numbing complexity of modern
-> >>>computer systems is not due so much to there being multiple CPUs, but
-> >>>rather to there being any CPUs at all.  In short, for the ultimate in
-> >>>computer-system simplicity, the optimal choice is NR_CPUS=0.
-> >>>
-> >>>This commit therefore limits kernel builds to zero CPUs.  This change
-> >>>has the beneficial side effect of rendering all kernel bugs harmless.
-> >>>Furthermore, this commit enables additional beneficial changes, for
-> >>>example, the removal of those parts of the kernel that are not needed
-> >>>when there are zero CPUs.
-> >>>
-> >>>Signed-off-by: Paul E. McKenney<paulmck@linux.vnet.ibm.com>
-> >>>Reviewed-by: Thomas Gleixner<tglx@linutronix.de>
-> >>>---
-> >>Hmm... I believe you could go one step forward and allow negative values
-> >>as well. Antimatter was proven to exist after all.
-> >>
-> >>Hint : nr_cpu_ids is an "int", not an "unsigned int"
-> >>
-> >>Bonus: Existing bugs become "must have" features.
-> >;-) ;-) ;-)
-> >
-> >>Of course there is no hurry and this can wait 365 days.
-> >James Bottomley suggested imaginary numbers of CPUs some time back,
-> >and I suppose there is no reason you cannot have fractional numbers of
-> >CPUs, and perhaps irrational numbers as well.  Of course, these last two
-> >would require use of floating-point arithmetic (or something similar)
-> >in the kernel.  So I guess we have at several years worth.  Over to you
-> >for the negative numbers.  ;-)
-> >
-> >							Thanx, Paul
-> >
-> >_______________________________________________
-> >Linuxppc-dev mailing list
-> >Linuxppc-dev@lists.ozlabs.org
-> >https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
-
+While it seems that 9p is the culprit, I have to point out that this
+bug is easily reproducible, and it happens each time due to a
+call_usermode_helper() call. Other than that 9p behaves perfectly and
+I'd assume that I'd be seeing other things break besides
+call_usermode_helper() related ones.
