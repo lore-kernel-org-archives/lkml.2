@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab2CaNND (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 09:13:03 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:52640 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab2CaNNA (ORCPT
+	id S1758518Ab2CaNeM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 09:34:12 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:49740 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab2CaNeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 09:13:00 -0400
-Message-ID: <4F7702CB.4050704@linux.vnet.ibm.com>
-Date: Sat, 31 Mar 2012 21:12:43 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Sat, 31 Mar 2012 09:34:10 -0400
+X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Mar 2012 09:34:10 EDT
+Message-ID: <4F77055A.2070502@ahsoftware.de>
+Date: Sat, 31 Mar 2012 15:23:38 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F7436FB.9000004@redhat.com> <4F744A43.4060600@linux.vnet.ibm.com> <4F745C4F.4060404@redhat.com> <4F757A7C.6020109@linux.vnet.ibm.com>
-In-Reply-To: <4F757A7C.6020109@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: linux-bluetooth@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: bluetooth: fix deadlock on device reset and power down
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12033113-2674-0000-0000-000003E60273
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2012 05:18 PM, Xiao Guangrong wrote:
+Hello,
 
-> On 03/29/2012 08:57 PM, Avi Kivity wrote:
-> 
->> On 03/29/2012 01:40 PM, Xiao Guangrong wrote:
->>>>> * Implementation
->>>>> We can freely walk the page between walk_shadow_page_lockless_begin and
->>>>> walk_shadow_page_lockless_end, it can ensure all the shadow page is valid.
->>>>>
->>>>> In the most case, cmpxchg is fair enough to change the access bit of spte,
->>>>> but the write-protect path on softmmu/nested mmu is a especial case: it is
->>>>> a read-check-modify path: read spte, check W bit, then clear W bit.
->>>>
->>>> We also set gpte.D and gpte.A, no? How do you handle that?
->>>>
->>>
->>>
->>> We still need walk gust page table before fast page fault to check
->>> whether the access is valid.
->>
->> Ok.  But that's outside the mmu lock.
->>
->> We can also skip that: if !sp->unsync, copy access rights and gpte.A/D
->> into spare bits in the spte, and use that to check.
->>
-> 
-> 
-> Great!
-> 
-> gpte.A need not be copied into spte since EFEC.P = 1 means the shadow page
-> table is present, gpte.A must be set in this case.
-> 
-> And, we do not need to cache gpte access rights into spte, instead of it,
-> we can atomicly read gpte to get these information (anyway, we need read gpte
-> to get the gfn.)
-> 
+I've experienced a deadlock on shutdown using kernel 3.3 and tracked it 
+down. Because I'm not very familiar with the bluetooth stack I'm not 
+sure if the below patch is correct, but it fixed the problem here.
 
+This patch should go to the stable tree too, if approved.
 
-It needs more thinking, we can excellent improvement for dirty page logged in
-this idea, but i am not sure we can gain the performance in the below case:
+Regards,
 
-- the page fault is trigged by the invalid access from guest
-  in the origin way, it is fixed on the FNAME(walk_addr) path which walk guest page
-  table, we way need call gfn_to_pfn (it is fast since the page is always not
-  swap out). After the idea, it is fixed on fast page fault path which walk shadow
-  page table with RCU locked, the preemption is disabled.
+Alexander
 
-  They are not too different i think.
+--------------
+ From 9d0902dc07504ab28a31de471cfb3225fb0404c6 Mon Sep 17 00:00:00 2001
+From: Alexander Holler <holler@ahsoftware.de>
+Date: Sat, 31 Mar 2012 15:03:27 +0200
+Subject: [PATCH] bluetooth: fix deadlock on device reset and power down
 
-- the page fault is caused by host, but we can not quickly check the page writable
-  since gfn is unknown, then after shadow page walking we get the gfn (read gpte),
-  what will we do if gfn is write-protect?
+Commit 09fd0de5bd8f8ef3317e5365f92f1a13dcd89aa9 introduced a deadlock:
 
-  - if the page is write-protected by the host (!spte.SPTE_HOST_WRITEABLE), we have
-    no choice, just call gfn_to_pfn and waiting the page cowed.
+bluetoothd calls ioctl HCIDEVDOWN
+     hci_sock_ioctl()
+         hci_dev_close()
+             hci_dev_do_close()
+                 hci_dev_lock(hdev);
+                 inquiry_cache_flush();
+                 hci_conn_hash_flush();
+                     hci_conn_del()
+                         cancel_delayed_work_sync()
+                             hci_conn_timeout()
+                                 hci_dev_lock(hdev); /* DEADLOCK */
+                 hci_dev_unlock(hdev);
 
-    Comparing with the origin way, the time costed on shadow page table walking is
-    wasted, unfortunately, it is triggered really frequently if KSM is enabled. It
-    may be a regression.
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+  net/bluetooth/hci_core.c |    4 ++--
+  1 files changed, 2 insertions(+), 2 deletions(-)
 
-  - if the write-protect is caused by page table protected, we have two choice:
-    - call slow page fault path. It is unacceptable, since the number of this kind
-      of page fault is very large. We may wast many CPU time.
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index 5aeb624..3428036 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -629,8 +629,8 @@ static int hci_dev_do_close(struct hci_dev *hdev)
 
-    - hold mmu-lock and fix it in the last spte. It is OK but makes thing little
-      complex, i am not sure if you agree with this. :)
+  	hci_dev_lock(hdev);
+  	inquiry_cache_flush(hdev);
+-	hci_conn_hash_flush(hdev);
+  	hci_dev_unlock(hdev);
++	hci_conn_hash_flush(hdev);
 
+  	hci_notify(hdev, HCI_DEV_DOWN);
 
+@@ -713,8 +713,8 @@ int hci_dev_reset(__u16 dev)
 
+  	hci_dev_lock(hdev);
+  	inquiry_cache_flush(hdev);
+-	hci_conn_hash_flush(hdev);
+  	hci_dev_unlock(hdev);
++	hci_conn_hash_flush(hdev);
+
+  	if (hdev->flush)
+  		hdev->flush(hdev);
+-- 
+1.7.6.5
 
