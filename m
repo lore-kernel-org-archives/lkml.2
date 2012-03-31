@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab2CaKdg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 06:33:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37991 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756455Ab2CaKdd (ORCPT
+	id S1757226Ab2CaKrL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 06:47:11 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:39971 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753778Ab2CaKrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 06:33:33 -0400
-Date: Sat, 31 Mar 2012 11:33:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RESEND 1/4] regulator: Fix setting new voltage in
- s5m8767_set_voltage
-Message-ID: <20120331103330.GD3163@opensource.wolfsonmicro.com>
-References: <1332130930.26765.2.camel@phoenix>
+	Sat, 31 Mar 2012 06:47:06 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvgGAM/fdk9XQENJ/2dsb2JhbABEgw+COLAwgwaBCIIJAQEFIxUeIgEQCxgCAgUWCwICCQMCAQIBJx4GDQEHAQGICagdkXmBL45VgRgEm1GKP4Jp
+Message-ID: <4F76E054.8010301@computer.org>
+Date: Sat, 31 Mar 2012 12:45:40 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LTeJQqWS0MN7I/qa"
-Content-Disposition: inline
-In-Reply-To: <1332130930.26765.2.camel@phoenix>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Aaron Lu <aaron.lu@amd.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+References: <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com> <Pine.LNX.4.44L0.1203291050580.1417-100000@iolanthe.rowland.org> <20120330010730.GA27346@ladygaga>
+In-Reply-To: <20120330010730.GA27346@ladygaga>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 30/03/12 03:07, Aaron Lu wrote:
+> When the ODD is put to zero power state, it will not be able to handle
+> commands like CDROMEJECT. We have to power it up first and then handle
+> the ioctl request. Currently, we only power back up the ODD when user
+> press the eject button as explained above.
 
---LTeJQqWS0MN7I/qa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+What about slot-loading optical drives, where the user does not first 
+have to press a button to open the tray (due to a lack of tray)?
 
-On Mon, Mar 19, 2012 at 12:22:10PM +0800, Axel Lin wrote:
-> Current code does not really update the register with new value, fix it.
-> I rename the variable i to sel for better readability.
-
-Applied, thanks.  I'll apply the others after this has been merged with
-Linus since there's going to be a dependency there.
-
---LTeJQqWS0MN7I/qa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPdt1yAAoJEBus8iNuMP3dmTYP/1b00LuIYmoIHG4G76HIrlb3
-UUAByifWLrDyyG1TkO+8m1cOqrqPoYPgGVETt0EpLm5rU6cY+WJFUuUNMJJM3jPl
-mspsKYPo6PnaMgKwOxHfsXkzdDHqe6UGVY+Ab5HylorOXNdk8/OZAlS5W2seKh5m
-wGVH5lJymbvfJ3h6LwDT6tFL2prHiRB2bura5kUuG7h+lzZXPH4QeAnmUZQQ6ZCF
-C2nlbXan+qG3MQXOl11TZwBt0BMXCaUkQg3XOvb4t9OWpZiqqJO0eo6PiQhEh7P3
-k4btAinHjNUxjsp9NasHGtr+GFa7lYm+ySVfxp9j9j70wk420mtSey7SxJJqVyku
-W7maHBuwjyNgcMFCNlxw3sOERLAxMVjv6lrNOWJI/BnP/yCITlXcnFQyMEc+zjb0
-ab0HZGnDQtooAvBYqJFRe522nLiFRlqiPf1Di+TUMkSZAurniJwZERzSJSS1+p4r
-SCEfVYuZ+fK9GcCDo8mfRO9L1giMjRbp3Ohdgr+2A32Sl1V/5cue0GfIUmjuYvTY
-ynmQB4sIUyvonuAErv17XjvNEVxItulWsvk7d7x152qrpO9UgjafisqNotqZ9TMH
-hEhYcZcyVe+i04cEqXYx3rJCLiANi/SCPTvdlK04DcyzOCzx6bNNqliWy1WHlCq+
-hk88cAwYAp2r1B4iUU7F
-=iEFQ
------END PGP SIGNATURE-----
-
---LTeJQqWS0MN7I/qa--
+Jan
