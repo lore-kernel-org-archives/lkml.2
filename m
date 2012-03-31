@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab2CaQWQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 12:22:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43229 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab2CaQWL (ORCPT
+	id S1751728Ab2CaQbG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 12:31:06 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:61459 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab2CaQbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 12:22:11 -0400
-Message-ID: <4F772F2A.9020903@gmail.com>
-Date: Sun, 01 Apr 2012 00:22:02 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	Sat, 31 Mar 2012 12:31:02 -0400
+Date: Sat, 31 Mar 2012 09:30:56 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: glommer@parallels.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com
+Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
+Message-ID: <20120331163056.GA2557@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1332368265-21586-1-git-send-email-tj@kernel.org>
+ <4F75AA1F.9020007@huawei.com>
+ <20120330154246.GE28934@google.com>
+ <4F76FF04.40007@huawei.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jiang Liu <jiang.liu@huawei.com>, x86@kernel.org,
-        Keping Chen <chenkeping@huawei.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] IRQ,x86: normalize return value of chip->irq_set_affinity()
- method
-References: <1333120296-13563-1-git-send-email-jiang.liu@huawei.com> <1333120296-13563-4-git-send-email-jiang.liu@huawei.com> <alpine.LFD.2.02.1203302320060.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1203302320060.2542@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F76FF04.40007@huawei.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-	Thanks for point this out. After checking related code again, I found
-the method suggested by you will produce better code, so will send out another
-version to remove the duplicated memory copy operations in arch specific code.
-	When I was reading the comment for IRQ_SET_MASK_OK_NOCOPY, I thought
-both way are ok to update the affinity mask by arch code or core logic, and
-haven't realized the issue raised by you.
-	Thanks!
-	Gerry
+Hello,
 
-On 03/31/2012 05:23 AM, Thomas Gleixner wrote:
-> On Fri, 30 Mar 2012, Jiang Liu wrote:
+On Sat, Mar 31, 2012 at 08:56:36PM +0800, Li Zefan wrote:
+> > Subsys can't be changed if any non-root cgroup exists.
 > 
->> On x86 platforms, interrupt controller chip's irq_set_affinity() method
->> always copies affinity mask to irq_data->affinity field but still returns
-> 
-> Now the question here is whether it copies the mask because it
-> modified the mask in some way and want to reflect the change back.
-> 
-> If it just copies the unmodified mask, then this patch is wrong. It
-> should remove the copy from the arch code and return IRQ_SET_MASK_OK
-> so the core code can take care of the copying.
-> 
-> Ditto for the ia64 one.
-> 
-> Thanks,
-> 
-> 	tglx
+> Ah, this is a long-standing defect, which is documented in Doc/../cgroups.txt.
+> It's not trivial to fix it, and I never heard someone request it to be fixed.
 
+Yeah, it was a bit of head scratcher.  If it can be done only when
+there's no cgroup configured, one might as well unmount and mount w/
+new subsys instead of remounting.  There's the minute difference that
+existing root cgroup state is preserved but that hardly justifies the
+crippled feature.  IMHO, lack of fix request indicates the feature not
+being used rather than anything else, so the deprecation proposal.
+
+Thanks.
+
+-- 
+tejun
