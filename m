@@ -1,116 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275Ab2CaRVI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 13:21:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60379 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab2CaRVG (ORCPT
+	id S1751261Ab2CaRZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 13:25:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35446 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab2CaRZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 13:21:06 -0400
-Date: Sat, 31 Mar 2012 10:20:48 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-6308191f6f55d3629c7dbe72dfb856ad9fa560fd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, rostedt@goodmis.org, dvlasenk@redhat.com,
-        tglx@linutronix.de, oleg@redhat.com, dsmith@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, rostedt@goodmis.org, dvlasenk@redhat.com,
-        tglx@linutronix.de, oleg@redhat.com, dsmith@redhat.com
-In-Reply-To: <20120330162636.GA4857@redhat.com>
-References: <20120330162636.GA4857@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tracing, sched, vfs: Fix 'old_pid'
-  usage in trace_sched_process_exec()
-Git-Commit-ID: 6308191f6f55d3629c7dbe72dfb856ad9fa560fd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 31 Mar 2012 10:20:54 -0700 (PDT)
+	Sat, 31 Mar 2012 13:25:52 -0400
+Subject: Re: [PATCH 2/5] perf: generic intel uncore support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: mingo@elte.hu, andi@firstfloor.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, ming.m.lin@intel.com
+In-Reply-To: <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>
+References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
+	 <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 31 Mar 2012 05:18:22 +0200
+Message-ID: <1333163902.2960.63.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6308191f6f55d3629c7dbe72dfb856ad9fa560fd
-Gitweb:     http://git.kernel.org/tip/6308191f6f55d3629c7dbe72dfb856ad9fa560fd
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Fri, 30 Mar 2012 18:26:36 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 31 Mar 2012 11:53:22 +0200
+On Wed, 2012-03-28 at 14:43 +0800, Yan, Zheng wrote:
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> new file mode 100644
+> index 0000000..d159e3e
+> --- /dev/null
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -0,0 +1,814 @@
+> +#include "perf_event_intel_uncore.h"
+> +
+> +static struct intel_uncore_type *empty_uncore[] = { NULL, };
+> +static struct intel_uncore_type **msr_uncores = empty_uncore;
+> +
+> +/* constraint for box with 2 counters */
+> +static struct event_constraint unconstrained_2 =
+> +       EVENT_CONSTRAINT(0, 0x3, 0);
+> +/* constraint for box with 3 counters */
+> +static struct event_constraint unconstrained_3 =
+> +       EVENT_CONSTRAINT(0, 0x7, 0);
+> +/* constraint for box with 4 counters */
+> +static struct event_constraint unconstrained_4 =
+> +       EVENT_CONSTRAINT(0, 0xf, 0);
+> +/* constraint for box with 8 counters */
+> +static struct event_constraint unconstrained_8 =
+> +       EVENT_CONSTRAINT(0, 0xff, 0);
+> +/* constraint for the fixed countesr */
+> +static struct event_constraint constraint_fixed =
+> +       EVENT_CONSTRAINT((u64)-1, 1 << UNCORE_PMC_IDX_FIXED, (u64)-1);
 
-tracing, sched, vfs: Fix 'old_pid' usage in trace_sched_process_exec()
+Since they're all different, why not have an struct event_constraint
+unconstrained member in your struct intel_uncore_pmu and fill it out
+whenever you create that.
 
-1. TRACE_EVENT(sched_process_exec) forgets to actually use the
-   old pid argument, it sets ->old_pid = p->pid.
+> +static DEFINE_SPINLOCK(uncore_box_lock);
 
-2. search_binary_handler() uses the wrong pid number. tracepoint
-   needs the global pid_t from the root namespace, while old_pid
-   is the virtual pid number as it seen by the tracer/parent.
+> +/*
+> + * The overflow interrupt is unavailable for SandyBridge-EP, is broken
+> + * for SandyBridge. So we use hrtimer to periodically poll the counter
+> + */
 
-With this patch we have two pid_t's in search_binary_handler(),
-not really nice. Perhaps we should switch to "struct pid*", but
-in this case it would be better to cleanup the current code
-first and move the "depth == 0" code outside.
+To avoid overlow and accumulate into the software u64, right? Not to
+actually sample anything.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: David Smith <dsmith@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>
-Link: http://lkml.kernel.org/r/20120330162636.GA4857@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- fs/exec.c                    |    7 ++++---
- include/trace/events/sched.h |    2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+Might also want to say is broken for anything else, since afaik uncore
+PMI has been broken for everything with an uncore.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 23559c2..644f6c4 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1370,7 +1370,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 	unsigned int depth = bprm->recursion_depth;
- 	int try,retval;
- 	struct linux_binfmt *fmt;
--	pid_t old_pid;
-+	pid_t old_pid, old_vpid;
- 
- 	retval = security_bprm_check(bprm);
- 	if (retval)
-@@ -1381,8 +1381,9 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 		return retval;
- 
- 	/* Need to fetch pid before load_binary changes it */
-+	old_pid = current->pid;
- 	rcu_read_lock();
--	old_pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
-+	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
- 	rcu_read_unlock();
- 
- 	retval = -ENOENT;
-@@ -1405,7 +1406,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			if (retval >= 0) {
- 				if (depth == 0) {
- 					trace_sched_process_exec(current, old_pid, bprm);
--					ptrace_event(PTRACE_EVENT_EXEC, old_pid);
-+					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
- 				}
- 				put_binfmt(fmt);
- 				allow_write_access(bprm->file);
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index fbc7b1a..ea7a203 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -295,7 +295,7 @@ TRACE_EVENT(sched_process_exec,
- 	TP_fast_assign(
- 		__assign_str(filename, bprm->filename);
- 		__entry->pid		= p->pid;
--		__entry->old_pid	= p->pid;
-+		__entry->old_pid	= old_pid;
- 	),
- 
- 	TP_printk("filename=%s pid=%d old_pid=%d", __get_str(filename),
+
+> +static struct intel_uncore_box *
+> +__uncore_pmu_find_box(struct intel_uncore_pmu *pmu, int phyid)
+> +{
+> +       struct intel_uncore_box *box;
+> +       struct hlist_head *head;
+> +       struct hlist_node *node;
+> +
+> +       head = &pmu->box_hash[phyid % UNCORE_BOX_HASH_SIZE];
+> +
+> +       hlist_for_each_entry_rcu(box, node, head, hlist) {
+> +               if (box->phy_id == phyid)
+> +                       return box;
+> +       }
+> +
+> +       return NULL;
+> +}
+> +
+> +static struct intel_uncore_box *
+> +uncore_pmu_find_box(struct intel_uncore_pmu *pmu, int phyid)
+> +{
+> +       struct intel_uncore_box *box;
+> +
+> +       rcu_read_lock();
+> +       box = __uncore_pmu_find_box(pmu, phyid);
+> +       rcu_read_unlock();
+> +
+> +       return box;
+> +}
+> +
+> +/* caller should hold the uncore_box_lock */
+> +static void uncore_pmu_add_box(struct intel_uncore_pmu *pmu,
+> +                               struct intel_uncore_box *box)
+> +{
+> +       struct hlist_head *head;
+> +
+> +       head = &pmu->box_hash[box->phy_id % UNCORE_BOX_HASH_SIZE];
+> +       hlist_add_head_rcu(&box->hlist, head);
+> +}
+> +
+> +static struct intel_uncore_pmu *uncore_event_to_pmu(struct perf_event *event)
+> +{
+> +       return container_of(event->pmu, struct intel_uncore_pmu, pmu);
+> +}
+> +
+> +static struct intel_uncore_box *uncore_event_to_box(struct perf_event *event)
+> +{
+> +       int phyid = topology_physical_package_id(smp_processor_id());
+
+Who says that this event has anything to do with the current cpu?
+
+> +       return uncore_pmu_find_box(uncore_event_to_pmu(event), phyid);
+> +}
+
+So why not simply use a per-cpu allocation and have something like:
+
+struct intel_uncore_pmu {
+	...
+	struct intel_uncore_box * __percpu box;
+};
+
+static inline
+struct intel_uncore_box *uncore_event_to_box(struct perf_event *event)
+{
+	return per_cpu_ptr(event->pmu->box, event->cpu);
+}
+
+And be done with it?
+
+> +static int uncore_collect_events(struct intel_uncore_box *box,
+> +                         struct perf_event *leader, bool dogrp)
+> +{
+> +       struct perf_event *event;
+> +       int n, max_count;
+> +
+> +       max_count = box->pmu->type->num_counters;
+> +       if (box->pmu->type->fixed_ctl)
+> +               max_count++;
+> +
+> +       if (box->n_events >= max_count)
+> +               return -EINVAL;
+> +
+> +       /*
+> +        * adding the same events twice to the uncore PMU may cause
+> +        * general protection fault
+> +        */
+
+Is that an errata or a 'feature' of some specific box types, or what?
+
+> +       for (n = 0; n < box->n_events; n++) {
+> +               event = box->event_list[n];
+> +               if (event->hw.config == leader->hw.config)
+> +                       return -EINVAL;
+> +       }
+> +
+> +       n = box->n_events;
+> +       box->event_list[n] = leader;
+> +       n++;
+> +       if (!dogrp)
+> +               return n;
+> +
+> +       list_for_each_entry(event, &leader->sibling_list, group_entry) {
+> +               if (event->state <= PERF_EVENT_STATE_OFF)
+> +                       continue;
+> +
+> +               if (n >= max_count)
+> +                       return -EINVAL;
+> +
+> +               box->event_list[n] = event;
+> +               n++;
+> +       }
+> +       return n;
+> +}
+> +
+> +static struct event_constraint *
+> +uncore_event_constraint(struct intel_uncore_type *type,
+> +                       struct perf_event *event)
+> +{
+> +       struct event_constraint *c;
+> +
+> +       if (event->hw.config == (u64)-1)
+> +               return &constraint_fixed;
+> +
+> +       if (type->constraints) {
+> +               for_each_event_constraint(c, type->constraints) {
+> +                       if ((event->hw.config & c->cmask) == c->code)
+> +                               return c;
+> +               }
+> +       }
+> +
+> +       if (type->num_counters == 2)
+> +               return &unconstrained_2;
+> +       if (type->num_counters == 3)
+> +               return &unconstrained_3;
+> +       if (type->num_counters == 4)
+> +               return &unconstrained_4;
+> +       if (type->num_counters == 8)
+> +               return &unconstrained_8;
+> +
+> +       WARN_ON_ONCE(1);
+> +       return &unconstrained_2;
+
+	return event->pmu->unconstrained;
+
+seems much saner to me..
+
+> +}
+> +
+> +static int uncore_assign_events(struct intel_uncore_box *box,
+> +                               int assign[], int n)
+> +{
+> +       struct event_constraint *c, *constraints[UNCORE_PMC_IDX_MAX];
+> +       int i, ret, wmin, wmax;
+> +
+> +       for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
+> +               c = uncore_event_constraint(box->pmu->type,
+> +                                       box->event_list[i]);
+> +               constraints[i] = c;
+> +               wmin = min(wmin, c->weight);
+> +               wmax = max(wmax, c->weight);
+> +       }
+
+No fast path then?
+
+> +       ret = perf_assign_events(constraints, n, wmin, wmax, assign);
+> +       return ret ? -EINVAL : 0;
+> +}
+
+
+> +static void uncore_pmu_event_start(struct perf_event *event, int flags)
+> +{
+> +       struct intel_uncore_box *box = uncore_event_to_box(event);
+> +
+> +       raw_spin_lock(&box->lock);
+> +       __uncore_pmu_event_start(box, event, flags);
+> +       raw_spin_unlock(&box->lock);
+> +}
+
+> +static void uncore_pmu_event_stop(struct perf_event *event, int flags)
+> +{
+> +       struct intel_uncore_box *box = uncore_event_to_box(event);
+> +
+> +       raw_spin_lock(&box->lock);
+> +       __uncore_pmu_event_stop(box, event, flags);
+> +       raw_spin_unlock(&box->lock);
+> +}
+
+> +static int uncore_pmu_event_add(struct perf_event *event, int flags)
+> +{
+> +       struct intel_uncore_box *box = uncore_event_to_box(event);
+> +       struct hw_perf_event *hwc = &event->hw;
+> +       int assign[UNCORE_PMC_IDX_MAX];
+> +       int i, n, ret;
+> +
+> +       if (!box)
+> +               return -ENODEV;
+> +
+> +       raw_spin_lock(&box->lock);
+
+> +       raw_spin_unlock(&box->lock);
+> +       return ret;
+> +}
+> +
+> +static void uncore_pmu_event_del(struct perf_event *event, int flags)
+> +{
+> +       struct intel_uncore_box *box = uncore_event_to_box(event);
+> +       int i;
+> +
+> +       raw_spin_lock(&box->lock);
+
+> +       raw_spin_unlock(&box->lock);
+> +}
+
+So what's up with all this box->lock business.. why does that lock
+exist?
+
+> +static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+> +{
+> +       int ret;
+> +
+> +       pmu->pmu.attr_groups    = pmu->type->attr_groups;
+> +       pmu->pmu.task_ctx_nr    = perf_invalid_context;
+> +       pmu->pmu.event_init     = uncore_pmu_event_init;
+> +       pmu->pmu.add            = uncore_pmu_event_add;
+> +       pmu->pmu.del            = uncore_pmu_event_del;
+> +       pmu->pmu.start          = uncore_pmu_event_start;
+> +       pmu->pmu.stop           = uncore_pmu_event_stop;
+> +       pmu->pmu.read           = uncore_pmu_event_read;
+
+Won't this look better as a C99 struct init? Something like:
+
+	pmu->pmu = (struct pmu){
+		.attr_groups	= pmu->type->attr_groups,
+		.task_ctx_nr	= perf_invalid_context,
+		.event_init	= uncore_pmu_event_init,
+		...
+	};
+
+> +       if (pmu->type->num_boxes == 1)
+> +               sprintf(pmu->name, "uncore_%s", pmu->type->name);
+> +       else
+> +               sprintf(pmu->name, "uncore_%s%d", pmu->type->name,
+> +                       pmu->pmu_idx);
+> +
+> +       ret = perf_pmu_register(&pmu->pmu, pmu->name, -1);
+> +       return ret;
+> +}
+
+
+> +static int __init uncore_type_init(struct intel_uncore_type *type)
+> +{
+> +       struct intel_uncore_pmu *pmus;
+> +       struct attribute_group *events_group;
+> +       struct attribute **attrs;
+> +       int i, j;
+> +
+> +       pmus = kzalloc(sizeof(*pmus) * type->num_boxes, GFP_KERNEL);
+> +       if (!pmus)
+> +               return -ENOMEM;
+
+Hmm, but if you have a pmu per number of boxes, then what do you need
+that  pmu->box reference for?
+
+> +
+> +       for (i = 0; i < type->num_boxes; i++) {
+> +               pmus[i].func_id = -1;
+> +               pmus[i].pmu_idx = i;
+> +               pmus[i].type = type;
+> +
+> +               for (j = 0; j < ARRAY_SIZE(pmus[0].box_hash); j++)
+> +                       INIT_HLIST_HEAD(&pmus[i].box_hash[j]);
+> +       }
+> +
+> +       if (type->event_descs) {
+> +               for (i = 0; ; i++) {
+> +                       if (!type->event_descs[i].attr.attr.name)
+> +                               break;
+> +               }
+> +
+> +               events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
+> +                               sizeof(*events_group), GFP_KERNEL);
+> +               if (!events_group)
+> +                       goto fail;
+> +
+> +               attrs = (struct attribute **)(events_group + 1);
+> +               events_group->name = "events";
+> +               events_group->attrs = attrs;
+> +
+> +               for (j = 0; j < i; j++)
+> +                       attrs[j] = &type->event_descs[j].attr.attr;
+> +
+> +               type->attr_groups[1] = events_group;
+> +       }
+> +       type->pmus = pmus;
+> +       return 0;
+> +fail:
+> +       uncore_type_exit(type);
+> +       return -ENOMEM;
+> +}
+> +
+
+
+Aside from all this, there's still the problem that you don't place all
+events for a particular phys_id onto a single cpu. It doesn't matter
+which cpu in that package it is, but all events should go to the same.
+
+This means that on unplug of that cpu, you have to migrate all these
+events etc..
+
+I suspect doing this will also allow you to get rid of that box->lock
+thing.
+
