@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759735Ab2CaMG3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 08:06:29 -0400
+	id S1759761Ab2CaMGt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 08:06:49 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:46047 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759554Ab2CaMG0 (ORCPT
+	with ESMTP id S1759446Ab2CaMGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 08:06:26 -0400
+	Sat, 31 Mar 2012 08:06:47 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: <jejb@parisc-linux.org>, Helge Deller <deller@gmx.de>
+Cc: linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 16/19 v2] sh/mm/fault_32.c: Port OOM changes to do_page_fault
-Date: Sat, 31 Mar 2012 08:06:11 -0400
-Message-Id: <1333195571-5455-1-git-send-email-consul.kautuk@gmail.com>
+Subject: [PATCH 17/19 v2] parisc/mm/fault.c: Port OOM changes to do_page_fault
+Date: Sat, 31 Mar 2012 08:06:28 -0400
+Message-Id: <1333195588-5490-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,70 +30,55 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to the 32-bit SH platform.
-
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- arch/sh/mm/fault_32.c |   38 +++++++++++++++++++++++++++++---------
- 1 files changed, 29 insertions(+), 9 deletions(-)
+ arch/parisc/mm/fault.c |   29 ++++++++++++++++++++++++-----
+ 1 files changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/arch/sh/mm/fault_32.c b/arch/sh/mm/fault_32.c
-index 324eef9..6084982 100644
---- a/arch/sh/mm/fault_32.c
-+++ b/arch/sh/mm/fault_32.c
-@@ -129,6 +129,8 @@ asmlinkage void __kprobes do_page_fault(struct pt_regs *regs,
- 	int si_code;
+diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
+index 18162ce..bd66ed6 100644
+--- a/arch/parisc/mm/fault.c
++++ b/arch/parisc/mm/fault.c
+@@ -175,10 +175,12 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
+ 	struct mm_struct *mm = tsk->mm;
+ 	unsigned long acc_type;
  	int fault;
- 	siginfo_t info;
-+	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+			      (writeaccess ? FAULT_FLAG_WRITE : 0));
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
  
- 	tsk = current;
- 	mm = tsk->mm;
-@@ -169,6 +171,7 @@ asmlinkage void __kprobes do_page_fault(struct pt_regs *regs,
  	if (in_atomic() || !mm)
  		goto no_context;
  
 +retry:
  	down_read(&mm->mmap_sem);
- 
- 	vma = find_vma(mm, address);
-@@ -200,7 +203,11 @@ good_area:
- 	 * make sure we exit gracefully rather than endlessly redo
- 	 * the fault.
+ 	vma = find_vma_prev(mm, address, &prev_vma);
+ 	if (!vma || address < vma->vm_start)
+@@ -201,7 +203,12 @@ good_area:
+ 	 * fault.
  	 */
--	fault = handle_mm_fault(mm, vma, address, writeaccess ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, address, flags);
+ 
+-	fault = handle_mm_fault(mm, vma, address, (acc_type & VM_WRITE) ? FAULT_FLAG_WRITE : 0);
++	fault = handle_mm_fault(mm, vma, address,
++			flags | ((acc_type & VM_WRITE) ? FAULT_FLAG_WRITE : 0));
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
 +		return;
 +
  	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		if (fault & VM_FAULT_OOM)
- 			goto out_of_memory;
-@@ -208,14 +215,27 @@ good_area:
- 			goto do_sigbus;
+ 		/*
+ 		 * We hit a shared mapping outside of the file, or some
+@@ -214,10 +221,22 @@ good_area:
+ 			goto bad_area;
  		BUG();
  	}
--	if (fault & VM_FAULT_MAJOR) {
--		tsk->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
--				     regs, address);
--	} else {
--		tsk->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
--				     regs, address);
-+
+-	if (fault & VM_FAULT_MAJOR)
+-		current->maj_flt++;
+-	else
+-		current->min_flt++;
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			tsk->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-+				      regs, address);
-+		} else {
-+			tsk->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-+				      regs, address);
-+		}
++		if (fault & VM_FAULT_MAJOR)
++			current->maj_flt++;
++		else
++			current->min_flt++;
 +		if (fault & VM_FAULT_RETRY) {
 +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
 +
@@ -105,9 +89,10 @@ index 324eef9..6084982 100644
 +
 +			goto retry;
 +		}
- 	}
- 
++	}
  	up_read(&mm->mmap_sem);
+ 	return;
+ 
 -- 
 1.7.5.4
 
