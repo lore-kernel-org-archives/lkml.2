@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab2CaVM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 17:12:26 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53907 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752844Ab2CaVMY (ORCPT
+	id S1753736Ab2CaVVr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 17:21:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62437 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab2CaVVd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 17:12:24 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/0y0IvWIj0T+lUGfIwyXgyxHZxT7mlmrEN2mRQv3
-	OOdfV1Yh9QeH2i
-Message-ID: <4F777316.9090406@gmx.de>
-Date: Sat, 31 Mar 2012 21:11:50 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
+	Sat, 31 Mar 2012 17:21:33 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, Wang YanQing <udknight@gmail.com>
-Subject: Re: [ 086/149] video:uvesafb: Fix oops that uvesafb try to execute
- NX-protected page
-References: <20120330194853.145065448@linuxfoundation.org>	<4F76260C.7080005@gmx.de>	<20120331180317.GA10792@kroah.com> <20120331213738.57a9649d@pyramind.ukuu.org.uk>
-In-Reply-To: <20120331213738.57a9649d@pyramind.ukuu.org.uk>
+In-Reply-To: <1333228179.2719.14.camel@lade.trondhjem.org>
+References: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
+ <5FF522E0-132E-4A6A-A40F-5CCD08AF800A@oracle.com> <20120107181221.GA3777@umich.edu>
+ <1326111265.30169.5.camel@lappy> <CA+1xoqdQPi53GYr_Q6RtECJJcrz0TVVp4uNQX6jkfbQWQSNF7g@mail.gmail.com>
+ <D3642511-B29B-4CA7-A133-C99B711954C1@oracle.com> <1333228179.2719.14.camel@lade.trondhjem.org>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 31 Mar 2012 23:21:12 +0200
+Message-ID: <CA+1xoqfv82ngQ4oc5uozZQjN7PipWVjVu670-uUGC5o_3Nec9A@mail.gmail.com>
+Subject: Re: [PATCH] nfs: Don't try mounting device as nfs root unless type
+ fully matches
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Chuck Lever <chuck.lever@oracle.com>, Jim Rees <rees@umich.edu>,
+        Lukas Razik <linux@razik.name>, Pekka Enberg <penberg@kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        LKML Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2012 08:37 PM, Alan Cox wrote:
-> On Sat, 31 Mar 2012 11:03:17 -0700
-> Greg KH <gregkh@linuxfoundation.org> wrote:
-> 
->> On Fri, Mar 30, 2012 at 09:30:52PM +0000, Florian Tobias Schandinat wrote:
->>> Hi Greg,
->>>
->>> On 03/30/2012 07:49 PM, Greg KH wrote:
->>>> 3.2-stable review patch.  If anyone has any objections, please let me know.
->>>
->>> the same as for 3.3: This patch would require exporting
->>> 'pcibios_enabled' to not break building uvesafb as a module. As Alan did
->>> not agree with this approach it is not suitable for stable as is.
->>
->> Oops, sorry about that, now removed, thanks for letting me know.
-> 
-> Actually for the backport its probably the right thing to do - its
-> simple, clear and slightly ugly, but its fairly provably safe.
+On Sat, Mar 31, 2012 at 11:09 PM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+> On Sat, 2012-03-31 at 11:27 -0400, Chuck Lever wrote:
+>> Oops.  Trond?  This got dropped somewhere.
+>
+> I don't own the 'init' directory, and since quite frankly this isn't
+> related to NFS at all, it should be sent to Linus directly.
+>
+> I'm quite happy to ack the patch if that would help.
 
-Is there a problem with using your preferred solution
-"__supported_pte_mask & _PAGE_NX" here?
-As far as I can see it should work since 2008.
+The patch which has triggered this whole story (6829a048 ("NFS: Retry
+mounting NFSROOT")) modified init/ as well, and went in through the
+NFS tree. Can't this patch follow the same path?
 
-
-Best regards,
-
-Florian Tobias Schandinat
+Anyhow, I've Cc'ed Linus in hopes that this patch can somehow find
+it's way into 3.4.
