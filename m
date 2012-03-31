@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab2CaRvn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 13:51:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42243 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab2CaRvk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 13:51:40 -0400
-MIME-Version: 1.0
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sat, 31 Mar 2012 19:51:19 +0200
-Message-ID: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
-Subject: ipv6: tunnel: hang when destroying ipv6 tunnel
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751583Ab2CaRx6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 13:53:58 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:58941 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146Ab2CaRx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 13:53:57 -0400
+From: Sergei Trofimovich <slyich@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sergei Trofimovich <slyfox@gentoo.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perl: fix build failure ("linux/module.h" not found)
+Date: Sat, 31 Mar 2012 20:58:27 +0300
+Message-Id: <1333216707-23469-1-git-send-email-slyich@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Sergei Trofimovich <slyfox@gentoo.org>
 
-It appears that a hang may occur when destroying an ipv6 tunnel, which
-I've reproduced several times in a KVM vm.
+    CC util/rbtree.o
+../../lib/rbtree.c:24:26: fatal error: linux/export.h: No such file or directory
+compilation terminated.
+make: *** [util/rbtree.o] Error 1
 
-The pattern in the stack dump below is consistent with unregistering a
-kobject when holding multiple locks. Unregistering a kobject usually
-leads to an exit back to userspace with call_usermodehelper_exec().
-The userspace code may access sysfs files which in turn will require
-locking within the kernel, leading to a deadlock since those locks are
-already held by kernel.
+Follow linux/module.h -> linux/export.h rename.
 
-[ 1561.564172] INFO: task kworker/u:2:3140 blocked for more than 120 seconds.
-[ 1561.566945] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-disables this message.
-[ 1561.570062] kworker/u:2     D ffff88006ee63000  4504  3140      2 0x00000000
-[ 1561.572968]  ffff88006ed9f7e0 0000000000000082 ffff88006ed9f790
-ffffffff8107d346
-[ 1561.575680]  ffff88006ed9ffd8 00000000001d4580 ffff88006ed9e010
-00000000001d4580
-[ 1561.578601]  00000000001d4580 00000000001d4580 ffff88006ed9ffd8
-00000000001d4580
-[ 1561.581697] Call Trace:
-[ 1561.582650]  [<ffffffff8107d346>] ? kvm_clock_read+0x46/0x80
-[ 1561.584543]  [<ffffffff827063d4>] schedule+0x24/0x70
-[ 1561.586231]  [<ffffffff82704025>] schedule_timeout+0x245/0x2c0
-[ 1561.588508]  [<ffffffff81117c9a>] ? mark_held_locks+0x7a/0x120
-[ 1561.590858]  [<ffffffff81119bbd>] ? __lock_release+0x8d/0x1d0
-[ 1561.593162]  [<ffffffff82707e6b>] ? _raw_spin_unlock_irq+0x2b/0x70
-[ 1561.595394]  [<ffffffff810e36d1>] ? get_parent_ip+0x11/0x50
-[ 1561.597403]  [<ffffffff82705919>] wait_for_common+0x119/0x190
-[ 1561.599707]  [<ffffffff810ed1b0>] ? try_to_wake_up+0x2c0/0x2c0
-[ 1561.601758]  [<ffffffff82705a38>] wait_for_completion+0x18/0x20
-[ 1561.603843]  [<ffffffff810cdcd8>] call_usermodehelper_exec+0x228/0x240
-[ 1561.606059]  [<ffffffff82705844>] ? wait_for_common+0x44/0x190
-[ 1561.608352]  [<ffffffff81878445>] kobject_uevent_env+0x615/0x650
-[ 1561.610908]  [<ffffffff810e36d1>] ? get_parent_ip+0x11/0x50
-[ 1561.613146]  [<ffffffff8187848b>] kobject_uevent+0xb/0x10
-[ 1561.615312]  [<ffffffff81876f5a>] kobject_cleanup+0xca/0x1b0
-[ 1561.617509]  [<ffffffff8187704d>] kobject_release+0xd/0x10
-[ 1561.619334]  [<ffffffff81876d9c>] kobject_put+0x2c/0x60
-[ 1561.621117]  [<ffffffff8226ea80>] net_rx_queue_update_kobjects+0xa0/0xf0
-[ 1561.623421]  [<ffffffff8226ec87>] netdev_unregister_kobject+0x37/0x70
-[ 1561.625979]  [<ffffffff82253e26>] rollback_registered_many+0x186/0x260
-[ 1561.628526]  [<ffffffff82253f14>] unregister_netdevice_many+0x14/0x60
-[ 1561.631064]  [<ffffffff8243922e>] ip6_tnl_destroy_tunnels+0xee/0x160
-[ 1561.633549]  [<ffffffff8243b8f3>] ip6_tnl_exit_net+0xd3/0x1c0
-[ 1561.635843]  [<ffffffff8243b820>] ? ip6_tnl_ioctl+0x550/0x550
-[ 1561.637972]  [<ffffffff81259c86>] ? proc_net_remove+0x16/0x20
-[ 1561.639881]  [<ffffffff8224f119>] ops_exit_list+0x39/0x60
-[ 1561.641666]  [<ffffffff8224f72b>] cleanup_net+0xfb/0x1a0
-[ 1561.643528]  [<ffffffff810ce97d>] process_one_work+0x1cd/0x460
-[ 1561.645828]  [<ffffffff810ce91c>] ? process_one_work+0x16c/0x460
-[ 1561.648180]  [<ffffffff8224f630>] ? net_drop_ns+0x40/0x40
-[ 1561.650285]  [<ffffffff810d1e76>] worker_thread+0x176/0x3b0
-[ 1561.652460]  [<ffffffff810d1d00>] ? manage_workers+0x120/0x120
-[ 1561.654734]  [<ffffffff810d727e>] kthread+0xbe/0xd0
-[ 1561.656656]  [<ffffffff8270a134>] kernel_thread_helper+0x4/0x10
-[ 1561.658881]  [<ffffffff810e3fe0>] ? finish_task_switch+0x80/0x110
-[ 1561.660828]  [<ffffffff82708434>] ? retint_restore_args+0x13/0x13
-[ 1561.662795]  [<ffffffff810d71c0>] ? __init_kthread_worker+0x70/0x70
-[ 1561.664932]  [<ffffffff8270a130>] ? gs_change+0x13/0x13
-[ 1561.667001] 4 locks held by kworker/u:2/3140:
-[ 1561.667599]  #0:  (netns){.+.+.+}, at: [<ffffffff810ce91c>]
-process_one_work+0x16c/0x460
-[ 1561.668758]  #1:  (net_cleanup_work){+.+.+.}, at:
-[<ffffffff810ce91c>] process_one_work+0x16c/0x460
-[ 1561.670002]  #2:  (net_mutex){+.+.+.}, at: [<ffffffff8224f6b0>]
-cleanup_net+0x80/0x1a0
-[ 1561.671700]  #3:  (rtnl_mutex){+.+.+.}, at: [<ffffffff82267f02>]
-rtnl_lock+0x12/0x20
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+---
+ tools/perf/Makefile                    |    2 +-
+ tools/perf/util/include/linux/export.h |    6 ++++++
+ tools/perf/util/include/linux/module.h |    6 ------
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+ create mode 100644 tools/perf/util/include/linux/export.h
+ delete mode 100644 tools/perf/util/include/linux/module.h
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 74fd7f8..3c32126 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -249,7 +249,7 @@ LIB_H += util/include/linux/const.h
+ LIB_H += util/include/linux/ctype.h
+ LIB_H += util/include/linux/kernel.h
+ LIB_H += util/include/linux/list.h
+-LIB_H += util/include/linux/module.h
++LIB_H += util/include/linux/export.h
+ LIB_H += util/include/linux/poison.h
+ LIB_H += util/include/linux/prefetch.h
+ LIB_H += util/include/linux/rbtree.h
+diff --git a/tools/perf/util/include/linux/export.h b/tools/perf/util/include/linux/export.h
+new file mode 100644
+index 0000000..b43e2dc
+--- /dev/null
++++ b/tools/perf/util/include/linux/export.h
+@@ -0,0 +1,6 @@
++#ifndef PERF_LINUX_MODULE_H
++#define PERF_LINUX_MODULE_H
++
++#define EXPORT_SYMBOL(name)
++
++#endif
+diff --git a/tools/perf/util/include/linux/module.h b/tools/perf/util/include/linux/module.h
+deleted file mode 100644
+index b43e2dc..0000000
+--- a/tools/perf/util/include/linux/module.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef PERF_LINUX_MODULE_H
+-#define PERF_LINUX_MODULE_H
+-
+-#define EXPORT_SYMBOL(name)
+-
+-#endif
+-- 
+1.7.8.5
+
