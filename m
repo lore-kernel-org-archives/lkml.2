@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2CaUfS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 16:35:18 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48962 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab2CaUfO (ORCPT
+	id S1752688Ab2CaUjU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 16:39:20 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40523 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab2CaUjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 16:35:14 -0400
-Date: Sat, 31 Mar 2012 21:37:38 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        Wang YanQing <udknight@gmail.com>
-Subject: Re: [ 086/149] video:uvesafb: Fix oops that uvesafb try to execute
- NX-protected page
-Message-ID: <20120331213738.57a9649d@pyramind.ukuu.org.uk>
-In-Reply-To: <20120331180317.GA10792@kroah.com>
-References: <20120330194853.145065448@linuxfoundation.org>
-	<4F76260C.7080005@gmx.de>
-	<20120331180317.GA10792@kroah.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 31 Mar 2012 16:39:16 -0400
+Date: Sun, 1 Apr 2012 00:39:12 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        linux-security-module@vger.kernel.org, oprofile-list@lists.sf.net,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120331203912.GB687@moon>
+References: <20120331091049.19373.28994.stgit@zurg>
+ <20120331092929.19920.54540.stgit@zurg>
+ <20120331201324.GA17565@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120331201324.GA17565@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Mar 2012 11:03:17 -0700
-Greg KH <gregkh@linuxfoundation.org> wrote:
-
-> On Fri, Mar 30, 2012 at 09:30:52PM +0000, Florian Tobias Schandinat wrote:
-> > Hi Greg,
-> > 
-> > On 03/30/2012 07:49 PM, Greg KH wrote:
-> > > 3.2-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > the same as for 3.3: This patch would require exporting
-> > 'pcibios_enabled' to not break building uvesafb as a module. As Alan did
-> > not agree with this approach it is not suitable for stable as is.
+On Sat, Mar 31, 2012 at 10:13:24PM +0200, Oleg Nesterov wrote:
 > 
-> Oops, sorry about that, now removed, thanks for letting me know.
+> Add Cyrill. This conflicts with
+> c-r-prctl-add-ability-to-set-new-mm_struct-exe_file.patch in -mm.
 
-Actually for the backport its probably the right thing to do - its
-simple, clear and slightly ugly, but its fairly provably safe.
+Thanks for CC'ing, Oleg. I think if thise series go in it won't
+be a problem to update my patch accordingly.
+
+	Cyrill
