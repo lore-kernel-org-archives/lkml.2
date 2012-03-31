@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab2CaHno (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 03:43:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54785 "EHLO
+	id S1754670Ab2CaHot (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 03:44:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54801 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2CaHnk (ORCPT
+	with ESMTP id S1753167Ab2CaHor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 03:43:40 -0400
-Date: Sat, 31 Mar 2012 00:43:29 -0700
-From: tip-bot for David Miller <davem@davemloft.net>
-Message-ID: <tip-1e2dd2f73afdc810cc7400b7036232fbdc416eeb@git.kernel.org>
+	Sat, 31 Mar 2012 03:44:47 -0400
+Date: Sat, 31 Mar 2012 00:44:17 -0700
+From: tip-bot for Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Message-ID: <tip-ba28c59bc9ed8fb7b9a753cd88ee54a2c4f6265b@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, davem@davemloft.net
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, tglx@linutronix.de, davem@davemloft.net
-In-Reply-To: <20120325.162822.2267799792062571623.davem@davemloft.net>
-References: <20120325.162822.2267799792062571623.davem@davemloft.net>
+        mingo@kernel.org, prashanth@linux.vnet.ibm.com, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: ananth@in.ibm.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        prashanth@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <4F703FB9.9020407@linux.vnet.ibm.com>
+References: <4F703FB9.9020407@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols: Handle NULL dso in dso__name_len
-Git-Commit-ID: 1e2dd2f73afdc810cc7400b7036232fbdc416eeb
+Subject: [tip:perf/urgent] perf probe:
+  Finder fails to resolve function name to address
+Git-Commit-ID: ba28c59bc9ed8fb7b9a753cd88ee54a2c4f6265b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,43 +33,57 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 31 Mar 2012 00:43:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 31 Mar 2012 00:44:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1e2dd2f73afdc810cc7400b7036232fbdc416eeb
-Gitweb:     http://git.kernel.org/tip/1e2dd2f73afdc810cc7400b7036232fbdc416eeb
-Author:     David Miller <davem@davemloft.net>
-AuthorDate: Sun, 25 Mar 2012 16:28:22 -0400
+Commit-ID:  ba28c59bc9ed8fb7b9a753cd88ee54a2c4f6265b
+Gitweb:     http://git.kernel.org/tip/ba28c59bc9ed8fb7b9a753cd88ee54a2c4f6265b
+Author:     Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+AuthorDate: Mon, 26 Mar 2012 15:36:49 +0530
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 27 Mar 2012 11:00:58 -0300
+CommitDate: Wed, 28 Mar 2012 11:56:49 -0300
 
-perf symbols: Handle NULL dso in dso__name_len
+perf probe: Finder fails to resolve function name to address
 
-We should use "[unknown]" in this case, in concert with the code in
-_hist_entry__dso_snprintf().
+If DIE entries corresponding to declarations appear before definition
+entry, probe finder returns error instead of continuing to look further
+for a definition entry.
 
-Otherwise we'll crash when recomputing the histogram column lengths in
-hists__calc_col_len().
+This patch ensures we reach to the DIE entry corresponding to the
+definition and get the function address.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Link: http://lkml.kernel.org/r/20120325.162822.2267799792062571623.davem@davemloft.net
+V2: A simpler solution based on Masami's suggestion.
+
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/4F703FB9.9020407@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/util/probe-finder.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index d9e995b..c0a028c 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -50,6 +50,8 @@ struct symbol_conf symbol_conf = {
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 2cc162d..d448984 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -972,10 +972,12 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+ 	struct dwarf_callback_param *param = data;
+ 	struct probe_finder *pf = param->data;
+ 	struct perf_probe_point *pp = &pf->pev->point;
++	Dwarf_Attribute attr;
  
- int dso__name_len(const struct dso *dso)
- {
-+	if (!dso)
-+		return strlen("[unknown]");
- 	if (verbose)
- 		return dso->long_name_len;
+ 	/* Check tag and diename */
+ 	if (dwarf_tag(sp_die) != DW_TAG_subprogram ||
+-	    !die_compare_name(sp_die, pp->function))
++	    !die_compare_name(sp_die, pp->function) ||
++	    dwarf_attr(sp_die, DW_AT_declaration, &attr))
+ 		return DWARF_CB_OK;
  
+ 	/* Check declared file */
