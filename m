@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab2CaVWk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 17:22:40 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:50379 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2CaVWH (ORCPT
+	id S1753470Ab2CaVXJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 17:23:09 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49262 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab2CaVXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 17:22:07 -0400
-Date: Sat, 31 Mar 2012 14:21:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-hexagon@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
-        linux-m32r-ja@ml.linux-m32r.org, linux-mips@linux-mips.org,
-        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        tglx@linutronix.de, linux@arm.linux.org.uk, dhowells@redhat.com,
-        jejb@parisc-linux.org, linux390@de.ibm.com, x86@kernel.org,
-        cmetcalf@tilera.com
-Subject: Re: [PATCH RFC] Simplify the Linux kernel by reducing its state space
-Message-ID: <20120331212149.GI2450@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120331163321.GA15809@linux.vnet.ibm.com>
- <1333227608.2325.4054.camel@edumazet-glaptop>
+	Sat, 31 Mar 2012 17:23:04 -0400
+Date: Sat, 31 Mar 2012 22:23:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mike Sinkovsky <msink@permonline.ru>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/2] Ethernet driver for the WIZnet W5100 chip
+Message-ID: <20120331212303.GB19965@sirena.org.uk>
+References: <1332752876-1650-1-git-send-email-msink@permonline.ru>
+ <1333090806-27988-2-git-send-email-msink@permonline.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333227608.2325.4054.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12033121-5518-0000-0000-0000035B7F8D
+In-Reply-To: <1333090806-27988-2-git-send-email-msink@permonline.ru>
+X-Cookie: No alcohol, dogs or horses.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 11:00:08PM +0200, Eric Dumazet wrote:
-> On Sun, 2012-04-01 at 00:33 +0800, Paul E. McKenney wrote:
-> > Although there have been numerous complaints about the complexity of
-> > parallel programming (especially over the past 5-10 years), the plain
-> > truth is that the incremental complexity of parallel programming over
-> > that of sequential programming is not as large as is commonly believed.
-> > Despite that you might have heard, the mind-numbing complexity of modern
-> > computer systems is not due so much to there being multiple CPUs, but
-> > rather to there being any CPUs at all.  In short, for the ultimate in
-> > computer-system simplicity, the optimal choice is NR_CPUS=0.
-> > 
-> > This commit therefore limits kernel builds to zero CPUs.  This change
-> > has the beneficial side effect of rendering all kernel bugs harmless.
-> > Furthermore, this commit enables additional beneficial changes, for
-> > example, the removal of those parts of the kernel that are not needed
-> > when there are zero CPUs.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-> > ---
-> 
-> Hmm... I believe you could go one step forward and allow negative values
-> as well. Antimatter was proven to exist after all.
-> 
-> Hint : nr_cpu_ids is an "int", not an "unsigned int"
-> 
-> Bonus: Existing bugs become "must have" features.
+On Fri, Mar 30, 2012 at 01:00:06PM +0600, Mike Sinkovsky wrote:
 
-;-) ;-) ;-)
+> +config WIZNET_W5100
+> +	tristate "WIZnet W5100 Ethernet support"
+> +	depends on ARM || BLACKFIN
 
-> Of course there is no hurry and this can wait 365 days.
+What are the architecture dependencies here?
 
-James Bottomley suggested imaginary numbers of CPUs some time back,
-and I suppose there is no reason you cannot have fractional numbers of
-CPUs, and perhaps irrational numbers as well.  Of course, these last two
-would require use of floating-point arithmetic (or something similar)
-in the kernel.  So I guess we have at several years worth.  Over to you
-for the negative numbers.  ;-)
+> +static irqreturn_t w5100_interrupt(int irq, void *ndev_instance)
+> +{
+> +	struct net_device *ndev = ndev_instance;
+> +	struct w5100_priv *priv = netdev_priv(ndev);
+> +
+> +	int ir = w5100_read(priv, W5100_S0_IR);
+> +	w5100_write(priv, W5100_S0_IR, ir);
+> +
+> +	if (ir & S0_IR_RECV) {
+> +		if (napi_schedule_prep(&priv->napi)) {
+> +			w5100_write(priv, W5100_IMR, 0);
+> +			mmiowb();
+> +			__napi_schedule(&priv->napi);
+> +		}
+> +	}
+> +
+> +	if (ir & S0_IR_SENDOK) {
+> +		if (unlikely(netif_queue_stopped(ndev)))
+> +			netif_wake_queue(ndev);
+> +	}
+> +
+> +	return IRQ_HANDLED;
 
-							Thanx, Paul
+This unconditionally acknowledges the interrupt even if one wasn't
+reported by the device.
 
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0)
+> +		return irq;
+> +	ret = devm_request_irq(&pdev->dev, irq, w5100_interrupt,
+> +			       IRQ_TYPE_LEVEL_LOW, name, ndev);
+> +	if (ret < 0)
+> +		return ret;
+> +	priv->irq = irq;
+> +
+> +	link = platform_get_resource(pdev, IORESOURCE_IO, 0);
+> +	if (!link) {
+> +		priv->link_gpio = -1;
+
+This is rather an abuse of the resource API and will run into trouble on
+device tree based systems.  You should use platform data for non-DT
+systems.
+
+> +		if (request_irq(priv->link_irq, w5100_detect_link,
+> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+> +				link_name, priv->ndev) < 0)
+
+Suggest using request_any_context_irq() to increase the range of
+supported interrupt controllers.
+
+> +err_register:
+> +	free_netdev(ndev);
+> +	platform_set_drvdata(pdev, NULL);
+> +	dev_info(&pdev->dev, "probe failed (%d)\n", err);
+
+This will be done for you by the driver core.
