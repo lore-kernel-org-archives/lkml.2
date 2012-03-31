@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2CaVkJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 17:40:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53791 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab2CaVkH (ORCPT
+	id S1753607Ab2CaVnm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 17:43:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48728 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab2CaVnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 17:40:07 -0400
-Message-ID: <4F77795C.6050109@mvista.com>
-Date: Sun, 01 Apr 2012 01:38:36 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Sat, 31 Mar 2012 17:43:40 -0400
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
-        olof@lixom.net, ludovic.desroches@atmel.com,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH] ARM: at91: include newly created system_misc.h file
-References: <cover.1333026637.git.nicolas.ferre@atmel.com> <1333110669-24554-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1333110669-24554-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120331213423.GA21219@redhat.com>
+References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
+ <1333227549.2325.4051.camel@edumazet-glaptop> <20120331213423.GA21219@redhat.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 31 Mar 2012 23:43:19 +0200
+Message-ID: <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com>
+Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, Mar 31, 2012 at 11:34 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 03/31, Eric Dumazet wrote:
+>>
+>> On Sat, 2012-03-31 at 19:51 +0200, Sasha Levin wrote:
+>> > Hi all,
+>> >
+>> > It appears that a hang may occur when destroying an ipv6 tunnel, which
+>> > I've reproduced several times in a KVM vm.
+>
+> kernel version?
 
-On 30-03-2012 16:31, Nicolas Ferre wrote:
+latest linux-next
 
-> system.h file has been split by commit "0195c00".
+>> > [ 1561.564172] INFO: task kworker/u:2:3140 blocked for more than 120 seconds.
+>
+> And nobody else?
 
-    Please also specify that commit's summary in parens. And don't put commit 
-ID into quoates.
+Some more messages follow a bit later which get stuck in vfs related code.
 
-> Now include
-> system_misc.h for having access to arm_pm_restart.
+> It would be nice to know what sysrq-t says, in particular the trace
+> of khelper thread is interesting.
 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Sure, I'll get one when it happens again.
 
-WBR, Sergei
-
+>> Something is wrong here, call_usermodehelper_exec ( ... UMH_WAIT_EXEC)
+>> should not block forever.
+>
+> Yes, unless it triggers another request_module()...
+>
+> Tetsuo, could you please take a look? Unlikely, but may be this
+> is fixed by your kmod-avoid-deadlock-by-recursive-kmod-call.patch
+> in -mm ?
+>
+> Oleg.
+>
