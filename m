@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab2CaTbw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 15:31:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47878 "EHLO mx1.redhat.com"
+	id S1752559Ab2CaTi6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 15:38:58 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:32891 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab2CaTbr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 15:31:47 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120329153409.7295eda9@stein>
-References: <20120329153409.7295eda9@stein>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: On patch "Remove all #inclusions of asm/system.h"
+	id S1752353Ab2CaTiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 15:38:50 -0400
+Message-ID: <4F775F42.5020406@fnac.net>
+Date: Sat, 31 Mar 2012 21:47:14 +0200
+From: Paul Chavent <paul.chavent@fnac.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 31 Mar 2012 20:31:33 +0100
-Message-ID: <31597.1333222293@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Packet mmap payload alignment.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
+Hi.
 
-> commit 9ffc93f2 "Remove all #inclusions of asm/system.h" removes a lot of
-> includes while its parent commit 96f951ed "Add #includes needed to permit
-> the removal of asm/system.h" adds only a few.  Some of the files modified
-> by commit 9ffc93f2 now only work due to indirect inclusion, don't they?
-> 
-> For example, drivers/firewire/{core-device,core-topology,ohci,sbp2}.c use
-> smp_rmb()¹ and used to include asm/system.h.  Now they do not include
-> asm/barrier.h.  Is this by mistake or on purpose?
+I'm playing with the packet mmap interface. After having success with SOCK_DGRAM, i would like to try SOCK_RAW packet mmap.
 
-I tried to make sure allyesconfig worked for x86_64 and a bunch of defconfigs
-worked.  I can't guarantee that that got 100% coverage.  I also knew there
-would be some breakage from the base Linux kernel having moved on by the time
-Linus pulled myu patches - though I don't know if this is the case here (I
-suspect not).
+I would like to align my payload on 16 bytes boundary. On rx side, it's automatic. But on tx side, it lacks the possibility to tell to the kernel where to begin to read the data.
 
-David
+Do i miss something ?
+
+Do you think it could be possible to have a "reserve" like on the rx side ?
+
+
+Regards.
+
+Paul.
+
+
+P.S. : can you cc me your reply please ?
