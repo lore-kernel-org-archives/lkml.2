@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759423Ab2CaBO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 21:14:58 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:48553 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759329Ab2CaBOg (ORCPT
+	id S1759375Ab2CaBSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 21:18:44 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51188 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759143Ab2CaBSm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 21:14:36 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 108.39.66.94
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18ggRT855JUTIw44zOGNZCs13hCS7gxmRo=
-Date: Fri, 30 Mar 2012 21:14:32 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Sylver Bruneau <sylver.bruneau@googlemail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH RFT v3] watchdog: Convert orion_wdt driver to watchdog
- core
-Message-ID: <20120331011432.GG7274@titan.lakedaemon.net>
-References: <1332804040.5294.2.camel@phoenix>
+	Fri, 30 Mar 2012 21:18:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332804040.5294.2.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <CA+55aFzeN+m0mWqe6ajBB=cdTNJMF2FgW17_mm_n0BoKokQVRw@mail.gmail.com>
+References: <CAOesGMjU5tehTf7+nYQv1_7a=+gGN2hVYUdh1g_BF=WRYj0hgg@mail.gmail.com>
+	<CA+55aFzeN+m0mWqe6ajBB=cdTNJMF2FgW17_mm_n0BoKokQVRw@mail.gmail.com>
+Date: Fri, 30 Mar 2012 18:18:40 -0700
+Message-ID: <CAOesGMhrokqQajQ6RROXdWNvVUd3WNjO4i3qggGAVXo5h05TKQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ARM: Two more fixes for merge window fallout
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 07:20:40AM +0800, Axel Lin wrote:
-> Convert orion_wdt driver to use watchdog framework API.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> Hi Jason, Andrew,
-> I don't have this hardware handy.
-> I'd appreciate if you can review and test this patch.
+On Fri, Mar 30, 2012 at 5:00 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Mar 30, 2012 at 4:20 PM, Olof Johansson <olof@lixom.net> wrote:
+>>
+>> are available in the git repository at:
+>>
+>>  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
+>
+> Hmm. I *think* you meant to ask me to pull the "fixes-for-linus" tag,
+> which points at the same commit as the "fixes" branch. No?
 
-Axel,
+Yes, that's correct.
 
-Sorry for the delay, been a busy week.  I'm getting the following error:
+> You might want to double-check whatever script or workflow you use to
+> generate these pull requests.
 
-drivers/watchdog/orion_wdt.c:133:2: error: unknown field 'get_timeleft'
-specified in initializer
-drivers/watchdog/orion_wdt.c:133:2: warning: initialization from
-incompatible pointer type
+Hmm, I had 'fixes' checked out locally, and used regular git request-pull.
 
-What tag did you base this off of?  Are there any dependencies not in
-mainline?
+Oh! I know what it was. I pushed the branch before I pushed the tag,
+so when I generated the request the branch had propagated out from ra
+to git.kernel.org but not the tag.
 
-I based off of v3.3 with the following merged:
+Since the branch matched but no tag did, request-pull used it and took
+the local tag contents for the message so I didn't notice the
+difference.
 
-git://git.infradead.org/users/jcooper/linux-kirkwood.git kirkwood_dt_for_3.4_v3
+Thanks for the sanity check, I'll double-check in the future.
 
-thx,
 
-Jason.
+-Olof
