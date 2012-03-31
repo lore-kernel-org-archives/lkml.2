@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab2CaC7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 22:59:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16103 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754991Ab2CaC7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 22:59:49 -0400
-Date: Sat, 31 Mar 2012 08:29:41 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: [PULL] virtio: S3 support, use PM API macro for init
-Message-ID: <20120331025941.GC9769@amit.redhat.com>
+	id S1756559Ab2CaDEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 23:04:30 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:59890 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab2CaDE2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Mar 2012 23:04:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <4F765A72.6090006@cn.fujitsu.com>
+References: <4F7581D4.4040301@cn.fujitsu.com> <4F7582B0.5010609@cn.fujitsu.com>
+ <CAFO3S427vWXHBDaRmfwqZrGZ2Y8RPUn7CQswQou9EGMh43jU8Q@mail.gmail.com> <4F765A72.6090006@cn.fujitsu.com>
+From: Asias He <asias.hejun@gmail.com>
+Date: Sat, 31 Mar 2012 11:03:47 +0800
+Message-ID: <CAFO3S41ag8wih8941qmpUGM=JbY_MsF28pNom-SRxW3M67_k3A@mail.gmail.com>
+Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass of
+ disks naming
+To: Ren Mingxin <renmx@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sat, Mar 31, 2012 at 9:14 AM, Ren Mingxin <renmx@cn.fujitsu.com> wrote:
+>  Hi, He:
+>
+>
+> On 03/30/2012 07:22 PM, Asias He wrote:
+>>
+>> On Fri, Mar 30, 2012 at 5:53 PM, Ren Mingxin<renmx@cn.fujitsu.com>  wrote:
+>>>
+>>>  The current virtblk's naming algorithm only supports 263  disks.
+>>> If there are mass of virtblks(exceeding 263), there will be disks
+>>> with the same name.
+>>
+>> This fix is pretty nice. However, current virtblk's naming still
+>> supports up to 18278 disks, no?
+>> ( index 0  ->  vda, index 18277 ->  vdzzz ).
+>
+>
+> Sorry, I intended to type 26^3+ (26^2+26)...
+> It may still be a restriction which should be improved though.
 
-Please pull for virtio-s3/s4 fixes.  I'm taking the liberty to send
-this to you directly since Rusty's on vacation.
+OK.
 
-The patches were posted earlier at
-
-http://www.spinics.net/lists/linux-virtualization/msg15781.html
-
-and have been tested to work fine, here's the message from the
-original submission:
-
-Turns out S3 is not different from S4 for virtio devices: the device
-is assumed to be reset, so the host and guest state are to be assumed
-to be out of sync upon resume.  We handle the S4 case with exactly the
-same scenario, so just point the suspend/resume routines to the
-freeze/restore ones.
-
-Once that is done, we also use the PM API's macro to initialise the
-sleep functions.
-
-A couple of cleanups are included: there's no need for special thaw
-processing in the balloon driver, so that's addressed in patches 1 and
-2.
-
-Testing: both S3 and S4 support have been tested using these patches
-using a similar method used earlier during S4 patch development: a
-guest is started with virtio-blk as the only disk, a virtio network
-card, a virtio-serial port and a virtio balloon device.  Ping from
-guest to host, dd /dev/zero to a file on the disk, and IO from the
-host on the virtio-serial port, all at once, while exercising S4 and
-S3 (separately) were tested.  They all continue to work fine after
-resume.  virtio balloon values too were tested by inflating and
-deflating the balloon.
-
-The following changes since commit fa2a4519cb6ad94224eb56a1341fff570fd44ea1:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2012-03-30 18:40:33 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/amit/virtio-console.git s3-for-3.4
-
-Amit Shah (5):
-      virtio: balloon: Allow stats update after restore from S4
-      virtio: drop thaw PM operation
-      virtio-pci: drop restore_common()
-      virtio-pci: S3 support
-      virtio-pci: switch to PM ops macro to initialise PM functions
-
- drivers/virtio/virtio_balloon.c |   14 -------
- drivers/virtio/virtio_pci.c     |   74 ++++----------------------------------
- include/linux/virtio.h          |    1 -
- 3 files changed, 8 insertions(+), 81 deletions(-)
-
-		Amit
+-- 
+Asias He
