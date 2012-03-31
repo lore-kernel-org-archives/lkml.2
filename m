@@ -1,143 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2CaHbj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 03:31:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49515 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab2CaHbf (ORCPT
+	id S1753723Ab2CaHcV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 03:32:21 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:49733 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274Ab2CaHcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 03:31:35 -0400
-Date: Sat, 31 Mar 2012 09:31:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Ahern <dsahern@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>,
-        Sorin Dumitru <dumitru.sorin87@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/9] perf/urgent fixes
-Message-ID: <20120331073129.GA15958@gmail.com>
-References: <1333123764-15662-1-git-send-email-acme@infradead.org>
+	Sat, 31 Mar 2012 03:32:17 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zz1dbaL1432N98dKzz1202hzz8275bh8275dhz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1QNLJ-02-AGS-02
+X-M-MSG: 
+Date: Sat, 31 Mar 2012 23:31:55 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Stern <stern@rowland.harvard.edu>, <linux-acpi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] ACPI: Introduce ACPI D3_COLD state support
+Message-ID: <20120331153155.GA8169@localhost.amd.com>
+References: <1333001380-6050-1-git-send-email-ming.m.lin@intel.com>
+ <1333001380-6050-2-git-send-email-ming.m.lin@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1333123764-15662-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1333001380-6050-2-git-send-email-ming.m.lin@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 31 Mar 2012 07:32:02.0123 (UTC) FILETIME=[5D3489B0:01CD0F10]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+On Thu, Mar 29, 2012 at 02:09:38PM +0800, Lin Ming wrote:
+> From: Zhang Rui <rui.zhang@intel.com>
+> 
+> If a device has _PR3, it means the device supports D3_COLD.
+> Add the ability to validate and enter D3_COLD state in ACPI.
 
-> Hi Ingo,
-> 
-> 	Please consider pulling.
-> 
-> 	But please test the bison/flex thing, it was a bit tricky to make it
-> work with/without O=, and also to make it work on at least RHEL6.2, Fedora 14
-> and Ubuntu 10.04 LTS.
-> 
-> 	I know that bison barfs on Fedora 8, but left the fix for later.
-> 
-> - Arnaldo
-> 
-> The following changes since commit b01c3a0010aabadf745f3e7fdb9cab682e0a28a2:
-> 
->   perf: Move mmap page data_head offset assertion out of header (2012-03-24 08:46:59 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/urgent
-> 
-> for you to fetch changes up to 65f3e56e0c81d1f581c4bdef7646ae5a8d51f494:
-> 
->   perf tools: Remove auto-generated bison/flex files (2012-03-30 12:43:17 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/urgent Fixes
-> 
-> . Assorted fixes from David Miller
-> 
-> . Fix display of first level of callchains, from Frederic Weisbecker
-> 
-> . Remove auto-generated bison/flex files, from Ingo Molnar and me
-> 
-> . Add missing ref-cycles event back to event parser, from Namhyung Kim
-> 
-> . Ignore DWARF decl tags to properly resolve function name do address,
->   from Prashanth Nageshappa
-> 
-> . Fix bug in raw sample parsing bug introduced in the branch stack patches,
->   from Stephane Eranian
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (1):
->       perf annotate: Fix off by one symbol hist size allocation and hit accounting
-> 
-> David Miller (3):
->       perf symbols: Do not include libgen.h
->       perf symbols: Handle NULL dso in dso__name_len
->       perf annotate: addr2line wants addresses in same format as objdump
-> 
-> Frederic Weisbecker (1):
->       perf tools: Fix display of first level of callchains
-> 
-> Ingo Molnar (1):
->       perf tools: Remove auto-generated bison/flex files
-> 
-> Namhyung Kim (1):
->       perf tools: Add missing ref-cycles event back to event parser
-> 
-> Prashanth Nageshappa (1):
->       perf probe: Finder fails to resolve function name to address
-> 
-> Stephane Eranian (1):
->       perf tools: Fix bug in raw sample parsing
-> 
->  tools/perf/Makefile                  |   47 +-
->  tools/perf/util/annotate.c           |    8 +-
->  tools/perf/util/evsel.c              |    2 +
->  tools/perf/util/hist.c               |  157 ++-
->  tools/perf/util/parse-events-bison.c | 1917 ----------------------------
->  tools/perf/util/parse-events-bison.h |   81 --
->  tools/perf/util/parse-events-flex.c  | 2272 ----------------------------------
->  tools/perf/util/parse-events-flex.h  |  316 -----
->  tools/perf/util/parse-events.l       |    1 +
->  tools/perf/util/pmu-bison.c          | 1663 -------------------------
->  tools/perf/util/pmu-bison.h          |   73 --
->  tools/perf/util/pmu-flex.c           | 1821 ---------------------------
->  tools/perf/util/pmu-flex.h           |  316 -----
->  tools/perf/util/probe-finder.c       |    4 +-
->  tools/perf/util/symbol.c             |    3 +-
->  15 files changed, 135 insertions(+), 8546 deletions(-)
->  delete mode 100644 tools/perf/util/parse-events-bison.c
->  delete mode 100644 tools/perf/util/parse-events-bison.h
->  delete mode 100644 tools/perf/util/parse-events-flex.c
->  delete mode 100644 tools/perf/util/parse-events-flex.h
->  delete mode 100644 tools/perf/util/pmu-bison.c
->  delete mode 100644 tools/perf/util/pmu-bison.h
->  delete mode 100644 tools/perf/util/pmu-flex.c
->  delete mode 100644 tools/perf/util/pmu-flex.h
+Since we are going to support two D3 states, I think maybe we should
+clear their meanings in Linux. So D3 means D3 hot, right?
 
-Pulled, thanks a lot Arnaldo!
+If so, I think the following code has problems:
 
-It's working fine on all my test-boxes.
+static int acpi_bus_get_power_flags(struct acpi_device *device)
+{
+	... ...
 
-Thanks,
+	/* Set defaults for D0 and D3 states (always valid) */
+	device->power.states[ACPI_STATE_D0].flags.valid = 1;
+	device->power.states[ACPI_STATE_D0].power = 100;
+	device->power.states[ACPI_STATE_D3].flags.valid = 1;
+	device->power.states[ACPI_STATE_D3].power = 0;
+}
 
-	Ingo
+The problem is, D3's valid flag shouldn't be set and its power shouldn't
+be 0 since it's D3 hot. It feels like D3_COLD should be used instead.
+
+What do you think? Thanks.
+
+-Aaron
+
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/acpi/power.c |    4 ++--
+>  drivers/acpi/scan.c  |    7 +++++++
+>  2 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> index 9ac2a9f..0d681fb 100644
+> --- a/drivers/acpi/power.c
+> +++ b/drivers/acpi/power.c
+> @@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
+>  {
+>  	int result;
+>  
+> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
+> +	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+>  		return -EINVAL;
+>  
+>  	if (device->power.state == state)
+>  		return 0;
+>  
+>  	if ((device->power.state < ACPI_STATE_D0)
+> -	    || (device->power.state > ACPI_STATE_D3))
+> +	    || (device->power.state > ACPI_STATE_D3_COLD))
+>  		return -ENODEV;
+>  
+>  	/* TBD: Resources must be ordered. */
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 8ab80ba..571396c 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -885,6 +885,13 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>  				acpi_bus_add_power_resource(ps->resources.handles[j]);
+>  		}
+>  
+> +		/* The exist of _PR3 indicates D3Cold support */
+> +		if (i == ACPI_STATE_D3) {
+> +			status = acpi_get_handle(device->handle, object_name, &handle);
+> +			if (ACPI_SUCCESS(status))
+> +				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> +		}
+> +
+>  		/* Evaluate "_PSx" to see if we can do explicit sets */
+>  		object_name[2] = 'S';
+>  		status = acpi_get_handle(device->handle, object_name, &handle);
+> -- 
+> 1.7.2.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
