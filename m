@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab2CaAIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 20:08:50 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58601 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2CaAIq (ORCPT
+	id S1758977Ab2CaANc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Mar 2012 20:13:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13199 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756253Ab2CaAN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 20:08:46 -0400
-Date: Sat, 31 Mar 2012 02:08:43 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-Message-ID: <20120331000843.GO17822@one.firstfloor.org>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F7616F5.4070000@zytor.com> <alpine.LFD.2.02.1203302333560.2542@ionos> <20120330221836.GN17822@one.firstfloor.org> <alpine.LFD.2.02.1203310044580.2542@ionos>
+	Fri, 30 Mar 2012 20:13:29 -0400
+X-Authority-Analysis: v=2.0 cv=T5EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wMWVvwg0qUAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=1IgKvS_jCbM8X3mIm0AA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1333152806.23924.196.camel@gandalf.stny.rr.com>
+Subject: Re: syscall_regfunc() && TIF_SYSCALL_TRACEPOINT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 30 Mar 2012 20:13:26 -0400
+In-Reply-To: <20120330201550.GA16628@redhat.com>
+References: <20120330183104.GA12927@redhat.com>
+	 <1333134131.23924.191.camel@gandalf.stny.rr.com>
+	 <20120330201550.GA16628@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1203310044580.2542@ionos>
-User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 01:04:41AM +0200, Thomas "Kubys" Gleixner wrote:
-> On Sat, 31 Mar 2012, Andi Kleen wrote:
+On Fri, 2012-03-30 at 22:15 +0200, Oleg Nesterov wrote:
+
+> > A lot of places test ->mm for kernel threads.
 > 
-> > > So if a guest exits due to an external event it's easy to inspect the
-> > > state of that guest and avoid to schedule away when it was interrupted
-> > > in a spinlock held section. That guest/host shared state needs to be
-> > 
-> > On a large system under high contention sleeping can perform surprisingly
-> > well. pthread mutexes have a tendency to beat kernel spinlocks there.
-> > So avoiding sleeping locks completely (that is what pv locks are
-> > essentially) is not necessarily that good.
+> And this is wrong, use_mm() can set ->mm != NULL. This is the common
+> mistake.
 > 
-> Care to back that up with numbers and proper trace evidence instead of
-> handwaving?
+> > Just search for ->mm in
+> > kernel/sched/core.c
+> 
+> Probably normalize_rt_tasks() and __sched_setscheduler() should be fixed.
 
-E.g. my plumbers presentations on lock and mm scalability from last year has some 
-graphs that show this very clearly, plus some additional data on the mutexes. 
-This compares to the glibc futex locks, which perform much better than the kernel 
-mutex locks on larger systems under higher contention
+Heh, the __sched_setscheduler() usage is from me. But I'm not sure we
+had an alternative back in 2005.
 
-Given your tone I will not supply an URL. I'm sure you can find it if you
-need it.
 
--Andi
+> But I don't really understand why do you think that "clear" is more
+> important.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+They are both important. But as I tend to consider performance when
+tracing is off as critical, I'm more concerned about that. But both must
+be fixed, because not reporting traces can confuse a developer.
+
+
+
+>  Sure, the wrong TIF_SYSCALL_TRACEPOINT triggers the slow
+> path unnecessary, but this is more or less harmless. But if we do
+> not set the task obviously won't report trace_sys*, this looks like
+> a bug even if nothing bad can happen.
+
+Agreed, both are a bug and both should be fixed.
+
+Thanks,
+
+-- Steve
+
+
