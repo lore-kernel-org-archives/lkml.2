@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab2DAR7J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 13:59:09 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:1906 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab2DAR7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 13:59:08 -0400
-Message-Id: <201204011759.q31Hx5ej030121@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 30 Mar 2012 16:07:12 -0400
-Subject: [PATCH v3] hugetlb: fix race condition in hugetlb_fault()
-In-Reply-To: <4F7887A5.3060700@tilera.com>
-References: <4F7887A5.3060700@tilera.com> <201203302018.q2UKIFH5020745@farm-0012.internal.tilera.com> <CAJd=RBCoLNB+iRX1shKGAwSbE8PsZXyk9e3inPTREcm2kk3nXA@mail.gmail.com> <201203311339.q2VDdJMD006254@farm-0012.internal.tilera.com> <CAJd=RBBWx7uZcw=_oA06RVunPAGeFcJ7LY=RwFCyB_BreJb_kg@mail.gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-X-OriginalArrivalTime: 01 Apr 2012 17:59:06.0828 (UTC) FILETIME=[21B0A8C0:01CD1031]
+	id S1753568Ab2DATnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 15:43:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59243 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab2DATnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 15:43:01 -0400
+Date: Sat, 31 Mar 2012 13:49:26 +0200
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Ted Tso <tytso@mit.edu>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+Message-ID: <20120331114926.GA4569@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+ <20120322095342.GC14485@quack.suse.cz>
+ <1332410747.18717.12.camel@sauron.fi.intel.com>
+ <20120322103309.GA14484@quack.suse.cz>
+ <1332854998.31549.40.camel@sauron.fi.intel.com>
+ <20120327201401.GF5020@quack.suse.cz>
+ <1333121035.5440.49.camel@sauron.fi.intel.com>
+ <20120330153530.GH5587@quack.suse.cz>
+ <1333122195.5440.60.camel@sauron.fi.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333122195.5440.60.camel@sauron.fi.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The race is as follows.
+On Fri 30-03-12 18:43:15, Artem Bityutskiy wrote:
+> On Fri, 2012-03-30 at 17:35 +0200, Jan Kara wrote:
+> > > [23500.239442]  [<ffffffff811ab59d>] write_dirty_buffer+0x4d/0x80
+> > > [23500.239442]  [<ffffffff8123be1d>] __flush_batch+0x4d/0xa0
+> > > [23500.239442]  [<ffffffff8123c605>] jbd2_log_do_checkpoint+0xf5/0x4f0
+> > > [23500.239442]  [<ffffffff8123ca89>] __jbd2_log_wait_for_space+0x89/0x190
+> > > [23500.239442]  [<ffffffff81237a98>] start_this_handle+0x3a8/0x4e0
+> > > [23500.239442]  [<ffffffff810799e0>] ? remove_wait_queue+0x50/0x50
+> > > [23500.239442]  [<ffffffff81237c93>] jbd2__journal_start+0xc3/0x100
+> > > [23500.239442]  [<ffffffff81237ce3>] jbd2_journal_start+0x13/0x20
+> > > [23500.239442]  [<ffffffff8121743f>] ext4_journal_start_sb+0x7f/0x1d0
+> > > [23500.239442]  [<ffffffff81224a24>] ? ext4_fallocate+0x1a4/0x530
+> > > [23500.239442]  [<ffffffff811f64c5>] ? ext4_meta_trans_blocks+0xa5/0xb0
+> > > [23500.239442]  [<ffffffff81224a24>] ext4_fallocate+0x1a4/0x530
+> > > [23500.239442]  [<ffffffff8117a092>] do_fallocate+0xf2/0x160
+> > > [23500.239442]  [<ffffffff8117a14b>] sys_fallocate+0x4b/0x70
+> > > [23500.239442]  [<ffffffff815e6d69>] system_call_fastpath+0x16/0x1b
+> > > [23500.239442] Code: ee 44 89 e7 e8 35 1f 0f 00 49 8b 5d 18 4c 89 ef e8 19 4e 00 00 48 83 c4 08 c1 e3 18 c1 fb 1f 83 e3 a1 89 d8 5b 41 5c 41 5d 5d c3 <0f> 0b 0f 0b 0f 0b 0f 0b 0f 0b 66 0f 1f 84 00 00 00 00 00 55 48 
+> > > [23500.239442] RIP  [<ffffffff811a9add>] submit_bh+0x10d/0x120
+> > > [23500.239442]  RSP <ffff880273a41b58>
+> > > [23500.261657] ---[ end trace 3db7a7a7ae953551 ]---
+> >   Hmm, looks like we tried to checkpoint BH_Unwritten buffer. That looks
+> > like a bug in fallocate() support. Not really related but definitely worth
+> > reporting.
+> 
+> Well, I ran vanilla the tests in vanilla 3.3 overnight, they were fine.
+> But may be I was lucky. I'll try to run the tests with vanilla kernel
+> some more. I mean, it would make more sense to report something against
+> vanilla 3.3, not a patched 3.3.
+  That's true. Frankly I think you were lucky with hitting the bug with
+patched kernel rather than not hitting it with vanilla :). What test did
+you run exactly?
 
-Suppose a multi-threaded task forks a new process (on cpu A), thus
-bumping up the ref count on all the pages.  While the fork is occurring
-(and thus we have marked all the PTEs as read-only), another thread in
-the original process (on cpu B) tries to write to a huge page, taking
-an access violation from the write-protect and calling hugetlb_cow().
-Now, suppose the fork() fails.  It will undo the COW and decrement the
-ref count on the pages, so the ref count on the huge page drops back
-to 1.  Meanwhile hugetlb_cow() also decrements the ref count by one on
-the original page, since the original address space doesn't need it any
-more, having copied a new page to replace the original page.  This leaves
-the ref count at zero, and when we call unlock_page(), we panic.
+> Any hints how to properly report an ext4 bug?
+  Hmm, like any other. Report what load did you run, what kernel, and the
+oops... And send the report to linux-ext4@vger.kernel.org.
+								Honza
 
-	fork on CPU A				fault on CPU B
-	=============				==============
-	...
-	down_write(&parent->mmap_sem);
-	down_write_nested(&child->mmap_sem);
-	...
-	while duplicating vmas
-		if error
-			break;
-	...
-	up_write(&child->mmap_sem);
-	up_write(&parent->mmap_sem);		...
-						down_read(&parent->mmap_sem);
-						...
-						lock_page(page);
-						handle COW
-						page_mapcount(old_page) == 2
-						alloc and prepare new_page
-	...
-	handle error
-	page_remove_rmap(page);
-	put_page(page);
-	...
-						fold new_page into pte
-						page_remove_rmap(page);
-						put_page(page);
-						...
-				oops ==>	unlock_page(page);
-						up_read(&parent->mmap_sem);
-
-The solution is to take an extra reference to the page while we are
-holding the lock on it.
-
-Reviewed-by: Hillf Danton <dhillf@gmail.com>
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- mm/hugetlb.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 1871753..2a04cfd 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2701,6 +2701,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * so no worry about deadlock.
- 	 */
- 	page = pte_page(entry);
-+	get_page(page);
- 	if (page != pagecache_page)
- 		lock_page(page);
- 
-@@ -2732,6 +2733,7 @@ out_page_table_lock:
- 	}
- 	if (page != pagecache_page)
- 		unlock_page(page);
-+	put_page(page);
- 
- out_mutex:
- 	mutex_unlock(&hugetlb_instantiation_mutex);
 -- 
-1.6.5.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
