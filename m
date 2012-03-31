@@ -1,95 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab2CaEmD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 00:42:03 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62200 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2CaEl7 (ORCPT
+	id S1752147Ab2CaE6v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 00:58:51 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:45180 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab2CaE6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 00:41:59 -0400
-Date: Sat, 31 Mar 2012 08:40:33 +0400
-From: Vladimir Murzin <murzin.v@gmail.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org
-Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
-Message-ID: <20120331044030.GB3077@pinguin>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
- <1333051320-30872-9-git-send-email-wad@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <1333051320-30872-9-git-send-email-wad@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 31 Mar 2012 00:58:49 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Sat, 31 Mar 2012 00:58:47 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: error: 'SEGMENT_SIZE' undeclared with arm-eabi-gcc toolchain
+In-reply-to: <4F7638C3.4060301@samsung.com>
+Message-id: <alpine.LFD.2.02.1203310017440.24151@xanadu.home>
+References: <4F7638C3.4060301@samsung.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On Fri, 30 Mar 2012, Kukjin Kim wrote:
 
-On Thu, Mar 29, 2012 at 03:01:53PM -0500, Will Drewry wrote:
+> Hi all,
+> 
+> Occurs following error with arm-eabi-gcc toolchain (gcc version 4.4.3 -
+> GCC). But there is no error with arm-none-linux-gnueabi-gcc toolchain
+> (gcc version 4.4.1 - Sourcery G++ Lite 2009q3)...
+> 
+> fs/binfmt_aout.c: In function 'load_aout_binary':
+> fs/binfmt_aout.c:255: error: 'SEGMENT_SIZE' undeclared (first use in
+> this function)
+> fs/binfmt_aout.c:255: error: (Each undeclared identifier is reported
+> only once
+> fs/binfmt_aout.c:255: error: for each function it appears in.)
+> make[2]: *** [fs/binfmt_aout.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+> make[1]: *** [fs] Error 2
+> 
+> Any idea?
 
-snipped
+Yes.  This comes from the N_DATADDR() macro, defined in 
+include/linux/a.out.h as follows:
 
-> +
-> +/* Limit any path through the tree to 256KB worth of instructions. */
-> +#define MAX_INSNS_PER_PATH ((1 << 18) / sizeof(struct sock_filter))
-> +
-> +static void seccomp_filter_log_failure(int syscall)
-> +{
-> +	int compat = 0;
-> +#ifdef CONFIG_COMPAT
-> +	compat = is_compat_task();
-> +#endif
-> +	pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
-> +		current->comm, task_pid_nr(current),
-> +		(compat ? "compat " : ""),
-> +		syscall, KSTK_EIP(current));
-> +}
+|#define N_DATADDR(x) \
+|    (N_MAGIC(x)==OMAGIC? (_N_TXTENDADDR(x)) \
+|     : (_N_SEGMENT_ROUND (_N_TXTENDADDR(x))))
 
-snipped
+Then, looking at _N_SEGMENT_ROUND() in the same file:
 
-> +/**
-> + * seccomp_attach_user_filter - attaches a user-supplied sock_fprog
-> + * @user_filter: pointer to the user data containing a sock_fprog.
-> + *
-> + * Returns 0 on success and non-zero otherwise.
-> + */
-> +long seccomp_attach_user_filter(char __user *user_filter)
-> +{
-> +	struct sock_fprog fprog;
-> +	long ret = -EFAULT;
-> +
-> +#ifdef CONFIG_COMPAT
-> +	if (is_compat_task()) {
-> +		struct compat_sock_fprog fprog32;
-> +		if (copy_from_user(&fprog32, user_filter, sizeof(fprog32)))
-> +			goto out;
-> +		fprog.len = fprog32.len;
-> +		fprog.filter = compat_ptr(fprog32.filter);
-> +	} else /* falls through to the if below. */
-> +#endif
-> +	if (copy_from_user(&fprog, user_filter, sizeof(fprog)))
-> +		goto out;
-> +	ret = seccomp_attach_filter(&fprog);
-> +out:
-> +	return ret;
-> +}
+|#define _N_SEGMENT_ROUND(x) ALIGN(x, SEGMENT_SIZE)
 
-Do we really need to surround is_compat_task() with CNFIG_COMPAT?
-It seems that this case has already handled in compat.h [1]
+Here it is.  Now, why isn't SEGMENT_SIZE defined?  Well that's where 
+things get way more hairy than they are already (caution, barf bag 
+recommended):
 
-[1] http://lxr.linux.no/#linux+v3.3/include/linux/compat.h#L566
+|/* Address of data segment in memory after it is loaded.
+|   Note that it is up to you to define SEGMENT_SIZE
+|   on machines not listed here.  */
+|#if defined(vax) || defined(hp300) || defined(pyr)
+|#define SEGMENT_SIZE page_size
+|#endif
+|#ifdef	sony
+|#define	SEGMENT_SIZE	0x2000
+|#endif	/* Sony.  */
+|#ifdef is68k
+|#define SEGMENT_SIZE 0x20000
+|#endif
+|#if defined(m68k) && defined(PORTAR)
+|#define PAGE_SIZE 0x400
+|#define SEGMENT_SIZE PAGE_SIZE
+|#endif
+|
+|#ifdef linux
+|#ifdef __KERNEL__
+|#include <asm/page.h>
+|#else
+|#include <unistd.h>
+|#endif
+|#if defined(__i386__) || defined(__mc68000__)
+|#define SEGMENT_SIZE	1024
+|#else
+|#ifndef SEGMENT_SIZE
+|#ifdef __KERNEL__
+|#define SEGMENT_SIZE	PAGE_SIZE
+|#else
+|#define SEGMENT_SIZE   getpagesize()
+|#endif
+|#endif
+|#endif
+|#endif
 
-Best wishes
-Vladimir Murzin
+So the clue you're looking for is probably on the 18th line above.
 
+BTW, no one is using a.out on ARM anymore.  You should really consider 
+removing CONFIG_BINFMT_AOUT from your config.
+
+
+Nicolas
