@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab2CaV1P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 17:27:15 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:36580 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab2CaV1N convert rfc822-to-8bit (ORCPT
+	id S1753527Ab2CaV3A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 17:29:00 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52107 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab2CaV25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 17:27:13 -0400
-Date: Sat, 31 Mar 2012 17:27:10 -0400 (EDT)
-Message-Id: <20120331.172710.540592519617177028.davem@davemloft.net>
-To: drepper@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: sendmmsg: put_user vs __put_user
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAOPLpQewA-AduBudgH5FK6Kz_=nHv6eFhGD29TkAosPTdP4ZHg@mail.gmail.com>
-References: <CAOPLpQf2bmj+i_zYtsS8JNzTDuBxCO5ByNRRqwv0kxaDBFdezg@mail.gmail.com>
-	<20120330.205120.2221145622131588797.davem@davemloft.net>
-	<CAOPLpQewA-AduBudgH5FK6Kz_=nHv6eFhGD29TkAosPTdP4ZHg@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 31 Mar 2012 14:27:11 -0700 (PDT)
+	Sat, 31 Mar 2012 17:28:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120330223606.GK28934@google.com>
+References: <20120330223423.GJ28934@google.com>
+	<20120330223606.GK28934@google.com>
+Date: Sun, 1 Apr 2012 06:28:56 +0900
+Message-ID: <CABEgKgpxidNfK4_A_TNPZvM8Dbm35QxGEGYbRH+roTU2zM7vNw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cgroup: make css->refcnt clearing on cgroup removal optional
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rni@google.com, ctalbott@google.com,
+        Vivek Goyal <vgoyal@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Sat, 31 Mar 2012 08:30:25 -0400
+2012$BG/(B3$B7n(B31$BF|(B7:36 Tejun Heo <tj@kernel.org>:
+> Currently, cgroup removal tries to drain all css references.  If there
+> are active css references, the removal logic waits and retries
+> ->pre_detroy() until either all refs drop to zero or removal is
+> cancelled.
+>
+> This semantics is unusual and adds non-trivial complexity to cgroup
+> core and IMHO is fundamentally misguided in that it couples internal
+> implementation details (references to internal data structure) with
+> externally visible operation (rmdir).  To userland, this is a behavior
+> peculiarity which is unnecessary and difficult to expect (css refs is
+> otherwise invisible from userland), and, to policy implementations,
+> this is an unnecessary restriction (e.g. blkcg wants to hold css refs
+> for caching purposes but can't as that becomes visible as rmdir hang).
+>
+> Unfortunately, memcg currently depends on ->pre_destroy() retrials and
+> cgroup removal vetoing and can't be immmediately switched to the new
+> behavior.  This patch introduces the new behavior of not waiting for
+> css refs to drain and maintains the old behavior for subsystems which
+> have __DEPRECATED_clear_css_refs set.
+>
+> Once, memcg is updated, we can drop the code paths for the old
+> behavior as proposed in the following patch.  Note that the following
+> patch is incorrect in that dput work item is in cgroup and may lose
+> some of dputs when multiples css's are released back-to-back, and
+> __css_put() triggers check_for_release() when refcnt reaches 0 instead
+> of 1; however, it shows what part can be removed.
+>
+>  http://thread.gmane.org/gmane.linux.kernel.containers/22559/focus=75251
+>
+> Note that, in not-too-distant future, cgroup core will start emitting
+> warning messages for subsys which require the old behavior, so please
+> get moving.
+>
+Ok, I'll update memcg ASAP (after LSF/MM).
+I'm now thinking to move all resources to root if use_hierarchy=0.
 
-> On Fri, Mar 30, 2012 at 20:51, David Miller <davem@davemloft.net> wrote:
->> Compat processes are not able to generate virtual addresses anywhere
->> near the range where the kernel resides, so the address range
->> verification done by put_user() is completely superfluous and
->> therefore not necessary.  The normal exception handling done by the
->> access is completely sufficient.
-> 
-> I was more thinking about the effects of might_fault() then additional tests.
-
-This is very clearly in a context where locks are not held and sleeping
-would be fine, so I don't see any value in that either.
+Thanks,
+-Kame
