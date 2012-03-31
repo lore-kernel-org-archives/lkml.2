@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378Ab2CaMCs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 08:02:48 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49908 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757391Ab2CaMCq (ORCPT
+	id S1759496Ab2CaMDG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 08:03:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37796 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757391Ab2CaMDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 08:02:46 -0400
+	Sat, 31 Mar 2012 08:03:03 -0400
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Michal Simek <monstr@monstr.eu>
-Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
         Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 06/19 v2] microblaze/mm/fault.c: Port OOM changes to do_page_fault
-Date: Sat, 31 Mar 2012 08:02:01 -0400
-Message-Id: <1333195321-5115-1-git-send-email-consul.kautuk@gmail.com>
+Subject: [PATCH 07/19 v2] m68k/mm/fault.c: Port OOM changes to do_page_fault
+Date: Sat, 31 Mar 2012 08:02:48 -0400
+Message-Id: <1333195368-5149-1-git-send-email-consul.kautuk@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,63 +30,89 @@ for making the page fault handler retryable as well as killable.
 These changes reduce the mmap_sem hold time, which is crucial
 during OOM killer invocation.
 
-Port these changes to microblaze.
+Port these changes to m68k.
 
 Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-Acked-by: Michal Simek <monstr@monstr.eu>
+Acked-by: <Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/microblaze/mm/fault.c |   32 +++++++++++++++++++++++++++-----
- 1 files changed, 27 insertions(+), 5 deletions(-)
+ arch/m68k/mm/fault.c |   40 ++++++++++++++++++++++++++++++++--------
+ 1 files changed, 32 insertions(+), 8 deletions(-)
 
-diff --git a/arch/microblaze/mm/fault.c b/arch/microblaze/mm/fault.c
-index c38a265..5f8b6fa0 100644
---- a/arch/microblaze/mm/fault.c
-+++ b/arch/microblaze/mm/fault.c
-@@ -92,6 +92,8 @@ void do_page_fault(struct pt_regs *regs, unsigned long address,
- 	int code = SEGV_MAPERR;
- 	int is_write = error_code & ESR_S;
- 	int fault;
-+	unsigned int flags = (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+			      (is_write ? FAULT_FLAG_WRITE : 0));
+diff --git a/arch/m68k/mm/fault.c b/arch/m68k/mm/fault.c
+index 6b020a8..e529938 100644
+--- a/arch/m68k/mm/fault.c
++++ b/arch/m68k/mm/fault.c
+@@ -72,7 +72,8 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct * vma;
+-	int write, fault;
++	int fault;
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
  
- 	regs->ear = address;
- 	regs->esr = error_code;
-@@ -138,6 +140,7 @@ void do_page_fault(struct pt_regs *regs, unsigned long address,
- 		if (kernel_mode(regs) && !search_exception_tables(regs->pc))
- 			goto bad_area_nosemaphore;
+ #ifdef DEBUG
+ 	printk ("do page fault:\nregs->sr=%#x, regs->pc=%#lx, address=%#lx, %ld, %p\n",
+@@ -87,6 +88,7 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
+ 	if (in_atomic() || !mm)
+ 		goto no_context;
  
 +retry:
- 		down_read(&mm->mmap_sem);
- 	}
+ 	down_read(&mm->mmap_sem);
  
-@@ -210,7 +213,11 @@ good_area:
- 	 * make sure we exit gracefully rather than endlessly redo
+ 	vma = find_vma(mm, address);
+@@ -117,14 +119,13 @@ good_area:
+ #ifdef DEBUG
+ 	printk("do_page_fault: good_area\n");
+ #endif
+-	write = 0;
+ 	switch (error_code & 3) {
+ 		default:	/* 3: write, present */
+ 			/* fall through */
+ 		case 2:		/* write, not present */
+ 			if (!(vma->vm_flags & VM_WRITE))
+ 				goto acc_err;
+-			write++;
++			flags |= FAULT_FLAG_WRITE;
+ 			break;
+ 		case 1:		/* read, present */
+ 			goto acc_err;
+@@ -139,10 +140,14 @@ good_area:
  	 * the fault.
  	 */
--	fault = handle_mm_fault(mm, vma, address, is_write ? FAULT_FLAG_WRITE : 0);
+ 
+-	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
 +	fault = handle_mm_fault(mm, vma, address, flags);
+ #ifdef DEBUG
+ 	printk("handle_mm_fault returns %d\n",fault);
+ #endif
 +
 +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return;
++		return 0;
 +
  	if (unlikely(fault & VM_FAULT_ERROR)) {
  		if (fault & VM_FAULT_OOM)
  			goto out_of_memory;
-@@ -218,11 +225,26 @@ good_area:
- 			goto do_sigbus;
+@@ -150,10 +155,29 @@ good_area:
+ 			goto bus_err;
  		BUG();
  	}
--	if (unlikely(fault & VM_FAULT_MAJOR))
+-	if (fault & VM_FAULT_MAJOR)
 -		current->maj_flt++;
 -	else
 -		current->min_flt++;
 +
++	 /* Major/minor page fault accounting is only done on the
++	 * initial attempt. If we go through a retry, it is extremely
++	 * likely that the page will be found in page cache at that point.
++	 */
 +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (unlikely(fault & VM_FAULT_MAJOR))
++		if (fault & VM_FAULT_MAJOR)
 +			current->maj_flt++;
 +		else
 +			current->min_flt++;
 +		if (fault & VM_FAULT_RETRY) {
++			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
++			 * of starvation. */
 +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
 +
 +			 /* No need to up_read(&mm->mmap_sem) as we would
@@ -97,12 +123,9 @@ index c38a265..5f8b6fa0 100644
 +			goto retry;
 +		}
 +	}
-+
+ 
  	up_read(&mm->mmap_sem);
-+
- 	/*
- 	 * keep track of tlb+htab misses that are good addrs but
- 	 * just need pte's created via handle_mm_fault()
+ 	return 0;
 -- 
 1.7.5.4
 
