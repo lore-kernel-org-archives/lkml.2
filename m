@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab2DAQFP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 12:05:15 -0400
+	id S1753231Ab2DAQFI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 12:05:08 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:46444 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab2DAQFL (ORCPT
+	with ESMTP id S1753203Ab2DAQFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 12:05:11 -0400
-Subject: [RFC PATCH -tip 16/16] tools/bogodis: Add bogus disassembler tool in
- userspace
+	Sun, 1 Apr 2012 12:05:03 -0400
+Subject: [RFC PATCH -tip 15/16] x86/kdb: Add x86 disassembe command
 To: linux-kernel@vger.kernel.org
 From: Masami Hiramatsu <masami.hiramatsu@gmail.com>
 Cc: Huang Ying <ying.huang@intel.com>,
@@ -18,8 +17,8 @@ Cc: Huang Ying <ying.huang@intel.com>,
         Jason Wessel <jason.wessel@windriver.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 02 Apr 2012 01:05:08 +0900
-Message-ID: <20120401160507.4502.84715.stgit@shimauta>
+Date: Mon, 02 Apr 2012 01:04:46 +0900
+Message-ID: <20120401160446.4502.35872.stgit@shimauta>
 In-Reply-To: <20120401160229.4502.2541.stgit@shimauta>
 References: <20120401160229.4502.2541.stgit@shimauta>
 User-Agent: StGit/0.15
@@ -30,316 +29,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a tiny bogus disassembler tool.
-Currently, only x86 is supported.
+Add a simple 'dis' command for x86 on KDB.
+This command takes 2 arguments, the first one is the address
+and the second one is the length of disassembling bytes.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu@gmail.com>
 ---
- arch/x86/lib/disasm.c   |    9 ++
- tools/bogodis/Makefile  |   51 ++++++++++++
- tools/bogodis/bogodis.c |  202 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 262 insertions(+), 0 deletions(-)
- create mode 100644 tools/bogodis/Makefile
- create mode 100644 tools/bogodis/bogodis.c
+ arch/x86/kernel/dumpstack.c |    6 ++--
+ arch/x86/kernel/kgdb.c      |   72 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/kdb.h         |    3 ++
+ kernel/debug/kdb/kdb_main.c |   35 +++++++++++++++++++++
+ 4 files changed, 113 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/lib/disasm.c b/arch/x86/lib/disasm.c
-index fc5e493..c6f2aef 100644
---- a/arch/x86/lib/disasm.c
-+++ b/arch/x86/lib/disasm.c
-@@ -7,7 +7,9 @@
- #include <linux/string.h>
- #include <linux/ctype.h>
- #include <linux/errno.h>
-+#ifdef __KERNEL__
- #include <linux/kallsyms.h>
-+#endif
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 098e61a..1441efc 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -297,9 +297,9 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+ #ifdef CONFIG_X86_DISASSEMBLER
  
- #include <asm/disasm.h>
- 
-@@ -30,6 +32,7 @@ static int psnprintf(char **buf, size_t *len, const char *fmt, ...)
- 	return ret;
- }
- 
-+#ifdef __KERNEL__
- /* Print address with symbol */
- static int psnprint_symbol(char **buf, size_t *len, unsigned long addr)
+ /* Find the instruction boundary address */
+-static unsigned long find_instruction_boundary(unsigned long saddr,
+-						unsigned long *poffs,
+-						char **modname, char *namebuf)
++unsigned long find_instruction_boundary(unsigned long saddr,
++					unsigned long *poffs,
++					char **modname, char *namebuf)
  {
-@@ -50,6 +53,12 @@ static int psnprint_symbol(char **buf, size_t *len, unsigned long addr)
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
+ 	unsigned long offs, addr, fixed;
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index db6720e..0215a67 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -39,13 +39,17 @@
+ #include <linux/sched.h>
+ #include <linux/delay.h>
+ #include <linux/kgdb.h>
++#include <linux/kdb.h>
+ #include <linux/init.h>
+ #include <linux/smp.h>
+ #include <linux/nmi.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/kallsyms.h>
++#include <linux/kprobes.h>
  
- 	return psnprintf(buf, len, ">");
- }
-+#else
-+static int psnprint_symbol(char **buf, size_t *len, unsigned long addr)
-+{
-+	return psnprintf(buf, len, "%lx", addr);
-+}
-+#endif
- 
- /* Operand classifiers */
- static bool operand_is_register(const char *p)
-diff --git a/tools/bogodis/Makefile b/tools/bogodis/Makefile
-new file mode 100644
-index 0000000..3ef5a26d
---- /dev/null
-+++ b/tools/bogodis/Makefile
-@@ -0,0 +1,51 @@
-+AWK := LC_ALL=C awk
-+
-+# Architecture identifying: copied from tools/perf/Makefile
-+uname_M := $(shell uname -m 2>/dev/null || echo not)
-+
-+ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-+				  -e s/arm.*/arm/ -e s/sa110/arm/ \
-+				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
-+				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-+				  -e s/sh[234].*/sh/ )
-+
-+# Additional ARCH settings for x86
-+ifeq ($(ARCH),i386)
-+        ARCH := x86
-+endif
-+ifeq ($(ARCH),x86_64)
-+	ARCH := x86
-+endif
-+
-+ifneq ($(ARCH),x86)
-+	$(echo "This architecture is not supported yet.")
-+endif
-+
-+topdir := ../..
-+archdir := $(topdir)/arch/$(ARCH)
-+tooldir := $(archdir)/tools
-+libdir := $(archdir)/lib
-+incdir := $(archdir)/include/asm
-+
-+CFLAGS := -g -Wall -I$(topdir)/include -I$(archdir)/include
-+
-+SRC += $(libdir)/insn.c
-+SRC += $(libdir)/inat.c
-+SRC += $(libdir)/disasm.c
-+SRC += $(libdir)/mnemonic.c
-+SRC += $(incdir)/inat_types.h
-+SRC += $(incdir)/inat.h
-+SRC += $(incdir)/insn.h
-+SRC += $(incdir)/disasm.h
-+
-+bogodis: bogodis.c inat-tables.c mnemonic-tables.c $(SRC)
-+	$(CC) $(CFLAGS) -o $@ bogodis.c -I$(libdir) -I./
-+
-+inat-tables.c: $(libdir)/x86-opcode-map.txt $(tooldir)/gen-insn-attr-x86.awk
-+	$(AWK) -f $(tooldir)/gen-insn-attr-x86.awk $< > $@
-+
-+mnemonic-tables.c: $(libdir)/x86-opcode-map.txt $(tooldir)/gen-insn-mnemonic-x86.awk
-+	$(AWK) -f $(tooldir)/gen-insn-mnemonic-x86.awk $< > $@
-+
-+clean:
-+	rm -f bogodis *.o inat-tables.c mnemonic-tables.c
-diff --git a/tools/bogodis/bogodis.c b/tools/bogodis/bogodis.c
-new file mode 100644
-index 0000000..1454547
---- /dev/null
-+++ b/tools/bogodis/bogodis.c
-@@ -0,0 +1,202 @@
-+/* bogodis - A Bogus Disassember
-+ * Written by Masami Hiramatsu <masami.hiramatsu@gmail.com>
-+ *
-+ */
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <stdbool.h>
-+#include <stdarg.h>
-+#include <unistd.h>
-+#include <ctype.h>
-+#define _LINUX_CTYPE_H	/* Dummy for avoiding build error */
-+#define _LINUX_KERNEL_H	/* Ditto */
-+#include <errno.h>
-+#define BUG_ON(a)	\
-+	do { fprintf(stderr, "BUG at %s:%d\n", __FILE__, __LINE__); exit(1); } while (1)
-+
-+/* These are for compiling instruction decoder in user space */
-+#define unlikely(cond) (cond)
-+
-+#include <asm/insn.h>
+ #include <asm/debugreg.h>
+ #include <asm/apicdef.h>
 +#include <asm/disasm.h>
+ #include <asm/apic.h>
+ #include <asm/nmi.h>
+ 
+@@ -751,3 +755,71 @@ struct kgdb_arch arch_kgdb_ops = {
+ 	.remove_all_hw_break	= kgdb_remove_all_hw_break,
+ 	.correct_hw_break	= kgdb_correct_hw_break,
+ };
 +
-+/* Decoder code */
-+#include <inat.c>
-+#include <insn.c>
++#if defined(CONFIG_X86_DISASSEMBLER)
++extern unsigned long find_instruction_boundary(unsigned long addr,
++						unsigned long *poffs,
++						char **modname, char *namebuf);
 +
-+/* Disassembler code */
-+#include <mnemonic.c>
-+#include <disasm.c>
-+
-+static int verbose;
-+static bool x86_64 = (sizeof(long) == 8);
-+
-+static void usage(void)
++static int kdb_disasm_printk(unsigned long addr, unsigned long *next)
 +{
-+	fprintf(stderr, "Usage: bogodis [-6|-3] [-v]\n");
-+	fprintf(stderr, "\t-6	64bit mode %s\n", (x86_64) ? "(default)" : "");
-+	fprintf(stderr, "\t-3	32bit mode %s\n", (x86_64) ? "" : "(default)");
-+	fprintf(stderr, "\t-v	Increment verbosity\n");
-+	exit(1);
-+}
++	char buf[DISASM_STR_LEN];
++	u8 kbuf[MAX_INSN_SIZE];
++	struct insn insn;
++	unsigned long fixed;
++	int i, ret;
++	u8 *v = (u8 *)addr;
 +
-+static void parse_args(int argc, char *argv[])
-+{
-+	int c;
++	/* recover if the instruction is probed */
++	fixed = recover_probed_instruction(kbuf, addr);
++	kernel_insn_init(&insn, (void *)fixed);
++	insn_get_length(&insn);
++	insn.kaddr = (void *)addr;
 +
-+	while ((c = getopt(argc, argv, "63v")) != -1) {
-+		switch (c) {
-+		case '6':
-+			x86_64 = true;
-+			break;
-+		case '3':
-+			x86_64 = false;
-+			break;
-+		case 'v':
-+			verbose++;
-+			break;
-+		default:
-+			usage();
-+		}
-+	}
-+}
-+
-+static void dump_field(FILE *fp, const char *name, const char *indent,
-+		       struct insn_field *field)
-+{
-+	fprintf(fp, "%s.%s = {\n", indent, name);
-+	fprintf(fp, "%s\t.value = %d, bytes[] = {%x, %x, %x, %x},\n",
-+		indent, field->value, field->bytes[0], field->bytes[1],
-+		field->bytes[2], field->bytes[3]);
-+	fprintf(fp, "%s\t.got = %d, .nbytes = %d},\n", indent,
-+		field->got, field->nbytes);
-+}
-+
-+static void dump_insn(FILE *fp, struct insn *insn)
-+{
-+	fprintf(fp, "Instruction = {\n");
-+	dump_field(fp, "prefixes", "\t",	&insn->prefixes);
-+	dump_field(fp, "rex_prefix", "\t",	&insn->rex_prefix);
-+	dump_field(fp, "vex_prefix", "\t",	&insn->vex_prefix);
-+	dump_field(fp, "opcode", "\t",		&insn->opcode);
-+	dump_field(fp, "modrm", "\t",		&insn->modrm);
-+	dump_field(fp, "sib", "\t",		&insn->sib);
-+	dump_field(fp, "displacement", "\t",	&insn->displacement);
-+	dump_field(fp, "immediate1", "\t",	&insn->immediate1);
-+	dump_field(fp, "immediate2", "\t",	&insn->immediate2);
-+	fprintf(fp, "\t.attr = %x, .opnd_bytes = %d, .addr_bytes = %d,\n",
-+		insn->attr, insn->opnd_bytes, insn->addr_bytes);
-+	fprintf(fp, "\t.length = %d, .x86_64 = %d, .kaddr = %p}\n",
-+		insn->length, insn->x86_64, insn->kaddr);
-+}
-+
-+static int read_instruction(FILE *fp, insn_byte_t *insn_buf, size_t size)
-+{
-+	char *buf = NULL, *p;
-+	size_t dummy;
-+	int i;
-+
-+	memset(insn_buf, 0, size);
-+
-+	if (getline(&buf, &dummy, fp) < 0)
-+		return -errno;
-+	p = buf;
-+	i = 0;
-+	while (i < size) {
-+		insn_buf[i++] = (insn_byte_t)strtoul(p, &p, 16);
-+		if (*p == '\0' || *p == '\n' || !isspace(*p))
-+			break;
-+	}
-+	free(buf);
-+	return i;
-+}
-+
-+/* Disassemble options */
-+#define DISASM_PR_ADDR	1	/* Print address */
-+#define DISASM_PR_RAW	2	/* Print raw code */
-+#define DISASM_PR_ALL	(DISASM_PR_ADDR | DISASM_PR_RAW)
-+
-+/**
-+ * snprint_assembly() - Disassemble given instruction with headers
-+ * @buf:	A buffer in which assembly code is stored
-+ * @len:	The size of @buf
-+ * @insn:	An instruction which will be disassembled
-+ * @opts:	Options
-+ *
-+ * This disassembles given instruction and put it into buffer with
-+ * some optional information. Available option flagss are;
-+ * DISASM_PR_ADDR: the address of given instruction is added.
-+ * DISASM_PR_RAW:  the raw bytes of given instruction are added.
-+ * Caller must initialize @insn but don't need to decode (ex insn_get_length).
-+ */
-+int snprint_assembly(char *buf, size_t len, struct insn *insn, int opts)
-+{
-+	int i = 0, ret;
-+
-+	insn_get_length(insn);
-+	if (!insn_complete(insn))
-+		return -EINVAL;
-+
-+	if (opts & DISASM_PR_ADDR)	/* print address */
-+		psnprintf(&buf, &len, "%p: ", insn->kaddr);
-+
-+	if (opts & DISASM_PR_RAW) {	/* print raw instruction */
-+		for (i = 0; i < MAX_INSN_SIZE / 2 && i < insn->length; i++)
-+			psnprintf(&buf, &len, "%02x ", insn->kaddr[i]);
-+		if (i != MAX_INSN_SIZE / 2)
-+			psnprintf(&buf, &len, "%*s",
-+				3 * (MAX_INSN_SIZE / 2 - i), " ");
-+	}
++	kdb_printf("%p: ", v);
++	for (i = 0; i < MAX_INSN_SIZE / 2 && i < insn.length; i++)
++		kdb_printf("%02x ", ((u8 *)v)[i]);
++	if (i != MAX_INSN_SIZE / 2)
++		kdb_printf("%*s", 3 * (MAX_INSN_SIZE / 2 - i), " ");
 +
 +	/* print assembly code */
-+	ret = disassemble(buf, len, insn);
++	ret = disassemble(buf, DISASM_STR_LEN, &insn);
 +	if (ret < 0)
 +		return ret;
-+	len -= ret;
-+	buf += ret;
-+	psnprintf(&buf, &len, "\n");
++	kdb_printf("%s%s\n", (fixed != addr) ? "(probed)" : "", buf);
 +
-+	/* print rest of raw instruction if exist */
-+	if ((opts & DISASM_PR_RAW) && (i < insn->length)) {
-+		if (opts & DISASM_PR_ADDR) /* print address */
-+			psnprintf(&buf, &len, "%p: ", insn->kaddr + i);
-+		for (; i < insn->length - 1; i++)
-+			psnprintf(&buf, &len, "%02x ", insn->kaddr[i]);
-+		psnprintf(&buf, &len, "%02x\n", insn->kaddr[i]);
++	if (i < insn.length) {
++		kdb_printf("%p: ", v + i);
++		for (; i < insn.length - 1; i++)
++			kdb_printf("%02x ", ((u8 *)v)[i]);
++		kdb_printf("%02x\n", ((u8 *)v)[i]);
 +	}
++
++	if (next)
++		*next = addr + insn.length;
++
 +	return 0;
 +}
 +
-+int main(int argc, char *argv[])
++int kdb_show_disasm(unsigned long addr, size_t len)
 +{
-+	insn_byte_t insn_buf[MAX_INSN_SIZE];
-+	struct insn insn;
-+	char buf[128];
-+	const char *grp;
-+	int ret;
++	unsigned long offs, eaddr = addr + len;
++	char buf[KSYM_NAME_LEN] = {0};
++	char *modname;
 +
-+	parse_args(argc, argv);
++	addr = find_instruction_boundary(addr, &offs, &modname, buf);
++	if (!addr)
++		return KDB_BADADDR;
 +
-+	while ((ret = read_instruction(stdin, insn_buf, MAX_INSN_SIZE)) > 0) {
-+		insn_init(&insn, insn_buf, x86_64);
-+		ret = snprint_assembly(buf, sizeof(buf), &insn, DISASM_PR_ALL);
-+		if (ret < 0) {
-+			printf("Error: reason %d\n", ret);
-+			if (verbose)
-+				dump_insn(stdout, &insn);
-+		} else {
-+			printf("%s", buf);
-+			if (verbose >= 2) {
-+				printf("format: %s\n",
-+					get_mnemonic_format(&insn, &grp));
-+				dump_insn(stdout, &insn);
-+			}
-+		}
-+	}
-+	if (verbose)
-+		printf("ret = %d\n", ret);
++	if (modname)
++		kdb_printf("<%s+0x%lx [%s]>:\n", buf, offs, modname);
++	else
++		kdb_printf("<%s+0x%lx>:\n", buf, offs);
++
++	do {
++		kdb_disasm_printk(addr, &addr);
++	} while (addr < eaddr);
 +
 +	return 0;
 +}
++#endif
+diff --git a/include/linux/kdb.h b/include/linux/kdb.h
+index 0647258..ff4b765 100644
+--- a/include/linux/kdb.h
++++ b/include/linux/kdb.h
+@@ -166,4 +166,7 @@ enum {
+ extern int kdbgetintenv(const char *, int *);
+ extern int kdb_set(int, const char **);
+ 
++/* Some architectures support disassembling in kernel */
++extern int kdb_show_disasm(unsigned long addr, size_t len);
++
+ #endif	/* !_KDB_H */
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 67b847d..f09aca4 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2672,6 +2672,39 @@ static int kdb_per_cpu(int argc, const char **argv)
+ 	return 0;
+ }
+ 
++int __weak kdb_show_disasm(unsigned long addr, size_t len)
++{
++	return KDB_NOTIMP;
++}
++
++/*
++ * kdb_dis - This function implements the 'dis' command.
++ */
++static int kdb_dis(int argc, const char **argv)
++{
++	int diag;
++	unsigned long addr;
++	long offset;
++	int nextarg;
++	unsigned long len;
++
++	if (argc > 3)
++		return KDB_ARGCOUNT;
++
++	nextarg = 1;
++	diag = kdbgetaddrarg(argc, argv, &nextarg, &addr, &offset, NULL);
++	if (diag)
++		return diag;
++
++	if (argc == 2) {
++		if (kstrtoul(argv[2], 0, &len) < 0)
++			return KDB_BADINT;
++	} else
++		len = 0;
++
++	return kdb_show_disasm(addr + offset, (size_t)len);
++}
++
+ /*
+  * display help for the use of cmd | grep pattern
+  */
+@@ -2899,6 +2932,8 @@ static void __init kdb_inittab(void)
+ 	  "Display per_cpu variables", 3, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("grephelp", kdb_grep_help, "",
+ 	  "Display help on | grep", 0, KDB_REPEAT_NONE);
++	kdb_register_repeat("dis", kdb_dis, "<addr> [<len>]",
++	  "Display disassmbled code", 2, KDB_REPEAT_NONE);
+ }
+ 
+ /* Execute any commands defined in kdb_cmds.  */
 
