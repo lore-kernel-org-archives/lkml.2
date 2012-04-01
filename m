@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab2DANzK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 09:55:10 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61199 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab2DANzG convert rfc822-to-8bit (ORCPT
+	id S1752389Ab2DAN5Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 09:57:16 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60118 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab2DAN5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 09:55:06 -0400
-Date: Sun, 1 Apr 2012 09:55:39 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Steve French <smfrench@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Shilovsky <piastry@etersoft.ru>, linux-cifs@vger.kernel.org
-Subject: Re: [ 105/175] CIFS: Respect negotiated MaxMpxCount
-Message-ID: <20120401095539.31323c95@corrin.poochiereds.net>
-In-Reply-To: <CAH2r5muM-4_pVt59XeNrOZZ=28P0hT8GiMqBUk+0nxnUw9L+VA@mail.gmail.com>
-References: <20120330195801.GA31806@kroah.com>
-	<20120330194846.517484801@linuxfoundation.org>
-	<20120331201825.036fe1d8@corrin.poochiereds.net>
-	<CAH2r5muM-4_pVt59XeNrOZZ=28P0hT8GiMqBUk+0nxnUw9L+VA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 1 Apr 2012 09:57:14 -0400
+Message-ID: <4F785E89.8080609@linux.vnet.ibm.com>
+Date: Sun, 01 Apr 2012 19:26:25 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Alan Meadows <alan.meadows@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com> <4F73568D.7000703@linux.vnet.ibm.com> <4F743247.5080407@redhat.com> <4F74A405.2040609@linux.vnet.ibm.com> <4F7585EE.7060203@linux.vnet.ibm.com> <4F7855A1.80107@redhat.com> <4F785CC9.7070204@linux.vnet.ibm.com> <4F785DCF.7020809@redhat.com>
+In-Reply-To: <4F785DCF.7020809@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12040113-2674-0000-0000-000003E7A522
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Apr 2012 02:26:58 -0500
-Steve French <smfrench@gmail.com> wrote:
+On 04/01/2012 07:23 PM, Avi Kivity wrote:
+> On 04/01/2012 04:48 PM, Raghavendra K T wrote:
+>>>> I have patch something like below in mind to try:
+>
+> I'm interested in how PLE does vs. your patches, both with PLE enabled
+> and disabled.
+>
 
-> On Sat, Mar 31, 2012 at 7:18 PM, Jeff Layton <jlayton@samba.org> wrote:
-> > On Fri, 30 Mar 2012 12:50:10 -0700
-> > Greg KH <gregkh@linuxfoundation.org> wrote:
-> >
-> >> 3.3-stable review patch.  If anyone has any objections, please let me know.
-> >>
-> >
-> > I'm not sure it's a good idea to put this patch into any stable release
-> > just yet. I think it's a correct and necessary fix, but it has some
-> > potential to cause regressions too (or uncover other preexisting
-> > problems with this code). Might it be best to wait until we have some
-> > more experience with this before we push it into stable?
-> 
-> Delaying it a little is probably ok, but weigh that against the
-> frequency/severity
-> of the problem that Pavel's fix addresses:  ie sequential writes to some
-> versions of Windows 7 and Windows Vista can fail partway
-> through large file copy (which also causes those servers
-> to become unresponsive to subsequent connection requests
-> as well) so the fix does address a hot problem.
-> 
-> 
-> 
+Sure. will update with the experimental results.
 
-I'm not disputing whether this patch is correct. It's clearly a bug
-that cifs.ko has never respected this value, and it's quite problematic
-with certain servers.
-
-The problem is that we don't have any confirmation that:
-
-a) this fixes any of the problems that we think it will
-
-b) this doesn't introduce any regressions
-
-The request slot allocation code is quite fiddly and fragile, and I
-think the potential for "b" is somewhat high. I'd feel more comfortable
-if we waited until we have more experience with this patch before
-merging it into stable.
-
--- 
-Jeff Layton <jlayton@samba.org>
