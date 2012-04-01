@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab2DARVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 13:21:25 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39876 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2DARVV (ORCPT
+	id S1752628Ab2DARWt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 13:22:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52233 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2DARWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 13:21:21 -0400
+	Sun, 1 Apr 2012 13:22:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120401125741.GA7484@p183.telecom.by>
-References: <20120401125741.GA7484@p183.telecom.by>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 1 Apr 2012 10:20:59 -0700
-X-Google-Sender-Auth: npZPDIGzeCTM9hr7e0ATmGVfdCg
-Message-ID: <CA+55aFwCaekbk7VocaU0_O=7fDgJRBXUiQYvoYh1GDMicbCtow@mail.gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <1333294181-27653-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1333294181-27653-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Sun, 1 Apr 2012 19:22:46 +0200
+Message-ID: <CACRpkdb6+2SLm1Ojw2jNkK9ejW66fw2Pcit-b3AL67wP4Hr_ow@mail.gmail.com>
+Subject: Re: [PATCH/RFC] ARM: amba: Remove AMBA level regulator support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 1, 2012 at 5:57 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+On Sun, Apr 1, 2012 at 5:29 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+
+> The AMBA bus regulator support is being used to model on/off switches
+> for power domains which isn't terribly idiomatic for modern kernels with
+> the generic power domain code and creates integration problems on platforms
+> which don't use regulators for their power domains as it's hard to tell
+> the difference between a regulator that is needed but failed to be provided
+> and one that isn't supposed to be there (though DT does make that easier).
 >
-> BSD added closefrom(fd) which is OK for this exact purpose but suboptimal
-> on the bigger scale. closefrom(2) does only close(2) (obviously :-)
-> closefrom(2) siletly ignores errors from close(2) which in theory is not OK
-> for userspace.
->
-> So, don't add closefrom(2), add nextfd(2).
+> Platforms that wish to use the regulator API to manage their power domains
+> can indirect via the power domain interface.
 
-I don't disagree with this, but I don't think it's worth a new file of
-its own - I think it should go next to dup() and friends (currently in
-fs/fcntl.h).
+I don't see how this solves the problem of AMBA PrimeCell probing.
 
-Also, I think you should:
+If you look at the code in bus.c, you can see that it acquires and
+enables the regulator - as it does with the clock.
 
- (a) at a minimum use the bitmap.  It's easy:
+The reason is that is does this *before* the device can probe,
+since it needs to map up the memory to read out some magic
+values at the end to figure out what device it is in the first place.
 
-    struct fdtable *fdt;
+We need the current code replaced with something that
+enables a power domain before probe instead, then implement
+these power domains for the in-kernel AMBA devices that need it.
 
-    rcu_read_lock();
-    fdt = files_fdtable(current->files);
-    .. maximum fd in fdt->max_fds ...
-    .. you have the bitmap in fdt->open_fds ..
+Is the default behaviour of power domains such that they will
+be enabled as soon as devices are registered but before
+any buses probe()? Because that is what is needed in this case.
 
- (b) I'd also suggest you add a "flag" argument and have at least one
-bit option for "search for next *free* file table entry". I'm not sure
-anybody wants it, but it is kind of the same operation, and having a
-"flags" field means that it's extensible in the future if people want
-to find the next cloexec fd or whatever. Or if they just want to find
-the *last* fd, or something.
+(AMBA devices are special in this way: no other ARM things
+support auto-detection of devices using magic numbers,
+basically the DT stuff came about because noone was using
+a thing like this.)
 
-But I think the concept makes sense.
+> The impact should be minimal since currently there are no mainline
+> systems which actually provide a vcore regulator so none need updating.
 
-                               Linus
+Oh yes there are:
+drivers/mfd/db8500-prcmu.c
+
+This driver registers a number of voltage domain regulators,
+among those:
+
+static struct regulator_consumer_supply db8500_vape_consumers[] = {
+       (...)
+        REGULATOR_SUPPLY("vcore", "sdi0"),
+        REGULATOR_SUPPLY("vcore", "sdi1"),
+        REGULATOR_SUPPLY("vcore", "sdi2"),
+        REGULATOR_SUPPLY("vcore", "sdi3"),
+        REGULATOR_SUPPLY("vcore", "sdi4"),
+        (...)
+        REGULATOR_SUPPLY("vcore", "uart0"),
+        REGULATOR_SUPPLY("vcore", "uart1"),
+        REGULATOR_SUPPLY("vcore", "uart2"),
+
+(I know the supplies should probably be moved up to the
+platform but there they are.) The first array is MMC controllers
+and the second is a number of UARTs.
+
+IIRC the machine will not boot (i.e. these drivers cannot even
+probe) without these regulators in place, so they get enabled by
+the AMBA bus code.
+
+So we need something that not just removes stuff from the
+AMBA bus, but also adds a better power domain mechanism
+and fixes up taking the above regulators.
+
+That said I'm all for replacing it - but I'd need to figure out the
+details on how to do that.
+
+We do have code for ux500 power domains. If it will will be
+enough to handle this I can try to hack it up and submit it.
+
+Yours,
+Linus Walleij
