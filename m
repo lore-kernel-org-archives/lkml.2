@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2DAWNl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 18:13:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46351 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752713Ab2DAWNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 18:13:40 -0400
-Message-ID: <4F78D30B.4070205@zytor.com>
-Date: Sun, 01 Apr 2012 15:13:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753755Ab2DAWdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 18:33:22 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42600 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab2DAWdV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 18:33:21 -0400
 MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] nextfd(2)
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
-In-Reply-To: <4F78D0BA.9040709@zytor.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120401212750.GE8971@opensource.wolfsonmicro.com>
+References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<CACRpkdYRStgKo_e-4kZKA-V-OoMiV21jRS3R4g1Cq+4c+4=iQA@mail.gmail.com>
+	<20120401212750.GE8971@opensource.wolfsonmicro.com>
+Date: Mon, 2 Apr 2012 00:33:20 +0200
+Message-ID: <CACRpkdbj_shuGWATGER+zxvA9MNDobGjWC3XHh+-5e0R6V4n4w@mail.gmail.com>
+Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2012 03:03 PM, H. Peter Anvin wrote:
-> On 04/01/2012 05:57 AM, Alexey Dobriyan wrote:
->>
->> * /proc/self/fd is unreliable:
->>   proc may be unconfigured or not mounted at expected place.
->>   Looking at /proc/self/fd requires opening directory
->>   which may not be available due to malicious rlimit drop or ENOMEM situations.
->>   Not opening directory is equivalent to dumb close(2) loop except slower.
->>
-> 
-> This is really the motivation for this... the real question is how much
-> functionality is actually available in the system without /proc mounted,
-> and in particular if this particular subcase is worth optimizing ...
-> after all, if someone is maliciously setting rlimit, we can just abort
-> (if someone can set an rlimit they can also force an abort) or revert to
-> the slow path.
-> 
+On Sun, Apr 1, 2012 at 11:27 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Sun, Apr 01, 2012 at 09:22:50PM +0200, Linus Walleij wrote:
+>
+>> Combined with the PL022 patch this causes a power regression since
+>> the PL022 is hereafter always on.
+>
+> I guess this code isn't in mainline, though?  In that case you can
+> always add a revert of this commit to your out of tree patches if you
+> need to.
 
-A few more observations:
+No, we can sure live with it... Out-of-mainline we do use power domains
+so that's what we should do instead. It currently looks like this:
+http://www.igloocommunity.org/gitweb/?p=kernel/igloo-kernel.git;a=blob;f=arch/arm/mach-ux500/pm/runtime.c;hb=HEAD
 
-- There is a huge backwards compatibility problem with this for a
-substantial transition period; using /proc/self/fd has worked for a very
-long time already.
+It's a really nice piece of code but uses some out-of-tree features,
+the most obvious one is "atomic regulators" (which are exactly
+that).
 
-- Your nextfd() system call will require more system calls that the
-typical case for reading /proc/self/fd, because each getdents() system
-call handles multiple readdir() invocations.
+>> But to the defence: power domain code was not in the kernel
+>> when the AMBA "vcore" regulator was introduced so how else
+>> could we do it... except for inventing power domains...
+>
+> Which might've happened sooner if we'd noticed :)  There were some other
+> platforms doing similar things but they mostly used the clock API since
+> it was always entirely platform code until 3.4 so they're less intrusive
+> into the generic code.
 
-	-hpa
+Yeah ... but this sounds familiar, (searching searching) Yes! We did ask on
+the lists if regulators were proper for modeling power domains in 2008:
+http://marc.info/?l=linux-arm-kernel&m=121580531500758&w=2
 
+But I should've pushed for a proper answer ...
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Yours,
+Linus Walleij
