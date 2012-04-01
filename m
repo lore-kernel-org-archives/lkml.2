@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2DARgt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 13:36:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46867 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab2DARgr (ORCPT
+	id S1752989Ab2DARt3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 13:49:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49388 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab2DARt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 13:36:47 -0400
-Date: Sun, 1 Apr 2012 19:36:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sasha Levin <levinsasha928@gmail.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] debugobjects: Use GFP_ATOMIC to allocate when
- initializing
-In-Reply-To: <1333228972-4594-1-git-send-email-levinsasha928@gmail.com>
-Message-ID: <alpine.LFD.2.02.1204011935190.2542@ionos>
-References: <1333228972-4594-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 1 Apr 2012 13:49:27 -0400
+From: Eldad Zack <eldad@fogrefinery.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eldad Zack <eldad@fogrefinery.com>
+Subject: [PATCH 1/8] net/ipv6/sit.c: Checkpatch cleanup
+Date: Sun,  1 Apr 2012 19:49:01 +0200
+Message-Id: <1333302548-9187-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Mar 2012, Sasha Levin wrote:
+sit.c:118: ERROR: "foo * bar" should be "foo *bar"
+sit.c:694: ERROR: "(foo*)" should be "(foo *)"
+sit.c:724: ERROR: "(foo*)" should be "(foo *)"
 
-> During the init stage, we have only 1 cpu and run with IRQs disabled,
-> we can't allocate with GFP_KERNEL.
-> 
-> This also fixes the related warning on boot.
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+---
+ net/ipv6/sit.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Hrmm. This should not be the case. In early boot GFP_KERNEL
-allocations should not trigger a warning when interrupts are
-disabled. Which kind of warning are you observing ?
-
-Thanks,
-
-	tglx
-
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index c4ffd17..f9608db 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -115,7 +115,7 @@ static struct net_device_stats *ipip6_get_stats(struct net_device *dev)
+ /*
+  * Must be invoked with rcu_read_lock
+  */
+-static struct ip_tunnel * ipip6_tunnel_lookup(struct net *net,
++static struct ip_tunnel *ipip6_tunnel_lookup(struct net *net,
+ 		struct net_device *dev, __be32 remote, __be32 local)
+ {
+ 	unsigned int h0 = HASH(remote);
+@@ -691,7 +691,7 @@ static netdev_tx_t ipip6_tunnel_xmit(struct sk_buff *skb,
+ 			goto tx_error;
+ 		}
  
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  lib/debugobjects.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-> index 0ab9ae8..ece5e06 100644
-> --- a/lib/debugobjects.c
-> +++ b/lib/debugobjects.c
-> @@ -1020,7 +1020,7 @@ static int __init debug_objects_replace_static_objects(void)
->  	int i, cnt = 0;
->  
->  	for (i = 0; i < ODEBUG_POOL_SIZE; i++) {
-> -		obj = kmem_cache_zalloc(obj_cache, GFP_KERNEL);
-> +		obj = kmem_cache_zalloc(obj_cache, GFP_ATOMIC);
->  		if (!obj)
->  			goto free;
->  		hlist_add_head(&obj->node, &objects);
-> -- 
-> 1.7.8.5
-> 
-> 
+-		addr6 = (const struct in6_addr*)&neigh->primary_key;
++		addr6 = (const struct in6_addr *)&neigh->primary_key;
+ 		addr_type = ipv6_addr_type(addr6);
+ 
+ 		if ((addr_type & IPV6_ADDR_UNICAST) &&
+@@ -721,7 +721,7 @@ static netdev_tx_t ipip6_tunnel_xmit(struct sk_buff *skb,
+ 			goto tx_error;
+ 		}
+ 
+-		addr6 = (const struct in6_addr*)&neigh->primary_key;
++		addr6 = (const struct in6_addr *)&neigh->primary_key;
+ 		addr_type = ipv6_addr_type(addr6);
+ 
+ 		if (addr_type == IPV6_ADDR_ANY) {
+-- 
+1.7.9.5
+
