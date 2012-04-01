@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332Ab2DAFH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 01:07:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48311 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab2DAFHy (ORCPT
+	id S1751359Ab2DAFSU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 01:18:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60127 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab2DAFSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 01:07:54 -0400
-Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, davem@davemloft.net, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-In-Reply-To: <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
-References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
-	 <1333227549.2325.4051.camel@edumazet-glaptop>
-	 <20120331213423.GA21219@redhat.com>
-	 <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com>
-	 <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 01 Apr 2012 07:07:48 +0200
-Message-ID: <1333256868.2325.4545.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 1 Apr 2012 01:18:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOzFzEjJSuTKy9-wk-qSzsmMHfB8h2ushRG6LQ0+92uDyB4sZg@mail.gmail.com>
+References: <CA+ekxPWHbOsa1BChpPvr4Bzj=8YixLDWA2TWtRyHSQ43QqVdqw@mail.gmail.com>
+	<1333221304.30812.5.camel@obelisk.thedillows.org>
+	<CA+ekxPUP+6DbYS6u-fvrKB0awiaL=WQBW7TF5u-XFSehWuM7Ag@mail.gmail.com>
+	<CAOzFzEjJSuTKy9-wk-qSzsmMHfB8h2ushRG6LQ0+92uDyB4sZg@mail.gmail.com>
+Date: Sat, 31 Mar 2012 23:18:17 -0600
+Message-ID: <CA+ekxPX90hgC80HdHvy4U31fdM8gd1sRdSoa1osPpwgwNH-jmw@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Linux hits 20 Gb/s stream to disk levels over Infiniband
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: Joseph Glanville <joseph.glanville@orionvm.com.au>
+Cc: David Dillow <dave@thedillows.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-01 at 01:26 +0200, Sasha Levin wrote:
-> On Sat, Mar 31, 2012 at 11:43 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > On Sat, Mar 31, 2012 at 11:34 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> On 03/31, Eric Dumazet wrote:
-> >>>
-> >>> On Sat, 2012-03-31 at 19:51 +0200, Sasha Levin wrote:
-> >>> > Hi all,
-> >>> >
-> >>> > It appears that a hang may occur when destroying an ipv6 tunnel, which
-> >>> > I've reproduced several times in a KVM vm.
-> >>
-> >> kernel version?
-> >
-> > latest linux-next
-> >
-> >>> > [ 1561.564172] INFO: task kworker/u:2:3140 blocked for more than 120 seconds.
-> >>
-> >> And nobody else?
-> >
-> > Some more messages follow a bit later which get stuck in vfs related code.
-> >
-> >> It would be nice to know what sysrq-t says, in particular the trace
-> >> of khelper thread is interesting.
-> >
-> > Sure, I'll get one when it happens again.
-> 
-> So here's the stack of the usermode thread:
-> 
-> [  336.614015] kworker/u:2     S ffff880062c13000  5176  4539   3031 0x00000000
-> [  336.614015]  ffff880062fb38d0 0000000000000082 ffff880062fb3860
-> 0000000000000001
-> [  336.614015]  ffff880062fb3fd8 00000000001d4580 ffff880062fb2010
-> 00000000001d4580
-> [  336.614015]  00000000001d4580 00000000001d4580 ffff880062fb3fd8
-> 00000000001d4580
-> [  336.614015] Call Trace:
-> [  336.614015]  [<ffffffff826a8e54>] schedule+0x24/0x70
-> [  336.614015]  [<ffffffff825fd66d>] p9_client_rpc+0x13d/0x360
-> [  336.614015]  [<ffffffff810d7850>] ? wake_up_bit+0x40/0x40
-> [  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
-> [  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
-> [  336.614015]  [<ffffffff825ff5ff>] p9_client_walk+0x8f/0x220
-> [  336.614015]  [<ffffffff815a8e3b>] v9fs_vfs_lookup+0xab/0x1c0
-> [  336.614015]  [<ffffffff811ee0c0>] d_alloc_and_lookup+0x40/0x80
-> [  336.614015]  [<ffffffff811fdea0>] ? d_lookup+0x30/0x50
-> [  336.614015]  [<ffffffff811f0aea>] do_lookup+0x28a/0x3b0
-> [  336.614015]  [<ffffffff817c9117>] ? security_inode_permission+0x17/0x20
-> [  336.614015]  [<ffffffff811f1c07>] link_path_walk+0x167/0x420
-> [  336.614015]  [<ffffffff811ee630>] ? generic_readlink+0xb0/0xb0
-> [  336.614015]  [<ffffffff81896d88>] ? __raw_spin_lock_init+0x38/0x70
-> [  336.614015]  [<ffffffff811f24da>] path_openat+0xba/0x500
-> [  336.614015]  [<ffffffff81057253>] ? sched_clock+0x13/0x20
-> [  336.614015]  [<ffffffff810ed805>] ? sched_clock_local+0x25/0x90
-> [  336.614015]  [<ffffffff810ed940>] ? sched_clock_cpu+0xd0/0x120
-> [  336.614015]  [<ffffffff811f2a34>] do_filp_open+0x44/0xa0
-> [  336.614015]  [<ffffffff81119acd>] ? __lock_release+0x8d/0x1d0
-> [  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
-> [  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
-> [  336.614015]  [<ffffffff826aa7f0>] ? _raw_spin_unlock+0x30/0x60
-> [  336.614015]  [<ffffffff811ea74d>] open_exec+0x2d/0xf0
-> [  336.614015]  [<ffffffff811eb888>] do_execve_common+0x128/0x320
-> [  336.614015]  [<ffffffff811ebb05>] do_execve+0x35/0x40
-> [  336.614015]  [<ffffffff810589e5>] sys_execve+0x45/0x70
-> [  336.614015]  [<ffffffff826acc28>] kernel_execve+0x68/0xd0
-> [  336.614015]  [<ffffffff810cd6a6>] ? ____call_usermodehelper+0xf6/0x130
-> [  336.614015]  [<ffffffff810cd6f9>] call_helper+0x19/0x20
-> [  336.614015]  [<ffffffff826acbb4>] kernel_thread_helper+0x4/0x10
-> [  336.614015]  [<ffffffff810e3f80>] ? finish_task_switch+0x80/0x110
-> [  336.614015]  [<ffffffff826aaeb4>] ? retint_restore_args+0x13/0x13
-> [  336.614015]  [<ffffffff810cd6e0>] ? ____call_usermodehelper+0x130/0x130
-> [  336.614015]  [<ffffffff826acbb0>] ? gs_change+0x13/0x13
-> 
-> While it seems that 9p is the culprit, I have to point out that this
-> bug is easily reproducible, and it happens each time due to a
-> call_usermode_helper() call. Other than that 9p behaves perfectly and
-> I'd assume that I'd be seeing other things break besides
-> call_usermode_helper() related ones.
+On 3/31/12, Joseph Glanville <joseph.glanville@orionvm.com.au> wrote:
+> On 1 April 2012 05:23, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
+>> On 3/31/12, David Dillow <dave@thedillows.org> wrote:
+>>> On Sat, 2012-03-31 at 11:28 -0600, Jeffrey Merkey wrote:
+>>>> Made it to 20 Gb/s network packet capture stream to disk performance
+>>>> levels over Infiniband fabrics on Linux.
+>>>
+>>> I'm assuming that the interesting part is the 20 Gbits/s capture? And at
+>>> minimum packet sizes, I'd hope. Linux has been able to stream more than
+>>> 5 GBytes/s (40 Gbits/s) to disk for several years now over SRP.
+>>
+>> Network Capture while being routed and regenerated and piped through
+>> apps at the same time from live network traffic.  Most of the other
+>> vendors tout 10 Gb/s stream to disk but only Solera really can do it.
+>> All of them except Niksun are Linux and I think they moved some of
+>> their stuff to it.  So hitting 20 Gb/s is a big deal right now.  With
+>> Intel's push in IB/Ethernet, this is where the next thing is going.
+>> 3D Torus stuff is totally cool.  You can actually store data in the
+>> network itself.  Talk about a challenge for Network security.
+>
+> You can do Infiniband routing in software? This is indeed very interesting.
+> Pinged your contact page. :)
 
-OK then there is a third process (might be a 9p related one trying to
-serve this RPC request) blocking on one of the mutex hold by your first
-process (the one invoking call_usermodehelper())
+Got your email.  Was catching up on SLES testing today, so sorry for
+the late response.     Yes, we can support IP routing and regeneration
+over IB fabrics.  If your question is can we also support native
+routing of some IB functionality, yes.   But RDMA stuff is better left
+direct without local store and forward in software.    I will email
+you off line and you can better describe what you want done on IB.
+The api and ib verbs are tedious and detailed to
+program, but the technology rocks.  We use IB primarily as an IP and
+storage fabric, but I have worked on several commercial products with
+IB, notably, this one last year which does routing -- a ton of work.
+www.kove.com
 
-Maybe kobject_uevent_env() should not use UMH_WAIT_EXEC  to get a non
-blocking guarantee.
+Jeff
 
-
-
+>
+>>
+>> The next class of malicious programs may be adapted to live within
+>> fabrics and require new methods to detect and remove them.
+>>
+>>>
+>>>>  Will be trying this on 3.0
+>>>> after I work through the OFED issues (long list).  Post the results
+>>>> from 3.0.  These are from 2.6.XX series kernels.
+>>>
+>>> You may find it easier to use a recent RedHat or SUSE with an upstream
+>>> kernel. I know that RHEL6 userland is compatible with the upstream
+>>> kernel's Infiniband, and OFED is moving its kernel work to a "backport
+>>> upstream" model for OFED 3.2.
+>>>
+>>
+>>
+>> I've got RH6 done, but OFED was down on the list and SLES was ahead
+>> of.it.  No rest for the weary.
+>>
+>> Jeff
+>>
+>>>> Linux f_cking ROCKS!!!
+>>>
+>>> Indeed it does.
+>>>
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> Joseph.
+>
+> --
+> Founder | Director | VP Research
+> Orion Virtualisation Solutions | www.orionvm.com.au | Phone: 1300 56
+> 99 52 | Mobile: 0428 754 846
+>
