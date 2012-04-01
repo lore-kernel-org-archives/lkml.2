@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab2DAMUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 08:20:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44155 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab2DAMTx convert rfc822-to-8bit (ORCPT
+	id S1751993Ab2DAMT5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 08:19:57 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36888 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab2DAMTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 08:19:53 -0400
+	Sun, 1 Apr 2012 08:19:48 -0400
+Date: Sun, 1 Apr 2012 14:19:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: semaphore and mutex in current Linux kernel (3.2.2)
+Message-ID: <20120401121943.GA11893@gmail.com>
+References: <491D6B4EAD0A714894D8AD22F4BDE0439F94AB@SCYBEXDAG02.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CANE52KgubfHC65xi8O9s+Uq7iEd9vEmEQBPEByVHxTy-xW-raQ@mail.gmail.com>
-References: <1331540451-2380-1-git-send-email-hamo.by@gmail.com>
- <CANE52KjOF2G_WQmms8+Xu9m2RXmb0=Bc5E94UUFvMc2xhhJ9mA@mail.gmail.com>
- <4F77F883.5050207@codeaurora.org> <CANE52KgubfHC65xi8O9s+Uq7iEd9vEmEQBPEByVHxTy-xW-raQ@mail.gmail.com>
-From: Yang Bai <hamo.by@gmail.com>
-Date: Sun, 1 Apr 2012 20:19:32 +0800
-Message-ID: <CAO_0yfMNhw3KDkqckZfkzkWByGkOpJ+F2WysD6mfLbyBdqdkmw@mail.gmail.com>
-Subject: Re: [PATCH] scripts: refactor remove structure forward declarations
-To: Jike Song <albcamus@gmail.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, mmarek@suse.cz, rostedt@goodmis.org,
-        adobriyan@gmail.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE0439F94AB@SCYBEXDAG02.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 1, 2012 at 4:31 PM, Jike Song <albcamus@gmail.com> wrote:
-> On Sun, Apr 1, 2012 at 2:41 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>
->> Ah yes. Forgot the quotes.
->>
->> Subject: [PATCH] tags.sh: Add missing quotes
+
+* Chen, Dennis (SRDC SW) <Dennis1.Chen@amd.com> wrote:
+
+> Documentation/mutex-design.txt:
+> 
+> "- 'struct mutex' is smaller on most architectures: E.g. on x86,
+>    'struct semaphore' is 20 bytes, 'struct mutex' is 16 bytes.
+>    A smaller structure size means less RAM footprint, and better
+>    CPU-cache utilization."
+> ================================================================
 >
-> it's fixed, thanks.
->
-> --
-> Thanks,
-> Jike
+> Now in my x86-64 32-bit Linux environment, 'struct semaphone' 
+> is 16 bytes, 'struct mutex' is 20 bytes. So seems the RAM 
+> footprint advantages are not there...
 
-Thanks for reporting and testing for this bug.
+It got larger due to the adaptive spin-mutex performance 
+optimization.
 
+> For the performance advantages followed, I don't have the 
+> ./test-mutex and maybe the testing environment, so haven't the 
+> 1st hand data for this item...
 
--- 
-    """
-    Keep It Simple,Stupid.
-    """
+Well, a way to reproduce that would be to find a lock_mutex 
+intense workload ('perf top -g', etc.), and then changing back 
+the underlying mutex to a semaphore, and measure the performance 
+of the two primitives.
 
-Chinese Name: 白杨
-Nick Name: Hamo
-Homepage: http://hamobai.com/
-GPG KEY ID: 0xA4691A33
-Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
+Thanks,
+
+	Ingo
