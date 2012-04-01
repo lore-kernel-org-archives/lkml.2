@@ -1,121 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2DAReU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 13:34:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36836 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2DAReR convert rfc822-to-8bit (ORCPT
+	id S1752951Ab2DARfM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 13:35:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46839 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab2DARfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 13:34:17 -0400
+	Sun, 1 Apr 2012 13:35:07 -0400
+Date: Sun, 1 Apr 2012 19:34:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-hexagon@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-mips@linux-mips.org,
+        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        dhowells@redhat.com, jejb@parisc-linux.org, linux390@de.ibm.com,
+        x86@kernel.org, cmetcalf@tilera.com
+Subject: Re: [PATCH RFC] Simplify the Linux kernel by reducing its state
+ space
+In-Reply-To: <20120331223200.GA32482@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1204011930010.2542@ionos>
+References: <20120331163321.GA15809@linux.vnet.ibm.com> <20120331223200.GA32482@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <201204011221.GAG51016.JQFSFFOtLOMVHO@I-love.SAKURA.ne.jp>
-References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com>
- <1333227549.2325.4051.camel@edumazet-glaptop> <20120331213423.GA21219@redhat.com>
- <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com>
- <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com> <201204011221.GAG51016.JQFSFFOtLOMVHO@I-love.SAKURA.ne.jp>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sun, 1 Apr 2012 19:33:56 +0200
-Message-ID: <CA+1xoqe+T=iUtUeFdeqmRvMZ7TMCgkLs_1QYv-4YNtn-jCoMCQ@mail.gmail.com>
-Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: oleg@redhat.com, eric.dumazet@gmail.com, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davej@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 1, 2012 at 5:21 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Sasha Levin wrote:
->> While it seems that 9p is the culprit, I have to point out that this
->> bug is easily reproducible, and it happens each time due to a
->> call_usermode_helper() call. Other than that 9p behaves perfectly and
->> I'd assume that I'd be seeing other things break besides
->> call_usermode_helper() related ones.
->
-> I think one of below two patches can catch the bug if this is a usermodehelper
-> related bug. Please try.
->
-> ----- Patch 1 -----
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 01394b6..3e63319 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -571,7 +571,7 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
->         * flag, for khelper thread is already waiting for the thread at
->         * wait_for_completion() in do_fork().
->         */
-> -       if (wait != UMH_NO_WAIT && current == kmod_thread_locker) {
-> +       if (WARN_ON(wait != UMH_NO_WAIT && current == kmod_thread_locker)) {
->                retval = -EBUSY;
->                goto out;
->        }
->
->
-> ----- Patch 2 -----
-> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-> index 9efeae6..1350670 100644
-> --- a/include/linux/kmod.h
-> +++ b/include/linux/kmod.h
-> @@ -48,10 +48,10 @@ static inline int request_module_nowait(const char *name, ...) { return -ENOSYS;
->  struct cred;
->  struct file;
->
-> -#define UMH_NO_WAIT    0       /* don't wait at all */
-> -#define UMH_WAIT_EXEC  1       /* wait for the exec, but not the process */
-> -#define UMH_WAIT_PROC  2       /* wait for the process to complete */
-> -#define UMH_KILLABLE   4       /* wait for EXEC/PROC killable */
-> +#define UMH_NO_WAIT    0x10    /* don't wait at all */
-> +#define UMH_WAIT_EXEC  0x11    /* wait for the exec, but not the process */
-> +#define UMH_WAIT_PROC  0x12    /* wait for the process to complete */
-> +#define UMH_KILLABLE   0x04    /* wait for EXEC/PROC killable */
->
->  struct subprocess_info {
->        struct work_struct work;
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 957a7aa..ecfd3d5 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -483,6 +483,18 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
->        DECLARE_COMPLETION_ONSTACK(done);
->        int retval = 0;
->
-> +       if (unlikely(wait == -1 || wait == 0 || wait == 1)) {
-> +               WARN(1, "Requesting for usermode helper with hardcoded wait "
-> +                    "flag. Change to use UMH_* symbols and recompile, or "
-> +                    "this request will fail on Linux 3.4.\n");
-> +               if (wait == -1)
-> +                       wait = UMH_NO_WAIT;
-> +               else if (wait == 0)
-> +                       wait = UMH_WAIT_EXEC;
-> +               else
-> +                       wait = UMH_WAIT_PROC;
-> +       }
-> +
->        helper_lock();
->        if (sub_info->path[0] == '\0')
->                goto out;
+On Sat, 31 Mar 2012, Russell King - ARM Linux wrote:
 
-Neither of these patches did the trick (no warnings showing up and
-still seeing the hangs). However, the following patch has fixed it:
+> On Sun, Apr 01, 2012 at 12:33:21AM +0800, Paul E. McKenney wrote:
+> > Although there have been numerous complaints about the complexity of
+> > parallel programming (especially over the past 5-10 years), the plain
+> > truth is that the incremental complexity of parallel programming over
+> > that of sequential programming is not as large as is commonly believed.
+> > Despite that you might have heard, the mind-numbing complexity of modern
+> > computer systems is not due so much to there being multiple CPUs, but
+> > rather to there being any CPUs at all.  In short, for the ultimate in
+> > computer-system simplicity, the optimal choice is NR_CPUS=0.
+> > 
+> > This commit therefore limits kernel builds to zero CPUs.  This change
+> > has the beneficial side effect of rendering all kernel bugs harmless.
+> > Furthermore, this commit enables additional beneficial changes, for
+> > example, the removal of those parts of the kernel that are not needed
+> > when there are zero CPUs.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+> 
+> Great work, but I don't think you've gone far enough with this.
+> 
+> What would really help is if you could consolidate all these NR_CPUS
+> definitions into one place so we don't have essentially the same thing
+> scattered across all these architectures.  We're already doing this on
+> ARM across our platforms, and its about time such an approach was taken
+> across the entire kernel tree.
+> 
+> It looks like the MIPS solution would be the best one to pick.
+> Could you rework your patch to do this please?
+> 
+> While you're at it, you might like to consider that having zero CPUs
+> makes all this architecture support redundant, so maybe you've missed
+> a trick there - according to my count, we could get rid of almost 3
+> million lines of code from arch.  We could replace all that with a
+> single standard implementation.
 
-diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-index 1a91efa..8ecc377 100644
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -309,7 +309,7 @@ int kobject_uevent_env(struct kobject *kobj, enum
-kobject_action action,
-                        goto exit;
+For a first step we can deprecated arch/ and make it depend on
+CONFIG_STAGING. That way we can have it around a bit for sentimental
+reasons w/o having a lot of churn.
 
-                retval = call_usermodehelper(argv[0], argv,
--                                            env->envp, UMH_WAIT_EXEC);
-+                                            env->envp, UMH_NO_WAIT);
-        }
+Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
- exit:
-
-Not sure if that info helps any, but just in case.
+Index: tip/Makefile
+===================================================================
+--- tip.orig/Makefile
++++ tip/Makefile
+@@ -564,7 +564,9 @@ else
+ KBUILD_CFLAGS	+= -O2
+ endif
+ 
++ifdef CONFIG_ARCH_SUPPORT
+ include $(srctree)/arch/$(SRCARCH)/Makefile
++endif
+ 
+ ifneq ($(CONFIG_FRAME_WARN),0)
+ KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
+Index: tip/drivers/staging/Kconfig
+===================================================================
+--- tip.orig/drivers/staging/Kconfig
++++ tip/drivers/staging/Kconfig
+@@ -1,6 +1,10 @@
++config ARCH_SUPPORT
++	bool
++
+ menuconfig STAGING
+ 	bool "Staging drivers"
+ 	default n
++	select ARCH_SUPPORT
+ 	---help---
+ 	  This option allows you to select a number of drivers that are
+ 	  not of the "normal" Linux kernel quality level.  These drivers
+Index: tip/Documentation/feature-removal-schedule.txt
+===================================================================
+--- tip.orig/Documentation/feature-removal-schedule.txt
++++ tip/Documentation/feature-removal-schedule.txt
+@@ -537,3 +537,13 @@ When:	3.6
+ Why:	setitimer is not returning -EFAULT if user pointer is NULL. This
+ 	violates the spec.
+ Who:	Sasikantha Babu <sasikanth.v19@gmail.com>
++
++-----------------------------
++
++What:	Remove arch
++When:	April 1st 2013
++Why:    NR_CPUS=0 made arch/ obsolete. Keep it around a bit for
++	sentimental reasons.
++Who:	paulmck,tglx.rmk
++
++	
