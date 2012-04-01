@@ -1,77 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab2DAQ5q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 12:57:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752916Ab2DAQ5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 12:57:43 -0400
-Date: Sun, 1 Apr 2012 13:53:54 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Pavel Machek <pavel@ucw.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>, Igor Mammedov <imammedo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86: v3.4-rc1 s2ram regression
-Message-ID: <20120401165354.GA18526@amt.cnet>
-References: <20120401132643.4922.79748.stgit@zurg>
+	id S1753206Ab2DAQ7g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 12:59:36 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35108 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab2DAQ7d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 12:59:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120401132643.4922.79748.stgit@zurg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120401161108.GA6448@milliways>
+References: <20120316233829.GA14022@kroah.com> <20120316233811.136320350@linuxfoundation.org>
+ <20120331032356.GA6664@milliways> <20120401161108.GA6448@milliways>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 1 Apr 2012 09:59:12 -0700
+X-Google-Sender-Auth: j_i54yTbU0WZe8Jd5NYnK0Ipf0E
+Message-ID: <CA+55aFzEgpfBvFmxQnvaD0RY5q2ST1G_ue=u0Gpbxeptc4+TNA@mail.gmail.com>
+Subject: Re: [ 06/41] PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 05:26:43PM +0400, Konstantin Khlebnikov wrote:
-> commit b74f05d61b73af584d0c39121980171389ecfaaa
-> ("x86: kvmclock: abstract save/restore sched_clock_state")
-> breaks s2ram for my notebook. It hangs (maybe panic) somewhere on resume stage
-> and blinks with all possible leds =) Screen is black, so I don't know what happened.
-> 
-> reverting or following patch helps
-> 
-> Bisected-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Igor Mammedov <imammedo@redhat.com>
-> ---
->  arch/x86/power/cpu.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-> index 4793683..2bc5a82 100644
-> --- a/arch/x86/power/cpu.c
-> +++ b/arch/x86/power/cpu.c
-> @@ -231,8 +231,8 @@ static void __restore_processor_state(struct saved_context *ctxt)
->  /* Needed by apm.c */
->  void restore_processor_state(void)
->  {
-> -	x86_platform.restore_sched_clock_state();
->  	__restore_processor_state(&saved_context);
-> +	x86_platform.restore_sched_clock_state();
->  }
->  #ifdef CONFIG_X86_32
->  EXPORT_SYMBOL(restore_processor_state);
+On Sun, Apr 1, 2012 at 9:11 AM, Ken Moffat <zarniwhoop@ntlworld.com> wrote:
+>
+>  BUT, for 3.4.0-rc1 I don't need to revert it - just went with the
+> defaults for additions in menuconfig, and it boots fine.  Maybe
+> something else needs to be backported ?
 
-The correct fix is in kvm.git (see below).
+It was fixed by commit c9651e70ad0a ("ASPM: Fix pcie devices with
+non-pcie children") which is marked for stable but just hasn't made it
+quite yet.
 
-Ingo, can you please merge it through x86 tree while the
-kvm.git issues are resolved? It has been forward to you directly.
-
-    x86: call restore_sched_clock_state after %gs is initialized
-    
-    restore_sched_clock_state methods use percpu data, therefore they
-    must run after %gs is initialized, but before mtrr_bp_restore (due to
-    lockstat using sched_clock).
-    
-    Move it to the correct place.
-    
-    Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-    Signed-off-by: Avi Kivity <avi@redhat.com>
-
-
+                   Linus
