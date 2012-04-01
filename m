@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab2DATJq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 15:09:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61182 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab2DATJn (ORCPT
+	id S1753249Ab2DATOY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 15:14:24 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:41985 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752918Ab2DATOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 15:09:43 -0400
-From: Tracey Dent <tdent48227@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: shea@shealevy.com, torvalds@linux-foundation.org, mchehab@infradead.org,
-        hans.verkuil@cisco.com, linux-media@vger.kernel.org,
-        Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 1/1] Drivers/media/radio: Fix build error
-Date: Sun,  1 Apr 2012 15:09:34 -0400
-Message-Id: <1333307374-25848-1-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
+	Sun, 1 Apr 2012 15:14:23 -0400
+Date: Sun, 1 Apr 2012 22:13:51 +0300
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: Joe Perches <joe@perches.com>
+Cc: eduardo.valentin@ti.com, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        Len Brown <len.brown@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 17/76] thermal_sys: convert printks to
+ pr_<level>
+Message-ID: <20120401191351.GA4010@besouro>
+Reply-To: eduardo.valentin@ti.com
+References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
+ <c5a01dd52dc4903772f464ea580895ccc36e911d.1333101989.git.len.brown@intel.com>
+ <20120330134119.GA13130@besouro>
+ <1333134530.27601.2.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333134530.27601.2.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-radio-maxiradio depends on SND_FM801_TEA575X_BOOL to build or will
-result in an build error such as:
+Hello Joe,
 
-Kernel: arch/x86/boot/bzImage is ready  (#1)
-ERROR: "snd_tea575x_init" [drivers/media/radio/radio-maxiradio.ko] undefined!
-ERROR: "snd_tea575x_exit" [drivers/media/radio/radio-maxiradio.ko] undefined!
-WARNING: modpost: Found 6 section mismatch(es).
-To see full details build your kernel with:
-'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+On Fri, Mar 30, 2012 at 12:08:50PM -0700, Joe Perches wrote:
+> On Fri, 2012-03-30 at 16:41 +0300, Eduardo Valentin wrote:
+> > On Fri, Mar 30, 2012 at 06:13:20AM -0400, Len Brown wrote:
+> > > From: Joe Perches <joe@perches.com>
+> > > Use the current logging style.
+> []
+> > We should get the struct dev in thermal_zone_device, I think it makes
+> > more sense to use the dev_* helper functions.
+> []
+> > The orig argument could probably be changed to a thermal zone device
+> > and the we use it's id as orig for the message.
+> > What do you think?
+> 
+> dev_<level> should be used instead of pr_<level> when
+> an appropriate struct device * is available.
 
-Select CONFIG_SND_TEA575X to fixes problem and enable
-the driver to be built as desired.
+Agreed that we need a struct device *. My comments are based on the fact
+that you have one of it inside the struct therma_zone_device, field device.
 
-v2:
-instead of selecting CONFIG_SND_FM801_TEA575X_BOOL, select
-CONFIG_SND_TEA575X, which in turns selects CONFIG_SND_FM801_TEA575X_BOOL
-and any other dependencies for it to build.
+Isn't that struct device appropriated enough to be used by the dev_* functions?
 
-Reported-by: Shea Levy <shea@shealevy.com>
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
----
- drivers/media/radio/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+> 
+> cheers, Joe
+> 
 
-diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
-index 8db2d7f..b518ce5 100644
---- a/drivers/media/radio/Kconfig
-+++ b/drivers/media/radio/Kconfig
-@@ -44,6 +44,7 @@ config USB_DSBR
- config RADIO_MAXIRADIO
- 	tristate "Guillemot MAXI Radio FM 2000 radio"
- 	depends on VIDEO_V4L2 && PCI && SND
-+	select SND_TEA575X
- 	---help---
- 	  Choose Y here if you have this radio card.  This card may also be
- 	  found as Gemtek PCI FM.
--- 
-1.7.10.rc3.3.g19a6c
+Cheers,
 
+Eduardo
