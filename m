@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab2DAUjU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 16:39:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:54147 "EHLO
+	id S1753759Ab2DAUkF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 16:40:05 -0400
+Received: from mail.windriver.com ([147.11.1.11]:54193 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab2DAUjK (ORCPT
+	with ESMTP id S1751938Ab2DAUjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 16:39:10 -0400
+	Sun, 1 Apr 2012 16:39:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: dhowells@redhat.com
 Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-next@vger.kernel.org,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 07/11] sh: fix several build failures from system.h fallout
-Date: Sun,  1 Apr 2012 16:38:43 -0400
-Message-Id: <1333312727-11428-8-git-send-email-paul.gortmaker@windriver.com>
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH 04/11] avr32: fix build failures from mis-naming of atmel_nand.h
+Date: Sun,  1 Apr 2012 16:38:40 -0400
+Message-Id: <1333312727-11428-5-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,92 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e839ca528718e68cad32a307dc9aabf01ef3eb05
+Commit bf4289cba02b8cf770ecd7959ca70839f0dd9d3c
 
-    "Disintegrate asm/system.h for SH"
+    "ATMEL: fix nand ecc support"
 
-created the new file asm/cache_insns.h but it didn't add
-an include for all the users of it.
+indicated that it wanted to "Move platform data to a common
+header include/linux/platform_data/atmel_nand.h" and the new
+header even had re-include protectors with:
 
-The failure on fpu.c (also seen below) showed up roughly
-at the same time, and since the fix is trivial (include traps.h)
-I did not bother to bisect to 100% confirm it was caused by
-the system.h disintegration.
+    #ifndef __ATMEL_NAND_H__
 
-arch/sh/mm/flush-sh4.c:16:2: error: implicit declaration of function 'register_align' [-Werror=implicit-function-declaration]
-arch/sh/mm/flush-sh4.c:23:3: error: implicit declaration of function '__ocbwb' [-Werror=implicit-function-declaration]
-arch/sh/mm/flush-sh4.c:57:3: error: implicit declaration of function '__ocbp' [-Werror=implicit-function-declaration]
-arch/sh/mm/flush-sh4.c:87:3: error: implicit declaration of function '__ocbi' [-Werror=implicit-function-declaration]
-cc1: all warnings being treated as errors
-make[2]: *** [arch/sh/mm/flush-sh4.o] Error 1
-arch/sh/mm/cache-sh4.c:70:3: error: implicit declaration of function '__ocbwb' [-Werror=implicit-function-declaration]
-cc1: all warnings being treated as errors
-make[2]: *** [arch/sh/mm/cache-sh4.o] Error 1
-arch/sh/kernel/cpu/fpu.c:81:2: error: 'TRAP_HANDLER_DECL' undeclared (first use in this function)
-arch/sh/kernel/cpu/fpu.c:83:20: error: 'regs' undeclared (first use in this function)
-arch/sh/kernel/cpu/fpu.c:83:19: error: called object 'fpu_state_restore' is not a function
-make[3]: *** [arch/sh/kernel/cpu/fpu.o] Error 1
-arch/sh/kernel/cpu/sh4/fpu.c:407:2: error: 'TRAP_HANDLER_DECL' undeclared (first use in this function)
-arch/sh/kernel/cpu/sh4/fpu.c:409:20: error: 'regs' undeclared (first use in this function)
-make[4]: *** [arch/sh/kernel/cpu/sh4/fpu.o] Error 1
+However, the file that was added was simply called atmel.h
+and this caused avr32 defconfig to fail with:
 
-Cc: Paul Mundt <lethal@linux-sh.org>
+  In file included from arch/avr32/boards/atstk1000/setup.c:22:
+  arch/avr32/mach-at32ap/include/mach/board.h:10:44: error: linux/platform_data/atmel_nand.h: No such file or directory
+  In file included from arch/avr32/boards/atstk1000/setup.c:22:
+  arch/avr32/mach-at32ap/include/mach/board.h:121: warning: 'struct atmel_nand_data' declared inside parameter list
+  arch/avr32/mach-at32ap/include/mach/board.h:121: warning: its scope is only this definition or declaration, which is probably not what you want
+  make[2]: *** [arch/avr32/boards/atstk1000/setup.o] Error 1
+
+It seems the scope of the file contents will expand beyond
+just nand, so ignore the original intention, and fix up the
+users who reference the bad name with the _nand suffix.
+
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: David Woodhouse <dwmw2@infradead.org>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/sh/kernel/cpu/fpu.c     |    1 +
- arch/sh/kernel/cpu/sh4/fpu.c |    1 +
- arch/sh/mm/cache-sh4.c       |    1 +
- arch/sh/mm/flush-sh4.c       |    1 +
- 4 files changed, 4 insertions(+), 0 deletions(-)
+ arch/avr32/mach-at32ap/include/mach/board.h |    2 +-
+ include/linux/platform_data/atmel.h         |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/sh/kernel/cpu/fpu.c b/arch/sh/kernel/cpu/fpu.c
-index 7f1b70c..07fb02f 100644
---- a/arch/sh/kernel/cpu/fpu.c
-+++ b/arch/sh/kernel/cpu/fpu.c
-@@ -1,6 +1,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <asm/processor.h>
-+#include <asm/traps.h>
- #include <asm/fpu.h>
+diff --git a/arch/avr32/mach-at32ap/include/mach/board.h b/arch/avr32/mach-at32ap/include/mach/board.h
+index 7173386..70742ec 100644
+--- a/arch/avr32/mach-at32ap/include/mach/board.h
++++ b/arch/avr32/mach-at32ap/include/mach/board.h
+@@ -7,7 +7,7 @@
+ #include <linux/types.h>
+ #include <linux/serial.h>
+ #include <linux/platform_data/macb.h>
+-#include <linux/platform_data/atmel_nand.h>
++#include <linux/platform_data/atmel.h>
  
- int init_fpu(struct task_struct *tsk)
-diff --git a/arch/sh/kernel/cpu/sh4/fpu.c b/arch/sh/kernel/cpu/sh4/fpu.c
-index e74cd6c..36538ff 100644
---- a/arch/sh/kernel/cpu/sh4/fpu.c
-+++ b/arch/sh/kernel/cpu/sh4/fpu.c
-@@ -15,6 +15,7 @@
- #include <linux/io.h>
- #include <cpu/fpu.h>
- #include <asm/processor.h>
-+#include <asm/traps.h>
- #include <asm/fpu.h>
+ #define GPIO_PIN_NONE	(-1)
  
- /* The PR (precision) bit in the FP Status Register must be clear when
-diff --git a/arch/sh/mm/cache-sh4.c b/arch/sh/mm/cache-sh4.c
-index 112fea1..c9667d9 100644
---- a/arch/sh/mm/cache-sh4.c
-+++ b/arch/sh/mm/cache-sh4.c
-@@ -19,6 +19,7 @@
- #include <asm/pgtable.h>
- #include <asm/mmu_context.h>
- #include <asm/cacheflush.h>
-+#include <asm/cache_insns.h>
+diff --git a/include/linux/platform_data/atmel.h b/include/linux/platform_data/atmel.h
+index d056263..b0f2c56 100644
+--- a/include/linux/platform_data/atmel.h
++++ b/include/linux/platform_data/atmel.h
+@@ -4,8 +4,8 @@
+  * GPL v2 Only
+  */
  
- /*
-  * The maximum number of pages we support up to when doing ranged dcache
-diff --git a/arch/sh/mm/flush-sh4.c b/arch/sh/mm/flush-sh4.c
-index 75a17f5..59acd8a 100644
---- a/arch/sh/mm/flush-sh4.c
-+++ b/arch/sh/mm/flush-sh4.c
-@@ -1,6 +1,7 @@
- #include <linux/mm.h>
- #include <asm/mmu_context.h>
- #include <asm/cacheflush.h>
-+#include <asm/cache_insns.h>
- #include <asm/traps.h>
+-#ifndef __ATMEL_NAND_H__
+-#define __ATMEL_NAND_H__
++#ifndef __ATMEL_H__
++#define __ATMEL_H__
  
- /*
+ #include <linux/mtd/nand.h>
+ 
+@@ -24,4 +24,4 @@ struct atmel_nand_data {
+ 	unsigned int	num_parts;
+ };
+ 
+-#endif /* __ATMEL_NAND_H__ */
++#endif /* __ATMEL_H__ */
 -- 
 1.7.9.1
 
