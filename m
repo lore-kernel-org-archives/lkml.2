@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab2DAOzH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 10:55:07 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39082 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751731Ab2DAOzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 10:55:05 -0400
-Message-ID: <1333292103.9225.1.camel@joe2Laptop>
-Subject: Re: [PATCH] percpu: use KERN_CONT in pcpu_dump_alloc_info()
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 01 Apr 2012 07:55:03 -0700
-In-Reply-To: <CAPXgP12nMmNwN6-T-2sCsv++-5qyZNokkZFLRQ5LpuwgmuaBWA@mail.gmail.com>
-References: <20120329164842.GE28941@google.com>
-	 <1333044612.15602.4.camel@joe2Laptop>
-	 <CAOS58YOWA9U3Esb2535v_iivPaXeFYYS3nWd2KKF1=MsfZ0Piw@mail.gmail.com>
-	 <1333051616.15602.23.camel@joe2Laptop>
-	 <CAOS58YMjB4HrNOxWMjm=EKqZNd9QmK+QjSv2EfMbYs9MKk+-tA@mail.gmail.com>
-	 <CAPXgP12nMmNwN6-T-2sCsv++-5qyZNokkZFLRQ5LpuwgmuaBWA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1751988Ab2DAP0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 11:26:16 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:63661 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab2DAP0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 11:26:13 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6666"; a="175554190"
+Message-ID: <4F787392.5040308@codeaurora.org>
+Date: Sun, 01 Apr 2012 08:26:10 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Russell King <linux@arm.linux.org.uk>, Mike Turquette <mturquette@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] clkdev: Implement managed clk_get()
+References: <1333279960-8497-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1333279960-8497-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1333279960-8497-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-01 at 15:29 +0200, Kay Sievers wrote:
-> The kernel's printk() uses a static scratch buffer of 1024 chars. The
-> prototype for the printk() with facility and structure support I have,
-> does a bit better and more reliable 'buffered IO' than the current
-> one.
+On 4/1/2012 4:32 AM, Mark Brown wrote:
+> Allow clk API users to simplify their cleanup paths by providing a
+> managed version of clk_get().
 
-Can you send me a link to your code please?
+I was thinking the same thing last week.
 
+>
+> Due to the lack of a standard struct clk to look up the device from a
+> managed clk_put() is not provided, it would be very unusual to use this
+> function so it's not a big loss.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  Documentation/driver-model/devres.txt |    3 +++
+>  drivers/clk/clkdev.c                  |   25 +++++++++++++++++++++++++
+>  include/linux/clk.h                   |   20 ++++++++++++++++++++
+>  3 files changed, 48 insertions(+), 0 deletions(-)
+>
+
+But why is this part of clkdev.c? devm_clk_get() should work regardless
+of the implementation of clk_get() so can we put it into some other file
+that is compiled if HAVE_CLK=y so everyone benefits from this and not
+just users who select CLKDEV_LOOKUP?
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
