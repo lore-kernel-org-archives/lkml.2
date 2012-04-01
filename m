@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab2DACeg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 22:34:36 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:6482 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754056Ab2DACe3 (ORCPT
+	id S1754242Ab2DADDC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 23:03:02 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50802 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123Ab2DADC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 22:34:29 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zz1432N98dK4015Izz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1S4HA-01-67K-02
-X-M-MSG: 
-Date: Sun, 1 Apr 2012 18:34:09 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Jan Ceuleers <jan.ceuleers@computer.org>
-CC: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-Message-ID: <20120401103408.GA2815@localhost.amd.com>
-References: <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
- <Pine.LNX.4.44L0.1203291050580.1417-100000@iolanthe.rowland.org>
- <20120330010730.GA27346@ladygaga>
- <4F76E054.8010301@computer.org>
+	Sat, 31 Mar 2012 23:02:59 -0400
+Date: Sat, 31 Mar 2012 20:02:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Rolland <rol@witbe.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Blocked in keyctl(...) ??? - RCU related ???
+Message-ID: <20120401030246.GQ2450@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120312170301.5982e054@tux.DEF.witbe.net>
+ <20120316094328.6b37a4d9@tux.DEF.witbe.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4F76E054.8010301@computer.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120316094328.6b37a4d9@tux.DEF.witbe.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 01 Apr 2012 02:34:16.0261 (UTC) FILETIME=[EEBC1750:01CD0FAF]
-X-OriginatorOrg: amd.com
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040103-7408-0000-0000-000003DFF59E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 12:45:40PM +0200, Jan Ceuleers wrote:
+On Fri, Mar 16, 2012 at 09:43:28AM +0100, Paul Rolland wrote:
+> Hello,
 > 
-> What about slot-loading optical drives, where the user does not
-> first have to press a button to open the tray (due to a lack of
-> tray)?
+> On Mon, 12 Mar 2012 17:03:01 +0100
+> Paul Rolland (ポール・ロラン)  <rol@witbe.net> wrote:
+> 
+> > Sometimes, my applications start "locking": nothing happens anymore, can't
+> > kill them... 
+> > I manage to strace them, to find that they are executing the following
+> > syscall:
+> > 
+> > 13686 keyctl(0x1, 0, 0xffffffffffffffff, 0x7fa90fd6a2c0, 0
+> > 
+> > and that syscall never returns.
+> 
+> OK, this happened again, while running 3.3-rc7... I've used sysrq to
+> collect some informations and what I can see from that is the following :
+> 
+> Mar 16 08:40:02 tux kernel: Call Trace:
+> Mar 16 08:40:02 tux kernel: [<ffffffff813b8771>] ? extract_buf+0x91/0x140
+> Mar 16 08:40:02 tux kernel: [<ffffffff8166fd5a>] schedule+0x3a/0x50
+> Mar 16 08:40:02 tux kernel: [<ffffffff8166e09d>] schedule_timeout+0x1ed/0x260
+> Mar 16 08:40:02 tux kernel: [<ffffffff810636c1>] ? get_parent_ip+0x11/0x50
+> Mar 16 08:40:02 tux kernel: [<ffffffff810636c1>] ? get_parent_ip+0x11/0x50
+> Mar 16 08:40:02 tux kernel: [<ffffffff810636c1>] ? get_parent_ip+0x11/0x50
+> Mar 16 08:40:02 tux kernel: [<ffffffff8166f100>] wait_for_common+0xc0/0x160
+> Mar 16 08:40:02 tux kernel: [<ffffffff81062150>] ? try_to_wake_up+0x2e0/0x2e0
+> Mar 16 08:40:02 tux kernel: [<ffffffff810ad020>] ? __call_rcu+0x150/0x150
+> Mar 16 08:40:02 tux kernel: [<ffffffff8166f1b8>] wait_for_completion+0x18/0x20
+> Mar 16 08:40:02 tux kernel: [<ffffffff81054628>] wait_rcu_gp+0x48/0x50
+> Mar 16 08:40:02 tux kernel: [<ffffffff81054630>] ? wait_rcu_gp+0x50/0x50
+> Mar 16 08:40:02 tux kernel: [<ffffffff810ac09c>] synchronize_rcu+0x1c/0x20
+> Mar 16 08:40:02 tux kernel: [<ffffffff812ba6a9>] install_session_keyring_to_cred+0x59/0xc0
+> Mar 16 08:40:02 tux kernel: [<ffffffff812bac3a>] join_session_keyring+0x12a/0x170
+> Mar 16 08:40:02 tux kernel: [<ffffffff812b8cd2>] keyctl_join_session_keyring+0x32/0x60
+> Mar 16 08:40:02 tux kernel: [<ffffffff812ba278>] sys_keyctl+0x168/0x180
+> Mar 16 08:40:02 tux kernel: [<ffffffff81671b62>]
+> system_call_fastpath+0x16/0x1b
+> 
+> The complete traces collected in /var/log/messages is attached to this email.
+> 
+> Is there anything I can do to investigate this ?
 
-For slot type ODD, the insert of a disk will fire the gpe event by
-means of the sata slimline connector's device attention pin.
+>From your message output, it looks like something is stalling RCU grace
+periods, possibly due to a task being preempted in an RCU read-side
+critical section (this assumes you are running CONFIG_PREEMPT=y).
 
-That means, the insert of a disk into a slot type ODD and the
-press of the eject button of a tray type ODD has the same effect to
-trigger the resume process.
+Could you please try reproducing with CONFIG_RCU_CPU_STALL_VERBOSE=y?
+This would identify tasks stalling the RCU grace period.
 
-Thanks,
-Aaron
-
+							Thanx, Paul
 
