@@ -1,161 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab2DAN67 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 09:58:59 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53286 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab2DAN64 (ORCPT
+	id S1752410Ab2DAOEE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 10:04:04 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55696 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab2DAOD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 09:58:56 -0400
-Message-ID: <4F785F1D.4020503@openvz.org>
-Date: Sun, 01 Apr 2012 17:58:53 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "drepper@gmail.com" <drepper@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] nextfd(2)
-References: <20120401125741.GA7484@p183.telecom.by>
-In-Reply-To: <20120401125741.GA7484@p183.telecom.by>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 1 Apr 2012 10:03:59 -0400
+Date: Sun, 1 Apr 2012 17:03:45 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [PATCHv1] ipv6: Fix RTM_GETROUTE's interpretation of RTA_IIF to be
+ consistent with ipv4
+Message-ID: <20120401170345.5ed75cab@pixies.home.jungo.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Dobriyan wrote:
-> Currently there is no reliable way to close all opened file descriptors
-> (which daemons need and like to do):
->
-> * dumb close(fd) loop is slow, upper bound is unknown and
->    can be arbitrary large,
->
-> * /proc/self/fd is unreliable:
->    proc may be unconfigured or not mounted at expected place.
->    Looking at /proc/self/fd requires opening directory
->    which may not be available due to malicious rlimit drop or ENOMEM situations.
->    Not opening directory is equivalent to dumb close(2) loop except slower.
->
-> BSD added closefrom(fd) which is OK for this exact purpose but suboptimal
-> on the bigger scale. closefrom(2) does only close(2) (obviously :-)
-> closefrom(2) siletly ignores errors from close(2) which in theory is not OK
-> for userspace.
->
-> So, don't add closefrom(2), add nextfd(2).
->
-> 	int nextfd(int fd)
+In IPv4, if an RTA_IIF attribute is specified within an RTM_GETROUTE
+message, then a route is searched as if a packet was received on the
+specified 'iif' interface.
 
-Can we add "pid" argument to be able to search next fd in other task?
-Together with sys_kcmp() this will be very useful for checkpoint/restore.
+However in IPv6, RTA_IIF is not interpreted in the same way:
+'inet6_rtm_getroute()' always calls 'ip6_route_output()', regardless the
+RTA_IIF attribute.
 
->
-> returns next opened file descriptor which is>= than fd or -1/ESRCH
-> if there aren't any descriptors>= than fd.
->
-> Thus closefrom(3) can be rewritten through it in userspace:
->
-> 	void closefrom(int fd)
-> 	{
-> 		while (1) {
-> 			fd = nextfd(fd);
-> 			if (fd == -1&&  errno == ESRCH)
-> 				break;
-> 			(void)close(fd);
-> 			fd++;
-> 		}
-> 	}
->
-> Maybe it will grow other smart uses.
->
-> nextfd(2) doesn't change kernel state and thus can't fail
-> which is why it should go in. Other means may fail or
-> may not be available or require linear time with only guessed
-> upper boundaries (1024, getrlimit(RLIM_NOFILE), sysconf(_SC_OPEN_MAX).
->
-> Signed-off-by: Alexey Dobriyan<adobriyan@gmail.com>
-> ---
->
->   arch/x86/syscalls/syscall_32.tbl |    1 +
->   arch/x86/syscalls/syscall_64.tbl |    1 +
->   fs/Makefile                      |    1 +
->   fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
->   include/linux/syscalls.h         |    1 +
->   5 files changed, 31 insertions(+)
->
-> --- a/arch/x86/syscalls/syscall_32.tbl
-> +++ b/arch/x86/syscalls/syscall_32.tbl
-> @@ -355,3 +355,4 @@
->   346	i386	setns			sys_setns
->   347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
->   348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
-> +349	i386	nextfd			sys_nextfd
-> --- a/arch/x86/syscalls/syscall_64.tbl
-> +++ b/arch/x86/syscalls/syscall_64.tbl
-> @@ -318,6 +318,7 @@
->   309	common	getcpu			sys_getcpu
->   310	64	process_vm_readv	sys_process_vm_readv
->   311	64	process_vm_writev	sys_process_vm_writev
-> +312	64	nextfd			sys_nextfd
->   #
->   # x32-specific system call numbers start at 512 to avoid cache impact
->   # for native 64-bit operation.
-> --- a/fs/Makefile
-> +++ b/fs/Makefile
-> @@ -12,6 +12,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
->   		seq_file.o xattr.o libfs.o fs-writeback.o \
->   		pnode.o drop_caches.o splice.o sync.o utimes.o \
->   		stack.o fs_struct.o statfs.o
-> +obj-y += nextfd.o
->
->   ifeq ($(CONFIG_BLOCK),y)
->   obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
-> --- /dev/null
-> +++ b/fs/nextfd.c
-> @@ -0,0 +1,27 @@
-> +#include<linux/errno.h>
-> +#include<linux/fdtable.h>
-> +#include<linux/rcupdate.h>
-> +#include<linux/sched.h>
-> +#include<linux/syscalls.h>
-> +
-> +/* Return first opened file descriptor which is>= than the argument. */
-> +SYSCALL_DEFINE1(nextfd, unsigned int, fd)
-> +{
-> +	struct files_struct *files = current->files;
-> +	struct fdtable *fdt;
-> +
-> +	rcu_read_lock();
-> +	fdt = files_fdtable(files);
-> +	while (fd<  fdt->max_fds) {
-> +		struct file *file;
-> +
-> +		file = rcu_dereference_check_fdtable(files, fdt->fd[fd]);
-> +		if (file) {
-> +			rcu_read_unlock();
-> +			return fd;
-> +		}
-> +		fd++;
-> +	}
-> +	rcu_read_unlock();
-> +	return -ESRCH;
-> +}
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -857,5 +857,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
->   				      const struct iovec __user *rvec,
->   				      unsigned long riovcnt,
->   				      unsigned long flags);
-> +asmlinkage long sys_nextfd(unsigned int fd);
->
->   #endif
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+As a result, in IPv6 there's no way to use RTM_GETROUTE in order to look
+for a route as if a packet was received on a specific interface.
 
+Fix 'inet6_rtm_getroute()' so that RTA_IIF is interpreted as "lookup a
+route as if a packet was received on the specified interface", similar
+to IPv4's 'inet_rtm_getroute()' interpretation.
+
+Reported-by: Ami Koren <amikoren@yahoo.com>
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+---
+
+Tested on v3.2.6. Patch applies to v3.3.
+
+Few points to review:
+
+1) An alternative: construction of an skb within 'inet6_rtm_getroute()'
+   and then calling 'ip6_route_input()' with the skb as an argument.
+   Thus, no need to split common code of 'ip6_route_input()'.
+   Less elegant IMO.
+ 
+2) Better name for the new common function 'ip6_route_input_lookup()'
+   Will happily accept any better suggestions.
+
+3) In IPv4 the 'ip_route_input()' call within 'inet_rtm_getroute()'is
+   protected by a 'local_bh_disable()' since dawn of history.
+   Not sure if similar protection needed within 'inet6_rtm_getroute()'.
+
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 22b7664..1178345 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -868,6 +868,16 @@ static struct rt6_info *ip6_pol_route_input(struct net *net, struct fib6_table *
+ 	return ip6_pol_route(net, table, fl6->flowi6_iif, fl6, flags);
+ }
+ 
++static struct dst_entry *ip6_route_input_lookup(struct net *net,
++						struct net_device *dev,
++						struct flowi6 *fl6, int flags)
++{
++	if (rt6_need_strict(&fl6->daddr) && dev->type != ARPHRD_PIMREG)
++		flags |= RT6_LOOKUP_F_IFACE;
++
++	return fib6_rule_lookup(net, fl6, flags, ip6_pol_route_input);
++}
++
+ void ip6_route_input(struct sk_buff *skb)
+ {
+ 	const struct ipv6hdr *iph = ipv6_hdr(skb);
+@@ -882,10 +892,7 @@ void ip6_route_input(struct sk_buff *skb)
+ 		.flowi6_proto = iph->nexthdr,
+ 	};
+ 
+-	if (rt6_need_strict(&iph->daddr) && skb->dev->type != ARPHRD_PIMREG)
+-		flags |= RT6_LOOKUP_F_IFACE;
+-
+-	skb_dst_set(skb, fib6_rule_lookup(net, &fl6, flags, ip6_pol_route_input));
++	skb_dst_set(skb, ip6_route_input_lookup(net, skb->dev, &fl6, flags));
+ }
+ 
+ static struct rt6_info *ip6_pol_route_output(struct net *net, struct fib6_table *table,
+@@ -2520,7 +2527,7 @@ static int inet6_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr* nlh, void
+ 	struct sk_buff *skb;
+ 	struct rtmsg *rtm;
+ 	struct flowi6 fl6;
+-	int err, iif = 0;
++	int err, iif = 0, oif = 0;
+ 
+ 	err = nlmsg_parse(nlh, sizeof(*rtm), tb, RTA_MAX, rtm_ipv6_policy);
+ 	if (err < 0)
+@@ -2547,15 +2554,29 @@ static int inet6_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr* nlh, void
+ 		iif = nla_get_u32(tb[RTA_IIF]);
+ 
+ 	if (tb[RTA_OIF])
+-		fl6.flowi6_oif = nla_get_u32(tb[RTA_OIF]);
++		oif = nla_get_u32(tb[RTA_OIF]);
+ 
+ 	if (iif) {
+ 		struct net_device *dev;
++		int flags = 0;
++
+ 		dev = __dev_get_by_index(net, iif);
+ 		if (!dev) {
+ 			err = -ENODEV;
+ 			goto errout;
+ 		}
++
++		fl6.flowi6_iif = iif;
++
++		if (!ipv6_addr_any(&fl6.saddr))
++			flags |= RT6_LOOKUP_F_HAS_SADDR;
++
++		rt = (struct rt6_info *)ip6_route_input_lookup(net, dev, &fl6,
++							       flags);
++	} else {
++		fl6.flowi6_oif = oif;
++
++		rt = (struct rt6_info *)ip6_route_output(net, NULL, &fl6);
+ 	}
+ 
+ 	skb = alloc_skb(NLMSG_GOODSIZE, GFP_KERNEL);
+@@ -2570,7 +2591,6 @@ static int inet6_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr* nlh, void
+ 	skb_reset_mac_header(skb);
+ 	skb_reserve(skb, MAX_HEADER + sizeof(struct ipv6hdr));
+ 
+-	rt = (struct rt6_info*) ip6_route_output(net, NULL, &fl6);
+ 	skb_dst_set(skb, &rt->dst);
+ 
+ 	err = rt6_fill_node(net, skb, rt, &fl6.daddr, &fl6.saddr, iif,
