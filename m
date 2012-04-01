@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab2DAG3D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 02:29:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49236 "EHLO mga09.intel.com"
+	id S1751843Ab2DAGcO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 02:32:14 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47519 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab2DAG3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 02:29:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="124127434"
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-From: Lin Ming <ming.m.lin@intel.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: Len Brown <lenb@kernel.org>, "Rafeal J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-In-Reply-To: <20120401055603.GA11505@localhost.amd.com>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
-	 <1333258053.2939.22.camel@minggr>
-	 <20120401055603.GA11505@localhost.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 01 Apr 2012 14:28:57 +0800
-Message-ID: <1333261737.2939.84.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1750843Ab2DAGcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 02:32:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] More power management updates for 3.4
+Date: Sun, 1 Apr 2012 08:36:30 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204010836.30707.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-01 at 13:56 +0800, Aaron Lu wrote:
-> Hi,
-> 
-> On Sun, Apr 01, 2012 at 01:27:33PM +0800, Lin Ming wrote:
-> > > -		if (device->power.states[state].flags.explicit_set) {
-> > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
-> > > +		if (state == ACPI_STATE_D3_COLD) {
-> > > +			explicit_set = (ps - 1)->flags.explicit_set;
-> > > +			object_name[3] -= 1;
-> > > +		}
-> > 
-> > I'm not sure whether this works or not.
-> > 
-> > From ACPI spec,
-> > 
-> > _PS3 "is used to put the specific device into its D3hot or D3 state"
-> > 
-> > D3 neither means D3hot nor D3cold. It's an old term before D3hot and
-> > D3cold were introduced.
-> I guess D3 has to mean something, right? :-)
-> 
-> Here is the problem, there is no _PR3 in AMD's implementation, just _PS3.
-> And since _S0W evaluates 4, I've to put this device into D3 cold state
-> with _PS3.
-> 
-> And the ACPI does have some words like:
-> 
-> ------
-> Platform/drivers must assume that the device will have power completely
-> removed when the device is place into “D3” via _PS3
-> ------
-> 
-> This is in section 7.2.11: _PR3.
-> 
-> > 
-> > Another problem:
-> > 
-> > With your patch, both D3hot and D3cold will evaluate _PS3, right?
-> > 
-> Yes.
-> 
-> > Will it have problem on AMD platform if you try to put ODD into D3hot
-> > state? _PS3 is evaluated, so it actually enters D3Cold state.
-> 
-> There is no D3 hot support for this device(from the firmware's
-> perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
-> _PS3).
+Hi Linus,
 
-But this is the generic code. We can't only consider some special
-device.
+I prepared this on Friday with the hope to send the pull request before the end
+of the merge window, but then I had to go to San Francisco (for the LFCS) and
+missed the opportunity.  That said, this includes fixes mostly (and -stable
+ones for that matter), so I think it's appropriate for the -rc1 time frame too. 
 
-Maybe we need some flag to tell which D3 state _PS3 is used for.
+Please pull additional power management updates for 3.4 since commit
+735e941caa9a35f933297af0ab1e0ad6447411c4:
 
-Lin Ming
+    Merge tag 'common-clk-api' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
 
-> 
-> 
-> Thanks for the review.
-> 
-> -Aaron
-> 
+with top-most commit c4772d192c70b61d52262b0db76f7abd8aeb51c6:
 
+    PM / QoS: add pm_qos_update_request_timeout() API
+
+from the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-for-3.4-part-2
+
+This mostly consists of fixes and changes requisite for those fixes, with the
+exception of the last commit, which is a new feature.  However, that new
+feature is reasonably isolated and very unlikely to cause any regressions to
+happen, although it is necessary for some future changes in the works now.
+Included are:
+
+* Patch series that hopefully fixes races between the freezer and request_firmware()
+  and request_firmware_nowait() for good, with two cleanups from Stephen Boyd on top.
+
+* Runtime PM fix from Alan Stern preventing tasks from getting stuck indefinitely
+  in the runtime PM wait queue.
+
+* Device PM QoS update from MyungJoo Ham introducing a new variant of
+  pm_qos_update_request() allowing the callers to specify a timeout.
+
+Thanks!
+
+
+ drivers/base/firmware_class.c |  208 +++++++++++++++++++++--------------------
+ drivers/base/power/runtime.c  |    3 +-
+ include/linux/kmod.h          |   27 +++++-
+ include/linux/pm_qos.h        |    4 +
+ kernel/kmod.c                 |  117 +++++++++++++++++------
+ kernel/power/hibernate.c      |   18 +---
+ kernel/power/process.c        |    8 ++
+ kernel/power/qos.c            |   50 ++++++++++
+ kernel/power/suspend.c        |    7 --
+ kernel/power/user.c           |   10 +--
+ 10 files changed, 284 insertions(+), 168 deletions(-)
+
+---------------
+
+Alan Stern (1):
+      PM / Runtime: don't forget to wake up waitqueue on failure
+
+MyungJoo Ham (1):
+      PM / QoS: add pm_qos_update_request_timeout() API
+
+Rafael J. Wysocki (6):
+      firmware_class: Rework usermodehelper check
+      firmware_class: Split _request_firmware() into three functions, v2
+      firmware_class: Do not warn that system is not ready from async loads
+      PM / Hibernate: Disable usermode helpers right before freezing tasks
+      PM / Sleep: Move disabling of usermode helpers to the freezer
+      PM / Sleep: Mitigate race between the freezer and request_firmware()
+
+Stephen Boyd (2):
+      firmware_class: Reorganize fw_create_instance()
+      firmware_class: Move request_firmware_nowait() to workqueues
 
