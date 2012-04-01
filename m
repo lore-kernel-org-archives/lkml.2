@@ -1,106 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab2DAQgi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 12:36:38 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62598 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab2DAQga (ORCPT
+	id S1752614Ab2DAQiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 12:38:09 -0400
+Received: from na3sys010aog114.obsmtp.com ([74.125.245.96]:33857 "HELO
+	na3sys010aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751547Ab2DAQiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 12:36:30 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-altix@sgi.com
-Subject: [PATCH 4/4] IRQ,IA64: normalize return value of chip->irq_set_affinity() method
-Date: Mon,  2 Apr 2012 00:33:52 +0800
-Message-Id: <1333298032-4047-4-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333298032-4047-1-git-send-email-jiang.liu@huawei.com>
-References: <1333298032-4047-1-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <4F772F2A.9020903@gmail.com>
-References: <4F772F2A.9020903@gmail.com>
+	Sun, 1 Apr 2012 12:38:07 -0400
+From: Roland Dreier <roland@kernel.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Add EWOODBLOCK
+Date: Sun,  1 Apr 2012 09:38:00 -0700
+Message-Id: <1333298280-4968-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Roland Dreier <roland@purestorage.com>
 
-Changeset 3b8249e7 has introduced standard return value IRQ_SET_MASK_OK(0) and
-IRQ_SET_MASK_OK_NOCOPY(1) for interrupt controller chip's set_irq_affinity()
-method. So use IRQ_SET_MASK_OK instead of 0 for consistency.
+We have found that in RT Linux applications around control of sawmills
+and other lumber handling equipment, there is no good way for the
+kernel to report jams or other blockages, and so we ended up adding a
+new error code.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+We were quite happy to carry this as an out-of-tree patch until we
+heard that a group doing functional MRI of politicians' brains had
+independently started using EWOODBLOCK.  To enable other innovative
+uses of this fundamental advancement in kernel infrastructure, we are
+proposing this patch for upstream merge.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 ---
- arch/ia64/kernel/iosapic.c   |    4 ++--
- arch/ia64/kernel/msi_ia64.c  |    4 ++--
- arch/ia64/sn/kernel/irq.c    |    2 +-
- arch/ia64/sn/kernel/msi_sn.c |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ include/asm-generic/errno.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
-index ef4b5d8..5f67fcb 100644
---- a/arch/ia64/kernel/iosapic.c
-+++ b/arch/ia64/kernel/iosapic.c
-@@ -372,9 +372,9 @@ iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		iosapic_write(iosapic, IOSAPIC_RTE_HIGH(rte_index), high32);
- 		iosapic_write(iosapic, IOSAPIC_RTE_LOW(rte_index), low32);
- 	}
--
- #endif
--	return 0;
+diff --git a/include/asm-generic/errno.h b/include/asm-generic/errno.h
+index a1331ce..9a337b8 100644
+--- a/include/asm-generic/errno.h
++++ b/include/asm-generic/errno.h
+@@ -110,4 +110,6 @@
+ 
+ #define EHWPOISON	133	/* Memory page has hardware error */
+ 
++#define EWOODBLOCK	134	/* logjam */
 +
-+	return IRQ_SET_MASK_OK;
- }
- 
- /*
-diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-index 05f5dc6..e1cc71d 100644
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -40,7 +40,7 @@ static int ia64_set_msi_irq_affinity(struct irq_data *idata,
- 
- 	write_msi_msg(irq, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- #endif /* CONFIG_SMP */
- 
-@@ -155,7 +155,7 @@ static int dmar_msi_set_affinity(struct irq_data *data,
- 
- 	dmar_msi_write(irq, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- #endif /* CONFIG_SMP */
- 
-diff --git a/arch/ia64/sn/kernel/irq.c b/arch/ia64/sn/kernel/irq.c
-index 62cf4dd..57cedda 100644
---- a/arch/ia64/sn/kernel/irq.c
-+++ b/arch/ia64/sn/kernel/irq.c
-@@ -216,7 +216,7 @@ static int sn_set_affinity_irq(struct irq_data *data,
- 				 sn_irq_lh[irq], list)
- 		(void)sn_retarget_vector(sn_irq_info, nasid, slice);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- 
- #ifdef CONFIG_SMP
-diff --git a/arch/ia64/sn/kernel/msi_sn.c b/arch/ia64/sn/kernel/msi_sn.c
-index a033fc9..4249c87 100644
---- a/arch/ia64/sn/kernel/msi_sn.c
-+++ b/arch/ia64/sn/kernel/msi_sn.c
-@@ -207,7 +207,7 @@ static int sn_set_msi_irq_affinity(struct irq_data *data,
- 
- 	write_msi_msg(irq, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- #endif /* CONFIG_SMP */
- 
+ #endif
 -- 
-1.7.5.4
+1.7.9.1
 
