@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359Ab2DAFSU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 01:18:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60127 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2DAFSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 01:18:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOzFzEjJSuTKy9-wk-qSzsmMHfB8h2ushRG6LQ0+92uDyB4sZg@mail.gmail.com>
-References: <CA+ekxPWHbOsa1BChpPvr4Bzj=8YixLDWA2TWtRyHSQ43QqVdqw@mail.gmail.com>
-	<1333221304.30812.5.camel@obelisk.thedillows.org>
-	<CA+ekxPUP+6DbYS6u-fvrKB0awiaL=WQBW7TF5u-XFSehWuM7Ag@mail.gmail.com>
-	<CAOzFzEjJSuTKy9-wk-qSzsmMHfB8h2ushRG6LQ0+92uDyB4sZg@mail.gmail.com>
-Date: Sat, 31 Mar 2012 23:18:17 -0600
-Message-ID: <CA+ekxPX90hgC80HdHvy4U31fdM8gd1sRdSoa1osPpwgwNH-jmw@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Linux hits 20 Gb/s stream to disk levels over Infiniband
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: Joseph Glanville <joseph.glanville@orionvm.com.au>
-Cc: David Dillow <dave@thedillows.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751431Ab2DAF1k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 01:27:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53552 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1749667Ab2DAF1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 01:27:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="127425131"
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+From: Lin Ming <ming.m.lin@intel.com>
+To: Aaron Lu <aaron.lu@amd.com>
+Cc: Len Brown <lenb@kernel.org>, "Rafeal J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+In-Reply-To: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 01 Apr 2012 13:27:33 +0800
+Message-ID: <1333258053.2939.22.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/31/12, Joseph Glanville <joseph.glanville@orionvm.com.au> wrote:
-> On 1 April 2012 05:23, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
->> On 3/31/12, David Dillow <dave@thedillows.org> wrote:
->>> On Sat, 2012-03-31 at 11:28 -0600, Jeffrey Merkey wrote:
->>>> Made it to 20 Gb/s network packet capture stream to disk performance
->>>> levels over Infiniband fabrics on Linux.
->>>
->>> I'm assuming that the interesting part is the 20 Gbits/s capture? And at
->>> minimum packet sizes, I'd hope. Linux has been able to stream more than
->>> 5 GBytes/s (40 Gbits/s) to disk for several years now over SRP.
->>
->> Network Capture while being routed and regenerated and piped through
->> apps at the same time from live network traffic.  Most of the other
->> vendors tout 10 Gb/s stream to disk but only Solera really can do it.
->> All of them except Niksun are Linux and I think they moved some of
->> their stuff to it.  So hitting 20 Gb/s is a big deal right now.  With
->> Intel's push in IB/Ethernet, this is where the next thing is going.
->> 3D Torus stuff is totally cool.  You can actually store data in the
->> network itself.  Talk about a challenge for Network security.
->
-> You can do Infiniband routing in software? This is indeed very interesting.
-> Pinged your contact page. :)
+On Sun, 2012-04-01 at 02:18 +0800, Aaron Lu wrote:
+> When entering D3 Cold from a higher device state, evaluate _PS3 first
+> and then make the proper power transition.
+> This is used to solve the ZPODD problem on AMD's platform, _PS3 on such
+> platforms will power off the ODD device and thus make the device enter
+> D3 cold state.
+> 
+> Signed-off-by: Aaron Lu <aaron.lu@amd.com>
+> Cc: Andiry Xu <andiry.xu@amd.com>
+> Cc: Alex He <alex.he@amd.com>
+> ---
+>  drivers/acpi/bus.c |   17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> index 3263b68..68e593f 100644
+> --- a/drivers/acpi/bus.c
+> +++ b/drivers/acpi/bus.c
+> @@ -227,6 +227,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+>  	int result = 0;
+>  	acpi_status status = AE_OK;
+>  	char object_name[5] = { '_', 'P', 'S', '0' + state, '\0' };
+> +	struct acpi_device_power_state *ps;
+> +	u8 explicit_set;
+>  
+>  	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+>  		return -EINVAL;
+> @@ -239,7 +241,8 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+>  		return 0;
+>  	}
+>  
+> -	if (!device->power.states[state].flags.valid) {
+> +	ps = &device->power.states[state];
+> +	if (!ps->flags.valid) {
+>  		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
+>  		return -ENODEV;
+>  	}
+> @@ -263,7 +266,7 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+>  			if (result)
+>  				goto end;
+>  		}
+> -		if (device->power.states[state].flags.explicit_set) {
+> +		if (ps->flags.explicit_set) {
+>  			status = acpi_evaluate_object(device->handle,
+>  						      object_name, NULL, NULL);
+>  			if (ACPI_FAILURE(status)) {
+> @@ -272,7 +275,15 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
+>  			}
+>  		}
+>  	} else {
+> -		if (device->power.states[state].flags.explicit_set) {
+> +		/* If state is D3 Cold, try to evaluate _PS3 first */
+> +		if (state == ACPI_STATE_D3_COLD) {
+> +			explicit_set = (ps - 1)->flags.explicit_set;
+> +			object_name[3] -= 1;
+> +		}
 
-Got your email.  Was catching up on SLES testing today, so sorry for
-the late response.     Yes, we can support IP routing and regeneration
-over IB fabrics.  If your question is can we also support native
-routing of some IB functionality, yes.   But RDMA stuff is better left
-direct without local store and forward in software.    I will email
-you off line and you can better describe what you want done on IB.
-The api and ib verbs are tedious and detailed to
-program, but the technology rocks.  We use IB primarily as an IP and
-storage fabric, but I have worked on several commercial products with
-IB, notably, this one last year which does routing -- a ton of work.
-www.kove.com
+I'm not sure whether this works or not.
 
-Jeff
+>From ACPI spec,
 
->
->>
->> The next class of malicious programs may be adapted to live within
->> fabrics and require new methods to detect and remove them.
->>
->>>
->>>>  Will be trying this on 3.0
->>>> after I work through the OFED issues (long list).  Post the results
->>>> from 3.0.  These are from 2.6.XX series kernels.
->>>
->>> You may find it easier to use a recent RedHat or SUSE with an upstream
->>> kernel. I know that RHEL6 userland is compatible with the upstream
->>> kernel's Infiniband, and OFED is moving its kernel work to a "backport
->>> upstream" model for OFED 3.2.
->>>
->>
->>
->> I've got RH6 done, but OFED was down on the list and SLES was ahead
->> of.it.  No rest for the weary.
->>
->> Jeff
->>
->>>> Linux f_cking ROCKS!!!
->>>
->>> Indeed it does.
->>>
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> Joseph.
->
-> --
-> Founder | Director | VP Research
-> Orion Virtualisation Solutions | www.orionvm.com.au | Phone: 1300 56
-> 99 52 | Mobile: 0428 754 846
->
+_PS3 "is used to put the specific device into its D3hot or D3 state"
+
+D3 neither means D3hot nor D3cold. It's an old term before D3hot and
+D3cold were introduced.
+
+Another problem:
+
+With your patch, both D3hot and D3cold will evaluate _PS3, right?
+
+Will it have problem on AMD platform if you try to put ODD into D3hot
+state? _PS3 is evaluated, so it actually enters D3Cold state.
+
+Thanks,
+Lin Ming
+
+> +		else {
+> +			explicit_set = ps->flags.explicit_set;
+> +		}
+> +		if (explicit_set) {
+>  			status = acpi_evaluate_object(device->handle,
+>  						      object_name, NULL, NULL);
+>  			if (ACPI_FAILURE(status)) {
+
+
