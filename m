@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab2DASgz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 14:36:55 -0400
-Received: from segfault.kiev.ua ([193.193.193.4]:38155 "EHLO segfault.kiev.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601Ab2DASgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 14:36:53 -0400
-X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Apr 2012 14:36:52 EDT
-Date: Sun, 1 Apr 2012 21:28:26 +0300
-From: Valentin Nechayev <netch@netch.kiev.ua>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] nextfd(2)
-Message-ID: <20120401182825.GJ21084@netch.kiev.ua>
-References: <20120401125741.GA7484@p183.telecom.by>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120401125741.GA7484@p183.telecom.by>
-X-42: On
+	id S1752625Ab2DAStU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 14:49:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38695 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab2DAStT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 14:49:19 -0400
+From: Tracey Dent <tdent48227@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: shea@shealevy.com, torvalds@linux-foundation.org, mchehab@infradead.org,
+        hans.verkuil@cisco.com, linux-media@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [V2 PATCH 1/1] drivers/media/radio: Fix build error
+Date: Sun,  1 Apr 2012 14:49:11 -0400
+Message-Id: <1333306151-20954-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Sun, Apr 01, 2012 at 15:57:42, adobriyan wrote about "[PATCH] nextfd(2)": 
+radio-maxiradio depends on SND_FM801_TEA575X_BOOL to build or will
+result in an build error such as:
 
-> So, don't add closefrom(2), add nextfd(2).
-> 
-> 	int nextfd(int fd)
+Kernel: arch/x86/boot/bzImage is ready  (#1)
+ERROR: "snd_tea575x_init" [drivers/media/radio/radio-maxiradio.ko] undefined!
+ERROR: "snd_tea575x_exit" [drivers/media/radio/radio-maxiradio.ko] undefined!
+WARNING: modpost: Found 6 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
-Is it really needed here to create syscall? One shall update all arch
-lists for it. Instead, adding a new option for fcntl() (named e.g.
-F_NEXTFD) solves for all platforms simultaneously.
+Select CONFIG_SND_TEA575X to fixes problem and enable
+the driver to be built as desired.
 
+v2:
+instead of selecting CONFIG_SND_FM801_TEA575X_BOOL, select
+CONFIG_SND_TEA575X, which in turns selects CONFIG_SND_FM801_TEA575X_BOOL
+and any other dependencies.
 
--netch-
+Reported-by: Shea Levy <shea@shealevy.com>
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/media/radio/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+index 25025e0..a49a4ea 100644
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -43,8 +43,8 @@ config USB_DSBR
+ 
+ config RADIO_MAXIRADIO
+ 	tristate "Guillemot MAXI Radio FM 2000 radio"
+-	depends on VIDEO_V4L2 && PCI && SND
+-	select SND_FM801_TEA575X_BOOL
++	depends on VIDEO_V4L2 && PCI && SND 
++	select SND_TEA575X
+ 	---help---
+ 	  Choose Y here if you have this radio card.  This card may also be
+ 	  found as Gemtek PCI FM.
+-- 
+1.7.9.2.358.g22243
+
