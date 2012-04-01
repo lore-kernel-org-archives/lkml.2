@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab2DAB71 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 21:59:27 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37688 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084Ab2DAB7Y (ORCPT
+	id S1754070Ab2DACAo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 22:00:44 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:34698 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab2DACAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 21:59:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331540451-2380-1-git-send-email-hamo.by@gmail.com>
-References: <1331540451-2380-1-git-send-email-hamo.by@gmail.com>
-Date: Sun, 1 Apr 2012 09:59:23 +0800
-Message-ID: <CANE52KjOF2G_WQmms8+Xu9m2RXmb0=Bc5E94UUFvMc2xhhJ9mA@mail.gmail.com>
-Subject: Re: [PATCH] scripts: refactor remove structure forward declarations
-From: Jike Song <albcamus@gmail.com>
-To: Yang Bai <hamo.by@gmail.com>
-Cc: mmarek@suse.cz, rostedt@goodmis.org, sboyd@codeaurora.org,
-        adobriyan@gmail.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 31 Mar 2012 22:00:42 -0400
+Date: Sun, 01 Apr 2012 10:00:26 +0800
+From: Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 2/2] cgroup: make css->refcnt clearing on cgroup removal
+ optional
+In-reply-to: <20120330223606.GK28934@google.com>
+X-Originating-IP: [10.166.88.150]
+To: Tejun Heo <tj@kernel.org>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
+        ctalbott@google.com, Vivek Goyal <vgoyal@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Message-id: <4F77B6BA.4070207@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
+ Thunderbird/11.0
+X-CFilter-Loop: Reflected
+References: <20120330223423.GJ28934@google.com>
+ <20120330223606.GK28934@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 4:20 PM, Yang Bai <hamo.by@gmail.com> wrote:
-> Since now it has some problems when generate TAGS,
-> refactor this code. Now it will not show the error
-> message and will remove declarations using emacs etags.
+Tejun Heo wrote:
 
-Seems broke cscope build:
-
-$ make cscope
-  GEN     cscope
-sed: can't read cscope: No such file or directory
-make: *** [cscope] Error 2
-
-with V=1:
-
-  /bin/sh /Sources/linux-2.6/scripts/tags.sh cscope
-+ ignore='( -name SCCS -o -name BitKeeper -o -name .svn -o
--name CVS  -o -name .pc       -o -name .hg  -o           -name .git )
-                                           -prune -o'
-+ '[' '' = '' ']'
-+ tree=
-+ '[' '' = '' ']'
-+ ALLSOURCE_ARCHS=x86
-+ '[' x86_64 = um ']'
-+ remove_structs=
-+ case "$1" in
-+ docscope
-+ echo -k
-+ echo -q
-+ all_sources
-+ find_arch_include_sources x86 '*.[chS]'
-++ find arch/x86/ -name include -type d
-+ include=arch/x86/include
-+ '[' -n arch/x86/include ']'
-+ archincludedir=' arch/x86/include'
-+ find arch/x86/include '(' -name SCCS -o -name BitKeeper -o -name
-.svn -o -name CVS -o -name .pc -o -name .hg -o -name .git ')' -prune
--o -name '*.[chS]' -print
-+ '[' '!' -z '' ']'
-+ find_include_sources '*.[chS]'
-+ find include '(' -name SCCS -o -name BitKeeper -o -name .svn -o
--name CVS -o -name .pc -o -name .hg -o -name .git ')' -prune -o -name
-config -prune -o -name '*.[chS]' -print
-+ for arch in '$ALLSOURCE_ARCHS'
-+ find_sources x86 '*.[chS]'
-+ find_arch_sources x86 '*.[chS]'
-+ for i in '$archincludedir'
-+ prune=' -wholename arch/x86/include -prune -o'
-+ find arch/x86 '(' -name SCCS -o -name BitKeeper -o -name .svn -o
--name CVS -o -name .pc -o -name .hg -o -name .git ')' -prune -o
--wholename arch/x86/include -prune -o -name '*.[chS]' -print
-+ find_other_sources '*.[chS]'
-+ find COPYING CREDITS Documentation Kbuild Kconfig MAINTAINERS
-Makefile README REPORTING-BUGS arch block crypto cscope.files
-cscope.out cscope.out.in cscope.out.po drivers firmware fs include
-init ipc kernel lib mm net samples scripts security sound tags tools
-usr virt '(' -name SCCS -o -name BitKeeper -o -name .svn -o -name CVS
--o -name .pc -o -name .hg -o -name .git ')' -prune -o '(' -name
-include -o -name arch -o -name '.tmp_*' ')' -prune -o -name '*.[chS]'
--print
-+ cscope -b -f cscope.out
-+ '[' -n ']'
-+ LANG=C
-+ sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct
-\1;.*\$\/;"\tx$/d' cscope
-sed: can't read cscope: No such file or directory
-make: *** [cscope] Error 2
+> Currently, cgroup removal tries to drain all css references.  If there
+> are active css references, the removal logic waits and retries
+> ->pre_detroy() until either all refs drop to zero or removal is
+> cancelled.
+> 
 
 
+I don't like this either.
+
+> This semantics is unusual and adds non-trivial complexity to cgroup
+> core and IMHO is fundamentally misguided in that it couples internal
+> implementation details (references to internal data structure) with
+> externally visible operation (rmdir).  To userland, this is a behavior
+> peculiarity which is unnecessary and difficult to expect (css refs is
+> otherwise invisible from userland), and, to policy implementations,
+> this is an unnecessary restriction (e.g. blkcg wants to hold css refs
+> for caching purposes but can't as that becomes visible as rmdir hang).
+> 
+> Unfortunately, memcg currently depends on ->pre_destroy() retrials and
+> cgroup removal vetoing and can't be immmediately switched to the new
+> behavior.  This patch introduces the new behavior of not waiting for
+> css refs to drain and maintains the old behavior for subsystems which
+> have __DEPRECATED_clear_css_refs set.
+> 
+> Once, memcg is updated, we can drop the code paths for the old
+> behavior as proposed in the following patch.  Note that the following
+> patch is incorrect in that dput work item is in cgroup and may lose
+> some of dputs when multiples css's are released back-to-back, and
+> __css_put() triggers check_for_release() when refcnt reaches 0 instead
+> of 1; however, it shows what part can be removed.
+> 
+>   http://thread.gmane.org/gmane.linux.kernel.containers/22559/focus=75251
+> 
+> Note that, in not-too-distant future, cgroup core will start emitting
+> warning messages for subsys which require the old behavior, so please
+> get moving.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
 
--- 
-Thanks,
-Jike
+Both patches look good.
+
+Acked-by: Li Zefan <lizefan@huawei.com>
+
+and I'd like to see code shrink with memcg updates ASAP.
+
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
