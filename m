@@ -1,132 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2DAQEq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 12:04:46 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:32815 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab2DAQEl (ORCPT
+	id S1752989Ab2DAQFL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 12:05:11 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:47289 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753204Ab2DAQFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 12:04:41 -0400
-Subject: [RFC PATCH -tip 14/16] x86: Indicate trapped address and probed
- address
-To: linux-kernel@vger.kernel.org
-From: Masami Hiramatsu <masami.hiramatsu@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 02 Apr 2012 01:04:37 +0900
-Message-ID: <20120401160437.4502.78991.stgit@shimauta>
-In-Reply-To: <20120401160229.4502.2541.stgit@shimauta>
-References: <20120401160229.4502.2541.stgit@shimauta>
-User-Agent: StGit/0.15
+	Sun, 1 Apr 2012 12:05:04 -0400
+X-Authenticated: #787645
+X-Provags-ID: V01U2FsdGVkX19A8rU4xuBAsmkDg3InUjZhGmH6cyaEOIYFlTif+V
+	ARMUlQOsCuXBH6
+Message-ID: <4F787C9C.8050206@gmx.net>
+Date: Sun, 01 Apr 2012 18:04:44 +0200
+From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] PNP: Allow PNP resources to be disabled (interface)
+References: <4F68D14B.60409@gmx.net> <CAErSpo7Xt2Pz5EqDO_NJGyRkPMrY21vzWJBK1ORwu=j+9t55Gg@mail.gmail.com>
+In-Reply-To: <CAErSpo7Xt2Pz5EqDO_NJGyRkPMrY21vzWJBK1ORwu=j+9t55Gg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show trapped address as a comment style on disassembled
-code when kernel panicks.
+On 27/03/12 22:57, Bjorn Helgaas wrote:
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu@gmail.com>
----
- arch/x86/kernel/dumpstack.c |   62 +++++++++++++++++++++++++++++++++----------
- 1 files changed, 48 insertions(+), 14 deletions(-)
+[...]
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 2966142..098e61a 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -322,22 +322,63 @@ static unsigned long find_instruction_boundary(unsigned long saddr,
- 	return addr;
- }
- 
-+static int disasm_printk(unsigned long addr, unsigned long *next,
-+			 unsigned long ip)
-+{
-+	char buf[DISASM_STR_LEN];
-+	u8 kbuf[MAX_INSN_SIZE];
-+	struct insn insn;
-+	unsigned long fixed;
-+	int i, ret;
-+	u8 *v = (u8 *)addr;
-+
-+	/* recover if the instruction is probed */
-+	fixed = recover_probed_instruction(kbuf, addr);
-+	kernel_insn_init(&insn, (void *)fixed);
-+	insn_get_length(&insn);
-+	insn.kaddr = (void *)addr;
-+
-+	printk(KERN_CONT "%p: ", v);
-+	for (i = 0; i < MAX_INSN_SIZE / 2 && i < insn.length; i++)
-+		printk(KERN_CONT "%02x ", ((u8 *)v)[i]);
-+	if (i != MAX_INSN_SIZE / 2)
-+		printk(KERN_CONT "%*s", 3 * (MAX_INSN_SIZE / 2 - i), " ");
-+
-+	/* print assembly code */
-+	ret = disassemble(buf, DISASM_STR_LEN, &insn);
-+	if (ret < 0)
-+		return ret;
-+	printk(KERN_CONT "%s%s%s\n", (fixed != addr) ? "(probed)" : "", buf,
-+		(addr == ip) ? "\t<-- trapping instruction" : "");
-+
-+	if (i < insn.length) {
-+		printk(KERN_CONT "%p: ", v + i);
-+		for (; i < insn.length - 1; i++)
-+			printk(KERN_CONT "%02x ", ((u8 *)v)[i]);
-+		printk(KERN_CONT "%02x\n", ((u8 *)v)[i]);
-+	}
-+
-+	if (next)
-+		*next = addr + insn.length;
-+
-+	return 0;
-+}
-+
- /* Disassemble between (ip - prologue) to (ip - prologue + length) */
- static int disassemble_code_dump(unsigned long ip, unsigned long prologue,
- 				 unsigned long length)
- {
--	kprobe_opcode_t buf[MAX_INSN_SIZE];
--	unsigned long offs, addr, fixed;
--	unsigned long saddr = ip - prologue;
-+	unsigned long offs;
-+	unsigned long addr = ip - prologue;
- 	unsigned long eaddr = ip - prologue + length;
- 	char buf[KSYM_NAME_LEN] = {0};
- 	char *modname;
- 
- 	/* given address must be in text area */
--	if (!kernel_text_address(saddr) || !kernel_text_address(eaddr))
-+	if (!kernel_text_address(addr) || !kernel_text_address(eaddr))
- 		return -EINVAL;
- 
--	addr = find_instruction_boundary(saddr, &offs, &modname, buf);
-+	addr = find_instruction_boundary(addr, &offs, &modname, buf);
- 	if (!addr)
- 		return -EINVAL;
- 
-@@ -348,15 +389,8 @@ static int disassemble_code_dump(unsigned long ip, unsigned long prologue,
- 		printk(KERN_CONT "\n<%s+0x%lx>:\n", buf, addr - (ip - offs));
- 
- 	do {
--		if (addr == ip)
--			printk(KERN_CONT ">>");
--		fixed = recover_probed_instruction(buf, addr);
--		kernel_insn_init(&insn, (void *)fixed);
--		insn_get_length(&insn);
--		insn.kaddr = addr;
--		snprint_assembly(buf, sizeof(buf), &insn, DISASM_PR_ALL);
--		printk(KERN_CONT "%s", buf);
--		addr += insn.length;
-+		if (disasm_printk(addr, &addr, ip) < 0)
-+			break;
- 	} while (addr < eaddr);
- 
- 	return 0;
+>
+> If I understand this correctly, even with this patches, you still have
+> to manually muck around with "/sys/bus/pnp/devices/*/resources" to get
+> these ThinkPads to work?  If that's the case, there must be more PNP
+> work we could do to make them Just Work.  And that's fine; I'm just
+> trying to understand the current situation better.  Is there a
+> bugzilla or other URL with more details?
+>
 
+Yes, this is true: even with this patch applied it is necessary to 
+explicitly set the IRQ link to disabled.  Let me briefly explain it, 
+using an excerpt from the 600E's DSDT (printer port):
+
+    Name (PLPT, ResourceTemplate ()
+    {
+        StartDependentFnNoPri ()
+        {
+            IO (Decode16, 0x03BC, 0x03BC, 0x01, 0x04)
+            IRQNoFlags () {7}
+        }
+        /* Some entries deleted */
+        StartDependentFnNoPri ()
+        {
+            IO (Decode16, 0x03BC, 0x03BC, 0x01, 0x04)
+            IRQNoFlags () {}
+        }
+        EndDependentFn ()
+    })
+
+As you can see, the IRQ line for the second option is empty/disabled. 
+Also, both options share the same priority, there is no priority of 
+the first option over the second option.
+
+In order to be able to use the IRQ 7 for some other device, I need 
+to be able to select the second option, which can be done with the 
+patch series applied.
+
+As for a bugzilla entry: I did not find any.  Frankly, I don't 
+think there is one, for until recently, disabled resources were 
+not handled at all (at least in the PNPACPI case).  Though, it is 
+(remotely?) possible the handling of optional IRQ lines 
+(IORESOURCE_IRQ_OPTIONAL) is obsolete these days (because the 
+quirks that introduce that flag seem to fix a symptom that could 
+have been fixed by commit 18fd470a48396c8795ba7256c5973e92ffa25cb3).
+
+
+--- Witold
