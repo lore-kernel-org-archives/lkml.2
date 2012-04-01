@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2DAU47 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 16:56:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24764 "EHLO mx1.redhat.com"
+	id S1753510Ab2DAVCp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 17:02:45 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34951 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab2DAU45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 16:56:57 -0400
-Date: Sun, 1 Apr 2012 16:56:47 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        Suresh Jayaraman <sjayaraman@suse.com>,
-        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
-Message-ID: <20120401205647.GD6116@redhat.com>
-References: <20120328121308.568545879@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328121308.568545879@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752947Ab2DAVCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 17:02:44 -0400
+Message-ID: <1333314138.30734.17.camel@pasglop>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Date: Mon, 02 Apr 2012 07:02:18 +1000
+In-Reply-To: <4F784C4D.3000409@redhat.com>
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>
+	 <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
+	 <4F6EEEC1.4030608@redhat.com>
+	 <20120326213809.GA29788@bloggs.ozlabs.ibm.com>
+	 <4F7191E8.7020804@redhat.com>
+	 <20120330120107.GA28503@bloggs.ozlabs.ibm.com>
+	 <4F784C4D.3000409@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 08:13:08PM +0800, Fengguang Wu wrote:
+On Sun, 2012-04-01 at 15:38 +0300, Avi Kivity wrote:
+> On 03/30/2012 03:01 PM, Paul Mackerras wrote:
+> > I just noticed that the branch you asked Linus to pull includes none
+> > of the patches that Alex sent you in the last batch, in the email with
+> > subject "[PULL 00/56] ppc patch queue 2012-03-15" sent on March 15,
+> > where he asked you to pull git://github.com/agraf/linux-2.6.git
+> > for-upstream.
+> >
+> > What happened?  Did they get lost in the re-signing, or is there some
+> > reason you thought they shouldn't go in?
 > 
-> Here is one possible solution to "buffered write IO controller", based on Linux
-> v3.3
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git  buffered-write-io-controller
-> 
-> Features:
-> - support blkio.weight
-> - support blkio.throttle.buffered_write_bps
+> That pull request was send three days before the merge window opened;
+> patches are supposed to cook for a while in -next before being merged,
+> especially large trees like that one.
 
-Introducing separate knob for buffered write makes sense. It is different
-throttling done at block layer.
+These are all powerpc specific patches that have been cooking in Alex
+tree for a while and elsewhere before that. They almost only affect
+arch/powerpc/kvm, and as such don't really need a lot of integration
+testing in -next. A bit for sure but not necessarily monthes.
 
-> 
-> Possibilities:
-> - it's trivial to support per-bdi .weight or .buffered_write_bps
-> 
-> Pros:
-> 1) simple
-> 2) virtually no space/time overheads
-> 3) independent of the block layer and IO schedulers, hence
-> 3.1) supports all filesystems/storages, eg. NFS/pNFS, CIFS, sshfs, ...
-> 3.2) supports all IO schedulers. One may use noop for SSDs, inside virtual machines, over iSCSI, etc.
-> 
-> Cons:
-> 1) don't try to smooth bursty IO submission in the flusher thread (*)
+The current process is such that it takes absolutely forever for our
+patches to get in, which is a major PITA for something in such state of
+active development.
 
-Yes, this is a core limitation of throttling while writing to cache. I think
-once we had agreed that IO scheduler in general should be able to handle
-burstiness caused by WRITES. CFQ does it well. deadline not so much.
+Why don't we have Alex tree go straight to -next like I do with Kumar
+for example ? That way I don't need to have his branch sit in my tree
+for weeks before I push it out to Linus.
 
-> 2) don't support IOPS based throttling
-
-If need be then you can still support it. Isn't it? Just that it will
-require more code in buffered write controller to keep track of number
-of operations per second and throttle task if IOPS limit is crossed. So
-it does not sound like a limitation of design but just limitation of
-current set of patches?
-
-> 3) introduces semantic differences to blkio.weight, which will be
->    - working by "bandwidth" for buffered writes
->    - working by "device time" for direct IO
-
-I think blkio.weight can be thought of a system wide weight of a cgroup
-and more than one entity/subsystem should be able to make use of it and
-differentiate between IO in its own way. CFQ can decide to do proportional
-time division, and buffered write controller should be able to use the
-same weight and do write bandwidth differentiation. I think it is better
-than introducing another buffered write controller tunable for weight.
-
-Personally, I am not too worried about this point. We can document and
-explain it well.
+Cheers,
+Ben.
 
 
-> 
-> (*) Maybe not a big concern, since the bursties are limited to 500ms: if one dd
-> is throttled to 50% disk bandwidth, the flusher thread will be waking up on
-> every 1 second, keep the disk busy for 500ms and then go idle for 500ms; if
-> throttled to 10% disk bandwidth, the flusher thread will wake up on every 5s,
-> keep busy for 500ms and stay idle for 4.5s.
-> 
-> The test results included in the last patch look pretty good in despite of the
-> simple implementation.
-
-Can you give more details about test results. Did you test throttling or you
-tested write speed differentation based on weight too.
-
-Thanks
-Vivek
