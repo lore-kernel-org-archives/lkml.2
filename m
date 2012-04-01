@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab2DAJ0Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 05:26:25 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:60731 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab2DAJ0X (ORCPT
+	id S1751443Ab2DAJo2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 05:44:28 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59320 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab2DAJo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 05:26:23 -0400
-Date: Sun, 1 Apr 2012 11:26:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+	Sun, 1 Apr 2012 05:44:27 -0400
+Date: Sun, 1 Apr 2012 11:44:25 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: update EDAC information
-Message-ID: <20120401092616.GB15717@aftab>
-References: <20120331100214.GA7256@aftab>
- <mailman.285955.1333149246.6384.bluesmoke-devel@lists.sourceforge.net>
- <4F7642A9.2070801@tilera.com>
- <201203311350.q2VDoO23007327@farm-0012.internal.tilera.com>
-MIME-Version: 1.0
+Subject: Re: [PATCH] Extend core dump note section to contain file names of mapped files
+Message-ID: <20120401094425.GQ17822@one.firstfloor.org>
+References: <CAK1hOcPxVWDCTRLzH6X+88WXuw_Ywzbt+iAJ3QMEfxG22duk9g@mail.gmail.com> <20120401031329.GP17822@one.firstfloor.org> <4F77C972.2000200@zytor.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201203311350.q2VDoO23007327@farm-0012.internal.tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F77C972.2000200@zytor.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 09:46:03AM -0400, Chris Metcalf wrote:
-> The bluesmoke mailing list no longer works, so use
-> linux-edac@vger.kernel.org.  And, use a less restrictive pattern so all
-> drivers/edac changes go to linux-edac as well.
+On Sat, Mar 31, 2012 at 08:20:18PM -0700, H. Peter Anvin wrote:
+> On 03/31/2012 08:13 PM, Andi Kleen wrote:
+> >> I propose to save this information in core dump, as a new note
+> >> in note segment.
+> > 
+> > Seems like a good idea but rather than write complicated code i would just reuse
+> > the /proc/*/maps code and dump it in that format?
+> > 
 > 
-> Borislav suggested I just push this through the tile tree since there
-> is currently no core edac maintainer (emails to Doug Thompson bounce).
-> 
-> Reviewed-by: Borislav Petkov <bp@amd64.org>
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Does /proc/*/maps handle oddball characters in filenames?
 
-Please don't add Reviewed-by tags to a patch which actually hasn't been
-reviewed yet, no matter how trivial it is.
+It doesn't handle new lines well, but then if someone does that they 
+break all programs that parse maps for other reasons (and likely
+a lot of other things too) anyways.
 
-Other than that:
+Other than that it should be ok: the file name is just the last component
+on the line.
 
-Acked-by: Borislav Petkov <bp@amd64.org>
-
-Thanks for doing that.
-
+-Andi
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+ak@linux.intel.com -- Speaking for myself only.
