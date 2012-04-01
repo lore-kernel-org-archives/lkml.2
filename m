@@ -1,386 +1,698 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2DABmM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 21:42:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31796 "EHLO mga14.intel.com"
+	id S1754044Ab2DABmQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 21:42:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:43207 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab2DABlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 21:41:46 -0400
+	id S1753117Ab2DABlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Mar 2012 21:41:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="125662202"
+   d="scan'208";a="125662214"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
         eranian@google.com
 Cc: linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Subject: [PATCH 4/6] perf tool: Parse general events from sysfs
-Date: Sun,  1 Apr 2012 09:41:33 +0800
-Message-Id: <1333244495-1020-5-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH 6/6] perf: Add Sandy Bridge-EP uncore support
+Date: Sun,  1 Apr 2012 09:41:35 +0800
+Message-Id: <1333244495-1020-7-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1333244495-1020-1-git-send-email-zheng.z.yan@intel.com>
 References: <1333244495-1020-1-git-send-email-zheng.z.yan@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-PMU can export general events to sysfs, for example:
-
-/sys/bus/event_source/devices/uncore_nhm/events
-└── CLOCKTICKS
-
-Then we can specify the event as "<pmu>/<event>/", for example:
-
-perf stat -a -C 0 -e "uncore_nhm/CLOCKTICKS/" sleep 1
+Add Intel Nehalem and Sandy Bridge uncore pmu support. The uncore
+subsystem in Sandy Bridge-EP consists of 8 components (Ubox,
+Cacheing Agent, Home Agent, Memory controller, Power Control,
+QPI Link Layer, R2PCIe, R3QPI). A few general events for Memory
+controller and R2PCIe are exported to the sysfs.
 
 Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 ---
- tools/perf/util/parse-events.c |   24 ++++++--
- tools/perf/util/parse-events.h |    6 +-
- tools/perf/util/parse-events.y |    6 +-
- tools/perf/util/pmu.c          |  140 +++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/pmu.h          |   11 +++-
- 5 files changed, 172 insertions(+), 15 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  511 +++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   86 +++++
+ include/linux/pci_ids.h                       |   11 +
+ 3 files changed, 608 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5b3a0ef..fdac544 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -24,7 +24,7 @@ struct event_symbol {
- };
- 
- int parse_events_parse(struct list_head *list, struct list_head *list_tmp,
--		       int *idx);
-+			int *idx, char **newcfg);
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -648,8 +648,8 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
- 			 (char *) __event_name(type, config));
- }
- 
--int parse_events_add_pmu(struct list_head *list, int *idx,
--			 char *name, struct list_head *head_config)
-+int parse_events_add_pmu(struct list_head *list, char **newcfg,
-+			int *idx, char *name, struct list_head *head_config)
- {
- 	struct perf_event_attr attr;
- 	struct perf_pmu *pmu;
-@@ -666,9 +666,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	 */
- 	config_attr(&attr, head_config, 0);
- 
--	if (perf_pmu__config(pmu, &attr, head_config))
-+	if (perf_pmu__config(pmu, head_config, &attr, newcfg))
- 		return -EINVAL;
- 
-+	if (newcfg && *newcfg)
-+		return 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 42fa770..f394c47 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -33,6 +33,509 @@ DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
+ DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
+ DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
+ DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
++DEFINE_UNCORE_FORMAT_ATTR(thresh8, thresh, "config:24-31");
++DEFINE_UNCORE_FORMAT_ATTR(thresh5, thresh, "config:24-28");
++DEFINE_UNCORE_FORMAT_ATTR(occ_sel, occ_sel, "config:14-15");
++DEFINE_UNCORE_FORMAT_ATTR(occ_invert, occ_invert, "config:30");
++DEFINE_UNCORE_FORMAT_ATTR(occ_edge, occ_edge, "config:14-51");
 +
- 	return add_event(list, idx, &attr, (char *) "pmu");
- }
- 
-@@ -753,14 +756,25 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
- 	LIST_HEAD(list_tmp);
- 	YY_BUFFER_STATE buffer;
- 	int ret, idx = evlist->nr_entries;
-+	char *newcfg = NULL;
- 
- 	buffer = parse_events__scan_string(str);
- 
--	ret = parse_events_parse(&list, &list_tmp, &idx);
-+	ret = parse_events_parse(&list, &list_tmp, &idx, &newcfg);
- 
- 	parse_events__flush_buffer(buffer);
- 	parse_events__delete_buffer(buffer);
- 
-+	if (!ret && newcfg) {
-+		buffer = parse_events__scan_string(newcfg);
-+
-+		ret = parse_events_parse(&list, &list_tmp, &idx, NULL);
-+
-+		parse_events__flush_buffer(buffer);
-+		parse_events__delete_buffer(buffer);
-+		free(newcfg);
-+	}
-+
- 	if (!ret) {
- 		int entries = idx - evlist->nr_entries;
- 		perf_evlist__splice_list_tail(evlist, &list, entries);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index ca069f8..24924fd 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -74,13 +74,13 @@ int parse_events_add_cache(struct list_head *list, int *idx,
- 			   char *type, char *op_result1, char *op_result2);
- int parse_events_add_breakpoint(struct list_head *list, int *idx,
- 				void *ptr, char *type);
--int parse_events_add_pmu(struct list_head *list, int *idx,
--			 char *pmu , struct list_head *head_config);
-+int parse_events_add_pmu(struct list_head *list, char **newcfg,
-+			 int *idx, char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(struct list_head *list_all,
- 			struct list_head *list_event,
--			int *idx, char const *msg);
-+			int *idx, char **newcfg, char const *msg);
- 
- void print_events(const char *event_glob);
- void print_events_type(u8 type);
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index d9637da..5f569f2 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -3,6 +3,7 @@
- %parse-param {struct list_head *list_all}
- %parse-param {struct list_head *list_event}
- %parse-param {int *idx}
-+%parse-param {char **newcfg}
- 
- %{
- 
-@@ -82,7 +83,7 @@ event_def: event_pmu |
- event_pmu:
- PE_NAME '/' event_config '/'
- {
--	ABORT_ON(parse_events_add_pmu(list_event, idx, $1, $3));
-+	ABORT_ON(parse_events_add_pmu(list_event, newcfg, idx, $1, $3));
- 	parse_events__free_terms($3);
- }
- 
-@@ -194,7 +195,7 @@ PE_NAME
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
-+	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_STR,
- 		 $1, NULL, 1));
- 	$$ = term;
- }
-@@ -224,6 +225,7 @@ sep_slash_dc: '/' | ':' |
- void parse_events_error(struct list_head *list_all __used,
- 			struct list_head *list_event __used,
- 			int *idx __used,
-+			char **newcfg __used,
- 			char const *msg __used)
- {
- }
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index cb08a11..71244b6 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -80,6 +80,89 @@ static int pmu_format(char *name, struct list_head *format)
- 	return 0;
- }
- 
-+static int perf_pmu__new_event(struct list_head *list, char *name, FILE *file)
++/* Sandy Bridge-EP uncore support */
++static void snbep_uncore_pci_disable_all(struct intel_uncore_box *box)
 +{
-+	struct perf_pmu__event *event;
-+	char buf[256];
-+	int ret;
++	struct pci_dev *pdev = box->pci_dev;
++	int box_ctl = uncore_pci_box_ctl(box);
++	u32 config;
 +
-+	ret = fread(buf, 1, sizeof(buf), file);
-+	if (ret == 0)
-+		return -EINVAL;
-+
-+	event = zalloc(sizeof(*event));
-+	if (!event)
-+		return -ENOMEM;
-+
-+	event->name = strdup(name);
-+	event->config = strndup(buf, ret);
-+
-+	list_add_tail(&event->list, list);
-+	return 0;
++	pci_read_config_dword(pdev, box_ctl, &config);
++	config |= SNBEP_PMON_BOX_CTL_FRZ;
++	pci_write_config_dword(pdev, box_ctl, config);
 +}
 +
-+/*
-+ * Process all the sysfs attributes located under the directory
-+ * specified in 'dir' parameter.
-+ */
-+static int pmu_events_parse(char *dir, struct list_head *head)
++static void snbep_uncore_pci_enable_all(struct intel_uncore_box *box)
 +{
-+	struct dirent *evt_ent;
-+	DIR *event_dir;
-+	int ret = 0;
++	struct pci_dev *pdev = box->pci_dev;
++	int box_ctl = uncore_pci_box_ctl(box);
++	u32 config;
 +
-+	event_dir = opendir(dir);
-+	if (!event_dir)
-+		return -EINVAL;
++	pci_read_config_dword(pdev, box_ctl, &config);
++	config &= ~SNBEP_PMON_BOX_CTL_FRZ;
++	pci_write_config_dword(pdev, box_ctl, config);
++}
 +
-+	while (!ret && (evt_ent = readdir(event_dir))) {
-+		char path[PATH_MAX];
-+		char *name = evt_ent->d_name;
-+		FILE *file;
++static void snbep_uncore_pci_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	struct hw_perf_event *hwc = &event->hw;
 +
-+		if (!strcmp(name, ".") || !strcmp(name, ".."))
++	pci_write_config_dword(pdev, hwc->config_base, hwc->config |
++				SNBEP_PMON_CTL_EN);
++}
++
++static void snbep_uncore_pci_disable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	struct hw_perf_event *hwc = &event->hw;
++
++	pci_write_config_dword(pdev, hwc->config_base, hwc->config);
++}
++
++static u64 snbep_uncore_pci_read_counter(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	struct hw_perf_event *hwc = &event->hw;
++	u64 count;
++
++	pci_read_config_dword(pdev, hwc->event_base, (u32 *)&count);
++	pci_read_config_dword(pdev, hwc->event_base + 4, (u32 *)&count + 1);
++	return count;
++}
++
++static void snbep_uncore_pci_box_init(struct intel_uncore_box *box)
++{
++	struct pci_dev *pdev = box->pci_dev;
++	pci_write_config_dword(pdev, SNBEP_PCI_PMON_BOX_CTL,
++				SNBEP_PMON_BOX_CTL_INT);
++}
++
++static void snbep_uncore_msr_disable_all(struct intel_uncore_box *box)
++{
++	u64 config;
++	unsigned msr;
++	int i;
++
++	msr = uncore_msr_box_ctl(box);
++	if (msr) {
++		rdmsrl(msr, config);
++		config |= SNBEP_PMON_BOX_CTL_FRZ;
++		wrmsrl(msr, config);
++		return;
++	}
++
++	/* ubox has no box level control */
++	for (i = 0; i < uncore_num_counters(box); i++) {
++		if (!test_bit(i, box->active_mask))
 +			continue;
 +
-+		snprintf(path, PATH_MAX, "%s/%s", dir, name);
++		msr = uncore_msr_event_ctl(box, i);
++		rdmsrl(msr, config);
++		config &= ~SNBEP_PMON_CTL_EN;
++		wrmsrl(msr, config);
++	}
++}
 +
-+		ret = -EINVAL;
-+		file = fopen(path, "r");
-+		if (!file)
-+			break;
-+		ret = perf_pmu__new_event(head, name, file);
-+		fclose(file);
++static void snbep_uncore_msr_enable_all(struct intel_uncore_box *box)
++{
++	u64 config;
++	unsigned msr;
++	int i;
++
++	msr = uncore_msr_box_ctl(box);
++	if (msr) {
++		rdmsrl(msr, config);
++		config &= ~SNBEP_PMON_BOX_CTL_FRZ;
++		wrmsrl(msr, config);
++		return;
 +	}
 +
-+	closedir(event_dir);
-+	return ret;
++	/* ubox has no box level control */
++	for (i = 0; i < uncore_num_counters(box); i++) {
++		if (!test_bit(i, box->active_mask))
++			continue;
++
++		msr = uncore_msr_event_ctl(box, i);
++		rdmsrl(msr, config);
++		config |= SNBEP_PMON_CTL_EN;
++		wrmsrl(msr, config);
++	}
 +}
 +
-+/*
-+ * Reading the pmu event definition, which should be located at:
-+ * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-+ */
-+static int pmu_events(char *name, struct list_head *events)
++static void snbep_uncore_msr_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
 +{
-+	struct stat st;
-+	char path[PATH_MAX];
-+	const char *sysfs;
++	struct hw_perf_event *hwc = &event->hw;
 +
-+	sysfs = sysfs_find_mountpoint();
-+	if (!sysfs)
-+		return -1;
-+
-+	snprintf(path, PATH_MAX,
-+		 "%s/bus/event_source/devices/%s/events", sysfs, name);
-+
-+	if (stat(path, &st) < 0)
-+		return -1;
-+
-+	if (pmu_events_parse(path, events))
-+		return -1;
-+
-+	return 0;
++	wrmsrl(hwc->config_base, hwc->config | SNBEP_PMON_CTL_EN);
 +}
 +
- /*
-  * Reading/parsing the default pmu type value, which should be
-  * located at:
-@@ -118,6 +201,7 @@ static struct perf_pmu *pmu_lookup(char *name)
- {
- 	struct perf_pmu *pmu;
- 	LIST_HEAD(format);
-+	LIST_HEAD(events);
- 	__u32 type;
- 
- 	/*
-@@ -135,8 +219,12 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	if (!pmu)
- 		return NULL;
- 
-+	pmu_events(name, &events);
-+
- 	INIT_LIST_HEAD(&pmu->format);
-+	INIT_LIST_HEAD(&pmu->events);
- 	list_splice(&format, &pmu->format);
-+	list_splice(&events, &pmu->events);
- 	pmu->name = strdup(name);
- 	pmu->type = type;
- 	return pmu;
-@@ -262,16 +350,62 @@ static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
- 	return 0;
- }
- 
-+
-+static struct perf_pmu__event*
-+pmu_find_event(struct list_head *events, char *name)
++static void snbep_uncore_msr_disable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
 +{
-+	struct perf_pmu__event *event;
++	struct hw_perf_event *hwc = &event->hw;
 +
-+	list_for_each_entry(event, events, list)
-+		if (!strcmp(event->name, name))
-+			return event;
-+
-+	return NULL;
++	wrmsrl(hwc->config_base, hwc->config);
 +}
 +
-+static int pmu_event(struct perf_pmu *pmu, struct list_head *head_terms,
-+		     char **newcfg)
++static u64 snbep_uncore_msr_read_counter(struct intel_uncore_box *box,
++					struct perf_event *event)
 +{
-+	struct parse_events__term *term;
-+	struct perf_pmu__event *event;
-+	char *buf;
++	struct hw_perf_event *hwc = &event->hw;
++	u64 count;
 +
-+	if (!list_is_singular(head_terms))
-+		return -EINVAL;
-+
-+	term = list_entry(head_terms->next, struct parse_events__term, list);
-+
-+	if (term->type != PARSE_EVENTS__TERM_TYPE_STR || term->val.str)
-+		return -EINVAL;
-+
-+	event = pmu_find_event(&pmu->events, term->config);
-+	if (!event)
-+		return -EINVAL;
-+
-+	buf = malloc(strlen(pmu->name) + strlen(event->config) + 3);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	sprintf(buf, "%s/%s/", pmu->name, event->config);
-+	*newcfg = buf;
-+
-+	return 0;
++	rdmsrl(hwc->event_base, count);
++	return count;
 +}
 +
- /*
-  * Configures event's 'attr' parameter based on the:
-  * 1) users input - specified in terms parameter
-  * 2) pmu format definitions - specified by pmu parameter
-  */
--int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
--		     struct list_head *head_terms)
-+int perf_pmu__config(struct perf_pmu *pmu, struct list_head *head_terms,
-+		     struct perf_event_attr *attr, char **newcfg)
- {
-+	int ret;
- 	attr->type = pmu->type;
--	return pmu_config(&pmu->format, attr, head_terms);
-+	ret = pmu_config(&pmu->format, attr, head_terms);
-+	if (ret == -EINVAL && newcfg)
-+		ret = pmu_event(pmu, head_terms, newcfg);
-+	return ret;
- }
- 
- int perf_pmu__new_format(struct list_head *list, char *name,
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 68c0db9..2052b3f 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -19,16 +19,23 @@ struct perf_pmu__format {
- 	struct list_head list;
- };
- 
-+struct perf_pmu__event {
-+	char *name;
-+	char *config;
-+	struct list_head list;
++static void snbep_uncore_msr_box_init(struct intel_uncore_box *box)
++{
++	if (uncore_msr_box_ctl(box))
++		wrmsrl(uncore_msr_box_ctl(box), SNBEP_PMON_BOX_CTL_INT);
++}
++
++static struct attribute *snbep_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_thresh8.attr,
++	NULL,
 +};
 +
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
- 	struct list_head format;
-+	struct list_head events;
- 	struct list_head list;
- };
++static struct attribute *snbep_uncore_ubox_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_thresh5.attr,
++	NULL,
++};
++
++static struct attribute *snbep_uncore_pcu_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_occ_sel.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_thresh5.attr,
++	&format_attr_occ_invert.attr,
++	&format_attr_occ_edge.attr,
++	NULL,
++};
++
++static struct uncore_event_desc snbep_uncore_imc_events[] = {
++	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
++	/* DRAM Activate Count */
++	INTEL_UNCORE_EVENT_DESC(ACT_COUNT, "event=0x1"),
++	/* DRAM Read CAS commands */
++	INTEL_UNCORE_EVENT_DESC(CAS_COUNT_RD, "event=0x4,umask=0x3"),
++	/* DRAM Write CAS commands */
++	INTEL_UNCORE_EVENT_DESC(CAS_COUNT_WR, "event=0x4,umask=0xc"),
++	/* Total number of DRAM CAS commands */
++	INTEL_UNCORE_EVENT_DESC(CAS_COUNT_ALL, "event=0x4,umask=0xf"),
++	{ /* end: all zeroes */ },
++};
++
++static struct uncore_event_desc snbep_uncore_r2pcie_events[] = {
++	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "event=0x1"),
++	/* date ring cycles used in the up direction */
++	INTEL_UNCORE_EVENT_DESC(RING_BL_USED_UP, "event=0x9,umask=0x3"),
++	/* date ring cycles used in the down direction */
++	INTEL_UNCORE_EVENT_DESC(RING_BL_USED_DOWN, "event=0x9,umask=0xc"),
++	/* IIO reads, data transmitted to the data ring */
++	INTEL_UNCORE_EVENT_DESC(TxR_INSERT_BL, "event=0x24,umask=0x4"),
++	{ /* end: all zeroes */ },
++};
++
++static struct attribute_group snbep_uncore_format_group = {
++	.name = "format",
++	.attrs = snbep_uncore_formats_attr,
++};
++
++static struct attribute_group snbep_uncore_ubox_format_group = {
++	.name = "format",
++	.attrs = snbep_uncore_ubox_formats_attr,
++};
++
++static struct attribute_group snbep_uncore_pcu_format_group = {
++	.name = "format",
++	.attrs = snbep_uncore_pcu_formats_attr,
++};
++
++static struct intel_uncore_ops snbep_uncore_msr_ops = {
++	.init		= snbep_uncore_msr_box_init,
++	.disable_all	= snbep_uncore_msr_disable_all,
++	.enable_all	= snbep_uncore_msr_enable_all,
++	.disable_event	= snbep_uncore_msr_disable_event,
++	.enable_event	= snbep_uncore_msr_enable_event,
++	.read_counter	= snbep_uncore_msr_read_counter,
++};
++
++static struct intel_uncore_ops snbep_uncore_pci_ops = {
++	.init		= snbep_uncore_pci_box_init,
++	.disable_all	= snbep_uncore_pci_disable_all,
++	.enable_all	= snbep_uncore_pci_enable_all,
++	.disable_event	= snbep_uncore_pci_disable_event,
++	.enable_event	= snbep_uncore_pci_enable_event,
++	.read_counter	= snbep_uncore_pci_read_counter,
++};
++
++static struct event_constraint snbep_uncore_cbo_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x01, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x02, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x04, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x05, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x07, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x11, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x12, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x13, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x1b, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1c, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1d, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1e, 0xc),
++	UNCORE_EVENT_CONSTRAINT(0x1f, 0xe),
++	UNCORE_EVENT_CONSTRAINT(0x21, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x31, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x33, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x35, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x36, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x37, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x38, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x39, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x3b, 0x1),
++	EVENT_CONSTRAINT_END
++};
++
++static struct event_constraint snbep_uncore_r2pcie_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x10, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x11, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x12, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x24, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x25, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x26, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x33, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
++	EVENT_CONSTRAINT_END
++};
++
++static struct event_constraint snbep_uncore_r3qpi_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x10, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x11, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x12, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x13, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x20, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x21, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x22, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x24, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x25, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x26, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x30, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x31, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x33, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x36, 0x3),
++	UNCORE_EVENT_CONSTRAINT(0x37, 0x3),
++	EVENT_CONSTRAINT_END
++};
++
++static struct intel_uncore_type snbep_uncore_ubox = {
++	.name		= "ubox",
++	.num_counters   = 2,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 44,
++	.fixed_ctr_bits	= 48,
++	.perf_ctr	= SNBEP_U_MSR_PMON_CTR0,
++	.event_ctl	= SNBEP_U_MSR_PMON_CTL0,
++	.event_mask	= SNBEP_U_MSR_PMON_RAW_EVENT_MASK,
++	.fixed_ctr	= SNBEP_U_MSR_PMON_UCLK_FIXED_CTR,
++	.fixed_ctl	= SNBEP_U_MSR_PMON_UCLK_FIXED_CTL,
++	.ops		= &snbep_uncore_msr_ops,
++	.format_group	= &snbep_uncore_ubox_format_group,
++};
++
++static struct intel_uncore_type snbep_uncore_cbo = {
++	.name		= "cbo",
++	.num_counters   = 4,
++	.num_boxes	= 8,
++	.perf_ctr_bits	= 44,
++	.event_ctl	= SNBEP_C0_MSR_PMON_CTL0,
++	.perf_ctr	= SNBEP_C0_MSR_PMON_CTR0,
++	.event_mask	= SNBEP_PMON_RAW_EVENT_MASK,
++	.box_ctl	= SNBEP_C0_MSR_PMON_BOX_CTL,
++	.msr_offset	= SNBEP_CBO_MSR_OFFSET,
++	.constraints	= snbep_uncore_cbo_constraints,
++	.ops		= &snbep_uncore_msr_ops,
++	.format_group	= &snbep_uncore_format_group,
++};
++
++static struct intel_uncore_type snbep_uncore_pcu = {
++	.name		= "pcu",
++	.num_counters   = 4,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 48,
++	.perf_ctr	= SNBEP_PCU_MSR_PMON_CTR0,
++	.event_ctl	= SNBEP_PCU_MSR_PMON_CTL0,
++	.event_mask	= SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK,
++	.box_ctl	= SNBEP_PCU_MSR_PMON_BOX_CTL,
++	.ops		= &snbep_uncore_msr_ops,
++	.format_group	= &snbep_uncore_pcu_format_group,
++};
++
++static struct intel_uncore_type *snbep_msr_uncores[] = {
++	&snbep_uncore_ubox,
++	&snbep_uncore_cbo,
++	&snbep_uncore_pcu,
++	NULL,
++};
++
++#define SNBEP_UNCORE_PCI_COMMON_INIT()				\
++	.perf_ctr	= SNBEP_PCI_PMON_CTR0,			\
++	.event_ctl	= SNBEP_PCI_PMON_CTL0,			\
++	.event_mask	= SNBEP_PMON_RAW_EVENT_MASK,		\
++	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,		\
++	.ops		= &snbep_uncore_pci_ops,		\
++	.format_group	= &snbep_uncore_format_group
++
++static struct intel_uncore_type snbep_uncore_ha = {
++	.name		= "ha",
++	.num_counters   = 4,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 48,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type snbep_uncore_imc = {
++	.name		= "imc",
++	.num_counters   = 4,
++	.num_boxes	= 4,
++	.perf_ctr_bits	= 48,
++	.fixed_ctr_bits	= 48,
++	.fixed_ctr	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
++	.fixed_ctl	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
++	.event_descs	= snbep_uncore_imc_events,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type snbep_uncore_qpi = {
++	.name		= "qpi",
++	.num_counters   = 4,
++	.num_boxes	= 2,
++	.perf_ctr_bits	= 48,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++
++static struct intel_uncore_type snbep_uncore_r2pcie = {
++	.name		= "r2pcie",
++	.num_counters   = 4,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 44,
++	.constraints	= snbep_uncore_r2pcie_constraints,
++	.event_descs	= snbep_uncore_r2pcie_events,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type snbep_uncore_r3qpi = {
++	.name		= "r3qpi",
++	.num_counters   = 3,
++	.num_boxes	= 2,
++	.perf_ctr_bits	= 44,
++	.constraints	= snbep_uncore_r3qpi_constraints,
++	SNBEP_UNCORE_PCI_COMMON_INIT(),
++};
++
++static struct intel_uncore_type *snbep_pci_uncores[] = {
++	&snbep_uncore_ha,
++	&snbep_uncore_imc,
++	&snbep_uncore_qpi,
++	&snbep_uncore_r2pcie,
++	&snbep_uncore_r3qpi,
++	NULL,
++};
++
++static DEFINE_PCI_DEVICE_TABLE(snbep_uncore_pci_ids) = {
++	{ /* Home Agent */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_HA),
++		.driver_data = (unsigned long)&snbep_uncore_ha,
++	},
++	{ /* MC Channel 0 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC0),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* MC Channel 1 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC1),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* MC Channel 2 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC2),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* MC Channel 3 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC3),
++		.driver_data = (unsigned long)&snbep_uncore_imc,
++	},
++	{ /* QPI Port 0 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI0),
++		.driver_data = (unsigned long)&snbep_uncore_qpi,
++	},
++	{ /* QPI Port 1 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI1),
++		.driver_data = (unsigned long)&snbep_uncore_qpi,
++	},
++	{ /* P2PCIe */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R2PCIE),
++		.driver_data = (unsigned long)&snbep_uncore_r2pcie,
++	},
++	{ /* R3QPI Link 0 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI0),
++		.driver_data = (unsigned long)&snbep_uncore_r3qpi,
++	},
++	{ /* R3QPI Link 1 */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI1),
++		.driver_data = (unsigned long)&snbep_uncore_r3qpi,
++	},
++	{ /* end: all zeroes */ }
++};
++
++static struct pci_driver snbep_uncore_pci_driver = {
++	.name		= "snbep_uncore",
++	.id_table	= snbep_uncore_pci_ids,
++};
++
++/*
++ * build pci bus to socket mapping
++ */
++static void snbep_pci2phy_map_init(void)
++{
++	struct pci_dev *ubox_dev = NULL;
++	int i, bus, nodeid;
++	u32 config;
++
++	while (1) {
++		/* find the UBOX device */
++		ubox_dev = pci_get_device(PCI_VENDOR_ID_INTEL,
++					PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX,
++					ubox_dev);
++		if (!ubox_dev)
++			break;
++		bus = ubox_dev->bus->number;
++		/* get the Node ID of the local register */
++		pci_read_config_dword(ubox_dev, 0x40, &config);
++		nodeid = config;
++		/* get the Node ID mapping */
++		pci_read_config_dword(ubox_dev, 0x54, &config);
++		/*
++		 * every three bits in the Node ID mapping register maps
++		 * to a particular node.
++		 */
++		for (i = 0; i < 8; i++) {
++			if (nodeid == ((config >> (3 * i)) & 0x7)) {
++				pcibus_to_phyid[bus] = i;
++				break;
++			}
++		}
++	};
++	return;
++}
++/* end of Sandy Bridge-EP uncore support */
++
  
- struct perf_pmu *perf_pmu__find(char *name);
--int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
--		     struct list_head *head_terms);
-+int perf_pmu__config(struct perf_pmu *pmu, struct list_head *head_terms,
-+		     struct perf_event_attr *attr, char **newcfg);
+ /* Sandy Bridge uncore support */
+ static void snb_uncore_msr_disable_all(struct intel_uncore_box *box)
+@@ -957,6 +1460,11 @@ static int __init uncore_pci_init(void)
+ 	int ret;
  
- int perf_pmu_wrap(void);
- void perf_pmu_error(struct list_head *list, char *name, char const *msg);
+ 	switch (boot_cpu_data.x86_model) {
++	case 45: /* Sandy Bridge-EP */
++		pci_uncores = snbep_pci_uncores;
++		uncore_pci_driver = &snbep_uncore_pci_driver;
++		snbep_pci2phy_map_init();
++		break;
+ 	default:
+ 		return 0;
+ 	}
+@@ -1124,6 +1632,9 @@ static int __init uncore_cpu_init(void)
+ 	case 42: /* Sandy Bridge */
+ 		msr_uncores = snb_msr_uncores;
+ 		break;
++	case 45: /* Sandy Birdge-EP */
++		msr_uncores = snbep_msr_uncores;
++		break;
+ 	default:
+ 		return 0;
+ 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 6d8cd79..6588dc7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -65,6 +65,92 @@
+ #define NHM_UNC_PERFEVTSEL0                     0x3c0
+ #define NHM_UNC_UNCORE_PMC0                     0x3b0
+ 
++/* SNB-EP Box level control */
++#define SNBEP_PMON_BOX_CTL_RST_CTRL	(1 << 0)
++#define SNBEP_PMON_BOX_CTL_RST_CTRS	(1 << 1)
++#define SNBEP_PMON_BOX_CTL_FRZ		(1 << 8)
++#define SNBEP_PMON_BOX_CTL_FRZ_EN	(1 << 16)
++#define SNBEP_PMON_BOX_CTL_INT		(SNBEP_PMON_BOX_CTL_RST_CTRL | \
++					 SNBEP_PMON_BOX_CTL_RST_CTRS | \
++					 SNBEP_PMON_BOX_CTL_FRZ_EN)
++/* SNB-EP event control */
++#define SNBEP_PMON_CTL_EV_SEL_MASK	0x000000ff
++#define SNBEP_PMON_CTL_UMASK_MASK	0x0000ff00
++#define SNBEP_PMON_CTL_RST		(1 << 17)
++#define SNBEP_PMON_CTL_EDGE_DET		(1 << 18)
++#define SNBEP_PMON_CTL_EV_SEL_EXT	(1 << 21)	/* only for QPI */
++#define SNBEP_PMON_CTL_EN		(1 << 22)
++#define SNBEP_PMON_CTL_INVERT		(1 << 23)
++#define SNBEP_PMON_CTL_TRESH_MASK	0xff000000
++#define SNBEP_PMON_RAW_EVENT_MASK	(SNBEP_PMON_CTL_EV_SEL_MASK | \
++					 SNBEP_PMON_CTL_UMASK_MASK | \
++					 SNBEP_PMON_CTL_EDGE_DET | \
++					 SNBEP_PMON_CTL_INVERT | \
++					 SNBEP_PMON_CTL_TRESH_MASK)
++
++/* SNB-EP Ubox event control */
++#define SNBEP_U_MSR_PMON_CTL_TRESH_MASK		0x1f000000
++#define SNBEP_U_MSR_PMON_RAW_EVENT_MASK		\
++				(SNBEP_PMON_CTL_EV_SEL_MASK | \
++				 SNBEP_PMON_CTL_UMASK_MASK | \
++				 SNBEP_PMON_CTL_EDGE_DET | \
++				 SNBEP_PMON_CTL_INVERT | \
++				 SNBEP_U_MSR_PMON_CTL_TRESH_MASK)
++
++/* SNB-EP PCU event control */
++#define SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK	0x0000c000
++#define SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK	0x1f000000
++#define SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT	(1 << 30)
++#define SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET	(1 << 31)
++#define SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK	\
++				(SNBEP_PMON_CTL_EV_SEL_MASK | \
++				 SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK | \
++				 SNBEP_PMON_CTL_EDGE_DET | \
++				 SNBEP_PMON_CTL_INVERT | \
++				 SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK | \
++				 SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
++				 SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET)
++
++/* SNB-EP pci control register */
++#define SNBEP_PCI_PMON_BOX_CTL			0xf4
++#define SNBEP_PCI_PMON_CTL0			0xd8
++/* SNB-EP pci counter register */
++#define SNBEP_PCI_PMON_CTR0			0xa0
++
++/* SNB-EP home agent register */
++#define SNBEP_HA_PCI_PMON_BOX_ADDRMATCH0	0x40
++#define SNBEP_HA_PCI_PMON_BOX_ADDRMATCH1	0x44
++#define SNBEP_HA_PCI_PMON_BOX_OPCODEMATCH	0x48
++/* SNB-EP memory controller register */
++#define SNBEP_MC_CHy_PCI_PMON_FIXED_CTL		0xf0
++#define SNBEP_MC_CHy_PCI_PMON_FIXED_CTR		0xd0
++/* SNB-EP QPI register */
++#define SNBEP_Q_Py_PCI_PMON_PKT_MATCH0		0x228
++#define SNBEP_Q_Py_PCI_PMON_PKT_MATCH1		0x22c
++#define SNBEP_Q_Py_PCI_PMON_PKT_MASK0		0x238
++#define SNBEP_Q_Py_PCI_PMON_PKT_MASK1		0x23c
++
++/* SNB-EP Ubox register */
++#define SNBEP_U_MSR_PMON_CTR0			0xc16
++#define SNBEP_U_MSR_PMON_CTL0			0xc10
++
++#define SNBEP_U_MSR_PMON_UCLK_FIXED_CTL		0xc08
++#define SNBEP_U_MSR_PMON_UCLK_FIXED_CTR		0xc09
++
++/* SNB-EP Cbo register */
++#define SNBEP_C0_MSR_PMON_CTR0			0xd16
++#define SNBEP_C0_MSR_PMON_CTL0			0xd10
++#define SNBEP_C0_MSR_PMON_BOX_FILTER		0xd14
++#define SNBEP_C0_MSR_PMON_BOX_CTL		0xd04
++#define SNBEP_CBO_MSR_OFFSET			0x20
++
++/* SNB-EP PCU register */
++#define SNBEP_PCU_MSR_PMON_CTR0			0xc36
++#define SNBEP_PCU_MSR_PMON_CTL0			0xc30
++#define SNBEP_PCU_MSR_PMON_BOX_FILTER		0xc34
++#define SNBEP_PCU_MSR_PMON_BOX_CTL		0xc24
++#define SNBEP_PCU_MSR_CORE_C3_CTR		0x3fc
++#define SNBEP_PCU_MSR_CORE_C6_CTR		0x3fd
+ 
+ struct intel_uncore_ops;
+ struct intel_uncore_pmu;
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 3329965..9870b8d 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2754,6 +2754,17 @@
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB7	0x3c27
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB8	0x3c2e
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB9	0x3c2f
++#define PCI_DEVICE_ID_INTEL_UNC_HA	0x3c46
++#define PCI_DEVICE_ID_INTEL_UNC_IMC0	0x3cb0
++#define PCI_DEVICE_ID_INTEL_UNC_IMC1	0x3cb1
++#define PCI_DEVICE_ID_INTEL_UNC_IMC2	0x3cb4
++#define PCI_DEVICE_ID_INTEL_UNC_IMC3	0x3cb5
++#define PCI_DEVICE_ID_INTEL_UNC_QPI0	0x3c41
++#define PCI_DEVICE_ID_INTEL_UNC_QPI1	0x3c42
++#define PCI_DEVICE_ID_INTEL_UNC_R2PCIE	0x3c43
++#define PCI_DEVICE_ID_INTEL_UNC_R3QPI0	0x3c44
++#define PCI_DEVICE_ID_INTEL_UNC_R3QPI1	0x3c45
++#define PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX	0x3ce0
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB	0x402f
+ #define PCI_DEVICE_ID_INTEL_5100_16	0x65f0
+ #define PCI_DEVICE_ID_INTEL_5100_21	0x65f5
 -- 
 1.7.7.6
 
