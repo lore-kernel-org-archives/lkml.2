@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563Ab2DAAre (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 20:47:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35926 "EHLO
+	id S1751820Ab2DAAyE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 20:54:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34307 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2DAAr3 (ORCPT
+	with ESMTP id S1751097Ab2DAAyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 20:47:29 -0400
-Date: Sun, 1 Apr 2012 08:47:28 +0800
+	Sat, 31 Mar 2012 20:54:00 -0400
+Date: Sun, 1 Apr 2012 08:54:02 +0800
 From: Wang YanQing <udknight@gmail.com>
 To: FlorianSchandinat@gmx.de
-Cc: alan@lxorguk.ukuu.org.uk, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spock@gentoo.org
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spock@gentoo.org, alan@lxorguk.ukuu.org.uk
 Subject: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute
  NX-protected page
-Message-ID: <20120401004728.GA4329@udknight>
+Message-ID: <20120401005402.GA4375@udknight>
 Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	FlorianSchandinat@gmx.de, alan@lxorguk.ukuu.org.uk,
-	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	spock@gentoo.org
+	FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, spock@gentoo.org,
+	alan@lxorguk.ukuu.org.uk
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,7 +26,6 @@ User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
 
 This patch fix the oops below that catched in my machine
 
@@ -103,44 +102,6 @@ This patch fix the oops below that catched in my machine
 [   81.744388] EIP: [<c00cd3b3>] 0xc00cd3b3 SS:ESP 0068:f57f3a00
 [   81.744391] CR2: 00000000c00cd3b3
 [   81.744393] ---[ end trace 18b2c87c925b54d6 ]---
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/uvesafb.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index e7f69ef..f9a670d 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -23,6 +23,7 @@
- #include <video/uvesafb.h>
- #ifdef CONFIG_X86
- #include <video/vga.h>
-+#include <linux/pci.h>
- #endif
- #ifdef CONFIG_MTRR
- #include <asm/mtrr.h>
-@@ -815,8 +816,15 @@ static int __devinit uvesafb_vbe_init(struct fb_info *info)
- 	par->pmi_setpal = pmi_setpal;
- 	par->ypan = ypan;
-
--	if (par->pmi_setpal || par->ypan)
--		uvesafb_vbe_getpmi(task, par);
-+	if (par->pmi_setpal || par->ypan) {
-+		if (pcibios_enabled) {
-+			uvesafb_vbe_getpmi(task, par);
-+		} else {
-+			par->pmi_setpal = par->ypan = 0;
-+			printk(KERN_WARNING "uvesafb: PCI BIOS area is NX."
-+				"Can't use protected mode interface\n");
-+		}
-+	}
- #else
- 	/* The protected mode interface is not available on non-x86. */
- 	par->pmi_setpal = par->ypan = 0;
---
-1.7.9.2.315.g25a78
 
 Signed-off-by: Wang YanQing <udknight@gmail.com>
 ---
