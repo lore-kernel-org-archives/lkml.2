@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab2DAUua (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 16:50:30 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:33972 "EHLO
-	homiemail-a49.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752603Ab2DAUu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 16:50:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=FtjeFxE1OBkGgRq/mOR3fAFIrzCNPbPrQnaC2ttvsmk6QGD1VP9nRCtuqo7mq
-	/23i7Uzq2i12OPrjJXA2QzoGeRMSSsZU/QEe1X4px6yIrV1sNee46vP+Iidf7J80
-	z4Nr5rtCHL4qwdXvawl+rPOjQ5kltg7z+LO27Ll/9MJQnk=
-Message-ID: <4F78BF92.70304@shealevy.com>
-Date: Sun, 01 Apr 2012 16:50:26 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120321 Thunderbird/11.0
+	id S1753458Ab2DAU47 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 16:56:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab2DAU45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 16:56:57 -0400
+Date: Sun, 1 Apr 2012 16:56:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        Suresh Jayaraman <sjayaraman@suse.com>,
+        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
+Message-ID: <20120401205647.GD6116@redhat.com>
+References: <20120328121308.568545879@intel.com>
 MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>
-CC: Tracey Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mchehab@infradead.org,
-        hans.verkuil@cisco.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/1] Drivers/media/radio: Fix build error
-References: <1333307374-25848-1-git-send-email-tdent48227@gmail.com> <201204012124.48701.hverkuil@xs4all.nl>
-In-Reply-To: <201204012124.48701.hverkuil@xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328121308.568545879@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2012 03:24 PM, Hans Verkuil wrote:
-> No, this is the correct patch:
->
-> diff --git a/sound/pci/Kconfig b/sound/pci/Kconfig
-> index 8816804..5ca0939 100644
-> --- a/sound/pci/Kconfig
-> +++ b/sound/pci/Kconfig
-> @@ -2,8 +2,8 @@
->
->   config SND_TEA575X
->   	tristate
-> -	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO || RADIO_SF16FMR2
-> -	default SND_FM801 || SND_ES1968 || RADIO_SF16FMR2
-> +	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO || RADIO_SF16FMR2 || RADIO_MAXIRADIO
-> +	default SND_FM801 || SND_ES1968 || RADIO_SF16FMR2 || RADIO_MAXIRADIO
->
->   menuconfig SND_PCI
->   	bool "PCI sound devices"
+On Wed, Mar 28, 2012 at 08:13:08PM +0800, Fengguang Wu wrote:
+> 
+> Here is one possible solution to "buffered write IO controller", based on Linux
+> v3.3
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git  buffered-write-io-controller
+> 
+> Features:
+> - support blkio.weight
+> - support blkio.throttle.buffered_write_bps
 
-Builds now, thanks.
+Introducing separate knob for buffered write makes sense. It is different
+throttling done at block layer.
 
-Tested-by: Shea Levy <shea@shealevy.com>
+> 
+> Possibilities:
+> - it's trivial to support per-bdi .weight or .buffered_write_bps
+> 
+> Pros:
+> 1) simple
+> 2) virtually no space/time overheads
+> 3) independent of the block layer and IO schedulers, hence
+> 3.1) supports all filesystems/storages, eg. NFS/pNFS, CIFS, sshfs, ...
+> 3.2) supports all IO schedulers. One may use noop for SSDs, inside virtual machines, over iSCSI, etc.
+> 
+> Cons:
+> 1) don't try to smooth bursty IO submission in the flusher thread (*)
 
-Cheers,
-Shea
+Yes, this is a core limitation of throttling while writing to cache. I think
+once we had agreed that IO scheduler in general should be able to handle
+burstiness caused by WRITES. CFQ does it well. deadline not so much.
+
+> 2) don't support IOPS based throttling
+
+If need be then you can still support it. Isn't it? Just that it will
+require more code in buffered write controller to keep track of number
+of operations per second and throttle task if IOPS limit is crossed. So
+it does not sound like a limitation of design but just limitation of
+current set of patches?
+
+> 3) introduces semantic differences to blkio.weight, which will be
+>    - working by "bandwidth" for buffered writes
+>    - working by "device time" for direct IO
+
+I think blkio.weight can be thought of a system wide weight of a cgroup
+and more than one entity/subsystem should be able to make use of it and
+differentiate between IO in its own way. CFQ can decide to do proportional
+time division, and buffered write controller should be able to use the
+same weight and do write bandwidth differentiation. I think it is better
+than introducing another buffered write controller tunable for weight.
+
+Personally, I am not too worried about this point. We can document and
+explain it well.
+
+
+> 
+> (*) Maybe not a big concern, since the bursties are limited to 500ms: if one dd
+> is throttled to 50% disk bandwidth, the flusher thread will be waking up on
+> every 1 second, keep the disk busy for 500ms and then go idle for 500ms; if
+> throttled to 10% disk bandwidth, the flusher thread will wake up on every 5s,
+> keep busy for 500ms and stay idle for 4.5s.
+> 
+> The test results included in the last patch look pretty good in despite of the
+> simple implementation.
+
+Can you give more details about test results. Did you test throttling or you
+tested write speed differentation based on weight too.
+
+Thanks
+Vivek
