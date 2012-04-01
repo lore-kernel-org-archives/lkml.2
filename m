@@ -1,243 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2DAAR4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 20:17:56 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55745 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab2DAARw (ORCPT
+	id S1751563Ab2DAAre (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 20:47:34 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35926 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab2DAAr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 20:17:52 -0400
-Date: Sat, 31 Mar 2012 20:18:25 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <smfrench@gmail.com>
-Subject: Re: [ 105/175] CIFS: Respect negotiated MaxMpxCount
-Message-ID: <20120331201825.036fe1d8@corrin.poochiereds.net>
-In-Reply-To: <20120330194846.517484801@linuxfoundation.org>
-References: <20120330195801.GA31806@kroah.com>
-	<20120330194846.517484801@linuxfoundation.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 31 Mar 2012 20:47:29 -0400
+Date: Sun, 1 Apr 2012 08:47:28 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: alan@lxorguk.ukuu.org.uk, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spock@gentoo.org
+Subject: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute
+ NX-protected page
+Message-ID: <20120401004728.GA4329@udknight>
+Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
+	FlorianSchandinat@gmx.de, alan@lxorguk.ukuu.org.uk,
+	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	spock@gentoo.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012 12:50:10 -0700
-Greg KH <gregkh@linuxfoundation.org> wrote:
 
-> 3.3-stable review patch.  If anyone has any objections, please let me know.
-> 
+This patch fix the oops below that catched in my machine
 
-I'm not sure it's a good idea to put this patch into any stable release
-just yet. I think it's a correct and necessary fix, but it has some
-potential to cause regressions too (or uncover other preexisting
-problems with this code). Might it be best to wait until we have some
-more experience with this before we push it into stable?
+[   81.560602] uvesafb: NVIDIA Corporation, GT216 Board - 0696a290, Chip Rev   , OEM: NVIDIA, VBE v3.0
+[   81.609384] uvesafb: protected mode interface info at c000:d350
+[   81.609388] uvesafb: pmi: set display start = c00cd3b3, set palette = c00cd40e
+[   81.609390] uvesafb: pmi: ports = 3b4 3b5 3ba 3c0 3c1 3c4 3c5 3c6 3c7 3c8 3c9 3cc 3ce 3cf 3d0 3d1 3d2 3d3 3d4 3d5 3da
+[   81.614558] uvesafb: VBIOS/hardware doesn't support DDC transfers
+[   81.614562] uvesafb: no monitor limits have been set, default refresh rate will be used
+[   81.614994] uvesafb: scrolling: ypan using protected mode interface, yres_virtual=4915
+[   81.744147] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+[   81.744153] BUG: unable to handle kernel paging request at c00cd3b3
+[   81.744159] IP: [<c00cd3b3>] 0xc00cd3b2
+[   81.744167] *pdpt = 00000000016d6001 *pde = 0000000001c7b067 *pte = 80000000000cd163
+[   81.744171] Oops: 0011 [#1] SMP
+[   81.744174] Modules linked in: uvesafb(+) cfbcopyarea cfbimgblt cfbfillrect
+[   81.744178]
+[   81.744181] Pid: 3497, comm: modprobe Not tainted 3.3.0-rc4NX+ #71 Acer            Aspire 4741                    /Aspire 4741
+[   81.744185] EIP: 0060:[<c00cd3b3>] EFLAGS: 00010246 CPU: 0
+[   81.744187] EIP is at 0xc00cd3b3
+[   81.744189] EAX: 00004f07 EBX: 00000000 ECX: 00000000 EDX: 00000000
+[   81.744191] ESI: f763f000 EDI: f763f6e8 EBP: f57f3a0c ESP: f57f3a00
+[   81.744192]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[   81.744195] Process modprobe (pid: 3497, ti=f57f2000 task=f748c600 task.ti=f57f2000)
+[   81.744196] Stack:
+[   81.744197]  f82512c5 f759341c 00000000 f57f3a30 c124a9bc 00000001 00000001 000001e0
+[   81.744202]  f8251280 f763f000 f7593400 00000000 f57f3a40 c12598dd f5c0c000 00000000
+[   81.744206]  f57f3b10 c1255efe c125a21a 00000006 f763f09c 00000000 c1c6cb60 f7593400
+[   81.744210] Call Trace:
+[   81.744215]  [<f82512c5>] ? uvesafb_pan_display+0x45/0x60 [uvesafb]
+[   81.744222]  [<c124a9bc>] fb_pan_display+0x10c/0x160
+[   81.744226]  [<f8251280>] ? uvesafb_vbe_find_mode+0x180/0x180 [uvesafb]
+[   81.744230]  [<c12598dd>] bit_update_start+0x1d/0x50
+[   81.744232]  [<c1255efe>] fbcon_switch+0x39e/0x550
+[   81.744235]  [<c125a21a>] ? bit_cursor+0x4ea/0x560
+[   81.744240]  [<c129b6cb>] redraw_screen+0x12b/0x220
+[   81.744245]  [<c128843b>] ? tty_do_resize+0x3b/0xc0
+[   81.744247]  [<c129ef42>] vc_do_resize+0x3d2/0x3e0
+[   81.744250]  [<c129efb4>] vc_resize+0x14/0x20
+[   81.744253]  [<c12586bd>] fbcon_init+0x29d/0x500
+[   81.744255]  [<c12984c4>] ? set_inverse_trans_unicode+0xe4/0x110
+[   81.744258]  [<c129b378>] visual_init+0xb8/0x150
+[   81.744261]  [<c129c16c>] bind_con_driver+0x16c/0x360
+[   81.744264]  [<c129b47e>] ? register_con_driver+0x6e/0x190
+[   81.744267]  [<c129c3a1>] take_over_console+0x41/0x50
+[   81.744269]  [<c1257b7a>] fbcon_takeover+0x6a/0xd0
+[   81.744272]  [<c12594b8>] fbcon_event_notify+0x758/0x790
+[   81.744277]  [<c10929e2>] notifier_call_chain+0x42/0xb0
+[   81.744280]  [<c1092d30>] __blocking_notifier_call_chain+0x60/0x90
+[   81.744283]  [<c1092d7a>] blocking_notifier_call_chain+0x1a/0x20
+[   81.744285]  [<c124a5a1>] fb_notifier_call_chain+0x11/0x20
+[   81.744288]  [<c124b759>] register_framebuffer+0x1d9/0x2b0
+[   81.744293]  [<c1061c73>] ? ioremap_wc+0x33/0x40
+[   81.744298]  [<f82537c6>] uvesafb_probe+0xaba/0xc40 [uvesafb]
+[   81.744302]  [<c12bb81f>] platform_drv_probe+0xf/0x20
+[   81.744306]  [<c12ba558>] driver_probe_device+0x68/0x170
+[   81.744309]  [<c12ba731>] __device_attach+0x41/0x50
+[   81.744313]  [<c12b9088>] bus_for_each_drv+0x48/0x70
+[   81.744316]  [<c12ba7f3>] device_attach+0x83/0xa0
+[   81.744319]  [<c12ba6f0>] ? __driver_attach+0x90/0x90
+[   81.744321]  [<c12b991f>] bus_probe_device+0x6f/0x90
+[   81.744324]  [<c12b8a45>] device_add+0x5e5/0x680
+[   81.744329]  [<c122a1a3>] ? kvasprintf+0x43/0x60
+[   81.744332]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
+[   81.744335]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
+[   81.744339]  [<c12bbe9f>] platform_device_add+0xff/0x1b0
+[   81.744343]  [<f8252906>] uvesafb_init+0x50/0x9b [uvesafb]
+[   81.744346]  [<c100111f>] do_one_initcall+0x2f/0x170
+[   81.744350]  [<f82528b6>] ? uvesafb_is_valid_mode+0x66/0x66 [uvesafb]
+[   81.744355]  [<c10c6994>] sys_init_module+0xf4/0x1410
+[   81.744359]  [<c1157fc0>] ? vfsmount_lock_local_unlock_cpu+0x30/0x30
+[   81.744363]  [<c144cb10>] sysenter_do_call+0x12/0x36
+[   81.744365] Code: f5 00 00 00 32 f6 66 8b da 66 d1 e3 66 ba d4 03 8a e3 b0 1c 66 ef b0 1e 66 ef 8a e7 b0 1d 66 ef b0 1f 66 ef e8 fa 00 00 00 61 c3 <60> e8 c8 00 00 00 66 8b f3 66 8b da 66 ba d4 03 b0 0c 8a e5 66
+[   81.744388] EIP: [<c00cd3b3>] 0xc00cd3b3 SS:ESP 0068:f57f3a00
+[   81.744391] CR2: 00000000c00cd3b3
+[   81.744393] ---[ end trace 18b2c87c925b54d6 ]---
 
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ drivers/video/uvesafb.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-> ------------------
-> 
-> From: Pavel Shilovsky <piastry@etersoft.ru>
-> 
-> commit 10b9b98e41ba248a899f6175ce96ee91431b6194 upstream.
-> 
-> Some servers sets this value less than 50 that was hardcoded and
-> we lost the connection if when we exceed this limit. Fix this by
-> respecting this value - not sending more than the server allows.
-> 
-> Reviewed-by: Jeff Layton <jlayton@samba.org>
-> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-> Signed-off-by: Steve French <smfrench@gmail.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  fs/cifs/cifsfs.c    |    8 ++++----
->  fs/cifs/cifsglob.h  |   10 +++-------
->  fs/cifs/cifssmb.c   |    9 +++++++--
->  fs/cifs/connect.c   |   11 ++++-------
->  fs/cifs/dir.c       |    6 ++++--
->  fs/cifs/file.c      |    4 ++--
->  fs/cifs/transport.c |    4 ++--
->  7 files changed, 26 insertions(+), 26 deletions(-)
-> 
-> --- a/fs/cifs/cifsfs.c
-> +++ b/fs/cifs/cifsfs.c
-> @@ -76,7 +76,7 @@ MODULE_PARM_DESC(cifs_min_small, "Small
->  unsigned int cifs_max_pending = CIFS_MAX_REQ;
->  module_param(cifs_max_pending, int, 0444);
->  MODULE_PARM_DESC(cifs_max_pending, "Simultaneous requests to server. "
-> -				   "Default: 50 Range: 2 to 256");
-> +				   "Default: 32767 Range: 2 to 32767.");
->  unsigned short echo_retries = 5;
->  module_param(echo_retries, ushort, 0644);
->  MODULE_PARM_DESC(echo_retries, "Number of echo attempts before giving up and "
-> @@ -1116,9 +1116,9 @@ init_cifs(void)
->  	if (cifs_max_pending < 2) {
->  		cifs_max_pending = 2;
->  		cFYI(1, "cifs_max_pending set to min of 2");
-> -	} else if (cifs_max_pending > 256) {
-> -		cifs_max_pending = 256;
-> -		cFYI(1, "cifs_max_pending set to max of 256");
-> +	} else if (cifs_max_pending > CIFS_MAX_REQ) {
-> +		cifs_max_pending = CIFS_MAX_REQ;
-> +		cFYI(1, "cifs_max_pending set to max of %u", CIFS_MAX_REQ);
->  	}
->  
->  	rc = cifs_fscache_register();
-> --- a/fs/cifs/cifsglob.h
-> +++ b/fs/cifs/cifsglob.h
-> @@ -55,14 +55,9 @@
->  
->  /*
->   * MAX_REQ is the maximum number of requests that WE will send
-> - * on one socket concurrently. It also matches the most common
-> - * value of max multiplex returned by servers.  We may
-> - * eventually want to use the negotiated value (in case
-> - * future servers can handle more) when we are more confident that
-> - * we will not have problems oveloading the socket with pending
-> - * write data.
-> + * on one socket concurrently.
->   */
-> -#define CIFS_MAX_REQ 50
-> +#define CIFS_MAX_REQ 32767
->  
->  #define RFC1001_NAME_LEN 15
->  #define RFC1001_NAME_LEN_WITH_NULL (RFC1001_NAME_LEN + 1)
-> @@ -263,6 +258,7 @@ struct TCP_Server_Info {
->  	bool session_estab; /* mark when very first sess is established */
->  	u16 dialect; /* dialect index that server chose */
->  	enum securityEnum secType;
-> +	bool oplocks:1; /* enable oplocks */
->  	unsigned int maxReq;	/* Clients should submit no more */
->  	/* than maxReq distinct unanswered SMBs to the server when using  */
->  	/* multiplexed reads or writes */
-> --- a/fs/cifs/cifssmb.c
-> +++ b/fs/cifs/cifssmb.c
-> @@ -458,7 +458,10 @@ CIFSSMBNegotiate(unsigned int xid, struc
->  			goto neg_err_exit;
->  		}
->  		server->sec_mode = (__u8)le16_to_cpu(rsp->SecurityMode);
-> -		server->maxReq = le16_to_cpu(rsp->MaxMpxCount);
-> +		server->maxReq = min_t(unsigned int,
-> +				       le16_to_cpu(rsp->MaxMpxCount),
-> +				       cifs_max_pending);
-> +		server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
->  		server->maxBuf = le16_to_cpu(rsp->MaxBufSize);
->  		server->max_vcs = le16_to_cpu(rsp->MaxNumberVcs);
->  		/* even though we do not use raw we might as well set this
-> @@ -564,7 +567,9 @@ CIFSSMBNegotiate(unsigned int xid, struc
->  
->  	/* one byte, so no need to convert this or EncryptionKeyLen from
->  	   little endian */
-> -	server->maxReq = le16_to_cpu(pSMBr->MaxMpxCount);
-> +	server->maxReq = min_t(unsigned int, le16_to_cpu(pSMBr->MaxMpxCount),
-> +			       cifs_max_pending);
-> +	server->oplocks = server->maxReq > 1 ? enable_oplocks : false;
->  	/* probably no need to store and check maxvcs */
->  	server->maxBuf = le32_to_cpu(pSMBr->MaxBufferSize);
->  	server->max_rw = le32_to_cpu(pSMBr->MaxRawSize);
-> --- a/fs/cifs/connect.c
-> +++ b/fs/cifs/connect.c
-> @@ -642,14 +642,10 @@ static void clean_demultiplex_info(struc
->  	spin_unlock(&GlobalMid_Lock);
->  	wake_up_all(&server->response_q);
->  
-> -	/*
-> -	 * Check if we have blocked requests that need to free. Note that
-> -	 * cifs_max_pending is normally 50, but can be set at module install
-> -	 * time to as little as two.
-> -	 */
-> +	/* Check if we have blocked requests that need to free. */
->  	spin_lock(&GlobalMid_Lock);
-> -	if (atomic_read(&server->inFlight) >= cifs_max_pending)
-> -		atomic_set(&server->inFlight, cifs_max_pending - 1);
-> +	if (atomic_read(&server->inFlight) >= server->maxReq)
-> +		atomic_set(&server->inFlight, server->maxReq - 1);
->  	/*
->  	 * We do not want to set the max_pending too low or we could end up
->  	 * with the counter going negative.
-> @@ -1910,6 +1906,7 @@ cifs_get_tcp_session(struct smb_vol *vol
->  	tcp_ses->noautotune = volume_info->noautotune;
->  	tcp_ses->tcp_nodelay = volume_info->sockopt_tcp_nodelay;
->  	atomic_set(&tcp_ses->inFlight, 0);
-> +	tcp_ses->maxReq = 1; /* enough to send negotiate request */
->  	init_waitqueue_head(&tcp_ses->response_q);
->  	init_waitqueue_head(&tcp_ses->request_q);
->  	INIT_LIST_HEAD(&tcp_ses->pending_mid_q);
-> --- a/fs/cifs/dir.c
-> +++ b/fs/cifs/dir.c
-> @@ -171,7 +171,7 @@ cifs_create(struct inode *inode, struct
->  	}
->  	tcon = tlink_tcon(tlink);
->  
-> -	if (enable_oplocks)
-> +	if (tcon->ses->server->oplocks)
->  		oplock = REQ_OPLOCK;
->  
->  	if (nd)
-> @@ -492,7 +492,7 @@ cifs_lookup(struct inode *parent_dir_ino
->  {
->  	int xid;
->  	int rc = 0; /* to get around spurious gcc warning, set to zero here */
-> -	__u32 oplock = enable_oplocks ? REQ_OPLOCK : 0;
-> +	__u32 oplock;
->  	__u16 fileHandle = 0;
->  	bool posix_open = false;
->  	struct cifs_sb_info *cifs_sb;
-> @@ -518,6 +518,8 @@ cifs_lookup(struct inode *parent_dir_ino
->  	}
->  	pTcon = tlink_tcon(tlink);
->  
-> +	oplock = pTcon->ses->server->oplocks ? REQ_OPLOCK : 0;
-> +
->  	/*
->  	 * Don't allow the separator character in a path component.
->  	 * The VFS will not allow "/", but "\" is allowed by posix.
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -380,7 +380,7 @@ int cifs_open(struct inode *inode, struc
->  	cFYI(1, "inode = 0x%p file flags are 0x%x for %s",
->  		 inode, file->f_flags, full_path);
->  
-> -	if (enable_oplocks)
-> +	if (tcon->ses->server->oplocks)
->  		oplock = REQ_OPLOCK;
->  	else
->  		oplock = 0;
-> @@ -505,7 +505,7 @@ static int cifs_reopen_file(struct cifsF
->  	cFYI(1, "inode = 0x%p file flags 0x%x for %s",
->  		 inode, pCifsFile->f_flags, full_path);
->  
-> -	if (enable_oplocks)
-> +	if (tcon->ses->server->oplocks)
->  		oplock = REQ_OPLOCK;
->  	else
->  		oplock = 0;
-> --- a/fs/cifs/transport.c
-> +++ b/fs/cifs/transport.c
-> @@ -265,12 +265,12 @@ static int wait_for_free_request(struct
->  
->  	spin_lock(&GlobalMid_Lock);
->  	while (1) {
-> -		if (atomic_read(&server->inFlight) >= cifs_max_pending) {
-> +		if (atomic_read(&server->inFlight) >= server->maxReq) {
->  			spin_unlock(&GlobalMid_Lock);
->  			cifs_num_waiters_inc(server);
->  			wait_event(server->request_q,
->  				   atomic_read(&server->inFlight)
-> -				     < cifs_max_pending);
-> +				     < server->maxReq);
->  			cifs_num_waiters_dec(server);
->  			spin_lock(&GlobalMid_Lock);
->  		} else {
-> 
-> 
+diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+index e7f69ef..f9a670d 100644
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -23,6 +23,7 @@
+ #include <video/uvesafb.h>
+ #ifdef CONFIG_X86
+ #include <video/vga.h>
++#include <linux/pci.h>
+ #endif
+ #ifdef CONFIG_MTRR
+ #include <asm/mtrr.h>
+@@ -815,8 +816,15 @@ static int __devinit uvesafb_vbe_init(struct fb_info *info)
+ 	par->pmi_setpal = pmi_setpal;
+ 	par->ypan = ypan;
 
+-	if (par->pmi_setpal || par->ypan)
+-		uvesafb_vbe_getpmi(task, par);
++	if (par->pmi_setpal || par->ypan) {
++		if (pcibios_enabled) {
++			uvesafb_vbe_getpmi(task, par);
++		} else {
++			par->pmi_setpal = par->ypan = 0;
++			printk(KERN_WARNING "uvesafb: PCI BIOS area is NX."
++				"Can't use protected mode interface\n");
++		}
++	}
+ #else
+ 	/* The protected mode interface is not available on non-x86. */
+ 	par->pmi_setpal = par->ypan = 0;
+--
+1.7.9.2.315.g25a78
 
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ drivers/video/uvesafb.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+index 260cca7..26e83d7 100644
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -815,8 +815,15 @@ static int __devinit uvesafb_vbe_init(struct fb_info *info)
+ 	par->pmi_setpal = pmi_setpal;
+ 	par->ypan = ypan;
+ 
+-	if (par->pmi_setpal || par->ypan)
+-		uvesafb_vbe_getpmi(task, par);
++	if (par->pmi_setpal || par->ypan) {
++		if (__supported_pte_mask & _PAGE_NX) {
++			par->pmi_setpal = par->ypan = 0;
++			printk(KERN_WARNING "uvesafb: NX protection is actively."
++				"We have better not to use the PMI.\n");
++		} else {
++			uvesafb_vbe_getpmi(task, par);
++		}
++	}
+ #else
+ 	/* The protected mode interface is not available on non-x86. */
+ 	par->pmi_setpal = par->ypan = 0;
 -- 
-Jeff Layton <jlayton@samba.org>
+1.7.9.2.315.g25a78
