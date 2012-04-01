@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab2DAVdX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 17:33:23 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44893 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614Ab2DAVdW (ORCPT
+	id S1753870Ab2DAVdy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 17:33:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55463 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249Ab2DAVdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 17:33:22 -0400
-Date: Sun, 01 Apr 2012 17:30:32 -0400 (EDT)
-Message-Id: <20120401.173032.1881937766187683052.davem@davemloft.net>
-To: shmulik.ladkani@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net
-Subject: Re: [PATCHv1] ipv6: Fix RTM_GETROUTE's interpretation of RTA_IIF
- to be consistent with ipv4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120401170345.5ed75cab@pixies.home.jungo.com>
-References: <20120401170345.5ed75cab@pixies.home.jungo.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 01 Apr 2012 14:30:35 -0700 (PDT)
+	Sun, 1 Apr 2012 17:33:53 -0400
+Date: Mon, 2 Apr 2012 00:33:47 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Valentin Nechayev <netch@netch.kiev.ua>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        torvalds@linux-foundation.org, drepper@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+Message-ID: <20120401213347.GC4408@p183.telecom.by>
+References: <20120401125741.GA7484@p183.telecom.by>
+ <20120401182825.GJ21084@netch.kiev.ua>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120401182825.GJ21084@netch.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Date: Sun, 1 Apr 2012 17:03:45 +0300
-
-> In IPv4, if an RTA_IIF attribute is specified within an RTM_GETROUTE
-> message, then a route is searched as if a packet was received on the
-> specified 'iif' interface.
+On Sun, Apr 01, 2012 at 09:28:26PM +0300, Valentin Nechayev wrote:
+>  Sun, Apr 01, 2012 at 15:57:42, adobriyan wrote about "[PATCH] nextfd(2)": 
 > 
-> However in IPv6, RTA_IIF is not interpreted in the same way:
-> 'inet6_rtm_getroute()' always calls 'ip6_route_output()', regardless the
-> RTA_IIF attribute.
+> > So, don't add closefrom(2), add nextfd(2).
+> > 
+> > 	int nextfd(int fd)
 > 
-> As a result, in IPv6 there's no way to use RTM_GETROUTE in order to look
-> for a route as if a packet was received on a specific interface.
-> 
-> Fix 'inet6_rtm_getroute()' so that RTA_IIF is interpreted as "lookup a
-> route as if a packet was received on the specified interface", similar
-> to IPv4's 'inet_rtm_getroute()' interpretation.
-> 
-> Reported-by: Ami Koren <amikoren@yahoo.com>
-> Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+> Is it really needed here to create syscall? One shall update all arch
+> lists for it. Instead, adding a new option for fcntl() (named e.g.
+> F_NEXTFD) solves for all platforms simultaneously.
 
-Applied, thanks.
-
-> 1) An alternative: construction of an skb within 'inet6_rtm_getroute()'
->    and then calling 'ip6_route_input()' with the skb as an argument.
->    Thus, no need to split common code of 'ip6_route_input()'.
->    Less elegant IMO.
-
-Agreed.
-
-> 2) Better name for the new common function 'ip6_route_input_lookup()'
->    Will happily accept any better suggestions.
-
-No, it's fine.
-
-> 3) In IPv4 the 'ip_route_input()' call within 'inet_rtm_getroute()'is
->    protected by a 'local_bh_disable()' since dawn of history.
->    Not sure if similar protection needed within 'inet6_rtm_getroute()'.
-
-Since all the code paths are shared more than on the ipv4 side, both
-output and input route lookups can be done with and without BH
-disabling.
+This is not a problem, build system even checks for not yet added syscalls.
+Explicit syscall is better than multiplexer.
