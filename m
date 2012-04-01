@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab2DAVeZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 17:34:25 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41286 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858Ab2DAVeX (ORCPT
+	id S1753756Ab2DAVfd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 17:35:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63075 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab2DAVfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 17:34:23 -0400
-Date: Sun, 1 Apr 2012 22:36:48 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        drepper@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+	Sun, 1 Apr 2012 17:35:32 -0400
+Date: Mon, 2 Apr 2012 00:35:25 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        torvalds@linux-foundation.org, drepper@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Subject: Re: [PATCH] nextfd(2)
-Message-ID: <20120401223648.026b4087@pyramind.ukuu.org.uk>
-In-Reply-To: <1333295005.2325.5204.camel@edumazet-glaptop>
+Message-ID: <20120401213525.GD4408@p183.telecom.by>
 References: <20120401125741.GA7484@p183.telecom.by>
-	<1333295005.2325.5204.camel@edumazet-glaptop>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <201204011921.59596.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204011921.59596.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	return -ESRCH;
-> > +}
+On Sun, Apr 01, 2012 at 07:21:59PM +0000, Arnd Bergmann wrote:
+> On Sunday 01 April 2012, Alexey Dobriyan wrote:
+> >  arch/x86/syscalls/syscall_32.tbl |    1 +
+> >  arch/x86/syscalls/syscall_64.tbl |    1 +
+> >  fs/Makefile                      |    1 +
+> >  fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
+> >  include/linux/syscalls.h         |    1 +
+> >  5 files changed, 31 insertions(+)
 > 
-> Interesting idea but what about using fdt->open_fds bitmap to have a
-> fast search and less cache pollution 
+> I don't have any comments on the syscall itself, but when you add one, please
+> also make the change to include/asm-generic/unistd.h so it appears in the
+> various architectures using the generic syscall table.
 
-I do wonder who needs this on a hot path versus just looking
-in /proc/self ?
-
-Alan
+I will.
+The amount of places to plug new syscall is suprising. :-(
