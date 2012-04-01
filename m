@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2DAVmt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 17:42:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51774 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab2DAVms (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 17:42:48 -0400
-Date: Sun, 1 Apr 2012 14:42:43 -0700
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCHSET] block: modularize blkcg config and stat file
- handling
-Message-ID: <20120401214243.GA12536@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1332975091-10950-1-git-send-email-tj@kernel.org>
+	id S1753913Ab2DAWEN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 18:04:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46287 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753756Ab2DAWDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 18:03:48 -0400
+Message-ID: <4F78D0BA.9040709@zytor.com>
+Date: Sun, 01 Apr 2012 15:03:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332975091-10950-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        torvalds@linux-foundation.org, drepper@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+References: <20120401125741.GA7484@p183.telecom.by>
+In-Reply-To: <20120401125741.GA7484@p183.telecom.by>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 03:51:10PM -0700, Tejun Heo wrote:
-> and is on top of
+On 04/01/2012 05:57 AM, Alexey Dobriyan wrote:
 > 
->   block/for-3.5/core eb7d8c07f9 "cfq: fix cfqg ref handling..."
-> + [1] cgroup-cftypes d954ca6469 "cgroup: implement cgroup_rm_cftypes()"
+> * /proc/self/fd is unreliable:
+>   proc may be unconfigured or not mounted at expected place.
+>   Looking at /proc/self/fd requires opening directory
+>   which may not be available due to malicious rlimit drop or ENOMEM situations.
+>   Not opening directory is equivalent to dumb close(2) loop except slower.
 > 
-> Note that the cgroup branch is temporary and the merge between the two
-> branches aren't trivial.  I'll prepare a proper merged branch once the
-> cgroup/for-3.5 branch is settled.
-> 
-> This patchset is also available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-files
 
-The above branch has been updated on top of block/for-3.5/core +
-cgroup/for-3.5.  Ready to be pulled.
+This is really the motivation for this... the real question is how much
+functionality is actually available in the system without /proc mounted,
+and in particular if this particular subcase is worth optimizing ...
+after all, if someone is maliciously setting rlimit, we can just abort
+(if someone can set an rlimit they can also force an abort) or revert to
+the slow path.
 
-Thanks.
+	-hpa
 
 -- 
-tejun
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
