@@ -1,86 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab2DAMmd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 08:42:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab2DAMma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 08:42:30 -0400
-Message-ID: <4F784D31.4070206@redhat.com>
-Date: Sun, 01 Apr 2012 15:42:25 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1751954Ab2DAM5x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 08:57:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63938 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab2DAM5r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 08:57:47 -0400
+Date: Sun, 1 Apr 2012 15:57:42 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org, viro@zeniv.linux.org.uk
+Cc: torvalds@linux-foundation.org, drepper@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH] nextfd(2)
+Message-ID: <20120401125741.GA7484@p183.telecom.by>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 04/13] KVM: MMU: introduce FNAME(get_sp_gpa)
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F7429E7.3010801@linux.vnet.ibm.com> <4F745E7D.5080102@redhat.com> <4F753E3B.4040308@linux.vnet.ibm.com>
-In-Reply-To: <4F753E3B.4040308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2012 08:01 AM, Xiao Guangrong wrote:
-> On 03/29/2012 09:07 PM, Avi Kivity wrote:
->
-> > On 03/29/2012 11:22 AM, Xiao Guangrong wrote:
-> >> It can calculate the base gpa of the specified shadow page on any level,
-> >> let it instead of FNAME(get_level1_sp_gpa)
-> >>
-> >>
-> >> +static gpa_t FNAME(get_sp_gpa)(struct kvm_mmu_page *sp)
-> >> +{
-> > 
-> > Maybe worth adding a pte index and calling it get_spte_gpa(), depends on
-> > the next patches I guess.
-> > 
->
->
-> Yes.
->
-> But FNAME(get_sp_gpa) is still needed by FNAME(sync_page) path which sync
-> all sptes. I will introduce get_spte_gpa() as you mentioned which will be
-> used in invlpg path and in the later patch.
->
->
-> >> +	int offset, shift;
-> >> +
-> >> +	shift = PAGE_SHIFT - (PT_LEVEL_BITS - PT64_LEVEL_BITS) * sp->role.level;
-> >> +	offset = sp->role.quadrant << shift;
-> > 
-> > if you add '& ~PAGE_MASK' the compiler may be smart enough to drop the
-> > whole thing for 64-bit ptes.
-> > 
->
->
-> Sorry. how to do that?
+Currently there is no reliable way to close all opened file descriptors
+(which daemons need and like to do):
 
-   offset = (sp->role.quadrant << shift) & ~PAGEMASK;
+* dumb close(fd) loop is slow, upper bound is unknown and
+  can be arbitrary large,
 
-the compiler should see that shift == PAGE_SHIFT and therefore anything
-in sp->role.quadrant will be masked out.
+* /proc/self/fd is unreliable:
+  proc may be unconfigured or not mounted at expected place.
+  Looking at /proc/self/fd requires opening directory
+  which may not be available due to malicious rlimit drop or ENOMEM situations.
+  Not opening directory is equivalent to dumb close(2) loop except slower.
 
-> But if you want to remove the unnecessary workload, i will change it
-> like this:
->
-> static gpa_t FNAME(get_sp_gpa)(struct kvm_mmu_page *sp)
-> {
-> 	int offset = 0;
->
-> #if PTTYPE == 32
-> 	int shift;
->
-> 	shift = PAGE_SHIFT - (PT_LEVEL_BITS - PT64_LEVEL_BITS) * sp->role.level;
-> 	offset = sp->role.quadrant << shift;
-> #endif
-> 	return gfn_to_gpa(sp->gfn) + offset;
-> }
+BSD added closefrom(fd) which is OK for this exact purpose but suboptimal
+on the bigger scale. closefrom(2) does only close(2) (obviously :-)
+closefrom(2) siletly ignores errors from close(2) which in theory is not OK
+for userspace.
 
-That works too.
+So, don't add closefrom(2), add nextfd(2).
 
--- 
-error compiling committee.c: too many arguments to function
+	int nextfd(int fd)
 
+returns next opened file descriptor which is >= than fd or -1/ESRCH
+if there aren't any descriptors >= than fd.
+
+Thus closefrom(3) can be rewritten through it in userspace:
+
+	void closefrom(int fd)
+	{
+		while (1) {
+			fd = nextfd(fd);
+			if (fd == -1 && errno == ESRCH)
+				break;
+			(void)close(fd);
+			fd++;
+		}
+	}
+
+Maybe it will grow other smart uses.
+
+nextfd(2) doesn't change kernel state and thus can't fail
+which is why it should go in. Other means may fail or
+may not be available or require linear time with only guessed
+upper boundaries (1024, getrlimit(RLIM_NOFILE), sysconf(_SC_OPEN_MAX).
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
+
+ arch/x86/syscalls/syscall_32.tbl |    1 +
+ arch/x86/syscalls/syscall_64.tbl |    1 +
+ fs/Makefile                      |    1 +
+ fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
+ include/linux/syscalls.h         |    1 +
+ 5 files changed, 31 insertions(+)
+
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -355,3 +355,4 @@
+ 346	i386	setns			sys_setns
+ 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
++349	i386	nextfd			sys_nextfd
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -318,6 +318,7 @@
+ 309	common	getcpu			sys_getcpu
+ 310	64	process_vm_readv	sys_process_vm_readv
+ 311	64	process_vm_writev	sys_process_vm_writev
++312	64	nextfd			sys_nextfd
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+ # for native 64-bit operation.
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -12,6 +12,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
+ 		seq_file.o xattr.o libfs.o fs-writeback.o \
+ 		pnode.o drop_caches.o splice.o sync.o utimes.o \
+ 		stack.o fs_struct.o statfs.o
++obj-y += nextfd.o
+ 
+ ifeq ($(CONFIG_BLOCK),y)
+ obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
+--- /dev/null
++++ b/fs/nextfd.c
+@@ -0,0 +1,27 @@
++#include <linux/errno.h>
++#include <linux/fdtable.h>
++#include <linux/rcupdate.h>
++#include <linux/sched.h>
++#include <linux/syscalls.h>
++
++/* Return first opened file descriptor which is >= than the argument. */
++SYSCALL_DEFINE1(nextfd, unsigned int, fd)
++{
++	struct files_struct *files = current->files;
++	struct fdtable *fdt;
++
++	rcu_read_lock();
++	fdt = files_fdtable(files);
++	while (fd < fdt->max_fds) {
++		struct file *file;
++
++		file = rcu_dereference_check_fdtable(files, fdt->fd[fd]);
++		if (file) {
++			rcu_read_unlock();
++			return fd;
++		}
++		fd++;
++	}
++	rcu_read_unlock();
++	return -ESRCH;
++}
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -857,5 +857,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ 				      const struct iovec __user *rvec,
+ 				      unsigned long riovcnt,
+ 				      unsigned long flags);
++asmlinkage long sys_nextfd(unsigned int fd);
+ 
+ #endif
