@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab2DARup (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 13:50:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51860 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab2DARuG (ORCPT
+	id S1753574Ab2DARum (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 13:50:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40680 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab2DARuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 13:50:06 -0400
-From: Eldad Zack <eldad@fogrefinery.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eldad Zack <eldad@fogrefinery.com>
-Subject: [PATCH 7/8] net/ipv6/icmp.c: Checkpatch cleanups
-Date: Sun,  1 Apr 2012 19:49:07 +0200
-Message-Id: <1333302548-9187-7-git-send-email-eldad@fogrefinery.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1333302548-9187-1-git-send-email-eldad@fogrefinery.com>
-References: <1333302548-9187-1-git-send-email-eldad@fogrefinery.com>
+	Sun, 1 Apr 2012 13:50:03 -0400
+Message-ID: <1333302596.32308.28.camel@clam>
+Subject: [ANNOUNCE] Petitboot now available as Debian package
+From: Geoff Levand <geoff@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: Keith Packard <keithp@keithp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeremy Kerr <jk@ozlabs.org>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Date: Sun, 01 Apr 2012 10:49:56 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-icmp.c:501: ERROR: "(foo*)" should be "(foo *)"
-icmp.c:582: ERROR: "(foo*)" should be "(foo *)"
-icmp.c:954: WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+Hi All,
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
----
- net/ipv6/icmp.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Just for anyone interested, there is now a packaging of Petitboot in Debian that
+allows you to install it as a kind of reboot utility.  This is mainly intended
+for developers who want a convenient way of either rebooting to kernels served
+from remote machines or want a way to select a kernel and/or boot options from a
+menu without going through a cold reboot to get to a first stage bootloader
+menu.
 
-diff --git a/net/ipv6/icmp.c b/net/ipv6/icmp.c
-index 27ac95a..cc079d8 100644
---- a/net/ipv6/icmp.c
-+++ b/net/ipv6/icmp.c
-@@ -498,7 +498,7 @@ void icmpv6_send(struct sk_buff *skb, u8 type, u8 code, __u32 info)
- 	err = ip6_append_data(sk, icmpv6_getfrag, &msg,
- 			      len + sizeof(struct icmp6hdr),
- 			      sizeof(struct icmp6hdr), hlimit,
--			      np->tclass, NULL, &fl6, (struct rt6_info*)dst,
-+			      np->tclass, NULL, &fl6, (struct rt6_info *)dst,
- 			      MSG_DONTWAIT, np->dontfrag);
- 	if (err) {
- 		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
-@@ -579,7 +579,7 @@ static void icmpv6_echo_reply(struct sk_buff *skb)
- 
- 	err = ip6_append_data(sk, icmpv6_getfrag, &msg, skb->len + sizeof(struct icmp6hdr),
- 				sizeof(struct icmp6hdr), hlimit, np->tclass, NULL, &fl6,
--				(struct rt6_info*)dst, MSG_DONTWAIT,
-+				(struct rt6_info *)dst, MSG_DONTWAIT,
- 				np->dontfrag);
- 
- 	if (err) {
-@@ -950,7 +950,6 @@ int icmpv6_err_convert(u8 type, u8 code, int *err)
- 
- 	return fatal;
- }
--
- EXPORT_SYMBOL(icmpv6_err_convert);
- 
- #ifdef CONFIG_SYSCTL
--- 
-1.7.9.5
+The Debian package should also work on other recent Debian derivatives, I've
+tested it on Ubuntu 12.04.  I've recently added a grub2 config file parser to
+petitboot, so it can now parse kboot, yaboot and grub2 config files.  This makes
+it easier to use on system that have yaboot or grub2 as their primary bootloader.
+
+Comments, usage reports, etc. would be greatly appreciated.
+
+
+About Petitboot:
+
+Petitboot is a platform independent bootloader based on the Linux kexec warm
+reboot mechanism. Petitboot supports loading kernel and initrd image files from
+any mountable Linux device, plus can load image files from the network using
+TFTP, NFS, HTTP, HTTPS, and SCP. Petitboot can boot any operating system
+supported by kexec.  More info about petitboot is available at its home page:
+
+  http://www.kernel.org/pub/linux/kernel/people/geoff/petitboot/petitboot.html
+
+Some info about the Debian package can be found through my QA page:
+
+  http://qa.debian.org/developer.php?login=geoff%40infradead.org
+
+-Geoff
+
 
