@@ -1,135 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab2DAQYA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 12:24:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266Ab2DAQX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 12:23:58 -0400
-Message-ID: <4F788119.6090401@redhat.com>
-Date: Sun, 01 Apr 2012 19:23:53 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1752541Ab2DAQ0l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 12:26:41 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:16841 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab2DAQ0j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 12:26:39 -0400
+Message-ID: <4F7881BD.2050605@tilera.com>
+Date: Sun, 1 Apr 2012 12:26:37 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 11/13] KVM: MMU: fast path of handling guest page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F742AE8.9020201@linux.vnet.ibm.com>
-In-Reply-To: <4F742AE8.9020201@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] MAINTAINERS: update EDAC information
+References: <20120331100214.GA7256@aftab> <mailman.285955.1333149246.6384.bluesmoke-devel@lists.sourceforge.net> <4F7642A9.2070801@tilera.com> <201203311350.q2VDoO23007327@farm-0012.internal.tilera.com> <20120401092616.GB15717@aftab>
+In-Reply-To: <20120401092616.GB15717@aftab>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 11:27 AM, Xiao Guangrong wrote:
-> If the the present bit of page fault error code is set, it indicates
-> the shadow page is populated on all levels, it means what we do is only
-> modify the access bit which can be done out of mmu-lock
->
-> The tricks in this patch is avoiding the race between fast page fault
-> path and write-protect path, write-protect path is a read-check-modify
-> path:
-> read spte, check W bit, then clear W bit. What we do is populating a
-> identification in spte, if write-protect meets it, it modify the spte
-> even if the spte is readonly. See the comment in the code to get more
-> information
->
-> +
-> +static bool page_fault_can_be_fast(struct kvm_vcpu *vcpu, gfn_t gfn,
-> +				   u32 error_code)
-> +{
-> +	unsigned long *rmap;
-> +	bool write = error_code & PFERR_WRITE_MASK;
-> +
-> +	/*
-> +	 * #PF can be fast only if the shadow page table is present, that
-> +	 * means we just need change the access bits (e.g: R/W, U/S...)
-> +	 * which can be done out of mmu-lock.
-> +	 */
-> +	if (!(error_code & PFERR_PRESENT_MASK))
-> +		return false;
-> +
-> +	if (unlikely(vcpu->vcpu_id > max_vcpu_spte()))
-> +		return false;
-> +
-> +	rmap = gfn_to_rmap(vcpu->kvm, gfn, PT_PAGE_TABLE_LEVEL);
+On 4/1/2012 5:26 AM, Borislav Petkov wrote:
+> On Sat, Mar 31, 2012 at 09:46:03AM -0400, Chris Metcalf wrote:
+>> The bluesmoke mailing list no longer works, so use
+>> linux-edac@vger.kernel.org.  And, use a less restrictive pattern so all
+>> drivers/edac changes go to linux-edac as well.
+>>
+>> Borislav suggested I just push this through the tile tree since there
+>> is currently no core edac maintainer (emails to Doug Thompson bounce).
+>>
+>> Reviewed-by: Borislav Petkov <bp@amd64.org>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Please don't add Reviewed-by tags to a patch which actually hasn't been
+> reviewed yet, no matter how trivial it is.
 
-What prevents sp->gfns from being freed while this is going on?  Did I
-miss the patch that makes mmu pages freed by rcu?  Also need barriers in
-kvm_mmu_get_page() to make sure sp->gfns is made visible before the page
-is hashed in.
+Thanks, will do (or, "won't do", I guess).
 
-+ smp_rmb()
-
-> +
-> +	/* Quickly check the page can be writable. */
-> +	if (write && (ACCESS_ONCE(*rmap) & PTE_LIST_WRITE_PROTECT))
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
-> +typedef bool (*fast_pf_fetch_spte)(struct kvm_vcpu *vcpu, u64 *sptep,
-> +				   u64 *new_spte, gfn_t gfn, u32 expect_access,
-> +				   u64 spte);
-> +
-> +static bool
-> +fast_pf_fetch_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 *new_spte,
-> +			  gfn_t gfn, u32 expect_access, u64 spte)
-> +{
-> +	struct kvm_mmu_page *sp = page_header(__pa(sptep));
-> +
-
-Why is this stable?  Another cpu could have removed it.
-
->
-> +	WARN_ON(!sp->role.direct);
-> +
-> +	if (kvm_mmu_page_get_gfn(sp, sptep - sp->spt) != gfn)
-> +		return false;
-
-Simpler to check if the page is sync; if it is, gfn has not changed.
-
-(but the check for a sync page is itself unstable).
-
->
-> +
-> +	set_spte(vcpu, new_spte, sp->role.access,
-> +		 expect_access & ACC_USER_MASK, expect_access & ACC_WRITE_MASK,
-> +		 sp->role.level, gfn, spte_to_pfn(spte), false, false,
-> +		 spte & SPTE_HOST_WRITEABLE, true);
-> +
-
-What if the conditions have changed meanwhile?  Should we set the spte
-atomically via set_spte?  For example an mmu notifier clearing the spte
-in parallel.
-
-What if another code path has read *spte, and did not re-read it because
-it holds the mmu lock and thinks only the guest can access it?
-
->
-> +	return true;
-> +}
-> +
-> +static bool
-> +fast_page_fault_fix_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 spte,
-> +			 gfn_t gfn, u32 expect_access,
-> +			 fast_pf_fetch_spte fn)
-> +{
-> +	u64 new_spte = 0ull;
-> +	int vcpu_id = vcpu->vcpu_id;
-> +
-> +	spte = mark_vcpu_id_spte(sptep, spte, vcpu_id);
-
-What's the point of reading spte?  It can change any minute, so the
-value is stale and we can't use it.  We have to read and lock it
-atomically, no?
-
-Your patches read the spte, then set the identity.  In between some
-other path can change the spte.
+I added your Acked-by to the patch and will push through the tile tree.
 
 -- 
-error compiling committee.c: too many arguments to function
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
