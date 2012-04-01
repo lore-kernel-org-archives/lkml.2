@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab2DAVfd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 17:35:33 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63075 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab2DAVfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 17:35:32 -0400
-Date: Mon, 2 Apr 2012 00:35:25 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] nextfd(2)
-Message-ID: <20120401213525.GD4408@p183.telecom.by>
-References: <20120401125741.GA7484@p183.telecom.by>
- <201204011921.59596.arnd@arndb.de>
+	id S1753724Ab2DAViD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 17:38:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18905 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752614Ab2DAViB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 17:38:01 -0400
+Date: Sun, 1 Apr 2012 23:37:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/2] (Was: syscall_regfunc() && TIF_SYSCALL_TRACEPOINT)
+Message-ID: <20120401213748.GA17795@redhat.com>
+References: <20120330183104.GA12927@redhat.com> <1333134131.23924.191.camel@gandalf.stny.rr.com> <20120330201550.GA16628@redhat.com> <1333152806.23924.196.camel@gandalf.stny.rr.com> <20120331204501.GA18572@redhat.com> <1333229859.23924.200.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201204011921.59596.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1333229859.23924.200.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 07:21:59PM +0000, Arnd Bergmann wrote:
-> On Sunday 01 April 2012, Alexey Dobriyan wrote:
-> >  arch/x86/syscalls/syscall_32.tbl |    1 +
-> >  arch/x86/syscalls/syscall_64.tbl |    1 +
-> >  fs/Makefile                      |    1 +
-> >  fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
-> >  include/linux/syscalls.h         |    1 +
-> >  5 files changed, 31 insertions(+)
-> 
-> I don't have any comments on the syscall itself, but when you add one, please
-> also make the change to include/asm-generic/unistd.h so it appears in the
-> various architectures using the generic syscall table.
+On 03/31, Steven Rostedt wrote:
+>
+> On Sat, 2012-03-31 at 22:45 +0200, Oleg Nesterov wrote:
+> >
+> > So what do you think we should do,
+> >
+> > 	- keep this check
+> >
+> > 	- remove it
+> >
+> > 	- remove it in a separate patch
+>
+> I say this one (remove it in a separate patch). That way if something
+> breaks we know exactly what did it ;-)
 
-I will.
-The amount of places to plug new syscall is suprising. :-(
+OK, agreed.
+
+Don't really know how can I test this... but the kernel didn't
+crash after I enabled the syscall tracer ;)
+
+Oleg.
+
