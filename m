@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab2DABFb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 21:05:31 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33490 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2DABF2 (ORCPT
+	id S1752603Ab2DABXI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 21:23:08 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33535 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab2DABXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 21:05:28 -0400
-Date: Sun, 1 Apr 2012 09:05:30 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, FlorianSchandinat@gmx.de,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spock@gentoo.org
-Subject: Re: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute
- NX-protected page
-Message-ID: <20120401010530.GA4431@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, FlorianSchandinat@gmx.de,
-	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	spock@gentoo.org
-References: <20120327100136.GA3829@udknight>
- <20120327143243.015ecff6@pyramind.ukuu.org.uk>
- <20120328005238.GA3844@udknight>
+	Sat, 31 Mar 2012 21:23:04 -0400
+Date: Sat, 31 Mar 2012 18:22:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-hexagon@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-mips@linux-mips.org,
+        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        tglx@linutronix.de, dhowells@redhat.com, jejb@parisc-linux.org,
+        linux390@de.ibm.com, x86@kernel.org, cmetcalf@tilera.com
+Subject: Re: [PATCH RFC] Simplify the Linux kernel by reducing its state	space
+Message-ID: <20120401012212.GP2450@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120331163321.GA15809@linux.vnet.ibm.com>
+ <20120331223200.GA32482@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120328005238.GA3844@udknight>
+In-Reply-To: <20120331223200.GA32482@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040101-1780-0000-0000-0000046C0FBF
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000264; HX=3.00000186; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00126942; UDB=6.00030202; UTC=2012-04-01
+ 01:22:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 08:52:38AM +0800, Wang YanQing wrote:
-> On Tue, Mar 27, 2012 at 02:32:43PM +0100, Alan Cox wrote:
-> > On Tue, 27 Mar 2012 18:01:36 +0800
-> > Wang YanQing <udknight@gmail.com> wrote:
+On Sat, Mar 31, 2012 at 11:32:00PM +0100, Russell King - ARM Linux wrote:
+> On Sun, Apr 01, 2012 at 12:33:21AM +0800, Paul E. McKenney wrote:
+> > Although there have been numerous complaints about the complexity of
+> > parallel programming (especially over the past 5-10 years), the plain
+> > truth is that the incremental complexity of parallel programming over
+> > that of sequential programming is not as large as is commonly believed.
+> > Despite that you might have heard, the mind-numbing complexity of modern
+> > computer systems is not due so much to there being multiple CPUs, but
+> > rather to there being any CPUs at all.  In short, for the ultimate in
+> > computer-system simplicity, the optimal choice is NR_CPUS=0.
 > > 
-> > > 
-> > > Ok! I try to check pcibios_enabled first, but get some opposition by Alan Cox,
-> > > but I want to make thing work and fix the oops, so I choice the simple way to
-> > > check the (__supported_pte_mask & _PAGE_NX) instead of to check this variable plus
-> > > pci kernel boot parameter, pci mmconfig works or not, and more, and more. It is not
-> > > the best method, but it works and maybe all will feel happy.
+> > This commit therefore limits kernel builds to zero CPUs.  This change
+> > has the beneficial side effect of rendering all kernel bugs harmless.
+> > Furthermore, this commit enables additional beneficial changes, for
+> > example, the removal of those parts of the kernel that are not needed
+> > when there are zero CPUs.
 > > 
-> > Okay let me ask the obvious question - why is it not the best method ?
-> > 
-> > Apart from adding a helper in the includes for the arch code of
-> > 
-> > 	static inline is_nx_enabled(void)
-> > 	{
-> > 		return !!(__supported_pte_mask & _PAGE_NX);
-> > 	}
-> > 
-> > is there anything else it lacks ?
-> > 
-> > Yes ideally we'd set the relevant ROM areas executable, but for a simple
-> > fix is there anything else that's a problem with it ?
-> Ok! Maybe you had missed my previous reply
-> http://permalink.gmane.org/gmane.linux.kernel/1272433
-> It is not the best method, because the check is not enough.
-> I means when NX is actively, the pci bios is NX or not also depend on
-> the code path in pci_arch_init which will be influenced by the acpi on or off, pci kernel boot
-> parameter, even kernel config like pci access method PCI_GOANY, PCI_GOMMCONFIG, or PCI_GODIRECT,
-> but if I check the pcibios_enabled, all the above can be ignored.
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 > 
-> if uvesafb use the PMI when PCI BIOS is X, it can get the better work efficience then use the redraw 
-> method as a fallback when do the panning.
-Alan
+> Great work, but I don't think you've gone far enough with this.
+> 
+> What would really help is if you could consolidate all these NR_CPUS
+> definitions into one place so we don't have essentially the same thing
+> scattered across all these architectures.  We're already doing this on
+> ARM across our platforms, and its about time such an approach was taken
+> across the entire kernel tree.
+> 
+> It looks like the MIPS solution would be the best one to pick.
+> Could you rework your patch to do this please?
+> 
+> While you're at it, you might like to consider that having zero CPUs
+> makes all this architecture support redundant, so maybe you've missed
+> a trick there - according to my count, we could get rid of almost 3
+> million lines of code from arch.  We could replace all that with a
+> single standard implementation.
+> 
+> Bah, maybe I shouldn't have pushed that bpf_jit code for ARM after all...
 
-I am just curious, I want to know what I describe above is right a little,
-or wrong about all the aspect.
-thanks.
+;-) ;-) ;-)
+
+							Thanx, Paul
 
