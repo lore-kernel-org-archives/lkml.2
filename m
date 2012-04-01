@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab2DAHiL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 03:38:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41835 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab2DAHiA (ORCPT
+	id S1751563Ab2DAHif (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 03:38:35 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:41533 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab2DAHhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 03:38:00 -0400
+	Sun, 1 Apr 2012 03:37:51 -0400
 From: Marc Reilly <marc@cpdesign.com.au>
 To: sameo@linux.intel.com
 Cc: linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org,
         u.kleine-koenig@pengutronix.de, oskar@scara.com,
         linux-kernel@vger.kernel.org, alexg@meprolight.com,
         Marc Reilly <marc@cpdesign.com.au>
-Subject: [PATCH v5 4/4] mfd: mc13xxx: Add i2c driver
-Date: Sun,  1 Apr 2012 16:41:39 +1000
-Message-Id: <1333262499-25871-5-git-send-email-marc@cpdesign.com.au>
+Subject: [PATCH v5 2/4] mfd: mc13xxx-core: use regmap for register access
+Date: Sun,  1 Apr 2012 16:41:37 +1000
+Message-Id: <1333262499-25871-3-git-send-email-marc@cpdesign.com.au>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1333262499-25871-1-git-send-email-marc@cpdesign.com.au>
 References: <1333262499-25871-1-git-send-email-marc@cpdesign.com.au>
@@ -24,106 +24,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for mc13xxx family ICs connected via i2c.
+This change converts the mc13xxx core to use regmap rather than direct
+spi r/w.
+The spidev member of mc13xxx struct becomes redundant and is removed.
+Extra debugging aids are added to mc13xxx_reg_rmw.
+Mutex init is moved to before regmap init.
 
 Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
 ---
- drivers/mfd/Kconfig       |    9 +++-
- drivers/mfd/Makefile      |    1 +
- drivers/mfd/mc13xxx-i2c.c |  128 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 137 insertions(+), 1 deletions(-)
- create mode 100644 drivers/mfd/mc13xxx-i2c.c
+ drivers/mfd/Kconfig        |    1 +
+ drivers/mfd/mc13xxx-core.c |  113 +++++++++++++------------------------------
+ 2 files changed, 35 insertions(+), 79 deletions(-)
 
 diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index fe0a0ab..7f4d85a 100644
+index cd13e9f..4e92513 100644
 --- a/drivers/mfd/Kconfig
 +++ b/drivers/mfd/Kconfig
-@@ -573,7 +573,7 @@ config MFD_MC13783
- 
- config MFD_MC13XXX
- 	tristate "Support Freescale MC13783 and MC13892"
--	depends on SPI_MASTER
-+	depends on SPI_MASTER || I2C
+@@ -576,6 +576,7 @@ config MFD_MC13XXX
+ 	depends on SPI_MASTER
  	select MFD_CORE
  	select MFD_MC13783
++	select REGMAP_SPI
  	help
-@@ -591,6 +591,13 @@ config MFD_MC13XXX_SPI
- 	help
- 	  Select this if your MC13xxx is connected via an SPI bus.
- 
-+config MFD_MC13XXX_I2C
-+	tristate "MC13xxx I2C interface" if I2C
-+	default I2C
-+	select REGMAP_I2C
-+	help
-+	  Select this if your MC13xxx is connected via an I2C bus.
-+
- endif
- 
- config ABX500_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 2dc66ed..6d4566f 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
- 
- obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
- obj-$(CONFIG_MFD_MC13XXX_SPI)	+= mc13xxx-spi.o
-+obj-$(CONFIG_MFD_MC13XXX_I2C)	+= mc13xxx-i2c.o
- 
- obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
- 
-diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
-new file mode 100644
-index 0000000..d22501d
---- /dev/null
-+++ b/drivers/mfd/mc13xxx-i2c.c
-@@ -0,0 +1,128 @@
-+/*
-+ * Copyright 2009-2010 Creative Product Design
-+ * Marc Reilly marc@cpdesign.com.au
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mutex.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/mc13xxx.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/i2c.h>
+ 	  Support for the Freescale (Atlas) PMIC and audio CODECs
+ 	  MC13783 and MC13892.
+diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+index 0753402..3223625 100644
+--- a/drivers/mfd/mc13xxx-core.c
++++ b/drivers/mfd/mc13xxx-core.c
+@@ -21,6 +21,8 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_gpio.h>
++#include <linux/regmap.h>
 +#include <linux/err.h>
-+
-+#include "mc13xxx.h"
-+
-+static const struct i2c_device_id mc13xxx_i2c_device_id[] = {
-+	{
-+		.name = "mc13892",
-+		.driver_data = MC13XXX_ID_MC13892,
-+	}, {
-+		/* sentinel */
-+	}
-+};
-+MODULE_DEVICE_TABLE(i2c, mc13xxx_i2c_device_id);
-+
-+static const struct of_device_id mc13xxx_dt_ids[] = {
-+	{
-+		.compatible = "fsl,mc13892",
-+		.data = (void *) &mc13xxx_i2c_device_id[0],
-+	}, {
-+		/* sentinel */
-+	}
-+};
-+MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
-+
-+static struct regmap_config mc13xxx_regmap_i2c_config = {
-+	.reg_bits = 8,
+ 
+ enum mc13xxx_id {
+ 	MC13XXX_ID_MC13783,
+@@ -29,7 +31,7 @@ enum mc13xxx_id {
+ };
+ 
+ struct mc13xxx {
+-	struct spi_device *spidev;
++	struct regmap *regmap;
+ 
+ 	struct device *dev;
+ 	enum mc13xxx_id ictype;
+@@ -172,67 +174,6 @@ void mc13xxx_unlock(struct mc13xxx *mc13xxx)
+ }
+ EXPORT_SYMBOL(mc13xxx_unlock);
+ 
+-#define MC13XXX_REGOFFSET_SHIFT 25
+-static int mc13xxx_spi_reg_read(struct mc13xxx *mc13xxx,
+-				unsigned int offset, u32 *val)
+-{
+-	struct spi_transfer t;
+-	struct spi_message m;
+-	int ret;
+-
+-	*val = offset << MC13XXX_REGOFFSET_SHIFT;
+-
+-	memset(&t, 0, sizeof(t));
+-
+-	t.tx_buf = val;
+-	t.rx_buf = val;
+-	t.len = sizeof(u32);
+-
+-	spi_message_init(&m);
+-	spi_message_add_tail(&t, &m);
+-
+-	ret = spi_sync(mc13xxx->spidev, &m);
+-
+-	/* error in message.status implies error return from spi_sync */
+-	BUG_ON(!ret && m.status);
+-
+-	if (ret)
+-		return ret;
+-
+-	*val &= 0xffffff;
+-
+-	return 0;
+-}
+-
+-static int mc13xxx_spi_reg_write(struct mc13xxx *mc13xxx, unsigned int offset,
+-		u32 val)
+-{
+-	u32 buf;
+-	struct spi_transfer t;
+-	struct spi_message m;
+-	int ret;
+-
+-	buf = 1 << 31 | offset << MC13XXX_REGOFFSET_SHIFT | val;
+-
+-	memset(&t, 0, sizeof(t));
+-
+-	t.tx_buf = &buf;
+-	t.rx_buf = &buf;
+-	t.len = sizeof(u32);
+-
+-	spi_message_init(&m);
+-	spi_message_add_tail(&t, &m);
+-
+-	ret = spi_sync(mc13xxx->spidev, &m);
+-
+-	BUG_ON(!ret && m.status);
+-
+-	if (ret)
+-		return ret;
+-
+-	return 0;
+-}
+-
+ int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
+ {
+ 	int ret;
+@@ -242,7 +183,7 @@ int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
+ 	if (offset > MC13XXX_NUMREGS)
+ 		return -EINVAL;
+ 
+-	ret = mc13xxx_spi_reg_read(mc13xxx, offset, val);
++	ret = regmap_read(mc13xxx->regmap, offset, val);
+ 	dev_vdbg(mc13xxx->dev, "[0x%02x] -> 0x%06x\n", offset, *val);
+ 
+ 	return ret;
+@@ -258,25 +199,19 @@ int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val)
+ 	if (offset > MC13XXX_NUMREGS || val > 0xffffff)
+ 		return -EINVAL;
+ 
+-	return mc13xxx_spi_reg_write(mc13xxx, offset, val);
++	return regmap_write(mc13xxx->regmap, offset, val);
+ }
+ EXPORT_SYMBOL(mc13xxx_reg_write);
+ 
+ int mc13xxx_reg_rmw(struct mc13xxx *mc13xxx, unsigned int offset,
+ 		u32 mask, u32 val)
+ {
+-	int ret;
+-	u32 valread;
+-
++	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
+ 	BUG_ON(val & ~mask);
++	dev_vdbg(mc13xxx->dev, "[0x%02x] <- 0x%06x (mask: 0x%06x)\n",
++			offset, val, mask);
+ 
+-	ret = mc13xxx_reg_read(mc13xxx, offset, &valread);
+-	if (ret)
+-		return ret;
+-
+-	valread = (valread & ~mask) | val;
+-
+-	return mc13xxx_reg_write(mc13xxx, offset, valread);
++	return regmap_update_bits(mc13xxx->regmap, offset, mask, val);
+ }
+ EXPORT_SYMBOL(mc13xxx_reg_rmw);
+ 
+@@ -706,7 +641,7 @@ static int mc13xxx_add_subdevice(struct mc13xxx *mc13xxx, const char *format)
+ #ifdef CONFIG_OF
+ static int mc13xxx_probe_flags_dt(struct mc13xxx *mc13xxx)
+ {
+-	struct device_node *np = mc13xxx->dev.of_node;
++	struct device_node *np = mc13xxx->dev->of_node;
+ 
+ 	if (!np)
+ 		return -ENODEV;
+@@ -752,6 +687,16 @@ static const struct of_device_id mc13xxx_dt_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
+ 
++static struct regmap_config mc13xxx_regmap_spi_config = {
++	.reg_bits = 7,
++	.pad_bits = 1,
 +	.val_bits = 24,
 +
 +	.max_register = MC13XXX_NUMREGS,
@@ -131,82 +201,57 @@ index 0000000..d22501d
 +	.cache_type = REGCACHE_NONE,
 +};
 +
-+static int mc13xxx_i2c_probe(struct i2c_client *client,
-+		const struct i2c_device_id *id)
-+{
-+	const struct of_device_id *of_id;
-+	struct i2c_driver *idrv = to_i2c_driver(client->dev.driver);
-+	struct mc13xxx *mc13xxx;
-+	struct mc13xxx_platform_data *pdata = dev_get_platdata(&client->dev);
-+	int ret;
-+
-+	of_id = of_match_device(mc13xxx_dt_ids, &client->dev);
-+	if (of_id)
-+		idrv->id_table = (const struct i2c_device_id*) of_id->data;
-+
-+	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
-+	if (!mc13xxx)
-+		return -ENOMEM;
-+
-+	dev_set_drvdata(&client->dev, mc13xxx);
-+
-+	mc13xxx->dev = &client->dev;
+ static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
+ 		struct mc13xxx_platform_data *pdata, int irq);
+ 
+@@ -776,10 +721,19 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+ 	dev_set_drvdata(&spi->dev, mc13xxx);
+ 	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
+ 	spi->bits_per_word = 32;
+-	spi_setup(spi);
+ 
+ 	mc13xxx->dev = &spi->dev;
+-	mc13xxx->spidev = spi;
 +	mutex_init(&mc13xxx->lock);
 +
-+	mc13xxx->regmap = regmap_init_i2c(client, &mc13xxx_regmap_i2c_config);
++	mc13xxx->regmap = regmap_init_spi(spi, &mc13xxx_regmap_spi_config);
 +	if (IS_ERR(mc13xxx->regmap)) {
 +		ret = PTR_ERR(mc13xxx->regmap);
 +		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
 +				ret);
-+		dev_set_drvdata(&client->dev, NULL);
++		dev_set_drvdata(&spi->dev, NULL);
 +		kfree(mc13xxx);
 +		return ret;
 +	}
+ 
+ 	ret = mc13xxx_common_init(mc13xxx, pdata, spi->irq);
+ 
+@@ -787,7 +741,7 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+ 		dev_set_drvdata(&spi->dev, NULL);
+ 	} else {
+ 		const struct spi_device_id *devid =
+-			spi_get_device_id(mc13xxx->spidev);
++			spi_get_device_id(spi);
+ 		if (!devid || devid->driver_data != mc13xxx->ictype)
+ 			dev_warn(mc13xxx->dev,
+ 				"device id doesn't match auto detection!\n");
+@@ -801,7 +755,6 @@ static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
+ {
+ 	int ret;
+ 
+-	mutex_init(&mc13xxx->lock);
+ 	mc13xxx_lock(mc13xxx);
+ 
+ 	ret = mc13xxx_identify(mc13xxx);
+@@ -878,6 +831,8 @@ static void mc13xxx_common_cleanup(struct mc13xxx *mc13xxx)
+ 
+ 	mfd_remove_devices(mc13xxx->dev);
+ 
++	regmap_exit(mc13xxx->regmap);
 +
-+	ret = mc13xxx_common_init(mc13xxx, pdata, client->irq);
-+
-+	if (ret == 0 && (id->driver_data != mc13xxx->ictype))
-+		dev_warn(mc13xxx->dev,
-+				"device id doesn't match auto detection!\n");
-+
-+	return ret;
-+}
-+
-+static int __devexit mc13xxx_i2c_remove(struct i2c_client *client)
-+{
-+	struct mc13xxx *mc13xxx = dev_get_drvdata(&client->dev);
-+
-+	mc13xxx_common_cleanup(mc13xxx);
-+
-+	return 0;
-+}
-+
-+static struct i2c_driver mc13xxx_i2c_driver = {
-+	.id_table = mc13xxx_i2c_device_id,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "mc13xxx",
-+		.of_match_table = mc13xxx_dt_ids,
-+	},
-+	.probe = mc13xxx_i2c_probe,
-+	.remove = __devexit_p(mc13xxx_i2c_remove),
-+};
-+
-+static int __init mc13xxx_i2c_init(void)
-+{
-+	return i2c_add_driver(&mc13xxx_i2c_driver);
-+}
-+subsys_initcall(mc13xxx_i2c_init);
-+
-+static void __exit mc13xxx_i2c_exit(void)
-+{
-+	i2c_del_driver(&mc13xxx_i2c_driver);
-+}
-+module_exit(mc13xxx_i2c_exit);
-+
-+MODULE_DESCRIPTION("i2c driver for Freescale MC13XXX PMIC");
-+MODULE_AUTHOR("Marc Reilly <marc@cpdesign.com.au");
-+MODULE_LICENSE("GPL v2");
+ 	kfree(mc13xxx);
+ }
+ 
 -- 
 1.7.3.4
 
