@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab2DARSP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 13:18:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60962 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752414Ab2DARSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 13:18:12 -0400
-Date: Sun, 1 Apr 2012 18:38:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
-Message-ID: <20120401163833.GA29697@redhat.com>
-References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com> <1333227549.2325.4051.camel@edumazet-glaptop> <20120331213423.GA21219@redhat.com> <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com> <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
+	id S1752728Ab2DARVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 13:21:25 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39876 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2DARVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 13:21:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120401125741.GA7484@p183.telecom.by>
+References: <20120401125741.GA7484@p183.telecom.by>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 1 Apr 2012 10:20:59 -0700
+X-Google-Sender-Auth: npZPDIGzeCTM9hr7e0ATmGVfdCg
+Message-ID: <CA+55aFwCaekbk7VocaU0_O=7fDgJRBXUiQYvoYh1GDMicbCtow@mail.gmail.com>
+Subject: Re: [PATCH] nextfd(2)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk, drepper@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01, Sasha Levin wrote:
+On Sun, Apr 1, 2012 at 5:57 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
 >
-> >> It would be nice to know what sysrq-t says, in particular the trace
-> >> of khelper thread is interesting.
-> >
-> > Sure, I'll get one when it happens again.
+> BSD added closefrom(fd) which is OK for this exact purpose but suboptimal
+> on the bigger scale. closefrom(2) does only close(2) (obviously :-)
+> closefrom(2) siletly ignores errors from close(2) which in theory is not OK
+> for userspace.
 >
-> So here's the stack of the usermode thread:
+> So, don't add closefrom(2), add nextfd(2).
 
-Great, thanks, this is even better than khelper's trace,
+I don't disagree with this, but I don't think it's worth a new file of
+its own - I think it should go next to dup() and friends (currently in
+fs/fcntl.h).
 
-> [  336.614015]  [<ffffffff826a8e54>] schedule+0x24/0x70
-> [  336.614015]  [<ffffffff825fd66d>] p9_client_rpc+0x13d/0x360
-> [  336.614015]  [<ffffffff810d7850>] ? wake_up_bit+0x40/0x40
-> [  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
-> [  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
-> [  336.614015]  [<ffffffff825ff5ff>] p9_client_walk+0x8f/0x220
-> [  336.614015]  [<ffffffff815a8e3b>] v9fs_vfs_lookup+0xab/0x1c0
-> [  336.614015]  [<ffffffff811ee0c0>] d_alloc_and_lookup+0x40/0x80
-> [  336.614015]  [<ffffffff811fdea0>] ? d_lookup+0x30/0x50
-> [  336.614015]  [<ffffffff811f0aea>] do_lookup+0x28a/0x3b0
-> [  336.614015]  [<ffffffff817c9117>] ? security_inode_permission+0x17/0x20
-> [  336.614015]  [<ffffffff811f1c07>] link_path_walk+0x167/0x420
-> [  336.614015]  [<ffffffff811ee630>] ? generic_readlink+0xb0/0xb0
-> [  336.614015]  [<ffffffff81896d88>] ? __raw_spin_lock_init+0x38/0x70
-> [  336.614015]  [<ffffffff811f24da>] path_openat+0xba/0x500
-> [  336.614015]  [<ffffffff81057253>] ? sched_clock+0x13/0x20
-> [  336.614015]  [<ffffffff810ed805>] ? sched_clock_local+0x25/0x90
-> [  336.614015]  [<ffffffff810ed940>] ? sched_clock_cpu+0xd0/0x120
-> [  336.614015]  [<ffffffff811f2a34>] do_filp_open+0x44/0xa0
-> [  336.614015]  [<ffffffff81119acd>] ? __lock_release+0x8d/0x1d0
-> [  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
-> [  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
-> [  336.614015]  [<ffffffff826aa7f0>] ? _raw_spin_unlock+0x30/0x60
-> [  336.614015]  [<ffffffff811ea74d>] open_exec+0x2d/0xf0
-> [  336.614015]  [<ffffffff811eb888>] do_execve_common+0x128/0x320
-> [  336.614015]  [<ffffffff811ebb05>] do_execve+0x35/0x40
-> [  336.614015]  [<ffffffff810589e5>] sys_execve+0x45/0x70
-> [  336.614015]  [<ffffffff826acc28>] kernel_execve+0x68/0xd0
-> [  336.614015]  [<ffffffff810cd6a6>] ? ____call_usermodehelper+0xf6/0x130
-> [  336.614015]  [<ffffffff810cd6f9>] call_helper+0x19/0x20
-> [  336.614015]  [<ffffffff826acbb4>] kernel_thread_helper+0x4/0x10
-> [  336.614015]  [<ffffffff810e3f80>] ? finish_task_switch+0x80/0x110
-> [  336.614015]  [<ffffffff826aaeb4>] ? retint_restore_args+0x13/0x13
-> [  336.614015]  [<ffffffff810cd6e0>] ? ____call_usermodehelper+0x130/0x130
-> [  336.614015]  [<ffffffff826acbb0>] ? gs_change+0x13/0x13
->
-> While it seems that 9p is the culprit, I have to point out that this
-> bug is easily reproducible, and it happens each time due to a
-> call_usermode_helper() call. Other than that 9p behaves perfectly and
-> I'd assume that I'd be seeing other things break besides
-> call_usermode_helper() related ones.
+Also, I think you should:
 
-Of course I do not know what happens, but at least this obviously
-explains why UMH_WAIT_EXEC hangs, I think call_usermodehelper_exec()
-itself is innocent.
+ (a) at a minimum use the bitmap.  It's easy:
 
-Oleg.
+    struct fdtable *fdt;
 
+    rcu_read_lock();
+    fdt = files_fdtable(current->files);
+    .. maximum fd in fdt->max_fds ...
+    .. you have the bitmap in fdt->open_fds ..
+
+ (b) I'd also suggest you add a "flag" argument and have at least one
+bit option for "search for next *free* file table entry". I'm not sure
+anybody wants it, but it is kind of the same operation, and having a
+"flags" field means that it's extensible in the future if people want
+to find the next cloexec fd or whatever. Or if they just want to find
+the *last* fd, or something.
+
+But I think the concept makes sense.
+
+                               Linus
