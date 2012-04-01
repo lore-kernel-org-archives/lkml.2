@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab2DATi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 15:38:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab2DATiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 15:38:25 -0400
-Date: Sun, 1 Apr 2012 15:38:16 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCHSET] block: modularize blkcg config and stat file handling
-Message-ID: <20120401193816.GA6116@redhat.com>
-References: <1332975091-10950-1-git-send-email-tj@kernel.org>
+	id S1753344Ab2DATkK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 15:40:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36476 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab2DATkI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 15:40:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332975091-10950-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdYRStgKo_e-4kZKA-V-OoMiV21jRS3R4g1Cq+4c+4=iQA@mail.gmail.com>
+References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CACRpkdYRStgKo_e-4kZKA-V-OoMiV21jRS3R4g1Cq+4c+4=iQA@mail.gmail.com>
+From: Rabin Vincent <rabin@rab.in>
+Date: Mon, 2 Apr 2012 01:09:27 +0530
+X-Google-Sender-Auth: UDHkvuCmKDpixsmNNwS54MaRILQ
+Message-ID: <CAH+eYFC+q4xFuSdRBkO9nb0XZWU4pQ_yCyinMy2X3ds9WQd1kw@mail.gmail.com>
+Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 03:51:10PM -0700, Tejun Heo wrote:
+On Mon, Apr 2, 2012 at 00:52, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Sun, Apr 1, 2012 at 8:58 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+>
+>> diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+>> index ebc1e86..5be3248 100644
+>> --- a/drivers/mfd/db8500-prcmu.c
+>> +++ b/drivers/mfd/db8500-prcmu.c
+>> @@ -2788,6 +2788,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
+>>                .constraints = {
+>>                        .name = "db8500-vape",
+>>                        .valid_ops_mask = REGULATOR_CHANGE_STATUS,
+>> +                       .always_on = true,
+>>                },
+>>                .consumer_supplies = db8500_vape_consumers,
+>>                .num_consumer_supplies = ARRAY_SIZE(db8500_vape_consumers),
+>
+> Combined with the PL022 patch this causes a power regression since
+> the PL022 is hereafter always on.
 
-[..]
-> This patchset is an attempt at bringing some sanity to blkcg config
-> and stat file handling.  It makes use of the pending dynamic cgroup
-> file type addition / removal support [1], which will be merged into
-> cgroup/for-3.5 once 3.4-rc1 is released.
-
-Thanks Tejun. This looks like a nice cleanup. Especially the stat part.
-It was very messy in blkcg core code. Now atleast it is clear who owns what
-file and who needs per cpu stats etc. And new policies should be easily
-able to define their own cgroup files.
-
-Thanks
-Vivek
+How can there be a "power regression" here?  This is the only user of
+the vcore regulator, and, apart from the fact that its disable routine
+only decrements an essentialy write-only variable, it is shared which
+several devices which already never disable it.
