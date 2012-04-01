@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583Ab2DAF4W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 01:56:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:50325 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab2DAF4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 01:56:20 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com> (arch/tile)
-Cc: cpufreq@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>
-Cc: Helge Deller <deller@gmx.de>
-Cc: Jonas Aaberg <jonas.aberg@stericsson.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-hexagon@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Cc: Martin Persson <martin.persson@stericsson.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Sundar Iyer <sundar.iyer@stericsson.com>
-Cc: user-mode-linux-devel@lists.sourceforge.net
-Subject: [PULL] cpumask cleanups
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Sun, 01 Apr 2012 15:25:50 +0930
-Message-ID: <87sjgovvvd.fsf@rustcorp.com.au>
+	id S1751652Ab2DAF4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 01:56:44 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:29678
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751475Ab2DAF4m convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 01:56:42 -0400
+X-SpamScore: -19
+X-BigFish: VPS-19(zzc89bh1803M1432N98dK1447Mzz1202hzzz2dh668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1SDUD-02-22T-02
+X-M-MSG: 
+Date: Sun, 1 Apr 2012 13:56:03 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Len Brown <lenb@kernel.org>, "Rafeal J. Wysocki" <rjw@sisk.pl>,
+        <linux-acpi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Message-ID: <20120401055603.GA11505@localhost.amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
+ <1333258053.2939.22.camel@minggr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1333258053.2939.22.camel@minggr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 01 Apr 2012 05:56:32.0340 (UTC) FILETIME=[3066C940:01CD0FCC]
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Somehow forgot to send this out; it's been sitting in linux-next, and
-if you don't want it, it can sit there another cycle)
+Hi,
 
-To git@github.com:rustyrussell/linux.git
-   f946eeb..615399c  master -> master
- + 9dcbe9d...6ac67b9 for-linus -> for-linus (forced update)
-The following changes since commit b5174fa3a7f4f8f150bfa3b917c92608953dfa0f:
+On Sun, Apr 01, 2012 at 01:27:33PM +0800, Lin Ming wrote:
+> > -		if (device->power.states[state].flags.explicit_set) {
+> > +		/* If state is D3 Cold, try to evaluate _PS3 first */
+> > +		if (state == ACPI_STATE_D3_COLD) {
+> > +			explicit_set = (ps - 1)->flags.explicit_set;
+> > +			object_name[3] -= 1;
+> > +		}
+> 
+> I'm not sure whether this works or not.
+> 
+> From ACPI spec,
+> 
+> _PS3 "is used to put the specific device into its D3hot or D3 state"
+> 
+> D3 neither means D3hot nor D3cold. It's an old term before D3hot and
+> D3cold were introduced.
+I guess D3 has to mean something, right? :-)
 
-  Merge tag 'mmc-merge-for-3.4-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2012-03-28 20:59:45 -0700)
+Here is the problem, there is no _PR3 in AMD's implementation, just _PS3.
+And since _S0W evaluates 4, I've to put this device into D3 cold state
+with _PS3.
 
-are available in the git repository at:
+And the ACPI does have some words like:
 
-  git://github.com/rustyrussell/linux.git master
+------
+Platform/drivers must assume that the device will have power completely
+removed when the device is place into “D3” via _PS3
+------
 
-Rusty Russell (4):
-      remove references to cpu_*_map in arch/
-      drivers/cpufreq/db8500-cpufreq: remove references to cpu_*_map.
-      documentation: remove references to cpu_*_map.
-      cpumask: remove old cpu_*_map.
+This is in section 7.2.11: _PR3.
 
- Documentation/cgroups/cpusets.txt   |    2 +-
- Documentation/cpu-hotplug.txt       |   22 +++++++++++-----------
- arch/alpha/kernel/smp.c             |    2 +-
- arch/arm/kernel/kprobes.c           |    4 ++--
- arch/arm/kernel/smp.c               |    7 ++++---
- arch/hexagon/kernel/smp.c           |    8 ++++----
- arch/ia64/kernel/acpi.c             |    2 +-
- arch/mips/cavium-octeon/smp.c       |    4 ++--
- arch/mips/kernel/mips-mt-fpaff.c    |    2 +-
- arch/mips/kernel/proc.c             |    2 +-
- arch/mips/kernel/smp-bmips.c        |    2 +-
- arch/mips/kernel/smp.c              |   27 ++++++++++++---------------
- arch/mips/kernel/smtc.c             |    2 +-
- arch/mips/mm/c-octeon.c             |    6 +++---
- arch/mips/netlogic/common/smp.c     |    6 +++---
- arch/mips/pmc-sierra/yosemite/smp.c |    8 ++++----
- arch/mips/sgi-ip27/ip27-smp.c       |    2 +-
- arch/mips/sibyte/bcm1480/smp.c      |    7 +++----
- arch/mips/sibyte/sb1250/smp.c       |    7 +++----
- arch/sparc/kernel/leon_kernel.c     |    6 +++---
- arch/tile/kernel/setup.c            |    8 ++++----
- arch/um/kernel/skas/process.c       |    2 +-
- arch/um/kernel/smp.c                |    9 ++++-----
- arch/x86/xen/enlighten.c            |    2 +-
- drivers/cpufreq/db8500-cpufreq.c    |    2 +-
- include/linux/cpumask.h             |    6 ------
- init/Kconfig                        |    4 ++--
- kernel/cpuset.c                     |   10 +++++-----
- 28 files changed, 80 insertions(+), 91 deletions(-)
--- 
-  How could I marry someone with more hair than me?  http://baldalex.org
+> 
+> Another problem:
+> 
+> With your patch, both D3hot and D3cold will evaluate _PS3, right?
+> 
+Yes.
+
+> Will it have problem on AMD platform if you try to put ODD into D3hot
+> state? _PS3 is evaluated, so it actually enters D3Cold state.
+
+There is no D3 hot support for this device(from the firmware's
+perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
+_PS3).
+
+
+Thanks for the review.
+
+-Aaron
+
