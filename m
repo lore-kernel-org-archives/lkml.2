@@ -1,257 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563Ab2DAHif (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 03:38:35 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:41533 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab2DAHhv (ORCPT
+	id S1751457Ab2DAHnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 03:43:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47635 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab2DAHnG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 03:37:51 -0400
-From: Marc Reilly <marc@cpdesign.com.au>
-To: sameo@linux.intel.com
-Cc: linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
-        u.kleine-koenig@pengutronix.de, oskar@scara.com,
-        linux-kernel@vger.kernel.org, alexg@meprolight.com,
-        Marc Reilly <marc@cpdesign.com.au>
-Subject: [PATCH v5 2/4] mfd: mc13xxx-core: use regmap for register access
-Date: Sun,  1 Apr 2012 16:41:37 +1000
-Message-Id: <1333262499-25871-3-git-send-email-marc@cpdesign.com.au>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1333262499-25871-1-git-send-email-marc@cpdesign.com.au>
-References: <1333262499-25871-1-git-send-email-marc@cpdesign.com.au>
+	Sun, 1 Apr 2012 03:43:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@amd.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Date: Sun, 1 Apr 2012 09:47:26 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Zhang Rui <rui.zhang@intel.com>, Lin Ming <ming.m.lin@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <1333263819.2387.94.camel@rui.sh.intel.com> <20120401153434.GA3268@localhost.amd.com>
+In-Reply-To: <20120401153434.GA3268@localhost.amd.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201204010947.27234.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change converts the mc13xxx core to use regmap rather than direct
-spi r/w.
-The spidev member of mc13xxx struct becomes redundant and is removed.
-Extra debugging aids are added to mc13xxx_reg_rmw.
-Mutex init is moved to before regmap init.
+On Sunday, April 01, 2012, Aaron Lu wrote:
+> Hi,
+> 
+> On Sun, Apr 01, 2012 at 03:03:39PM +0800, Zhang Rui wrote:
+> > First of all, I agree that we must evaluate _PS3 when setting device to
+> > either D3_HOT or D3_COLD.
+> Good.
+> 
+> > 
+> > And here is my understanding about D3/D3_HOT/D3_COLD,
+> > 
+> > if _PR3 exists, it means the devices supports both D3_HOT and D3_COLD.
+> Agree.
+> 
+> > 
+> > if only _PS3 exists, we can only say that the state after evaluating
+> > _PS3 is D3, it could either be D3_HOT or D3_COLD, and this is device
+> > specific, which in your case, is D3_COLD.
+> I prefer Rafeal's definition, let's just *assume* the device is at D3
+> cold after its _PS3 is executed. Unless it has _PR3, in which case, we
+> have a chance to put the device into D3 hot instead.
+> 
+> > 
+> > BTW, here is the description of _S0W in ACPI spec,
+> > If OSPM has not indicated that it supports _PR3 through the OSPM
+> > Platform-Wide Capabilities (see Section 6.2.10.2), then the value "3"
+> > corresponds to D3. If it has indicated _PR3 support, the value "3"
+> > represents D3hot and the value "4" represents D3cold.
+> > 
+> > So IMO, the _S0W should return 3 in AMD's implementation as it does not
+> > have _PR3.
+> OK, sounds like a firmware bug.
+> Thanks for identifying this.
 
-Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
----
- drivers/mfd/Kconfig        |    1 +
- drivers/mfd/mc13xxx-core.c |  113 +++++++++++++------------------------------
- 2 files changed, 35 insertions(+), 79 deletions(-)
+I don't think this is a bug.  It actually may return either 3 or 4, because
+there is no difference between them if there's no _PR3 (i.e. the action to
+carry out by software would only be different if _PR3 were present).
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index cd13e9f..4e92513 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -576,6 +576,7 @@ config MFD_MC13XXX
- 	depends on SPI_MASTER
- 	select MFD_CORE
- 	select MFD_MC13783
-+	select REGMAP_SPI
- 	help
- 	  Support for the Freescale (Atlas) PMIC and audio CODECs
- 	  MC13783 and MC13892.
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 0753402..3223625 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -21,6 +21,8 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/of_gpio.h>
-+#include <linux/regmap.h>
-+#include <linux/err.h>
- 
- enum mc13xxx_id {
- 	MC13XXX_ID_MC13783,
-@@ -29,7 +31,7 @@ enum mc13xxx_id {
- };
- 
- struct mc13xxx {
--	struct spi_device *spidev;
-+	struct regmap *regmap;
- 
- 	struct device *dev;
- 	enum mc13xxx_id ictype;
-@@ -172,67 +174,6 @@ void mc13xxx_unlock(struct mc13xxx *mc13xxx)
- }
- EXPORT_SYMBOL(mc13xxx_unlock);
- 
--#define MC13XXX_REGOFFSET_SHIFT 25
--static int mc13xxx_spi_reg_read(struct mc13xxx *mc13xxx,
--				unsigned int offset, u32 *val)
--{
--	struct spi_transfer t;
--	struct spi_message m;
--	int ret;
--
--	*val = offset << MC13XXX_REGOFFSET_SHIFT;
--
--	memset(&t, 0, sizeof(t));
--
--	t.tx_buf = val;
--	t.rx_buf = val;
--	t.len = sizeof(u32);
--
--	spi_message_init(&m);
--	spi_message_add_tail(&t, &m);
--
--	ret = spi_sync(mc13xxx->spidev, &m);
--
--	/* error in message.status implies error return from spi_sync */
--	BUG_ON(!ret && m.status);
--
--	if (ret)
--		return ret;
--
--	*val &= 0xffffff;
--
--	return 0;
--}
--
--static int mc13xxx_spi_reg_write(struct mc13xxx *mc13xxx, unsigned int offset,
--		u32 val)
--{
--	u32 buf;
--	struct spi_transfer t;
--	struct spi_message m;
--	int ret;
--
--	buf = 1 << 31 | offset << MC13XXX_REGOFFSET_SHIFT | val;
--
--	memset(&t, 0, sizeof(t));
--
--	t.tx_buf = &buf;
--	t.rx_buf = &buf;
--	t.len = sizeof(u32);
--
--	spi_message_init(&m);
--	spi_message_add_tail(&t, &m);
--
--	ret = spi_sync(mc13xxx->spidev, &m);
--
--	BUG_ON(!ret && m.status);
--
--	if (ret)
--		return ret;
--
--	return 0;
--}
--
- int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
- {
- 	int ret;
-@@ -242,7 +183,7 @@ int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
- 	if (offset > MC13XXX_NUMREGS)
- 		return -EINVAL;
- 
--	ret = mc13xxx_spi_reg_read(mc13xxx, offset, val);
-+	ret = regmap_read(mc13xxx->regmap, offset, val);
- 	dev_vdbg(mc13xxx->dev, "[0x%02x] -> 0x%06x\n", offset, *val);
- 
- 	return ret;
-@@ -258,25 +199,19 @@ int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val)
- 	if (offset > MC13XXX_NUMREGS || val > 0xffffff)
- 		return -EINVAL;
- 
--	return mc13xxx_spi_reg_write(mc13xxx, offset, val);
-+	return regmap_write(mc13xxx->regmap, offset, val);
- }
- EXPORT_SYMBOL(mc13xxx_reg_write);
- 
- int mc13xxx_reg_rmw(struct mc13xxx *mc13xxx, unsigned int offset,
- 		u32 mask, u32 val)
- {
--	int ret;
--	u32 valread;
--
-+	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
- 	BUG_ON(val & ~mask);
-+	dev_vdbg(mc13xxx->dev, "[0x%02x] <- 0x%06x (mask: 0x%06x)\n",
-+			offset, val, mask);
- 
--	ret = mc13xxx_reg_read(mc13xxx, offset, &valread);
--	if (ret)
--		return ret;
--
--	valread = (valread & ~mask) | val;
--
--	return mc13xxx_reg_write(mc13xxx, offset, valread);
-+	return regmap_update_bits(mc13xxx->regmap, offset, mask, val);
- }
- EXPORT_SYMBOL(mc13xxx_reg_rmw);
- 
-@@ -706,7 +641,7 @@ static int mc13xxx_add_subdevice(struct mc13xxx *mc13xxx, const char *format)
- #ifdef CONFIG_OF
- static int mc13xxx_probe_flags_dt(struct mc13xxx *mc13xxx)
- {
--	struct device_node *np = mc13xxx->dev.of_node;
-+	struct device_node *np = mc13xxx->dev->of_node;
- 
- 	if (!np)
- 		return -ENODEV;
-@@ -752,6 +687,16 @@ static const struct of_device_id mc13xxx_dt_ids[] = {
- };
- MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
- 
-+static struct regmap_config mc13xxx_regmap_spi_config = {
-+	.reg_bits = 7,
-+	.pad_bits = 1,
-+	.val_bits = 24,
-+
-+	.max_register = MC13XXX_NUMREGS,
-+
-+	.cache_type = REGCACHE_NONE,
-+};
-+
- static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
- 		struct mc13xxx_platform_data *pdata, int irq);
- 
-@@ -776,10 +721,19 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
- 	dev_set_drvdata(&spi->dev, mc13xxx);
- 	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
- 	spi->bits_per_word = 32;
--	spi_setup(spi);
- 
- 	mc13xxx->dev = &spi->dev;
--	mc13xxx->spidev = spi;
-+	mutex_init(&mc13xxx->lock);
-+
-+	mc13xxx->regmap = regmap_init_spi(spi, &mc13xxx_regmap_spi_config);
-+	if (IS_ERR(mc13xxx->regmap)) {
-+		ret = PTR_ERR(mc13xxx->regmap);
-+		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
-+				ret);
-+		dev_set_drvdata(&spi->dev, NULL);
-+		kfree(mc13xxx);
-+		return ret;
-+	}
- 
- 	ret = mc13xxx_common_init(mc13xxx, pdata, spi->irq);
- 
-@@ -787,7 +741,7 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
- 		dev_set_drvdata(&spi->dev, NULL);
- 	} else {
- 		const struct spi_device_id *devid =
--			spi_get_device_id(mc13xxx->spidev);
-+			spi_get_device_id(spi);
- 		if (!devid || devid->driver_data != mc13xxx->ictype)
- 			dev_warn(mc13xxx->dev,
- 				"device id doesn't match auto detection!\n");
-@@ -801,7 +755,6 @@ static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
- {
- 	int ret;
- 
--	mutex_init(&mc13xxx->lock);
- 	mc13xxx_lock(mc13xxx);
- 
- 	ret = mc13xxx_identify(mc13xxx);
-@@ -878,6 +831,8 @@ static void mc13xxx_common_cleanup(struct mc13xxx *mc13xxx)
- 
- 	mfd_remove_devices(mc13xxx->dev);
- 
-+	regmap_exit(mc13xxx->regmap);
-+
- 	kfree(mc13xxx);
- }
- 
--- 
-1.7.3.4
+> > > And the ACPI does have some words like:
+> > > 
+> > > ------
+> > > Platform/drivers must assume that the device will have power completely
+> > > removed when the device is place into “D3” via _PS3
+> > > ------
+> > > 
+> > I think this means OS can not access device any more after evaluating
+> > _PS3, and it should re-enumerate the device when transiting back to D0.
+> > 
+> > > This is in section 7.2.11: _PR3.
+> > > 
+> > > > 
+> > > > Another problem:
+> > > > 
+> > > > With your patch, both D3hot and D3cold will evaluate _PS3, right?
+> > > > 
+> > > Yes.
+> > > 
+> > > > Will it have problem on AMD platform if you try to put ODD into D3hot
+> > > > state? _PS3 is evaluated, so it actually enters D3Cold state.
+> > > 
+> > > There is no D3 hot support for this device(from the firmware's
+> > > perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
+> > > _PS3).
+> > > 
+> > I was trying to make a cleanup of the D3/D3_HOT/D3_COLD support in
+> > Linux, and this gives me some clue.
+> This is great, and I would like to help as much as I can.
+> 
+> > 
+> > How about this?
+> > 
+> > We should use the term "D3" in general in Linux.
+> > Without _PR3, OS should *assume* that the power is removed, although it
+> > may be not true.
+> > With _PR3, OS can *assure* that the power is removed, because it knows
+> > how to remove thw power (evaluating _PR3._OFF).
+> > 
+> > So the difference is that OS need to make sure whether to evaluate
+> > _PR3._OFF when _PR3 exists. For example, a device has _PR3, but _S0W
+> > returns 3, OS should not evaluate _PR3._OFF when the device sleeps with
+> > remote wakeup support.
+> > 
+> > what do you think?
+> I agree with Rafeal's ideas.
 
+Good. :-)
+
+Thanks,
+Rafael
