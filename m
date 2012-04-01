@@ -1,144 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab2DAM5x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 08:57:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63938 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab2DAM5r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 08:57:47 -0400
-Date: Sun, 1 Apr 2012 15:57:42 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] nextfd(2)
-Message-ID: <20120401125741.GA7484@p183.telecom.by>
+	id S1751963Ab2DAM6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 08:58:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab2DAM6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 08:58:22 -0400
+Message-ID: <4F7850EA.3080203@redhat.com>
+Date: Sun, 01 Apr 2012 15:58:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F7436FB.9000004@redhat.com> <4F744A43.4060600@linux.vnet.ibm.com> <4F745C4F.4060404@redhat.com> <4F757A7C.6020109@linux.vnet.ibm.com>
+In-Reply-To: <4F757A7C.6020109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there is no reliable way to close all opened file descriptors
-(which daemons need and like to do):
+On 03/30/2012 12:18 PM, Xiao Guangrong wrote:
+> On 03/29/2012 08:57 PM, Avi Kivity wrote:
+>
+> > On 03/29/2012 01:40 PM, Xiao Guangrong wrote:
+> >>>> * Implementation
+> >>>> We can freely walk the page between walk_shadow_page_lockless_begin and
+> >>>> walk_shadow_page_lockless_end, it can ensure all the shadow page is valid.
+> >>>>
+> >>>> In the most case, cmpxchg is fair enough to change the access bit of spte,
+> >>>> but the write-protect path on softmmu/nested mmu is a especial case: it is
+> >>>> a read-check-modify path: read spte, check W bit, then clear W bit.
+> >>>
+> >>> We also set gpte.D and gpte.A, no? How do you handle that?
+> >>>
+> >>
+> >>
+> >> We still need walk gust page table before fast page fault to check
+> >> whether the access is valid.
+> > 
+> > Ok.  But that's outside the mmu lock.
+> > 
+> > We can also skip that: if !sp->unsync, copy access rights and gpte.A/D
+> > into spare bits in the spte, and use that to check.
+> > 
+>
+>
+> Great!
+>
+> gpte.A need not be copied into spte since EFEC.P = 1 means the shadow page
+> table is present, gpte.A must be set in this case.
+>
+> And, we do not need to cache gpte access rights into spte, instead of it,
+> we can atomicly read gpte to get these information (anyway, we need read gpte
+> to get the gfn.)
 
-* dumb close(fd) loop is slow, upper bound is unknown and
-  can be arbitrary large,
+Why do we need the gfn?  If !sp->unsync then it is unchanged (it's also
+in sp->gfns).
 
-* /proc/self/fd is unreliable:
-  proc may be unconfigured or not mounted at expected place.
-  Looking at /proc/self/fd requires opening directory
-  which may not be available due to malicious rlimit drop or ENOMEM situations.
-  Not opening directory is equivalent to dumb close(2) loop except slower.
+Oh, needed for mark_page_dirty().
 
-BSD added closefrom(fd) which is OK for this exact purpose but suboptimal
-on the bigger scale. closefrom(2) does only close(2) (obviously :-)
-closefrom(2) siletly ignores errors from close(2) which in theory is not OK
-for userspace.
+Caching gpte access in the spte will save decoding the access buts and
+sp->role.access.
 
-So, don't add closefrom(2), add nextfd(2).
+>
+> I will do it in the next version.
+>
+> >>
+> >>>>  In order
+> >>>> to avoid marking spte writable after/during page write-protect, we do the
+> >>>> trick like below:
+> >>>>
+> >>>>       fast page fault path:
+> >>>>             lock RCU
+> >>>>             set identification in the spte
+> >>>
+> >>> What if you can't (already taken)?  Spin?  Slow path?
+> >>
+> >>
+> >> In this patch, it allows to concurrently access on the same spte:
+> >> it freely set its identification on the spte, because i did not
+> >> want to introduce other atomic operations.
+> >>
+> >> You remind me that there may be a risk: if many vcpu fault on the
+> >> same spte, it will retry the spte forever. Hmm, how about fix it
+> >> like this:
+> >>
+> >> if ( spte.identification = 0) {
+> >> 	set spte.identification = vcpu.id
+> >> 	goto cmpxchg-path
+> >> }
+> >>
+> >> if (spte.identification == vcpu.id)
+> >> 	goto cmpxchg-path
+> >>
+> >> return to guest and retry the address again;
+> >>
+> >> cmpxchg-path:
+> >> 	do checks and cmpxchg
+> >>
+> >> It can ensure the spte can be updated.
+> > 
+> > What's the difference between this and
+> > 
+> > 
+> >   if test_and_set_bit(spte.lock)
+> >        return_to_guest
+> >   else
+> >        do checks and cmpxchg
+> > 
+> > ?
+> > 
+>
+>
+> test_and_set_bit is a atomic operation that is i want to avoid.
 
-	int nextfd(int fd)
+Right.  Can you check what the effect is (with say
+test_and_set_bit(spte, 0) in the same path).
 
-returns next opened file descriptor which is >= than fd or -1/ESRCH
-if there aren't any descriptors >= than fd.
+I'm not convinced it's significant.
 
-Thus closefrom(3) can be rewritten through it in userspace:
+>
+> >>
+> >>>> The identification should be unique to avoid the below race:
+> >>>>
+> >>>>      VCPU 0                VCPU 1            VCPU 2
+> >>>>       lock RCU
+> >>>>    spte + identification
+> >>>>    check conditions
+> >>>>                        do write-protect, clear
+> >>>>                           identification
+> >>>>                                               lock RCU
+> >>>>                                         set identification
+> >>>>      cmpxchg + w - identification
+> >>>>         OOPS!!!
+> >>>
+> >>> Is it not sufficient to use just two bits?
+> >>>
+> >>> pf_lock - taken by page fault path
+> >>> wp_lock - taken by write protect path
+> >>>
+> >>> pf cmpxchg checks both bits.
+> >>>
+> >>
+> >>
+> >> If we just use two byte as identification, it has to use atomic
+> >> operations to maintain these bits? or i misunderstood?
+> > 
+> > Ah, you're using byte writes to set the identification? remember I
+> > didn't read the patches yet.
+> > 
+>
+>
+> Yes.
+>
+> > Please check the optimization manual, I remember there are warnings
+> > there about using different sized accesses for the same location,
+> > particularly when locked ops are involved.
+>
+>
+> "using different sized accesses for the same location" is OK i guess,
+> anyway, we can have the data struct of this style:
+>
+> union {
+> 	struct	{
+> 		char byte1,
+> 		char byte2,
+> 		char byte3,
+> 		char byte4
+>       	} foo;
+>
+> 	int bar;
+> }
+>
+> Access .bar and .foo.byte1 is allowed.
+>
+> And for the LOCK operation, i find these descriptions in the manual:
+>
+> "Locked operations are atomic with respect to all other memory operations and all
+> externally visible events"
+>
+> And there is a warning:
+> Software should access semaphores (shared memory used for signalling between
+> multiple processors) using identical addresses and operand lengths. For example, if
+> one processor accesses a semaphore using a word access, other processors should
+> not access the semaphore using a byte access.
+>
+> It is the warning you remember?
 
-	void closefrom(int fd)
-	{
-		while (1) {
-			fd = nextfd(fd);
-			if (fd == -1 && errno == ESRCH)
-				break;
-			(void)close(fd);
-			fd++;
-		}
-	}
+No, it should be safe, but performance is degraded if you mix loads and
+stores of different sizes to the same location.
 
-Maybe it will grow other smart uses.
+See for example "2.1.5.2 L1 DCache", Store Forwarding section in the
+optimization guide.
 
-nextfd(2) doesn't change kernel state and thus can't fail
-which is why it should go in. Other means may fail or
-may not be available or require linear time with only guessed
-upper boundaries (1024, getrlimit(RLIM_NOFILE), sysconf(_SC_OPEN_MAX).
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
----
+>
+> In our case, we do not treat it as "semaphores": the "byte writes" does not
+> need be atomic.
+>
+> > Maybe bitops are cheaper. 
+> > If the cost is similar, they're at least more similar to the rest of the
+> > kernel.
+> > 
+>
+>
+> The "bitops" you mentioned is the atomic-style bitops? It is cheaper that
+> byte writes?
 
- arch/x86/syscalls/syscall_32.tbl |    1 +
- arch/x86/syscalls/syscall_64.tbl |    1 +
- fs/Makefile                      |    1 +
- fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
- include/linux/syscalls.h         |    1 +
- 5 files changed, 31 insertions(+)
+They're not cheaper in general but may be compared to mixing byte writes
+and word loads.
 
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -355,3 +355,4 @@
- 346	i386	setns			sys_setns
- 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
- 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
-+349	i386	nextfd			sys_nextfd
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -318,6 +318,7 @@
- 309	common	getcpu			sys_getcpu
- 310	64	process_vm_readv	sys_process_vm_readv
- 311	64	process_vm_writev	sys_process_vm_writev
-+312	64	nextfd			sys_nextfd
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
- # for native 64-bit operation.
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -12,6 +12,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
- 		seq_file.o xattr.o libfs.o fs-writeback.o \
- 		pnode.o drop_caches.o splice.o sync.o utimes.o \
- 		stack.o fs_struct.o statfs.o
-+obj-y += nextfd.o
- 
- ifeq ($(CONFIG_BLOCK),y)
- obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
---- /dev/null
-+++ b/fs/nextfd.c
-@@ -0,0 +1,27 @@
-+#include <linux/errno.h>
-+#include <linux/fdtable.h>
-+#include <linux/rcupdate.h>
-+#include <linux/sched.h>
-+#include <linux/syscalls.h>
-+
-+/* Return first opened file descriptor which is >= than the argument. */
-+SYSCALL_DEFINE1(nextfd, unsigned int, fd)
-+{
-+	struct files_struct *files = current->files;
-+	struct fdtable *fdt;
-+
-+	rcu_read_lock();
-+	fdt = files_fdtable(files);
-+	while (fd < fdt->max_fds) {
-+		struct file *file;
-+
-+		file = rcu_dereference_check_fdtable(files, fdt->fd[fd]);
-+		if (file) {
-+			rcu_read_unlock();
-+			return fd;
-+		}
-+		fd++;
-+	}
-+	rcu_read_unlock();
-+	return -ESRCH;
-+}
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -857,5 +857,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
- 				      const struct iovec __user *rvec,
- 				      unsigned long riovcnt,
- 				      unsigned long flags);
-+asmlinkage long sys_nextfd(unsigned int fd);
- 
- #endif
+-- 
+error compiling committee.c: too many arguments to function
+
