@@ -1,62 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab2DAUlj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 16:41:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:54110 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab2DAUjA (ORCPT
+	id S1753347Ab2DAUsP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 16:48:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38363 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab2DAUsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 16:39:00 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: dhowells@redhat.com
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 01/11] irq_work: fix compile failure on MIPS from system.h split
-Date: Sun,  1 Apr 2012 16:38:37 -0400
-Message-Id: <1333312727-11428-2-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
+	Sun, 1 Apr 2012 16:48:13 -0400
+Message-ID: <4F78BF08.2090709@suse.cz>
+Date: Sun, 01 Apr 2012 22:48:08 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120331 Thunderbird/13.0a2
+MIME-Version: 1.0
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
+        cwillu@cwillu.com, jackdachef@gmail.com,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] libata: disable runtime pm for hotpluggable port
+References: <1331603857.3436.24.camel@minggr>
+In-Reply-To: <1331603857.3436.24.camel@minggr>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Builds of the MIPS platform ip32_defconfig fails as of
-commit 0195c00244dc2e9f522475868fa278c473ba7339
+On 03/13/2012 02:57 AM, Lin Ming wrote:
+> Currently, hotplug doesn't work if port is already runtime suspended.
+> For now, we simply disable runtime pm for hotpluggable port.
+> Later, we should add runtime pm support for hotpluggable port too.
+> 
+> Bug report:
+> https://lkml.org/lkml/2012/2/19/70
+> 
+> v2:
+> - Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
+> 
+> TODO: add similar hotpluggable port check for controllers other than
+> AHCI.
 
-    "Merge tag 'split-asm_system_h-for-linus-20120328' ..."
+Any updates on this? The patches which introduced the bug are in -rc1
+now. Unlike this patch.
 
-because MIPS xchg() macro uses BUILD_BUG_ON and it was moved
-in commit b81947c646bfefdf98e2fde5d7d39cbbda8525d4
-
-    "Disintegrate asm/system.h for MIPS"
-
-The root cause is that the system.h split wasn't tested on
-a baseline with commit 6c03438edeb5c359af35f060ea016ca65671c269
-
-    "kernel.h: doesn't explicitly use bug.h, so don't include it."
-
-Since this file uses BUG code in several other places besides
-the xchg call, simply make the inclusion explicit.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- kernel/irq_work.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index c3c46c7..0c56d44 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -5,6 +5,7 @@
-  * context. The enqueueing is NMI-safe.
-  */
- 
-+#include <linux/bug.h>
- #include <linux/kernel.h>
- #include <linux/export.h>
- #include <linux/irq_work.h>
+> Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+> Reported-and-tested-by: cwillu@cwillu.com
+> Reported-and-tested-by: jackdachef@gmail.com
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/ata/ahci.c             |    3 +++
+>  drivers/ata/ahci.h             |    3 +++
+>  drivers/ata/libahci.c          |   20 ++++++++++++++++++++
+>  drivers/ata/libata-transport.c |    6 ++++--
+>  include/linux/libata.h         |    2 ++
+>  5 files changed, 32 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+> index d07bf03..02e93ff 100644
+> --- a/drivers/ata/ahci.c
+> +++ b/drivers/ata/ahci.c
+> @@ -1145,6 +1145,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  	if (hpriv->cap & HOST_CAP_PMP)
+>  		pi.flags |= ATA_FLAG_PMP;
+>  
+> +	if (hpriv->cap & HOST_CAP_SXS)
+> +		pi.flags |= ATA_FLAG_EXTERNAL;
+> +
+>  	ahci_set_em_messages(hpriv, &pi);
+>  
+>  	if (ahci_broken_system_poweroff(pdev)) {
+> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+> index b175000..92f7172 100644
+> --- a/drivers/ata/ahci.h
+> +++ b/drivers/ata/ahci.h
+> @@ -172,6 +172,9 @@ enum {
+>  	PORT_CMD_ALPE		= (1 << 26), /* Aggressive Link PM enable */
+>  	PORT_CMD_ATAPI		= (1 << 24), /* Device is ATAPI */
+>  	PORT_CMD_FBSCP		= (1 << 22), /* FBS Capable Port */
+> +	PORT_CMD_ESP		= (1 << 21), /* External SATA Port */
+> +	PORT_CMD_MPSP		= (1 << 19), /* Mechanical Presence Switch Attached to Port */
+> +	PORT_CMD_HPCP		= (1 << 18), /* Hot Plug Capable Port */
+>  	PORT_CMD_PMP		= (1 << 17), /* PMP attached */
+>  	PORT_CMD_LIST_ON	= (1 << 15), /* cmd list DMA engine running */
+>  	PORT_CMD_FIS_ON		= (1 << 14), /* FIS DMA engine running */
+> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+> index a72bfd0..7d72d3c 100644
+> --- a/drivers/ata/libahci.c
+> +++ b/drivers/ata/libahci.c
+> @@ -1097,6 +1097,23 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
+>  	writel(1 << port_no, mmio + HOST_IRQ_STAT);
+>  }
+>  
+> +static bool ahci_port_pluggable(struct ata_port *ap)
+> +{
+> +	void __iomem *port_mmio = ahci_port_base(ap);
+> +	u32 cmd;
+> +
+> +	cmd = readl(port_mmio + PORT_CMD);
+> +
+> +	if ((ap->flags & ATA_FLAG_EXTERNAL) &&
+> +	    (cmd & PORT_CMD_ESP))
+> +		return true;
+> +
+> +	if (cmd & (PORT_CMD_MPSP | PORT_CMD_HPCP))
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+>  void ahci_init_controller(struct ata_host *host)
+>  {
+>  	struct ahci_host_priv *hpriv = host->private_data;
+> @@ -1112,6 +1129,9 @@ void ahci_init_controller(struct ata_host *host)
+>  		if (ata_port_is_dummy(ap))
+>  			continue;
+>  
+> +		if (ahci_port_pluggable(ap))
+> +			ap->flags |= ATA_FLAG_PLUGGABLE;
+> +
+>  		ahci_port_init(host->dev, ap, i, mmio, port_mmio);
+>  	}
+>  
+> diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
+> index 74aaee3..a7166b9 100644
+> --- a/drivers/ata/libata-transport.c
+> +++ b/drivers/ata/libata-transport.c
+> @@ -292,8 +292,10 @@ int ata_tport_add(struct device *parent,
+>  	}
+>  
+>  	device_enable_async_suspend(dev);
+> -	pm_runtime_set_active(dev);
+> -	pm_runtime_enable(dev);
+> +	if (!(ap->flags & ATA_FLAG_PLUGGABLE)) {
+> +		pm_runtime_set_active(dev);
+> +		pm_runtime_enable(dev);
+> +	}
+>  
+>  	transport_add_device(dev);
+>  	transport_configure_device(dev);
+> diff --git a/include/linux/libata.h b/include/linux/libata.h
+> index cafc09a..f46961d 100644
+> --- a/include/linux/libata.h
+> +++ b/include/linux/libata.h
+> @@ -187,6 +187,8 @@ enum {
+>  	ATA_FLAG_SLAVE_POSS	= (1 << 0), /* host supports slave dev */
+>  					    /* (doesn't imply presence) */
+>  	ATA_FLAG_SATA		= (1 << 1),
+> +	ATA_FLAG_EXTERNAL	= (1 << 2), /* Controller supports external SATA */
+> +	ATA_FLAG_PLUGGABLE	= (1 << 3), /* Port is hotpluggable */
+>  	ATA_FLAG_NO_ATAPI	= (1 << 6), /* No ATAPI support */
+>  	ATA_FLAG_PIO_DMA	= (1 << 7), /* PIO cmds via DMA */
+>  	ATA_FLAG_PIO_LBA48	= (1 << 8), /* Host DMA engine is LBA28 only */
+> 
 -- 
-1.7.9.1
+js
+suse labs
 
