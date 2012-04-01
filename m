@@ -1,131 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab2DACHl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Mar 2012 22:07:41 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:39520 "EHLO
-	homiemail-a52.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753984Ab2DACHi (ORCPT
+	id S1754142Ab2DACKN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Mar 2012 22:10:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35193 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab2DACKL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Mar 2012 22:07:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=ITGGR7uj16h4IWmBILHpvohBSGsiTUJDCoTQ9B/TCxIOtcESEKMJ/COVqS++G
-	wWjpjmOsD8cH0Td8hi1o4fD3W+7JG84cqf+CNgjDH5/lQUcZ3uwDsOtagG1nbVJC
-	IPOra3fDe9fkXT0cuo8Yh5c7FCNSMD+I1PcLtKauNVdibk=
-Message-ID: <4F77B867.602@shealevy.com>
-Date: Sat, 31 Mar 2012 22:07:35 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120321 Thunderbird/11.0
+	Sat, 31 Mar 2012 22:10:11 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.4-rc1
-References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com> <4F77B3FA.1040001@shealevy.com>
-In-Reply-To: <4F77B3FA.1040001@shealevy.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
+References: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
+Date: Sat, 31 Mar 2012 19:10:10 -0700
+X-Google-Sender-Auth: z6nHg3NuyJehRX9Ia8wWbyuXiz8
+Message-ID: <CAGXu5jJhwy9=dmY_6WZWWxJ2MG2Vb2nwsh5zoQ3ocbvrt7HH0w@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: fix restrict write access to dmesg_restrict
+From: Kees Cook <keescook@chromium.org>
+To: Phillip Lougher <plougher@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Richard Weinberger <richard@nod.at>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, Eugene Teo <eteo@redhat.com>,
+        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2012 09:48 PM, Shea Levy wrote:
-> Hello,
+Actually, proc_dmesg_restrict is just a CAP_SYSADMIN-checking wrapper
+around proc_dointvec_minmax. Probably both dmesg_restrict and
+kptr_restrict should use it.
+
+On Fri, Mar 30, 2012 at 4:43 PM, Phillip Lougher <plougher@redhat.com> wrote:
+> Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
+> however, it incorrectly alters kptr_restrict rather than
+> dmesg_restrict.
 >
-> On 03/31/2012 07:58 PM, Linus Torvalds wrote:
->> Ok, it's been two weeks, and the merge window is over. Linux 3.4-rc1
->> has been pushed out to the git servers, and the tar-ball and patches
->> are going out as I type this (probably done by the time I'm done).
->>
+> The original patch from Richard Weinberger
+> (https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
+> expected, and so the patch seems to have been misapplied.
 >
-> Building this fails with:
+> Signed-off-by: Phillip Lougher <plougher@redhat.com>
+> ---
+>  kernel/sysctl.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> Kernel: arch/x86/boot/bzImage is ready  (#1)
-> ERROR: "snd_tea575x_init" [drivers/media/radio/radio-maxiradio.ko] 
-> undefined!
-> ERROR: "snd_tea575x_exit" [drivers/media/radio/radio-maxiradio.ko] 
-> undefined!
-> WARNING: modpost: Found 6 section mismatch(es).
-> To see full details build your kernel with:
-> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index f487f25..72a5302 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -713,7 +713,7 @@ static struct ctl_table kern_table[] = {
+>                .data           = &dmesg_restrict,
+>                .maxlen         = sizeof(int),
+>                .mode           = 0644,
+> -               .proc_handler   = proc_dointvec_minmax,
+> +               .proc_handler   = proc_dmesg_restrict,
+>                .extra1         = &zero,
+>                .extra2         = &one,
+>        },
+> @@ -722,7 +722,7 @@ static struct ctl_table kern_table[] = {
+>                .data           = &kptr_restrict,
+>                .maxlen         = sizeof(int),
+>                .mode           = 0644,
+> -               .proc_handler   = proc_dmesg_restrict,
+> +               .proc_handler   = proc_dointvec_minmax,
+>                .extra1         = &zero,
+>                .extra2         = &two,
+>        },
+> --
+> 1.7.9.5
 >
-> .config follows, I'll build with CONFIG_DEBUG_SECTION_MISMATCH and 
-> report back.
->
 
-Warnings I get:
 
-WARNING: drivers/usb/host/xhci-hcd.o(.init.text+0x3b): Section mismatch 
-in reference from the function init_module() to the function 
-.exit.text:xhci_unregister_pci()
-The function __init init_module() references
-a function __exit xhci_unregister_pci().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __exit annotation of
-xhci_unregister_pci() so it may be used outside an exit section.
 
-WARNING: drivers/usb/gadget/g_audio.o(.init.text+0x612): Section 
-mismatch in reference from the function afunc_bind() to the function 
-.devexit.text:snd_uac2_remove()
-The function __init afunc_bind() references
-a function __devexit snd_uac2_remove().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __devexit annotation of
-snd_uac2_remove() so it may be used outside an exit section.
-
-WARNING: drivers/staging/comedi/drivers/s626.o(.text+0x255a): Section 
-mismatch in reference from the function s626_attach() to the variable 
-.devinit.rodata:s626_pci_table
-The function s626_attach() references
-the variable __devinitconst s626_pci_table.
-This is often because s626_attach lacks a __devinitconst
-annotation or the annotation of s626_pci_table is wrong.
-
-WARNING: drivers/staging/comedi/drivers/s626.o(.text+0x2560): Section 
-mismatch in reference from the function s626_attach() to the variable 
-.devinit.rodata:s626_pci_table
-The function s626_attach() references
-the variable __devinitconst s626_pci_table.
-This is often because s626_attach lacks a __devinitconst
-annotation or the annotation of s626_pci_table is wrong.
-
-WARNING: drivers/staging/comedi/drivers/s626.o(.text+0x2566): Section 
-mismatch i
-n reference from the function s626_attach() to the variable 
-.devinit.rodata:s626_pci_table
-The function s626_attach() references
-the variable __devinitconst s626_pci_table.
-This is often because s626_attach lacks a __devinitconst
-annotation or the annotation of s626_pci_table is wrong.
-
-WARNING: drivers/staging/comedi/drivers/s626.o(.text+0x256c): Section 
-mismatch in reference from the function s626_attach() to the variable 
-.devinit.rodata:s626_pci_table
-The function s626_attach() references
-the variable __devinitconst s626_pci_table.
-This is often because s626_attach lacks a __devinitconst
-annotation or the annotation of s626_pci_table is wrong.
-
-WARNING: drivers/usb/gadget/g_audio.o(.init.text+0x612): Section 
-mismatch in reference from the function afunc_bind() to the function 
-.devexit.text:snd_uac2_remove()
-The function __init afunc_bind() references
-a function __devexit snd_uac2_remove().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __devexit annotation of
-snd_uac2_remove() so it may be used outside an exit section.
-
-WARNING: drivers/usb/host/xhci-hcd.o(.init.text+0x3b): Section mismatch 
-in reference from the function init_module() to the function 
-.exit.text:xhci_unregister_pci()
-The function __init init_module() references
-a function __exit xhci_unregister_pci().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __exit annotation of
-xhci_unregister_pci() so it may be used outside an exit section.
+-- 
+Kees Cook
+ChromeOS Security
