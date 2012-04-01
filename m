@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab2DARLA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 13:11:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44781 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab2DARK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 13:10:57 -0400
-Date: Sun, 1 Apr 2012 10:10:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ken Moffat <zarniwhoop@ntlworld.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [ 06/41] PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
-Message-ID: <20120401171053.GA24779@kroah.com>
-References: <20120316233829.GA14022@kroah.com>
- <20120316233811.136320350@linuxfoundation.org>
- <20120331032356.GA6664@milliways>
- <20120401161108.GA6448@milliways>
- <CA+55aFzEgpfBvFmxQnvaD0RY5q2ST1G_ue=u0Gpbxeptc4+TNA@mail.gmail.com>
+	id S1752777Ab2DARSP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 13:18:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752414Ab2DARSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 13:18:12 -0400
+Date: Sun, 1 Apr 2012 18:38:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
+Message-ID: <20120401163833.GA29697@redhat.com>
+References: <CA+1xoqfA9FMowOmAXYHtkXB+D6FqgjCRREKPOk_m2c9ZCyaN4A@mail.gmail.com> <1333227549.2325.4051.camel@edumazet-glaptop> <20120331213423.GA21219@redhat.com> <CA+1xoqcAXyh306=2=QKWyM3BE44=MT+nsuRQn5YLOLgbtZqicA@mail.gmail.com> <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzEgpfBvFmxQnvaD0RY5q2ST1G_ue=u0Gpbxeptc4+TNA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+1xoqe1Wc_uifrKsko6hu+py9Ahz3Q0p1tRxup09jmh2NZ1rw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 09:59:12AM -0700, Linus Torvalds wrote:
-> On Sun, Apr 1, 2012 at 9:11 AM, Ken Moffat <zarniwhoop@ntlworld.com> wrote:
+On 04/01, Sasha Levin wrote:
+>
+> >> It would be nice to know what sysrq-t says, in particular the trace
+> >> of khelper thread is interesting.
 > >
-> >  BUT, for 3.4.0-rc1 I don't need to revert it - just went with the
-> > defaults for additions in menuconfig, and it boots fine.  Maybe
-> > something else needs to be backported ?
-> 
-> It was fixed by commit c9651e70ad0a ("ASPM: Fix pcie devices with
-> non-pcie children") which is marked for stable but just hasn't made it
-> quite yet.
+> > Sure, I'll get one when it happens again.
+>
+> So here's the stack of the usermode thread:
 
-I've added it now, it will show up in the next round of stable kernels.
+Great, thanks, this is even better than khelper's trace,
 
-greg k-h
+> [  336.614015]  [<ffffffff826a8e54>] schedule+0x24/0x70
+> [  336.614015]  [<ffffffff825fd66d>] p9_client_rpc+0x13d/0x360
+> [  336.614015]  [<ffffffff810d7850>] ? wake_up_bit+0x40/0x40
+> [  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
+> [  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
+> [  336.614015]  [<ffffffff825ff5ff>] p9_client_walk+0x8f/0x220
+> [  336.614015]  [<ffffffff815a8e3b>] v9fs_vfs_lookup+0xab/0x1c0
+> [  336.614015]  [<ffffffff811ee0c0>] d_alloc_and_lookup+0x40/0x80
+> [  336.614015]  [<ffffffff811fdea0>] ? d_lookup+0x30/0x50
+> [  336.614015]  [<ffffffff811f0aea>] do_lookup+0x28a/0x3b0
+> [  336.614015]  [<ffffffff817c9117>] ? security_inode_permission+0x17/0x20
+> [  336.614015]  [<ffffffff811f1c07>] link_path_walk+0x167/0x420
+> [  336.614015]  [<ffffffff811ee630>] ? generic_readlink+0xb0/0xb0
+> [  336.614015]  [<ffffffff81896d88>] ? __raw_spin_lock_init+0x38/0x70
+> [  336.614015]  [<ffffffff811f24da>] path_openat+0xba/0x500
+> [  336.614015]  [<ffffffff81057253>] ? sched_clock+0x13/0x20
+> [  336.614015]  [<ffffffff810ed805>] ? sched_clock_local+0x25/0x90
+> [  336.614015]  [<ffffffff810ed940>] ? sched_clock_cpu+0xd0/0x120
+> [  336.614015]  [<ffffffff811f2a34>] do_filp_open+0x44/0xa0
+> [  336.614015]  [<ffffffff81119acd>] ? __lock_release+0x8d/0x1d0
+> [  336.614015]  [<ffffffff810e3671>] ? get_parent_ip+0x11/0x50
+> [  336.614015]  [<ffffffff810e399d>] ? sub_preempt_count+0x9d/0xd0
+> [  336.614015]  [<ffffffff826aa7f0>] ? _raw_spin_unlock+0x30/0x60
+> [  336.614015]  [<ffffffff811ea74d>] open_exec+0x2d/0xf0
+> [  336.614015]  [<ffffffff811eb888>] do_execve_common+0x128/0x320
+> [  336.614015]  [<ffffffff811ebb05>] do_execve+0x35/0x40
+> [  336.614015]  [<ffffffff810589e5>] sys_execve+0x45/0x70
+> [  336.614015]  [<ffffffff826acc28>] kernel_execve+0x68/0xd0
+> [  336.614015]  [<ffffffff810cd6a6>] ? ____call_usermodehelper+0xf6/0x130
+> [  336.614015]  [<ffffffff810cd6f9>] call_helper+0x19/0x20
+> [  336.614015]  [<ffffffff826acbb4>] kernel_thread_helper+0x4/0x10
+> [  336.614015]  [<ffffffff810e3f80>] ? finish_task_switch+0x80/0x110
+> [  336.614015]  [<ffffffff826aaeb4>] ? retint_restore_args+0x13/0x13
+> [  336.614015]  [<ffffffff810cd6e0>] ? ____call_usermodehelper+0x130/0x130
+> [  336.614015]  [<ffffffff826acbb0>] ? gs_change+0x13/0x13
+>
+> While it seems that 9p is the culprit, I have to point out that this
+> bug is easily reproducible, and it happens each time due to a
+> call_usermode_helper() call. Other than that 9p behaves perfectly and
+> I'd assume that I'd be seeing other things break besides
+> call_usermode_helper() related ones.
+
+Of course I do not know what happens, but at least this obviously
+explains why UMH_WAIT_EXEC hangs, I think call_usermodehelper_exec()
+itself is innocent.
+
+Oleg.
+
