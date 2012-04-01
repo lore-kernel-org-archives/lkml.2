@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab2DATWM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 15:22:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:52393 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab2DATWL (ORCPT
+	id S1753425Ab2DATWw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 15:22:52 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60401 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab2DATWv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 15:22:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-Date: Sun, 1 Apr 2012 19:21:59 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <20120401125741.GA7484@p183.telecom.by>
-In-Reply-To: <20120401125741.GA7484@p183.telecom.by>
+	Sun, 1 Apr 2012 15:22:51 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204011921.59596.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZkuBebvKE65cYj9hZYgxA+yM5a+Z8OjgKSi41EpBYqf
- m8GrnmKyBUcZLf5zBmvoBZ2PPk+An1gGkGNBHMvleddp4dHwGp
- 2togY1Oh94eBHtjTjbsQ5S7VTvtNGL+2Rv4EPeF0c8/DrfrN/4
- /0z+bGAvqHVFRNcDP0EHQaAHAAmLypv9dD9hdRX0O7QyLhNaTW
- ScscfhebkGUPUBjdfBxj28591DH5IUZF1BVyKddxVhRFEkdVYI
- Mq0OLlYX5n7UnaqgClPD4yECcE9vy5YBj04LLGQ+srkza0D8D6
- Pv+rqKFxjKvJ34uZt0xZrLXwfbP49G0kv+R6M9MLktyZDGnim8
- s4dJ7IS6WPzzo6NBrH40=
+In-Reply-To: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Sun, 1 Apr 2012 21:22:50 +0200
+Message-ID: <CACRpkdYRStgKo_e-4kZKA-V-OoMiV21jRS3R4g1Cq+4c+4=iQA@mail.gmail.com>
+Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 01 April 2012, Alexey Dobriyan wrote:
->  arch/x86/syscalls/syscall_32.tbl |    1 +
->  arch/x86/syscalls/syscall_64.tbl |    1 +
->  fs/Makefile                      |    1 +
->  fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
->  include/linux/syscalls.h         |    1 +
->  5 files changed, 31 insertions(+)
+On Sun, Apr 1, 2012 at 8:58 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-I don't have any comments on the syscall itself, but when you add one, please
-also make the change to include/asm-generic/unistd.h so it appears in the
-various architectures using the generic syscall table.
+> diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+> index ebc1e86..5be3248 100644
+> --- a/drivers/mfd/db8500-prcmu.c
+> +++ b/drivers/mfd/db8500-prcmu.c
+> @@ -2788,6 +2788,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
+>                .constraints = {
+>                        .name = "db8500-vape",
+>                        .valid_ops_mask = REGULATOR_CHANGE_STATUS,
+> +                       .always_on = true,
+>                },
+>                .consumer_supplies = db8500_vape_consumers,
+>                .num_consumer_supplies = ARRAY_SIZE(db8500_vape_consumers),
 
-	Arnd
+Combined with the PL022 patch this causes a power regression since
+the PL022 is hereafter always on.
+
+But I guess if I fix a power domain patch to accomplish much the
+same things then nothing is really lost...
+
+And I do like the change, if for nothing else so for the fact that it
+eventually pushes to power domains what belongs there, so:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+But to the defence: power domain code was not in the kernel
+when the AMBA "vcore" regulator was introduced so how else
+could we do it... except for inventing power domains...
+
+Yours,
+Linus Walleij
