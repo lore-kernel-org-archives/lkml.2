@@ -1,52 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2DAN5Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 09:57:16 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60118 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab2DAN5O (ORCPT
+	id S1752420Ab2DAN67 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 09:58:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53286 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107Ab2DAN64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 09:57:14 -0400
-Message-ID: <4F785E89.8080609@linux.vnet.ibm.com>
-Date: Sun, 01 Apr 2012 19:26:25 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Sun, 1 Apr 2012 09:58:56 -0400
+Message-ID: <4F785F1D.4020503@openvz.org>
+Date: Sun, 01 Apr 2012 17:58:53 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Alan Meadows <alan.meadows@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com> <4F73568D.7000703@linux.vnet.ibm.com> <4F743247.5080407@redhat.com> <4F74A405.2040609@linux.vnet.ibm.com> <4F7585EE.7060203@linux.vnet.ibm.com> <4F7855A1.80107@redhat.com> <4F785CC9.7070204@linux.vnet.ibm.com> <4F785DCF.7020809@redhat.com>
-In-Reply-To: <4F785DCF.7020809@redhat.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "drepper@gmail.com" <drepper@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] nextfd(2)
+References: <20120401125741.GA7484@p183.telecom.by>
+In-Reply-To: <20120401125741.GA7484@p183.telecom.by>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12040113-2674-0000-0000-000003E7A522
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2012 07:23 PM, Avi Kivity wrote:
-> On 04/01/2012 04:48 PM, Raghavendra K T wrote:
->>>> I have patch something like below in mind to try:
+Alexey Dobriyan wrote:
+> Currently there is no reliable way to close all opened file descriptors
+> (which daemons need and like to do):
 >
-> I'm interested in how PLE does vs. your patches, both with PLE enabled
-> and disabled.
+> * dumb close(fd) loop is slow, upper bound is unknown and
+>    can be arbitrary large,
 >
+> * /proc/self/fd is unreliable:
+>    proc may be unconfigured or not mounted at expected place.
+>    Looking at /proc/self/fd requires opening directory
+>    which may not be available due to malicious rlimit drop or ENOMEM situations.
+>    Not opening directory is equivalent to dumb close(2) loop except slower.
+>
+> BSD added closefrom(fd) which is OK for this exact purpose but suboptimal
+> on the bigger scale. closefrom(2) does only close(2) (obviously :-)
+> closefrom(2) siletly ignores errors from close(2) which in theory is not OK
+> for userspace.
+>
+> So, don't add closefrom(2), add nextfd(2).
+>
+> 	int nextfd(int fd)
 
-Sure. will update with the experimental results.
+Can we add "pid" argument to be able to search next fd in other task?
+Together with sys_kcmp() this will be very useful for checkpoint/restore.
+
+>
+> returns next opened file descriptor which is>= than fd or -1/ESRCH
+> if there aren't any descriptors>= than fd.
+>
+> Thus closefrom(3) can be rewritten through it in userspace:
+>
+> 	void closefrom(int fd)
+> 	{
+> 		while (1) {
+> 			fd = nextfd(fd);
+> 			if (fd == -1&&  errno == ESRCH)
+> 				break;
+> 			(void)close(fd);
+> 			fd++;
+> 		}
+> 	}
+>
+> Maybe it will grow other smart uses.
+>
+> nextfd(2) doesn't change kernel state and thus can't fail
+> which is why it should go in. Other means may fail or
+> may not be available or require linear time with only guessed
+> upper boundaries (1024, getrlimit(RLIM_NOFILE), sysconf(_SC_OPEN_MAX).
+>
+> Signed-off-by: Alexey Dobriyan<adobriyan@gmail.com>
+> ---
+>
+>   arch/x86/syscalls/syscall_32.tbl |    1 +
+>   arch/x86/syscalls/syscall_64.tbl |    1 +
+>   fs/Makefile                      |    1 +
+>   fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
+>   include/linux/syscalls.h         |    1 +
+>   5 files changed, 31 insertions(+)
+>
+> --- a/arch/x86/syscalls/syscall_32.tbl
+> +++ b/arch/x86/syscalls/syscall_32.tbl
+> @@ -355,3 +355,4 @@
+>   346	i386	setns			sys_setns
+>   347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+>   348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
+> +349	i386	nextfd			sys_nextfd
+> --- a/arch/x86/syscalls/syscall_64.tbl
+> +++ b/arch/x86/syscalls/syscall_64.tbl
+> @@ -318,6 +318,7 @@
+>   309	common	getcpu			sys_getcpu
+>   310	64	process_vm_readv	sys_process_vm_readv
+>   311	64	process_vm_writev	sys_process_vm_writev
+> +312	64	nextfd			sys_nextfd
+>   #
+>   # x32-specific system call numbers start at 512 to avoid cache impact
+>   # for native 64-bit operation.
+> --- a/fs/Makefile
+> +++ b/fs/Makefile
+> @@ -12,6 +12,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
+>   		seq_file.o xattr.o libfs.o fs-writeback.o \
+>   		pnode.o drop_caches.o splice.o sync.o utimes.o \
+>   		stack.o fs_struct.o statfs.o
+> +obj-y += nextfd.o
+>
+>   ifeq ($(CONFIG_BLOCK),y)
+>   obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
+> --- /dev/null
+> +++ b/fs/nextfd.c
+> @@ -0,0 +1,27 @@
+> +#include<linux/errno.h>
+> +#include<linux/fdtable.h>
+> +#include<linux/rcupdate.h>
+> +#include<linux/sched.h>
+> +#include<linux/syscalls.h>
+> +
+> +/* Return first opened file descriptor which is>= than the argument. */
+> +SYSCALL_DEFINE1(nextfd, unsigned int, fd)
+> +{
+> +	struct files_struct *files = current->files;
+> +	struct fdtable *fdt;
+> +
+> +	rcu_read_lock();
+> +	fdt = files_fdtable(files);
+> +	while (fd<  fdt->max_fds) {
+> +		struct file *file;
+> +
+> +		file = rcu_dereference_check_fdtable(files, fdt->fd[fd]);
+> +		if (file) {
+> +			rcu_read_unlock();
+> +			return fd;
+> +		}
+> +		fd++;
+> +	}
+> +	rcu_read_unlock();
+> +	return -ESRCH;
+> +}
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -857,5 +857,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+>   				      const struct iovec __user *rvec,
+>   				      unsigned long riovcnt,
+>   				      unsigned long flags);
+> +asmlinkage long sys_nextfd(unsigned int fd);
+>
+>   #endif
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
