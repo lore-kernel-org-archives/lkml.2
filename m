@@ -1,205 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab2DAS6v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 14:58:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38221 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752418Ab2DAS6u (ORCPT
+	id S1752999Ab2DATJq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 15:09:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61182 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab2DATJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 14:58:50 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
-Date: Sun,  1 Apr 2012 19:58:40 +0100
-Message-Id: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	Sun, 1 Apr 2012 15:09:43 -0400
+From: Tracey Dent <tdent48227@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: shea@shealevy.com, torvalds@linux-foundation.org, mchehab@infradead.org,
+        hans.verkuil@cisco.com, linux-media@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH 1/1] Drivers/media/radio: Fix build error
+Date: Sun,  1 Apr 2012 15:09:34 -0400
+Message-Id: <1333307374-25848-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AMBA bus regulator support is being used to model on/off switches
-for power domains which isn't terribly idiomatic for modern kernels with
-the generic power domain code and creates integration problems on platforms
-which don't use regulators for their power domains as it's hard to tell
-the difference between a regulator that is needed but failed to be provided
-and one that isn't supposed to be there (though DT does make that easier).
+radio-maxiradio depends on SND_FM801_TEA575X_BOOL to build or will
+result in an build error such as:
 
-Platforms that wish to use the regulator API to manage their power domains
-can indirect via the power domain interface.
+Kernel: arch/x86/boot/bzImage is ready  (#1)
+ERROR: "snd_tea575x_init" [drivers/media/radio/radio-maxiradio.ko] undefined!
+ERROR: "snd_tea575x_exit" [drivers/media/radio/radio-maxiradio.ko] undefined!
+WARNING: modpost: Found 6 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
-This feature is only used with the vape supply of the db8500 PRCMU
-driver which supplies the UARTs and MMC controllers, none of which have
-support for managing vcore at runtime in mainline (only pl022 SPI
-controller does).  Update that supply to have an always_on constraint
-until the power domain support for the system is updated so that it is
-enabled for these users, this is likely to have no impact on practical
-systems as probably at least one of these devices will be active and
-cause AMBA to hold the supply on anyway.
+Select CONFIG_SND_TEA575X to fixes problem and enable
+the driver to be built as desired.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+v2:
+instead of selecting CONFIG_SND_FM801_TEA575X_BOOL, select
+CONFIG_SND_TEA575X, which in turns selects CONFIG_SND_FM801_TEA575X_BOOL
+and any other dependencies for it to build.
+
+Reported-by: Shea Levy <shea@shealevy.com>
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
+ drivers/media/radio/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Updated to add the always_on constraint for db8500-prcmu as discussed in
-the changelog.
-
- drivers/amba/bus.c         |   42 +-----------------------------------------
- drivers/mfd/db8500-prcmu.c |    1 +
- drivers/spi/spi-pl022.c    |    2 --
- include/linux/amba/bus.h   |    8 --------
- 4 files changed, 2 insertions(+), 51 deletions(-)
-
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 01c2cf4..cc27322 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -247,8 +247,7 @@ static int amba_pm_restore(struct device *dev)
- /*
-  * Hooks to provide runtime PM of the pclk (bus clock).  It is safe to
-  * enable/disable the bus clock at runtime PM suspend/resume as this
-- * does not result in loss of context.  However, disabling vcore power
-- * would do, so we leave that to the driver.
-+ * does not result in loss of context.
-  */
- static int amba_pm_runtime_suspend(struct device *dev)
- {
-@@ -354,39 +353,6 @@ static void amba_put_disable_pclk(struct amba_device *pcdev)
- 	clk_put(pclk);
- }
- 
--static int amba_get_enable_vcore(struct amba_device *pcdev)
--{
--	struct regulator *vcore = regulator_get(&pcdev->dev, "vcore");
--	int ret;
--
--	pcdev->vcore = vcore;
--
--	if (IS_ERR(vcore)) {
--		/* It is OK not to supply a vcore regulator */
--		if (PTR_ERR(vcore) == -ENODEV)
--			return 0;
--		return PTR_ERR(vcore);
--	}
--
--	ret = regulator_enable(vcore);
--	if (ret) {
--		regulator_put(vcore);
--		pcdev->vcore = ERR_PTR(-ENODEV);
--	}
--
--	return ret;
--}
--
--static void amba_put_disable_vcore(struct amba_device *pcdev)
--{
--	struct regulator *vcore = pcdev->vcore;
--
--	if (!IS_ERR(vcore)) {
--		regulator_disable(vcore);
--		regulator_put(vcore);
--	}
--}
--
- /*
-  * These are the device model conversion veneers; they convert the
-  * device model structures to our more specific structures.
-@@ -399,10 +365,6 @@ static int amba_probe(struct device *dev)
- 	int ret;
- 
- 	do {
--		ret = amba_get_enable_vcore(pcdev);
--		if (ret)
--			break;
--
- 		ret = amba_get_enable_pclk(pcdev);
- 		if (ret)
- 			break;
-@@ -420,7 +382,6 @@ static int amba_probe(struct device *dev)
- 		pm_runtime_put_noidle(dev);
- 
- 		amba_put_disable_pclk(pcdev);
--		amba_put_disable_vcore(pcdev);
- 	} while (0);
- 
- 	return ret;
-@@ -442,7 +403,6 @@ static int amba_remove(struct device *dev)
- 	pm_runtime_put_noidle(dev);
- 
- 	amba_put_disable_pclk(pcdev);
--	amba_put_disable_vcore(pcdev);
- 
- 	return ret;
- }
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index ebc1e86..5be3248 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -2788,6 +2788,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 		.constraints = {
- 			.name = "db8500-vape",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+			.always_on = true,
- 		},
- 		.consumer_supplies = db8500_vape_consumers,
- 		.num_consumer_supplies = ARRAY_SIZE(db8500_vape_consumers),
-diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-index 96f0da6..09c925a 100644
---- a/drivers/spi/spi-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@ -2195,7 +2195,6 @@ static int pl022_runtime_suspend(struct device *dev)
- 	struct pl022 *pl022 = dev_get_drvdata(dev);
- 
- 	clk_disable(pl022->clk);
--	amba_vcore_disable(pl022->adev);
- 
- 	return 0;
- }
-@@ -2204,7 +2203,6 @@ static int pl022_runtime_resume(struct device *dev)
- {
- 	struct pl022 *pl022 = dev_get_drvdata(dev);
- 
--	amba_vcore_enable(pl022->adev);
- 	clk_enable(pl022->clk);
- 
- 	return 0;
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index 7847e19..63a59ac 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -19,7 +19,6 @@
- #include <linux/mod_devicetable.h>
- #include <linux/err.h>
- #include <linux/resource.h>
--#include <linux/regulator/consumer.h>
- 
- #define AMBA_NR_IRQS	2
- #define AMBA_CID	0xb105f00d
-@@ -30,7 +29,6 @@ struct amba_device {
- 	struct device		dev;
- 	struct resource		res;
- 	struct clk		*pclk;
--	struct regulator	*vcore;
- 	u64			dma_mask;
- 	unsigned int		periphid;
- 	unsigned int		irq[AMBA_NR_IRQS];
-@@ -75,12 +73,6 @@ void amba_release_regions(struct amba_device *);
- #define amba_pclk_disable(d)	\
- 	do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
- 
--#define amba_vcore_enable(d)	\
--	(IS_ERR((d)->vcore) ? 0 : regulator_enable((d)->vcore))
--
--#define amba_vcore_disable(d)	\
--	do { if (!IS_ERR((d)->vcore)) regulator_disable((d)->vcore); } while (0)
--
- /* Some drivers don't use the struct amba_device */
- #define AMBA_CONFIG_BITS(a) (((a) >> 24) & 0xff)
- #define AMBA_REV_BITS(a) (((a) >> 20) & 0x0f)
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+index 8db2d7f..b518ce5 100644
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -44,6 +44,7 @@ config USB_DSBR
+ config RADIO_MAXIRADIO
+ 	tristate "Guillemot MAXI Radio FM 2000 radio"
+ 	depends on VIDEO_V4L2 && PCI && SND
++	select SND_TEA575X
+ 	---help---
+ 	  Choose Y here if you have this radio card.  This card may also be
+ 	  found as Gemtek PCI FM.
 -- 
-1.7.9.1
+1.7.10.rc3.3.g19a6c
 
