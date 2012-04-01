@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab2DAGmU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 02:42:20 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:13724
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750898Ab2DAGmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 02:42:17 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1SFYD-01-1TV-02
-X-M-MSG: 
-Date: Sun, 1 Apr 2012 22:41:25 +0800
-From: Aaron Lu <aaron.lu@amd.com>
+	id S1751788Ab2DAGpp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 02:45:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47540 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab2DAGpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 02:45:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Lin Ming <ming.m.lin@intel.com>
-CC: Len Brown <lenb@kernel.org>, "Rafeal J. Wysocki" <rjw@sisk.pl>,
-        <linux-acpi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-Message-ID: <20120401144125.GA2900@localhost.amd.com>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
- <1333258053.2939.22.camel@minggr>
- <20120401055603.GA11505@localhost.amd.com>
- <1333261737.2939.84.camel@minggr>
+Subject: Re: [PATCH v2 1/2] ACPI: Introduce ACPI D3_COLD state support
+Date: Sun, 1 Apr 2012 08:50:03 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1332834624-29310-1-git-send-email-ming.m.lin@intel.com> <1332834624-29310-2-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <1332834624-29310-2-git-send-email-ming.m.lin@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1333261737.2939.84.camel@minggr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 01 Apr 2012 06:42:07.0287 (UTC) FILETIME=[8E8E9470:01CD0FD2]
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204010850.03736.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 02:28:57PM +0800, Lin Ming wrote:
-> > 
-> > There is no D3 hot support for this device(from the firmware's
-> > perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
-> > _PS3).
+On Tuesday, March 27, 2012, Lin Ming wrote:
+> From: Zhang Rui <rui.zhang@intel.com>
 > 
-> But this is the generic code. We can't only consider some special
-> device.
-Agree.
+> If a device has _PR3, it means the device supports D3_COLD.
+> Add the ability to validate and enter D3_COLD state in ACPI.
 
-The code change I've made only affects D3 cold path, existing code path
-to set device power state to D0-D3hot is not affected.
+This is not the way I understand D3_cold in ACPI.
 
-And for D3 cold path, I don't think evaluating _PS3 should do any harm
-to the device, isn't it the case?
+Namely, _PR3 lists power resources that are supposed to be "on"
+in D3, which means that in that state the device is not completely
+off, so this must be D3_hot and _not_ D3_cold.
 
+So. _PR3 means D3_hot is supported.  D3_cold, on the other hand,
+is always supported, although it may not be accessible through any
+direct software action (for example, it may be necessary to power
+a bus to put devices on it into D3_cold).
+
+Thanks,
+Rafael
+
+
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/acpi/power.c |    4 ++--
+>  drivers/acpi/scan.c  |    7 +++++++
+>  2 files changed, 9 insertions(+), 2 deletions(-)
 > 
-> Maybe we need some flag to tell which D3 state _PS3 is used for.
-Do you mean the ACPI spec needs to be updated to reflect which D3
-state the device will be at once its _PS3 is evaluated?
-
--Aaron
+> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> index 9ac2a9f..0d681fb 100644
+> --- a/drivers/acpi/power.c
+> +++ b/drivers/acpi/power.c
+> @@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
+>  {
+>  	int result;
+>  
+> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
+> +	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+>  		return -EINVAL;
+>  
+>  	if (device->power.state == state)
+>  		return 0;
+>  
+>  	if ((device->power.state < ACPI_STATE_D0)
+> -	    || (device->power.state > ACPI_STATE_D3))
+> +	    || (device->power.state > ACPI_STATE_D3_COLD))
+>  		return -ENODEV;
+>  
+>  	/* TBD: Resources must be ordered. */
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 8ab80ba..571396c 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -885,6 +885,13 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>  				acpi_bus_add_power_resource(ps->resources.handles[j]);
+>  		}
+>  
+> +		/* The exist of _PR3 indicates D3Cold support */
+> +		if (i == ACPI_STATE_D3) {
+> +			status = acpi_get_handle(device->handle, object_name, &handle);
+> +			if (ACPI_SUCCESS(status))
+> +				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> +		}
+> +
+>  		/* Evaluate "_PSx" to see if we can do explicit sets */
+>  		object_name[2] = 'S';
+>  		status = acpi_get_handle(device->handle, object_name, &handle);
+> 
 
