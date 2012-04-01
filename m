@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab2DAQxq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 12:53:46 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59551 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab2DAQxn (ORCPT
+	id S1753082Ab2DAQyV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 12:54:21 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:57209 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab2DAQyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 12:53:43 -0400
-Date: Sun, 1 Apr 2012 18:53:39 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Extend core dump note section to contain file names of mapped files
-Message-ID: <20120401165339.GR17822@one.firstfloor.org>
-References: <CAK1hOcPxVWDCTRLzH6X+88WXuw_Ywzbt+iAJ3QMEfxG22duk9g@mail.gmail.com> <20120401031329.GP17822@one.firstfloor.org> <201204011533.51628.vda.linux@googlemail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201204011533.51628.vda.linux@googlemail.com>
-User-Agent: Mutt/1.4.2.2i
+	Sun, 1 Apr 2012 12:54:19 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        ralf@linux-mips.org
+Subject: [PATCH] mips: cmpxchg: add missing include
+Date: Sun,  1 Apr 2012 19:54:13 +0300
+Message-Id: <1333299253-3308-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It uses seq_printf(). It will need refactoring if we would
-> want to use it for purposes other than /proc pseudo-file
-> generation.
+Fix the following build breakage in v3.4-rc1:
 
-seq_file just writes to a buffer. I'm sure there's a way to get at that
-buffer. In theory you could also just copy using read/write and a small temp
-buffer. The only problem would be to stop it taking the vm sem.
+  CC      kernel/irq_work.o
+In file included from include/linux/irq_work.h:4:0,
+                 from kernel/irq_work.c:10:
+include/linux/llist.h: In function 'llist_del_all':
+include/linux/llist.h:178:2: error: implicit declaration of function 'BUILD_BUG_ON' [-Werror=implicit-function-declaration]
 
--Andi
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ arch/mips/include/asm/cmpxchg.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/mips/include/asm/cmpxchg.h b/arch/mips/include/asm/cmpxchg.h
+index 285a41f..eee10dc 100644
+--- a/arch/mips/include/asm/cmpxchg.h
++++ b/arch/mips/include/asm/cmpxchg.h
+@@ -8,6 +8,7 @@
+ #ifndef __ASM_CMPXCHG_H
+ #define __ASM_CMPXCHG_H
+ 
++#include <linux/bug.h>
+ #include <linux/irqflags.h>
+ #include <asm/war.h>
+ 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.2.5
+
