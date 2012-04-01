@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab2DAStU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 14:49:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38695 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab2DAStT (ORCPT
+	id S1752728Ab2DASuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 14:50:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37601 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab2DASuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 14:49:19 -0400
-From: Tracey Dent <tdent48227@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: shea@shealevy.com, torvalds@linux-foundation.org, mchehab@infradead.org,
-        hans.verkuil@cisco.com, linux-media@vger.kernel.org,
-        Tracey Dent <tdent48227@gmail.com>
-Subject: [V2 PATCH 1/1] drivers/media/radio: Fix build error
-Date: Sun,  1 Apr 2012 14:49:11 -0400
-Message-Id: <1333306151-20954-1-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
+	Sun, 1 Apr 2012 14:50:08 -0400
+Date: Sun, 1 Apr 2012 21:49:13 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Rafal Prylowski <prylowski@metasoft.pl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Subject: Re: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+Message-ID: <20120401184913.GJ5812@mwesterb-mobl.ger.corp.intel.com>
+References: <4F683B36.8090101@metasoft.pl>
+ <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
+ <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
+ <20120324073207.GD5812@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F002069702575E@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F002069702575E@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-radio-maxiradio depends on SND_FM801_TEA575X_BOOL to build or will
-result in an build error such as:
+On Thu, Mar 29, 2012 at 05:33:49PM -0500, H Hartley Sweeten wrote:
 
-Kernel: arch/x86/boot/bzImage is ready  (#1)
-ERROR: "snd_tea575x_init" [drivers/media/radio/radio-maxiradio.ko] undefined!
-ERROR: "snd_tea575x_exit" [drivers/media/radio/radio-maxiradio.ko] undefined!
-WARNING: modpost: Found 6 section mismatch(es).
-To see full details build your kernel with:
-'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+> I tried doing a bit more debugging with the handle_one_vic function. It
+> appears that the timer tick is what's causing the spi dma interrupts grief.
+> I'm just not sure how it's happening or how to fix it...
+> 
+> I modified handle_one_vic to output a message when multiple interrupts
+> are detected in the stat. Then, if multiple interrupts were detected, to output
+> a message with the new calculated stat and the actual stat. These "should"
+> occur one right after the other when multiple interrupts are detected. But
+> that's not what I'm getting. Here's a sample trace with comments:
+> 
+> handle_one_vic: stat:0x00060000 - handling irq:17 now
+> 	stat shows interrupts 17 and 18
+> handle_one_vic: stat:0x00040010 - handling irq:4 now
+> 	stat shows interrupts 4 and 18, 17 was handled
+> handle_one_vic: next stat:0x00040000 - actual stat:0x00040000
+> 	next stat shows interrupt 18, 4 was handled, 18 is pending
+> handle_one_vic: stat:0x00040000 - handling irq:18 now
+> 	stat shows interrupt 18
+> handle_one_vic: next stat:0x00000000 - actual stat:0x00000010
+> 	next stat shows no interrupts, 18 was handled, 4 is pending
+> handle_one_vic: next stat:0x00040000 - actual stat:0x00000000
+> 	next stat shows interrupt 18, it was already handled, none are pending
+> handle_one_vic: stat:0x00040000 - handling irq:18 now
+> 	stat shows interrupt 18 (which was already handled)
+> dma dma1chan1: spurious interrupt: status=00002180
+> 	bang... spurious interrupt
+> 
+> It looks like the timer interrupt (4) is causing vic_handle_irq to start
+> iterating over the VIC's while an iteration is already in progress.  One
+> of the iterations is handling interrupt 18 correctly but, since the stat
+> is only read once, the second iteration also tries to handle it.
+>
+> Any ideas?
 
-Select CONFIG_SND_TEA575X to fixes problem and enable
-the driver to be built as desired.
+Unfortunately no :-/ I've been investigating this also and so far haven't
+found anything which could explain this behaviour. It is good that you found
+that the timer interrupt might have something to do with this. I'm going to
+add some more debugging code and see if that helps to identify the reason for
+this.
 
-v2:
-instead of selecting CONFIG_SND_FM801_TEA575X_BOOL, select
-CONFIG_SND_TEA575X, which in turns selects CONFIG_SND_FM801_TEA575X_BOOL
-and any other dependencies.
-
-Reported-by: Shea Levy <shea@shealevy.com>
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
----
- drivers/media/radio/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
-index 25025e0..a49a4ea 100644
---- a/drivers/media/radio/Kconfig
-+++ b/drivers/media/radio/Kconfig
-@@ -43,8 +43,8 @@ config USB_DSBR
- 
- config RADIO_MAXIRADIO
- 	tristate "Guillemot MAXI Radio FM 2000 radio"
--	depends on VIDEO_V4L2 && PCI && SND
--	select SND_FM801_TEA575X_BOOL
-+	depends on VIDEO_V4L2 && PCI && SND 
-+	select SND_TEA575X
- 	---help---
- 	  Choose Y here if you have this radio card.  This card may also be
- 	  found as Gemtek PCI FM.
--- 
-1.7.9.2.358.g22243
-
+It might also be that the ep93xx_dma driver is doing something wrong in its
+interrupt handler which causes the DONE bit to stay asserted even though the
+first thing it does is to write 0 to M2M_INTERRUPT register which is supposed
+to clear the interrupt..
