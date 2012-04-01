@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab2DAOb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 10:31:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50247 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751085Ab2DAOb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 10:31:26 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King <linux@arm.linux.org.uk>, Mike Turquette <mturquette@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] clk: Remove comment for end of CONFIG_COMMON_CLK section
-Date: Sun,  1 Apr 2012 15:31:23 +0100
-Message-Id: <1333290683-11815-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1752281Ab2DAOzH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 10:55:07 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39082 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751731Ab2DAOzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 10:55:05 -0400
+Message-ID: <1333292103.9225.1.camel@joe2Laptop>
+Subject: Re: [PATCH] percpu: use KERN_CONT in pcpu_dump_alloc_info()
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 01 Apr 2012 07:55:03 -0700
+In-Reply-To: <CAPXgP12nMmNwN6-T-2sCsv++-5qyZNokkZFLRQ5LpuwgmuaBWA@mail.gmail.com>
+References: <20120329164842.GE28941@google.com>
+	 <1333044612.15602.4.camel@joe2Laptop>
+	 <CAOS58YOWA9U3Esb2535v_iivPaXeFYYS3nWd2KKF1=MsfZ0Piw@mail.gmail.com>
+	 <1333051616.15602.23.camel@joe2Laptop>
+	 <CAOS58YMjB4HrNOxWMjm=EKqZNd9QmK+QjSv2EfMbYs9MKk+-tA@mail.gmail.com>
+	 <CAPXgP12nMmNwN6-T-2sCsv++-5qyZNokkZFLRQ5LpuwgmuaBWA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment is inaccurate (it actually ends the CONFIG_COMMON_CLK
-section, there's no else) and given that we've just got a single level
-of ifdef isn't really needed anyway.
+On Sun, 2012-04-01 at 15:29 +0200, Kay Sievers wrote:
+> The kernel's printk() uses a static scratch buffer of 1024 chars. The
+> prototype for the printk() with facility and structure support I have,
+> does a bit better and more reliable 'buffered IO' than the current
+> one.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- include/linux/clk.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Can you send me a link to your code please?
 
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index b025272..c9547d9 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -81,7 +81,7 @@ int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
- 
- int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
- 
--#endif /* !CONFIG_COMMON_CLK */
-+#endif
- 
- /**
-  * clk_get - lookup and obtain a reference to a clock producer.
--- 
-1.7.9.1
 
