@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab2DAQEI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 12:04:08 -0400
+	id S1753063Ab2DAQES (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 12:04:18 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:32815 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab2DAQEF (ORCPT
+	with ESMTP id S1752921Ab2DAQEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 12:04:05 -0400
-Subject: [RFC PATCH -tip 10/16] x86/disasm: Indicate modified instructions
+	Sun, 1 Apr 2012 12:04:15 -0400
+Subject: [RFC PATCH -tip 11/16] tracing/docs: add explanation about
+ disassembler interface
 To: linux-kernel@vger.kernel.org
 From: Masami Hiramatsu <masami.hiramatsu@gmail.com>
 Cc: Huang Ying <ying.huang@intel.com>,
@@ -17,8 +18,8 @@ Cc: Huang Ying <ying.huang@intel.com>,
         Jason Wessel <jason.wessel@windriver.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 02 Apr 2012 01:03:59 +0900
-Message-ID: <20120401160359.4502.88900.stgit@shimauta>
+Date: Mon, 02 Apr 2012 01:04:11 +0900
+Message-ID: <20120401160411.4502.77554.stgit@shimauta>
 In-Reply-To: <20120401160229.4502.2541.stgit@shimauta>
 References: <20120401160229.4502.2541.stgit@shimauta>
 User-Agent: StGit/0.15
@@ -29,51 +30,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show modified comment instead of disassembled code when
-given instruction has been modified by kprobes or kdb.
+Add an entry for explaining x86 disassembler interface
+to kprobetrace.txt, because that is very useful for
+someone who wants to put a probe on somewhere without
+using perf-probe.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu@gmail.com>
 ---
- arch/x86/kernel/kdebugfs.c |   23 +++++++++++++++++++++--
- 1 files changed, 21 insertions(+), 2 deletions(-)
+ Documentation/trace/kprobetrace.txt |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/kdebugfs.c b/arch/x86/kernel/kdebugfs.c
-index 5da917d..eccd718 100644
---- a/arch/x86/kernel/kdebugfs.c
-+++ b/arch/x86/kernel/kdebugfs.c
-@@ -296,13 +296,32 @@ static int disasm_seq_show(struct seq_file *m, void *v)
- 	u8 kbuf[MAX_INSN_SIZE];
- 	struct insn insn;
- 	void *p;
-+	int i, ret;
+diff --git a/Documentation/trace/kprobetrace.txt b/Documentation/trace/kprobetrace.txt
+index d0d0bb9..1dc7b44 100644
+--- a/Documentation/trace/kprobetrace.txt
++++ b/Documentation/trace/kprobetrace.txt
+@@ -92,6 +92,20 @@ Event Profiling
+ the third is the number of probe miss-hits.
  
-+	/* recover if the instruction is probed */
- 	p = (void *)recover_probed_instruction(kbuf, (unsigned long)v);
- 	kernel_insn_init(&insn, p);
- 	insn_get_length(&insn);
- 	insn.kaddr = v;
--	snprint_assembly(buf, DISASM_BUF_LEN, &insn, DISASM_PR_ALL);
--	seq_printf(m, "%s", buf);
-+
-+	seq_printf(m, "%p: ", v);
-+	for (i = 0; i < MAX_INSN_SIZE / 2 && i < insn.length; i++)
-+		seq_printf(m, "%02x ", ((u8 *)v)[i]);
-+	if (i != MAX_INSN_SIZE / 2)
-+		seq_printf(m, "%*s", 3 * (MAX_INSN_SIZE / 2 - i), " ");
-+
-+	/* print assembly code */
-+	ret = disassemble(buf, DISASM_BUF_LEN, &insn);
-+	if (ret < 0)
-+		return ret;
-+	seq_printf(m, "%s%s\n", (p != v) ? "(probed)" : "", buf);
-+
-+	if (i < insn.length) {
-+		seq_printf(m, "%p: ", v + i);
-+		for (; i < insn.length - 1; i++)
-+			seq_printf(m, "%02x ", ((u8 *)v)[i]);
-+		seq_printf(m, "%02x\n", ((u8 *)v)[i]);
-+	}
  
- 	return 0;
- }
++Function disassembling
++----------------------
++ To find a probe target, you have two options.
++1) Use perf-probe in perftools. This allows you to find a probe target
++ by using source-code level information.
++2) Use a kernel function disassembling interface on debugfs.
++The first one is easy to use, very helpful for noraml user, but also
++requires kernel debuginfo package (or built binary with CONFIG_DEBUGINFO).
++The second one is easy to use, but requires a knowladge of assembly
++language (and also, this is currently available on x86 with
++CONFIG_X86_DISASSEMBLER=y and CONFIG_DEBUG_X86_DISASSEMBLY=y).
++The debugfs interface is /sys/kernel/debug/x86/disassembly. At first,
++you should write a function name to the file, and then, read it.
++
+ Usage examples
+ --------------
+ To add a probe as a new event, write a new definition to kprobe_events
 
