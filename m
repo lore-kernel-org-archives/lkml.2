@@ -1,146 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab2DAG7k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 02:59:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54898 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab2DAG7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 02:59:39 -0400
-Date: Sun, 1 Apr 2012 14:59:49 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Richard Zhao <richard.zhao@linaro.org>
-Subject: Re: [PATCH v2] ARM: dts: imx6q: add anatop regulators
-Message-ID: <20120401065947.GD2395@S2101-09.ap.freescale.net>
-References: <1333115213-28922-1-git-send-email-paul.liu@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333115213-28922-1-git-send-email-paul.liu@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751998Ab2DAHDK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 03:03:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6595 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab2DAHDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 03:03:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="148326389"
+Message-ID: <1333263819.2387.94.camel@rui.sh.intel.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+From: Zhang Rui <rui.zhang@intel.com>
+To: Aaron Lu <aaron.lu@amd.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafeal J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+Date: Sun, 01 Apr 2012 15:03:39 +0800
+In-Reply-To: <20120401055603.GA11505@localhost.amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
+	 <1333258053.2939.22.camel@minggr>
+	 <20120401055603.GA11505@localhost.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 09:46:53PM +0800, Ying-Chun Liu (PaulLiu) wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On 日, 2012-04-01 at 13:56 +0800, Aaron Lu wrote:
+> Hi,
 > 
-> Add anatop regulators to imx6q.dtsi for all imx6q platforms.
+> On Sun, Apr 01, 2012 at 01:27:33PM +0800, Lin Ming wrote:
+> > > -		if (device->power.states[state].flags.explicit_set) {
+> > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
+> > > +		if (state == ACPI_STATE_D3_COLD) {
+> > > +			explicit_set = (ps - 1)->flags.explicit_set;
+> > > +			object_name[3] -= 1;
+> > > +		}
+> > 
+> > I'm not sure whether this works or not.
+> > 
+> > From ACPI spec,
+> > 
+> > _PS3 "is used to put the specific device into its D3hot or D3 state"
+> > 
+> > D3 neither means D3hot nor D3cold. It's an old term before D3hot and
+> > D3cold were introduced.
+> I guess D3 has to mean something, right? :-)
 > 
-> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-> Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  arch/arm/boot/dts/imx6q.dtsi |   86 ++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 86 insertions(+), 0 deletions(-)
+> Here is the problem, there is no _PR3 in AMD's implementation, just _PS3.
+> And since _S0W evaluates 4, I've to put this device into D3 cold state
+> with _PS3.
 > 
-> diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-> index 263e8f3..79f59e7 100644
-> --- a/arch/arm/boot/dts/imx6q.dtsi
-> +++ b/arch/arm/boot/dts/imx6q.dtsi
-> @@ -346,6 +346,92 @@
->  				compatible = "fsl,imx6q-anatop";
->  				reg = <0x020c8000 0x1000>;
->  				interrupts = <0 49 0x04 0 54 0x04 0 127 0x04>;
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
+First of all, I agree that we must evaluate _PS3 when setting device to
+either D3_HOT or D3_COLD.
 
-These two lines are not needed now.  Removed them and applied the
-patch.  Thanks.
+And here is my understanding about D3/D3_HOT/D3_COLD,
 
-Regards,
-Shawn
+if _PR3 exists, it means the devices supports both D3_HOT and D3_COLD.
 
-> +
-> +				regulator-1p1@110 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vdd1p1";
-> +					regulator-min-microvolt = <800000>;
-> +					regulator-max-microvolt = <1375000>;
-> +					regulator-always-on;
-> +					anatop-reg-offset = <0x110>;
-> +					anatop-vol-bit-shift = <8>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <4>;
-> +					anatop-min-voltage = <800000>;
-> +					anatop-max-voltage = <1375000>;
-> +				};
-> +
-> +				regulator-3p0@120 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vdd3p0";
-> +					regulator-min-microvolt = <2800000>;
-> +					regulator-max-microvolt = <3150000>;
-> +					regulator-always-on;
-> +					anatop-reg-offset = <0x120>;
-> +					anatop-vol-bit-shift = <8>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <0>;
-> +					anatop-min-voltage = <2625000>;
-> +					anatop-max-voltage = <3400000>;
-> +				};
-> +
-> +				regulator-2p5@130 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vdd2p5";
-> +					regulator-min-microvolt = <2000000>;
-> +					regulator-max-microvolt = <2750000>;
-> +					regulator-always-on;
-> +					anatop-reg-offset = <0x130>;
-> +					anatop-vol-bit-shift = <8>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <0>;
-> +					anatop-min-voltage = <2000000>;
-> +					anatop-max-voltage = <2750000>;
-> +				};
-> +
-> +				regulator-vddcore@140 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "cpu";
-> +					regulator-min-microvolt = <725000>;
-> +					regulator-max-microvolt = <1450000>;
-> +					regulator-always-on;
-> +					anatop-reg-offset = <0x140>;
-> +					anatop-vol-bit-shift = <0>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <1>;
-> +					anatop-min-voltage = <725000>;
-> +					anatop-max-voltage = <1450000>;
-> +				};
-> +
-> +				regulator-vddpu@140 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vddpu";
-> +					regulator-min-microvolt = <725000>;
-> +					regulator-max-microvolt = <1450000>;
-> +					regulator-always-on;
-> +					anatop-reg-offset = <0x140>;
-> +					anatop-vol-bit-shift = <9>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <1>;
-> +					anatop-min-voltage = <725000>;
-> +					anatop-max-voltage = <1450000>;
-> +				};
-> +
-> +				regulator-vddsoc@140 {
-> +					compatible = "fsl,anatop-regulator";
-> +					regulator-name = "vddsoc";
-> +					regulator-min-microvolt = <725000>;
-> +					regulator-max-microvolt = <1450000>;
-> +					regulator-always-on;
-> +					anatop-reg-offset = <0x140>;
-> +					anatop-vol-bit-shift = <18>;
-> +					anatop-vol-bit-width = <5>;
-> +					anatop-min-bit-val = <1>;
-> +					anatop-min-voltage = <725000>;
-> +					anatop-max-voltage = <1450000>;
-> +				};
->  			};
->  
->  			usbphy@020c9000 { /* USBPHY1 */
-> -- 
-> 1.7.9.1
+if only _PS3 exists, we can only say that the state after evaluating
+_PS3 is D3, it could either be D3_HOT or D3_COLD, and this is device
+specific, which in your case, is D3_COLD.
+
+BTW, here is the description of _S0W in ACPI spec,
+If OSPM has not indicated that it supports _PR3 through the OSPM
+Platform-Wide Capabilities (see Section 6.2.10.2), then the value "3"
+corresponds to D3. If it has indicated _PR3 support, the value "3"
+represents D3hot and the value "4" represents D3cold.
+
+So IMO, the _S0W should return 3 in AMD's implementation as it does not
+have _PR3.
+
+> And the ACPI does have some words like:
 > 
+> ------
+> Platform/drivers must assume that the device will have power completely
+> removed when the device is place into “D3” via _PS3
+> ------
+> 
+I think this means OS can not access device any more after evaluating
+_PS3, and it should re-enumerate the device when transiting back to D0.
+
+> This is in section 7.2.11: _PR3.
+> 
+> > 
+> > Another problem:
+> > 
+> > With your patch, both D3hot and D3cold will evaluate _PS3, right?
+> > 
+> Yes.
+> 
+> > Will it have problem on AMD platform if you try to put ODD into D3hot
+> > state? _PS3 is evaluated, so it actually enters D3Cold state.
+> 
+> There is no D3 hot support for this device(from the firmware's
+> perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
+> _PS3).
+> 
+I was trying to make a cleanup of the D3/D3_HOT/D3_COLD support in
+Linux, and this gives me some clue.
+
+How about this?
+
+We should use the term "D3" in general in Linux.
+Without _PR3, OS should *assume* that the power is removed, although it
+may be not true.
+With _PR3, OS can *assure* that the power is removed, because it knows
+how to remove thw power (evaluating _PR3._OFF).
+
+So the difference is that OS need to make sure whether to evaluate
+_PR3._OFF when _PR3 exists. For example, a device has _PR3, but _S0W
+returns 3, OS should not evaluate _PR3._OFF when the device sleeps with
+remote wakeup support.
+
+what do you think?
+
+thanks,
+rui
+
