@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab2DBMHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 08:07:31 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48161 "EHLO
+	id S1752090Ab2DBLzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:55:03 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:47934 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab2DBLzQ (ORCPT
+	with ESMTP id S1750877Ab2DBLzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:55:16 -0400
+	Mon, 2 Apr 2012 07:55:00 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: [PATCH 59/69] TTY: 68328serial, use flags from tty_port
-Date: Mon,  2 Apr 2012 13:54:43 +0200
-Message-Id: <1333367693-3244-60-git-send-email-jslaby@suse.cz>
+        Karsten Keil <isdn@linux-pingi.de>
+Subject: [PATCH 05/69] TTY: isdn, remove callout
+Date: Mon,  2 Apr 2012 13:53:49 +0200
+Message-Id: <1333367693-3244-6-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,179 +21,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@lists.linux-m68k.org
----
- drivers/tty/serial/68328serial.c |   39 ++++++++++++++++++--------------------
- 1 file changed, 18 insertions(+), 21 deletions(-)
+I wonder how this survived there during the whole 2.6 series until now
+:D.
 
-diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
-index e9fd13e..e3a1c55 100644
---- a/drivers/tty/serial/68328serial.c
-+++ b/drivers/tty/serial/68328serial.c
-@@ -105,8 +105,6 @@
- 
- /*
-  * This is our internal structure for each serial port's state.
-- *
-- * For definitions of the flags field, see serial.h
-  */
- struct m68k_serial {
- 	struct tty_port		tport;
-@@ -115,7 +113,6 @@ struct m68k_serial {
- 	int			baud_base;
- 	int			port;
- 	int			irq;
--	int			flags;		/* defined in tty.h */
- 	int			type;		/* UART type */
- 	struct tty_struct	*tty;
- 	int			custom_divisor;
-@@ -382,7 +379,7 @@ static int startup(struct m68k_serial * info)
- 	m68328_uart *uart = &uart_addr[info->line];
- 	unsigned long flags;
- 	
--	if (info->flags & ASYNC_INITIALIZED)
-+	if (info->tport.flags & ASYNC_INITIALIZED)
- 		return 0;
- 
- 	if (!info->xmit_buf) {
-@@ -422,7 +419,7 @@ static int startup(struct m68k_serial * info)
- 
- 	change_speed(info);
- 
--	info->flags |= ASYNC_INITIALIZED;
-+	info->tport.flags |= ASYNC_INITIALIZED;
- 	local_irq_restore(flags);
- 	return 0;
- }
-@@ -437,7 +434,7 @@ static void shutdown(struct m68k_serial * info)
- 	unsigned long	flags;
- 
- 	uart->ustcnt = 0; /* All off! */
--	if (!(info->flags & ASYNC_INITIALIZED))
-+	if (!(info->tport.flags & ASYNC_INITIALIZED))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -450,7 +447,7 @@ static void shutdown(struct m68k_serial * info)
- 	if (info->tty)
- 		set_bit(TTY_IO_ERROR, &info->tty->flags);
- 	
--	info->flags &= ~ASYNC_INITIALIZED;
-+	info->tport.flags &= ~ASYNC_INITIALIZED;
- 	local_irq_restore(flags);
- }
- 
-@@ -824,7 +821,7 @@ static int get_serial_info(struct m68k_serial * info,
- 	tmp.line = info->line;
- 	tmp.port = info->port;
- 	tmp.irq = info->irq;
--	tmp.flags = info->flags;
-+	tmp.flags = info->tport.flags;
- 	tmp.baud_base = info->baud_base;
- 	tmp.close_delay = info->tport.close_delay;
- 	tmp.closing_wait = info->tport.closing_wait;
-@@ -854,9 +851,9 @@ static int set_serial_info(struct m68k_serial * info,
- 		    (new_serial.type != info->type) ||
- 		    (new_serial.close_delay != port->close_delay) ||
- 		    ((new_serial.flags & ~ASYNC_USR_MASK) !=
--		     (info->flags & ~ASYNC_USR_MASK)))
-+		     (port->flags & ~ASYNC_USR_MASK)))
- 			return -EPERM;
--		info->flags = ((info->flags & ~ASYNC_USR_MASK) |
-+		port->flags = ((port->flags & ~ASYNC_USR_MASK) |
- 			       (new_serial.flags & ASYNC_USR_MASK));
- 		info->custom_divisor = new_serial.custom_divisor;
- 		goto check_and_exit;
-@@ -871,7 +868,7 @@ static int set_serial_info(struct m68k_serial * info,
- 	 */
- 
- 	info->baud_base = new_serial.baud_base;
--	info->flags = ((info->flags & ~ASYNC_FLAGS) |
-+	port->flags = ((port->flags & ~ASYNC_FLAGS) |
- 			(new_serial.flags & ASYNC_FLAGS));
- 	info->type = new_serial.type;
- 	port->close_delay = new_serial.close_delay;
-@@ -1041,7 +1038,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 		local_irq_restore(flags);
- 		return;
- 	}
--	info->flags |= ASYNC_CLOSING;
-+	port->flags |= ASYNC_CLOSING;
- 	/*
- 	 * Now we wait for the transmit buffer to clear; and we notify 
- 	 * the line discipline to only process XON/XOFF characters.
-@@ -1081,7 +1078,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 			msleep_interruptible(jiffies_to_msecs(port->close_delay));
- 		wake_up_interruptible(&port->open_wait);
- 	}
--	info->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
-+	port->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
- 	wake_up_interruptible(&port->close_wait);
- 	local_irq_restore(flags);
- }
-@@ -1099,7 +1096,7 @@ void rs_hangup(struct tty_struct *tty)
- 	rs_flush_buffer(tty);
- 	shutdown(info);
- 	info->tport.count = 0;
--	info->flags &= ~ASYNC_NORMAL_ACTIVE;
-+	info->tport.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->tty = NULL;
- 	wake_up_interruptible(&info->tport.open_wait);
- }
-@@ -1121,10 +1118,10 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
- 	 * If the device is in the middle of being closed, then block
- 	 * until it's done, and then try again.
- 	 */
--	if (info->flags & ASYNC_CLOSING) {
-+	if (port->flags & ASYNC_CLOSING) {
- 		interruptible_sleep_on(&port->close_wait);
- #ifdef SERIAL_DO_RESTART
--		if (info->flags & ASYNC_HUP_NOTIFY)
-+		if (port->flags & ASYNC_HUP_NOTIFY)
- 			return -EAGAIN;
- 		else
- 			return -ERESTARTSYS;
-@@ -1139,7 +1136,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+Callouts are not used for a decade, so let us remove it also from
+isdn. This means removal of ISDN_ASYNC_CALLOUT_ACTIVE which is never
+raised in info->flags and callout_termios which are never used.
+
+This will help us to get rid of ISDN_ASYNC_* flags and use ASYNC ones
+from serial.h. And then we will switch to tty_port.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Karsten Keil <isdn@linux-pingi.de>
+---
+ drivers/isdn/i4l/isdn_tty.c |   32 ++++++--------------------------
+ include/linux/isdn.h        |    3 ---
+ 2 files changed, 6 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
+index 1d701cd..27f7092 100644
+--- a/drivers/isdn/i4l/isdn_tty.c
++++ b/drivers/isdn/i4l/isdn_tty.c
+@@ -1504,18 +1504,11 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
  	 */
  	if ((filp->f_flags & O_NONBLOCK) ||
  	    (tty->flags & (1 << TTY_IO_ERROR))) {
--		info->flags |= ASYNC_NORMAL_ACTIVE;
-+		port->flags |= ASYNC_NORMAL_ACTIVE;
+-		if (info->flags & ISDN_ASYNC_CALLOUT_ACTIVE)
+-			return -EBUSY;
+ 		info->flags |= ISDN_ASYNC_NORMAL_ACTIVE;
  		return 0;
  	}
- 
-@@ -1161,9 +1158,9 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
- 	while (1) {
- 		current->state = TASK_INTERRUPTIBLE;
- 		if (tty_hung_up_p(filp) ||
--		    !(info->flags & ASYNC_INITIALIZED)) {
-+		    !(port->flags & ASYNC_INITIALIZED)) {
- #ifdef SERIAL_DO_RESTART
--			if (info->flags & ASYNC_HUP_NOTIFY)
-+			if (port->flags & ASYNC_HUP_NOTIFY)
- 				retval = -EAGAIN;
- 			else
- 				retval = -ERESTARTSYS;	
-@@ -1172,7 +1169,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+-	if (info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) {
+-		if (info->normal_termios.c_cflag & CLOCAL)
+-			do_clocal = 1;
+-	} else {
+-		if (tty->termios->c_cflag & CLOCAL)
+-			do_clocal = 1;
+-	}
++	if (tty->termios->c_cflag & CLOCAL)
++		do_clocal = 1;
+ 	/*
+ 	 * Block waiting for the carrier detect and the line to become
+ 	 * free (i.e., not in use by the callout).  While we are in
+@@ -1546,8 +1539,7 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
  #endif
  			break;
  		}
--		if (!(info->flags & ASYNC_CLOSING) && do_clocal)
-+		if (!(port->flags & ASYNC_CLOSING) && do_clocal)
+-		if (!(info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) &&
+-		    !(info->flags & ISDN_ASYNC_CLOSING) &&
++		if (!(info->flags & ISDN_ASYNC_CLOSING) &&
+ 		    (do_clocal || (info->msr & UART_MSR_DCD))) {
  			break;
-                 if (signal_pending(current)) {
- 			retval = -ERESTARTSYS;
-@@ -1190,7 +1187,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ 		}
+@@ -1670,14 +1662,6 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
+ 		return;
+ 	}
+ 	info->flags |= ISDN_ASYNC_CLOSING;
+-	/*
+-	 * Save the termios structure, since this port may have
+-	 * separate termios for callout and dialin.
+-	 */
+-	if (info->flags & ISDN_ASYNC_NORMAL_ACTIVE)
+-		info->normal_termios = *tty->termios;
+-	if (info->flags & ISDN_ASYNC_CALLOUT_ACTIVE)
+-		info->callout_termios = *tty->termios;
  
- 	if (retval)
- 		return retval;
--	info->flags |= ASYNC_NORMAL_ACTIVE;
-+	port->flags |= ASYNC_NORMAL_ACTIVE;
- 	return 0;
- }	
+ 	tty->closing = 1;
+ 	/*
+@@ -1731,7 +1715,7 @@ isdn_tty_hangup(struct tty_struct *tty)
+ 		return;
+ 	isdn_tty_shutdown(info);
+ 	info->count = 0;
+-	info->flags &= ~(ISDN_ASYNC_NORMAL_ACTIVE | ISDN_ASYNC_CALLOUT_ACTIVE);
++	info->flags &= ~ISDN_ASYNC_NORMAL_ACTIVE;
+ 	info->tty = NULL;
+ 	wake_up_interruptible(&info->open_wait);
+ }
+@@ -2116,8 +2100,7 @@ isdn_tty_find_icall(int di, int ch, setup_parm *setup)
+ 	return (wret == 2) ? 3 : 0;
+ }
  
+-#define TTY_IS_ACTIVE(info)						\
+-	(info->flags & (ISDN_ASYNC_NORMAL_ACTIVE | ISDN_ASYNC_CALLOUT_ACTIVE))
++#define TTY_IS_ACTIVE(info)	(info->flags & ISDN_ASYNC_NORMAL_ACTIVE)
+ 
+ int
+ isdn_tty_stat_callback(int i, isdn_ctrl *c)
+@@ -2628,11 +2611,8 @@ isdn_tty_modem_result(int code, modem_info *info)
+ 		if ((info->flags & ISDN_ASYNC_CLOSING) || (!info->tty)) {
+ 			return;
+ 		}
+-		if ((info->flags & ISDN_ASYNC_CHECK_CD) &&
+-		    (!((info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) &&
+-		       (info->flags & ISDN_ASYNC_CALLOUT_NOHUP)))) {
++		if (info->flags & ISDN_ASYNC_CHECK_CD)
+ 			tty_hangup(info->tty);
+-		}
+ 	}
+ }
+ 
+diff --git a/include/linux/isdn.h b/include/linux/isdn.h
+index 292f27a..d13b76d 100644
+--- a/include/linux/isdn.h
++++ b/include/linux/isdn.h
+@@ -393,7 +393,6 @@ typedef struct isdn_net_dev_s {
+ 
+ #define ISDN_ASYNC_MAGIC          0x49344C01 /* for paranoia-checking        */
+ #define ISDN_ASYNC_INITIALIZED	  0x80000000 /* port was initialized         */
+-#define ISDN_ASYNC_CALLOUT_ACTIVE 0x40000000 /* Call out device active       */
+ #define ISDN_ASYNC_NORMAL_ACTIVE  0x20000000 /* Normal device active         */
+ #define ISDN_ASYNC_CLOSING	  0x08000000 /* Serial port is closing       */
+ #define ISDN_ASYNC_CTS_FLOW	  0x04000000 /* Do CTS flow control          */
+@@ -498,8 +497,6 @@ typedef struct modem_info {
+ #endif
+   struct tty_struct 	*tty;            /* Pointer to corresponding tty   */
+   atemu                 emu;             /* AT-emulator data               */
+-  struct ktermios	normal_termios;  /* For saving termios structs     */
+-  struct ktermios	callout_termios;
+   wait_queue_head_t	open_wait, close_wait;
+   spinlock_t	        readlock;
+ } modem_info;
 -- 
 1.7.9.2
 
