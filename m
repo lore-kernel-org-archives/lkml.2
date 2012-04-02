@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab2DBNDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 09:03:20 -0400
-Received: from uhura.skim.hs-owl.de ([193.174.118.81]:35601 "EHLO
-	uhura.skim.hs-owl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab2DBNDS (ORCPT
+	id S1752229Ab2DBNEH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 09:04:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34772 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab2DBNEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 09:03:18 -0400
-Message-ID: <4F79A37D.5010605@googlemail.com>
-Date: Mon, 2 Apr 2012 15:02:53 +0200
-From: Jan Seiffert <kaffeemonster@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Firefox/11.0 SeaMonkey/2.8
+	Mon, 2 Apr 2012 09:04:04 -0400
+Message-ID: <4F79A3B3.9040209@gmail.com>
+Date: Mon, 02 Apr 2012 08:03:47 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, Matt Evans <matt@ozlabs.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [REGRESSION][PATCH V4 1/3] bpf jit: Make the filter.c::__load_pointer
- helper non-static  for the jits
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6ECE@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6ECE@saturn3.aculab.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PULL] generic irq chip and pl061 irqdomain support
+References: <4F3ADFE7.4090409@gmail.com> <4F5437FE.2000306@gmail.com> <4F5FD037.5000703@gmail.com> <20120313231834.8B6AE3E050F@localhost>
+In-Reply-To: <20120313231834.8B6AE3E050F@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Skim-SendBy: exchange.hs-owl.de on Mon, 02 Apr 2012 15:03:04 +0200
-X-SA-Exim-Connect-IP: 193.174.118.178
-X-SA-Exim-Mail-From: kaffeemonster@googlemail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Laight schrieb:
->  
->> The function is renamed to make it a little more clear what it does.
->> It is not added to any .h because it is not for general 
->> consumption, only for bpf internal use (and so by the jits).
+Grant,
+
+On 03/13/2012 06:18 PM, Grant Likely wrote:
+> On Tue, 13 Mar 2012 17:54:47 -0500, Rob Herring <robherring2@gmail.com> wrote:
+>> On 03/04/2012 09:50 PM, Rob Herring wrote:
+>>> Grant,
+>>>
+>>> On 02/14/2012 04:27 PM, Rob Herring wrote:
+>>>> Grant,
+>>>>
+>>>> Please pull. This is based on your current branch which you have said
+>>>> you plan to rebase, so feel free to rebase these as you need to. This
+>>>> has been tested on highbank and i.MX5.
+>>>>
+>>>
+>>> Ping.
+>>>
+>>> I've rebased onto your current tree. Updated pull request:
+>>>
+>>> The following changes since commit 280ad7fda5f95211857fda38960f2b6fdf6edd3e:
+>>>
+>>>   mfd: twl-core: Add IRQ_DOMAIN dependency (2012-02-26 16:48:06 -0700)
+>>>
+>>> are available in the git repository at:
+>>>   git://sources.calxeda.com/kernel/linux.git irqdomain-for-grant
+>>>
+>>> Rob Herring (3):
+>>>       ARM: kconfig: always select IRQ_DOMAIN
+>>>       irq: add irq_domain support to generic-chip
+>>>       gpio: pl061: enable interrupts with DT style binding
+>>>
+>>>  .../devicetree/bindings/gpio/pl061-gpio.txt        |   15 ++
+>>>  arch/arm/Kconfig                                   |    2 +-
+>>>  arch/arm/common/Kconfig                            |    2 -
+>>>  drivers/gpio/gpio-pl061.c                          |   48 ++++---
+>>>  include/linux/irq.h                                |   15 ++
+>>>  kernel/irq/generic-chip.c                          |  152
+>>> +++++++++++++++++---
+>>>  6 files changed, 186 insertions(+), 48 deletions(-)
+>>>
+>>
+>> Ping again...
 > 
-> I'd have thought it better to put in into a bfp_internal.h
-> (or similar) with a big warning there about the asm users.
-> 
+> Okay, I've pulled this in.  I need to do some compile testing before I push
+> it out.
 
-Hmmm, OK, where would i put the .h? Right there under ./include/linux/?
+What happened to this? It's not in rc1.
 
-> Possibly even worth adding some other defs that the asm
-> files will need (if there are any).
-> 
+Rob
 
-There is at least one other define, the lowest negative address range,
-but it would be a copy of the same define in filter.h, or i would have
-to massage filter.h to make it fit for inclusion by assembly.
-So I'm unsure how to proceed.
-
-> 	David
-> 
-
-Greetings
-	Jan
-
--- 
-An IPv4 address space walks into a bar: "A strong CIDR please. I'm
-exhausted."
