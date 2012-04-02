@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab2DBL42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:28 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48121 "EHLO
+	id S1754061Ab2DBL40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:26 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48115 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab2DBLzN (ORCPT
+	with ESMTP id S1752688Ab2DBLzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:13 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
-Subject: [PATCH 01/69] TTY: crisv10, remove unused tmp_buf
-Date: Mon,  2 Apr 2012 13:53:45 +0200
-Message-Id: <1333367693-3244-2-git-send-email-jslaby@suse.cz>
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH 35/69] TTY: bfin_jtag_comm, add tty_port
+Date: Mon,  2 Apr 2012 13:54:19 +0200
+Message-Id: <1333367693-3244-36-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -22,76 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This used to be a helper buffer for generic_serial. generic_serial is
-gone, tmp_buf shall be removed.
+And use open count from there. Switch to tty from there will follow.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org
 ---
- drivers/tty/serial/crisv10.c |   27 +--------------------------
- 1 file changed, 1 insertion(+), 26 deletions(-)
+ drivers/tty/bfin_jtag_comm.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
-index 5b07c0c..004ee2e 100644
---- a/drivers/tty/serial/crisv10.c
-+++ b/drivers/tty/serial/crisv10.c
-@@ -952,19 +952,6 @@ static const struct control_pins e100_modem_pins[NR_PORTS] =
- /* Input */
- #define E100_DSR_GET(info) ((*e100_modem_pins[(info)->line].dsr_port) & e100_modem_pins[(info)->line].dsr_mask)
+diff --git a/drivers/tty/bfin_jtag_comm.c b/drivers/tty/bfin_jtag_comm.c
+index 946f799..d81013c 100644
+--- a/drivers/tty/bfin_jtag_comm.c
++++ b/drivers/tty/bfin_jtag_comm.c
+@@ -63,8 +63,8 @@ static inline uint32_t bfin_write_emudat_chars(char a, char b, char c, char d)
+ static struct tty_driver *bfin_jc_driver;
+ static struct task_struct *bfin_jc_kthread;
+ static struct tty_struct * volatile bfin_jc_tty;
+-static unsigned long bfin_jc_count;
+ static DEFINE_MUTEX(bfin_jc_tty_mutex);
++static struct tty_port port;
+ static volatile struct circ_buf bfin_jc_write_buf;
  
--
--/*
-- * tmp_buf is used as a temporary buffer by serial_write.  We need to
-- * lock it in case the memcpy_fromfs blocks while swapping in a page,
-- * and some other program tries to do a serial write at the same time.
-- * Since the lock will only come under contention when the system is
-- * swapping and available memory is low, it makes sense to share one
-- * buffer across all the serial ports, since it significantly saves
-- * memory if large numbers of serial ports are open.
-- */
--static unsigned char *tmp_buf;
--static DEFINE_MUTEX(tmp_buf_mutex);
--
- /* Calculate the chartime depending on baudrate, numbor of bits etc. */
- static void update_char_time(struct e100_serial * info)
+ static int
+@@ -150,8 +150,7 @@ static int
+ bfin_jc_open(struct tty_struct *tty, struct file *filp)
  {
-@@ -3150,7 +3137,7 @@ static int rs_raw_write(struct tty_struct *tty,
- 
- 	/* first some sanity checks */
- 
--	if (!tty || !info->xmit.buf || !tmp_buf)
-+	if (!tty || !info->xmit.buf)
- 		return 0;
- 
- #ifdef SERIAL_DEBUG_DATA
-@@ -4106,7 +4093,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
+ 	mutex_lock(&bfin_jc_tty_mutex);
+-	pr_debug("open %lu\n", bfin_jc_count);
+-	++bfin_jc_count;
++	port.count++;
+ 	bfin_jc_tty = tty;
+ 	wake_up_process(bfin_jc_kthread);
+ 	mutex_unlock(&bfin_jc_tty_mutex);
+@@ -162,8 +161,7 @@ static void
+ bfin_jc_close(struct tty_struct *tty, struct file *filp)
  {
- 	struct e100_serial	*info;
- 	int 			retval;
--	unsigned long           page;
- 	int                     allocated_resources = 0;
+ 	mutex_lock(&bfin_jc_tty_mutex);
+-	pr_debug("close %lu\n", bfin_jc_count);
+-	if (--bfin_jc_count == 0)
++	if (--port.count == 0)
+ 		bfin_jc_tty = NULL;
+ 	wake_up_process(bfin_jc_kthread);
+ 	mutex_unlock(&bfin_jc_tty_mutex);
+@@ -242,6 +240,8 @@ static int __init bfin_jc_init(void)
+ {
+ 	int ret;
  
- 	info = rs_table + tty->index;
-@@ -4124,17 +4110,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
- 
- 	tty->low_latency = !!(info->flags & ASYNC_LOW_LATENCY);
- 
--	if (!tmp_buf) {
--		page = get_zeroed_page(GFP_KERNEL);
--		if (!page) {
--			return -ENOMEM;
--		}
--		if (tmp_buf)
--			free_page(page);
--		else
--			tmp_buf = (unsigned char *) page;
--	}
--
- 	/*
- 	 * If the port is in the middle of closing, bail out now
- 	 */
++	tty_port_init(&port);
++
+ 	bfin_jc_kthread = kthread_create(bfin_jc_emudat_manager, NULL, DRV_NAME);
+ 	if (IS_ERR(bfin_jc_kthread))
+ 		return PTR_ERR(bfin_jc_kthread);
 -- 
 1.7.9.2
 
