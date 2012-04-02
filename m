@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab2DBL0k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:26:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab2DBL0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:26:39 -0400
-Message-ID: <4F798B8C.2010802@redhat.com>
-Date: Mon, 02 Apr 2012 12:20:44 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1752420Ab2DBLeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:34:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41006 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751047Ab2DBLeQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 07:34:16 -0400
+Date: Mon, 2 Apr 2012 12:34:13 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Rabin Vincent <rabin@rab.in>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
+Message-ID: <20120402113413.GA7560@opensource.wolfsonmicro.com>
+References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CACRpkdYRStgKo_e-4kZKA-V-OoMiV21jRS3R4g1Cq+4c+4=iQA@mail.gmail.com>
+ <CAH+eYFC+q4xFuSdRBkO9nb0XZWU4pQ_yCyinMy2X3ds9WQd1kw@mail.gmail.com>
+ <CACRpkda2zh=zR+A9bwhRXYHtQdFeUpiqG4d5g1i82mPCs1mXaQ@mail.gmail.com>
+ <20120402101427.GA3172@opensource.wolfsonmicro.com>
+ <20120402104357.GB24211@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Extend core dump note section to contain file names of
- mapped files
-References: <CAK1hOcPxVWDCTRLzH6X+88WXuw_Ywzbt+iAJ3QMEfxG22duk9g@mail.gmail.com> <20120401031329.GP17822@one.firstfloor.org> <20120402002448.GA27179@redhat.com>
-In-Reply-To: <20120402002448.GA27179@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
+Content-Disposition: inline
+In-Reply-To: <20120402104357.GB24211@n2100.arm.linux.org.uk>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2012 01:24 AM, Oleg Nesterov wrote:
 
-> On 04/01, Andi Kleen wrote:
->> >
->>> > > I propose to save this information in core dump, as a new note
->>> > > in note segment.
->> >
->> > Seems like a good idea but rather than write complicated code
-> I agree, I feel it can be simplified...
-> 
->> > i would just reuse
->> > the /proc/*/maps code and dump it in that format?
-> I must have missed something. Do you really suggest to use
-> show_pid_map/etc?
-> 
-> If nothing else, this code depends on CONFIG_PROC_FS. But in any
-> case I think this will only complicate fill_files_note().
-> 
-> coredump is "simple", we are the last thread which can play with
-> this ->mm. We do not need locks, we do not need the "restart after
-> we dropped mmap_sem" logic. We know that the task_struct can't go
-> away. The only problem is rename, that is why we can't allocate the
-> whole buffer beforehand.
-> 
-> OK, I must have missed something ;)
+--u3/rZRmxL6MmkK24
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Mon, Apr 02, 2012 at 11:43:57AM +0100, Russell King - ARM Linux wrote:
+> On Mon, Apr 02, 2012 at 11:14:28AM +0100, Mark Brown wrote:
 
-In my perspective, it's about having a single format to consume.
-Having only one format to care for in either the core or when
-debugging a live process simplifies things for all parties involved.
+> > I was waiting for some pronouncement from Russell - looking at the git
+> > logs it seems the patch tracker is the normal way to merge things.
 
-(And it doesn't seem a good idea to me to have a better format that
-handles more things when debugging cores than what tools have available
-when debugging a live process.  If /proc/*/maps doesn't handle something
-we might care for, then fix that too, not just the core note.)
+> Well, this stuff was invented by Linus, so its Linus' decision about
+> how to deal with the power control.
 
-The kernel.  The man pages.  Userspace tools.  E.g., GDB can trivially
-be made to hook a new core note with /proc/*/maps-like contents with
-the "(gdb) info proc maps" command (an often requested feature).
+Linus already acked the patch, the question was more about how to get it
+merged.  Since most of the AMBA changes seem to go via your tree I've
+just submitted it to the patch system as 7366/1.
 
-I even wish that more (if not all) of /proc/ 's objects were
-copied verbatim (as much as possible) to a core dump.
+--u3/rZRmxL6MmkK24
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Pedro Alves
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPeY57AAoJEBus8iNuMP3dGg8P/Rg4W9/NSJqDzVr/fHBrhbIt
+B1ltzE0sWDzSCEV9IfKM68m263gOPZM+ZdnA3M+Il2bWTDsU/J20Tw/WZd1v+Rmx
+XjClRF7PWE7HIyxdUFNIlhfR5AXjdHlFViBbtzjl2G03JeJEQCt0HlMmXrBI+myG
+fG0UwWTnzsajaHltIqLmCcrNPAGvbqCqdJT1Xejam6vaYnC3+T2CCkxVQ6YI5mnB
+mhhCuP44dEtMcAm5Nvk63o3Z98EbjvyAETWgNpxiSr0WWRCeJh6tjQ6l7zMYRLXu
+Rb9AZIRgR/ZajZ1c1/Jwv5o6C13kb32prluMpGv3Vc5JzA25dpM2lDYCVfU57pny
+4B9NWrZy1VdArE0lR8Xa2KE7QmXQtnIhuXla7BOQ0of3GXZA4n3FsH9ljLBTXr7o
+9cOxGE8DYkKXKmSIqvfi8UrjuFT/u7j/ZuKzj9UZiH8Oqmi9VzSiqYzWSRk4TzjV
+kcXKKZXWPouozuBlCd88HYU75w3a2QsKuWPyLrxoAAP5fW1wAKPIQujPatdXT9D3
+itbxt2mIe4qg0XcDmfn7p2SDDkjFwbrwy/ocWtdfAHDMFizCDMoyMIW0hf4MehlE
+NiJvk9vzgDyI8Fc3/valOyWOxuSuyICAhjP/zHwQEcLHggnKzxPDWiOEsY5J9/o1
+2sUiAZ3jh3ykINwUq8Hr
+=zNu1
+-----END PGP SIGNATURE-----
+
+--u3/rZRmxL6MmkK24--
