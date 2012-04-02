@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab2DBRnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:43:06 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49753 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab2DBRnD (ORCPT
+	id S1753716Ab2DBRpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:45:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55729 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab2DBRpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:43:03 -0400
-Date: Mon, 2 Apr 2012 20:43:00 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Namhyung Kim <namhyung.kim@lge.com>
-cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] perf tools: Move UI bits to tools/perf/ui
- directory
-In-Reply-To: <1333003004-6391-2-git-send-email-namhyung.kim@lge.com>
-Message-ID: <alpine.LFD.2.02.1204022042530.1950@tux.localdomain>
-References: <1333003004-6391-1-git-send-email-namhyung.kim@lge.com> <1333003004-6391-2-git-send-email-namhyung.kim@lge.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 2 Apr 2012 13:45:14 -0400
+Message-ID: <4F79E5A5.9000004@lwfinger.net>
+Date: Mon, 02 Apr 2012 12:45:09 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@alien8.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: CONFIG_RTLWIFI_DEBUG default y
+References: <20120402164920.GA13264@x1.osrc.amd.com> <1333385618.15422.17.camel@joe2Laptop> <20120402171733.GB13264@x1.osrc.amd.com>
+In-Reply-To: <20120402171733.GB13264@x1.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012, Namhyung Kim wrote:
-> Move those files to new directory in order to be prepared to
-> further UI work. Makefile and header file pathes are adjusted
-> accordingly.
-> 
-> Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+On 04/02/2012 12:17 PM, Borislav Petkov wrote:
+> On Mon, Apr 02, 2012 at 09:53:38AM -0700, Joe Perches wrote:
+>> To keep all the "printk(KERN_DEBUG" to "pr_debug(" conversion
+>> output the same as the it was prior to the patch.
+>>
+>> Larry can default it to off if he wants.
+>
+>> From looking at one user of this -
+> drivers/net/wireless/rtlwifi/rtl8192ce/hw.c - some of the messages look
+> like important ones which you wanna have enabled always, f.e. error
+> handling in rtl92ce_hw_init().
+>
+> It probably needs splitting into debugging messages which are default n
+> and always-on messages.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+The current situation is fine with me. Any user with an embedded system can save 
+a lot of memory by setting CONFIG_RTLWIFI_DEBUG to n. If a normal distro chooses 
+to do that, then when some user of that distro reports a problem and is unable 
+to run with the module parameter "debug=X", I get to say "Sorry, I cannot help 
+you." :)
 
+Of course, if you want to go through the source and convert every instance of 
+"RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ...)" to the equivalent "pr_err(...), 
+then I would probably sign off on it.
+
+Larry
