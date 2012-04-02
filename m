@@ -1,117 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab2DBJke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:40:34 -0400
-Received: from mail4.ccl.ru ([195.222.140.73]:55084 "EHLO mail4.ccl.ru"
+	id S1751826Ab2DBJmw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:42:52 -0400
+Received: from chrocht.moloch.sk ([62.176.169.44]:50362 "EHLO mail.moloch.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224Ab2DBJkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:40:33 -0400
-Message-ID: <4F797402.1050109@permonline.ru>
-Date: Mon, 02 Apr 2012 15:40:18 +0600
-From: Mike Sinkovsky <msink@permonline.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1751056Ab2DBJmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 05:42:51 -0400
+Date: Mon, 2 Apr 2012 11:42:49 +0200
+From: Martin Lucina <martin@lucina.net>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] Implement IP_EVIL socket option (RFC 3514)
+Message-ID: <20120402094249.GB7601@dezo.moloch.sk>
+References: <1333284791-5363-1-git-send-email-martin@lucina.net>
+ <20120401.152048.267766557618433051.davem@davemloft.net>
+ <20120402092410.GA7601@dezo.moloch.sk>
+ <20120402.053544.1502825597915995582.davem@davemloft.net>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 2/2] Ethernet driver for the WIZnet W5100 chip
-References: <1332752876-1650-1-git-send-email-msink@permonline.ru> <1333090806-27988-2-git-send-email-msink@permonline.ru> <20120331212303.GB19965@sirena.org.uk>
-In-Reply-To: <20120331212303.GB19965@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120402.053544.1502825597915995582.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-01.04.2012 3:23, Mark Brown wrote:
-> On Fri, Mar 30, 2012 at 01:00:06PM +0600, Mike Sinkovsky wrote:
->
->> +config WIZNET_W5100
->> +	tristate "WIZnet W5100 Ethernet support"
->> +	depends on ARM || BLACKFIN
->
-> What are the architecture dependencies here?
+davem@davemloft.net said:
+> It wasn't the blurb it was simply that you're at least the third
+> person to submit a patch like this over the years, here's one:
+> 
+> http://www.version6.net/patches/linux-2.4.20-rfc3514.dif
+> 
+> Someone did a netfilter iptables module too:
+> 
+> http://www.gossamer-threads.com/lists/linux/kernel/431645
 
-Original driver from chip manufacturer was written for ARM, and now we 
-use it on Blackfin.
-Completely untested on other arch's, but should work. Maybe.
-
-
->> +static irqreturn_t w5100_interrupt(int irq, void *ndev_instance)
->> +{
->> +	struct net_device *ndev = ndev_instance;
->> +	struct w5100_priv *priv = netdev_priv(ndev);
->> +
->> +	int ir = w5100_read(priv, W5100_S0_IR);
->> +	w5100_write(priv, W5100_S0_IR, ir);
->> +
->> +	if (ir&  S0_IR_RECV) {
->> +		if (napi_schedule_prep(&priv->napi)) {
->> +			w5100_write(priv, W5100_IMR, 0);
->> +			mmiowb();
->> +			__napi_schedule(&priv->napi);
->> +		}
->> +	}
->> +
->> +	if (ir&  S0_IR_SENDOK) {
->> +		if (unlikely(netif_queue_stopped(ndev)))
->> +			netif_wake_queue(ndev);
->> +	}
->> +
->> +	return IRQ_HANDLED;
->
-> This unconditionally acknowledges the interrupt even if one wasn't
-> reported by the device.
-
-Hm? Don't get you.
-W5100_S0_IR register is R/W1C - writing back clears it.
-Or what do you mean?
-
-
->> +	irq = platform_get_irq(pdev, 0);
->> +	if (irq<  0)
->> +		return irq;
->> +	ret = devm_request_irq(&pdev->dev, irq, w5100_interrupt,
->> +			       IRQ_TYPE_LEVEL_LOW, name, ndev);
->> +	if (ret<  0)
->> +		return ret;
->> +	priv->irq = irq;
->> +
->> +	link = platform_get_resource(pdev, IORESOURCE_IO, 0);
->> +	if (!link) {
->> +		priv->link_gpio = -1;
->
-> This is rather an abuse of the resource API and will run into trouble on
-> device tree based systems.  You should use platform data for non-DT
-> systems.
-
-Ok, will move it to struct wiznet_platform_data.
-But here is downside - this gpio is optional, and if board doesn't have 
-it - it must be initialized as negative value, not just omitted.
-
-
->> +		if (request_irq(priv->link_irq, w5100_detect_link,
->> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
->> +				link_name, priv->ndev)<  0)
->
-> Suggest using request_any_context_irq() to increase the range of
-> supported interrupt controllers.
-
-Could it be anything but hard irq?
-But there is another bug - it should be devm_request_irq...
-:)
-
-
->> +err_register:
->> +	free_netdev(ndev);
->> +	platform_set_drvdata(pdev, NULL);
->> +	dev_info(&pdev->dev, "probe failed (%d)\n", err);
->
-> This will be done for you by the driver core.
-
-You mean platform_set_drvdata() and dev_info()? Maybe.
-I'm sure platform_driver will not do free_netdev() for me.
-
+I missed the former patch completely, sorry about that. Googling for "evil
+bit implementation" did turn up the ipt_evil patch but no corresponding
+patch to actually let an application *set* the bit.
 
 -- 
-Mike
-
+Martin Lucina
+http://lucina.net/ (interwebs/blogs/rants/consulting)
+martin@lucina.net  (smtp/xmpp/jabber/gtalk)
+@matolucina        (twitter)
