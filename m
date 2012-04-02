@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab2DBSz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:55:27 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57126 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2DBSz0 (ORCPT
+	id S1754171Ab2DBS4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:56:20 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52423 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752391Ab2DBS4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:55:26 -0400
-Date: Mon, 2 Apr 2012 11:55:22 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [GIT PULL] block/for-3.5/core: pull in cgroup/for-3.5
-Message-ID: <20120402185522.GB16226@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120401200306.GB9230@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120402115905.cbca9c04113e543163bdb5f2@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120402115905.cbca9c04113e543163bdb5f2@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 2 Apr 2012 14:56:18 -0400
+Message-ID: <1333392978.2971.25.camel@dabdike>
+Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass
+ of disks naming
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Ren Mingxin <renmx@cn.fujitsu.com>,
+        Jens Axboe <axboe@kernel.dk>, Rusty Russell <rusty@rustcorp.com.au>,
+        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Date: Mon, 02 Apr 2012 11:56:18 -0700
+In-Reply-To: <20120402185259.GA16226@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <4F7581D4.4040301@cn.fujitsu.com>
+	 <4F7582B0.5010609@cn.fujitsu.com> <20120330152606.GB28934@google.com>
+	 <20120330152808.GC28934@google.com> <4F78FE89.2070707@cn.fujitsu.com>
+	 <20120402072009.GF30360@redhat.com>
+	 <20120402185259.GA16226@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Stephen.
+On Mon, 2012-04-02 at 11:52 -0700, Tejun Heo wrote:
+> > Probably same. Renaming existing devices will break setups.
+> > I think the idea is to avoid using the
+> > legacy naming in new drivers *that will be added from now on*.
+> 
+> Yeap.
 
-On Mon, Apr 02, 2012 at 11:59:05AM +1000, Stephen Rothwell wrote:
-> today.  The best way to proceed is for the parts of the cgroup tree that
-> the block tree will depend on (which may be the entire current cgroup
-> tree) should be in a separate, stable (i.e. non rebasing/rewriting)
-> branch that can be merged into both the cgroup and block trees.
+So if we're agreed no other devices going forwards should ever use this
+interface, is there any point unifying the interface?  No matter how
+many caveats you hedge it round with, putting the API in a central place
+will be a bit like a honey trap for careless bears.   It might be safer
+just to leave it buried in the three current drivers.
 
-Yeap, that's the intention of this pull request.  cgroup/for-3.5 is
-already stable.  We just need it to be pulled into block/for-3.5/core.
+James
 
-Thanks.
 
--- 
-tejun
