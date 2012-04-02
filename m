@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab2DBOAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:00:10 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39417 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab2DBOAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:00:08 -0400
-Date: Mon, 2 Apr 2012 15:59:59 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski Filho <arozansk@redhat.com>
-Subject: Re: [PATCH 00/13] Convert EDAC internal strutures to support all
- types of Memory Controllers
-Message-ID: <20120402135959.GC24238@aftab>
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
+	id S1752258Ab2DBOCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:02:23 -0400
+Received: from antcom.de ([188.40.178.216]:49629 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553Ab2DBOCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 10:02:20 -0400
+Message-ID: <4F79B169.5010909@antcom.de>
+Date: Mon, 02 Apr 2012 16:02:17 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, srinivas.bakki@nxp.com, kevin.wells@nxp.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-watchdog@vger.kernel.org, wim@iguana.be
+Subject: Re: [PATCH 0/7]: arm: lpc32xx: Device tree support
+References: <1333371364-21347-1-git-send-email-stigge@antcom.de> <201204021345.04512.arnd@arndb.de>
+In-Reply-To: <201204021345.04512.arnd@arndb.de>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 01:45:33PM -0300, Mauro Carvalho Chehab wrote:
-> This is the 12th and final rebase of this patch series.
-> 
-> It is the first patchset for the EDAC rewrite. On this patchset,
-> there are all the internal changes at the EDAC core, needed
-> to properly represent memories at modern memory controllers that
-> aren't oriented per rank/channel.
-> 
-> It is needed in order to fix a long-term bug at the EDAC drivers
-> for the Intel memory controllers deployed since 2005 (well, in fact,
-> there is one Rambus that it is older, but also suffers from the same
-> syndrome), including the drivers for the recent Intel Nehalem and
-> Sandy Bridge architectures.
-> 
-> The new EDAC architecture supports both per rank/channel memory
-> controllers and per-DIMM ones.
-> 
-> On this changeset, there are no changes at the sysfs nodes. Just 
-> like before this changeset, non-per-rank memory controllers 
-> will expose memories as "virtual csrows/virtual channels[1].
-> 
-> [1] It sounds better to say "virtual" than to admit that all
-> EDAC Intel drivers since 2005 need to lie about their age to
-> the EDAC core, in order for the Kernel to accept them ;)
-> 
-> Mauro Carvalho Chehab (13):
->   edac: Create a dimm struct and move the labels into it
->   edac: move dimm properties to struct memset_info
->   edac: Don't initialize csrow's first_page & friends when not needed
->   edac: move nr_pages to dimm struct
->   edac: Fix core support for MC's that see DIMMS instead of ranks
+Hi Arnd,
 
-I was wondering why 6/13 doesn't apply cleanly but there's the patch
-above, 5/13 missing in the submission. It looks like vger has eaten it
-at least for the linux-edac mailing list - the patch is still on lkml
-though.
+On 04/02/2012 03:45 PM, Arnd Bergmann wrote:
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>
+> Looks good overall.
 
-And what a patch it is: almost 5000 lines.
+Thanks for your mails, I'm just integrating your suggestions.
 
-Please split it!
+> I notice that you are missing the bindings for irq and gpio, which
+> tend to be
+> quite important. Do you have another tree that has all the lpc32xx
+> specific
+> parts or are these still under heavy development?
 
-And don't tell me it cannot be done: each patch needs to do one thing
-and one thing only. From looking at this monster, here's one possible
-way to split it:
+Yes, still under development. GPIO is subject to an open minor issue
+(will post an RFC later), and irq is part of the main mach-lpc32xx dt
+switch - I have DT-irq already working, but I need to OF'ize lcd and usb
+to complete.
 
-* add all changes to include/linux/edac.h
-* a bunch of changes to edac_mc.c like edac_align_ptr etc
-* changes to edac_mc_alloc
-* add edac_mc_handle_error
-* switch old edac_mc_handle* stuff to edac_mc_handle_error
-...<a bunch more>
+> Do you plan to add DT support in parallel to the ATAGS based board you
+> already have, or do you plan to move everything over quickly?
 
-This way the code will be much easier to review.
+For the LPC32xx specific things, including arch/arm/mach-lpc32xx, I will
+switch over to DT quickly, eliminating phy3250.c by replacing with a
+respective dts file.
 
--- 
-Regards/Gruss,
-Boris.
+The other subsystems changes (pnx*) can and should be dual DT/non-DT to
+support other platforms and users who still use it in a non-DT way.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> In the latter case, it might be helpful to get Acks from the subsystem
+> maintainers and merge everything through arm-soc.
+
+Yes, sounds reasonable regarding the LPC32xx specific bits like wdt and
+adc. Is there sth. I can do about it?
+
+Thanks all,
+
+Roland
