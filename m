@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab2DBKTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 06:19:01 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:35500 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab2DBKTA (ORCPT
+	id S1752329Ab2DBKTT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 06:19:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34627 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab2DBKTQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 06:19:00 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=129.33.192.96;
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH v3 0/4] tools: Add a toplevel Makefile
-To: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>
-Message-Id: <tools-makefile-T2@mdm.bga.com>
-In-Reply-To: <20120331184906.GA25809@merkur.ravnborg.org>
-References: <1333023957-22746-1-git-send-email-bp@amd64.org>
-   <20120330052605.GA30508@merkur.ravnborg.org>
-   <20120330161526.GE30876@aftab>
-   <20120331084908.GA14149@gmail.com>
-	<20120331184906.GA25809@merkur.ravnborg.org>
-Date: Mon, 02 Apr 2012 05:18:57 -0500
-X-Originating-IP: 129.33.192.96
+	Mon, 2 Apr 2012 06:19:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <7A0BFCFE3DA5CD47B0FB7984326F201A136BDCC35E@BGMAIL01.nvidia.com>
+References: <1333345982-16595-1-git-send-email-alokc@nvidia.com>
+	<7A0BFCFE3DA5CD47B0FB7984326F201A136BDCC35E@BGMAIL01.nvidia.com>
+Date: Mon, 2 Apr 2012 15:49:16 +0530
+Message-ID: <CAM=Q2cuN+qAjDsBNp5Sq_Xs9KGcOQJ+PwjSVW-F0QczxMpWZRQ@mail.gmail.com>
+Subject: Re: [PATCH v2] i2c: tegra: Add delay before reset the controller
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: Alok Chauhan <alokc@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
+        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "bones@secretlab.ca" <bones@secretlab.ca>,
+        "ccross@android.com" <ccross@android.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "dgreid@chromium.org" <dgreid@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[fix a missing comma in cc ]
+Hi Alok,
+Few / doubts /questions.
 
-On Sat, 31 Mar 2012 20:49:06 +0200, Sam Ravnborg wrote:
-> 
-> > 
-> > One question. Instead of:
-> > 
-> >   make tools/perf_install
-> > 
-> > Couldnt we beat kbuild into submission to allow the much more 
-> > obvious:
-> > 
-> >   make tools/perf install
-> > 
-> > ?
-> It is more obvious if you look at it alone.
-> But when you look at it with the other commands then you suddenly
-> end up confused when you need to specify the command as a
-> separate target "tools/perf install - and when it is just
-> one target "tools/perf_install".
-> 
-> > 
-> > I don't think anyone would expect the *kernel* to be installed 
-> > in such a circumstance - so it's only a question of making the 
-> > Makefile understand it, right?
+
+On Mon, Apr 2, 2012 at 11:29 AM, Alok Chauhan <alokc@nvidia.com> wrote:
+> Stephen,
 >
-> Make will try to update the two targets "tools/perf" and "install"
-> in parallel. And it does not look easy to teach make that when you
-> specify the target "tools/*" then the install target should just
-> be ignored and passed down to the sub-make.
+> I've updated the commit message and comment in the code as per your suggestion. Tegra I2C controller doesn't have idle bit so delay is required before reset the controller in case of NACK error.  This delay is calculated purely based on clock period of that particular i2c bus and not passed as hardcoded value. I2C SCL clock-stretching won't affect this calculated delay.
 
-When I saw this concept, my thought was we should add a T= option,
-similar to M= option to build a single module.  The T would take
-the path under tools/ .  This would also be similar to how we add O=
-for output directory and M= for building "external" modules (and also
-similar to $(build)= for subdirectories).
+Why is it clock cycle dependent?
 
-> Anything that adds more complexity to the top-level Makefile should
-> be avoided if at all possible. It is un-maintainable as-is.
-> And the consistency issue is also important.
+Is it possible to poll if the stop is sent by controller ?
 
-I think this could be a simple rule, if we find the variable on the
-command line we pass everything to the tools Makefile (after processing
-O= I guess).
+>
+> Thanks
+> Alok
+>
+>
+> -----Original Message-----
+> From: Alok Chauhan [mailto:alokc@nvidia.com]
+> Sent: Monday, April 02, 2012 11:23 AM
+> To: swarren@wwwdotorg.org; khali@linux-fr.org; ben-linux@fluff.org; w.sang@pengutronix.de; Stephen Warren; olof@lixom.net; bones@secretlab.ca; omaplinuxkernel@gmail.com; ccross@android.com; Laxman Dewangan; linux-tegra@vger.kernel.org; linux-i2c@vger.kernel.org; dgreid@chromium.org
+> Cc: Alok Chauhan; linux-kernel@vger.kernel.org
+> Subject: [PATCH v2] i2c: tegra: Add delay before reset the controller
+>
+> NACK interrupt generated before I2C controller generates the STOP condition on bus. In Software, because of this reset of controller is happening before I2C controller could complete STOP condition. So wait for some time before resetting the controller so that STOP condition has delivered properly on bus.
+>
+> Added delay of 2 clock period
+How did you calculate the 2 clock cycles?
 
-I'll leave the implementation to someone else, I have more than enough
-on my plate right now.
 
-milton
+before reset the controller in case of NACK error.
+>
+> Signed-off-by: Alok Chauhan <alokc@nvidia.com>
+> ---
+> Added the more descriptive commit message about issue in case of NACK error condition. Changed the comment in code also
+>
+>  drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+>
