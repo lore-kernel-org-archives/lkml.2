@@ -1,39 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab2DBBA7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 21:00:59 -0400
-Received: from linux-sh.org ([111.68.239.195]:50459 "EHLO linux-sh.org"
+	id S1753935Ab2DBBGL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 21:06:11 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58752 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab2DBBA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 21:00:57 -0400
-Date: Mon, 2 Apr 2012 10:00:49 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: [PATCH 07/11] sh: fix several build failures from system.h fallout
-Message-ID: <20120402010048.GA21647@linux-sh.org>
-References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com> <1333312727-11428-8-git-send-email-paul.gortmaker@windriver.com>
+	id S1752933Ab2DBBGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 21:06:10 -0400
+Message-ID: <1333328762.30734.24.camel@pasglop>
+Subject: broken nouveau dependency on power supply
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Date: Mon, 02 Apr 2012 11:06:02 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333312727-11428-8-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 04:38:43PM -0400, Paul Gortmaker wrote:
-> commit e839ca528718e68cad32a307dc9aabf01ef3eb05
-> 
->     "Disintegrate asm/system.h for SH"
-> 
-> created the new file asm/cache_insns.h but it didn't add
-> an include for all the users of it.
-> 
-> The failure on fpu.c (also seen below) showed up roughly
-> at the same time, and since the fix is trivial (include traps.h)
-> I did not bother to bisect to 100% confirm it was caused by
-> the system.h disintegration.
-> 
-There's still more, but they've alreadly all been fixed up in my tree.
+Hi folks !
+
+With CONFIG_POWER_SUPPLY=m & nouveau built-in we get a build failure:
+
+drivers/built-in.o: In function `.nouveau_pm_trigger':
+(.text+0xa56e8): undefined reference to `.power_supply_is_system_supplied'
+
+nouveau probably needs to depends on CONFIG_POWER_SUPPLY to force a module
+build with the latter is =m
+
+Cheers,
+Ben.
+
+
