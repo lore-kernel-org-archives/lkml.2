@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab2DBWdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 18:33:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44875 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab2DBWdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 18:33:09 -0400
-Date: Mon, 2 Apr 2012 15:33:04 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCHSET] block: modularize blkcg config and stat file
- handling
-Message-ID: <20120402223304.GC21017@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1332975091-10950-1-git-send-email-tj@kernel.org>
- <4F741AED.6090901@kernel.dk>
- <20120402200233.GB17175@dhcp-172-17-108-109.mtv.corp.google.com>
- <4F7A1F52.50706@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7A1F52.50706@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753828Ab2DBWdw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 18:33:52 -0400
+Received: from gate.crashing.org ([63.228.1.57]:50602 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753096Ab2DBWdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 18:33:50 -0400
+Message-ID: <1333406005.30734.61.camel@pasglop>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Tue, 03 Apr 2012 08:33:25 +1000
+In-Reply-To: <20120402215524.GM24211@n2100.arm.linux.org.uk>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
+	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+	 <20120402202848.1EB833E02A7@localhost>
+	 <20120402215524.GM24211@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 02:51:14PM -0700, Jens Axboe wrote:
-> > Other than $SUBJ update on the eigth patch from "blkcg:
-> > blkg_conf_prep()" to "blkcg: simplify blkg_conf_prep()", the patchset
-> > can be applied as-is on top of the current block/for-3.5/core.
+On Mon, 2012-04-02 at 22:55 +0100, Russell King - ARM Linux wrote:
+> Well, presumably someone is calling irq_set_irq_type() asking explicitly
+> for IRQ_TYPE_NONE.  The code will now (as it always used to before David's
+> change) do exactly what you ask this to: it will ask the type to be set
+> to none.
 > 
-> Alright, pulled in as well. I'm glad we pushed this to 3.5 :-)
+> If you don't want to set the type to none, don't call the interface asking
+> for that to happen. 
 
-Yeah, I'm fairly sure if we had shoved this through 3.4, we would be
-having another round of f**k you's from Linus.
+I think part of the idea with NONE is to use it as "reset that interrupt
+to the "default" setting, whatever that means ...
 
-I'll probably send one or two more rounds of patches to clean up
-in-place blkg updates and make active policy selection per
-request_queue, but I'm glad to finally have the end in sight.
+Cheers,
+Ben.
 
-Thanks.
 
--- 
-tejun
