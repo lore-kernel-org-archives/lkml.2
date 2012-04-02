@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab2DBM6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 08:58:54 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60633 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab2DBM6w (ORCPT
+	id S1752129Ab2DBM6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 08:58:06 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:29064 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751743Ab2DBM6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 08:58:52 -0400
-Message-ID: <4F79A27E.1010509@gmail.com>
-Date: Mon, 02 Apr 2012 07:58:38 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
-MIME-Version: 1.0
-To: Martin Jansa <martin.jansa@gmail.com>
-CC: "moderated list:SOUND - SOC LAYER..." <alsa-devel@alsa-project.org>,
-        Russell King <linux@arm.linux.org.uk>, Takashi Iwai <tiwai@suse.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Eric Miao <eric.y.miao@gmail.com>,
-        Liam Girdwood <lrg@ti.com>,
-        "moderated list:PXA2xx/PXA3xx SUP..." 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: pxa: pxa2xx-i2s: add io.h for IOMEM macro
-References: <1333355048-732-1-git-send-email-Martin.Jansa@gmail.com>
-In-Reply-To: <1333355048-732-1-git-send-email-Martin.Jansa@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Apr 2012 08:58:03 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, srinivas.bakki@nxp.com, kevin.wells@nxp.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-watchdog@vger.kernel.org, wim@iguana.be
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 1/7] iio: Add device tree support to LPC32xx ADC
+Date: Mon,  2 Apr 2012 14:55:58 +0200
+Message-Id: <1333371364-21347-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1333371364-21347-1-git-send-email-stigge@antcom.de>
+References: <1333371364-21347-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2012 03:24 AM, Martin Jansa wrote:
-> * fixes
->   sound/soc/pxa/pxa2xx-i2s.c:86:2: error: implicit declaration of function 'IOMEM' [-Werror=implicit-function-declaration]
->   sound/soc/pxa/pxa2xx-i2s.c:86:2: error: initializer element is not constant
->   after 23019a733bb83c8499f192fb428b7e6e81c95a34 removed IOMEM
->   definition from arch/arm/mach-pxa/include/mach/hardware.h
-> 
-> Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+This patch adds device tree support to the LPC32xx's ADC.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-> ---
->  sound/soc/pxa/pxa2xx-i2s.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/sound/soc/pxa/pxa2xx-i2s.c b/sound/soc/pxa/pxa2xx-i2s.c
-> index 609abd5..d085837 100644
-> --- a/sound/soc/pxa/pxa2xx-i2s.c
-> +++ b/sound/soc/pxa/pxa2xx-i2s.c
-> @@ -17,6 +17,7 @@
->  #include <linux/delay.h>
->  #include <linux/clk.h>
->  #include <linux/platform_device.h>
-> +#include <linux/io.h>
->  #include <sound/core.h>
->  #include <sound/pcm.h>
->  #include <sound/initval.h>
+---
 
+ Applies to v3.4-rc1
+
+ Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt |   16 ++++++++++
+ drivers/staging/iio/adc/lpc32xx_adc.c                             |   10 ++++++
+ 2 files changed, 26 insertions(+)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt
+@@ -0,0 +1,16 @@
++* NXP LPC32xx SoC ADC controller
++
++Required properties:
++- compatible: must be "nxp,lpc32xx-adc"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: The ADC interrupt
++
++Example:
++
++	adc@40048000 {
++		compatible = "nxp,lpc32xx-adc";
++		reg = <0x40048000 0x1000>;
++		interrupt-parent = <&mic>;
++		interrupts = <39 0>;
++	};
+--- linux-2.6.orig/drivers/staging/iio/adc/lpc32xx_adc.c
++++ linux-2.6/drivers/staging/iio/adc/lpc32xx_adc.c
+@@ -30,6 +30,7 @@
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/completion.h>
++#include <linux/of.h>
+ 
+ #include "../iio.h"
+ #include "../sysfs.h"
+@@ -221,12 +222,21 @@ static int __devexit lpc32xx_adc_remove(
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id lpc32xx_adc_match[] = {
++	{ .compatible = "nxp,lpc32xx-adc" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, lpc32xx_adc_match);
++#endif
++
+ static struct platform_driver lpc32xx_adc_driver = {
+ 	.probe		= lpc32xx_adc_probe,
+ 	.remove		= __devexit_p(lpc32xx_adc_remove),
+ 	.driver		= {
+ 		.name	= MOD_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(lpc32xx_adc_match),
+ 	},
+ };
+ 
