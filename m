@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab2DBNnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 09:43:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43621 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737Ab2DBNnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 09:43:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="126110644"
-Message-ID: <1333374418.22146.5.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jan Kara <jack@suse.cz>
-Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Date: Mon, 02 Apr 2012 16:46:58 +0300
-In-Reply-To: <20120331114926.GA4569@quack.suse.cz>
-References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
-	 <20120322095342.GC14485@quack.suse.cz>
-	 <1332410747.18717.12.camel@sauron.fi.intel.com>
-	 <20120322103309.GA14484@quack.suse.cz>
-	 <1332854998.31549.40.camel@sauron.fi.intel.com>
-	 <20120327201401.GF5020@quack.suse.cz>
-	 <1333121035.5440.49.camel@sauron.fi.intel.com>
-	 <20120330153530.GH5587@quack.suse.cz>
-	 <1333122195.5440.60.camel@sauron.fi.intel.com>
-	 <20120331114926.GA4569@quack.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-U+0zOUbbIg/K1UOhMPwd"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S1752671Ab2DBNpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 09:45:15 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57205 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab2DBNpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 09:45:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH 0/7]: arm: lpc32xx: Device tree support
+Date: Mon, 2 Apr 2012 13:45:04 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, srinivas.bakki@nxp.com, kevin.wells@nxp.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-watchdog@vger.kernel.org, wim@iguana.be
+References: <1333371364-21347-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1333371364-21347-1-git-send-email-stigge@antcom.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204021345.04512.arnd@arndb.de>
+X-Provags-ID: V02:K0:yZAlqP8jLTHwZMJbYPUfctkT/PoJqr+OxrFUpMQai+Y
+ /0t6nwYhSkztqM8SDNnMOuIORugi+/SMMg343mjCsYmcVD+ZgF
+ ON0xPjlgKGChjLL2/uEU/rBKWkIyz0Dbisgkb6rO7w6YSF0SrS
+ N5IAUuqcN4dK8jLyhgZmTRVGeeghtjF+x/hnsLQI/ZEmA+eJrf
+ SG5rbxnXJCWxKG4W33Ys4tvcv85SmmLBYFzcF7MaLXHEPvREyF
+ kAnZRyzg6sAKWE+ZUXaZxbE5Guf1TbFFV2eid8DJbfMI5ZThqI
+ UOIs62qr9i7zHC3PM383ZJFWONfX9xTrAKq22Wo7WW16FKW8Ei
+ 12W5DvrSEisc0F48E5iY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 02 April 2012, Roland Stigge wrote:
+> This is the first series of patches to introduce device tree support for the
+> LPC32xx SoC. This series includes patches for the various subsystems to support
+> device tree to be used later by the machine's initialization.
+> 
+> The patches apply to various subsystems:
+> 
+>  * staging/iio/adc
+>  * rtc
+>  * net
+>  * arm-soc
+>  * i2c
+>  * wdt
+> 
+> Based on v3.4-rc1
+> 
+> You can also pull from
+> 
+>   git://git.antcom.de/linux-2.6 lpc32xx/dt
+> 
+> I'm CC'ing the various subsystem maintainers and lists who can each see what's
+> going on and please pick their respective subsystem's changes. - Thanks!
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
---=-U+0zOUbbIg/K1UOhMPwd
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Looks good overall.
 
-On Sat, 2012-03-31 at 13:49 +0200, Jan Kara wrote:
-> > Well, I ran vanilla the tests in vanilla 3.3 overnight, they were fine.
-> > But may be I was lucky. I'll try to run the tests with vanilla kernel
-> > some more. I mean, it would make more sense to report something against
-> > vanilla 3.3, not a patched 3.3.
->   That's true. Frankly I think you were lucky with hitting the bug with
-> patched kernel rather than not hitting it with vanilla :). What test did
-> you run exactly?
+I notice that you are missing the bindings for irq and gpio, which tend to be
+quite important. Do you have another tree that has all the lpc32xx specific
+parts or are these still under heavy development?
 
-I've sent a separate report (Subject: 3.3 oops). The oops there is a bit
-different comparing to this one, though. For this oops I used the same
-kvm setup.
+Do you plan to add DT support in parallel to the ATAGS based board you
+already have, or do you plan to move everything over quickly?
+In the latter case, it might be helpful to get Acks from the subsystem
+maintainers and merge everything through arm-soc.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-U+0zOUbbIg/K1UOhMPwd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPea3SAAoJECmIfjd9wqK0NF4P/i4Ab7tylwTOhX62OIl9O/jl
-4/ClO2jvq4QBzWCuusX+V4hxVgY7BW6MydX1GmRQYBGjRzZg5zA/7lVa/TEN8I44
-wATap01cm7wUDHMyBxDa7naR84gT8ODny50VJs9Ihsqwo56x9X4dMvIAhDxYea5j
-Ldy1TXVfiGyEWUvbcUVLNAxQ4A2z/i2CDPP6Q2bd1U16HmNGQMGCEwvEEmM0rno3
-cqDXh0xv6nEpvcGfsMk/iLOjMqWPuqPCYjeveB05pkLhVBXzhhWBSmZC2xKOcA2Y
-1DBJxtXHJrayfZeiFbVy9Oh554wxe74JZNVAkQZxX0huvboZcMWolB8zJ3kp61LW
-N7EDw7ARCpWEFaDT8x72c1pYXxHmuhiHFcgZm8jpNEQzBCYa2Y4wrj8aqmlCBZFi
-TM2R+B8+ECwswWeF68Yd32fxaMvtb0FftO2goes5kXWJq2yo00xVNNK+AeRV0yTx
-8WGdi537LMW0ZZbddg0rkUFgj3oi+OQeXImBjas7PW8nH/IXbjJUwI5hkH5yAspc
-XL0Z5hGoMGYmGGQJMPv09LkI8nznIrOfsmgb16NmKMvhb3hbzwLrJ8DnWz3Lrb1Z
-XakkjDs/9xRCeBHEzCO5432ULfaqJfwd+OG4vH7OJ+2uxrYuanjhL5dHOipQZ3ul
-+CSW8lZXSyOPgj815gN/
-=PqxT
------END PGP SIGNATURE-----
-
---=-U+0zOUbbIg/K1UOhMPwd--
-
+	Arnd
