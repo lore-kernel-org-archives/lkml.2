@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2DBOtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:49:23 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:52183 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751047Ab2DBOtW convert rfc822-to-8bit
+	id S1752866Ab2DBOtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:49:25 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:34302 "EHLO
+	homiemail-a79.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751047Ab2DBOtX convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:49:22 -0400
+	Mon, 2 Apr 2012 10:49:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=dl+g8nGRDrUSG/N61BRsveaE5iI+BknUmDJwXtIbaD3ZBBUs+Lx9KvnCm5LCh
+	Vzwfdbr5z3Is/cSOn0Ufhp0DEu0wFlchQRiydQqinHNQXLIFPQ1NfY2H7VeSre3l
+	iSsdXWzqYFEqPsdiuetORP0vxbqmwZbp2pH8cWepNDDHaI=
+Message-ID: <4F79BC66.3010902@shealevy.com>
+Date: Mon, 02 Apr 2012 10:49:10 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120321 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <1333376719-8383-1-git-send-email-justinmattock@gmail.com>
-References: <1333376719-8383-1-git-send-email-justinmattock@gmail.com>
-Date: Mon, 2 Apr 2012 09:49:19 -0500
-Message-ID: <CAO8GWqnyQLmfRG-yF9kU5csw5tQiUCLfj00dtBQe_PdYrDbf+w@mail.gmail.com>
-Subject: Re: [PATCH]NEXT:drivers:staging:omapdrm Fix typos in drivers:omapdrm
-From: "Clark, Rob" <rob@ti.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?ISO-8859-1?Q?Llu=EDs_Batlle_i_Rossell?= <viric@viric.name>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Hang opening a pipe written to by a child, with SIGCHLD
+References: <20120402144611.GY3029@vicerveza.homeunix.net>
+In-Reply-To: <20120402144611.GY3029@vicerveza.homeunix.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 9:25 AM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
+On 04/02/2012 10:46 AM, Lluís Batlle i Rossell wrote:
+> Hello,
 >
-> The below patch fixes some typos that I found while reading.
-> Note: I was told to hold off sending anything until *rc1 so hopefully
-> now its alright.(wasnt sure what kernel *rc*)
+> I had troubles running a simple bash script where a child wrote to a named pipe
+> before dying, and the parent opened and read the pipe.
 >
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> On a computer, my script hangs always. Also under 'strace'. Not under 'strace
+> -f'. Thinking of some race, I wrote a small script that hangs in the linuxes I
+> could try (3.2.11 now):
+>
+> ----------
+> #!/var/run/current-system/sw/bin/bash
+>
+> PIPE=/tmp/pipe
+>
+> rm -f $PIPE
+> mkfifo $PIPE
+>
+> function spawn {
+>      echo DONE>  $PIPE
+> }
+>
+> spawn sleep 1&
+>
+> while true; do
+>      echo reading
+>      while read LINE<  $PIPE; do
+>          echo $LINE
+>          spawn&
+>      done
+> done
+> -------------
+>
+> bash uses SA_RESTART on SIGCHLD handler, and nevertheless the script halts at
+> printing some amount of 'DONE'. Strace shows it's inside the open() call, while the open
+> call has been interrupted by SIGCHLD. One of the computers I have hangs at the *first* DONE always, and that's why it's annoying to me.
+>
+> Can anyone reproduce this?
 
-Thanks
+I've reproduced this on my system as well (3.3). No idea about cause though.
 
-Reviewed-by: Rob Clark <rob@ti.com>
-
->
-> ---
->  drivers/staging/omapdrm/omap_fb.c  |    2 +-
->  drivers/staging/omapdrm/tcm-sita.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/omapdrm/omap_fb.c b/drivers/staging/omapdrm/omap_fb.c
-> index 04b235b..0c53a3c 100644
-> --- a/drivers/staging/omapdrm/omap_fb.c
-> +++ b/drivers/staging/omapdrm/omap_fb.c
-> @@ -167,7 +167,7 @@ void omap_framebuffer_update_scanout(struct drm_framebuffer *fb, int x, int y,
->  }
->
->  /* Call for unpin 'a' (if not NULL), and pin 'b' (if not NULL).  Although
-> - * buffers to unpin are just just pushed to the unpin fifo so that the
-> + * buffers to unpin are just pushed to the unpin fifo so that the
->  * caller can defer unpin until vblank.
->  *
->  * Note if this fails (ie. something went very wrong!), all buffers are
-> diff --git a/drivers/staging/omapdrm/tcm-sita.c b/drivers/staging/omapdrm/tcm-sita.c
-> index 10d5ac3..efb6095 100644
-> --- a/drivers/staging/omapdrm/tcm-sita.c
-> +++ b/drivers/staging/omapdrm/tcm-sita.c
-> @@ -200,7 +200,7 @@ static s32 sita_reserve_1d(struct tcm *tcm, u32 num_slots,
->  *
->  * @param w    width
->  * @param h    height
-> - * @param area pointer to the area that will be populated with the reesrved
-> + * @param area pointer to the area that will be populated with the reserved
->  *             area
->  *
->  * @return 0 on success, non-0 error value on failure.
-> --
-> 1.7.5.4
->
+~Shea
