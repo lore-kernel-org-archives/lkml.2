@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab2DBFmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 01:42:38 -0400
-Received: from smtp20.mail.ru ([94.100.176.173]:41072 "EHLO smtp20.mail.ru"
+	id S1752910Ab2DBFnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 01:43:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51519 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751240Ab2DBFmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 01:42:37 -0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>
-Subject: [PATCH] w1: fix slave driver registration error message
-Date: Mon,  2 Apr 2012 09:42:22 +0400
-Message-Id: <1333345342-12113-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.5.4
-X-Spam: Not detected
-X-Mras: Ok
+	id S1752065Ab2DBFnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 01:43:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1333312727-11428-9-git-send-email-paul.gortmaker@windriver.com>
+References: <1333312727-11428-9-git-send-email-paul.gortmaker@windriver.com> <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: dhowells@redhat.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: [PATCH 08/11] frv: fix warnings in mb93090-mb00/pci-dma.c about implicit EXPORT_SYMBOL
+Date: Mon, 02 Apr 2012 06:43:06 +0100
+Message-ID: <29844.1333345386@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W1 core prints "Failed to register master driver" if error happens
-on registering SLAVE driver. Fix it.
+Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- drivers/w1/w1.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> To fix:
+> 
+> arch/frv/mb93090-mb00/pci-dma.c:31:1: warning: data definition has no type or storage class [enabled by default]
+> arch/frv/mb93090-mb00/pci-dma.c:31:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+> arch/frv/mb93090-mb00/pci-dma.c:31:1: warning: parameter names (without types) in function declaration [enabled by default]
+> arch/frv/mb93090-mb00/pci-dma.c:38:1: warning: data definition has no type or storage class [enabled by default]
+> 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index b7b5014..c01b5df 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -1011,7 +1011,7 @@ static int __init w1_init(void)
- 	retval = driver_register(&w1_slave_driver);
- 	if (retval) {
- 		printk(KERN_ERR
--			"Failed to register master driver. err=%d.\n",
-+			"Failed to register slave driver. err=%d.\n",
- 			retval);
- 		goto err_out_master_unregister;
- 	}
--- 
-1.7.5.4
-
+Acked-by: David Howells <dhowells@redhat.com>
