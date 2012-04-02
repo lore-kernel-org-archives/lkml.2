@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab2DBOFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:05:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab2DBOFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:05:12 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: the maxcpus= boot parameter broke somewhere along the line
-References: <x49vcmhhj2f.fsf@segfault.boston.devel.redhat.com>
-	<CA+1xoqe_xS95xKM2=X-Mq-_gc+DqzxF2D8YiuCf=0=7=mVKsyw@mail.gmail.com>
-	<20120306164835.GA26094@elliptictech.com>
-	<CA+1xoqfzCb5X8wwvR1Bz+D6K20n7v3ChUR0E4Jqw_BWam5C7TQ@mail.gmail.com>
-	<x49mx7thabf.fsf@segfault.boston.devel.redhat.com>
-	<4F578198.8060708@linux.vnet.ibm.com>
-	<x49ipigustu.fsf@segfault.boston.devel.redhat.com>
-	<4F59E802.6070301@linux.vnet.ibm.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 02 Apr 2012 10:05:06 -0400
-In-Reply-To: <4F59E802.6070301@linux.vnet.ibm.com> (Srivatsa S. Bhat's message
-	of "Fri, 09 Mar 2012 16:52:42 +0530")
-Message-ID: <x49wr5ygrfx.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752391Ab2DBOHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:07:08 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:36004 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab2DBOHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 10:07:05 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] x86: Make mwait_usable() respect "idle=nomwait" kernel
+ parameter
+To: lenb@kernel.org
+Cc: venki@google.com, suresh.b.siddha@intel.com, bp@amd64.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        ben@decadent.org.uk, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        deepthi@linux.vnet.ibm.com
+Date: Mon, 02 Apr 2012 19:36:45 +0530
+Message-ID: <20120402140645.6283.21190.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12040204-7014-0000-0000-000000D3D2F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
+mwait_usable() returns 1 even if the "idle=nomwait" kernel parameter is passed.
+Fix it by adding a check for boot_option_idle_override == IDLE_NOMWAIT and
+returning 0 if it is set.
 
-> Looking at the mention of udev above, and considering the commit you bisected
-> to, I think it would be good to see whether someone is writing 1 to
-> /sys/device/system/cpu/cpu*/online and hence the cpus are getting hot-added
-> towards the end of boot. Maybe that sounds stupid, but worth a try :)
->
-> So can you try the debug patch below? It applies on latest linux-3.3-rc6+
+Before applying the patch (dmesg snippet):
+[    0.000000] Command line: [...] idle=nomwait
+[    0.000000] Kernel command line: [...] idle=nomwait
+[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+[    0.140606] using mwait in idle threads.         <======= mwait being used
+[    4.303986] cpuidle: using governor ladder
+[    4.308232] cpuidle: using governor menu
 
-Sorry it took me so long to get back to you.  You're patch did, in fact,
-trigger:
+After applying the patch:
+[    0.000000] Command line: [...] idle=nomwait
+[    0.000000] Kernel command line: [...] idle=nomwait
+[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+[    4.264100] cpuidle: using governor ladder
+[    4.268342] cpuidle: using governor menu
 
-udev: starting version 147
-CPU 3 online initated from userspace
-SMP alternatives: switching to SMP code
-WARNING! power/level is deprecated; use power/control instead
-Booting Node 0 Processor 3 APIC 0x3
-NMI watchdog: enabled, takes one hw-pmu counter.
-CPU 1 online initated from userspace
-Booting Node 0 Processor 1 APIC 0x2
-NMI watchdog: enabled, takes one hw-pmu counter.
-CPU 2 online initated from userspace
-Booting Node 0 Processor 2 APIC 0x1
-NMI watchdog: enabled, takes one hw-pmu counter.
-CPU 1 online initated from userspace
-CPU 3 online initated from userspace
-CPU 2 online initated from userspace
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Checking through udev rules, I found this in
-/lib/udev/rules.d/40-redhat.rules (this is a RHEL 6 install, btw):
+ arch/x86/kernel/process.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-ACTION=="add", KERNEL=="cpu[0-9]*", RUN+="/bin/bash -c 'echo 1 > /sys/devices/system/cpu/%k/online'"
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index a33afaa..945fbf0 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -621,6 +621,9 @@ int mwait_usable(const struct cpuinfo_x86 *c)
+ 	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
+ 		return 1;
+ 
++	if (boot_option_idle_override == IDLE_NOMWAIT)
++		return 0;
++
+ 	if (c->cpuid_level < MWAIT_INFO)
+ 		return 0;
+ 
 
-So, what do you suppose is the right way to fix this?
-
-Cheers,
-Jeff
-
-Kay, you can read up on the rest of the thread here:
-https://lkml.org/lkml/2012/3/6/242
