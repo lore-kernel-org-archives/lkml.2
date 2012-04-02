@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab2DBRBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:01:34 -0400
-Received: from host171.canaca.com ([67.55.55.225]:39155 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab2DBRBc (ORCPT
+	id S1753554Ab2DBRDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:03:15 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:46635 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752961Ab2DBRDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:01:32 -0400
-Message-ID: <44acbf3ff0b6aa62eab2831ee6ecea80.squirrel@mungewell.org>
-In-Reply-To: <4F79D486.5090605@suse.cz>
-References: <a4e40aa5c43be934d83240849aa25f3b.squirrel@mungewell.org>
-    <1333378444-3117-1-git-send-email-simon@mungewell.org>
-    <4F79D486.5090605@suse.cz>
-Date: Mon, 2 Apr 2012 13:01:30 -0400
-Subject: Re: [PATCH 1/2] HID: hid-lg4ff: Use Private Data
-From: simon@mungewell.org
-To: "Jiri Slaby" <jslaby@suse.cz>
-Cc: "Simon Wood" <simon@mungewell.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Jiri Kosina" <jkosina@suse.cz>,
-        "Michael Bauer" <michael@m-bauer.org>,
-        "Michal Maly" <madcatxster@gmail.com>
-User-Agent: SquirrelMail/1.4.21
+	Mon, 2 Apr 2012 13:03:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20120402143448.GD922@valkosipuli.localdomain>
+References: <1327574749-18552-1-git-send-email-balbi@ti.com>
+	<20120402143448.GD922@valkosipuli.localdomain>
+Date: Mon, 2 Apr 2012 22:33:10 +0530
+Message-ID: <CAAe_U6+kqyn7mdujJKr-ysC+HyA0=pyO012H-FxYY6DSRjznJQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: musb: make modules behave better
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
->> +	struct lg4ff_device_entry *uninitialized_var(entry);
->> +	struct lg_drv_data *uninitialized_var(drv_data);
+On Mon, Apr 2, 2012 at 8:04 PM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
+> Hi Felipe,
 >
-> You don't need uninitialized_var bloat anymroe, right?
+> On Thu, Jan 26, 2012 at 12:45:49PM +0200, Felipe Balbi wrote:
+>> There's really no point in doing all that
+>> initcall trickery when we can safely let
+>> udev handle module probing for us.
+>>
+>> Remove all of that trickery, by moving everybody
+>> to module_init() and making proper use of
+>> platform_device_register() rather than
+>> platform_device_probe().
+>>
+>> Signed-off-by: Felipe Balbi <balbi@ti.com>
+>> ---
+>>
+>> Because this falls into the "has never worked before" category
+>> I will be sending this only on the next merge window. This
+>> also gives people enough time to complain about any mistakes
+>> on the patch.
+>
+> This patch looks correct and right to me, but it breaks musb when it's
+> compiled into the kernel, at least on the Nokia N950. I haven't yet figured
+> out exactly why, though.
 
-I guess I don't fully understand the 'unitialized_var()' macro, and was
-just following the previous uses in the code.
+Is it an abort?
+You can use the patch which I've sent to the list last week for fixing it.
+http://www.spinics.net/lists/linux-usb/msg60603.html.
 
-Google'ing doesn't really help either. Is there a definitive guide as when
-to use and not?
-
-Simon
-
+Thanks
+Kishon
