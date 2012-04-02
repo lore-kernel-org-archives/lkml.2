@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab2DBQBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 12:01:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56492 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab2DBQBF (ORCPT
+	id S1752892Ab2DBQDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 12:03:05 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35631 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab2DBQDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 12:01:05 -0400
-Date: Mon, 2 Apr 2012 17:00:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Marc Reilly <marc@cpdesign.com.au>
-Cc: sameo@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
-        u.kleine-koenig@pengutronix.de, oskar@scara.com,
-        linux-kernel@vger.kernel.org, alexg@meprolight.com
-Subject: Re: [PATCH v5 2/4] mfd: mc13xxx-core: use regmap for register
- access
-Message-ID: <20120402160036.GA29808@sirena.org.uk>
-References: <1333262499-25871-1-git-send-email-marc@cpdesign.com.au>
- <1333262499-25871-3-git-send-email-marc@cpdesign.com.au>
+	Mon, 2 Apr 2012 12:03:02 -0400
+Date: Mon, 2 Apr 2012 20:02:53 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120402160253.GB15260@moon>
+References: <20120331091049.19373.28994.stgit@zurg>
+ <20120331092929.19920.54540.stgit@zurg>
+ <20120331201324.GA17565@redhat.com>
+ <20120331203912.GB687@moon>
+ <4F79755B.3030703@openvz.org>
+ <20120402144821.GA3334@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333262499-25871-3-git-send-email-marc@cpdesign.com.au>
-X-Cookie: "Out of register space (ugh)"
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120402144821.GA3334@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 04:41:37PM +1000, Marc Reilly wrote:
-> This change converts the mc13xxx core to use regmap rather than direct
-> spi r/w.
-> The spidev member of mc13xxx struct becomes redundant and is removed.
-> Extra debugging aids are added to mc13xxx_reg_rmw.
+On Mon, Apr 02, 2012 at 04:48:21PM +0200, Oleg Nesterov wrote:
+> On 04/02, Konstantin Khlebnikov wrote:
+> >
+> > In this patch I leave mm->exe_file lockless.
+> > After exec/fork we can change it only for current task and only if mm->mm_users == 1.
+> >
+> > something like this:
+> >
+> > task_lock(current);
+> 
+> OK, this protects against the race with get_task_mm()
+> 
+> > if (atomic_read(&current->mm->mm_users) == 1)
+> 
+> this means PR_SET_MM_EXE_FILE can fail simply because someone did
+> get_task_mm(). Or the caller is multithreaded.
 
-To repeat what I've said on previous versions please push this down into
-regmap.  There's already extensive diagnostic features there, let's not
-have people open coding things that are missing.
+So it leads to the same question -- do we *really* need the PR_SET_MM_EXE_FILE
+to be one-shot action? Yeah, I know, we agreed that one-shot is better than
+anything else from sysadmin perspective and such, but maybe I could introduce
+a special capability bit for c/r and allow a program which has such cap to modify
+exe-file without checkin mm_users?
+
+/me hides
+
+> 
+> > 	set_mm_exe_file(current->mm, new_file);
+> 
+> No, fput() can sleep.
+
+Sure, it was just "something like" as Konstantin stated, thanks anyway ;)
+
+	Cyrill
