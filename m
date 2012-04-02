@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab2DBWDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 18:03:09 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33950 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751291Ab2DBWDH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 18:03:07 -0400
-Message-ID: <4F7A2217.2030201@tao.ma>
-Date: Tue, 03 Apr 2012 06:03:03 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1752565Ab2DBWKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 18:10:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60500 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907Ab2DBWKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 18:10:30 -0400
+Date: Tue, 3 Apr 2012 00:10:27 +0200
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] ext2: write superblock only once on unmount
+Message-ID: <20120402221027.GD5270@quack.suse.cz>
+References: <1332346475-1441-1-git-send-email-dedekind1@gmail.com>
+ <1332346475-1441-4-git-send-email-dedekind1@gmail.com>
+ <20120331115332.GB4569@quack.suse.cz>
+ <1333374249.22146.2.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: axboe@kernel.dk, vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 18/21] blkcg: move blkio_group_conf->weight to cfq
-References: <1332975091-10950-1-git-send-email-tj@kernel.org> <1332975091-10950-19-git-send-email-tj@kernel.org> <4F7A1C8B.3010402@tao.ma> <20120402214938.GA19634@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120402214938.GA19634@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 50.1.53.2 authed with tm@tao.ma}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333374249.22146.2.camel@sauron.fi.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 05:49 AM, Tejun Heo wrote:
-> Hello,
+On Mon 02-04-12 16:44:09, Artem Bityutskiy wrote:
+> On Sat, 2012-03-31 at 13:53 +0200, Jan Kara wrote:
+> > On Wed 21-03-12 18:14:30, Artem Bityutskiy wrote:
+> > > From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> > > 
+> > > Currently on unmount if we are mounted R/W, we first write the superblock to
+> > > the media if it is dirty, and then write it again, which is not optimal. This
+> > > patch makes ext2 write the superblock on unmount less times.
+> >   Looks good. I've added the patch to my tree.
 > 
-> On Tue, Apr 03, 2012 at 05:39:23AM +0800, Tao Ma wrote:
->> I guess blkio->weight is a generic way of abstracting the weight between
->> different block cgroups.
+> I would like to test v2 against your tree, I found this one:
 > 
-> It isn't and can't be.  There's nothing generic about it across
-> different policies and it's not even clear what that means.  If the
-> user chooses combine, iops limit with cfq weights, what the hell is
-> "generic" about that weight?
+> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git
 > 
->> Yes, currently, only cfq uses it, but I am
->> trying to improve Shaohua's original fiops scheduler and add cgroup
->> support to it. So please leave it there so that future scheduler(if
->> other than the fiops scheduler) can use the framework.
-> 
-> So, if you want to implement a new blkcg policy, add the config
-> parameters and export the stats the policy wants *yourself*.  Not
-> having clear separation between policies and generic stuff was what
-> led us to this yucky mess and there's no way we're going back there.
-> So, NO.
-Currently weight is just used to calculate the time slice of different
-cfq group, right? So why can't it be used to indicate other weight? So
-say, if we are just want to use iops to indicate the difference between
-different cgroups(100 weight vs 200 weight), so one process will send
-100 ios while the other will send 200 ios just for example. We will need
-a new iops_weight in your option to be exported?
+> but I do not see this patch there - is that the right tree, or may be
+> you did not push out? Which branch should I use?
+  Yeah, I didn't push out the changes. Now they are out (for_next /
+for_testing) branch.
 
-Thanks
-Tao
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
