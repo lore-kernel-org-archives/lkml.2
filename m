@@ -1,100 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab2DBOOl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:14:41 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:47709 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab2DBOOk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:14:40 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH] staging: zsmalloc: fix memory leak
-Date: Mon,  2 Apr 2012 09:13:56 -0500
-Message-Id: <1333376036-9841-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040214-5518-0000-0000-000003634440
+	id S1752509Ab2DBOQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:16:00 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:12204 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab2DBOP7 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 2 Apr 2012 10:15:59 -0400
+Message-Id: <4F79D0BB020000780007C02D@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 02 Apr 2012 15:15:55 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: clear HPET configuration registers on startup
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nitin Gupta <ngupta@vflare.org>
+While Linux itself has been calling hpet_disable() for quite a while,
+having e.g. a secondary (kexec) kernel depend on such behavior of the
+primary (crashed) environment is fragile. It particularly broke until
+very recently when the primary environment was Xen based, as that
+hypervisor did not clear any of the HPET settings it may have used.
 
-This patch fixes a memory leak in zsmalloc where the first
-subpage of each zspage is leaked when the zspage is freed.
+Rather than blindly (and incompletely) clearing certain HPET settings
+in hpet_disable(), latch the config register settings during boot and
+restore then here.
 
-Based on 3.4-rc1.
+(Note on the hpet_set_mode() change: Now that we're clearing the level
+bit upon initialization, there's no need anymore to do so here.)
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
 ---
- drivers/staging/zsmalloc/zsmalloc-main.c |   30 ++++++++++++++++++------------
- 1 files changed, 18 insertions(+), 12 deletions(-)
+ arch/x86/kernel/hpet.c |   59 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 51 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 09caa4f..917461c 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -267,33 +267,39 @@ static unsigned long obj_idx_to_offset(struct page *page,
- 	return off + obj_idx * class_size;
+--- 3.4-rc1-x86-hpet.orig/arch/x86/kernel/hpet.c
++++ 3.4-rc1-x86-hpet/arch/x86/kernel/hpet.c
+@@ -319,8 +319,6 @@ static void hpet_set_mode(enum clock_eve
+ 		now = hpet_readl(HPET_COUNTER);
+ 		cmp = now + (unsigned int) delta;
+ 		cfg = hpet_readl(HPET_Tn_CFG(timer));
+-		/* Make sure we use edge triggered interrupts */
+-		cfg &= ~HPET_TN_LEVEL;
+ 		cfg |= HPET_TN_ENABLE | HPET_TN_PERIODIC |
+ 		       HPET_TN_SETVAL | HPET_TN_32BIT;
+ 		hpet_writel(cfg, HPET_Tn_CFG(timer));
+@@ -787,15 +785,16 @@ static int hpet_clocksource_register(voi
+ 	return 0;
  }
  
-+static void reset_page(struct page *page)
-+{
-+	clear_bit(PG_private, &page->flags);
-+	clear_bit(PG_private_2, &page->flags);
-+	set_page_private(page, 0);
-+	page->mapping = NULL;
-+	page->freelist = NULL;
-+	reset_page_mapcount(page);
-+}
++static u32 *hpet_boot_cfg;
 +
- static void free_zspage(struct page *first_page)
+ /**
+  * hpet_enable - Try to setup the HPET timer. Returns 1 on success.
+  */
+ int __init hpet_enable(void)
  {
--	struct page *nextp, *tmp;
-+	struct page *nextp, *tmp, *head_extra;
+-	unsigned long hpet_period;
+-	unsigned int id;
++	u32 hpet_period, cfg, id;
+ 	u64 freq;
+-	int i;
++	unsigned int i, last;
  
- 	BUG_ON(!is_first_page(first_page));
- 	BUG_ON(first_page->inuse);
+ 	if (!is_hpet_capable())
+ 		return 0;
+@@ -847,15 +846,45 @@ int __init hpet_enable(void)
+ 	id = hpet_readl(HPET_ID);
+ 	hpet_print_config();
  
--	nextp = (struct page *)page_private(first_page);
-+	head_extra = (struct page *)page_private(first_page);
++	last = (id & HPET_ID_NUMBER) >> HPET_ID_NUMBER_SHIFT;
++
+ #ifdef CONFIG_HPET_EMULATE_RTC
+ 	/*
+ 	 * The legacy routing mode needs at least two channels, tick timer
+ 	 * and the rtc emulation channel.
+ 	 */
+-	if (!(id & HPET_ID_NUMBER))
++	if (!last)
+ 		goto out_nohpet;
+ #endif
  
--	clear_bit(PG_private, &first_page->flags);
--	clear_bit(PG_private_2, &first_page->flags);
--	set_page_private(first_page, 0);
--	first_page->mapping = NULL;
--	first_page->freelist = NULL;
--	reset_page_mapcount(first_page);
-+	reset_page(first_page);
- 	__free_page(first_page);
++	cfg = hpet_readl(HPET_CFG);
++	hpet_boot_cfg = kmalloc((last + 2) * sizeof(*hpet_boot_cfg),
++				GFP_KERNEL);
++	if (hpet_boot_cfg)
++		*hpet_boot_cfg = cfg;
++	else
++		pr_warn("HPET initial state will not be saved\n");
++	cfg &= ~(HPET_CFG_ENABLE | HPET_CFG_LEGACY);
++	hpet_writel(cfg, HPET_Tn_CFG(i));
++	if (cfg)
++		pr_warn("HPET: Unrecognized bits %#x set in global cfg\n",
++			cfg);
++
++	for (i = 0; i <= last; ++i) {
++		cfg = hpet_readl(HPET_Tn_CFG(i));
++		if (hpet_boot_cfg)
++			hpet_boot_cfg[i + 1] = cfg;
++		cfg &= ~(HPET_TN_ENABLE | HPET_TN_LEVEL | HPET_TN_FSB);
++		hpet_writel(cfg, HPET_Tn_CFG(i));
++		cfg &= ~(HPET_TN_PERIODIC | HPET_TN_PERIODIC_CAP
++			 | HPET_TN_64BIT_CAP | HPET_TN_32BIT | HPET_TN_ROUTE
++			 | HPET_TN_FSB | HPET_TN_FSB_CAP);
++		if (cfg)
++			pr_warn("HPET: Unrecognized bits %#x set in cfg#%u\n",
++				cfg, i);
++	}
++	hpet_print_config();
++
+ 	if (hpet_clocksource_register())
+ 		goto out_nohpet;
  
- 	/* zspage with only 1 system page */
--	if (!nextp)
-+	if (!head_extra)
- 		return;
+@@ -923,14 +952,28 @@ fs_initcall(hpet_late_init);
+ void hpet_disable(void)
+ {
+ 	if (is_hpet_capable() && hpet_virt_address) {
+-		unsigned int cfg = hpet_readl(HPET_CFG);
++		unsigned int cfg = hpet_readl(HPET_CFG), id, last;
  
--	list_for_each_entry_safe(nextp, tmp, &nextp->lru, lru) {
-+	list_for_each_entry_safe(nextp, tmp, &head_extra->lru, lru) {
- 		list_del(&nextp->lru);
--		clear_bit(PG_private_2, &nextp->flags);
--		nextp->index = 0;
-+		reset_page(nextp);
- 		__free_page(nextp);
+-		if (hpet_legacy_int_enabled) {
++		if (hpet_boot_cfg)
++			cfg = *hpet_boot_cfg;
++		else if (hpet_legacy_int_enabled) {
+ 			cfg &= ~HPET_CFG_LEGACY;
+ 			hpet_legacy_int_enabled = 0;
+ 		}
+ 		cfg &= ~HPET_CFG_ENABLE;
+ 		hpet_writel(cfg, HPET_CFG);
++
++		if (!hpet_boot_cfg)
++			return;
++
++		id = hpet_readl(HPET_ID);
++		last = ((id & HPET_ID_NUMBER) >> HPET_ID_NUMBER_SHIFT);
++
++		for (id = 0; id <= last; ++id)
++			hpet_writel(hpet_boot_cfg[id + 1], HPET_Tn_CFG(id));
++
++		if (*hpet_boot_cfg & HPET_CFG_ENABLE)
++			hpet_writel(*hpet_boot_cfg, HPET_CFG);
  	}
-+	reset_page(head_extra);
-+	__free_page(head_extra);
  }
  
- /* Initialize a newly allocated zspage */
--- 
-1.7.5.4
+
+
 
