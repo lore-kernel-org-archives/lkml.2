@@ -1,65 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab2DBE0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 00:26:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32924 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750717Ab2DBE0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 00:26:20 -0400
-Message-ID: <1333340764.443.19.camel@deadeye>
-Subject: Re: [PATCH firmware 1/3] rtl_nic: update firmware for RTL8111E-VL
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        kernel-team@fedoraproject.org, linux-kernel@vger.kernel.org
-Date: Mon, 02 Apr 2012 05:26:04 +0100
-In-Reply-To: <1332840075-5991-1-git-send-email-hayeswang@realtek.com>
-References: <1332840075-5991-1-git-send-email-hayeswang@realtek.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-LxKuiBnfqs4PGF/kJ8Pp"
-X-Mailer: Evolution 3.2.2-1 
+	id S1751121Ab2DBEkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 00:40:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48692 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752Ab2DBEkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 00:40:04 -0400
+Message-ID: <1333341590.30734.47.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Apr 2012 14:39:50 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus !
 
---=-LxKuiBnfqs4PGF/kJ8Pp
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This contains a couple more fixes for the system.h disintegration,
+a trivial section mismatch fix, a couple of patches from akpm that I
+didn't quite get he expected me to pickup, and a few more trivialities
+form Kumar that he appear to have forgotten to send me in the previous
+batch.
 
-Applied all 3, thanks.
-
+Cheers,
 Ben.
 
---=20
-Ben Hutchings
-Reality is just a crutch for people who can't handle science fiction.
+The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
 
---=-LxKuiBnfqs4PGF/kJ8Pp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+are available in the git repository at:
 
-iQIVAwUAT3kqXee/yOyVhhEJAQojThAA05zV549QpV2BrKXbawe7SDALHYjVoICT
-dON3lmehep9mZbnnoxcMM+F92oWp9bXBUjBJ0yJw1UTCtog7zHIBNDA46fz4h54k
-8bskOSG5KEphB5jpjJrCrjsHM+eNdPOxRX3QFpbNpM9YqA9mwv+9VgQT8amPDnu2
-B82w8JxxnJAyihTkSYyRrzXBieW34cXXLd9UJ5PdLzGDO6clQdUwWLa70G3w6Mq4
-6pNR1w8WiMURfdl/UqCenEXIGXQMjEspXfeCqFt9ohGCrCnO/oklaU6pxPx60lbg
-O9+mh5BKGd4tlQOHtBahsMukbnOr9mxtSCZBI4vIpzVNTKtdnziaKtqoURL2DD45
-NffBmBuQNkil3J7MhKwW7T7yg5YkX5pgPK3ZcTj24By3Wy7udNcXis87crwVGafN
-HSelFlLJnxBf4Y2CWUlDxbqD3VSlGeUGITeBkzVgPHY6XCDxV4vlPiLcRjizDAyS
-U11VTG7cKrBj0jAiWa4GH0DtvfNZ7If0BLmQ2eFZhnIgoQBPI8hzkPPswxWPdchs
-NmlZXS+BqHeBG4KTrvIe7BY9vVwMLPiUcDkhBT2GmLu8wbOgJ7RQ52JVZ2yHyqLo
-aqC9BP+da8KgwMRjF+21e+1rmoOq8PeUYpP4IvAaKAwqANZ7y4daQ4d4ycCJeM3r
-u0raLkHUAIk=
-=y6fX
------END PGP SIGNATURE-----
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
---=-LxKuiBnfqs4PGF/kJ8Pp--
+for you to fetch changes up to 9b218f63e50e590fe0c7724a0838d7eaa6dae5ce:
+
+  powerpc/eeh: Fix use of set_current_state() in eeh event handling set_current_state() wart (2012-04-02 14:31:19 +1000)
+
+----------------------------------------------------------------
+Andrew Morton (1):
+      powerpc/eeh: Fix use of set_current_state() in eeh event handling set_current_state() wart
+
+Benjamin Herrenschmidt (2):
+      Merge remote-tracking branch 'kumar/next' into merge
+      powerpc/kvm: Fallout from system.h disintegration
+
+Dave Liu (1):
+      powerpc/qe: Update the SNUM table for MPC8569 Rev2.0
+
+Diana CRACIUN (1):
+      powerpc/dts: Removed fsl,msi property from dts.
+
+Jerry Huang (2):
+      powerpc/85xx: add the P1020MBG-PC DTS support
+      powerpc/85xx: add the P1020UTM-PC DTS support
+
+Oleg Nesterov (1):
+      powerpc/eeh: Remove eeh_event_handler()->daemonize()
+
+Shaveta Leekha (1):
+      powerpc/85xx: Enable I2C_CHARDEV and I2C_MPC options in defconfigs
+
+Stephen Rothwell (1):
+      powerpc: Fix fallout from system.h split up
+
+Timur Tabi (2):
+      powerpc/8xxx: remove 85xx/86xx restrictions from fsl_guts.h
+      powerpc/epapr: add "memory" as a clobber to all hypercalls
+
+Uwe Kleine-König (1):
+      powerpc: Mark const init data with __initconst instead of __initdata
+
+ arch/powerpc/boot/dts/p1020mbg-pc.dtsi       |  151 ++++++++++++++++++++++++++
+ arch/powerpc/boot/dts/p1020mbg-pc_32b.dts    |   89 +++++++++++++++
+ arch/powerpc/boot/dts/p1020mbg-pc_36b.dts    |   89 +++++++++++++++
+ arch/powerpc/boot/dts/p1020utm-pc.dtsi       |  140 ++++++++++++++++++++++++
+ arch/powerpc/boot/dts/p1020utm-pc_32b.dts    |   89 +++++++++++++++
+ arch/powerpc/boot/dts/p1020utm-pc_36b.dts    |   89 +++++++++++++++
+ arch/powerpc/boot/dts/p2041rdb.dts           |    3 -
+ arch/powerpc/boot/dts/p3041ds.dts            |    4 -
+ arch/powerpc/boot/dts/p3060qds.dts           |    2 -
+ arch/powerpc/boot/dts/p4080ds.dts            |    3 -
+ arch/powerpc/boot/dts/p5020ds.dts            |    4 -
+ arch/powerpc/configs/corenet32_smp_defconfig |    1 +
+ arch/powerpc/configs/corenet64_smp_defconfig |    2 +
+ arch/powerpc/configs/mpc85xx_defconfig       |    1 +
+ arch/powerpc/configs/mpc85xx_smp_defconfig   |    1 +
+ arch/powerpc/include/asm/epapr_hcalls.h      |    7 +-
+ arch/powerpc/include/asm/fsl_guts.h          |   26 +----
+ arch/powerpc/kernel/fadump.c                 |    2 +
+ arch/powerpc/kernel/kgdb.c                   |    1 +
+ arch/powerpc/kvm/book3s_emulate.c            |    1 +
+ arch/powerpc/kvm/book3s_paired_singles.c     |    1 +
+ arch/powerpc/kvm/book3s_pr.c                 |    1 +
+ arch/powerpc/platforms/52xx/mpc52xx_pci.c    |    2 +-
+ arch/powerpc/platforms/85xx/mpc85xx_mds.c    |    2 +-
+ arch/powerpc/platforms/85xx/mpc85xx_rdb.c    |    2 +-
+ arch/powerpc/platforms/85xx/p1022_ds.c       |    4 +-
+ arch/powerpc/platforms/86xx/mpc8610_hpcd.c   |    2 +-
+ arch/powerpc/platforms/cell/qpace_setup.c    |    2 +-
+ arch/powerpc/platforms/cell/setup.c          |    2 +-
+ arch/powerpc/platforms/pseries/eeh_event.c   |    4 +-
+ arch/powerpc/sysdev/qe_lib/qe.c              |   22 +++-
+ drivers/net/ethernet/freescale/ucc_geth.c    |    6 +-
+ sound/soc/fsl/mpc8610_hpcd.c                 |    8 +-
+ sound/soc/fsl/p1022_ds.c                     |   10 +-
+ 34 files changed, 712 insertions(+), 61 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/p1020mbg-pc.dtsi
+ create mode 100644 arch/powerpc/boot/dts/p1020mbg-pc_32b.dts
+ create mode 100644 arch/powerpc/boot/dts/p1020mbg-pc_36b.dts
+ create mode 100644 arch/powerpc/boot/dts/p1020utm-pc.dtsi
+ create mode 100644 arch/powerpc/boot/dts/p1020utm-pc_32b.dts
+ create mode 100644 arch/powerpc/boot/dts/p1020utm-pc_36b.dts
+
+
