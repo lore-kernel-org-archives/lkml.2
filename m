@@ -1,126 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab2DBEqL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 00:46:11 -0400
-Received: from dgate10.ts.fujitsu.com ([80.70.172.49]:64668 "EHLO
-	dgate10.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2DBEqI (ORCPT
+	id S1752475Ab2DBFJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 01:09:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57480 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab2DBFJL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 00:46:08 -0400
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 00:46:07 EDT
-DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
-  h=X-SBRSScore:X-IronPort-AV:Received:X-IronPort-AV:
-   Received:Received:Message-ID:Date:From:Organization:
-   User-Agent:MIME-Version:To:CC:Subject:References:
-   In-Reply-To:Content-Type:Content-Transfer-Encoding;
-  b=hNLpKMTrts1AMurHRPQF3jd8x6CSfokvRnHybgtttQKL2t1N88uT0yp5
-   UdIjXaaMYeMFgNyWd1j13pWMVpHdE34amj9nX6sN3PLpN/SF7JKhhoqyl
-   2nFhO+tjb1YJIgusuaa5MTqLOl32GVJTpT/6Unt6wfAJevzrfUggJ01uQ
-   n/ULTJUikZD4V9oDsYCgbXKlJIO/I3IgvOYZgaKR7pQ8VMkSvGILzyXSZ
-   8A+KVgGXOklnM7cuxU9vi2YCX/yF0;
-X-SBRSScore: None
-X-IronPort-AV: E=Sophos;i="4.75,355,1330902000"; 
-   d="scan'208";a="106495614"
-X-IronPort-AV: E=Sophos;i="4.75,355,1330902000"; 
-   d="scan'208";a="131759793"
-Message-ID: <4F792CBA.1010402@ts.fujitsu.com>
-Date: Mon, 02 Apr 2012 06:36:10 +0200
-From: Juergen Gross <juergen.gross@ts.fujitsu.com>
-Organization: Fujitsu Technology Solutions
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
+	Mon, 2 Apr 2012 01:09:11 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Attilio Rao <attilio.rao@citrix.com>, Ingo Molnar <mingo@elte.hu>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Subject: Re: [Xen-devel] [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>	<4F7616F5.4070000@zytor.com> <alpine.LFD.2.02.1203302333560.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1203302333560.2542@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPz4a6C9J+7pSHsCabdtF8pXgx7msFDjYNBi2KviHuSShXWuZQ@mail.gmail.com>
+References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+	<1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
+	<1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com>
+	<20120309124119.GV3273@opensource.wolfsonmicro.com>
+	<CACSP8ShU5tu=9N53PtYMLyFVFMS9whNRhMvu7nu8rBoPuVCy+Q@mail.gmail.com>
+	<20120330100742.GB21950@opensource.wolfsonmicro.com>
+	<CACSP8SjhOZcXZa2hCNsH8zS+hm8X-i9uNm50UH=_VwOV=BJGmA@mail.gmail.com>
+	<CAPz4a6C9J+7pSHsCabdtF8pXgx7msFDjYNBi2KviHuSShXWuZQ@mail.gmail.com>
+Date: Mon, 2 Apr 2012 14:09:10 +0900
+Message-ID: <CAJ0PZbQM73wJOuRVLh7e5LYSVOdkZ1+ARxPdDMMm=1F-tf6PzA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/5] Extcon (external connector): import Android's
+ switch class and modify.
+From: MyungJoo Ham <myungjoo.ham@gmail.com>
+To: Dima Zavin <dima@android.com>
+Cc: Erik Gilling <konkers@google.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, NeilBrown <neilb@suse.de>,
+        gregkh@linuxfoundation.org, Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mike Lockwood <lockwood@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2012 12:07 AM, Thomas Gleixner wrote:
-> On Fri, 30 Mar 2012, H. Peter Anvin wrote:
+On Sat, Mar 31, 2012 at 2:38 AM, Dima Zavin <dima@android.com> wrote:
+> On Fri, Mar 30, 2012 at 10:29 AM, Erik Gilling <konkers@google.com> wrote:
+>> On Fri, Mar 30, 2012 at 3:07 AM, Mark Brown
+>> <broonie@opensource.wolfsonmicro.com> wrote:
+>>> On Thu, Mar 29, 2012 at 03:27:01PM -0700, Erik Gilling wrote:
+>>>> On Fri, Mar 9, 2012 at 4:41 AM, Mark Brown
+>>>
+>>>> > This seems somewhat sad - if ANDROID is turned on the standard ABI
+>>>> > vanishes.  It'd be much nicer to do this with a symlink (or with
+>>>> > symlinks within the android directory if the driver core doesn't support
+>>>> > that).  That way userspace code can be written to the new ABI and will
+>>>> > work on Android systems without ifdefery.
+>>>
+>>>> This won't work if userspace code is receiving uevents through netlink
+>>>> and comparing based on the device name which it does in android.  Why
+>>>
+>>> That's not really the point here - the point is that the new ABI
+>>> vanishes as soon as you turn on the legacy Android ABI.  You're right
+>>> that the particular fix I suggested has issues but the overall problem
+>>> exists and should be dealt with more sensibly.
+>>
+>> I'm also not in favor of having functionality conditionally compiled
+>> based on CONFIG_ANDROID.  If fact, going through the patch stack
+>> there's much more that changes the ABI from the switch driver than
+>> just the name.  Android asumes that there is a single "switch" for
+>> each logical entity (called cable types in extcon) each with a binary
+>> state (0,1).  Here things have changed to have a single extcon
+>> instance that can have a bitmask of states which are sent as strings
+>> in the uevent.
 >
->> What is the current status of this patchset?  I haven't looked at it too
->> closely because I have been focused on 3.4 up until now...
-> The real question is whether these heuristics are the correct approach
-> or not.
+> In addition to all this added complexity, the fact that you now have
+> to white-list the possible "cable types" is also undesirable. If I
+> wanted to expose a new cable type, I now have to modify the extcon.h
+> file and the extcon.c file and I don't see what that white-list buys
+> me. The class device itself should not care for which cable types can
+> be registered, nor how they relate to each other. Let the client
+> drivers decide, just enforce uniqueness.
 >
-> If I look at it from the non virtualized kernel side then this is ass
-> backwards. We know already that we are holding a spinlock which might
-> cause other (v)cpus going into eternal spin. The non virtualized
-> kernel solves this by disabling preemption and therefor getting out of
-> the critical section as fast as possible,
->
-> The virtualization problem reminds me a lot of the problem which RT
-> kernels are observing where non raw spinlocks are turned into
-> "sleeping spinlocks" and therefor can cause throughput issues for non
-> RT workloads.
->
-> Though the virtualized situation is even worse. Any preempted guest
-> section which holds a spinlock is prone to cause unbound delays.
->
-> The paravirt ticketlock solution can only mitigate the problem, but
-> not solve it. With massive overcommit there is always a way to trigger
-> worst case scenarious unless you are educating the scheduler to cope
-> with that.
->
-> So if we need to fiddle with the scheduler and frankly that's the only
-> way to get a real gain (the numbers, which are achieved by this
-> patches, are not that impressive) then the question arises whether we
-> should turn the whole thing around.
->
-> I know that Peter is going to go berserk on me, but if we are running
-> a paravirt guest then it's simple to provide a mechanism which allows
-> the host (aka hypervisor) to check that in the guest just by looking
-> at some global state.
->
-> So if a guest exits due to an external event it's easy to inspect the
-> state of that guest and avoid to schedule away when it was interrupted
-> in a spinlock held section. That guest/host shared state needs to be
-> modified to indicate the guest to invoke an exit when the last nested
-> lock has been released.
->
-> Of course this needs to be time bound, so a rogue guest cannot
-> monopolize the cpu forever, but that's the least to worry about
-> problem simply because a guest which does not get out of a spinlocked
-> region within a certain amount of time is borked and elegible to
-> killing anyway.
->
-> Thoughts ?
-
-I used this approach in 2008:
-
-http://lists.xen.org/archives/html/xen-devel/2008-12/msg00740.html
-
-It worked very well, but it was rejected at that time. I wouldn't mind trying
-it again if there is some support from your side. :-)
+> --Dima
 
 
-Juergen
+They are not a white-list that shows the possible cable types.
+
+It is a suggestion so that different device drivers may use the same
+cable names for common cable types.
+
+Any device drivers can still use their own "new" names without any
+modifications to extcon_class.c./extcon.h. Especially as long as they
+are "new", "rare", or "uncommon" cable types, the device drivers
+should be able to use their own created names.
+
+
+
+Cheers!
+MyungJoo.
+
+>
+>>
+>> As it stands, this patch does not solve the cases where we use switch
+>> today and we'll probably continue to carry the switch driver in the
+>> common android tree.  If, instead, we got rid of the idea of multiple
+>> states and mutual exclusivity and relied on the driver that uses
+>> extcon to have multiple instances for each logical entity and deal
+>> with mutual exclusion itself, we'd have a driver that would be pretty
+>> easy to support in android.
+>>
+>> -Erik
+
+
 
 -- 
-
-Juergen Gross                 Principal Developer Operating Systems
-PDG ES&S SWE OS6                       Telephone: +49 (0) 89 3222 2967
-Fujitsu Technology Solutions              e-mail: juergen.gross@ts.fujitsu.com
-Domagkstr. 28                           Internet: ts.fujitsu.com
-D-80807 Muenchen                 Company details: ts.fujitsu.com/imprint.html
-
+MyungJoo Ham, Ph.D.
+System S/W Lab, S/W Center, Samsung Electronics
