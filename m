@@ -1,121 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2DBWPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 18:15:39 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:43151 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab2DBWPh (ORCPT
+	id S1753425Ab2DBWPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 18:15:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55537 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752676Ab2DBWPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 18:15:37 -0400
-Message-ID: <4F7A2503.6070706@tilera.com>
-Date: Mon, 2 Apr 2012 18:15:31 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Mon, 2 Apr 2012 18:15:53 -0400
+Date: Mon, 2 Apr 2012 23:15:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2] regulator: Set list_voltage callback for max8925
+Message-ID: <20120402221549.GJ3160@opensource.wolfsonmicro.com>
+References: <1333329268.8048.1.camel@phoenix>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/tile bug fixes for v3.4-rc2
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OX7PPUk8qMPP4++R"
+Content-Disposition: inline
+In-Reply-To: <1333329268.8048.1.camel@phoenix>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the following changes for 3.4-rc2 from:
+--OX7PPUk8qMPP4++R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
+On Mon, Apr 02, 2012 at 09:14:28AM +0800, Axel Lin wrote:
+> Current code implements max8925_list_voltage but does not set the list_voltage
+> callback function in max8925_regulator_[ldo|sdv]_ops. Fix it.
 
-This includes Paul Gortmaker's change to fix the <asm/system.h> disintegration
-issues on tile, a fix to unbreak the tilepro ethernet driver, and a backlog
-of bugfix-only changes from internal Tilera development over the last few months.
-They have all been to LKML and on linux-next for the last few days.  The
-EDAC change to MAINTAINERS is an oddity but discussion on the linux-edac list
-suggested I ask you to pull that change through my tree since they don't have
-a tree to pull edac changes from at the moment.
+Applied both, thanks.
 
-Chris Metcalf (38):
-      arch/tile/Kconfig: remove pointless "!M386" test.
-      arch/tile/Kconfig: rename tile_defconfig to tilepro_defconfig
-      arch/tile/Kconfig: don't specify CONFIG_PAGE_OFFSET for 64-bit builds
-      arch/tile: fix typo in <arch/spr_def.h>
-      arch/tile: revert comment for atomic64_add_unless().
-      arch/tile: fix gcc 4.6 warnings in <asm/bitops_64.h>
-      arch/tile: use 0 for IRQ_RESCHEDULE instead of 1
-      arch/tile: avoid false corrupt frame warning in early boot
-      arch/tile: make sure to build memcpy_user_64 without frame pointer
-      arch/tile: various bugs in stack backtracer
-      arch/tile: work around a hardware issue with the return-address stack
-      arch/tile: fix up some minor trap handling issues
-      arch/tile: fix a couple of comments that needed updating
-      arch/tile/Makefile: use KCFLAGS when figuring out the libgcc path.
-      arch/tile: don't wait for migrating PTEs in an NMI handler
-      arch/tile: don't set the homecache of a PTE unless appropriate
-      arch/tile: don't enable irqs unconditionally in page fault handler
-      arch/tile: fix bug in loading kernels larger than 16 MB
-      arch/tile: fix bug in delay_backoff()
-      arch/tile: don't leak kernel memory when we unload modules
-      arch/tile: fix up locking in pgtable.c slightly
-      arch/tile: use proper memparse() for "maxmem" options
-      arch/tile: add "nop" after "nap" to help GX idle power draw
-      arch/tile: implement panic_smp_self_stop()
-      arch/tile: fix single-stepping over swint1 instructions on tilegx
-      arch/tile: fix pointer cast in cacheflush.c
-      arch/tile: export the page_home() function.
-      arch/tile: stop mentioning the "kvm" subdirectory
-      arch/tile: use atomic exchange in arch_write_unlock()
-      arch/tile: fix finv_buffer_remote() for tilegx
-      arch/tile: return SIGBUS for addresses that are unaligned AND invalid
-      arch/tile: remove bogus performance optimization
-      arch/tile: avoid accidentally unmasking NMI-type interrupt accidentally
-      edac: say "TILEGx" not "TILEPro" for the tilegx edac driver
-      tile-srom.c driver: minor code cleanup
-      tilepro ethernet driver: fix a few minor issues
-      MAINTAINERS: update EDAC information
-      drivers/net/ethernet/tile: fix netdev_alloc_skb() bombing
+--OX7PPUk8qMPP4++R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Paul Gortmaker (1):
-      tile: fix multiple build failures from system.h dismantle
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
- MAINTAINERS                         |   22 ++--
- arch/tile/Kconfig                   |    8 +-
- arch/tile/Makefile                  |    5 +-
- arch/tile/include/arch/spr_def.h    |    4 +-
- arch/tile/include/asm/atomic.h      |   50 +-------
- arch/tile/include/asm/atomic_32.h   |    2 +-
- arch/tile/include/asm/bitops_64.h   |    8 +-
- arch/tile/include/asm/cmpxchg.h     |   73 +++++++++++
- arch/tile/include/asm/irq.h         |    2 +-
- arch/tile/include/asm/spinlock_64.h |    2 +-
- arch/tile/include/asm/stack.h       |    1 -
- arch/tile/include/asm/traps.h       |    6 +-
- arch/tile/kernel/entry.S            |    2 +
- arch/tile/kernel/intvec_32.S        |   24 +++-
- arch/tile/kernel/intvec_64.S        |   52 +++++++-
- arch/tile/kernel/module.c           |    2 +
- arch/tile/kernel/process.c          |    3 +-
- arch/tile/kernel/setup.c            |   28 +++--
- arch/tile/kernel/single_step.c      |   31 +++--
- arch/tile/kernel/smp.c              |    8 +-
- arch/tile/kernel/stack.c            |  232 +++++++++++++++++------------------
- arch/tile/kernel/traps.c            |   15 ++-
- arch/tile/lib/Makefile              |    1 +
- arch/tile/lib/cacheflush.c          |   30 ++++-
- arch/tile/lib/memcpy_user_64.c      |    8 +-
- arch/tile/lib/spinlock_common.h     |    2 +-
- arch/tile/mm/fault.c                |   22 +++-
- arch/tile/mm/homecache.c            |    1 +
- arch/tile/mm/init.c                 |   26 +++--
- arch/tile/mm/pgtable.c              |   38 ++++--
- drivers/char/tile-srom.c            |   12 +-
- drivers/edac/tile_edac.c            |    4 +
- drivers/net/ethernet/tile/tilepro.c |   77 ++++++++----
- 33 files changed, 501 insertions(+), 300 deletions(-)
- create mode 100644 arch/tile/include/asm/cmpxchg.h
+iQIcBAEBAgAGBQJPeiUPAAoJEBus8iNuMP3dUycP/RSV5OZxw8Z6f63a83cugqtN
+Jj8dfCTBMlXCQSdKtXcVcGAmJmsLG7ce9rdYyrbJa/9xO721VUyJ+5zaktEknp14
++dRTqwQ6PRMmcgJZY/W6aHYwPKm++RgN/p13THC5zDRRsO92jPahSCvP+lSbuWQl
+ZxeYLYu9tc9HO7eqW0q8KUdefV7gni/GsxSFyTDC+ZhlIfTeZQ7LjonxIbFQi61J
+9bwAmJnis2ij6qVKFBD7RM4jntKFCDXK17BHZFNahlxVoBqoPu62XexxAAR2g3Zc
+3hlfKSIt4FuI+yfidFw6kCScbU/ZDrZaaZoY7jiMiU2xrpjuC4vRQYD4bh5BBL2y
+xjX3zJjLtuo6plhtsZhVzj19uKPkaPzrZfJva+jo8SuvZsK6E8vBXmsJO8KcrcU1
+1TiSj86okgxyophLeixY+2Z9EdLn8TOe5l/4jqbVizJ3/ctF5uNa7geM+jm0hX49
+qPGyVxQSqtc3pvAZJt+CjYVjmBxP0vo3HiZndzFPKXzvPXn/2m5Jcq20GAMbEm7X
+Lj3HAGqhH26aGQrDm0LizbXs9tNCbc48Si3whWt7cb2bTkiAD/S/ytYKwsnu3XZo
+qS2Q8bGiaESbdfhMo+gl5AOZH0rmSCbdslTVL9xqMwybcSAYjlGmKucWfmX8Cxim
+7ZsOV70vsM5rqOpUCnMf
+=MeHG
+-----END PGP SIGNATURE-----
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+--OX7PPUk8qMPP4++R--
