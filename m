@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab2DBJUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:20:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35833 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab2DBJUb convert rfc822-to-8bit (ORCPT
+	id S1751720Ab2DBJ0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:26:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62681 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2DBJ0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:20:31 -0400
+	Mon, 2 Apr 2012 05:26:32 -0400
+Date: Mon, 2 Apr 2012 13:26:27 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "drepper@gmail.com" <drepper@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] nextfd(2)
+Message-ID: <20120402092627.GC7607@moon>
+References: <20120401125741.GA7484@p183.telecom.by>
+ <4F785F1D.4020503@openvz.org>
+ <20120402010937.38b33576@pyramind.ukuu.org.uk>
+ <4F796581.1030302@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <1333358115.5440.101.camel@sauron.fi.intel.com>
-References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
-	<1333358115.5440.101.camel@sauron.fi.intel.com>
-Date: Mon, 2 Apr 2012 14:50:30 +0530
-Message-ID: <CAM=Q2cu4wx7=0UqyGJcB6oOO3KrDqpSGdSfjTNDpHG49XLzhuQ@mail.gmail.com>
-Subject: Re: Linux 3.4-rc1
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: dedekind1@gmail.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F796581.1030302@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Apr 02, 2012 at 12:38:25PM +0400, Konstantin Khlebnikov wrote:
+> Alan Cox wrote:
+> >>Can we add "pid" argument to be able to search next fd in other task?
+> >>Together with sys_kcmp() this will be very useful for checkpoint/restore.
+> >
+> >That would raise all sorts of security questions unless protected, plus
+> >its got races. If you want to do that and you have the rights you can do
+> >it via procfs anyway.
+> 
+> Don't worry, I just asked. =) Seems like crtools dumps fd in the target-task context,
+> so the current version is suitable.
 
-On Mon, Apr 2, 2012 at 2:45 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Sat, 2012-03-31 at 16:58 -0700, Linus Torvalds wrote:
->>  - HSI (High Speed Synchronous Serial Interface) framework. I'm
->> planning on pulling this into 3.4, it's in my queue, but I wanted to
->> bring it up one more time in case somebody has issues with it. Ping?
->
-> Linus,
-> we are interested to see HSI upstream.
->
-> FWIW, it is also used at least in one product - Nokia N9 - so I think it
-> is time-proved as well.
->
+Kind of ;) At moment we drain fds from dumpee task context to
+our tool context and then dump them.
 
-We also are interested in seeing the HSI upstream.
-In  fact we have plans to add omap4 driver support.
-
-Thanks and Regards,
-Shubhrajyoti
-
-> --
-> Best Regards,
-> Artem Bityutskiy
+	Cyrill
