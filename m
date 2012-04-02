@@ -1,393 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab2DBNSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 09:18:51 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39286 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab2DBNSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 09:18:49 -0400
-Date: Mon, 2 Apr 2012 15:18:40 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/13] edac: move nr_pages to dimm struct
-Message-ID: <20120402131840.GB24238@aftab>
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
- <1333039546-5590-5-git-send-email-mchehab@redhat.com>
+	id S1752288Ab2DBNWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 09:22:41 -0400
+Received: from sam.nabble.com ([216.139.236.26]:46263 "EHLO sam.nabble.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751498Ab2DBNWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 09:22:40 -0400
+Message-ID: <33544993.post@talk.nabble.com>
+Date: Mon, 2 Apr 2012 06:22:39 -0700 (PDT)
+From: Akifumi Chikazawa <chikazawa.akifu@jp.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Subject: kernel crash on P4080DS
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333039546-5590-5-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Nabble-From: chikazawa.akifu@jp.fujitsu.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 01:45:37PM -0300, Mauro Carvalho Chehab wrote:
-> The number of pages is a dimm property. Move it to the dimm struct.
-> 
-> After this change, it is possible to add sysfs nodes for the DIMM's that
 
-							       DIMMs
+A kernel panic has occurred when the driver do ioremap over and over on
+P4080DS.  
+There are two cases where the kernel panic occurs.
+Could you give me some advice or information, please?
+I can give more informations if you need it.
 
-> will properly represent the DIMM stick properties, including its size.
-> 
-> A TODO fix here is to properly represent dual-rank/quad-rank DIMMs when
-> the memory controller represents the memory via chip select rows.
-> 
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/edac/amd64_edac.c      |   13 ++++------
->  drivers/edac/amd76x_edac.c     |    6 ++--
->  drivers/edac/cell_edac.c       |    8 ++++--
->  drivers/edac/cpc925_edac.c     |    8 ++++--
->  drivers/edac/e752x_edac.c      |    6 +++-
->  drivers/edac/e7xxx_edac.c      |    5 ++-
->  drivers/edac/edac_mc.c         |   28 ++++++++++++---------
->  drivers/edac/edac_mc_sysfs.c   |   52 ++++++++++++++++++++++++++++++----------
->  drivers/edac/i3000_edac.c      |    6 +++-
->  drivers/edac/i3200_edac.c      |    3 +-
->  drivers/edac/i5000_edac.c      |   14 ++++++----
->  drivers/edac/i5100_edac.c      |   22 ++++++++++-------
->  drivers/edac/i5400_edac.c      |    9 ++----
->  drivers/edac/i7300_edac.c      |   22 ++++------------
->  drivers/edac/i7core_edac.c     |   10 ++-----
->  drivers/edac/i82443bxgx_edac.c |    2 +-
->  drivers/edac/i82860_edac.c     |    2 +-
->  drivers/edac/i82875p_edac.c    |    5 ++-
->  drivers/edac/i82975x_edac.c    |   11 ++++++--
->  drivers/edac/mpc85xx_edac.c    |    3 +-
->  drivers/edac/mv64x60_edac.c    |    3 +-
->  drivers/edac/pasemi_edac.c     |   14 +++++-----
->  drivers/edac/ppc4xx_edac.c     |    5 ++-
->  drivers/edac/r82600_edac.c     |    3 +-
->  drivers/edac/sb_edac.c         |    8 +----
->  drivers/edac/tile_edac.c       |    2 +-
->  drivers/edac/x38_edac.c        |    4 +-
->  include/linux/edac.h           |   10 ++++---
->  28 files changed, 158 insertions(+), 126 deletions(-)
-> 
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index b1b1551..ad0376e 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -2126,12 +2126,6 @@ static u32 amd64_csrow_nr_pages(struct amd64_pvt *pvt, u8 dct, int csrow_nr)
->  
->  	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode) << (20 - PAGE_SHIFT);
->  
-> -	/*
-> -	 * If dual channel then double the memory size of single channel.
-> -	 * Channel count is 1 or 2
-> -	 */
-> -	nr_pages <<= (pvt->channel_count - 1);
-> -
->  	debugf0("  (csrow=%d) DBAM map index= %d\n", csrow_nr, cs_mode);
->  	debugf0("    nr_pages= %u  channel-count = %d\n",
->  		nr_pages, pvt->channel_count);
-> @@ -2152,6 +2146,7 @@ static int init_csrows(struct mem_ctl_info *mci)
->  	int i, j, empty = 1;
->  	enum mem_type mtype;
->  	enum edac_type edac_mode;
-> +	int nr_pages;
->  
->  	amd64_read_pci_cfg(pvt->F3, NBCFG, &val);
->  
-> @@ -2174,7 +2169,7 @@ static int init_csrows(struct mem_ctl_info *mci)
->  			i, pvt->mc_node_id);
->  
->  		empty = 0;
-> -		csrow->nr_pages = amd64_csrow_nr_pages(pvt, 0, i);
-> +		nr_pages = amd64_csrow_nr_pages(pvt, 0, i);
->  		get_cs_base_and_mask(pvt, i, 0, &base, &mask);
->  		/* 8 bytes of resolution */
->  
-> @@ -2192,10 +2187,12 @@ static int init_csrows(struct mem_ctl_info *mci)
->  		for (j = 0; j < pvt->channel_count; j++) {
->  			csrow->channels[j].dimm->mtype = mtype;
->  			csrow->channels[j].dimm->edac_mode = edac_mode;
-> +			csrow->channels[j].dimm->nr_pages = nr_pages;
-> +
-
-One newline too many.
-
->  		}
->  
->  		debugf1("  for MC node %d csrow %d:\n", pvt->mc_node_id, i);
-> -		debugf1("    nr_pages: %u\n", csrow->nr_pages);
-> +		debugf1("    nr_pages: %u\n", nr_pages);
->  	}
->  
->  	return empty;
+One is as follows
+System could cause kernel panic in the map_page() function
+(arch/powerpc/mm/ptgtable_32.c).
+This was due to BUG_ON. so I checked the condition.
+But it is not true (it means pte_val(*pt) is 0).
+and It does'nt depend on the paticular adderss. 
 
 
-<snip>
+kernel version: 2.6.36.2
+architecture: powerpc/e500mc
+processor: P4080
+board: P4080DS
 
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index 2430ddb..02263c3 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -43,22 +43,22 @@ static void edac_mc_dump_channel(struct rank_info *chan)
->  {
->  	debugf4("\tchannel = %p\n", chan);
->  	debugf4("\tchannel->chan_idx = %d\n", chan->chan_idx);
-> -	debugf4("\tchannel->ce_count = %d\n", chan->dimm->ce_count);
-> -	debugf4("\tchannel->label = '%s'\n", chan->dimm->label);
->  	debugf4("\tchannel->csrow = %p\n\n", chan->csrow);
-> +	debugf4("\tdimm->ce_count = %d\n", chan->dimm->ce_count);
-> +	debugf4("\tdimm->label = '%s'\n", chan->dimm->label);
-> +	debugf4("\tdimm->nr_pages = 0x%x\n", chan->dimm->nr_pages);
->  }
->  
->  static void edac_mc_dump_csrow(struct csrow_info *csrow)
->  {
->  	debugf4("\tcsrow = %p\n", csrow);
->  	debugf4("\tcsrow->csrow_idx = %d\n", csrow->csrow_idx);
-> -	debugf4("\tcsrow->first_page = 0x%lx\n", csrow->first_page);
-> -	debugf4("\tcsrow->last_page = 0x%lx\n", csrow->last_page);
-> -	debugf4("\tcsrow->page_mask = 0x%lx\n", csrow->page_mask);
-> -	debugf4("\tcsrow->nr_pages = 0x%x\n", csrow->nr_pages);
->  	debugf4("\tcsrow->nr_channels = %d\n", csrow->nr_channels);
->  	debugf4("\tcsrow->channels = %p\n", csrow->channels);
->  	debugf4("\tcsrow->mci = %p\n\n", csrow->mci);
-> +	debugf4("\tcsrow->first_page = 0x%lx\n", csrow->first_page);
-> +	debugf4("\tcsrow->last_page = 0x%lx\n", csrow->last_page);
-> +	debugf4("\tcsrow->page_mask = 0x%lx\n", csrow->page_mask);
 
-Useless code churn: simply remove the ->nr_pages line.
+  [   60.190019] ------------[ cut here ]------------
+  [   60.194630] kernel BUG at arch/powerpc/mm/pgtable_32.c:288!
+  [   60.200195] Oops: Exception in kernel mode, sig: 5 [#1]
+  [   60.205411] SMP NR_CPUS=8 P4080 DS
+  [   60.208808] last sysfs file:
+  
+/sys/devices/pci0001:02/0001:02:00.0/0001:03:00.0/host0/target0:0:0/0:0:0:0/block/sda/size
+  [   60.219580] Modules linked in: cthermo binfmt_misc dm_mod [last
+unloaded:
+   scsi_wait_scan]
+  [   60.227773] NIP: c00154b4 LR: c0015464 CTR: 00000000
+  [   60.232730] REGS: ea52fd30 TRAP: 0700   Not tainted  (2.6.36.2)
+  [   60.238639] MSR: 00029002 <EE,ME,CE>  CR: 42000488  XER: 00000000
+  [   60.244752] TASK = ebf1b380[3289] 'cthermo_tp' THREAD: ea52e000 CPU: 1
+  [   60.251101] GPR00: 00000001 ea52fde0 ebf1b380 fffffff4 00029002
+0000000c
+  000e0000 00541215
+  [   60.259479] GPR08: 000000d0 00000000 c07c0000 00000001 0fffffff
+10018c2c
+  00000077 00000000 
+  [   60.267858] GPR16: 1001453c 00000000 bfc36454 00000020 00000000
+00000000
+  100dab00 00000000
+  [   60.276238] GPR24: 00000000 0000000c 000e0000 c0782000 c059e5b8
+00541215
+  fceae000 eaa83570
+  [   60.284800] NIP [c00154b4] map_page+0xd8/0x138
+  [   60.289236] LR [c0015464] map_page+0x88/0x138
+  [   60.293583] Call Trace:
+  [   60.296022] [ea52fde0] [c0015464] map_page+0x88/0x138 (unreliable)
+  [   60.302203] [ea52fe10] [c001573c] __ioremap_caller+0x19c/0x214
+  [   60.308039] [ea52fe50] [f953be24] Setup_ioremap+0x4c/0x158 [cthermo]
+  [   60.314391] [ea52fe70] [f953bfd8] lock_ioctl+0xa8/0x31c [cthermo]
+  [   60.320485] [ea52feb0] [c010e0bc] do_vfs_ioctl+0x6a4/0x74c
+  [   60.325968] [ea52ff10] [c010e1cc] sys_ioctl+0x68/0xa8
+  [   60.331019] [ea52ff40] [c000ebc0] ret_from_syscall+0x0/0x3c
+  [   60.336588] --- Exception: c01 at 0xff5f3c4
+  [   60.336590]     LR = 0xffecb40
+  [   60.343805] Instruction dump:
+  [   60.346767] 4856f081 2f9f0000 3860fff4 419e0058 813f0004 38000000
+712b0001
+  41820014
+  [   60.354537] 7fa9fe70 7d20ea78 7c004850 54000ffe <0f000000> 5739a016
+  5747a33e 7f273b78
+  [   60.362482] ---[ end trace 2241f4aa422ec8d9 ]---
 
->  }
->  
->  static void edac_mc_dump_mci(struct mem_ctl_info *mci)
-> @@ -655,15 +655,19 @@ static void edac_mc_scrub_block(unsigned long page, unsigned long offset,
->  int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci, unsigned long page)
->  {
->  	struct csrow_info *csrows = mci->csrows;
-> -	int row, i;
-> +	int row, i, j, n;
->  
->  	debugf1("MC%d: %s(): 0x%lx\n", mci->mc_idx, __func__, page);
->  	row = -1;
->  
->  	for (i = 0; i < mci->nr_csrows; i++) {
->  		struct csrow_info *csrow = &csrows[i];
-> -
-> -		if (csrow->nr_pages == 0)
-> +		n = 0;
-> +		for (j = 0; j < csrow->nr_channels; j++) {
-> +			struct dimm_info *dimm = csrow->channels[j].dimm;
-> +			n += dimm->nr_pages;
-> +		}
-> +		if (n == 0)
->  			continue;
->  
->  		debugf3("MC%d: %s(): first(0x%lx) page(0x%lx) last(0x%lx) "
-> @@ -672,9 +676,9 @@ int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci, unsigned long page)
->  			csrow->page_mask);
->  
->  		if ((page >= csrow->first_page) &&
-> -		    (page <= csrow->last_page) &&
-> -		    ((page & csrow->page_mask) ==
-> -		     (csrow->first_page & csrow->page_mask))) {
-> +		(page <= csrow->last_page) &&
-> +		((page & csrow->page_mask) ==
-> +		(csrow->first_page & csrow->page_mask))) {
 
-Useless and wrong formatting change, please retain the original formatting.
+The Other is as follows
+I have no idea what is caused karnel panic.
 
->  			row = i;
->  			break;
->  		}
-> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-> index d63904e..52c56cf 100644
-> --- a/drivers/edac/edac_mc_sysfs.c
-> +++ b/drivers/edac/edac_mc_sysfs.c
-> @@ -144,7 +144,13 @@ static ssize_t csrow_ce_count_show(struct csrow_info *csrow, char *data,
->  static ssize_t csrow_size_show(struct csrow_info *csrow, char *data,
->  				int private)
->  {
-> -	return sprintf(data, "%u\n", PAGES_TO_MiB(csrow->nr_pages));
-> +	int i;
-> +	u32 nr_pages = 0;
-> +
-> +	for (i = 0; i < csrow->nr_channels; i++)
-> +		nr_pages += csrow->channels[i].dimm->nr_pages;
-> +
-> +	return sprintf(data, "%u\n", PAGES_TO_MiB(nr_pages));
->  }
->  
->  static ssize_t csrow_mem_type_show(struct csrow_info *csrow, char *data,
-> @@ -519,16 +525,17 @@ static ssize_t mci_ctl_name_show(struct mem_ctl_info *mci, char *data)
->  
->  static ssize_t mci_size_mb_show(struct mem_ctl_info *mci, char *data)
->  {
-> -	int total_pages, csrow_idx;
-> +	int total_pages, csrow_idx, j;
->  
->  	for (total_pages = csrow_idx = 0; csrow_idx < mci->nr_csrows;
-> -		csrow_idx++) {
-> +	     csrow_idx++) {
-
-You can do the total_pages initialization in the declaration above and
-thus don't have to break the loop across two lines:
-
-	int total_pages = 0;
-	...
-
-	for (csrow_idx = 0; csrow_idx < mci->nr_csrows; csrow_idx++) {
-	...
-
->  		struct csrow_info *csrow = &mci->csrows[csrow_idx];
->  
-> -		if (!csrow->nr_pages)
-> -			continue;
-> +		for (j = 0; j < csrow->nr_channels; j++) {
-> +			struct dimm_info *dimm = csrow->channels[j].dimm;
->  
-> -		total_pages += csrow->nr_pages;
-> +			total_pages += dimm->nr_pages;
-> +		}
->  	}
->  
->  	return sprintf(data, "%u\n", PAGES_TO_MiB(total_pages));
-> @@ -900,7 +907,7 @@ static void edac_remove_mci_instance_attributes(struct mem_ctl_info *mci,
->   */
->  int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
->  {
-> -	int i;
-> +	int i, j;
->  	int err;
->  	struct csrow_info *csrow;
->  	struct kobject *kobj_mci = &mci->edac_mci_kobj;
-> @@ -934,10 +941,15 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
->  	/* Make directories for each CSROW object under the mc<id> kobject
->  	 */
->  	for (i = 0; i < mci->nr_csrows; i++) {
-> +		int n = 0;
-
-Let's call this variable with a bit more descriptive name like
-'nr_pages' or 'pages_total' or whatever but not simply n.
-
-> +
->  		csrow = &mci->csrows[i];
-> +		for (j = 0; j < csrow->nr_channels; j++) {
-> +			struct dimm_info *dimm = csrow->channels[j].dimm;
-> +			n += dimm->nr_pages;
-> +		}
-
-Btw, you can make the loop a single-statement one and drop the curly
-braces like so:
-
-		for (j = 0; j < csrow->nr_channels; j++)
-			nr_pages += csrow->channels[j].dimm->nr_pages;
-
-The same applies for all the other occurrences of when you iterate over
-the channels, accumulating the pages per dimm.
-
->  
-> -		/* Only expose populated CSROWs */
-> -		if (csrow->nr_pages > 0) {
-> +		if (n > 0) {
->  			err = edac_create_csrow_object(mci, csrow, i);
->  			if (err) {
->  				debugf1("%s() failure: create csrow %d obj\n",
-> @@ -949,10 +961,16 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
->  
->  	return 0;
->  
-> -	/* CSROW error: backout what has already been registered,  */
->  fail1:
->  	for (i--; i >= 0; i--) {
-> -		if (mci->csrows[i].nr_pages > 0)
-> +		int n = 0;
-
-ditto.
-
-> +
-> +		csrow = &mci->csrows[i];
-> +		for (j = 0; j < csrow->nr_channels; j++) {
-> +			struct dimm_info *dimm = csrow->channels[j].dimm;
-> +			n += dimm->nr_pages;
-> +		}
-> +		if (n > 0)
->  			kobject_put(&mci->csrows[i].kobj);
->  	}
->  
-> @@ -972,14 +990,22 @@ fail0:
->   */
->  void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
->  {
-> -	int i;
-> +	struct csrow_info *csrow;
-> +	int i, j;
->  
->  	debugf0("%s()\n", __func__);
->  
->  	/* remove all csrow kobjects */
->  	debugf4("%s()  unregister this mci kobj\n", __func__);
->  	for (i = 0; i < mci->nr_csrows; i++) {
-> -		if (mci->csrows[i].nr_pages > 0) {
-> +		int n = 0;
-
-ditto.
-
-> +
-> +		csrow = &mci->csrows[i];
-> +		for (j = 0; j < csrow->nr_channels; j++) {
-> +			struct dimm_info *dimm = csrow->channels[j].dimm;
-> +			n += dimm->nr_pages;
-> +		}
-> +		if (n > 0) {
->  			debugf0("%s()  unreg csrow-%d\n", __func__, i);
->  			kobject_put(&mci->csrows[i].kobj);
->  		}
-
-<snip>
-
-> diff --git a/include/linux/edac.h b/include/linux/edac.h
-> index 5244193..de22d4c 100644
-> --- a/include/linux/edac.h
-> +++ b/include/linux/edac.h
-> @@ -320,6 +320,8 @@ struct dimm_info {
->  	enum mem_type mtype;	/* memory dimm type */
->  	enum edac_type edac_mode;	/* EDAC mode for this dimm */
->  
-> +	u32 nr_pages;			/* number of pages in csrow */
-> +
->  	u32 ce_count;		/* Correctable Errors for this dimm */
->  };
->  
-> @@ -346,13 +348,13 @@ struct rank_info {
->  };
->  
->  struct csrow_info {
-> +	int csrow_idx;			/* the chip-select row */
-> +
-> +	/* Used only by edac_mc_find_csrow_by_page() */
->  	unsigned long first_page;	/* first page number in csrow */
->  	unsigned long last_page;	/* last page number in csrow */
-> -	u32 nr_pages;			/* number of pages in csrow */
->  	unsigned long page_mask;	/* used for interleaving -
-> -					 * 0UL for non intlv
-> -					 */
-> -	int csrow_idx;			/* the chip-select row */
-> +					 * 0UL for non intlv */
-
-Useless moving of code around.
-
->  
->  	u32 ue_count;		/* Uncorrectable Errors for this csrow */
->  	u32 ce_count;		/* Correctable Errors for this csrow */
-> -- 
-> 1.7.8
+kernel version: 2.6.36.2
+architecture: powerpc/e500mc
+processor: P4080
+board: P4080DS
+ 
+[   90.732024] Unable to handle kernel paging request for data at address
+0x00000000
+[   90.739509] Faulting instruction address: 0xc006ed50
+[   90.744469] Oops: Kernel access of bad area, sig: 11 [#1]
+[   90.749858] SMP NR_CPUS=8 P4080 DS
+[   90.753255] last sysfs file:
+/sys/devices/pci0001:02/0001:02:00.0/0001:03:00.0/host0/target0:0:0/0:0:0:0/block/sda/size
+[   90.764028] Modules linked in: cthermo binfmt_misc dm_mod [last unloaded:
+scsi_wait_scan]
+[   90.772220] NIP: c006ed50 LR: c006ed48 CTR: c022d708
+[   90.777175] REGS: effa3e90 TRAP: 0300   Not tainted  (2.6.36.2)
+[   90.783085] MSR: 00029002 <EE,ME,CE>  CR: 24000028  XER: 20000000
+[   90.789197] DEAR: 00000000, ESR: 00000000
+[   90.793198] TASK = ebc85a20[0] 'swapper' THREAD: ebca2000 CPU: 6
+[   90.799025] GPR00: c006ed48 effa3f40 ebc85a20 00000000 c1579180 ebd8c500
+c006edc8 e551070c
+[   90.807406] GPR08: 00000100 ebf06020 c3071cc0 00000060 44000088 00000000
+c07b2cf0 00000000
+[   90.815786] GPR16: c069966e c0787420 00000006 c077f480 c07bc080 c07bc080
+c077c1c0 c07be578
+[   90.824165] GPR24: 00000024 00000009 00000000 00000003 eaae7b40 c0789b80
+c307174c eb178e00
+[   90.832729] NIP [c006ed50] put_cred_rcu+0x54/0xe0
+[   90.836675] [cthermo]----- [CTHERMO] drv_open(): START
+[   90.836679] [cthermo]----- [CTHERMO] drv_open(): END
+[   90.836690] [cthermo]----- [CTHERMO] drv_ioctl(): START
+[   90.836694] [cthermo]Setup_ioremap(): before ioremap_nocache
+[   90.836746] [cthermo]Setup_ioremap(): ioremap_nocache
+(0xc000e0000)->[0xf9a42000]
+[   90.836751] [cthermo]Setup_ioremap(): ioremap_nocache
+(0xc000f0000)->[0xf9a46000]
+[   90.836755] [cthermo][CTHERMO] drv_ioctl(): no=0 kind=0
+[   90.836761] [cthermo][CTHERMO] Free_ioremap(): iounmap
+[   90.836765] [cthermo][CTHERMO] Free_ioremap(): iounmap
+[   90.836768] [cthermo][CTHERMO] drv_ioctl(): up(&gDrv_ioctl_sem) call
+[   90.836772] [cthermo]----- [CTHERMO] drv_ioctl(): END
+[   90.836818] [cthermo]----- [CTHERMO] drv_release(): START
+[   90.836822] [cthermo]----- [CTHERMO] drv_release(): END
+[   90.910824] LR [c006ed48] put_cred_rcu+0x4c/0xe0
+[   90.915431] Call Trace:
+[   90.917870] [effa3f40] [c006ed48] put_cred_rcu+0x4c/0xe0 (unreliable)
+[   90.924317] [effa3f50] [c0098c90] __rcu_process_callbacks+0x1e8/0x31c
+[   90.930755] [effa3f70] [c0098e20] rcu_process_callbacks+0x5c/0x98
+[   90.936847] [effa3f90] [c004b0cc] __do_softirq+0x16c/0x284
+[   90.942331] [effa3ff0] [c000e4dc] call_do_softirq+0x14/0x24
+[   90.947902] [ebca3e70] [c00051d0] do_softirq+0x84/0xb0
+[   90.953036] [ebca3e90] [c004ae9c] irq_exit+0x54/0xa0
+[   90.958000] [ebca3ea0] [c000bb8c] timer_interrupt+0x1a0/0x228
+[   90.963743] [ebca3ec0] [c000f204] ret_from_except+0x0/0x18
+[   90.969228] --- Exception: 901 at ppc_wait+0x4/0x8
+[   90.969230]     LR = cpu_idle_simple+0x4c/0xb0
+[   90.978444] [ebca3f80] [c0008ce8] cpu_idle_simple+0x3c/0xb0 (unreliable)
+[   90.985146] [ebca3fa0] [c0008d94] cpu_idle+0x38/0x164
+[   90.990199] [ebca3fc0] [c058a398] start_secondary+0x310/0x34c
+[   90.995942] [ebca3ff0] [c00019c8] __secondary_start+0x30/0x84
+[   91.001682] Instruction dump:
+[   91.004644] 3c60c06a 7fe4fb78 3863c23c 485155f5 7fe3fb78 481b34b9
+807f004c 481ab845
+[   91.012412] 807f0050 481ab83d 807f0054 7c2004ac <7c001828> 3000ffff
+7c00192d 40a2fff4
+[   91.020360] Kernel panic - not syncing: Fatal exception in interrupt
+[   91.026707] Call Trace:
+[   91.029151] [effa3dc0] [c0007c38] show_stack+0x78/0x18c (unreliable)
+[   91.035512] [effa3e00] [c05843d8] panic+0xb8/0x1e4
+[   91.040304] [effa3e50] [c000cc44] die+0x1e4/0x1f0
+[   91.045009] [effa3e70] [c0014544] bad_page_fault+0xbc/0xd4
+[   91.050496] [effa3e80] [c000f070] handle_page_fault+0x7c/0x80
+[   91.056245] --- Exception: 300 at put_cred_rcu+0x54/0xe0
+[   91.056247]     LR = put_cred_rcu+0x4c/0xe0
+[   91.065726] [effa3f50] [c0098c90] __rcu_process_callbacks+0x1e8/0x31c
+[   91.072171] [effa3f70] [c0098e20] rcu_process_callbacks+0x5c/0x98
+[   91.078265] [effa3f90] [c004b0cc] __do_softirq+0x16c/0x284
+[   91.083752] [effa3ff0] [c000e4dc] call_do_softirq+0x14/0x24
+[   91.089324] [ebca3e70] [c00051d0] do_softirq+0x84/0xb0
+[   91.094462] [ebca3e90] [c004ae9c] irq_exit+0x54/0xa0
+[   91.099426] [ebca3ea0] [c000bb8c] timer_interrupt+0x1a0/0x228
+[   91.105171] [ebca3ec0] [c000f204] ret_from_except+0x0/0x18
+[   91.110658] --- Exception: 901 at ppc_wait+0x4/0x8
+[   91.110660]     LR = cpu_idle_simple+0x4c/0xb0
+[   91.119877] [ebca3f80] [c0008ce8] cpu_idle_simple+0x3c/0xb0 (unreliable)
+[   91.126583] [ebca3fa0] [c0008d94] cpu_idle+0x38/0x164
+[   91.131634] [ebca3fc0] [c058a398] start_secondary+0x310/0x34c
+[   91.137379] [ebca3ff0] [c00019c8] __secondary_start+0x30/0x84
+[   91.143126] Rebooting in 180 seconds..
 
 -- 
-Regards/Gruss,
-Boris.
+View this message in context: http://old.nabble.com/kernel-crash-on-P4080DS-tp33544993p33544993.html
+Sent from the linux-kernel mailing list archive at Nabble.com.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
