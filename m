@@ -1,190 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab2DBRwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:52:46 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:43627 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751498Ab2DBRwo (ORCPT
+	id S1753642Ab2DBRxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:53:24 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54716 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab2DBRxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:52:44 -0400
-Message-ID: <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve
- plug-in module EEPROM
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stuart Hodgson <smhodgson@solarflare.com>
-CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
-        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
-        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
-        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
-Date: Mon, 2 Apr 2012 18:52:40 +0100
-In-Reply-To: <4F71FE0A.3060203@solarflare.com>
-References: <4F71FE0A.3060203@solarflare.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Apr 2012 13:53:23 -0400
+Date: Mon, 2 Apr 2012 19:54:02 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [3.4-rc1][Regression][intel] Resume from suspend to disk hangs
+ on restoring backlight state
+Message-ID: <20120402175402.GA5260@phenom.ffwll.local>
+Mail-Followup-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <201204021939.39603.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18812.005
-X-TM-AS-Result: No--21.708500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204021939.39603.maciej.rutecki@gmail.com>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We previously discussed the need for this in person, so I'm going to
-review this as a submission rather than an RFC.
-
-On Tue, 2012-03-27 at 18:51 +0100, Stuart Hodgson wrote:
-> Added extensions to the ethtool API to obtain plugin module eeprom data
-> This is useful for end users to be able to determine what the capabilities
-> of the in use module are.
+On Mon, Apr 02, 2012 at 07:39:39PM +0200, Maciej Rutecki wrote:
+> Last known good: 3.3
+> Bad kernel: 3.4-rc1
+> Subsystem: power management/suspend/dri(intel)
 > 
-> The first provides a new struct ethtool_modinfo that will return the
-> type and size of plug-in module eeprom (such as SFP+) for parsing
-> by userland program.
+> When I resume from suspend to disk then system hangs on this screen:
+> http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/DSC_5479.jpg
 > 
-> The second provides the API to get the raw eeprom information
-> using the existing ethtool_eeprom structture to return the data
+> It does not help SysRq keys. Only I can force power off by hold power button.
 > 
-> Signed-off-by: Stuart Hodgson <smhodgson@solarflare.com>
-> ---
->   include/linux/ethtool.h |   20 ++++++++++++
->   net/core/ethtool.c      |   79 
-> +++++++++++++++++++++++++++++++++++++++++++++++
->   2 files changed, 99 insertions(+), 0 deletions(-)
-
-This is line-wrapped; you'll need to take care to avoid that when
-submitting the patch for real.  Tabs have been converted to spaces,
-which you also need to avoid.  See Documentation/email-clients.txt.
-
-> diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
-> index da5b2de..50eaf35 100644
-> --- a/include/linux/ethtool.h
-> +++ b/include/linux/ethtool.h
-> @@ -117,6 +117,14 @@ struct ethtool_eeprom {
->       __u8    data[0];
->   };
->
-> +/* for passing plug-in module information */
-> +struct ethtool_modinfo {
-> +    __u32   cmd;
-> +    __u32   type;
-> +    __u32   eeprom_len;
-> +    __u32   reserved[8];
-> +};
-> +
-
-This needs a proper kernel-doc comment with a description of each of the
-fields (except reserved).
-
->   /**
->    * struct ethtool_coalesce - coalescing parameters for IRQs and stats 
-> updates
->    * @cmd: ETHTOOL_{G,S}COALESCE
-> @@ -936,6 +944,10 @@ struct ethtool_ops {
->       int    (*get_dump_data)(struct net_device *,
->                    struct ethtool_dump *, void *);
->       int    (*set_dump)(struct net_device *, struct ethtool_dump *);
-> +    int    (*get_module_info)(struct net_device *,
-> +                   struct ethtool_modinfo *);
-> +    int    (*get_module_eeprom)(struct net_device *,
-> +                     struct ethtool_eeprom *, u8 *);
-
-These need to be described in the kernel-doc comment for this structure.
-
->   };
->   #endif /* __KERNEL__ */
-> @@ -1010,6 +1022,8 @@ struct ethtool_ops {
->   #define ETHTOOL_SET_DUMP    0x0000003e /* Set dump settings */
->   #define ETHTOOL_GET_DUMP_FLAG    0x0000003f /* Get dump settings */
->   #define ETHTOOL_GET_DUMP_DATA    0x00000040 /* Get dump data */
-> +#define ETHTOOL_GMODULEINFO    0x00000041 /* Get plug-in module 
-> information */
-> +#define ETHTOOL_GMODULEEEPROM    0x00000042 /* Get plug-in module eeprom */
+> Dmesg:
+> http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/dmesg-3.4-rc1.txt
 > 
->   /* compatibility with older code */
->   #define SPARC_ETH_GSET        ETHTOOL_GSET
-> @@ -1159,6 +1173,12 @@ struct ethtool_ops {
->   #define RX_CLS_LOC_FIRST    0xfffffffe
->   #define RX_CLS_LOC_LAST        0xfffffffd
-> 
-> +/* EEPROM Standards for plug in modules */
-> +#define SFF_8079        0x1
-> +#define SFF_8079_LEN        256
-> +#define SFF_8472        0x2
-> +#define SFF_8472_LEN        512
-> +
+> Config:
+> http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/config-3.4.0-rc1
 
-I think it's best to include a prefix of 'ethtool_' 'ETHTOOL_' or 'ETH_'
-in new definitions in ethtool.h.  Since these are specific to modules I
-would suggest a prefix of 'ETH_MODULE_'.
+Likely a known regression, ppgtt support broke hibernate because my code
+doesn't restore the ppgtt page directory correctly in the thaw function.
 
->   /* Reset flags */
->   /* The reset() operation must clear the flags for the components which
->    * were actually reset.  On successful return, the flags indicate the
-> diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-> index 3f79db1..1e86bd9 100644
-> --- a/net/core/ethtool.c
-> +++ b/net/core/ethtool.c
-[...]
-> +static int ethtool_get_module_eeprom(struct net_device *dev,
-> +        void __user *useraddr)
-> +{
-> +    int ret;
-> +    struct ethtool_eeprom eeprom;
-> +    struct ethtool_modinfo modinfo;
-> +    const struct ethtool_ops *ops = dev->ethtool_ops;
-> +    void __user *userbuf = useraddr + sizeof(eeprom);
-> +    u8 *data;
-> +
-> +    if (!ops->get_module_info || !ops->get_module_eeprom)
-> +        return -EOPNOTSUPP;
-> +
-> +    if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
-> +        return -EFAULT;
-> +
-> +    /* Check for wrap and zero */
-> +    if (eeprom.offset + eeprom.len <= eeprom.offset)
-> +        return -EINVAL;
-> +
-> +    /* Get the modinfo to get the length */
-> +    ret = ops->get_module_info(dev, &modinfo);
-> +    if (ret)
-> +        return ret;
-> +
-> +    if (eeprom.offset + eeprom.len > modinfo.eeprom_len)
-> +        return -EINVAL;
-> +
-> +    data = kmalloc(PAGE_SIZE, GFP_USER);
-> +    if (!data)
-> +        return -ENOMEM;
+Patch:
+http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-fixes&id=55a254ac63a3ac1867d1501030e7fba69c7d4aeb
 
-What if some device has a larger EEPROM?  Surely this length should be
-eeprom.len.
+Please test whether this fixes your issue. You can also try adding
+i915.i915_enable_ppgtt=0 to your kernel cmdline.
 
-> +    ret = ops->get_module_eeprom(dev, &eeprom, data);
-> +    if (ret)
-> +        goto out;
-> +
-> +
-> +    if (copy_to_user(userbuf, data, eeprom.len)) {
-> +        ret = -EFAULT;
-> +        goto out;
-> +    }
-> +
-> +    if (copy_to_user(useraddr, &eeprom, sizeof(eeprom)))
-> +        ret = -EFAULT;
-[...]
-
-I think you can drop this last copy as there's no information to return
-in the eeprom structure itself.
-
-Ben.
-
+Thanks, Daniel
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
