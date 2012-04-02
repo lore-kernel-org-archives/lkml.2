@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab2DBJME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:12:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48678 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab2DBJMB (ORCPT
+	id S1751595Ab2DBJMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:12:45 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44096 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab2DBJMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:12:01 -0400
-Date: Mon, 2 Apr 2012 11:12:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sasha Levin <levinsasha928@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] debugobjects: Use GFP_ATOMIC to allocate when
- initializing
-In-Reply-To: <CA+1xoqeTJu-uaaOCek5Y5ZKam83ePoRNFdxLcqdonYxok-BkhA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1204021111070.2542@ionos>
-References: <1333228972-4594-1-git-send-email-levinsasha928@gmail.com> <alpine.LFD.2.02.1204011935190.2542@ionos> <CA+1xoqeTJu-uaaOCek5Y5ZKam83ePoRNFdxLcqdonYxok-BkhA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 2 Apr 2012 05:12:43 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Tony Vroon <tony@linx.net>
+Subject: [PATCH] drm/i915: disable ppgtt on snb when dmar is enabled
+Date: Mon,  2 Apr 2012 10:08:35 +0200
+Message-Id: <1333354115-2430-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Apr 2012, Sasha Levin wrote:
-> On Sun, Apr 1, 2012 at 7:36 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Sat, 31 Mar 2012, Sasha Levin wrote:
+Totally unexpected that this regressed. Luckily it sounds like we just
+need to have dmar disable on the igfx, not the entire system. At least
+that's what a few days of testing between Tony Vroon and me indicates.
 
-Peter ????
+Reported-by: Tony Vroon <tony@linx.net>
+Cc: Tony Vroon <tony@linx.net>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43024
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/char/agp/intel-gtt.c    |    1 -
+ drivers/gpu/drm/i915/i915_dma.c |   17 ++++++++++++++++-
+ drivers/gpu/drm/i915/i915_drv.c |    4 ++--
+ drivers/gpu/drm/i915/i915_drv.h |    2 +-
+ include/drm/intel-gtt.h         |    4 ++++
+ 5 files changed, 23 insertions(+), 5 deletions(-)
 
-> >> During the init stage, we have only 1 cpu and run with IRQs disabled,
-> >> we can't allocate with GFP_KERNEL.
-> >>
-> >> This also fixes the related warning on boot.
-> >
-> > Hrmm. This should not be the case. In early boot GFP_KERNEL
-> > allocations should not trigger a warning when interrupts are
-> > disabled. Which kind of warning are you observing ?
-> 
-> There were two, both pointing at the same WARN(). I don't have the
-> first one which was fixed in this patch handy, but the second one is:
-> 
-> [    0.000000] WARNING: at kernel/lockdep.c:2739
-> lockdep_trace_alloc+0x11f/0x130()
-> [    0.000000] Pid: 0, comm: swapper/0 Not tainted
-> 3.3.0-next-20120330-sasha-dirty #40
-> [    0.000000] Call Trace:
-> [    0.000000]  [<ffffffff810b4175>] warn_slowpath_common+0x75/0xb0
-> [    0.000000]  [<ffffffff810b41c5>] warn_slowpath_null+0x15/0x20
-> [    0.000000]  [<ffffffff8111999f>] lockdep_trace_alloc+0x11f/0x130
-> [    0.000000]  [<ffffffff81182e0c>] __alloc_pages_nodemask+0x9c/0x260
-> [    0.000000]  [<ffffffff826bcea7>] ? retint_restore_args+0x6/0x13
-> [    0.000000]  [<ffffffff811cc2cd>] kmemcheck_alloc_shadow+0x4d/0xf0
-> [    0.000000]  [<ffffffff811c5597>] allocate_slab+0x197/0x270
-> [    0.000000]  [<ffffffff811c569b>] new_slab+0x2b/0x190
-> [    0.000000]  [<ffffffff811c7e7a>] ? __slab_alloc+0x5a/0x6b0
-> [    0.000000]  [<ffffffff811c82b3>] __slab_alloc+0x493/0x6b0
-> [    0.000000]  [<ffffffff81114f61>] ? trace_hardirqs_off_caller+0xe1/0x150
-> [    0.000000]  [<ffffffff81886f1d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> [    0.000000]  [<ffffffff8395eb55>] ?
-> debug_objects_replace_static_objects+0x2a/0x1f5
-> [    0.000000]  [<ffffffff8395eb55>] ?
-> debug_objects_replace_static_objects+0x2a/0x1f5
-> [    0.000000]  [<ffffffff811c900e>] kmem_cache_alloc+0x17e/0x1a0
-> [    0.000000]  [<ffffffff8395eb55>]
-> debug_objects_replace_static_objects+0x2a/0x1f5
-> [    0.000000]  [<ffffffff8395ed59>] debug_objects_mem_init+0x39/0x68
-> [    0.000000]  [<ffffffff8392af65>] start_kernel+0x33a/0x3f8
-> [    0.000000]  [<ffffffff8392aa13>] ? kernel_init+0x280/0x280
-> [    0.000000]  [<ffffffff8392a2b6>] x86_64_start_reservations+0xa1/0xa6
-> [    0.000000]  [<ffffffff8392a410>] x86_64_start_kernel+0x155/0x164
-> [    0.000000] ---[ end trace a7919e7f17c0a725 ]---
-
+diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+index 7e223a2..e086fa5 100644
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -1204,7 +1204,6 @@ static inline int needs_idle_maps(void)
+ {
+ #ifdef CONFIG_INTEL_IOMMU
+ 	const unsigned short gpu_devid = intel_private.pcidev->device;
+-	extern int intel_iommu_gfx_mapped;
  
+ 	/* Query intel_iommu to see if we need the workaround. Presumably that
+ 	 * was loaded first.
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 4636391..ee06241 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1189,6 +1189,21 @@ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
+ 	return can_switch;
+ }
+ 
++static bool
++intel_enable_ppgtt(struct drm_device *dev)
++{
++	if (i915_enable_ppgtt >= 0)
++		return i915_enable_ppgtt;
++
++#ifdef CONFIG_INTEL_IOMMU
++	/* Disable ppgtt on SNB if VT-d is on. */
++	if (INTEL_INFO(dev)->gen == 6 && intel_iommu_gfx_mapped)
++		return false;
++#endif
++
++	return true;
++}
++
+ static int i915_load_gem_init(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -1203,7 +1218,7 @@ static int i915_load_gem_init(struct drm_device *dev)
+ 	drm_mm_init(&dev_priv->mm.stolen, 0, prealloc_size);
+ 
+ 	mutex_lock(&dev->struct_mutex);
+-	if (i915_enable_ppgtt && HAS_ALIASING_PPGTT(dev)) {
++	if (intel_enable_ppgtt(dev) && HAS_ALIASING_PPGTT(dev)) {
+ 		/* PPGTT pdes are stolen from global gtt ptes, so shrink the
+ 		 * aperture accordingly when using aliasing ppgtt. */
+ 		gtt_size -= I915_PPGTT_PD_ENTRIES*PAGE_SIZE;
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index 0efc02e..c65907e 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -109,8 +109,8 @@ MODULE_PARM_DESC(enable_hangcheck,
+ 		"WARNING: Disabling this can cause system wide hangs. "
+ 		"(default: true)");
+ 
+-bool i915_enable_ppgtt __read_mostly = 1;
+-module_param_named(i915_enable_ppgtt, i915_enable_ppgtt, bool, 0600);
++int i915_enable_ppgtt __read_mostly = -1;
++module_param_named(i915_enable_ppgtt, i915_enable_ppgtt, int, 0600);
+ MODULE_PARM_DESC(i915_enable_ppgtt,
+ 		"Enable PPGTT (default: true)");
+ 
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index b617cd5..1c8c440 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1088,7 +1088,7 @@ extern int i915_vbt_sdvo_panel_type __read_mostly;
+ extern int i915_enable_rc6 __read_mostly;
+ extern int i915_enable_fbc __read_mostly;
+ extern bool i915_enable_hangcheck __read_mostly;
+-extern bool i915_enable_ppgtt __read_mostly;
++extern int i915_enable_ppgtt __read_mostly;
+ 
+ extern int i915_suspend(struct drm_device *dev, pm_message_t state);
+ extern int i915_resume(struct drm_device *dev);
+diff --git a/include/drm/intel-gtt.h b/include/drm/intel-gtt.h
+index 0a0001b..923afb5 100644
+--- a/include/drm/intel-gtt.h
++++ b/include/drm/intel-gtt.h
+@@ -44,4 +44,8 @@ void intel_gtt_insert_pages(unsigned int first_entry, unsigned int num_entries,
+ /* flag for GFDT type */
+ #define AGP_USER_CACHED_MEMORY_GFDT (1 << 3)
+ 
++#ifdef CONFIG_INTEL_IOMMU
++extern int intel_iommu_gfx_mapped;
++#endif
++
+ #endif
+-- 
+1.7.7.6
+
