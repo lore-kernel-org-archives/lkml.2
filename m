@@ -1,151 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2DBSKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:10:48 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:49258 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752836Ab2DBSKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:10:46 -0400
-X-IronPort-AV: E=Sophos;i="4.75,358,1330934400"; 
-   d="scan'208";a="638039032"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Dave Jones <davej@redhat.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: kernel BUG at include/net/netns/generic.h:41
-Thread-Topic: kernel BUG at include/net/netns/generic.h:41
-Thread-Index: AQHNEPofLBggl9rQZUWE5n3mvfO03paISysA
-Date: Mon, 2 Apr 2012 18:10:20 +0000
-Message-ID: <1333390230.13718.34.camel@lade.trondhjem.org>
-References: <20120328002346.GB3077@redhat.com>
-	 <20120402172600.GA3728@redhat.com>
-In-Reply-To: <20120402172600.GA3728@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <BFDC31E3AA3A3F47B6D012697409053B@tahoe.netapp.com>
+	id S1754093Ab2DBSLC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:11:02 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:20491
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754026Ab2DBSK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 14:10:58 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzzz2dh668h839hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1V6I0-02-2FQ-02
+X-M-MSG: 
+Message-ID: <4F79EBAA.7040602@amd.com>
+Date: Mon, 2 Apr 2012 14:10:50 -0400
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
 MIME-Version: 1.0
+To: Tony Luck <tony.luck@gmail.com>
+CC: Len Brown <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 58/76] idle, x86: Allow off-lined CPU to enter deeper
+ C states
+References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>	<1333102459-23750-1-git-send-email-lenb@kernel.org>	<1a022e3f1be11730bd8747b1af96a0274bf6356e.1333101989.git.len.brown@intel.com>	<CA+8MBbLROfbyfAGZ0xn1tZVHsndeTUNrn=-gHhsfzkocBLh=iQ@mail.gmail.com>	<CA+8MBbJnrhKmy5f_pbL8Ogi1ihM-51hfqCDY5gUQ1hkvw7p22Q@mail.gmail.com>	<4F79E83C.5090506@amd.com> <CA+8MBbKv25Uu3fJeBhyj5cQvB6FN+KqgnP67UGhwvF+p635g7w@mail.gmail.com>
+In-Reply-To: <CA+8MBbKv25Uu3fJeBhyj5cQvB6FN+KqgnP67UGhwvF+p635g7w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q32IAtDD005470
 
-This looks related to the recent net namespace changes, so I'm adding
-Stanislav.
+On 04/02/12 14:02, Tony Luck wrote:
+>> x86 halt() causes processor to go to C1 state (which is often not the
+>> deepest). But other than that it seems similar to what you are describing.
+>
+> OK - then Konrad's suggestion of using "safe_halt()" here rather than
+> "halt()" would work for ia64.
 
-Cheers
-  Trond
+I originally didn't want to use safe_halt() because the CPU will wake up 
+on an unmasked HW interrupt unlike halt(). But I guess we are not 
+supposed to get any such interrupts when we are off-lining a CPU so 
+safe_halt() should be OK.
 
-On Mon, 2012-04-02 at 13:26 -0400, Dave Jones wrote:
-> [added Trond to cc:]
-> 
-> still seeing this in 3.4rc1
-> 
-> 	Dave
-> 
-> 
-> On Tue, Mar 27, 2012 at 08:23:46PM -0400, Dave Jones wrote:
->  > I started seeing this every boot.. (v3.3-6972-ge22057c)
->  > 
->  > [   17.103931] ------------[ cut here ]------------
->  > [   17.105987] RPC: Registered named UNIX socket transport module.
->  > [   17.105989] RPC: Registered udp transport module.
->  > [   17.105990] RPC: Registered tcp transport module.
->  > [   17.105992] RPC: Registered tcp NFSv4.1 backchannel transport module.
->  > [   17.104856] kernel BUG at include/net/netns/generic.h:41!
->  > [   17.104856] invalid opcode: 0000 [#1] PREEMPT SMP 
->  > [   17.104856] CPU 0 
->  > [   17.104856] Modules linked in: sunrpc btrfs zlib_deflate libcrc32c firewire_ohci firewire_core sata_sil crc_itu_t floppy radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core
->  > [   17.104856] 
->  > [   17.104856] Pid: 416, comm: mount Not tainted 3.3.0+ #19                  /D975XBX
->  > [   17.104856] RIP: 0010:[<ffffffffa029068b>]  [<ffffffffa029068b>] rpc_fill_super+0x29b/0x2a0 [sunrpc]
->  > [   17.104856] RSP: 0018:ffff8800b52c5cf8  EFLAGS: 00010246
->  > [   17.104856] RAX: 0000000000000001 RBX: ffff8800a394dcd0 RCX: 0000000000000000
->  > [   17.104856] RDX: ffff8800a4c10000 RSI: ffffffff81c2cd00 RDI: ffff8800a4c10918
->  > [   17.104856] RBP: ffff8800b52c5d38 R08: 0000000000000001 R09: 0000000000000000
->  > [   17.104856] R10: 0000000000000001 R11: 0000000000000002 R12: 0000000000000000
->  > [   17.104856] R13: ffffffff82d0f140 R14: ffff8800ba54c000 R15: 0000000000000000
->  > [   17.104856] FS:  00007f1a97593800(0000) GS:ffff8800bf600000(0000) knlGS:0000000000000000
->  > [   17.104856] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->  > [   17.104856] CR2: 0000003e92478a90 CR3: 00000000a4d22000 CR4: 00000000000007f0
->  > [   17.104856] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->  > [   17.104856] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->  > [   17.104856] Process mount (pid: 416, threadinfo ffff8800b52c4000, task ffff8800a4c10000)
->  > [   17.104856] Stack:
->  > [   17.104856]  ffffffffa02903f0 00000000000000d0 000060ff40002438 ffffffff82d0f140
->  > [   17.104856]  0000000000000000 ffffffffa02903f0 ffff8800a394dcd0 0000000000000000
->  > [   17.104856]  ffff8800b52c5d88 ffffffff811a9d8c 0000000000000003 ffffffff00000001
->  > [   17.104856] Call Trace:
->  > [   17.104856]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
->  > [   17.104856]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
->  > [   17.104856]  [<ffffffff811a9d8c>] mount_ns+0xac/0xe0
->  > [   17.104856]  [<ffffffffa028ea39>] rpc_mount+0x29/0x30 [sunrpc]
->  > [   17.104856]  [<ffffffff811aaab3>] mount_fs+0x43/0x1b0
->  > [   17.104856]  [<ffffffff8115dd80>] ? __alloc_percpu+0x10/0x20
->  > [   17.104856]  [<ffffffff811c8af2>] vfs_kern_mount+0x72/0x100
->  > [   17.104856]  [<ffffffff811c92d4>] do_kern_mount+0x54/0x110
->  > [   17.104856]  [<ffffffff811caa44>] do_mount+0x1a4/0x830
->  > [   17.104856]  [<ffffffff8115765b>] ? memdup_user+0x4b/0x90
->  > [   17.104856]  [<ffffffff811576fb>] ? strndup_user+0x5b/0x80
->  > [   17.104856]  [<ffffffff811cb210>] sys_mount+0x90/0xe0
->  > [   17.104856]  [<ffffffff816624d2>] system_call_fastpath+0x16/0x1b
->  > [   17.104856] Code: e8 db 7a e6 e0 84 c0 74 c9 48 c7 c7 00 cd c2 81 e8 bb e5 e1 e0 85 c0 0f 85 f4 fd ff ff eb b3 90 41 bf f4 ff ff ff e9 ce fe ff ff <0f> 0b 0f 0b 90 55 48 89 e5 41 54 53 48 83 ec 10 66 66 66 66 90 
->  > [   17.104856] RIP  [<ffffffffa029068b>] rpc_fill_super+0x29b/0x2a0 [sunrpc]
->  > [   17.104856]  RSP <ffff8800b52c5cf8>
->  > [   17.469688] ---[ end trace 74871f164631364c ]---
->  > [   17.488286] BUG: sleeping function called from invalid context at kernel/rwsem.c:21
->  > [   17.498626] in_atomic(): 0, irqs_disabled(): 0, pid: 416, name: mount
->  > [   17.498629] INFO: lockdep is turned off.
->  > [   17.498631] Pid: 416, comm: mount Tainted: G      D      3.3.0+ #19
->  > [   17.498632] Call Trace:
->  > [   17.498639]  [<ffffffff8107d96c>] __might_sleep+0x13c/0x1f0
->  > [   17.498644]  [<ffffffff81657c06>] down_read+0x26/0x93
->  > [   17.498646]  [<ffffffff81061164>] exit_signals+0x24/0x130
->  > [   17.498650]  [<ffffffff8104d3cf>] do_exit+0xbf/0xb60
->  > [   17.498652]  [<ffffffff8104a443>] ? kmsg_dump+0x1c3/0x2c0
->  > [   17.498654]  [<ffffffff8104a2ff>] ? kmsg_dump+0x7f/0x2c0
->  > [   17.498657]  [<ffffffff8165b9d4>] oops_end+0xa4/0xf0
->  > [   17.498660]  [<ffffffff81005be8>] die+0x58/0x90
->  > [   17.498662]  [<ffffffff8165b2f4>] do_trap+0xc4/0x170
->  > [   17.498665]  [<ffffffff81002f35>] ? do_invalid_op+0xa5/0xb0
->  > [   17.498667]  [<ffffffff81002f25>] do_invalid_op+0x95/0xb0
->  > [   17.498684]  [<ffffffffa029068b>] ? rpc_fill_super+0x29b/0x2a0 [sunrpc]
->  > [   17.498686]  [<ffffffff8165e3cd>] ? sub_preempt_count+0x9d/0xd0
->  > [   17.498689]  [<ffffffff8131baad>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->  > [   17.498692]  [<ffffffff8165ac4d>] ? restore_args+0x30/0x30
->  > [   17.498696]  [<ffffffff81663755>] invalid_op+0x15/0x20
->  > [   17.498704]  [<ffffffffa029068b>] ? rpc_fill_super+0x29b/0x2a0 [sunrpc]
->  > [   17.498713]  [<ffffffffa0290675>] ? rpc_fill_super+0x285/0x2a0 [sunrpc]
->  > [   17.498721]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
->  > [   17.498731]  [<ffffffffa02903f0>] ? rpc_mkpipe_dentry+0x180/0x180 [sunrpc]
->  > [   17.498734]  [<ffffffff811a9d8c>] mount_ns+0xac/0xe0
->  > [   17.498743]  [<ffffffffa028ea39>] rpc_mount+0x29/0x30 [sunrpc]
->  > [   17.498746]  [<ffffffff811aaab3>] mount_fs+0x43/0x1b0
->  > [   17.498750]  [<ffffffff8115dd80>] ? __alloc_percpu+0x10/0x20
->  > [   17.498754]  [<ffffffff811c8af2>] vfs_kern_mount+0x72/0x100
->  > [   17.498756]  [<ffffffff811c92d4>] do_kern_mount+0x54/0x110
->  > [   17.498760]  [<ffffffff811caa44>] do_mount+0x1a4/0x830
->  > [   17.498763]  [<ffffffff8115765b>] ? memdup_user+0x4b/0x90
->  > [   17.498765]  [<ffffffff811576fb>] ? strndup_user+0x5b/0x80
->  > [   17.498769]  [<ffffffff811cb210>] sys_mount+0x90/0xe0
->  > [   17.498773]  [<ffffffff816624d2>] system_call_fastpath+0x16/0x1b
->  > [   17.775067] systemd[1]: var-lib-nfs-rpc_pipefs.mount mount process exited, code=killed status=11
->  > [   17.829617] systemd[1]: Job nfs-idmap.service/start failed with result 'dependency'.
->  > [   17.856061] systemd[1]: Unit var-lib-nfs-rpc_pipefs.mount entered failed state.
->  > 
-> ---end quoted text---
+Thanks.
+-boris
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
