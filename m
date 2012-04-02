@@ -1,90 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab2DBXKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 19:10:19 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:51352
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751331Ab2DBXKR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 19:10:17 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h683h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Properly handle errors from
- the host
-Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Properly handle errors
- from the host
-Thread-Index: AQHNDgZFm4boNsEwgEymbyPqBTW0JpaB8ZaAgAY6QdA=
-Date: Mon, 2 Apr 2012 23:09:54 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF90238C1@BY2PRD0310MB378.namprd03.prod.outlook.com>
-References: <1333065283-30484-1-git-send-email-kys@microsoft.com>
- <20120329235111.GA19924@kroah.com>
-In-Reply-To: <20120329235111.GA19924@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [64.134.220.71]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754068Ab2DBXKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 19:10:53 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57326 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab2DBXKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 19:10:52 -0400
+Date: Tue, 3 Apr 2012 02:10:43 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kmemleak: illegal RCU use assertion error
+Message-ID: <20120402231042.GB4353@swordfish>
+References: <20120402070911.GB3464@swordfish>
+ <20120402130936.GF2450@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: BY2PRD0310HT001.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
+Content-Disposition: inline
+In-Reply-To: <20120402130936.GF2450@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, March 29, 2012 7:51 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com; jbottomley@parallels.com;
-> hch@infradead.org; linux-scsi@vger.kernel.org
-> Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Properly handle errors from the
-> host
-> 
-> On Thu, Mar 29, 2012 at 04:54:43PM -0700, K. Y. Srinivasan wrote:
-> > If the host returns error for pass through commands, deal with
-> > appropriately. I would like to thank James for patiently helping
-> > me with this patch.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> >  drivers/scsi/storvsc_drv.c |   20 ++++++++++++++++----
-> >  1 files changed, 16 insertions(+), 4 deletions(-)
-> 
-> As this driver is now in Linus's tree, and drivers/scsi/ is James's
-> area, he is the one to take them, not me.
+On (04/02/12 06:09), Paul E. McKenney wrote:
+> On Mon, Apr 02, 2012 at 10:09:11AM +0300, Sergey Senozhatsky wrote:
+> > Hello,
+> >=20
+> > commit e5601400081651060a59bd1f45f2821bb8e97f95
+> > Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Date:   Sat Jan 7 11:03:57 2012 -0800
+> >=20
+> >     rcu: Simplify offline processing
+> >    =20
+> >     Move ->qsmaskinit and blkd_tasks[] manipulation to the CPU_DYING
+> >     notifier.  This simplifies the code by eliminating a potential
+> >     deadlock and by reducing the responsibilities of force_quiescent_st=
+ate().
+> >     Also rename functions to make their connection to the CPU-hotplug
+> >     stages explicit.
+> >    =20
+> >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >=20
+> >=20
+> > introduced WARN_ON_ONCE(cpu_is_offline(smp_processor_id())); to __call_=
+rcu()
+> > function, Paul also added cpu_offline checks to other routines (e.g. ca=
+llbacks)
+> > in later commits. It happens that kmemleak() triggers one of them.
+> >=20
+> > During cpu core offline, kfree()->kmemleak_free()->put_object()-->__cal=
+l_rcu() chain
+> > for struct intel_shared_regs * is executed when no struct users left on=
+ this core --=20
+> > all CPUs are dead or dying.
+> >=20
+> >=20
+> > [ 4703.342462] CPU 3 is now offline
+> > [ 4705.588116] ------------[ cut here ]------------
+> > [ 4705.588129] WARNING: at kernel/rcutree.c:1823 __call_rcu+0x9d/0x1d2()
+> > [..]
+> > [ 4705.588196] Call Trace:
+> > [ 4705.588207]  [<ffffffff81059a00>] ? synchronize_srcu+0x6/0x17
+> > [ 4705.588215]  [<ffffffff8103364e>] warn_slowpath_common+0x83/0x9c
+> > [ 4705.588223]  [<ffffffff8111e627>] ? get_object+0x31/0x31
+> > [ 4705.588229]  [<ffffffff81033681>] warn_slowpath_null+0x1a/0x1c
+> > [ 4705.588235]  [<ffffffff810af770>] __call_rcu+0x9d/0x1d2
+> > [ 4705.588243]  [<ffffffff81013f52>] ? intel_pmu_cpu_dying+0x3b/0x5d
+> > [ 4705.588249]  [<ffffffff810af8f1>] call_rcu_sched+0x17/0x19
+> > [ 4705.588255]  [<ffffffff8111eb7e>] put_object+0x47/0x4b
+> > [ 4705.588261]  [<ffffffff8111ed8b>] delete_object_full+0x2a/0x2e
+> > [ 4705.588269]  [<ffffffff81491dc8>] kmemleak_free+0x26/0x45
+> > [ 4705.588274]  [<ffffffff8111691f>] kfree+0x130/0x221
+> > [ 4705.588280]  [<ffffffff81013f52>] intel_pmu_cpu_dying+0x3b/0x5d
+> > [ 4705.588287]  [<ffffffff8149cb83>] x86_pmu_notifier+0xaf/0xb9
+> > [ 4705.588296]  [<ffffffff814b0e9d>] notifier_call_chain+0xac/0xd9
+> > [ 4705.588303]  [<ffffffff81059c9e>] __raw_notifier_call_chain+0xe/0x10
+> > [ 4705.588309]  [<ffffffff810354ec>] __cpu_notify+0x20/0x37
+> > [ 4705.588314]  [<ffffffff81035516>] cpu_notify+0x13/0x15
+> > [ 4705.588320]  [<ffffffff81490fab>] take_cpu_down+0x28/0x2e
+> > [ 4705.588326]  [<ffffffff8109ef7f>] stop_machine_cpu_stop+0x96/0xf1
+> > [ 4705.588332]  [<ffffffff8109ece3>] cpu_stopper_thread+0xe3/0x183
+> > [ 4705.588338]  [<ffffffff8109eee9>] ? queue_stop_cpus_work+0xd0/0xd0
+> > [ 4705.588344]  [<ffffffff814ad382>] ? _raw_spin_unlock_irqrestore+0x47=
+/0x65
+> > [ 4705.588353]  [<ffffffff81087d0d>] ? trace_hardirqs_on_caller+0x119/0=
+x175
+> > [ 4705.588358]  [<ffffffff81087d76>] ? trace_hardirqs_on+0xd/0xf
+> > [ 4705.588364]  [<ffffffff8109ec00>] ? cpu_stop_signal_done+0x2c/0x2c
+> > [ 4705.588370]  [<ffffffff810544a9>] kthread+0x8b/0x93
+> > [ 4705.588378]  [<ffffffff814b5f34>] kernel_thread_helper+0x4/0x10
+> > [ 4705.588385]  [<ffffffff814ad7f0>] ? retint_restore_args+0x13/0x13
+> > [ 4705.588391]  [<ffffffff8105441e>] ? __init_kthread_worker+0x5a/0x5a
+> > [ 4705.588397]  [<ffffffff814b5f30>] ? gs_change+0x13/0x13
+> > [ 4705.588400] ---[ end trace 720328982e35a713 ]---
+> > [ 4705.588507] CPU 2 is now offline
+> >=20
+> >=20
+> > My first solution was to return from delete_object() if object dealloca=
+tion
+> > performed on cpu_is_offline(smp_processor_id()), marking object with sp=
+ecial
+> > flag, say OBJECT_ORPHAN. And issue real object_delete() during scan (fo=
+r example)
+> > when we see OBJECT_ORPHAN object. =20
+> > That, however, requires to handle special case when cpu core offlined
+> > for small period of time, leading to object insertion error in
+> > create_object(), which either may be handled in 2 possible ways (assumi=
+ng
+> > that lookup_object() returned OBJECT_ORPHAN):
+> > #1 delete orphaned object and retry with insertion (*)
+> > #2 re-set existing orphan object
+> >=20
+> >=20
+> > (*) performing delete_object() from within create_object() requires rel=
+easing
+> > of held kmemleak and object locks, which is racy with other create_obje=
+ct() and
+> > any possible scan() activities.
+> >=20
+> > Yet I'm not exactly sure that option #2 is the correct one.
+> > (I've kind of a patch [not properly tested, etc.] for #2 option).
+>=20
+> Alternatively, I can make RCU tolerate __call_rcu() from late in the
+> CPU_DYING notifiers without too much trouble.
+>=20
 
-Thanks Greg; I understand James would be responsible for deciding if
-this patch is the correct way to fix this issue and to check this patch in, if it is.
-
-Regards,
-
-K. Y
+Well, if that will `do the trick', then I'm ready to test it.
 
 
+	Sergey
 
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iJwEAQECAAYFAk96MfIACgkQfKHnntdSXjSRxAP/QjaJzvZFzgGdLHUvveNCeVdd
+EtYw4vkYccNSx/iRBq/pTQqlppuC28FtbXRuoOUFTWtjLuzwHrVAapsC0w0rr3Ln
+almvUQvZJyMTTtjnld9VueChc/9WAiYRcmmdP6wjrOo7nzTjBhokZgckpjJ2lzSJ
+lrnR/zj6K9M5KtPlhZ8=
+=VE6m
+-----END PGP SIGNATURE-----
+
+--lrZ03NoBR/3+SXJZ--
