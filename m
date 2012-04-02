@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2DBWp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 18:45:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50883 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2DBWp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 18:45:26 -0400
-Message-ID: <4F7A2BFE.8000609@oracle.com>
-Date: Mon, 02 Apr 2012 17:45:18 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
+	id S1753891Ab2DBWvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 18:51:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751493Ab2DBWvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 18:51:36 -0400
+Date: Mon, 2 Apr 2012 18:51:31 -0400
+From: Dave Jones <davej@redhat.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org
+Subject: Re: btrfs io errors on 3.4rc1
+Message-ID: <20120402225131.GB16907@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org
+References: <20120402180214.GA1830@redhat.com>
+ <20120402194814.GA10965@shiny.msi.event>
+ <20120402211622.GA2487@redhat.com>
+ <20120402212608.GA14958@shiny.msi.event>
+ <20120402214051.GB2487@redhat.com>
+ <20120402222802.GA18000@shiny.nikko.sjc.wayport.net>
+ <20120402223350.GA16907@redhat.com>
+ <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: Re: [RFC PATCH v2 18/21] ext4: add support for read_iter and write_iter
-References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-19-git-send-email-dave.kleikamp@oracle.com> <20120402184204.GE2880@thunk.org>
-In-Reply-To: <20120402184204.GE2880@thunk.org>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F7A2C04.0081,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2012 01:42 PM, Ted Ts'o wrote:
-> On Fri, Mar 30, 2012 at 10:43:45AM -0500, Dave Kleikamp wrote:
->> use the generic .read_iter and .write_iter functions
-> 
-> Potentially silly question --- why not use NULL pointer to mean
-> generic_file_read_iter and generic_file_write_iter?  Then you won't
-> have to patch a bunch of file systems to add the generic .read_iter
-> and .write_iter?
+On Mon, Apr 02, 2012 at 06:39:19PM -0400, Chris Mason wrote:
+ > On Mon, Apr 02, 2012 at 06:33:50PM -0400, Dave Jones wrote:
+ > > On Mon, Apr 02, 2012 at 06:28:02PM -0400, Chris Mason wrote:
+ > >  
+ > >  > > x86-64.
+ > >  > > 
+ > >  > > dmesg below.  (ignore the rpc oops, reported elsewhere, it's unrelated)
+ > >  > 
+ > >  > Well, there really are no btrfs messages in there at all.  Do you have
+ > >  > free space for a clean copy of the btrfs partition?  Trying to figure
+ > >  > out if you have a stale corruption (on two boxes seems really unlikely).
+ > >  > I definitely can't reproduce it here.
+ > > 
+ > > Don't really have any free space for it (It's the / partition on both)
+ > > 
+ > > Is there a wip btrfs.fsck yet ? One of the machines is just a scratch testbox,
+ > > so I'm happy to run it even if it'll potentially make things worse.
+ > 
+ > The current btrfsck repair mode will fix problems in the extent
+ > allocation tree, but that probably isn't what you're seeing.  I'd just
+ > run it read only and see if it finds any problems.
+ > 
+ > (You'll need the FS completely unmounted though).
 
-I'm  not very confident that generic_file_read_iter and
-generic_file_write_iter will work for every filesystem that I haven't
-yet touched. It should work if they use generic_aio_read and _write, but
-some have their own versions of those.
+I'll start a bisect later to see if I can narrow it down at least.
 
-Shaggy
+	Dave
+
