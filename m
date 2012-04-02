@@ -1,55 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab2DBRul (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:50:41 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42520 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab2DBRuk convert rfc822-to-8bit (ORCPT
+	id S1753527Ab2DBRwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:52:46 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:43627 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751498Ab2DBRwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:50:40 -0400
-Date: Mon, 2 Apr 2012 13:45:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 58/76] idle, x86: Allow off-lined CPU to enter deeper C
- states
-Message-ID: <20120402174557.GA9446@phenom.dumpdata.com>
-References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
- <1333102459-23750-1-git-send-email-lenb@kernel.org>
- <1a022e3f1be11730bd8747b1af96a0274bf6356e.1333101989.git.len.brown@intel.com>
- <CA+8MBbLROfbyfAGZ0xn1tZVHsndeTUNrn=-gHhsfzkocBLh=iQ@mail.gmail.com>
- <CA+8MBbJnrhKmy5f_pbL8Ogi1ihM-51hfqCDY5gUQ1hkvw7p22Q@mail.gmail.com>
+	Mon, 2 Apr 2012 13:52:44 -0400
+Message-ID: <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve
+ plug-in module EEPROM
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stuart Hodgson <smhodgson@solarflare.com>
+CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
+        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
+        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
+        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
+Date: Mon, 2 Apr 2012 18:52:40 +0100
+In-Reply-To: <4F71FE0A.3060203@solarflare.com>
+References: <4F71FE0A.3060203@solarflare.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbJnrhKmy5f_pbL8Ogi1ihM-51hfqCDY5gUQ1hkvw7p22Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090207.4F79E6EA.0077,ss=1,re=0.000,fgs=0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18812.005
+X-TM-AS-Result: No--21.708500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 10:25:27AM -0700, Tony Luck wrote:
-> >> +       while (1) {
-> >> +
-> >> +               if (cx->entry_method == ACPI_CSTATE_HALT)
-> >> +                       halt();
-> 
-> What's the intent here?  I think that I can just set up a function pointer
-> named "halt" on ia64 and point it to my cpu_halt() function (which looks
-> for the deepest C-state, and then calls PAL to enter it. Is that equivalent
-> to what the x86 "halt()" function does?
+We previously discussed the need for this in person, so I'm going to
+review this as a submission rather than an RFC.
 
-Or use the appropiate safe_halt() which should work on IA64.
-
+On Tue, 2012-03-27 at 18:51 +0100, Stuart Hodgson wrote:
+> Added extensions to the ethtool API to obtain plugin module eeprom data
+> This is useful for end users to be able to determine what the capabilities
+> of the in use module are.
 > 
-> -Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> The first provides a new struct ethtool_modinfo that will return the
+> type and size of plug-in module eeprom (such as SFP+) for parsing
+> by userland program.
+> 
+> The second provides the API to get the raw eeprom information
+> using the existing ethtool_eeprom structture to return the data
+> 
+> Signed-off-by: Stuart Hodgson <smhodgson@solarflare.com>
+> ---
+>   include/linux/ethtool.h |   20 ++++++++++++
+>   net/core/ethtool.c      |   79 
+> +++++++++++++++++++++++++++++++++++++++++++++++
+>   2 files changed, 99 insertions(+), 0 deletions(-)
+
+This is line-wrapped; you'll need to take care to avoid that when
+submitting the patch for real.  Tabs have been converted to spaces,
+which you also need to avoid.  See Documentation/email-clients.txt.
+
+> diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
+> index da5b2de..50eaf35 100644
+> --- a/include/linux/ethtool.h
+> +++ b/include/linux/ethtool.h
+> @@ -117,6 +117,14 @@ struct ethtool_eeprom {
+>       __u8    data[0];
+>   };
+>
+> +/* for passing plug-in module information */
+> +struct ethtool_modinfo {
+> +    __u32   cmd;
+> +    __u32   type;
+> +    __u32   eeprom_len;
+> +    __u32   reserved[8];
+> +};
+> +
+
+This needs a proper kernel-doc comment with a description of each of the
+fields (except reserved).
+
+>   /**
+>    * struct ethtool_coalesce - coalescing parameters for IRQs and stats 
+> updates
+>    * @cmd: ETHTOOL_{G,S}COALESCE
+> @@ -936,6 +944,10 @@ struct ethtool_ops {
+>       int    (*get_dump_data)(struct net_device *,
+>                    struct ethtool_dump *, void *);
+>       int    (*set_dump)(struct net_device *, struct ethtool_dump *);
+> +    int    (*get_module_info)(struct net_device *,
+> +                   struct ethtool_modinfo *);
+> +    int    (*get_module_eeprom)(struct net_device *,
+> +                     struct ethtool_eeprom *, u8 *);
+
+These need to be described in the kernel-doc comment for this structure.
+
+>   };
+>   #endif /* __KERNEL__ */
+> @@ -1010,6 +1022,8 @@ struct ethtool_ops {
+>   #define ETHTOOL_SET_DUMP    0x0000003e /* Set dump settings */
+>   #define ETHTOOL_GET_DUMP_FLAG    0x0000003f /* Get dump settings */
+>   #define ETHTOOL_GET_DUMP_DATA    0x00000040 /* Get dump data */
+> +#define ETHTOOL_GMODULEINFO    0x00000041 /* Get plug-in module 
+> information */
+> +#define ETHTOOL_GMODULEEEPROM    0x00000042 /* Get plug-in module eeprom */
+> 
+>   /* compatibility with older code */
+>   #define SPARC_ETH_GSET        ETHTOOL_GSET
+> @@ -1159,6 +1173,12 @@ struct ethtool_ops {
+>   #define RX_CLS_LOC_FIRST    0xfffffffe
+>   #define RX_CLS_LOC_LAST        0xfffffffd
+> 
+> +/* EEPROM Standards for plug in modules */
+> +#define SFF_8079        0x1
+> +#define SFF_8079_LEN        256
+> +#define SFF_8472        0x2
+> +#define SFF_8472_LEN        512
+> +
+
+I think it's best to include a prefix of 'ethtool_' 'ETHTOOL_' or 'ETH_'
+in new definitions in ethtool.h.  Since these are specific to modules I
+would suggest a prefix of 'ETH_MODULE_'.
+
+>   /* Reset flags */
+>   /* The reset() operation must clear the flags for the components which
+>    * were actually reset.  On successful return, the flags indicate the
+> diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+> index 3f79db1..1e86bd9 100644
+> --- a/net/core/ethtool.c
+> +++ b/net/core/ethtool.c
+[...]
+> +static int ethtool_get_module_eeprom(struct net_device *dev,
+> +        void __user *useraddr)
+> +{
+> +    int ret;
+> +    struct ethtool_eeprom eeprom;
+> +    struct ethtool_modinfo modinfo;
+> +    const struct ethtool_ops *ops = dev->ethtool_ops;
+> +    void __user *userbuf = useraddr + sizeof(eeprom);
+> +    u8 *data;
+> +
+> +    if (!ops->get_module_info || !ops->get_module_eeprom)
+> +        return -EOPNOTSUPP;
+> +
+> +    if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
+> +        return -EFAULT;
+> +
+> +    /* Check for wrap and zero */
+> +    if (eeprom.offset + eeprom.len <= eeprom.offset)
+> +        return -EINVAL;
+> +
+> +    /* Get the modinfo to get the length */
+> +    ret = ops->get_module_info(dev, &modinfo);
+> +    if (ret)
+> +        return ret;
+> +
+> +    if (eeprom.offset + eeprom.len > modinfo.eeprom_len)
+> +        return -EINVAL;
+> +
+> +    data = kmalloc(PAGE_SIZE, GFP_USER);
+> +    if (!data)
+> +        return -ENOMEM;
+
+What if some device has a larger EEPROM?  Surely this length should be
+eeprom.len.
+
+> +    ret = ops->get_module_eeprom(dev, &eeprom, data);
+> +    if (ret)
+> +        goto out;
+> +
+> +
+> +    if (copy_to_user(userbuf, data, eeprom.len)) {
+> +        ret = -EFAULT;
+> +        goto out;
+> +    }
+> +
+> +    if (copy_to_user(useraddr, &eeprom, sizeof(eeprom)))
+> +        ret = -EFAULT;
+[...]
+
+I think you can drop this last copy as there's no information to return
+in the eeprom structure itself.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
