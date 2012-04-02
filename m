@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab2DBOyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:54:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57548 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab2DBOyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:54:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="136616916"
-Message-ID: <1333378674.22146.18.camel@sauron.fi.intel.com>
-Subject: Re: [patch] UBIFS: Add cryptographic functionality when a key is
- passed to the compress / decompress functions
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Mon, 02 Apr 2012 17:57:54 +0300
-In-Reply-To: <alpine.DEB.2.00.1204021645070.29393@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-	      <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>
-	     <1330531826.3545.128.camel@sauron.fi.intel.com>
-	     <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net>
-	  <1332511796.18717.72.camel@sauron.fi.intel.com>
-	    <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net>
-	   <1332521515.22278.2.camel@sauron.fi.intel.com>
-	   <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>
-	   <alpine.DEB.2.00.1203252325100.5527@eristoteles.iwoars.net>
-	  <1332837188.31549.14.camel@sauron.fi.intel.com>
-	  <alpine.DEB.2.00.1203291639200.912@eristoteles.iwoars.net>
-	 <1333377383.22146.14.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1204021645070.29393@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-acqWhqSzj0UQWawQILGr"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S1752876Ab2DBOzk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:55:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64454 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab2DBOzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 10:55:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: swap on eMMC and other flash
+Date: Mon, 2 Apr 2012 14:55:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linaro-kernel@lists.linaro.org, Rik van Riel <riel@redhat.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
+        "Luca Porzio (lporzio)" <lporzio@micron.com>, linux-mm@kvack.org,
+        Hyojin Jeong <syr.jeong@samsung.com>, kernel-team@android.com,
+        Yejin Moon <yejin.moon@samsung.com>
+References: <201203301744.16762.arnd@arndb.de> <201204021145.43222.arnd@arndb.de> <alpine.LSU.2.00.1204020734560.1847@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1204020734560.1847@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204021455.25029.arnd@arndb.de>
+X-Provags-ID: V02:K0:nZMFbmJdwz3oJmxVM0tRY4WtxDlpjoEw1hBgPLa+K6Y
+ +bUdUpnZyGKYu9huzqDQqe9Sl9HTJSAb+OGb2Xz0G+CEbVsikK
+ ChdCilmjVmm4J+v2jeJ8rPEPFXQyuIyRm551RH0FI/8AL1gAOB
+ 79dl87BOBWqZj7c+VtQFXoSHCNPtL5i4xIl8dVh7suyzR4Jj7D
+ p/E5FRpWh0ddD6V3x8ch80LnTZmfiIOhCwvT/hMktcbk4msUpo
+ zaow6AViJ2tANgl2YSUuoJRXHzjoL/9N+In0eb+I+BcirP+uej
+ Jt5VXNVvgZeYcFB219ZMZ7tZFuwRJN5KcO6PrMfTYgfKvXv8PQ
+ f2VQcGOPmVmPhN3zK9/E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 02 April 2012, Hugh Dickins wrote:
+> On Mon, 2 Apr 2012, Arnd Bergmann wrote:
+> > 
+> > Another option would be batched discard as we do it for file systems:
+> > occasionally stop writing to swap space and scanning for areas that
+> > have become available since the last discard, then send discard
+> > commands for those.
+> 
+> I'm not sure whether you've missed "swapon --discard", which switches
+> on discard_swap_cluster() just before we allocate from a new cluster;
+> or whether you're musing that it's no use to you because you want to
+> repurpose the swap cluster to match erase block: I'm mentioning it in
+> case you missed that it's already there (but few use it, since even
+> done at that scale it's often more trouble than it's worth).
 
---=-acqWhqSzj0UQWawQILGr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I actually argued that discard_swap_cluster is exactly the right thing
+to do, especially when clusters match erase blocks on the less capable
+devices like SD cards.
 
-On Mon, 2012-04-02 at 16:48 +0200, Joel Reardon wrote:
-> >
-> > You support only one length - please, kill ivlen parameter.
-> >
-> > Also, should ubifs_aes_crypt be static? I do not see any users outside
-> > of compress.c. In this case remove the "ubifs_" prefix. But a
-> > non-written convention, in UBIFS we _tend_ to prefix only non-static
-> > functions with "ubifs_" and avoid having it for static functions.
-> >
->=20
-> Should length for key remain, and the IV is just the same? Or should the
-> global #define just be used inside the aes function.
+Luca was arguing that on some hardware there is no point in ever
+submitting a discard just before we start reusing space, because
+at that point it the hardware already discards the old data by
+overwriting the logical addresses with new blocks, while
+issuing a discard on all blocks as soon as they become available
+would make a bigger difference. I would be interested in hearing
+from Hyojin Jeong and Alex Lemberg what they think is the best
+time to issue a discard, because they would know about other hardware
+than Luca.
 
-I guess I was a little confused WRT iv vs cryptokey. Anyway, I thought
-you just use UBIFS_CRYPTO_KEYSIZE for all of this, why not to just use
-the constant in this function? Why passing the length as an argument?
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-acqWhqSzj0UQWawQILGr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPeb5yAAoJECmIfjd9wqK0Rt4QAKUUNE01BMt4AMnSLskOc9TL
-dkCmmG3AjoyuWks+NJ3V1fNq3ajNq+Rn+C4GgUmv0UhPoI4/ih54sO4JXuD2NMBs
-lqSZD/KTKUukEOiwxopw7W9yYn2gFiW0inoK0QdNMHqn70XMsFRrOGSFs/qNgnAH
-4jdC4wLQD5H28VAV5qPHtx4xXF5lu4z4KoIBMqBVxI8zjD5bs9OqmbOMZKhisA/z
-W5nwJA4QUdafa4s3CqKphaMUbUj4+dPrISCWg/cjGTwbmKlzKAh3Pu8o1v8IoXBx
-reghqG1fnatxPDqdL7L17Ye3z7YQIwnWozZkmEsd/lerEQ6jFN80ThY6fZaWnewn
-bxoEndvEerQA8eOMs6USzqQsI2wted5xCTcKO6dA3ID7S8XDL+akRYKijjDRq1Bt
-QkHZaZBRHax1i5ygcPSNZ0fqTyeOFuVdzPWgr01qGXJPo4Pxx//l9pKIZJX6hRCD
-/jBve+ZN2COhD5NxDGekkzqeRIA/QRrfvbr86x49M4x/MYc4zliM2GMBzVfdt1u1
-za0P42CWMBMqxzjoX5IgujsMH06YCngMv99PKMI04Etlzm2z8ZxD55UBms1/lb4y
-C/HrNgxrp3Ttnh17Ya8AqXu8r0wfLnUUJqzoFiMTemv7ef63McjJnrqwaR6oRiAP
-HLeKR6TejCAelXmdcf1X
-=/my3
------END PGP SIGNATURE-----
-
---=-acqWhqSzj0UQWawQILGr--
-
+	Arnd
