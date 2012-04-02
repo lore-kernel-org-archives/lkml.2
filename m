@@ -1,161 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab2DBHEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 03:04:53 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59463 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab2DBHEw (ORCPT
+	id S1751463Ab2DBHJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 03:09:21 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40320 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2DBHJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 03:04:52 -0400
-Date: Mon, 2 Apr 2012 09:04:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH -tip 00/16] in-kernel x86 disassember
-Message-ID: <20120402070446.GA12689@gmail.com>
-References: <20120401160229.4502.2541.stgit@shimauta>
+	Mon, 2 Apr 2012 03:09:19 -0400
+Date: Mon, 2 Apr 2012 10:09:11 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: kmemleak: illegal RCU use assertion error
+Message-ID: <20120402070911.GB3464@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120401160229.4502.2541.stgit@shimauta>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Masami Hiramatsu <masami.hiramatsu@gmail.com> wrote:
+commit e5601400081651060a59bd1f45f2821bb8e97f95
+Author: Paul E. McKenney <paul.mckenney@linaro.org>
+Date:   Sat Jan 7 11:03:57 2012 -0800
 
-> Hi,
-> 
-> Here is a series of patches of the in-kernel x86 disassembler
-> for the latest tip tree.
-> This will show you a pretty disassembled code instead of
-> just a digital code sequence when you gets a kernel panic etc.
-> (I know, we also have script/decodecode for the panic use)
-> 
-> This feature is not for users, but mainly for kernel developers
-> who can understand disassembly code of x86 ;). This is just like
-> a joke feature in kernel. (yeah, I spend my spare time for this.
-> It's my fun :))
+    rcu: Simplify offline processing
+    
+    Move ->qsmaskinit and blkd_tasks[] manipulation to the CPU_DYING
+    notifier.  This simplifies the code by eliminating a potential
+    deadlock and by reducing the responsibilities of force_quiescent_state().
+    Also rename functions to make their connection to the CPU-hotplug
+    stages explicit.
+    
+    Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Nice :-)
 
-Wrt. testing: just wondering, could we eventually attempt to 
-create a user-space testcase for this as well? I.e. if we tried 
-to have a switch to emulate objdump output, we could check that 
-the in-kernel disassembler outputs the same sequence as objdump 
--d, or so.
+introduced WARN_ON_ONCE(cpu_is_offline(smp_processor_id())); to __call_rcu()
+function, Paul also added cpu_offline checks to other routines (e.g. callbacks)
+in later commits. It happens that kmemleak() triggers one of them.
 
-[ I realize that this does not cover SSE instructions, which do 
-  sometimes occur in the vmlinux - but 99% of the instruction 
-  stream is regular and would be a nice testcase. ]
+During cpu core offline, kfree()->kmemleak_free()->put_object()-->__call_rcu() chain
+for struct intel_shared_regs * is executed when no struct users left on this core -- 
+all CPUs are dead or dying.
 
->  - Debugfs disassembler interface for kernel function. You can disassemble
->    running kernel function on-line.
 
-Nice :-)
+[ 4703.342462] CPU 3 is now offline
+[ 4705.588116] ------------[ cut here ]------------
+[ 4705.588129] WARNING: at kernel/rcutree.c:1823 __call_rcu+0x9d/0x1d2()
+[..]
+[ 4705.588196] Call Trace:
+[ 4705.588207]  [<ffffffff81059a00>] ? synchronize_srcu+0x6/0x17
+[ 4705.588215]  [<ffffffff8103364e>] warn_slowpath_common+0x83/0x9c
+[ 4705.588223]  [<ffffffff8111e627>] ? get_object+0x31/0x31
+[ 4705.588229]  [<ffffffff81033681>] warn_slowpath_null+0x1a/0x1c
+[ 4705.588235]  [<ffffffff810af770>] __call_rcu+0x9d/0x1d2
+[ 4705.588243]  [<ffffffff81013f52>] ? intel_pmu_cpu_dying+0x3b/0x5d
+[ 4705.588249]  [<ffffffff810af8f1>] call_rcu_sched+0x17/0x19
+[ 4705.588255]  [<ffffffff8111eb7e>] put_object+0x47/0x4b
+[ 4705.588261]  [<ffffffff8111ed8b>] delete_object_full+0x2a/0x2e
+[ 4705.588269]  [<ffffffff81491dc8>] kmemleak_free+0x26/0x45
+[ 4705.588274]  [<ffffffff8111691f>] kfree+0x130/0x221
+[ 4705.588280]  [<ffffffff81013f52>] intel_pmu_cpu_dying+0x3b/0x5d
+[ 4705.588287]  [<ffffffff8149cb83>] x86_pmu_notifier+0xaf/0xb9
+[ 4705.588296]  [<ffffffff814b0e9d>] notifier_call_chain+0xac/0xd9
+[ 4705.588303]  [<ffffffff81059c9e>] __raw_notifier_call_chain+0xe/0x10
+[ 4705.588309]  [<ffffffff810354ec>] __cpu_notify+0x20/0x37
+[ 4705.588314]  [<ffffffff81035516>] cpu_notify+0x13/0x15
+[ 4705.588320]  [<ffffffff81490fab>] take_cpu_down+0x28/0x2e
+[ 4705.588326]  [<ffffffff8109ef7f>] stop_machine_cpu_stop+0x96/0xf1
+[ 4705.588332]  [<ffffffff8109ece3>] cpu_stopper_thread+0xe3/0x183
+[ 4705.588338]  [<ffffffff8109eee9>] ? queue_stop_cpus_work+0xd0/0xd0
+[ 4705.588344]  [<ffffffff814ad382>] ? _raw_spin_unlock_irqrestore+0x47/0x65
+[ 4705.588353]  [<ffffffff81087d0d>] ? trace_hardirqs_on_caller+0x119/0x175
+[ 4705.588358]  [<ffffffff81087d76>] ? trace_hardirqs_on+0xd/0xf
+[ 4705.588364]  [<ffffffff8109ec00>] ? cpu_stop_signal_done+0x2c/0x2c
+[ 4705.588370]  [<ffffffff810544a9>] kthread+0x8b/0x93
+[ 4705.588378]  [<ffffffff814b5f34>] kernel_thread_helper+0x4/0x10
+[ 4705.588385]  [<ffffffff814ad7f0>] ? retint_restore_args+0x13/0x13
+[ 4705.588391]  [<ffffffff8105441e>] ? __init_kthread_worker+0x5a/0x5a
+[ 4705.588397]  [<ffffffff814b5f30>] ? gs_change+0x13/0x13
+[ 4705.588400] ---[ end trace 720328982e35a713 ]---
+[ 4705.588507] CPU 2 is now offline
 
->  - Panic dump shows disassembly code instead of instruction byte stream.
->    It generates more human-readable report. (I strongly recommend you to
->    add a serial logger if it is enabled :))
 
-This is the most useful short-term practical aspect I suspect.
+My first solution was to return from delete_object() if object deallocation
+performed on cpu_is_offline(smp_processor_id()), marking object with special
+flag, say OBJECT_ORPHAN. And issue real object_delete() during scan (for example)
+when we see OBJECT_ORPHAN object.  
+That, however, requires to handle special case when cpu core offlined
+for small period of time, leading to object insertion error in
+create_object(), which either may be handled in 2 possible ways (assuming
+that lookup_object() returned OBJECT_ORPHAN):
+#1 delete orphaned object and retry with insertion (*)
+#2 re-set existing orphan object
 
->  - Disassemble command for KDB. 'dis' command is now available.
->  - User-land disassembly tool.
 
-It would be nice to extend the output beyond the boring GNU 
-tooling, for example to auto-label branch targets instead of 
-relying on debuginfo.
+(*) performing delete_object() from within create_object() requires releasing
+of held kmemleak and object locks, which is racy with other create_object() and
+any possible scan() activities.
 
-This could be used for better visualization as well, instead of 
-the boring and hard to read GNU output:
+Yet I'm not exactly sure that option #2 is the correct one.
+(I've kind of a patch [not properly tested, etc.] for #2 option).
 
-ffffffff8175d500 <_raw_spin_lock>:
-ffffffff8175d500:	55                   	push   %rbp
-ffffffff8175d501:	b8 00 00 01 00       	mov    $0x10000,%eax
-ffffffff8175d506:	48 89 e5             	mov    %rsp,%rbp
-ffffffff8175d509:	f0 0f c1 07          	lock xadd %eax,(%rdi)
-ffffffff8175d50d:	89 c2                	mov    %eax,%edx
-ffffffff8175d50f:	c1 ea 10             	shr    $0x10,%edx
-ffffffff8175d512:	66 39 c2             	cmp    %ax,%dx
-ffffffff8175d515:	74 13                	je     ffffffff8175d52a <_raw_spin_lock+0x2a>
-ffffffff8175d517:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
-ffffffff8175d51e:	00 00 
-ffffffff8175d520:	f3 90                	pause  
-ffffffff8175d522:	0f b7 07             	movzwl (%rdi),%eax
-ffffffff8175d525:	66 39 d0             	cmp    %dx,%ax
-ffffffff8175d528:	75 f6                	jne    ffffffff8175d520 <_raw_spin_lock+0x20>
-ffffffff8175d52a:	5d                   	pop    %rbp
-ffffffff8175d52b:	c3                   	retq   
-ffffffff8175d52c:	0f 1f 40 00          	nopl   0x0(%rax)
 
-the default 'human readable' output could be something much more 
-intelligent, like:
-
-<_raw_spin_lock>:
-             push       %rbp
-             mov        $0x10000, %eax
-             mov        %rsp, %rbp
-             lock xadd  %eax, (%rdi)
-             mov        %eax, %edx
-             shr        $0x10, %edx
-             cmp        %ax, %dx
-             je         L2       #-----------------------------.
-             nop-7                                             |
-                                                               |
-L1:          pause                          <-------------.    |
-             movzwl     (%rdi), %eax                      |    |
-             cmp        %dx, %ax                          |    |
-             jne        L1       #------------------------'    |
-                                                               |
-L2:          pop        %rbp                <------------------'
-             retq
-
-This is much more readable, right? Yet it carries all the 
-essential information that the original output one carried.
-
-If vector instructions (SEE, MMX, AVX) are in your list to 
-support then it would be and interesting use to combine this 
-with perf on x86 - which uses objdump right now. Perf could use 
-a programmatic, librarized disassembler for its assembly 
-annotation code.
-
-That would allow new UI features like:
-
- - proper highlighting of jump/branch instructions and 
-   navigation along branch instructions (and visualization of 
-   possible execution flow) as well.
-
- - register modification and lifetime highlighting. If I click 
-   on 'rax' then the output could show how this register gets 
-   touched by the code, explicitly and implicitly (a common 
-   assembly coding pitfall)
-
- - summarization of usually irrelevant details, like the nop-7 
-   example above.
-
-Another very interesting usecase would be to invert it and 
-create a simpler parser and an in-kernel *assembler*: a GAS 
-replacement in essence. We could build the kernel using its own 
-assembler.
-
-That could also be used for safe sandboxing: the disassembler 
-could be combined with the assembler to ensure that binary code 
-submitted to the kernel is 'safe' to execute - even in 
-kernel-space. A sha1 hash could be used to cache already 
-checked, 'safe' modules of code.
-
-Thanks,
-
-	Ingo
+	Sergey
