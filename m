@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2DBMHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 08:07:34 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48160 "EHLO
+	id S1753260Ab2DBMHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 08:07:32 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48159 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab2DBLzQ (ORCPT
+	with ESMTP id S1752738Ab2DBLzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:16 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
         Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: [PATCH 60/69] TTY: 68328serial, propagate tty
-Date: Mon,  2 Apr 2012 13:54:44 +0200
-Message-Id: <1333367693-3244-61-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 56/69] TTY: 68328serial, add tty_port
+Date: Mon,  2 Apr 2012 13:54:40 +0200
+Message-Id: <1333367693-3244-57-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,212 +21,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need tty at some places, but info->tty might be NULL at those. Let
-us propagate tty from callers where we know we have a valid tty. This
-will make a switch to tty refcounting simpler.
+And use count and blocked_count from that.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: linux-m68k@lists.linux-m68k.org
 ---
- drivers/tty/serial/68328serial.c |   53 +++++++++++++++++++-------------------
- 1 file changed, 27 insertions(+), 26 deletions(-)
+ drivers/tty/serial/68328serial.c |   40 +++++++++++++++++++-------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
-index e3a1c55..fde573b 100644
+index 116d932..848662c 100644
 --- a/drivers/tty/serial/68328serial.c
 +++ b/drivers/tty/serial/68328serial.c
-@@ -140,7 +140,7 @@ m68328_uart *uart_addr = (m68328_uart *)USTCNT_ADDR;
- 
- struct tty_driver *serial_driver;
- 
--static void change_speed(struct m68k_serial *info);
-+static void change_speed(struct m68k_serial *info, struct tty_struct *tty);
- 
- /*
-  *	Setup for console. Argument comes from the boot command line.
-@@ -263,9 +263,9 @@ static void rs_start(struct tty_struct *tty)
- 	local_irq_restore(flags);
- }
- 
--static void receive_chars(struct m68k_serial *info, unsigned short rx)
-+static void receive_chars(struct m68k_serial *info, struct tty_struct *tty,
-+		unsigned short rx)
- {
--	struct tty_struct *tty = info->tty;
- 	m68328_uart *uart = &uart_addr[info->line];
- 	unsigned char ch, flag;
- 
-@@ -317,7 +317,7 @@ clear_and_exit:
- 	return;
- }
- 
--static void transmit_chars(struct m68k_serial *info)
-+static void transmit_chars(struct m68k_serial *info, struct tty_struct *tty)
- {
- 	m68328_uart *uart = &uart_addr[info->line];
- 
-@@ -328,7 +328,7 @@ static void transmit_chars(struct m68k_serial *info)
- 		goto clear_and_return;
+@@ -109,6 +109,7 @@
+  * For definitions of the flags field, see serial.h
+  */
+ struct m68k_serial {
++	struct tty_port		tport;
+ 	char			is_cons;	/* Is this our console. */
+ 	int			magic;
+ 	int			baud_base;
+@@ -122,8 +123,6 @@ struct m68k_serial {
+ 	int			close_delay;
+ 	unsigned short		closing_wait;
+ 	int			line;
+-	int			count;		/* # of fd on device */
+-	int			blocked_open;	/* # of blocked opens */
+ 	unsigned char		*xmit_buf;
+ 	int			xmit_head;
+ 	int			xmit_tail;
+@@ -866,7 +865,7 @@ static int set_serial_info(struct m68k_serial * info,
+ 		goto check_and_exit;
  	}
  
--	if((info->xmit_cnt <= 0) || info->tty->stopped) {
-+	if ((info->xmit_cnt <= 0) || !tty || tty->stopped) {
- 		/* That's peculiar... TX ints off */
- 		uart->ustcnt &= ~USTCNT_TX_INTR_MASK;
- 		goto clear_and_return;
-@@ -356,6 +356,7 @@ clear_and_return:
- irqreturn_t rs_interrupt(int irq, void *dev_id)
- {
- 	struct m68k_serial *info = dev_id;
-+	struct tty_struct *tty = info->tty;
- 	m68328_uart *uart;
- 	unsigned short rx;
- 	unsigned short tx;
-@@ -366,15 +367,17 @@ irqreturn_t rs_interrupt(int irq, void *dev_id)
- #ifdef USE_INTS
- 	tx = uart->utx.w;
+-	if (info->count > 1)
++	if (info->tport.count > 1)
+ 		return -EBUSY;
  
--	if (rx & URX_DATA_READY) receive_chars(info, rx);
--	if (tx & UTX_TX_AVAIL)   transmit_chars(info);
-+	if (rx & URX_DATA_READY)
-+		receive_chars(info, tty, rx);
-+	if (tx & UTX_TX_AVAIL)
-+		transmit_chars(info, tty);
- #else
--	receive_chars(info, rx);		
-+	receive_chars(info, tty, rx);
- #endif
- 	return IRQ_HANDLED;
- }
- 
--static int startup(struct m68k_serial * info)
-+static int startup(struct m68k_serial *info, struct tty_struct *tty)
+ 	/*
+@@ -1010,6 +1009,7 @@ static void rs_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+ static void rs_close(struct tty_struct *tty, struct file * filp)
  {
+ 	struct m68k_serial * info = (struct m68k_serial *)tty->driver_data;
++	struct tty_port *port = &info->tport;
  	m68328_uart *uart = &uart_addr[info->line];
  	unsigned long flags;
-@@ -409,15 +412,15 @@ static int startup(struct m68k_serial * info)
- 	uart->ustcnt = USTCNT_UEN | USTCNT_RXEN | USTCNT_RX_INTR_MASK;
- #endif
  
--	if (info->tty)
--		clear_bit(TTY_IO_ERROR, &info->tty->flags);
-+	if (tty)
-+		clear_bit(TTY_IO_ERROR, &tty->flags);
- 	info->xmit_cnt = info->xmit_head = info->xmit_tail = 0;
- 
- 	/*
- 	 * and set the speed of the serial port
- 	 */
- 
--	change_speed(info);
-+	change_speed(info, tty);
- 
- 	info->tport.flags |= ASYNC_INITIALIZED;
- 	local_irq_restore(flags);
-@@ -428,7 +431,7 @@ static int startup(struct m68k_serial * info)
-  * This routine will shutdown a serial port; interrupts are disabled, and
-  * DTR is dropped if the hangup on close termio flag is on.
-  */
--static void shutdown(struct m68k_serial * info)
-+static void shutdown(struct m68k_serial *info, struct tty_struct *tty)
- {
- 	m68328_uart *uart = &uart_addr[info->line];
- 	unsigned long	flags;
-@@ -444,8 +447,8 @@ static void shutdown(struct m68k_serial * info)
- 		info->xmit_buf = 0;
+@@ -1023,7 +1023,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 		return;
  	}
- 
--	if (info->tty)
--		set_bit(TTY_IO_ERROR, &info->tty->flags);
-+	if (tty)
-+		set_bit(TTY_IO_ERROR, &tty->flags);
  	
- 	info->tport.flags &= ~ASYNC_INITIALIZED;
- 	local_irq_restore(flags);
-@@ -503,7 +506,7 @@ struct {
-  * This routine is called to set the UART divisor registers to match
-  * the specified baud rate for a serial port.
-  */
--static void change_speed(struct m68k_serial *info)
-+static void change_speed(struct m68k_serial *info, struct tty_struct *tty)
- {
- 	m68328_uart *uart = &uart_addr[info->line];
- 	unsigned short port;
-@@ -511,9 +514,7 @@ static void change_speed(struct m68k_serial *info)
- 	unsigned cflag;
- 	int	i;
- 
--	if (!info->tty || !info->tty->termios)
--		return;
--	cflag = info->tty->termios->c_cflag;
-+	cflag = tty->termios->c_cflag;
- 	if (!(port = info->port))
+-	if ((tty->count == 1) && (info->count != 1)) {
++	if ((tty->count == 1) && (port->count != 1)) {
+ 		/*
+ 		 * Uh, oh.  tty->count is 1, which means that the tty
+ 		 * structure will be freed.  Info->count should always
+@@ -1032,15 +1032,15 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 		 * serial port won't be shutdown.
+ 		 */
+ 		printk("rs_close: bad serial port count; tty->count is 1, "
+-		       "info->count is %d\n", info->count);
+-		info->count = 1;
++		       "port->count is %d\n", port->count);
++		port->count = 1;
+ 	}
+-	if (--info->count < 0) {
++	if (--port->count < 0) {
+ 		printk("rs_close: bad serial port count for ttyS%d: %d\n",
+-		       info->line, info->count);
+-		info->count = 0;
++		       info->line, port->count);
++		port->count = 0;
+ 	}
+-	if (info->count) {
++	if (port->count) {
+ 		local_irq_restore(flags);
  		return;
- 
-@@ -832,7 +833,7 @@ static int get_serial_info(struct m68k_serial * info,
- 	return 0;
- }
- 
--static int set_serial_info(struct m68k_serial * info,
-+static int set_serial_info(struct m68k_serial *info, struct tty_struct *tty,
- 			   struct serial_struct * new_info)
- {
- 	struct tty_port *port = &info->tport;
-@@ -875,7 +876,7 @@ static int set_serial_info(struct m68k_serial * info,
- 	port->closing_wait = new_serial.closing_wait;
- 
- check_and_exit:
--	retval = startup(info);
-+	retval = startup(info, tty);
- 	return retval;
- }
- 
-@@ -961,7 +962,7 @@ static int rs_ioctl(struct tty_struct *tty,
- 			return get_serial_info(info,
- 				       (struct serial_struct *) arg);
- 		case TIOCSSERIAL:
--			return set_serial_info(info,
-+			return set_serial_info(info, tty,
- 					       (struct serial_struct *) arg);
- 		case TIOCSERGETLSR: /* Get line status register */
- 			return get_lsr_info(info, (unsigned int *) arg);
-@@ -980,7 +981,7 @@ static void rs_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
- {
- 	struct m68k_serial *info = (struct m68k_serial *)tty->driver_data;
- 
--	change_speed(info);
-+	change_speed(info, tty);
- 
- 	if ((old_termios->c_cflag & CRTSCTS) &&
- 	    !(tty->termios->c_cflag & CRTSCTS)) {
-@@ -1056,7 +1057,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 	uart->ustcnt &= ~USTCNT_RXEN;
- 	uart->ustcnt &= ~(USTCNT_RXEN | USTCNT_RX_INTR_MASK);
- 
--	shutdown(info);
-+	shutdown(info, tty);
- 	rs_flush_buffer(tty);
- 		
- 	tty_ldisc_flush(tty);
-@@ -1094,7 +1095,7 @@ void rs_hangup(struct tty_struct *tty)
- 		return;
+ 	}
+@@ -1079,7 +1079,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 			(tty->ldisc.open)(tty);
+ 	}
+ #endif	
+-	if (info->blocked_open) {
++	if (port->blocked_open) {
+ 		if (info->close_delay) {
+ 			msleep_interruptible(jiffies_to_msecs(info->close_delay));
+ 		}
+@@ -1102,7 +1102,7 @@ void rs_hangup(struct tty_struct *tty)
  	
  	rs_flush_buffer(tty);
--	shutdown(info);
-+	shutdown(info, tty);
- 	info->tport.count = 0;
- 	info->tport.flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	shutdown(info);
+-	info->count = 0;
++	info->tport.count = 0;
+ 	info->flags &= ~ASYNC_NORMAL_ACTIVE;
  	info->tty = NULL;
-@@ -1214,7 +1215,7 @@ int rs_open(struct tty_struct *tty, struct file * filp)
+ 	wake_up_interruptible(&info->open_wait);
+@@ -1116,6 +1116,7 @@ void rs_hangup(struct tty_struct *tty)
+ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ 			   struct m68k_serial *info)
+ {
++	struct tty_port *port = &info->tport;
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int		retval;
+ 	int		do_clocal = 0;
+@@ -1152,15 +1153,15 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
  	/*
- 	 * Start up serial port
+ 	 * Block waiting for the carrier detect and the line to become
+ 	 * free (i.e., not in use by the callout).  While we are in
+-	 * this loop, info->count is dropped by one, so that
++	 * this loop, port->count is dropped by one, so that
+ 	 * rs_close() knows when to free things.  We restore it upon
+ 	 * exit, either normal or abnormal.
  	 */
--	retval = startup(info);
-+	retval = startup(info, tty);
+ 	retval = 0;
+ 	add_wait_queue(&info->open_wait, &wait);
+ 
+-	info->count--;
+-	info->blocked_open++;
++	port->count--;
++	port->blocked_open++;
+ 	while (1) {
+ 		current->state = TASK_INTERRUPTIBLE;
+ 		if (tty_hung_up_p(filp) ||
+@@ -1188,8 +1189,8 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ 	current->state = TASK_RUNNING;
+ 	remove_wait_queue(&info->open_wait, &wait);
+ 	if (!tty_hung_up_p(filp))
+-		info->count++;
+-	info->blocked_open--;
++		port->count++;
++	port->blocked_open--;
+ 
  	if (retval)
  		return retval;
+@@ -1213,7 +1214,7 @@ int rs_open(struct tty_struct *tty, struct file * filp)
+ 	if (serial_paranoia_check(info, tty->name, "rs_open"))
+ 		return -ENODEV;
  
+-	info->count++;
++	info->tport.count++;
+ 	tty->driver_data = info;
+ 	info->tty = tty;
+ 
+@@ -1291,6 +1292,7 @@ rs68328_init(void)
+ 	for(i=0;i<NR_PORTS;i++) {
+ 
+ 	    info = &m68k_soft[i];
++	    tty_port_init(&info->tport);
+ 	    info->magic = SERIAL_MAGIC;
+ 	    info->port = (int) &uart_addr[i];
+ 	    info->tty = NULL;
+@@ -1299,8 +1301,6 @@ rs68328_init(void)
+ 	    info->close_delay = 50;
+ 	    info->closing_wait = 3000;
+ 	    info->x_char = 0;
+-	    info->count = 0;
+-	    info->blocked_open = 0;
+ 	    init_waitqueue_head(&info->open_wait);
+ 	    init_waitqueue_head(&info->close_wait);
+ 	    info->line = i;
 -- 
 1.7.9.2
 
