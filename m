@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab2DBL4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:48 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48199 "EHLO
+	id S1754650Ab2DBL4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:47 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48200 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab2DBLzS (ORCPT
+	with ESMTP id S1752860Ab2DBLzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:18 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: [PATCH 55/69] TTY: 68328serial, remove 68328serial.h
-Date: Mon,  2 Apr 2012 13:54:39 +0200
-Message-Id: <1333367693-3244-56-git-send-email-jslaby@suse.cz>
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 41/69] TTY: hvcs, use kref from tty_port
+Date: Mon,  2 Apr 2012 13:54:25 +0200
+Message-Id: <1333367693-3244-42-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,216 +21,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the needed stuff is moved to 68328serial.c now.
+A simple switch. Except we convert destroy_hvcs_struct to be
+tty_port_operations->destruct...
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@lists.linux-m68k.org
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- drivers/tty/serial/68328serial.c |   79 ++++++++++++++++++++++++++++++--
- drivers/tty/serial/68328serial.h |   94 --------------------------------------
- 2 files changed, 76 insertions(+), 97 deletions(-)
- delete mode 100644 drivers/tty/serial/68328serial.h
+ drivers/tty/hvc/hvcs.c |   34 ++++++++++++++++------------------
+ 1 file changed, 16 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
-index f0d5039..116d932 100644
---- a/drivers/tty/serial/68328serial.c
-+++ b/drivers/tty/serial/68328serial.c
-@@ -57,8 +57,6 @@
- #endif /* CONFIG_M68VZ328 */
- #endif /* CONFIG_M68EZ328 */
+diff --git a/drivers/tty/hvc/hvcs.c b/drivers/tty/hvc/hvcs.c
+index a049ced..817f94b 100644
+--- a/drivers/tty/hvc/hvcs.c
++++ b/drivers/tty/hvc/hvcs.c
+@@ -290,12 +290,11 @@ struct hvcs_struct {
+ 	int chars_in_buffer;
  
--#include "68328serial.h"
+ 	/*
+-	 * Any variable below the kref is valid before a tty is connected and
++	 * Any variable below is valid before a tty is connected and
+ 	 * stays valid after the tty is disconnected.  These shouldn't be
+ 	 * whacked until the kobject refcount reaches zero though some entries
+ 	 * may be changed via sysfs initiatives.
+ 	 */
+-	struct kref kref; /* ref count & hvcs_struct lifetime */
+ 	int connected; /* is the vty-server currently connected to a vty? */
+ 	uint32_t p_unit_address; /* partner unit address */
+ 	uint32_t p_partition_ID; /* partner partition ID */
+@@ -304,9 +303,6 @@ struct hvcs_struct {
+ 	struct vio_dev *vdev;
+ };
+ 
+-/* Required to back map a kref to its containing object */
+-#define from_kref(k) container_of(k, struct hvcs_struct, kref)
 -
- /* Turn off usage of real serial interrupt code, to "support" Copilot */
- #ifdef CONFIG_XCOPILOT_BUGS
- #undef USE_INTS
-@@ -66,9 +64,84 @@
- #define USE_INTS
- #endif
+ static LIST_HEAD(hvcs_structs);
+ static DEFINE_SPINLOCK(hvcs_structs_lock);
+ static DEFINE_MUTEX(hvcs_init_mutex);
+@@ -701,10 +697,9 @@ static void hvcs_return_index(int index)
+ 		hvcs_index_list[index] = -1;
+ }
  
-+/*
-+ * I believe this is the optimal setting that reduces the number of interrupts.
-+ * At high speeds the output might become a little "bursted" (use USTCNT_TXHE
-+ * if that bothers you), but in most cases it will not, since we try to
-+ * transmit characters every time rs_interrupt is called. Thus, quite often
-+ * you'll see that a receive interrupt occures before the transmit one.
-+ *                                  -- Vladimir Gurevich
-+ */
-+#define USTCNT_TX_INTR_MASK (USTCNT_TXEE)
-+
-+/*
-+ * 68328 and 68EZ328 UARTS are a little bit different. EZ328 has special
-+ * "Old data interrupt" which occures whenever the data stay in the FIFO
-+ * longer than 30 bits time. This allows us to use FIFO without compromising
-+ * latency. '328 does not have this feature and without the real  328-based
-+ * board I would assume that RXRE is the safest setting.
-+ *
-+ * For EZ328 I use RXHE (Half empty) interrupt to reduce the number of
-+ * interrupts. RXFE (receive queue full) causes the system to lose data
-+ * at least at 115200 baud
-+ *
-+ * If your board is busy doing other stuff, you might consider to use
-+ * RXRE (data ready intrrupt) instead.
-+ *
-+ * The other option is to make these INTR masks run-time configurable, so
-+ * that people can dynamically adapt them according to the current usage.
-+ *                                  -- Vladimir Gurevich
-+ */
-+
-+/* (es) */
-+#if defined(CONFIG_M68EZ328) || defined(CONFIG_M68VZ328)
-+#define USTCNT_RX_INTR_MASK (USTCNT_RXHE | USTCNT_ODEN)
-+#elif defined(CONFIG_M68328)
-+#define USTCNT_RX_INTR_MASK (USTCNT_RXRE)
-+#else
-+#error Please, define the Rx interrupt events for your CPU
-+#endif
-+/* (/es) */
-+
-+/*
-+ * This is our internal structure for each serial port's state.
-+ *
-+ * For definitions of the flags field, see serial.h
-+ */
-+struct m68k_serial {
-+	char			is_cons;	/* Is this our console. */
-+	int			magic;
-+	int			baud_base;
-+	int			port;
-+	int			irq;
-+	int			flags;		/* defined in tty.h */
-+	int			type;		/* UART type */
-+	struct tty_struct	*tty;
-+	int			custom_divisor;
-+	int			x_char;		/* xon/xoff character */
-+	int			close_delay;
-+	unsigned short		closing_wait;
-+	int			line;
-+	int			count;		/* # of fd on device */
-+	int			blocked_open;	/* # of blocked opens */
-+	unsigned char		*xmit_buf;
-+	int			xmit_head;
-+	int			xmit_tail;
-+	int			xmit_cnt;
-+	wait_queue_head_t	open_wait;
-+	wait_queue_head_t	close_wait;
+-/* callback when the kref ref count reaches zero */
+-static void destroy_hvcs_struct(struct kref *kref)
++static void hvcs_destruct_port(struct tty_port *p)
+ {
+-	struct hvcs_struct *hvcsd = from_kref(kref);
++	struct hvcs_struct *hvcsd = container_of(p, struct hvcs_struct, port);
+ 	struct vio_dev *vdev;
+ 	unsigned long flags;
+ 
+@@ -741,6 +736,10 @@ static void destroy_hvcs_struct(struct kref *kref)
+ 	kfree(hvcsd);
+ }
+ 
++static const struct tty_port_operations hvcs_port_ops = {
++	.destruct = hvcs_destruct_port,
 +};
 +
-+#define SERIAL_MAGIC 0x5301
-+
-+/*
-+ * Define the number of ports supported and their irqs.
-+ */
-+#define NR_PORTS 1
-+
- static struct m68k_serial m68k_soft[NR_PORTS];
+ static int hvcs_get_index(void)
+ {
+ 	int i;
+@@ -790,9 +789,8 @@ static int __devinit hvcs_probe(
+ 		return -ENODEV;
  
--static unsigned int uart_irqs[NR_PORTS] = UART_IRQ_DEFNS;
-+static unsigned int uart_irqs[NR_PORTS] = { UART_IRQ_NUM };
+ 	tty_port_init(&hvcsd->port);
++	hvcsd->port.ops = &hvcs_port_ops;
+ 	spin_lock_init(&hvcsd->lock);
+-	/* Automatically incs the refcount the first time */
+-	kref_init(&hvcsd->kref);
  
- /* multiple ports are contiguous in memory */
- m68328_uart *uart_addr = (m68328_uart *)USTCNT_ADDR;
-diff --git a/drivers/tty/serial/68328serial.h b/drivers/tty/serial/68328serial.h
-deleted file mode 100644
-index 971ead5..0000000
---- a/drivers/tty/serial/68328serial.h
-+++ /dev/null
-@@ -1,94 +0,0 @@
--/* 68328serial.h: Definitions for the mc68328 serial driver.
-- *
-- * Copyright (C) 1995       David S. Miller    <davem@caip.rutgers.edu>
-- * Copyright (C) 1998       Kenneth Albanowski <kjahds@kjahds.com>
-- * Copyright (C) 1998, 1999 D. Jeff Dionne     <jeff@uclinux.org>
-- * Copyright (C) 1999       Vladimir Gurevich  <vgurevic@cisco.com>
-- *
-- * VZ Support/Fixes             Evan Stawnyczy <e@lineo.ca>
-- */
--
--#ifndef _MC683XX_SERIAL_H
--#define _MC683XX_SERIAL_H
--
--/*
-- * I believe this is the optimal setting that reduces the number of interrupts.
-- * At high speeds the output might become a little "bursted" (use USTCNT_TXHE
-- * if that bothers you), but in most cases it will not, since we try to 
-- * transmit characters every time rs_interrupt is called. Thus, quite often
-- * you'll see that a receive interrupt occures before the transmit one.
-- *                                  -- Vladimir Gurevich
-- */
--#define USTCNT_TX_INTR_MASK (USTCNT_TXEE)
--
--/*
-- * 68328 and 68EZ328 UARTS are a little bit different. EZ328 has special
-- * "Old data interrupt" which occures whenever the data stay in the FIFO
-- * longer than 30 bits time. This allows us to use FIFO without compromising
-- * latency. '328 does not have this feature and without the real  328-based
-- * board I would assume that RXRE is the safest setting.
-- *
-- * For EZ328 I use RXHE (Half empty) interrupt to reduce the number of
-- * interrupts. RXFE (receive queue full) causes the system to lose data
-- * at least at 115200 baud
-- *
-- * If your board is busy doing other stuff, you might consider to use
-- * RXRE (data ready intrrupt) instead.
-- *
-- * The other option is to make these INTR masks run-time configurable, so
-- * that people can dynamically adapt them according to the current usage.
-- *                                  -- Vladimir Gurevich
-- */
--
--/* (es) */
--#if defined(CONFIG_M68EZ328) || defined(CONFIG_M68VZ328)
--#define USTCNT_RX_INTR_MASK (USTCNT_RXHE | USTCNT_ODEN)
--#elif defined(CONFIG_M68328)
--#define USTCNT_RX_INTR_MASK (USTCNT_RXRE)
--#else
--#error Please, define the Rx interrupt events for your CPU
--#endif
--/* (/es) */
--
--/*
-- * This is our internal structure for each serial port's state.
-- * 
-- * Many fields are paralleled by the structure used by the serial_struct
-- * structure.
-- *
-- * For definitions of the flags field, see tty.h
-- */
--
--struct m68k_serial {
--	char is_cons;       /* Is this our console. */
--	int			magic;
--	int			baud_base;
--	int			port;
--	int			irq;
--	int			flags; 		/* defined in tty.h */
--	int			type; 		/* UART type */
--	struct tty_struct 	*tty;
--	int			custom_divisor;
--	int			x_char;	/* xon/xoff character */
--	int			close_delay;
--	unsigned short		closing_wait;
--	int			line;
--	int			count;	    /* # of fd on device */
--	int			blocked_open; /* # of blocked opens */
--	unsigned char 		*xmit_buf;
--	int			xmit_head;
--	int			xmit_tail;
--	int			xmit_cnt;
--	wait_queue_head_t	open_wait;
--	wait_queue_head_t	close_wait;
--};
--
--#define SERIAL_MAGIC 0x5301
--
--/* 
-- * Define the number of ports supported and their irqs.
-- */
--#define NR_PORTS 1
--#define UART_IRQ_DEFNS {UART_IRQ_NUM}
--
--#endif /* !(_MC683XX_SERIAL_H) */
+ 	hvcsd->vdev = dev;
+ 	dev_set_drvdata(&dev->dev, hvcsd);
+@@ -860,7 +858,7 @@ static int __devexit hvcs_remove(struct vio_dev *dev)
+ 	 * Let the last holder of this object cause it to be removed, which
+ 	 * would probably be tty_hangup below.
+ 	 */
+-	kref_put(&hvcsd->kref, destroy_hvcs_struct);
++	tty_port_put(&hvcsd->port);
+ 
+ 	/*
+ 	 * The hangup is a scheduled function which will auto chain call
+@@ -1094,7 +1092,7 @@ static struct hvcs_struct *hvcs_get_by_index(int index)
+ 	list_for_each_entry(hvcsd, &hvcs_structs, next) {
+ 		spin_lock_irqsave(&hvcsd->lock, flags);
+ 		if (hvcsd->index == index) {
+-			kref_get(&hvcsd->kref);
++			tty_port_get(&hvcsd->port);
+ 			spin_unlock_irqrestore(&hvcsd->lock, flags);
+ 			spin_unlock(&hvcs_structs_lock);
+ 			return hvcsd;
+@@ -1160,7 +1158,7 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
+ 	 * and will grab the spinlock and free the connection if it fails.
+ 	 */
+ 	if (((rc = hvcs_enable_device(hvcsd, unit_address, irq, vdev)))) {
+-		kref_put(&hvcsd->kref, destroy_hvcs_struct);
++		tty_port_put(&hvcsd->port);
+ 		printk(KERN_WARNING "HVCS: enable device failed.\n");
+ 		return rc;
+ 	}
+@@ -1171,7 +1169,7 @@ fast_open:
+ 	hvcsd = tty->driver_data;
+ 
+ 	spin_lock_irqsave(&hvcsd->lock, flags);
+-	kref_get(&hvcsd->kref);
++	tty_port_get(&hvcsd->port);
+ 	hvcsd->port.count++;
+ 	hvcsd->todo_mask |= HVCS_SCHED_READ;
+ 	spin_unlock_irqrestore(&hvcsd->lock, flags);
+@@ -1186,7 +1184,7 @@ open_success:
+ 
+ error_release:
+ 	spin_unlock_irqrestore(&hvcsd->lock, flags);
+-	kref_put(&hvcsd->kref, destroy_hvcs_struct);
++	tty_port_put(&hvcsd->port);
+ 
+ 	printk(KERN_WARNING "HVCS: partner connect failed.\n");
+ 	return retval;
+@@ -1240,7 +1238,7 @@ static void hvcs_close(struct tty_struct *tty, struct file *filp)
+ 		tty->driver_data = NULL;
+ 
+ 		free_irq(irq, hvcsd);
+-		kref_put(&hvcsd->kref, destroy_hvcs_struct);
++		tty_port_put(&hvcsd->port);
+ 		return;
+ 	} else if (hvcsd->port.count < 0) {
+ 		printk(KERN_ERR "HVCS: vty-server@%X open_count: %d"
+@@ -1249,7 +1247,7 @@ static void hvcs_close(struct tty_struct *tty, struct file *filp)
+ 	}
+ 
+ 	spin_unlock_irqrestore(&hvcsd->lock, flags);
+-	kref_put(&hvcsd->kref, destroy_hvcs_struct);
++	tty_port_put(&hvcsd->port);
+ }
+ 
+ static void hvcs_hangup(struct tty_struct * tty)
+@@ -1301,7 +1299,7 @@ static void hvcs_hangup(struct tty_struct * tty)
+ 		 * NOTE:  If this hangup was signaled from user space then the
+ 		 * final put will never happen.
+ 		 */
+-		kref_put(&hvcsd->kref, destroy_hvcs_struct);
++		tty_port_put(&hvcsd->port);
+ 	}
+ }
+ 
 -- 
 1.7.9.2
 
