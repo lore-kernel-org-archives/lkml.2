@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab2DBOZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:25:30 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38335 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab2DBOZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:25:28 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: rob@ti.com
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]NEXT:drivers:staging:omapdrm Fix typos in drivers:omapdrm
-Date: Mon,  2 Apr 2012 07:25:19 -0700
-Message-Id: <1333376719-8383-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752489Ab2DBOc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:32:26 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:56005 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab2DBOc0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 2 Apr 2012 10:32:26 -0400
+Message-Id: <4F79D496020000780007C05B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 02 Apr 2012 15:32:22 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] xen/pciback: fix XEN_PCI_OP_enable_msix result
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+Prior to 2.6.19 and as of 2.6.31, pci_enable_msix() can return a
+positive value to indicate the number of vectors (less than the amount
+requested) that can be set up for a given device. Returning this as an
+operation value (secondary result) is fine, but (primary) operation
+results are expected to be negative (error) or zero (success) according
+to the protocol. With the frontend fixed to match the XenoLinux
+behavior, the backend can now validly return zero (success) here,
+passing the upper limit on the number of vectors in op->value.
 
-The below patch fixes some typos that I found while reading. 
-Note: I was told to hold off sending anything until *rc1 so hopefully 
-now its alright.(wasnt sure what kernel *rc*)
-
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
 ---
- drivers/staging/omapdrm/omap_fb.c  |    2 +-
- drivers/staging/omapdrm/tcm-sita.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/xen/xen-pciback/pciback_ops.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/omapdrm/omap_fb.c b/drivers/staging/omapdrm/omap_fb.c
-index 04b235b..0c53a3c 100644
---- a/drivers/staging/omapdrm/omap_fb.c
-+++ b/drivers/staging/omapdrm/omap_fb.c
-@@ -167,7 +167,7 @@ void omap_framebuffer_update_scanout(struct drm_framebuffer *fb, int x, int y,
+--- 3.4-rc1/drivers/xen/xen-pciback/pciback_ops.c
++++ 3.4-rc1-xen-pciback-msix-retval/drivers/xen/xen-pciback/pciback_ops.c
+@@ -234,7 +234,7 @@ int xen_pcibk_enable_msix(struct xen_pci
+ 	if (dev_data)
+ 		dev_data->ack_intr = 0;
+ 
+-	return result;
++	return result > 0 ? 0 : result;
  }
  
- /* Call for unpin 'a' (if not NULL), and pin 'b' (if not NULL).  Although
-- * buffers to unpin are just just pushed to the unpin fifo so that the
-+ * buffers to unpin are just pushed to the unpin fifo so that the
-  * caller can defer unpin until vblank.
-  *
-  * Note if this fails (ie. something went very wrong!), all buffers are
-diff --git a/drivers/staging/omapdrm/tcm-sita.c b/drivers/staging/omapdrm/tcm-sita.c
-index 10d5ac3..efb6095 100644
---- a/drivers/staging/omapdrm/tcm-sita.c
-+++ b/drivers/staging/omapdrm/tcm-sita.c
-@@ -200,7 +200,7 @@ static s32 sita_reserve_1d(struct tcm *tcm, u32 num_slots,
-  *
-  * @param w	width
-  * @param h	height
-- * @param area	pointer to the area that will be populated with the reesrved
-+ * @param area	pointer to the area that will be populated with the reserved
-  *		area
-  *
-  * @return 0 on success, non-0 error value on failure.
--- 
-1.7.5.4
+ static
+
+
 
