@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab2DBJTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:19:25 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:40323 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751497Ab2DBJTX convert rfc822-to-8bit (ORCPT
+	id S1751739Ab2DBJUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:20:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35833 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab2DBJUb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:19:23 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 2 Apr 2012 05:20:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+In-Reply-To: <1333358115.5440.101.camel@sauron.fi.intel.com>
+References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
+	<1333358115.5440.101.camel@sauron.fi.intel.com>
+Date: Mon, 2 Apr 2012 14:50:30 +0530
+Message-ID: <CAM=Q2cu4wx7=0UqyGJcB6oOO3KrDqpSGdSfjTNDpHG49XLzhuQ@mail.gmail.com>
+Subject: Re: Linux 3.4-rc1
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: dedekind1@gmail.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Subject: RE: [REGRESSION][PATCH V4 1/3] bpf jit: Make the filter.c::__load_pointer helper non-static  for the jits
-Date: Mon, 2 Apr 2012 10:18:02 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6ECE@saturn3.aculab.com>
-In-Reply-To: <4F75CC63.10405@googlemail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [REGRESSION][PATCH V4 1/3] bpf jit: Make the filter.c::__load_pointer helper non-static  for the jits
-Thread-Index: Ac0OlZYv8RI9mkt6ROe8QEpOpjNLnQCG3/MQ
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Jan Seiffert" <kaffeemonster@googlemail.com>, <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        "Matt Evans" <matt@ozlabs.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-X-OriginalArrivalTime: 02 Apr 2012 09:18:02.0357 (UTC) FILETIME=[8106BA50:01CD10B1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> The function is renamed to make it a little more clear what it does.
-> It is not added to any .h because it is not for general 
-> consumption, only for bpf internal use (and so by the jits).
+Hi Linus,
 
-I'd have thought it better to put in into a bfp_internal.h
-(or similar) with a big warning there about the asm users.
+On Mon, Apr 2, 2012 at 2:45 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Sat, 2012-03-31 at 16:58 -0700, Linus Torvalds wrote:
+>>  - HSI (High Speed Synchronous Serial Interface) framework. I'm
+>> planning on pulling this into 3.4, it's in my queue, but I wanted to
+>> bring it up one more time in case somebody has issues with it. Ping?
+>
+> Linus,
+> we are interested to see HSI upstream.
+>
+> FWIW, it is also used at least in one product - Nokia N9 - so I think it
+> is time-proved as well.
+>
 
-Possibly even worth adding some other defs that the asm
-files will need (if there are any).
+We also are interested in seeing the HSI upstream.
+In  fact we have plans to add omap4 driver support.
 
-	David
+Thanks and Regards,
+Shubhrajyoti
 
-
+> --
+> Best Regards,
+> Artem Bityutskiy
