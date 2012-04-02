@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab2DBVQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 17:16:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23425 "EHLO mx1.redhat.com"
+	id S1752649Ab2DBVUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 17:20:39 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40700 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab2DBVQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 17:16:27 -0400
-Date: Mon, 2 Apr 2012 17:16:22 -0400
-From: Dave Jones <davej@redhat.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org
-Subject: Re: btrfs io errors on 3.4rc1
-Message-ID: <20120402211622.GA2487@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Chris Mason <chris.mason@oracle.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-btrfs@vger.kernel.org
-References: <20120402180214.GA1830@redhat.com>
- <20120402194814.GA10965@shiny.msi.event>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120402194814.GA10965@shiny.msi.event>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751768Ab2DBVUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 17:20:39 -0400
+Message-ID: <1333401600.30734.56.camel@pasglop>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Date: Tue, 03 Apr 2012 07:20:00 +1000
+In-Reply-To: <alpine.LFD.2.02.1204022251420.2542@ionos>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
+	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+	 <alpine.LFD.2.02.1204022251420.2542@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 03:48:14PM -0400, Chris Mason wrote:
- > On Mon, Apr 02, 2012 at 02:02:14PM -0400, Dave Jones wrote:
- > > Updated to rc1 this morning, and my machines with btrfs are all freaking out..
- > > 
- > > I got this from my cron email ..
- > > 
- > > /etc/cron.daily/prelink: line 41: /var/lib/prelink/full: Input/output error
- > > cp: cannot create regular file `/var/lib/prelink/quick': Input/output error
- > > /etc/cron.daily/prelink: line 45: /var/log/prelink/prelink.log: Input/output error
- > 
- > That's not good.  Can you please try my for-linus branch against 3.3?
- > That will rules out all the shiny new btrfs code.
- > 
- > git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
- > 
- > -chris
+On Mon, 2012-04-02 at 22:52 +0200, Thomas Gleixner wrote:
+> > When I revert a09b659cd68c10ec6a30cb91ebd2c327fcd5bfe5 ("genirq: Fix
+> > long-term regression in genirq irq_set_irq_type() handling") on top
+> of
+> > 3.4-rc1 the sata irq errors disappear, but I see a lot of spurious
+> 
+> Hmm. Which irq chip is handling the interrupt for that sata irq ?
 
-Broken.
+MPIC. The irq is a PCI IRQ, and so should be level-low, it should have
+been mapped by the PCI code using the of_* calls.
 
-(17:14:52:davej@dhcp-189-232:~)$ fsx foo
-truncating to largest ever: 0x13e76
-truncating to largest ever: 0x2e52c
-ftruncate1: 2e52c
-dotruncate: ftruncate: Input/output error
-Segmentation fault (core dumped)
+Cheers,
+Ben.
 
-	Dave
+
