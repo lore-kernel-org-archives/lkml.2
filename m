@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab2DBBeg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 21:34:36 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42152 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772Ab2DBBef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 21:34:35 -0400
-Date: Mon, 2 Apr 2012 11:34:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rhyland Klein <rklein@nvidia.com>
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20120402113424.3e5981bd914d68a2fb8fcead@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__2_Apr_2012_11_34_24_+1000_fcHXUu6tMFhh1vqq"
+	id S1753991Ab2DBBhm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 21:37:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47642 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753772Ab2DBBhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 21:37:41 -0400
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CAGZ=bqJ4mAwzuHk5rDbvKTfR_Qi=QiPt6MrwbVhe7H63Yba2Wg@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAGZ=bqJ4mAwzuHk5rDbvKTfR_Qi=QiPt6MrwbVhe7H63Yba2Wg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] nextfd(2)
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 01 Apr 2012 18:37:26 -0700
+To: Kyle Moffett <kyle@moffetthome.net>
+CC: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Message-ID: <782e192e-e1b5-4c53-895d-1eac4a4c9097@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Apr_2012_11_34_24_+1000_fcHXUu6tMFhh1vqq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Are those use cases heavyweight enough to motivate a new interface?
 
-Hi all,
+Kyle Moffett <kyle@moffetthome.net> wrote:
 
-After merging the sound-asoc tree, today's linux-next build (x86_64_allmodc=
-onfig)
-failed like this:
+>On Sun, Apr 1, 2012 at 15:03, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 04/01/2012 05:57 AM, Alexey Dobriyan wrote:
+>>> * /proc/self/fd is unreliable:
+>>>   proc may be unconfigured or not mounted at expected place.
+>>>   Looking at /proc/self/fd requires opening directory
+>>>   which may not be available due to malicious rlimit drop or ENOMEM
+>situations.
+>>>   Not opening directory is equivalent to dumb close(2) loop except
+>slower.
+>>
+>> This is really the motivation for this... the real question is how
+>much
+>> functionality is actually available in the system without /proc
+>mounted,
+>> and in particular if this particular subcase is worth optimizing ...
+>> after all, if someone is maliciously setting rlimit, we can just
+>abort
+>> (if someone can set an rlimit they can also force an abort) or revert
+>to
+>> the slow path.
+>
+>Well, I imagine one typical usecase for closing all FDs is for
+>security isolation purposes (EG: chroot()+etc), and in a great deal of
+>chroot environments you don't have /proc available.  In particular
+>/proc has been a source of a lot of privilege escalations in the past,
+>so avoiding mounting it in a chroot is good security policy if
+>possible.
+>
+>Cheers,
+>Kyle Moffett
 
-sound/soc/codecs/max98095.c: In function 'max98095_jack_detect_enable':
-sound/soc/codecs/max98095.c:2229:14: error: 'struct max98095_priv' has no m=
-ember named 'jack_detect_delay'
-sound/soc/codecs/max98095.c:2230:18: error: 'struct max98095_priv' has no m=
-ember named 'jack_detect_delay'
-
-Caused by commit 9dd90c5db040 ("ASoC: max98095: add jack detection").
-At least build test, please.
-
-I have used the sound-asoc tree from next-20120330 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__2_Apr_2012_11_34_24_+1000_fcHXUu6tMFhh1vqq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPeQIgAAoJEECxmPOUX5FECKUP/0+UIJ3W+hvRfJ2v3+ChLyaB
-0Xt4kvYMn3JrTxpkcCUwHX/izkZ6gaahd8zz5kIE6iwoQ77CiHelL1yiZgWHxwE5
-Bzg4nAZYo4Ra6X5e+dSGO65/fh1WR4a+tEgCwnrAMlQ3g3kY4Y6/t8LMBECQ2xEE
-JAt44QNo82FwEbmI01wjjThc2WUztDon2mnpRjL/1uvlp0RBlPRpRD/o+9jMPKHQ
-aYH+JQnqmThzDPK/n7TddIlHsfR3wSUSVnx/9Jp/VbAPeuknUw+KknUN+AVCl//V
-3QF3UkxF+PR3SHG9iMMSI78Y+u7Ts7QXEFHUKYuu/BfXVEnYnLqEeHBTthN5GoWp
-Wd4QUoSrBcKaTcArLDgChLvr1HGt+3Uzr8VGodhf9wxu6g6bFpFe13Mk6RHrQLCH
-vKmSx1WlgaalthmsnxgCBMLNtCnkUC99KDXZ3yDDrk5sepbsk9p4lhiIJo5bV8WA
-Llzf0RevPow9rMZLvNbZD7A7RE2Meb6XkS0sTFuwqjK83zMFjeu1LSJSJ5gLczYP
-yTPm0FK4RQJNQ3+7DUhv7YnDSQxSQD0FR4UIWtVNFtRWSXIXGUkUvQbsWhRFbljg
-dFpLYmqyxr54KKveswCtkom0L/DS3RUKkdn37bu/5nCEtBK5UT3ku5+JiYwa3dFt
-97Xnih90O+Lna4EIat9Z
-=kWyg
------END PGP SIGNATURE-----
-
---Signature=_Mon__2_Apr_2012_11_34_24_+1000_fcHXUu6tMFhh1vqq--
+-- 
+Sent from my mobile phone. Please excuse my brevity and lack of formatting.
