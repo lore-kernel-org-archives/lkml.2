@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab2DBUnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 16:43:41 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:56669 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab2DBUni (ORCPT
+	id S1752553Ab2DBUrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 16:47:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38063 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab2DBUq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 16:43:38 -0400
+	Mon, 2 Apr 2012 16:46:58 -0400
+Message-ID: <4F7A103E.90007@lwfinger.net>
+Date: Mon, 02 Apr 2012 15:46:54 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <4F7A033D.4040901@googlemail.com>
-References: <4F75CA89.4010709@googlemail.com> <4F7A033D.4040901@googlemail.com>
-From: Matt Turner <mattst88@gmail.com>
-Date: Mon, 2 Apr 2012 16:43:17 -0400
-Message-ID: <CAEdQ38FnZXLiPM4CtOhT5X9qj9jLt84x=NhcSSbGO1agSNc24w@mail.gmail.com>
-Subject: Re: [PATCH V1 1/1] NET: add a bpf jit for Alpha
-To: Jan Seiffert <kaffeemonster@googlemail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Evans <matt@ozlabs.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-arch@vger.kernel.org,
-        linux-alpha@vger.kernel.org, rth@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: CONFIG_RTLWIFI_DEBUG default y
+References: <20120402164920.GA13264@x1.osrc.amd.com> <1333385618.15422.17.camel@joe2Laptop> <20120402171733.GB13264@x1.osrc.amd.com> <4F79E5A5.9000004@lwfinger.net> <20120402203211.GA27889@liondog.tnic>
+In-Reply-To: <20120402203211.GA27889@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 3:51 PM, Jan Seiffert
-<kaffeemonster@googlemail.com> wrote:
-> The weekend was cold and windy, so i wrote a bpf jit for the Alpha architecture.
+On 04/02/2012 03:32 PM, Borislav Petkov wrote:
+> On Mon, Apr 02, 2012 at 12:45:09PM -0500, Larry Finger wrote:
+>> The current situation is fine with me. Any user with an embedded
+>> system can save a lot of memory by setting CONFIG_RTLWIFI_DEBUG to
+>> n. If a normal distro chooses to do that, then when some user of
+>> that distro reports a problem and is unable to run with the module
+>> parameter "debug=X", I get to say "Sorry, I cannot help you." :)
+>>
+>> Of course, if you want to go through the source and convert every
+>> instance of "RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ...)" to the
+>> equivalent "pr_err(...), then I would probably sign off on it.
 >
-> Signed-off-by: Jan Seiffert <kaffeemonster@googlemail.com>
+> I see. Well, I suppose when the driver matures, you're probably going
+> to remove most of the debugging code yourself because you won't need it
+> anymore and turn important printk statements into pr_err or pr_info or
+> whatever.
 >
-> ---
+> However, the way it is default y now, people who do 'yes "" | make
+> oldconfig' will be surprised to see a whole lot of debugging output
+> spewed from the wireless driver upon next reboot, and I don't think you
+> want that.
 >
-> Patch is against net-next and needs Patch 1 of my "Fix negative offsets" Series
-> (to get bpf_internal_load_pointer_neg_helper)
->
-> The Problem is: i don't have any Alpha machine nor do i really have any clue about
-> the arch.
-> So this is only compile tested.
-> I could really need some Alpha asm guru to give some advice and review this.
-> Are the calls done right, are the asm load helper ok, all the conditional and
-> sign handling is a little brittle in my mind, etc.
+> I dunno, maybe CONFIG_DYNAMIC_DEBUG could be of help. There's also a
+> howto:<Documentation/dynamic-debug-howto.txt>
 
-Very cool. I'll try to find some time soon to test this.
+Users will see nothing more than before!
 
-Thanks a lot!
-Matt
+Before CONFIG_RTLWIFI_DEBUG was allowed to be set, the driver always compiled in 
+the debug code, but only those messages with the DBG_EMERG code were actually 
+output. With the parameter set to Y, nothing changed. If the module is loaded 
+with the "debug=X" option, where X is greater than 0, then other messages will 
+be seen. That dynamic setting of the level is enough.
+
+The only change when the configuration parameter is set to N is that the entire 
+debug setup compiles away. The driver is a lot smaller, but there is no debugging.
+
+Larry
