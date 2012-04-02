@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab2DBQqo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 12:46:44 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55897 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2DBQqn convert rfc822-to-8bit (ORCPT
+	id S1753135Ab2DBQsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 12:48:33 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:18296 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab2DBQsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 12:46:43 -0400
+	Mon, 2 Apr 2012 12:48:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6668"; a="178093809"
+Message-ID: <4F79D85F.4020909@codeaurora.org>
+Date: Mon, 02 Apr 2012 09:48:31 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1332775433.22830.7.camel@ayu>
-References: <CA+55aFyR2TXcKdzXontH8B4Reu40bdY_APhuUJeUxm6D-OuQkg@mail.gmail.com>
- <87r4wpx7lr.fsf@silenus.orebokech.com> <1332775433.22830.7.camel@ayu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 2 Apr 2012 09:46:21 -0700
-X-Google-Sender-Auth: V9auLxqU-clkN6TgIT6g9WI_sF8
-Message-ID: <CA+55aFy_=-8LsSKiDhnVbOamiHJ3R2E5-USiHS4izQTbvCXCrA@mail.gmail.com>
-Subject: Re: Linux 3.3 release
-To: Calvin Walton <calvin.walton@kepstin.ca>
-Cc: Romain Francoise <romain@orebokech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Russell King <linux@arm.linux.org.uk>, Mike Turquette <mturquette@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] clkdev: Implement managed clk_get()
+References: <1333279960-8497-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1333279960-8497-2-git-send-email-broonie@opensource.wolfsonmicro.com> <4F787392.5040308@codeaurora.org> <20120401153450.GC8971@opensource.wolfsonmicro.com>
+In-Reply-To: <20120401153450.GC8971@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 8:23 AM, Calvin Walton <calvin.walton@kepstin.ca> wrote:
-> On Mon, 2012-03-19 at 10:28 +0100, Romain Francoise wrote:
->> There seems to be a regression in the final release compared to -rc7,
->> specifically this commit:
->>
->> > Matthew Garrett (1):
->> >       PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
->>
->> causes an early kernel panic on my machine (Intel DP67BG). Reverting the
->> change fixes it. Unfortunately it crashes before setting up the video mode
->> so I don't have the full stack trace, but RIP points to
->> pcie_aspm_init_link_state().
->>
->> When the machine boots successfully, dmesg contains the following related
->> to ASPM:
->>
->> [    0.382384] ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
->> [    0.433016] pci 0000:06:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
+On 04/01/12 08:34, Mark Brown wrote:
+> On Sun, Apr 01, 2012 at 08:26:10AM -0700, Stephen Boyd wrote:
+>> But why is this part of clkdev.c? devm_clk_get() should work regardless
+>> of the implementation of clk_get() so can we put it into some other file
+>> that is compiled if HAVE_CLK=y so everyone benefits from this and not
+>> just users who select CLKDEV_LOOKUP?
+> Mostly just because clk_get() is part of clkdev.c and I didn't feel like
+> creating a new file, though also because I really hope that we're going
+> to be moving away from open coding clock framework things so that we can
+> start to push clock API usage into non-SoC code.  Things like adding new
+> clocks are going to be a part of that.
 >
-> This commit is also breaking boot on one of my boxes; it's causing the
-> pata_jmicron driver to fail to detect my IDE boot drive. This was
-> reported in this thread as well:
-> https://lkml.org/lkml/2012/3/22/6
->
-> Apparently, using the 'pcie_aspm=force' may work around the issue, from
-> some reports that I've seen when searching around. Haven't tried it
-> myself, yet.
+> To put it another way, why would a platform want to avoid clkdev?
 
-(Coming back to this thread late)
+I hope we get a better clk_get() implementation with the unified struct
+clk. Don't get me wrong, clkdev is a great improvement over open coding
+clock framework stuff in each platform. But clkdev is really just
+another platform specific implementation that most platforms decide to
+use. Each platform has to select the option and it breaks if two
+platforms implement __clk_get()/__clk_put() in conflicting ways. Ideally
+the unified struct clk code guts clkdev and uses the core parts of it
+for its own clk_get() implementation.
 
-This issue should be fixed by commit c9651e70ad0a ("ASPM: Fix pcie
-devices with non-pcie children") in mainline, and it's in the stable
-queue too.
+Sticking devm_clk_get() into clkdev.c is simple, no new file, smaller
+diff. Great. But linking it to clkdev doesn't sound much better when
+we're trying to get rid of platform specific code and this code is
+entirely platform independent.
 
-                      Linus
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
