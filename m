@@ -1,37 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab2DBDJt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 23:09:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:47013 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab2DBDJs (ORCPT
+	id S1754625Ab2DBDcB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 23:32:01 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:57543 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754259Ab2DBDcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 23:09:48 -0400
-Date: Sun, 01 Apr 2012 23:07:04 -0400 (EDT)
-Message-Id: <20120401.230704.1907135693272001517.davem@davemloft.net>
-To: eldad@fogrefinery.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] net/ipv6/sit.c: Checkpatch cleanup
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1333302548-9187-1-git-send-email-eldad@fogrefinery.com>
-References: <1333302548-9187-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 1 Apr 2012 23:32:00 -0400
+Message-ID: <4F791D69.9080002@st.com>
+Date: Mon, 2 Apr 2012 09:00:49 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: pinctrl: Query regarding SPEAr patches.
+References: <4F755350.4070000@st.com> <CACRpkdZjRWxfvt8=9rVr3ojtszf0hWE2wECuNKnA0S3g4M1hrw@mail.gmail.com>
+In-Reply-To: <CACRpkdZjRWxfvt8=9rVr3ojtszf0hWE2wECuNKnA0S3g4M1hrw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 01 Apr 2012 20:07:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eldad Zack <eldad@fogrefinery.com>
-Date: Sun,  1 Apr 2012 19:49:01 +0200
+On 4/2/2012 12:22 AM, Linus Walleij wrote:
+> Sure, no problem. How many million lines is it? 
 
-> sit.c:118: ERROR: "foo * bar" should be "foo *bar"
-> sit.c:694: ERROR: "(foo*)" should be "(foo *)"
-> sit.c:724: ERROR: "(foo*)" should be "(foo *)"
-> 
-> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Actually it is in billions :) :)
 
-Applied.
+-- 
+viresh
