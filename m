@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab2DBL4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:45 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48198 "EHLO
+	id S1754478Ab2DBL4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:43 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48201 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab2DBLzS (ORCPT
+	with ESMTP id S1752859Ab2DBLzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:18 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
         Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: [PATCH 51/69] TTY: 68328serial, remove serial_state and friends
-Date: Mon,  2 Apr 2012 13:54:35 +0200
-Message-Id: <1333367693-3244-52-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 52/69] TTY: 68328serial, remove unused stuff from m68k_serial
+Date: Mon,  2 Apr 2012 13:54:36 +0200
+Message-Id: <1333367693-3244-53-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,298 +21,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-serial_state in 68328serial.h is a duplicated structure. One is
-defined in linux/serial.h. So let us use that instead. And since the
-serial flags are identical, use ones from there too.
+Not everything from struct m68k_serial is really used. So remove
+unused or only-set members of that structure. Next step is to move it
+to 68328serial.c and remove 68328serial.h completely.
+
+This change also takes status_handle and batten_down_hatches away
+since they use break_abort but do nothing.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: linux-m68k@lists.linux-m68k.org
 ---
- drivers/tty/serial/68328serial.c |   55 +++++++++++----------------
- drivers/tty/serial/68328serial.h |   76 --------------------------------------
- 2 files changed, 22 insertions(+), 109 deletions(-)
+ drivers/tty/serial/68328serial.c |   36 ++++--------------------------------
+ drivers/tty/serial/68328serial.h |   16 ----------------
+ 2 files changed, 4 insertions(+), 48 deletions(-)
 
 diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
-index 5ce7825..bf5f811 100644
+index bf5f811..c1cd214 100644
 --- a/drivers/tty/serial/68328serial.c
 +++ b/drivers/tty/serial/68328serial.c
-@@ -17,6 +17,7 @@
- #include <asm/dbg.h>
- #include <linux/module.h>
- #include <linux/errno.h>
-+#include <linux/serial.h>
- #include <linux/signal.h>
- #include <linux/sched.h>
- #include <linux/timer.h>
-@@ -79,18 +80,6 @@ struct m68k_serial *m68k_consinfo = 0;
+@@ -213,25 +213,6 @@ static void rs_start(struct tty_struct *tty)
+ 	local_irq_restore(flags);
+ }
  
- struct tty_driver *serial_driver;
- 
--/* number of characters left in xmit buffer before we ask for more */
--#define WAKEUP_CHARS 256
--
--/* Debugging... DEBUG_INTR is bad to use when one of the zs
-- * lines is your console ;(
+-/* Drop into either the boot monitor or kadb upon receiving a break
+- * from keyboard/console input.
 - */
--#undef SERIAL_DEBUG_INTR
--#undef SERIAL_DEBUG_OPEN
--#undef SERIAL_DEBUG_FLOW
+-static void batten_down_hatches(void)
+-{
+-	/* Drop into the debugger */
+-}
 -
--#define RS_ISR_PASS_LIMIT 256
+-static void status_handle(struct m68k_serial *info, unsigned short status)
+-{
+-	/* If this is console input and this is a
+-	 * 'break asserted' status change interrupt
+-	 * see if we can drop into the debugger
+-	 */
+-	if((status & URX_BREAK) && info->break_abort)
+-		batten_down_hatches();
+-	return;
+-}
 -
- static void change_speed(struct m68k_serial *info);
- 
- /*
-@@ -363,7 +352,7 @@ static int startup(struct m68k_serial * info)
- 	m68328_uart *uart = &uart_addr[info->line];
- 	unsigned long flags;
+ static void receive_chars(struct m68k_serial *info, unsigned short rx)
+ {
+ 	struct tty_struct *tty = info->tty;
+@@ -248,7 +229,6 @@ static void receive_chars(struct m68k_serial *info, unsigned short rx)
  	
--	if (info->flags & S_INITIALIZED)
-+	if (info->flags & ASYNC_INITIALIZED)
- 		return 0;
+ 		if(info->is_cons) {
+ 			if(URX_BREAK & rx) { /* whee, break received */
+-				status_handle(info, rx);
+ 				return;
+ #ifdef CONFIG_MAGIC_SYSRQ
+ 			} else if (ch == 0x10) { /* ^P */
+@@ -269,16 +249,13 @@ static void receive_chars(struct m68k_serial *info, unsigned short rx)
+ 		
+ 		flag = TTY_NORMAL;
  
- 	if (!info->xmit_buf) {
-@@ -404,7 +393,7 @@ static int startup(struct m68k_serial * info)
- 
- 	change_speed(info);
- 
--	info->flags |= S_INITIALIZED;
-+	info->flags |= ASYNC_INITIALIZED;
- 	local_irq_restore(flags);
- 	return 0;
- }
-@@ -419,7 +408,7 @@ static void shutdown(struct m68k_serial * info)
- 	unsigned long	flags;
- 
- 	uart->ustcnt = 0; /* All off! */
--	if (!(info->flags & S_INITIALIZED))
-+	if (!(info->flags & ASYNC_INITIALIZED))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -432,7 +421,7 @@ static void shutdown(struct m68k_serial * info)
- 	if (info->tty)
- 		set_bit(TTY_IO_ERROR, &info->tty->flags);
- 	
--	info->flags &= ~S_INITIALIZED;
-+	info->flags &= ~ASYNC_INITIALIZED;
- 	local_irq_restore(flags);
- }
- 
-@@ -835,11 +824,11 @@ static int set_serial_info(struct m68k_serial * info,
- 		if ((new_serial.baud_base != info->baud_base) ||
- 		    (new_serial.type != info->type) ||
- 		    (new_serial.close_delay != info->close_delay) ||
--		    ((new_serial.flags & ~S_USR_MASK) !=
--		     (info->flags & ~S_USR_MASK)))
-+		    ((new_serial.flags & ~ASYNC_USR_MASK) !=
-+		     (info->flags & ~ASYNC_USR_MASK)))
- 			return -EPERM;
--		info->flags = ((info->flags & ~S_USR_MASK) |
--			       (new_serial.flags & S_USR_MASK));
-+		info->flags = ((info->flags & ~ASYNC_USR_MASK) |
-+			       (new_serial.flags & ASYNC_USR_MASK));
- 		info->custom_divisor = new_serial.custom_divisor;
- 		goto check_and_exit;
- 	}
-@@ -853,8 +842,8 @@ static int set_serial_info(struct m68k_serial * info,
+-		if(rx & URX_PARITY_ERROR) {
++		if (rx & URX_PARITY_ERROR)
+ 			flag = TTY_PARITY;
+-			status_handle(info, rx);
+-		} else if(rx & URX_OVRUN) {
++		else if (rx & URX_OVRUN)
+ 			flag = TTY_OVERRUN;
+-			status_handle(info, rx);
+-		} else if(rx & URX_FRAME_ERROR) {
++		else if (rx & URX_FRAME_ERROR)
+ 			flag = TTY_FRAME;
+-			status_handle(info, rx);
+-		}
++
+ 		tty_insert_flip_char(tty, ch, flag);
+ #ifndef CONFIG_XCOPILOT_BUGS
+ 	} while((rx = uart->urx.w) & URX_DATA_READY);
+@@ -369,7 +346,6 @@ static int startup(struct m68k_serial * info)
  	 */
  
- 	info->baud_base = new_serial.baud_base;
--	info->flags = ((info->flags & ~S_FLAGS) |
--			(new_serial.flags & S_FLAGS));
-+	info->flags = ((info->flags & ~ASYNC_FLAGS) |
-+			(new_serial.flags & ASYNC_FLAGS));
- 	info->type = new_serial.type;
- 	info->close_delay = new_serial.close_delay;
- 	info->closing_wait = new_serial.closing_wait;
-@@ -1022,13 +1011,13 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 		local_irq_restore(flags);
- 		return;
- 	}
--	info->flags |= S_CLOSING;
-+	info->flags |= ASYNC_CLOSING;
- 	/*
- 	 * Now we wait for the transmit buffer to clear; and we notify 
- 	 * the line discipline to only process XON/XOFF characters.
- 	 */
- 	tty->closing = 1;
--	if (info->closing_wait != S_CLOSING_WAIT_NONE)
-+	if (info->closing_wait != ASYNC_CLOSING_WAIT_NONE)
- 		tty_wait_until_sent(tty, info->closing_wait);
- 	/*
- 	 * At this point we stop accepting input.  To do this, we
-@@ -1064,7 +1053,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 		}
- 		wake_up_interruptible(&info->open_wait);
- 	}
--	info->flags &= ~(S_NORMAL_ACTIVE|S_CLOSING);
-+	info->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
- 	wake_up_interruptible(&info->close_wait);
- 	local_irq_restore(flags);
- }
-@@ -1083,7 +1072,7 @@ void rs_hangup(struct tty_struct *tty)
- 	shutdown(info);
- 	info->event = 0;
- 	info->count = 0;
--	info->flags &= ~S_NORMAL_ACTIVE;
-+	info->flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	uart->ustcnt = USTCNT_UEN;
+-	info->xmit_fifo_size = 1;
+ 	uart->ustcnt = USTCNT_UEN | USTCNT_RXEN | USTCNT_TXEN;
+ 	(void)uart->urx.w;
+ 
+@@ -499,7 +475,6 @@ static void change_speed(struct m68k_serial *info)
+                 i = (i & ~CBAUDEX) + B38400;
+         }
+ 
+-	info->baud = baud_table[i];
+ 	uart->ubaud = PUT_FIELD(UBAUD_DIVIDE,    hw_baud_table[i].divisor) | 
+ 		PUT_FIELD(UBAUD_PRESCALER, hw_baud_table[i].prescale);
+ 
+@@ -1034,7 +1009,6 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 		
+ 	tty_ldisc_flush(tty);
+ 	tty->closing = 0;
+-	info->event = 0;
  	info->tty = NULL;
- 	wake_up_interruptible(&info->open_wait);
- }
-@@ -1104,10 +1093,10 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
- 	 * If the device is in the middle of being closed, then block
- 	 * until it's done, and then try again.
- 	 */
--	if (info->flags & S_CLOSING) {
-+	if (info->flags & ASYNC_CLOSING) {
- 		interruptible_sleep_on(&info->close_wait);
- #ifdef SERIAL_DO_RESTART
--		if (info->flags & S_HUP_NOTIFY)
-+		if (info->flags & ASYNC_HUP_NOTIFY)
- 			return -EAGAIN;
- 		else
- 			return -ERESTARTSYS;
-@@ -1122,7 +1111,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
- 	 */
- 	if ((filp->f_flags & O_NONBLOCK) ||
- 	    (tty->flags & (1 << TTY_IO_ERROR))) {
--		info->flags |= S_NORMAL_ACTIVE;
-+		info->flags |= ASYNC_NORMAL_ACTIVE;
- 		return 0;
- 	}
- 
-@@ -1147,9 +1136,9 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
- 		local_irq_enable();
- 		current->state = TASK_INTERRUPTIBLE;
- 		if (tty_hung_up_p(filp) ||
--		    !(info->flags & S_INITIALIZED)) {
-+		    !(info->flags & ASYNC_INITIALIZED)) {
- #ifdef SERIAL_DO_RESTART
--			if (info->flags & S_HUP_NOTIFY)
-+			if (info->flags & ASYNC_HUP_NOTIFY)
- 				retval = -EAGAIN;
- 			else
- 				retval = -ERESTARTSYS;	
-@@ -1158,7 +1147,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
- #endif
- 			break;
- 		}
--		if (!(info->flags & S_CLOSING) && do_clocal)
-+		if (!(info->flags & ASYNC_CLOSING) && do_clocal)
- 			break;
-                 if (signal_pending(current)) {
- 			retval = -ERESTARTSYS;
-@@ -1176,7 +1165,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
- 
- 	if (retval)
- 		return retval;
--	info->flags |= S_NORMAL_ACTIVE;
-+	info->flags |= ASYNC_NORMAL_ACTIVE;
- 	return 0;
- }	
- 
+ #warning "This is not and has never been valid so fix it"	
+ #if 0
+@@ -1070,7 +1044,6 @@ void rs_hangup(struct tty_struct *tty)
+ 	
+ 	rs_flush_buffer(tty);
+ 	shutdown(info);
+-	info->event = 0;
+ 	info->count = 0;
+ 	info->flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	info->tty = NULL;
+@@ -1270,7 +1243,6 @@ rs68328_init(void)
+ 	    info->close_delay = 50;
+ 	    info->closing_wait = 3000;
+ 	    info->x_char = 0;
+-	    info->event = 0;
+ 	    info->count = 0;
+ 	    info->blocked_open = 0;
+ 	    init_waitqueue_head(&info->open_wait);
 diff --git a/drivers/tty/serial/68328serial.h b/drivers/tty/serial/68328serial.h
-index 3d2faab..a804ea5 100644
+index a804ea5..971ead5 100644
 --- a/drivers/tty/serial/68328serial.h
 +++ b/drivers/tty/serial/68328serial.h
-@@ -11,69 +11,6 @@
- #ifndef _MC683XX_SERIAL_H
- #define _MC683XX_SERIAL_H
- 
--
--struct serial_struct {
--	int	type;
--	int	line;
--	int	port;
--	int	irq;
--	int	flags;
--	int	xmit_fifo_size;
--	int	custom_divisor;
--	int	baud_base;
--	unsigned short	close_delay;
--	char	reserved_char[2];
--	int	hub6;  /* FIXME: We don't have AT&T Hub6 boards! */
--	unsigned short	closing_wait; /* time to wait before closing */
--	unsigned short	closing_wait2; /* no longer used... */
--	int	reserved[4];
--};
--
--/*
-- * For the close wait times, 0 means wait forever for serial port to
-- * flush its output.  65535 means don't wait at all.
-- */
--#define S_CLOSING_WAIT_INF	0
--#define S_CLOSING_WAIT_NONE	65535
--
--/*
-- * Definitions for S_struct (and serial_struct) flags field
-- */
--#define S_HUP_NOTIFY 0x0001 /* Notify getty on hangups and closes 
--				   on the callout port */
--#define S_FOURPORT  0x0002	/* Set OU1, OUT2 per AST Fourport settings */
--#define S_SAK	0x0004	/* Secure Attention Key (Orange book) */
--#define S_SPLIT_TERMIOS 0x0008 /* Separate termios for dialin/callout */
--
--#define S_SPD_MASK	0x0030
--#define S_SPD_HI	0x0010	/* Use 56000 instead of 38400 bps */
--
--#define S_SPD_VHI	0x0020  /* Use 115200 instead of 38400 bps */
--#define S_SPD_CUST	0x0030  /* Use user-specified divisor */
--
--#define S_SKIP_TEST	0x0040 /* Skip UART test during autoconfiguration */
--#define S_AUTO_IRQ  0x0080 /* Do automatic IRQ during autoconfiguration */
--#define S_SESSION_LOCKOUT 0x0100 /* Lock out cua opens based on session */
--#define S_PGRP_LOCKOUT    0x0200 /* Lock out cua opens based on pgrp */
--#define S_CALLOUT_NOHUP   0x0400 /* Don't do hangups for cua device */
--
--#define S_FLAGS	0x0FFF	/* Possible legal S flags */
--#define S_USR_MASK 0x0430	/* Legal flags that non-privileged
--				 * users can set or reset */
--
--/* Internal flags used only by kernel/chr_drv/serial.c */
--#define S_INITIALIZED	0x80000000 /* Serial port was initialized */
--#define S_CALLOUT_ACTIVE	0x40000000 /* Call out device is active */
--#define S_NORMAL_ACTIVE	0x20000000 /* Normal device is active */
--#define S_BOOT_AUTOCONF	0x10000000 /* Autoconfigure port on bootup */
--#define S_CLOSING		0x08000000 /* Serial port is closing */
--#define S_CTS_FLOW		0x04000000 /* Do CTS flow control */
--#define S_CHECK_CD		0x02000000 /* i.e., CLOCAL */
--
--/* Software state per channel */
--
--#ifdef __KERNEL__
--
- /*
-  * I believe this is the optimal setting that reduces the number of interrupts.
-  * At high speeds the output might become a little "bursted" (use USTCNT_TXHE
-@@ -162,25 +99,12 @@ struct m68k_serial {
- 	wait_queue_head_t	close_wait;
- };
- 
--
- #define SERIAL_MAGIC 0x5301
- 
--/*
-- * The size of the serial xmit buffer is 1 page, or 4096 bytes
-- */
--#define SERIAL_XMIT_SIZE 4096
--
--/*
-- * Events are used to schedule things to happen at timer-interrupt
-- * time, instead of at rs interrupt time.
-- */
--#define RS_EVENT_WRITE_WAKEUP	0
--
- /* 
-  * Define the number of ports supported and their irqs.
+@@ -60,16 +60,7 @@
   */
- #define NR_PORTS 1
- #define UART_IRQ_DEFNS {UART_IRQ_NUM}
  
--#endif /* __KERNEL__ */
- #endif /* !(_MC683XX_SERIAL_H) */
+ struct m68k_serial {
+-	char soft_carrier;  /* Use soft carrier on this channel */
+-	char break_abort;   /* Is serial console in, so process brk/abrt */
+ 	char is_cons;       /* Is this our console. */
+-
+-	/* We need to know the current clock divisor
+-	 * to read the bps rate the chip has currently
+-	 * loaded.
+-	 */
+-	unsigned char clk_divisor;  /* May be 1, 16, 32, or 64 */
+-	int baud;
+ 	int			magic;
+ 	int			baud_base;
+ 	int			port;
+@@ -77,17 +68,10 @@ struct m68k_serial {
+ 	int			flags; 		/* defined in tty.h */
+ 	int			type; 		/* UART type */
+ 	struct tty_struct 	*tty;
+-	int			read_status_mask;
+-	int			ignore_status_mask;
+-	int			timeout;
+-	int			xmit_fifo_size;
+ 	int			custom_divisor;
+ 	int			x_char;	/* xon/xoff character */
+ 	int			close_delay;
+ 	unsigned short		closing_wait;
+-	unsigned short		closing_wait2;
+-	unsigned long		event;
+-	unsigned long		last_active;
+ 	int			line;
+ 	int			count;	    /* # of fd on device */
+ 	int			blocked_open; /* # of blocked opens */
 -- 
 1.7.9.2
 
