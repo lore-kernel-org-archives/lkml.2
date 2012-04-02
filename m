@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab2DBJDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:03:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28771 "EHLO mga02.intel.com"
+	id S1751872Ab2DBJGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:06:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4790 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab2DBJDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:03:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="127715401"
-Date: Mon, 2 Apr 2012 12:03:46 +0300
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: Alexander Holler <holler@ahsoftware.de>, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: Re: bluetooth: fix deadlock on device reset and power down
-Message-ID: <20120402090337.GB29687@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	David Herrmann <dh.herrmann@googlemail.com>,
-	Alexander Holler <holler@ahsoftware.de>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-	"Gustavo F. Padovan" <padovan@profusion.mobi>
-References: <4F77055A.2070502@ahsoftware.de>
- <20120402065525.GA29687@aemeltch-MOBL1>
- <4F796377.2050008@ahsoftware.de>
- <CANq1E4RCQvQX6deGOTjdhbEkAahZD9MmAmfgz-Y-+wDfRtx0dw@mail.gmail.com>
+	id S1751354Ab2DBJGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 05:06:44 -0400
+Message-ID: <4F796C18.2040209@redhat.com>
+Date: Mon, 02 Apr 2012 12:06:32 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANq1E4RCQvQX6deGOTjdhbEkAahZD9MmAmfgz-Y-+wDfRtx0dw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>  <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>  <4F6EEEC1.4030608@redhat.com>  <20120326213809.GA29788@bloggs.ozlabs.ibm.com>  <4F7191E8.7020804@redhat.com>  <20120330120107.GA28503@bloggs.ozlabs.ibm.com>  <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop>
+In-Reply-To: <1333314138.30734.17.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On 04/02/2012 12:02 AM, Benjamin Herrenschmidt wrote:
+> On Sun, 2012-04-01 at 15:38 +0300, Avi Kivity wrote:
+> > On 03/30/2012 03:01 PM, Paul Mackerras wrote:
+> > > I just noticed that the branch you asked Linus to pull includes none
+> > > of the patches that Alex sent you in the last batch, in the email with
+> > > subject "[PULL 00/56] ppc patch queue 2012-03-15" sent on March 15,
+> > > where he asked you to pull git://github.com/agraf/linux-2.6.git
+> > > for-upstream.
+> > >
+> > > What happened?  Did they get lost in the re-signing, or is there some
+> > > reason you thought they shouldn't go in?
+> > 
+> > That pull request was send three days before the merge window opened;
+> > patches are supposed to cook for a while in -next before being merged,
+> > especially large trees like that one.
+>
+> These are all powerpc specific patches that have been cooking in Alex
+> tree for a while and elsewhere before that. They almost only affect
+> arch/powerpc/kvm, and as such don't really need a lot of integration
+> testing in -next. A bit for sure but not necessarily monthes.
+>
+> The current process is such that it takes absolutely forever for our
+> patches to get in, which is a major PITA for something in such state of
+> active development.
 
-On Mon, Apr 02, 2012 at 10:44:43AM +0200, David Herrmann wrote:
-> Hi Andrei and Alexander
-> 
-> On Mon, Apr 2, 2012 at 10:29 AM, Alexander Holler <holler@ahsoftware.de> wrote:
-> > Am 02.04.2012 08:55, schrieb Andrei Emeltchenko:
-> >> Hi Alexander,
-> >>
-> >> On Sat, Mar 31, 2012 at 03:23:38PM +0200, Alexander Holler wrote:
-> >>> I've experienced a deadlock on shutdown using kernel 3.3 and tracked
-> >>> it down. Because I'm not very familiar with the bluetooth stack I'm
-> >>> not sure if the below patch is correct, but it fixed the problem
-> >>> here.
-> >>
-> >> Could you please attach deadlock dump?
-> >>
-> >>>
-> >>> Commit 09fd0de5bd8f8ef3317e5365f92f1a13dcd89aa9 introduced a deadlock:
-> >>>
-> >>> bluetoothd calls ioctl HCIDEVDOWN
-> >>>     hci_sock_ioctl()
-> >>>         hci_dev_close()
-> >>>             hci_dev_do_close()
-> >>>                 hci_dev_lock(hdev);
-> >>>                 inquiry_cache_flush();
-> >>>                 hci_conn_hash_flush();
-> >>>                     hci_conn_del()
-> >>>                         cancel_delayed_work_sync()
-> >>>                             hci_conn_timeout()
-> >>>                                 hci_dev_lock(hdev); /* DEADLOCK */
-> >>
-> >> I am actually not sure that hci_conn_timeout locks hdev. Why do you think
-> >> so?
-> >
-> > By reading the source, printk and suffering through the deadlock. It's
-> > especially painfull when using a bt-keyboard and systemd, because
-> > systemd tries 4 times (~ some minutes) to kill bluetoothd before it
-> > marks the service as failed and finally continues to shut down.
-> 
-> hci_conn_timeout does lock the device. See the source. But the problem
+If the patches were posted two weeks earlier, they would have gone in.
 
-I think you need to check commit e72acc13c770a82b4ce4a07e9716f29320eae0f8
+> Why don't we have Alex tree go straight to -next like I do with Kumar
+> for example ? That way I don't need to have his branch sit in my tree
+> for weeks before I push it out to Linus.
 
-commit e72acc13c770a82b4ce4a07e9716f29320eae0f8
-Author: Andre Guedes <andre.guedes@openbossa.org>
-Date:   Fri Jan 27 19:42:03 2012 -0300
+There isn't a lot of common kvm code, but what there is needs to be
+synchronized.
 
-    Bluetooth: Remove unneeded locking
-    
-    We don't need locking hdev in hci_conn_timeout() since it doesn't
-    access any hdev's shared resources, it basically queues HCI commands.
-
-Best regards 
-Andrei Emeltchenko 
+-- 
+error compiling committee.c: too many arguments to function
 
