@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab2DBJCo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:02:44 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:55058 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2DBJCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:02:43 -0400
-Date: Mon, 02 Apr 2012 05:00:42 -0400 (EDT)
-From: David Airlie <airlied@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Anton Vorontsov <cbou@mail.ru>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Woodhouse <dwmw2@infradead.org>, dri-devel@lists.freedesktop.org,
-        David@freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: broken nouveau dependency on power supply
-Message-ID: <6373b480-2185-4651-b12d-8498c806ff69@zmail16.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1333338803.30734.37.camel@pasglop>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1751826Ab2DBJDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:03:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28771 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab2DBJDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 05:03:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="127715401"
+Date: Mon, 2 Apr 2012 12:03:46 +0300
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: Alexander Holler <holler@ahsoftware.de>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: Re: bluetooth: fix deadlock on device reset and power down
+Message-ID: <20120402090337.GB29687@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	David Herrmann <dh.herrmann@googlemail.com>,
+	Alexander Holler <holler@ahsoftware.de>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+	"Gustavo F. Padovan" <padovan@profusion.mobi>
+References: <4F77055A.2070502@ahsoftware.de>
+ <20120402065525.GA29687@aemeltch-MOBL1>
+ <4F796377.2050008@ahsoftware.de>
+ <CANq1E4RCQvQX6deGOTjdhbEkAahZD9MmAmfgz-Y-+wDfRtx0dw@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.36.7.3]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANq1E4RCQvQX6deGOTjdhbEkAahZD9MmAmfgz-Y-+wDfRtx0dw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi guys,
 
+On Mon, Apr 02, 2012 at 10:44:43AM +0200, David Herrmann wrote:
+> Hi Andrei and Alexander
 > 
-> Ok, not that trivial...
+> On Mon, Apr 2, 2012 at 10:29 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+> > Am 02.04.2012 08:55, schrieb Andrei Emeltchenko:
+> >> Hi Alexander,
+> >>
+> >> On Sat, Mar 31, 2012 at 03:23:38PM +0200, Alexander Holler wrote:
+> >>> I've experienced a deadlock on shutdown using kernel 3.3 and tracked
+> >>> it down. Because I'm not very familiar with the bluetooth stack I'm
+> >>> not sure if the below patch is correct, but it fixed the problem
+> >>> here.
+> >>
+> >> Could you please attach deadlock dump?
+> >>
+> >>>
+> >>> Commit 09fd0de5bd8f8ef3317e5365f92f1a13dcd89aa9 introduced a deadlock:
+> >>>
+> >>> bluetoothd calls ioctl HCIDEVDOWN
+> >>>     hci_sock_ioctl()
+> >>>         hci_dev_close()
+> >>>             hci_dev_do_close()
+> >>>                 hci_dev_lock(hdev);
+> >>>                 inquiry_cache_flush();
+> >>>                 hci_conn_hash_flush();
+> >>>                     hci_conn_del()
+> >>>                         cancel_delayed_work_sync()
+> >>>                             hci_conn_timeout()
+> >>>                                 hci_dev_lock(hdev); /* DEADLOCK */
+> >>
+> >> I am actually not sure that hci_conn_timeout locks hdev. Why do you think
+> >> so?
+> >
+> > By reading the source, printk and suffering through the deadlock. It's
+> > especially painfull when using a bt-keyboard and systemd, because
+> > systemd tries 4 times (~ some minutes) to kill bluetoothd before it
+> > marks the service as failed and finally continues to shut down.
 > 
-> The problem is more like POWER_SUPPLY should be a bool, not a
-> tristate.
-> 
-> If you think about it: you don't want things like nouveau to depend
-> on a
-> random subsystem like that, people will never get it. In fact,
-> POWER_SUPPLY provides empty inline stubs when not enabled, so that's
-> really designed to not have depends...
-> 
-> However that -cannot- work if POWER_SUPPLY is modular and the drivers
-> who use it are not. The only fixes here that make sense I can think
-> of
-> that don't also involve Kconfig horrors are:
-> 
->  - Ugly: in power_supply.h, use the extern variant if
-> 
-> 	defined(CONFIG_POWER_SUPPLY) ||
-> 	 (defined(CONFIG_POWER_SUPPLY_MODULE) && defined(MODULE))
-> 
-> IE. use the stub if power supply is a module and what is being built
-> is
-> built-in. Of course that's not only ugly, it somewhat sucks from a
-> user
-> perspective as the subsystem now exists but can't be used by some
-> drivers...
-> 
->  - Better: Just make the bloody thing a bool :-) The power supply
-> framework itself is small enough, just make it a boolean option and
-> avoid the problem entirely. The actual power supply sub drivers can
-> remain modular of course.
+> hci_conn_timeout does lock the device. See the source. But the problem
 
-We can just do select POWER_SUPPLY.
+I think you need to check commit e72acc13c770a82b4ce4a07e9716f29320eae0f8
 
-Yes it reduces the option range for some stupid corner case but really I don't care, removing features from the kernel that a driver depends on is just leading to insane state combination and QA problems.
+commit e72acc13c770a82b4ce4a07e9716f29320eae0f8
+Author: Andre Guedes <andre.guedes@openbossa.org>
+Date:   Fri Jan 27 19:42:03 2012 -0300
 
-Dave.
+    Bluetooth: Remove unneeded locking
+    
+    We don't need locking hdev in hci_conn_timeout() since it doesn't
+    access any hdev's shared resources, it basically queues HCI commands.
+
+Best regards 
+Andrei Emeltchenko 
+
