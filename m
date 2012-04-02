@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab2DBFxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 01:53:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39967 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab2DBFw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 01:52:59 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1333312727-11428-11-git-send-email-paul.gortmaker@windriver.com>
-References: <1333312727-11428-11-git-send-email-paul.gortmaker@windriver.com> <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 10/11] tile: fix multiple build failures from system.h dismantle
-Date: Mon, 02 Apr 2012 06:52:49 +0100
-Message-ID: <30198.1333345969@redhat.com>
+	id S1754080Ab2DBFxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 01:53:22 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8912 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab2DBFxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 01:53:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 01 Apr 2012 22:53:20 -0700
+From: Alok Chauhan <alokc@nvidia.com>
+To: <swarren@wwwdotorg.org>, <khali@linux-fr.org>, <ben-linux@fluff.org>,
+        <w.sang@pengutronix.de>, <swarren@nvidia.com>, <olof@lixom.net>,
+        <bones@secretlab.ca>, <omaplinuxkernel@gmail.com>,
+        <ccross@android.com>, <ldewangan@nvidia.com>,
+        <linux-tegra@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <dgreid@chromium.org>
+CC: <alokc@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] i2c: tegra: Add delay before reset the controller
+Date: Mon, 2 Apr 2012 11:23:02 +0530
+Message-ID: <1333345982-16595-1-git-send-email-alokc@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+NACK interrupt generated before I2C controller generates
+the STOP condition on bus. In Software, because of this
+reset of controller is happening before I2C controller could
+complete STOP condition. So wait for some time before resetting
+the controller so that STOP condition has delivered properly on bus.
 
-> Commit bd119c69239322caafdb64517a806037d0d0c70a
-> 
->     "Disintegrate asm/system.h for Tile"
-> 
-> created the asm/switch_to.h file, but did not add an include
-> of it to all its users.
-> 
-> Also, commit b4816afa3986704d1404fc48e931da5135820472
-> 
->         "Move the asm-generic/system.h xchg() implementation to asm-generic/cmpxchg.h"
-> 
-> introduced the concept of asm/cmpxchg.h but the tile arch
-> never got one.  Fork the cmpxchg content out of the asm/atomic.h
-> file to create one.
-> 
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Added delay of 2 clock period before reset the
+controller in case of NACK error.
 
-Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Alok Chauhan <alokc@nvidia.com>
+---
+Added the more descriptive commit message about issue in case
+of NACK error condition. Changed the comment in code also
+
+ drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index e978635..dfb850a8 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -516,6 +516,14 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+ 	if (likely(i2c_dev->msg_err == I2C_ERR_NONE))
+ 		return 0;
+ 
++	/*
++	 * NACK interrupt generated before I2C controller generates the STOP
++	 * condition on bus. So wait for some time before reset the controller
++	 * so that STOP condition has delivered properly on bus.
++	 */
++	if (i2c_dev->msg_err == I2C_ERR_NO_ACK)
++		udelay(DIV_ROUND_UP(2 * 1000000, i2c_dev->bus_clk_rate));
++
+ 	tegra_i2c_init(i2c_dev);
+ 	if (i2c_dev->msg_err == I2C_ERR_NO_ACK) {
+ 		if (msg->flags & I2C_M_IGNORE_NAK)
+-- 
+1.7.4.1
+
