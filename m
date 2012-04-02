@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab2DBGue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 02:50:34 -0400
+	id S1751413Ab2DBGub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 02:50:31 -0400
 Received: from denmail01-v4020.amcc.com ([192.195.68.30]:46617 "EHLO
 	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751323Ab2DBGuS (ORCPT
+	with ESMTP id S1751339Ab2DBGuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 02:50:18 -0400
+	Mon, 2 Apr 2012 02:50:20 -0400
 X-Greylist: delayed 618 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 02:50:18 EDT
 From: Tanmay Inamdar <tinamdar@apm.com>
 To: benh@kernel.crashing.org, jwboyer@gmail.com, grant.likely@secretlab.ca,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org
 Cc: Tanmay Inamdar <tinamdar@apm.com>
-Subject: [PATCH 2/5] powerpc: 40x: Add AHB, APB of_device_ids
-Date: Mon,  2 Apr 2012 12:09:04 +0530
-Message-Id: <1333348747-12713-2-git-send-email-tinamdar@apm.com>
+Subject: [PATCH 4/5] powerpc: config: 40x: Add 16650 UART support in klondike defconfig
+Date: Mon,  2 Apr 2012 12:09:06 +0530
+Message-Id: <1333348747-12713-4-git-send-email-tinamdar@apm.com>
 X-Mailer: git-send-email 1.6.1.rc3
-In-Reply-To: <1333348747-12713-1-git-send-email-tinamdar@apm.com>
+In-Reply-To: <1333348747-12713-3-git-send-email-tinamdar@apm.com>
 References: <1333348747-12713-1-git-send-email-tinamdar@apm.com>
+ <1333348747-12713-2-git-send-email-tinamdar@apm.com>
+ <1333348747-12713-3-git-send-email-tinamdar@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding of_device_id's for AHB and APB buses used in klondike (APM8018X) in
-platforms/40x/ppc40x_simple.c file
+Adding 16650 UART support in klondike_defconfig for APM8018X SOC
 
 Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
 ---
-:100644 100644 9761206... 7b518ed... M	arch/powerpc/platforms/40x/ppc40x_simple.c
- arch/powerpc/platforms/40x/ppc40x_simple.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+:100644 100644 c0d228d... c35c345... M	arch/powerpc/configs/40x/klondike_defconfig
+ arch/powerpc/configs/40x/klondike_defconfig |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/platforms/40x/ppc40x_simple.c b/arch/powerpc/platforms/40x/ppc40x_simple.c
-index 9761206..7b518ed 100644
---- a/arch/powerpc/platforms/40x/ppc40x_simple.c
-+++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
-@@ -29,6 +29,8 @@ static __initdata struct of_device_id ppc40x_of_bus[] = {
- 	{ .compatible = "ibm,plb4", },
- 	{ .compatible = "ibm,opb", },
- 	{ .compatible = "ibm,ebc", },
-+	{ .compatible = "apm,ahb", },
-+	{ .compatible = "apm,apb", },
- 	{ .compatible = "simple-bus", },
- 	{},
- };
+diff --git a/arch/powerpc/configs/40x/klondike_defconfig b/arch/powerpc/configs/40x/klondike_defconfig
+index c0d228d..c35c345 100644
+--- a/arch/powerpc/configs/40x/klondike_defconfig
++++ b/arch/powerpc/configs/40x/klondike_defconfig
+@@ -30,6 +30,12 @@ CONFIG_SCSI_SAS_ATTRS=y
+ # CONFIG_UNIX98_PTYS is not set
+ # CONFIG_LEGACY_PTYS is not set
+ # CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_8250_NR_UARTS=2
++CONFIG_SERIAL_8250_RUNTIME_UARTS=2
++CONFIG_SERIAL_8250_EXTENDED=y
++CONFIG_SERIAL_OF_PLATFORM=y
+ # CONFIG_HW_RANDOM is not set
+ # CONFIG_HWMON is not set
+ # CONFIG_USB_SUPPORT is not set
 -- 
 1.6.1.rc3
 
