@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab2DBKTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 06:19:37 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:15047 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab2DBKTf (ORCPT
+	id S1752492Ab2DBKTr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 06:19:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34627 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358Ab2DBKTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 06:19:35 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=129.33.192.96;
-From: Milton Miller <miltonm@bga.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartmann <greg@kroah.com>,
-        lkml <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 08/18] PCI, powerpc: Register busn_res for root buses
-Message-Id: <powerpc-pci-domains-by-busnumber-resend@mdm.bga.com>
-In-Reply-To: <1330472496.11728.31.camel@pasglop>
-References: <1330472496.11728.31.camel@pasglop>
- <1330395009-29260-1-git-send-email-yinghai@kernel.org>
- <1330395009-29260-9-git-send-email-yinghai@kernel.org>
- <CAErSpo4bw-V=SM+h5iP4nfv3HaAnHjwvNwu+4Oz8iyQcY_3gOQ@mail.gmail.com>
- <CAErSpo72_JnUkWXrzbNdbX9wiWZtQdX2tuNjEpYrSd+sGzxfzA@mail.gmail.com>
-Date: Mon, 02 Apr 2012 05:19:31 -0500
-X-Originating-IP: 129.33.192.96
-X-HeloNotChecked: Helo response was not checked before commands sent
+	Mon, 2 Apr 2012 06:19:36 -0400
+Message-ID: <1333361968.2802.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: Add support for tps62362 and tps62363 in
+ tps62360-regulator driver
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 02 Apr 2012 18:19:28 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+According to the datasheet[1], tps62360 is register compatible with tps62362.
+tps62361B is register compatible with tps62363.
+Thus this patch adds support for tps62362 and tps62363.
 
-[Apollogies if I left anyone off cc.  I am not subscribed and the archives
-go to great pains to hide the to and cc lists, and then truncate it for size]
-{fix a comma in cc}
+[1] http://www.ti.com/litv/pdf/slvsau9b
 
-On Tue Feb 28 2012 about 18:42:03 EST, Benjamin Herrenschmidt wrote:
-> On Tue, 2012-02-28 at 16:31 -0700, Bjorn Helgaas wrote:
-> > We may need mechanism to say "don't trust this info from the
-> > firmware," but we should be able to figure out a way that doesn't
-> > penalize platforms that do everything correctly. The current patch
-> > breaks these scenarios even when the platform firmware is 100%
-> > correct.
-> 
-> On the other hand, our firmwares tend not to be and the vast majority of
-> our platforms have separate bus number domains (In fact I'm not sure
-> whether we have one that actually splits bus numbers or not, maybe some
-> ancient Apple gear, I need to double check).
-> 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/Kconfig              |    4 ++--
+ drivers/regulator/tps62360-regulator.c |   30 ++++++++++++++++++++++--------
+ 2 files changed, 24 insertions(+), 10 deletions(-)
 
-In the POWER3 era we had several boxes that split the pci bus number
-space across domains and RTAS used the bus number to find the correct
-PHB.   This contineed to the first RS64 boxes.  By S80 and RS64-III
-it was obvious that we didn't have enough numbers to continue this
-ilusion and we added the presently used RTAS calls that take the pci
-domain as well as bus, device, and function numbers.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index ed37125..8fb5f81 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -268,11 +268,11 @@ config REGULATOR_TPS6105X
+ 	  audio amplifiers.
+ 
+ config REGULATOR_TPS62360
+-	tristate "TI TPS62360 Power Regulator"
++	tristate "TI TPS6236x Power Regulator"
+ 	depends on I2C
+ 	select REGMAP_I2C
+ 	help
+-	  This driver supports TPS62360 voltage regulator chip. This
++	  This driver supports TPS6236x voltage regulator chip. This
+ 	  regulator is meant for processor core supply. This chip is
+ 	  high-frequency synchronous step down dc-dc converter optimized
+ 	  for battery-powered portable applications.
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index b18b7ca..aa57632 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -1,7 +1,7 @@
+ /*
+  * tps62360.c -- TI tps62360
+  *
+- * Driver for processor core supply tps62360 and tps62361B
++ * Driver for processor core supply tps62360, tps62361B, tps62362 and tps62363.
+  *
+  * Copyright (c) 2012, NVIDIA Corporation.
+  *
+@@ -46,7 +46,7 @@
+ #define REG_RAMPCTRL		6
+ #define REG_CHIPID		8
+ 
+-enum chips {TPS62360, TPS62361};
++enum chips {TPS62360, TPS62361, TPS62362, TPS62363};
+ 
+ #define TPS62360_BASE_VOLTAGE	770
+ #define TPS62360_N_VOLTAGES	64
+@@ -296,14 +296,26 @@ static int __devinit tps62360_probe(struct i2c_client *client,
+ 	tps->vsel0_gpio = pdata->vsel0_gpio;
+ 	tps->vsel1_gpio = pdata->vsel1_gpio;
+ 	tps->dev = &client->dev;
+-	tps->voltage_base = (id->driver_data == TPS62360) ?
+-				TPS62360_BASE_VOLTAGE : TPS62361_BASE_VOLTAGE;
+-	tps->voltage_reg_mask = (id->driver_data == TPS62360) ? 0x3F : 0x7F;
++
++	switch (id->driver_data) {
++	case TPS62360:
++	case TPS62362:
++		tps->voltage_base = TPS62360_BASE_VOLTAGE;
++		tps->voltage_reg_mask = 0x3F;
++		tps->desc.n_voltages = TPS62360_N_VOLTAGES;
++		break;
++	case TPS62361:
++	case TPS62363:
++		tps->voltage_base = TPS62361_BASE_VOLTAGE;
++		tps->voltage_reg_mask = 0x7F;
++		tps->desc.n_voltages = TPS62361_N_VOLTAGES;
++		break;
++	default:
++		return -ENODEV;
++	}
+ 
+ 	tps->desc.name = id->name;
+ 	tps->desc.id = 0;
+-	tps->desc.n_voltages = (id->driver_data == TPS62360) ?
+-				TPS62360_N_VOLTAGES : TPS62361_N_VOLTAGES;
+ 	tps->desc.ops = &tps62360_dcdc_ops;
+ 	tps->desc.type = REGULATOR_VOLTAGE;
+ 	tps->desc.owner = THIS_MODULE;
+@@ -435,6 +447,8 @@ static void tps62360_shutdown(struct i2c_client *client)
+ static const struct i2c_device_id tps62360_id[] = {
+ 	{.name = "tps62360", .driver_data = TPS62360},
+ 	{.name = "tps62361", .driver_data = TPS62361},
++	{.name = "tps62362", .driver_data = TPS62362},
++	{.name = "tps62363", .driver_data = TPS62363},
+ 	{},
+ };
+ 
+@@ -464,5 +478,5 @@ static void __exit tps62360_cleanup(void)
+ module_exit(tps62360_cleanup);
+ 
+ MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
+-MODULE_DESCRIPTION("TPS62360 voltage regulator driver");
++MODULE_DESCRIPTION("TPS6236x voltage regulator driver");
+ MODULE_LICENSE("GPL v2");
+-- 
+1.7.5.4
 
-The bus numbers split across pci domains started with the F50
-F50 chrp 32 bit platforms.
 
-> We did use to force renumbering on macs to avoid bus number collisions
-> between domains because of ancient X servers that didn't do domains
-> properly but I think we dropped that.
-> 
-> Cheers,
-> Ben.
 
-milton
