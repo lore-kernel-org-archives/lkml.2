@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2DBWQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 18:16:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55542 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752619Ab2DBWQX (ORCPT
+	id S1753062Ab2DBWQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 18:16:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44847 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab2DBWQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 18:16:23 -0400
-Date: Mon, 2 Apr 2012 23:16:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT] regulator: Add support for tps62362 and tps62363 in
- tps62360-regulator driver
-Message-ID: <20120402221620.GK3160@opensource.wolfsonmicro.com>
-References: <1333361968.2802.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dxRQSzdsN/lOP445"
-Content-Disposition: inline
-In-Reply-To: <1333361968.2802.1.camel@phoenix>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Apr 2012 18:16:55 -0400
+Subject: Re: [PATCH 2/5] perf: generic intel uncore support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: mingo@elte.hu, andi@firstfloor.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, ming.m.lin@intel.com
+In-Reply-To: <4F77C75B.4060105@intel.com>
+References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
+	 <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>
+	 <1333163902.2960.63.camel@laptop>  <4F77C75B.4060105@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Apr 2012 00:16:48 +0200
+Message-ID: <1333405008.2960.84.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-04-01 at 11:11 +0800, Yan, Zheng wrote:
+> > So what's up with all this box->lock business.. why does that lock
+> > exist?
+> 
+> If user doesn't provide the "-C x" option to the perf tool, multiple cpus
+> will try adding/deleting events at the same time. 
 
---dxRQSzdsN/lOP445
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, however:
 
-On Mon, Apr 02, 2012 at 06:19:28PM +0800, Axel Lin wrote:
-> According to the datasheet[1], tps62360 is register compatible with tps62362.
-> tps62361B is register compatible with tps62363.
-> Thus this patch adds support for tps62362 and tps62363.
+> > Aside from all this, there's still the problem that you don't place all
+> > events for a particular phys_id onto a single cpu. It doesn't matter
+> > which cpu in that package it is, but all events should go to the same.
+> > 
+> > This means that on unplug of that cpu, you have to migrate all these
+> > events etc..
+> 
+> Any hints how to do this. I'm afraid it requires big changes to perf core.
 
-Applied, thanks.
+Yes it'll need some core changes, but I don't think I'll be too bad,
+I'll try and write up something soonish.. 
 
---dxRQSzdsN/lOP445
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPeiUtAAoJEBus8iNuMP3dUfMP/37q2fx5Nn1z68Tylcjjujki
-xq3YSqwxesMyaBa8Wzz36RjCObL7xjKk51ZsiavwevI2yF9sZ7j8ghJI4lI7Ma2A
-WNUXmeM2NswrNmlnwViY9KYTr5BRsbrx/J/QexgEtUD3Ktyu+x+iaarQmwnBRvMI
-We1AcigoApkGgmk827hGctd43blkv3I2i7ebW66cGIF5EC1VM01YgmOk1LlReZuQ
-qe93zBh/vjsHfAxfDxbraBDUISbdjBOSm9Wa6ojSG/rEKyEPeOOTDBQYnSRAjuuQ
-NSP80jfax2AHWVC/1mRaIcdzq45drk4pfq5YehKxO3VAhHcBw9ts8AoN6ETaOzf6
-bEd8JUudAlMXfXPIQHd65U2EDAjRSO0kOgAH0nQIOaEWUiwuxSolwszHtGqBi+99
-zutcw+AdnLjdEcYjcoI9fI0LGMvoXZ+BV4X7l0W8+PhKLf+1B37U6GvYQl+6MvUk
-LO3gU1Wl3dYOVuY1rFDpcvrtXjn82LNx6Uj+cMxkeL6iJvUV83yeKklVeFpQPZca
-iigXkoS9s2q5PbSrJ3dIjwKQDUMOIISDptQk2cadY4slJqbMY0GRonVMe/2sV9W5
-CgcUYFX/EhGLA1O7u9/fOFygACTa7g2NLVJPfaMLgbYWXtGdS8Lcw8g1NuZC3XEh
-le80VHnqXI3l2V7K4029
-=JRPH
------END PGP SIGNATURE-----
-
---dxRQSzdsN/lOP445--
