@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab2DBJm6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:42:58 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:59402 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab2DBJm4 (ORCPT
+	id S1752016Ab2DBJp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:45:27 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:40627 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751075Ab2DBJpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:42:56 -0400
-X-IronPort-AV: E=Sophos;i="4.75,356,1330905600"; 
-   d="scan'208";a="11716944"
-Message-ID: <1333359773.25602.24.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Attilio Rao <attilio.rao@citrix.com>, "Ingo Molnar" <mingo@elte.hu>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Date: Mon, 2 Apr 2012 10:42:53 +0100
-In-Reply-To: <alpine.LFD.2.02.1203302333560.2542@ionos>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
-	 <4F7616F5.4070000@zytor.com> <alpine.LFD.2.02.1203302333560.2542@ionos>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Apr 2012 05:45:25 -0400
+Date: Mon, 2 Apr 2012 17:45:16 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Fixes for 3.4
+Message-ID: <20120402094516.GA23763@gondor.apana.org.au>
+References: <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au> <20110328071322.GA6569@gondor.apana.org.au> <20110629235153.GA16559@gondor.apana.org.au> <20120126024342.GA12492@gondor.apana.org.au> <20120322012046.GA8854@gondor.apana.org.au>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120322012046.GA8854@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-30 at 23:07 +0100, Thomas Gleixner wrote:
-> So if we need to fiddle with the scheduler and frankly that's the only
-> way to get a real gain (the numbers, which are achieved by this
-> patches, are not that impressive) then the question arises whether we
-> should turn the whole thing around.
+Hi Linus:
 
-It probably doesn't materially effect your core point (which seems valid
-to me) but it's worth pointing out that the numbers presented in this
-thread are AFAICT mostly focused on ensuring that that the impact of
-this infrastructure is acceptable on native rather than showing the
-benefits for virtualized workloads.
+This push fixes a number of issues:
 
-Ian.
+* Fix for CPU hotplug hang in padata.
+* Avoid using cpu_active inappropriately in pcrypt and padata.
+* Fix for user-space algorithm lookup hang with IV generators.
+* Fix for netlink dump of algorithms where stuff went missing due
+  to incorrect calculation of message size.
 
+Please pull from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Steffen Klassert (6):
+      padata: Add a reference to the api documentation
+      padata: Use the online cpumask as the default
+      padata: Fix cpu hotplug
+      crypto: pcrypt - Use the online cpumask as the default
+      crypto: user - Fix lookup of algorithms with IV generator
+      crypto: user - Fix size of netlink dump message
+
+ crypto/ablkcipher.c                |    4 +-
+ crypto/aead.c                      |    4 +-
+ crypto/crypto_user.c               |   80 +++++++++++++++++++++++++++++++++++-
+ crypto/pcrypt.c                    |    8 ++--
+ include/crypto/internal/aead.h     |    2 +
+ include/crypto/internal/skcipher.h |    2 +
+ include/linux/cryptouser.h         |    3 +
+ kernel/padata.c                    |   13 ++++--
+ 8 files changed, 103 insertions(+), 13 deletions(-)
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
