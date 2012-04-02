@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2DBVu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 17:50:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59649 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab2DBVuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 17:50:25 -0400
-Date: Mon, 2 Apr 2012 23:50:22 +0200
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Ted Tso <tytso@mit.edu>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH v2 4/4] ext4: weed out ext4_write_super
-Message-ID: <20120402215022.GB5270@quack.suse.cz>
-References: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
- <1333367140-28370-6-git-send-email-artem.bityutskiy@linux.intel.com>
+	id S1753260Ab2DBVtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 17:49:49 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:65216 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab2DBVts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 17:49:48 -0400
+Date: Mon, 2 Apr 2012 14:49:38 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tao Ma <tm@tao.ma>
+Cc: axboe@kernel.dk, vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 18/21] blkcg: move blkio_group_conf->weight to cfq
+Message-ID: <20120402214938.GA19634@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1332975091-10950-1-git-send-email-tj@kernel.org>
+ <1332975091-10950-19-git-send-email-tj@kernel.org>
+ <4F7A1C8B.3010402@tao.ma>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333367140-28370-6-git-send-email-artem.bityutskiy@linux.intel.com>
+In-Reply-To: <4F7A1C8B.3010402@tao.ma>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 02-04-12 14:45:40, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> 
-> We do not depend on VFS's '->write_super()' anymore and do not need the
-> 's_dirt' flag anymore. This patch weeds out 'ext4_write_super()' and the
-> 's_dirt' usage in VFS.
-> 
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-  Looks good.
-Reviewed-by: Jan Kara <jack@suse.cz>
+Hello,
 
-								Honza
-> ---
->  fs/ext4/super.c |   10 ----------
->  1 files changed, 0 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index 6b45785..0818eef 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -73,7 +73,6 @@ static const char *ext4_decode_error(struct super_block *sb, int errno,
->  static int ext4_remount(struct super_block *sb, int *flags, char *data);
->  static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf);
->  static int ext4_unfreeze(struct super_block *sb);
-> -static void ext4_write_super(struct super_block *sb);
->  static int ext4_freeze(struct super_block *sb);
->  static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
->  		       const char *dev_name, void *data);
-> @@ -1148,7 +1147,6 @@ static const struct super_operations ext4_nojournal_sops = {
->  	.dirty_inode	= ext4_dirty_inode,
->  	.drop_inode	= ext4_drop_inode,
->  	.evict_inode	= ext4_evict_inode,
-> -	.write_super	= ext4_write_super,
->  	.put_super	= ext4_put_super,
->  	.statfs		= ext4_statfs,
->  	.remount_fs	= ext4_remount,
-> @@ -4038,7 +4036,6 @@ int ext4_commit_super(struct super_block *sb, int sync)
->  	es->s_free_inodes_count =
->  		cpu_to_le32(percpu_counter_sum_positive(
->  				&EXT4_SB(sb)->s_freeinodes_counter));
-> -	sb->s_dirt = 0;
->  	BUFFER_TRACE(sbh, "marking dirty");
->  	mark_buffer_dirty(sbh);
->  	if (sync) {
-> @@ -4144,13 +4141,6 @@ int ext4_force_commit(struct super_block *sb)
->  	return ret;
->  }
->  
-> -static void ext4_write_super(struct super_block *sb)
-> -{
-> -	lock_super(sb);
-> -	ext4_commit_super(sb, 1);
-> -	unlock_super(sb);
-> -}
-> -
->  static int ext4_sync_fs(struct super_block *sb, int wait)
->  {
->  	int ret = 0;
-> -- 
-> 1.7.7.6
-> 
+On Tue, Apr 03, 2012 at 05:39:23AM +0800, Tao Ma wrote:
+> I guess blkio->weight is a generic way of abstracting the weight between
+> different block cgroups.
+
+It isn't and can't be.  There's nothing generic about it across
+different policies and it's not even clear what that means.  If the
+user chooses combine, iops limit with cfq weights, what the hell is
+"generic" about that weight?
+
+> Yes, currently, only cfq uses it, but I am
+> trying to improve Shaohua's original fiops scheduler and add cgroup
+> support to it. So please leave it there so that future scheduler(if
+> other than the fiops scheduler) can use the framework.
+
+So, if you want to implement a new blkcg policy, add the config
+parameters and export the stats the policy wants *yourself*.  Not
+having clear separation between policies and generic stuff was what
+led us to this yucky mess and there's no way we're going back there.
+So, NO.
+
+Thanks.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+tejun
