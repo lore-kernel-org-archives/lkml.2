@@ -1,186 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab2DBNWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 09:22:41 -0400
-Received: from sam.nabble.com ([216.139.236.26]:46263 "EHLO sam.nabble.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab2DBNWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 09:22:40 -0400
-Message-ID: <33544993.post@talk.nabble.com>
-Date: Mon, 2 Apr 2012 06:22:39 -0700 (PDT)
-From: Akifumi Chikazawa <chikazawa.akifu@jp.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Subject: kernel crash on P4080DS
+	id S1752324Ab2DBNhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 09:37:14 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60791 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab2DBNhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 09:37:12 -0400
+Date: Mon, 2 Apr 2012 06:09:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kmemleak: illegal RCU use assertion error
+Message-ID: <20120402130936.GF2450@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120402070911.GB3464@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Nabble-From: chikazawa.akifu@jp.fujitsu.com
+Content-Disposition: inline
+In-Reply-To: <20120402070911.GB3464@swordfish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040213-4242-0000-0000-000001395F66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 02, 2012 at 10:09:11AM +0300, Sergey Senozhatsky wrote:
+> Hello,
+> 
+> commit e5601400081651060a59bd1f45f2821bb8e97f95
+> Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> Date:   Sat Jan 7 11:03:57 2012 -0800
+> 
+>     rcu: Simplify offline processing
+>     
+>     Move ->qsmaskinit and blkd_tasks[] manipulation to the CPU_DYING
+>     notifier.  This simplifies the code by eliminating a potential
+>     deadlock and by reducing the responsibilities of force_quiescent_state().
+>     Also rename functions to make their connection to the CPU-hotplug
+>     stages explicit.
+>     
+>     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> 
+> introduced WARN_ON_ONCE(cpu_is_offline(smp_processor_id())); to __call_rcu()
+> function, Paul also added cpu_offline checks to other routines (e.g. callbacks)
+> in later commits. It happens that kmemleak() triggers one of them.
+> 
+> During cpu core offline, kfree()->kmemleak_free()->put_object()-->__call_rcu() chain
+> for struct intel_shared_regs * is executed when no struct users left on this core -- 
+> all CPUs are dead or dying.
+> 
+> 
+> [ 4703.342462] CPU 3 is now offline
+> [ 4705.588116] ------------[ cut here ]------------
+> [ 4705.588129] WARNING: at kernel/rcutree.c:1823 __call_rcu+0x9d/0x1d2()
+> [..]
+> [ 4705.588196] Call Trace:
+> [ 4705.588207]  [<ffffffff81059a00>] ? synchronize_srcu+0x6/0x17
+> [ 4705.588215]  [<ffffffff8103364e>] warn_slowpath_common+0x83/0x9c
+> [ 4705.588223]  [<ffffffff8111e627>] ? get_object+0x31/0x31
+> [ 4705.588229]  [<ffffffff81033681>] warn_slowpath_null+0x1a/0x1c
+> [ 4705.588235]  [<ffffffff810af770>] __call_rcu+0x9d/0x1d2
+> [ 4705.588243]  [<ffffffff81013f52>] ? intel_pmu_cpu_dying+0x3b/0x5d
+> [ 4705.588249]  [<ffffffff810af8f1>] call_rcu_sched+0x17/0x19
+> [ 4705.588255]  [<ffffffff8111eb7e>] put_object+0x47/0x4b
+> [ 4705.588261]  [<ffffffff8111ed8b>] delete_object_full+0x2a/0x2e
+> [ 4705.588269]  [<ffffffff81491dc8>] kmemleak_free+0x26/0x45
+> [ 4705.588274]  [<ffffffff8111691f>] kfree+0x130/0x221
+> [ 4705.588280]  [<ffffffff81013f52>] intel_pmu_cpu_dying+0x3b/0x5d
+> [ 4705.588287]  [<ffffffff8149cb83>] x86_pmu_notifier+0xaf/0xb9
+> [ 4705.588296]  [<ffffffff814b0e9d>] notifier_call_chain+0xac/0xd9
+> [ 4705.588303]  [<ffffffff81059c9e>] __raw_notifier_call_chain+0xe/0x10
+> [ 4705.588309]  [<ffffffff810354ec>] __cpu_notify+0x20/0x37
+> [ 4705.588314]  [<ffffffff81035516>] cpu_notify+0x13/0x15
+> [ 4705.588320]  [<ffffffff81490fab>] take_cpu_down+0x28/0x2e
+> [ 4705.588326]  [<ffffffff8109ef7f>] stop_machine_cpu_stop+0x96/0xf1
+> [ 4705.588332]  [<ffffffff8109ece3>] cpu_stopper_thread+0xe3/0x183
+> [ 4705.588338]  [<ffffffff8109eee9>] ? queue_stop_cpus_work+0xd0/0xd0
+> [ 4705.588344]  [<ffffffff814ad382>] ? _raw_spin_unlock_irqrestore+0x47/0x65
+> [ 4705.588353]  [<ffffffff81087d0d>] ? trace_hardirqs_on_caller+0x119/0x175
+> [ 4705.588358]  [<ffffffff81087d76>] ? trace_hardirqs_on+0xd/0xf
+> [ 4705.588364]  [<ffffffff8109ec00>] ? cpu_stop_signal_done+0x2c/0x2c
+> [ 4705.588370]  [<ffffffff810544a9>] kthread+0x8b/0x93
+> [ 4705.588378]  [<ffffffff814b5f34>] kernel_thread_helper+0x4/0x10
+> [ 4705.588385]  [<ffffffff814ad7f0>] ? retint_restore_args+0x13/0x13
+> [ 4705.588391]  [<ffffffff8105441e>] ? __init_kthread_worker+0x5a/0x5a
+> [ 4705.588397]  [<ffffffff814b5f30>] ? gs_change+0x13/0x13
+> [ 4705.588400] ---[ end trace 720328982e35a713 ]---
+> [ 4705.588507] CPU 2 is now offline
+> 
+> 
+> My first solution was to return from delete_object() if object deallocation
+> performed on cpu_is_offline(smp_processor_id()), marking object with special
+> flag, say OBJECT_ORPHAN. And issue real object_delete() during scan (for example)
+> when we see OBJECT_ORPHAN object.  
+> That, however, requires to handle special case when cpu core offlined
+> for small period of time, leading to object insertion error in
+> create_object(), which either may be handled in 2 possible ways (assuming
+> that lookup_object() returned OBJECT_ORPHAN):
+> #1 delete orphaned object and retry with insertion (*)
+> #2 re-set existing orphan object
+> 
+> 
+> (*) performing delete_object() from within create_object() requires releasing
+> of held kmemleak and object locks, which is racy with other create_object() and
+> any possible scan() activities.
+> 
+> Yet I'm not exactly sure that option #2 is the correct one.
+> (I've kind of a patch [not properly tested, etc.] for #2 option).
 
-A kernel panic has occurred when the driver do ioremap over and over on
-P4080DS.  
-There are two cases where the kernel panic occurs.
-Could you give me some advice or information, please?
-I can give more informations if you need it.
+Alternatively, I can make RCU tolerate __call_rcu() from late in the
+CPU_DYING notifiers without too much trouble.
 
-One is as follows
-System could cause kernel panic in the map_page() function
-(arch/powerpc/mm/ptgtable_32.c).
-This was due to BUG_ON. so I checked the condition.
-But it is not true (it means pte_val(*pt) is 0).
-and It does'nt depend on the paticular adderss. 
-
-
-kernel version: 2.6.36.2
-architecture: powerpc/e500mc
-processor: P4080
-board: P4080DS
-
-
-  [   60.190019] ------------[ cut here ]------------
-  [   60.194630] kernel BUG at arch/powerpc/mm/pgtable_32.c:288!
-  [   60.200195] Oops: Exception in kernel mode, sig: 5 [#1]
-  [   60.205411] SMP NR_CPUS=8 P4080 DS
-  [   60.208808] last sysfs file:
-  
-/sys/devices/pci0001:02/0001:02:00.0/0001:03:00.0/host0/target0:0:0/0:0:0:0/block/sda/size
-  [   60.219580] Modules linked in: cthermo binfmt_misc dm_mod [last
-unloaded:
-   scsi_wait_scan]
-  [   60.227773] NIP: c00154b4 LR: c0015464 CTR: 00000000
-  [   60.232730] REGS: ea52fd30 TRAP: 0700   Not tainted  (2.6.36.2)
-  [   60.238639] MSR: 00029002 <EE,ME,CE>  CR: 42000488  XER: 00000000
-  [   60.244752] TASK = ebf1b380[3289] 'cthermo_tp' THREAD: ea52e000 CPU: 1
-  [   60.251101] GPR00: 00000001 ea52fde0 ebf1b380 fffffff4 00029002
-0000000c
-  000e0000 00541215
-  [   60.259479] GPR08: 000000d0 00000000 c07c0000 00000001 0fffffff
-10018c2c
-  00000077 00000000 
-  [   60.267858] GPR16: 1001453c 00000000 bfc36454 00000020 00000000
-00000000
-  100dab00 00000000
-  [   60.276238] GPR24: 00000000 0000000c 000e0000 c0782000 c059e5b8
-00541215
-  fceae000 eaa83570
-  [   60.284800] NIP [c00154b4] map_page+0xd8/0x138
-  [   60.289236] LR [c0015464] map_page+0x88/0x138
-  [   60.293583] Call Trace:
-  [   60.296022] [ea52fde0] [c0015464] map_page+0x88/0x138 (unreliable)
-  [   60.302203] [ea52fe10] [c001573c] __ioremap_caller+0x19c/0x214
-  [   60.308039] [ea52fe50] [f953be24] Setup_ioremap+0x4c/0x158 [cthermo]
-  [   60.314391] [ea52fe70] [f953bfd8] lock_ioctl+0xa8/0x31c [cthermo]
-  [   60.320485] [ea52feb0] [c010e0bc] do_vfs_ioctl+0x6a4/0x74c
-  [   60.325968] [ea52ff10] [c010e1cc] sys_ioctl+0x68/0xa8
-  [   60.331019] [ea52ff40] [c000ebc0] ret_from_syscall+0x0/0x3c
-  [   60.336588] --- Exception: c01 at 0xff5f3c4
-  [   60.336590]     LR = 0xffecb40
-  [   60.343805] Instruction dump:
-  [   60.346767] 4856f081 2f9f0000 3860fff4 419e0058 813f0004 38000000
-712b0001
-  41820014
-  [   60.354537] 7fa9fe70 7d20ea78 7c004850 54000ffe <0f000000> 5739a016
-  5747a33e 7f273b78
-  [   60.362482] ---[ end trace 2241f4aa422ec8d9 ]---
-
-
-The Other is as follows
-I have no idea what is caused karnel panic.
-
-kernel version: 2.6.36.2
-architecture: powerpc/e500mc
-processor: P4080
-board: P4080DS
- 
-[   90.732024] Unable to handle kernel paging request for data at address
-0x00000000
-[   90.739509] Faulting instruction address: 0xc006ed50
-[   90.744469] Oops: Kernel access of bad area, sig: 11 [#1]
-[   90.749858] SMP NR_CPUS=8 P4080 DS
-[   90.753255] last sysfs file:
-/sys/devices/pci0001:02/0001:02:00.0/0001:03:00.0/host0/target0:0:0/0:0:0:0/block/sda/size
-[   90.764028] Modules linked in: cthermo binfmt_misc dm_mod [last unloaded:
-scsi_wait_scan]
-[   90.772220] NIP: c006ed50 LR: c006ed48 CTR: c022d708
-[   90.777175] REGS: effa3e90 TRAP: 0300   Not tainted  (2.6.36.2)
-[   90.783085] MSR: 00029002 <EE,ME,CE>  CR: 24000028  XER: 20000000
-[   90.789197] DEAR: 00000000, ESR: 00000000
-[   90.793198] TASK = ebc85a20[0] 'swapper' THREAD: ebca2000 CPU: 6
-[   90.799025] GPR00: c006ed48 effa3f40 ebc85a20 00000000 c1579180 ebd8c500
-c006edc8 e551070c
-[   90.807406] GPR08: 00000100 ebf06020 c3071cc0 00000060 44000088 00000000
-c07b2cf0 00000000
-[   90.815786] GPR16: c069966e c0787420 00000006 c077f480 c07bc080 c07bc080
-c077c1c0 c07be578
-[   90.824165] GPR24: 00000024 00000009 00000000 00000003 eaae7b40 c0789b80
-c307174c eb178e00
-[   90.832729] NIP [c006ed50] put_cred_rcu+0x54/0xe0
-[   90.836675] [cthermo]----- [CTHERMO] drv_open(): START
-[   90.836679] [cthermo]----- [CTHERMO] drv_open(): END
-[   90.836690] [cthermo]----- [CTHERMO] drv_ioctl(): START
-[   90.836694] [cthermo]Setup_ioremap(): before ioremap_nocache
-[   90.836746] [cthermo]Setup_ioremap(): ioremap_nocache
-(0xc000e0000)->[0xf9a42000]
-[   90.836751] [cthermo]Setup_ioremap(): ioremap_nocache
-(0xc000f0000)->[0xf9a46000]
-[   90.836755] [cthermo][CTHERMO] drv_ioctl(): no=0 kind=0
-[   90.836761] [cthermo][CTHERMO] Free_ioremap(): iounmap
-[   90.836765] [cthermo][CTHERMO] Free_ioremap(): iounmap
-[   90.836768] [cthermo][CTHERMO] drv_ioctl(): up(&gDrv_ioctl_sem) call
-[   90.836772] [cthermo]----- [CTHERMO] drv_ioctl(): END
-[   90.836818] [cthermo]----- [CTHERMO] drv_release(): START
-[   90.836822] [cthermo]----- [CTHERMO] drv_release(): END
-[   90.910824] LR [c006ed48] put_cred_rcu+0x4c/0xe0
-[   90.915431] Call Trace:
-[   90.917870] [effa3f40] [c006ed48] put_cred_rcu+0x4c/0xe0 (unreliable)
-[   90.924317] [effa3f50] [c0098c90] __rcu_process_callbacks+0x1e8/0x31c
-[   90.930755] [effa3f70] [c0098e20] rcu_process_callbacks+0x5c/0x98
-[   90.936847] [effa3f90] [c004b0cc] __do_softirq+0x16c/0x284
-[   90.942331] [effa3ff0] [c000e4dc] call_do_softirq+0x14/0x24
-[   90.947902] [ebca3e70] [c00051d0] do_softirq+0x84/0xb0
-[   90.953036] [ebca3e90] [c004ae9c] irq_exit+0x54/0xa0
-[   90.958000] [ebca3ea0] [c000bb8c] timer_interrupt+0x1a0/0x228
-[   90.963743] [ebca3ec0] [c000f204] ret_from_except+0x0/0x18
-[   90.969228] --- Exception: 901 at ppc_wait+0x4/0x8
-[   90.969230]     LR = cpu_idle_simple+0x4c/0xb0
-[   90.978444] [ebca3f80] [c0008ce8] cpu_idle_simple+0x3c/0xb0 (unreliable)
-[   90.985146] [ebca3fa0] [c0008d94] cpu_idle+0x38/0x164
-[   90.990199] [ebca3fc0] [c058a398] start_secondary+0x310/0x34c
-[   90.995942] [ebca3ff0] [c00019c8] __secondary_start+0x30/0x84
-[   91.001682] Instruction dump:
-[   91.004644] 3c60c06a 7fe4fb78 3863c23c 485155f5 7fe3fb78 481b34b9
-807f004c 481ab845
-[   91.012412] 807f0050 481ab83d 807f0054 7c2004ac <7c001828> 3000ffff
-7c00192d 40a2fff4
-[   91.020360] Kernel panic - not syncing: Fatal exception in interrupt
-[   91.026707] Call Trace:
-[   91.029151] [effa3dc0] [c0007c38] show_stack+0x78/0x18c (unreliable)
-[   91.035512] [effa3e00] [c05843d8] panic+0xb8/0x1e4
-[   91.040304] [effa3e50] [c000cc44] die+0x1e4/0x1f0
-[   91.045009] [effa3e70] [c0014544] bad_page_fault+0xbc/0xd4
-[   91.050496] [effa3e80] [c000f070] handle_page_fault+0x7c/0x80
-[   91.056245] --- Exception: 300 at put_cred_rcu+0x54/0xe0
-[   91.056247]     LR = put_cred_rcu+0x4c/0xe0
-[   91.065726] [effa3f50] [c0098c90] __rcu_process_callbacks+0x1e8/0x31c
-[   91.072171] [effa3f70] [c0098e20] rcu_process_callbacks+0x5c/0x98
-[   91.078265] [effa3f90] [c004b0cc] __do_softirq+0x16c/0x284
-[   91.083752] [effa3ff0] [c000e4dc] call_do_softirq+0x14/0x24
-[   91.089324] [ebca3e70] [c00051d0] do_softirq+0x84/0xb0
-[   91.094462] [ebca3e90] [c004ae9c] irq_exit+0x54/0xa0
-[   91.099426] [ebca3ea0] [c000bb8c] timer_interrupt+0x1a0/0x228
-[   91.105171] [ebca3ec0] [c000f204] ret_from_except+0x0/0x18
-[   91.110658] --- Exception: 901 at ppc_wait+0x4/0x8
-[   91.110660]     LR = cpu_idle_simple+0x4c/0xb0
-[   91.119877] [ebca3f80] [c0008ce8] cpu_idle_simple+0x3c/0xb0 (unreliable)
-[   91.126583] [ebca3fa0] [c0008d94] cpu_idle+0x38/0x164
-[   91.131634] [ebca3fc0] [c058a398] start_secondary+0x310/0x34c
-[   91.137379] [ebca3ff0] [c00019c8] __secondary_start+0x30/0x84
-[   91.143126] Rebooting in 180 seconds..
-
--- 
-View this message in context: http://old.nabble.com/kernel-crash-on-P4080DS-tp33544993p33544993.html
-Sent from the linux-kernel mailing list archive at Nabble.com.
+							Thanx, Paul
 
