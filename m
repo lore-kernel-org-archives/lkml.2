@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab2DBOsh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:48:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37967 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751403Ab2DBOsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:48:36 -0400
-Date: Mon, 2 Apr 2012 16:48:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        "linux-security-module@vger.kernel.org"@jasper.es
-Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
-Message-ID: <20120402144821.GA3334@redhat.com>
-References: <20120331091049.19373.28994.stgit@zurg> <20120331092929.19920.54540.stgit@zurg> <20120331201324.GA17565@redhat.com> <20120331203912.GB687@moon> <4F79755B.3030703@openvz.org>
+	id S1752830Ab2DBOsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:48:46 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:46120
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1752644Ab2DBOsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 10:48:45 -0400
+Date: Mon, 2 Apr 2012 16:48:42 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [patch] UBIFS: Add cryptographic functionality when a key is
+ passed to the compress / decompress functions
+In-Reply-To: <1333377383.22146.14.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1204021645070.29393@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>      <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>     <1330531826.3545.128.camel@sauron.fi.intel.com>     <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net> 
+   <1332511796.18717.72.camel@sauron.fi.intel.com>    <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net>   <1332521515.22278.2.camel@sauron.fi.intel.com>   <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>  
+ <alpine.DEB.2.00.1203252325100.5527@eristoteles.iwoars.net>  <1332837188.31549.14.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203291639200.912@eristoteles.iwoars.net> <1333377383.22146.14.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F79755B.3030703@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02, Konstantin Khlebnikov wrote:
+
 >
-> In this patch I leave mm->exe_file lockless.
-> After exec/fork we can change it only for current task and only if mm->mm_users == 1.
+> You support only one length - please, kill ivlen parameter.
 >
-> something like this:
+> Also, should ubifs_aes_crypt be static? I do not see any users outside
+> of compress.c. In this case remove the "ubifs_" prefix. But a
+> non-written convention, in UBIFS we _tend_ to prefix only non-static
+> functions with "ubifs_" and avoid having it for static functions.
 >
-> task_lock(current);
 
-OK, this protects against the race with get_task_mm()
+Should length for key remain, and the IV is just the same? Or should the
+global #define just be used inside the aes function.
 
-> if (atomic_read(&current->mm->mm_users) == 1)
+There is another use where the data is decrypted and reencrypted with a
+different key. (during GC and if an erase block becomes bad.) In this
+case, the data is not decompressed and recompressed, only the encryption
+changes. However, for simplicity, and because its not frequent, we can
+make it static and use the compress functions to handle this.
 
-this means PR_SET_MM_EXE_FILE can fail simply because someone did
-get_task_mm(). Or the caller is multithreaded.
+>
+> I guess the above goto is redundant?
+>
 
-> 	set_mm_exe_file(current->mm, new_file);
+It is, but I put it in for future developers who may add a new control
+case there after without expecting the above to 'fall through'.
 
-No, fput() can sleep.
 
-Oleg.
 
