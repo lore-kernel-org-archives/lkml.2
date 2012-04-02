@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab2DBAD4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 20:03:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53858 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab2DBADy (ORCPT
+	id S1753772Ab2DBAFv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 20:05:51 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38489 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab2DBAFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 20:03:54 -0400
-Date: Mon, 2 Apr 2012 10:03:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: [PATCH 00/11] Fix up more asm/system.h fallout
-Message-Id: <20120402100341.1b231afd6aa7efb1cb0c8af0@canb.auug.org.au>
-In-Reply-To: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Sun, 1 Apr 2012 20:05:49 -0400
+Date: Mon, 2 Apr 2012 01:08:19 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+Message-ID: <20120402010819.76d31790@pyramind.ukuu.org.uk>
+In-Reply-To: <4F78D0BA.9040709@zytor.com>
+References: <20120401125741.GA7484@p183.telecom.by>
+	<4F78D0BA.9040709@zytor.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__2_Apr_2012_10_03_41_+1000_GnJ5yR0QtSzz2yBC"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Apr_2012_10_03_41_+1000_GnJ5yR0QtSzz2yBC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 01 Apr 2012 15:03:38 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Hi Paul,
+> On 04/01/2012 05:57 AM, Alexey Dobriyan wrote:
+> > 
+> > * /proc/self/fd is unreliable:
+> >   proc may be unconfigured or not mounted at expected place.
 
-On Sun,  1 Apr 2012 16:38:36 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
->
-> Like others, I was surprised it didn't get a soak in linux-next
-> before being merged, but I guess what is done is done, so lets
-> try and limit the fallout from having any wider of a commit range
-> than it already does.
->=20
-> It is all system.h stuff except for three things.
->=20
->  1) an avr32 patch I'd created but the avr32 guys hadn't got
->     signed keys yet, so I might as well get it in here along
->     with other similar build fail fixes (the atmel one).
->=20
->  2) A cosmetic fix to the device.h changeset from me earlier.
->=20
->  3) A trivial warning fix to an arch/frv specific file.
->=20
-> I'm going to queue this up in my feed branch to linux-next
-> so we can start reducing the number of build failures from what
-> we had on Friday.
+Equally someone could be ptracing your process and changing the answers.
+Both are "do stupid stuff, get stupid answers" cases. Why do we care ???
+Lots of other stuff breaks in this case so nobody will be doing it for
+good reasons
 
-Thanks for all this.  Please feed them to Linus as soon as sensible i.e.
-after you get some feedback from the affected arch maintainers etc.
-Maybe you should repost some of these with more cc's on them.
+> >   Looking at /proc/self/fd requires opening directory
 
-I look forward to less blood on the ground in today's linux-next
-builds :-)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Which is very efficient
 
---Signature=_Mon__2_Apr_2012_10_03_41_+1000_GnJ5yR0QtSzz2yBC
-Content-Type: application/pgp-signature
+> >   which may not be available due to malicious rlimit drop or ENOMEM situations.
+> >   Not opening directory is equivalent to dumb close(2) loop except slower.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+If I've rlimited you to no file handles then you already lost whichever
+approach you use. Just abort. Trying to do clever stuff in security
+sensitive situations via codepaths that inevitably don't get tested when
+you've apparently got a malicious executor is dumb.
 
-iQIcBAEBCAAGBQJPeOzdAAoJEECxmPOUX5FEivEP/0SgGQvo1PSCjF7ASM0vRXNi
-KIMu0jvnG889WPslxmpDuk/kf67+LSEXy77gBIMC4hib4KifErCjSJ1/7t8QjRTM
-nOJETEGZtaH//OYhqd8MlTwqQF12qO8TN/ztEZM00suD7hZS0tLcpAcexQPcoB3k
-IRvONEr6SRdEl3B+YTrVhavAdymC9+fSRDIT9kP8VbYN1Gm6omV/lo1gAA/1/sso
-sxUyBDRZU8g2ykvU8qcqUyIZuOFsNs6jUUelK1/ZI74qiJ1AC9EkSAEfpCGPp4dh
-/Mxp9tCMmlTvdf+VQdWqLAuYnRwQOaLcWNFsjgvhWBkW9HS5xWzYlnTnAiuc4Wph
-8jWMgSWwyKkRrxVSyVVHl46SkGDM5eaO79JdNMgZoyPAgJV/KMfc34oG2sA3tIIs
-7DuqGvQ7cN1Rin0s/Q0K4qcw5+NKNuvera5k4WGLjutWAAqUFp/unHNrIQLw8+Fs
-eAojEJBBPMBqRx5JkR3mSLy0YcwZuKpY85Uc7gdTekOXrDAXJAKoDrx+vdyRsoxI
-npXAZXmS3meupaxCYE+uUm7SWiLS6FZFgw4vUvRDMFuDKLm2TwVq61VTyNkE2ljg
-Buv1+R22ep6t6aapNIwrZUz1mgwd3BMzdQoTenxn3JHQ0I31Zi6xapgHAyylJo5+
-0qyk46Cv76NdPsbuXIpJ
-=45+X
------END PGP SIGNATURE-----
+> (if someone can set an rlimit they can also force an abort) or revert to
+> the slow path.
 
---Signature=_Mon__2_Apr_2012_10_03_41_+1000_GnJ5yR0QtSzz2yBC--
+Or have set a CPU limit or memory limit or more.
+
+Alan
