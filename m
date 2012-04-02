@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab2DBBQO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 21:16:14 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49131 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab2DBBQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 21:16:13 -0400
-Message-ID: <1333329368.8048.3.camel@phoenix>
-Subject: [PATCH 2/2] regulator: Add missing n_voltages setting for max8925
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 02 Apr 2012 09:16:08 +0800
-In-Reply-To: <1333329268.8048.1.camel@phoenix>
-References: <1333329268.8048.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1754018Ab2DBBSj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 21:18:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58057 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753730Ab2DBBSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 21:18:36 -0400
+X-IronPort-AV: E=Sophos;i="4.75,354,1330876800"; 
+   d="scan'208";a="4670690"
+Message-ID: <4F78FE7F.7070403@cn.fujitsu.com>
+Date: Mon, 02 Apr 2012 09:18:55 +0800
+From: Ren Mingxin <renmx@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20110412 CentOS/3.1.3-1.el6.centos Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass
+ of disks naming
+References: <4F7581D4.4040301@cn.fujitsu.com> <4F7582B0.5010609@cn.fujitsu.com> <20120330152606.GB28934@google.com> <20120330153828.GD28934@google.com>
+In-Reply-To: <20120330153828.GD28934@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/02 09:18:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/02 09:18:25,
+	Serialize complete at 2012/04/02 09:18:25
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The n_voltages are the same for all regulators: (max - min / step) + 1 == 64.
-The vol_shift is always 0, and the vol_nbits is always the same as n_voltages
-setting. Thus we can remove vol_shitf and vol_nbits fields from struct
-max8925_regulator_info.
+  On 03/30/2012 11:38 PM, Tejun Heo wrote:
+> On Fri, Mar 30, 2012 at 08:26:06AM -0700, Tejun Heo wrote:
+>> On Fri, Mar 30, 2012 at 05:53:52PM +0800, Ren Mingxin wrote:
+>>>   The current virtblk's naming algorithm only supports 263  disks.
+>>> If there are mass of virtblks(exceeding 263), there will be disks
+>>> with the same name.
+>>>
+>>> By renaming "sd_format_disk_name()" to "disk_name_format()"
+>>> and moving it into block core, virtio_blk can use this function to
+>>> support mass of disks.
+>>>
+>>> Signed-off-by: Ren Mingxin<renmx@cn.fujitsu.com>
+>> I guess it's already way too late but why couldn't they have been
+>> named vdD-P where both D and P are integers denoting disk number and
+> So, if a device name ends in digit the partition code adds delimiter
+> 'p' automatically and this is already in use by md.  So, partitioned
+> md devices are named mdDpP where D and P are base 10 number indicating
+> the sequence like md12p4.  So, let's please add comment that new
+> drivers should name their devices PREFIX%d where the sequence number
+> can be allocated by ida.
+>
+>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8925-regulator.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+Oh, got it. Just like md devices' names.
 
-diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
-index ad8b093..a62f3b5 100644
---- a/drivers/regulator/max8925-regulator.c
-+++ b/drivers/regulator/max8925-regulator.c
-@@ -42,8 +42,6 @@ struct max8925_regulator_info {
- 	int	max_uV;
- 	int	step_uV;
- 	int	vol_reg;
--	int	vol_shift;
--	int	vol_nbits;
- 	int	enable_reg;
- };
- 
-@@ -75,8 +73,7 @@ static int max8925_set_voltage(struct regulator_dev *rdev,
- 	}
- 	data = DIV_ROUND_UP(min_uV - info->min_uV, info->step_uV);
- 	*selector = data;
--	data <<= info->vol_shift;
--	mask = ((1 << info->vol_nbits) - 1) << info->vol_shift;
-+	mask = rdev->desc->n_voltages - 1;
- 
- 	return max8925_set_bits(info->i2c, info->vol_reg, mask, data);
- }
-@@ -90,8 +87,8 @@ static int max8925_get_voltage(struct regulator_dev *rdev)
- 	ret = max8925_reg_read(info->i2c, info->vol_reg);
- 	if (ret < 0)
- 		return ret;
--	mask = ((1 << info->vol_nbits) - 1) << info->vol_shift;
--	data = (ret & mask) >> info->vol_shift;
-+	mask = rdev->desc->n_voltages - 1;
-+	data = ret & mask;
- 
- 	return max8925_list_voltage(rdev, data);
- }
-@@ -191,13 +188,12 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
- 		.type	= REGULATOR_VOLTAGE,			\
- 		.id	= MAX8925_ID_SD##_id,			\
- 		.owner	= THIS_MODULE,				\
-+		.n_voltages = 64,				\
- 	},							\
- 	.min_uV		= min * 1000,				\
- 	.max_uV		= max * 1000,				\
- 	.step_uV	= step * 1000,				\
- 	.vol_reg	= MAX8925_SDV##_id,			\
--	.vol_shift	= 0,					\
--	.vol_nbits	= 6,					\
- 	.enable_reg	= MAX8925_SDCTL##_id,			\
- }
- 
-@@ -209,13 +205,12 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
- 		.type	= REGULATOR_VOLTAGE,			\
- 		.id	= MAX8925_ID_LDO##_id,			\
- 		.owner	= THIS_MODULE,				\
-+		.n_voltages = 64,				\
- 	},							\
- 	.min_uV		= min * 1000,				\
- 	.max_uV		= max * 1000,				\
- 	.step_uV	= step * 1000,				\
- 	.vol_reg	= MAX8925_LDOVOUT##_id,			\
--	.vol_shift	= 0,					\
--	.vol_nbits	= 6,					\
- 	.enable_reg	= MAX8925_LDOCTL##_id,			\
- }
- 
 -- 
-1.7.5.4
-
-
+Thanks,
+Ren
 
