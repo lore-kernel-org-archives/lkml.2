@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab2DBRpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:45:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55729 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab2DBRpO (ORCPT
+	id S1753231Ab2DBRqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:46:49 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:59734 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240Ab2DBRqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:45:14 -0400
-Message-ID: <4F79E5A5.9000004@lwfinger.net>
-Date: Mon, 02 Apr 2012 12:45:09 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: CONFIG_RTLWIFI_DEBUG default y
-References: <20120402164920.GA13264@x1.osrc.amd.com> <1333385618.15422.17.camel@joe2Laptop> <20120402171733.GB13264@x1.osrc.amd.com>
-In-Reply-To: <20120402171733.GB13264@x1.osrc.amd.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 2 Apr 2012 13:46:47 -0400
+Date: Mon, 2 Apr 2012 19:46:43 +0200
+From: Anatolij Gustschin <agust@denx.de>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb: Kconfig fix display
+Message-ID: <20120402194643.4a1098fc@wker>
+In-Reply-To: <1333365230-15450-1-git-send-email-plagnioj@jcrosoft.com>
+References: <1333365230-15450-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2012 12:17 PM, Borislav Petkov wrote:
-> On Mon, Apr 02, 2012 at 09:53:38AM -0700, Joe Perches wrote:
->> To keep all the "printk(KERN_DEBUG" to "pr_debug(" conversion
->> output the same as the it was prior to the patch.
->>
->> Larry can default it to off if he wants.
->
->> From looking at one user of this -
-> drivers/net/wireless/rtlwifi/rtl8192ce/hw.c - some of the messages look
-> like important ones which you wanna have enabled always, f.e. error
-> handling in rtl92ce_hw_init().
->
-> It probably needs splitting into debugging messages which are default n
-> and always-on messages.
+On Mon,  2 Apr 2012 13:13:50 +0200
+Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
 
-The current situation is fine with me. Any user with an embedded system can save 
-a lot of memory by setting CONFIG_RTLWIFI_DEBUG to n. If a normal distro chooses 
-to do that, then when some user of that distro reports a problem and is unable 
-to run with the module parameter "debug=X", I get to say "Sorry, I cannot help 
-you." :)
+> Move HAS option before menuconfig so the USB option will show in the sub menu
+> and not the drivers menu.
+> Introduce in commit 53c6bc24fdc8db87109a5760579cbb060fa644cf usb: Don't make
+> USB_ARCH_HAS_{XHCI,OHCI,EHCI} depend on USB_SUPPORT.
+> 
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Cc: linux-usb@vger.kernel.org
+> ---
+>  drivers/usb/Kconfig |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
 
-Of course, if you want to go through the source and convert every instance of 
-"RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ...)" to the equivalent "pr_err(...), 
-then I would probably sign off on it.
+Already fixed by
 
-Larry
+ http://marc.info/?l=linux-kernel&m=133245014825438&w=2
