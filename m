@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab2DBRKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:10:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60135 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab2DBRKd convert rfc822-to-8bit (ORCPT
+	id S1752936Ab2DBRME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:12:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64858 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab2DBRMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:10:33 -0400
+	Mon, 2 Apr 2012 13:12:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9C01454D13A6@USINDEVS02.corp.hds.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
- <20120305215602.GA1693@redhat.com> <4F5798B1.5070005@jp.fujitsu.com>
- <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com> <65795E11DBF1E645A09CEC7EAEE94B9C01454D13A6@USINDEVS02.corp.hds.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Mon, 2 Apr 2012 10:10:12 -0700
-X-Google-Sender-Auth: 8RWpR34mnt5nbdT_3PxaUEtsfLw
-Message-ID: <CAHGf_=p9OgVC9J-Nh78CTbuMbc9CVt-+-G+CNbYUsgz70Uc8Qg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
-To: Satoru Moriya <satoru.moriya@hds.com>
-Cc: "jweiner@redhat.com" <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
+In-Reply-To: <CAOJsxLGJorTZL7OhNzfpX0T1LQHrLs59LVr1WYX_8VAi8BF35g@mail.gmail.com>
+References: <20120316144028.036474157@chello.nl>
+	<4F670325.7080700@redhat.com>
+	<1332155527.18960.292.camel@twins>
+	<20120319130401.GI24602@redhat.com>
+	<1332163591.18960.334.camel@twins>
+	<20120319135745.GL24602@redhat.com>
+	<4F673D73.90106@redhat.com>
+	<20120319143002.GQ24602@redhat.com>
+	<1332182523.18960.372.camel@twins>
+	<4F69022D.3080300@redhat.com>
+	<CAOJsxLHPc7QxdsUADikgeqQo7WVCzUD1KoHRT7Ngr7xXM_F7ig@mail.gmail.com>
+	<4F79D9F1.7030504@redhat.com>
+	<CAOJsxLGJorTZL7OhNzfpX0T1LQHrLs59LVr1WYX_8VAi8BF35g@mail.gmail.com>
+Date: Mon, 2 Apr 2012 20:12:01 +0300
+X-Google-Sender-Auth: lXm36hjNhl_ViHG3WibKcKMQL4M
+Message-ID: <CAOJsxLHYoAtxvcW1B47jGm4GYZpc1vB6+ovyCk0njU4LFXsaAg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 00/26] sched/numa
+From: Pekka Enberg <penberg@kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/30 Satoru Moriya <satoru.moriya@hds.com>:
-> Hello Kosaki-san,
->
-> On 03/07/2012 01:18 PM, Satoru Moriya wrote:
->> On 03/07/2012 12:19 PM, KOSAKI Motohiro wrote:
->>> Thank you. I brought back to memory it. Unfortunately DB folks are
->>> still mainly using RHEL5 generation distros. At that time,
->>> swapiness=0 doesn't mean disabling swap.
->>>
->>> They want, "don't swap as far as kernel has any file cache page". but
->>> linux don't have such feature. then they used swappiness for emulate
->>> it. So, I think this patch clearly make userland harm. Because of, we
->>> don't have an alternative way.
->
-> As I wrote in the previous mail(see below), with this patch
-> the kernel begins to swap out when the sum of free pages and
-> filebacked pages reduces less than watermark_high.
->
-> So the kernel reclaims pages like following.
->
-> nr_free + nr_filebacked >= watermark_high: reclaim only filebacked pages
-> nr_free + nr_filebacked <  watermark_high: reclaim only anonymous pages
+On Mon, Apr 2, 2012 at 7:54 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> Sure, it's probably going to help for the kinds of workloads you're
+> describing. I'm just wondering how typical they are in the real world.
 
-How?
+I don't have a NUMA machine to test this with but it'd be interesting
+to see how AutoNUMA and sched/numa affect DaCapo benchmarks:
+
+http://dacapobench.org/
+
+I guess benchmarks that represent typical JVM server workloads are
+tomcat and tradesoap. You can run them easily with this small shell
+script:
+
+#!/bin/sh
+
+JAR=dacapo-9.12-bach.jar
+
+if [ ! -f $JAR ];
+then
+  wget http://sourceforge.net/projects/dacapobench/files/9.12-bach/$JAR/download
+fi
+
+java -jar $JAR tomcat tradesoap | grep PASSED
