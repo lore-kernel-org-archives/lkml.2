@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab2DBQQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 12:16:30 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64627 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab2DBQQ3 (ORCPT
+	id S1753173Ab2DBQUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 12:20:06 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38784 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab2DBQUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 12:16:29 -0400
+	Mon, 2 Apr 2012 12:20:03 -0400
+Message-ID: <4F79D1AF.7080100@openvz.org>
+Date: Mon, 02 Apr 2012 20:19:59 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-In-Reply-To: <1333380769-2650-1-git-send-email-consul.kautuk@gmail.com>
-References: <1333380769-2650-1-git-send-email-consul.kautuk@gmail.com>
-Date: Mon, 2 Apr 2012 09:16:28 -0700
-Message-ID: <CAF8ieYUyiRj45O+zu399yL_biE6fm-q8W-qjaxTHNS4ci3otBA@mail.gmail.com>
-Subject: Re: [PATCH 01/19 v2.1] avr32/mm/fault.c: Port OOM changes to do_page_fault
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel@vger.kernel.org, "Mohd. Faris" <mohdfarisq2010@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+References: <20120331091049.19373.28994.stgit@zurg> <20120331092929.19920.54540.stgit@zurg> <20120331201324.GA17565@redhat.com> <20120331203912.GB687@moon> <4F79755B.3030703@openvz.org> <20120402144821.GA3334@redhat.com>
+In-Reply-To: <20120402144821.GA3334@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 8:32 AM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
+Oleg Nesterov wrote:
+> On 04/02, Konstantin Khlebnikov wrote:
+>>
+>> In this patch I leave mm->exe_file lockless.
+>> After exec/fork we can change it only for current task and only if mm->mm_users == 1.
+>>
+>> something like this:
+>>
+>> task_lock(current);
 >
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
+> OK, this protects against the race with get_task_mm()
 >
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
+>> if (atomic_read(&current->mm->mm_users) == 1)
 >
-> Port these changes to AVR32.
->
-> Signed-off-by: Mohd. Faris <mohdfarisq2010@gmail.com>
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> this means PR_SET_MM_EXE_FILE can fail simply because someone did
+> get_task_mm(). Or the caller is multithreaded.
 
-Acked-by: Havard Skinnemoen <hskinnemoen@gmail.com>
+This is sad, seems like we should keep mm->exe_file protection by mm->mmap_sem.
+So, I'll rework this patch...
+
+>
+>> 	set_mm_exe_file(current->mm, new_file);
+>
+> No, fput() can sleep.
+
+Yep
+
+>
+> Oleg.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+
