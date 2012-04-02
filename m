@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab2DBTGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 15:06:04 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58937 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2DBTGB (ORCPT
+	id S1752389Ab2DBTGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 15:06:21 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60916 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab2DBTGT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 15:06:01 -0400
-Message-ID: <4F79F859.8080002@mvista.com>
-Date: Mon, 02 Apr 2012 23:04:57 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Mon, 2 Apr 2012 15:06:19 -0400
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/1] usb: Kconfig fix display
-References: <1333365230-15450-1-git-send-email-plagnioj@jcrosoft.com>
-In-Reply-To: <1333365230-15450-1-git-send-email-plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1333391754.2960.70.camel@laptop>
+References: <1333228972-4594-1-git-send-email-levinsasha928@gmail.com>
+ <alpine.LFD.2.02.1204011935190.2542@ionos> <CA+1xoqeTJu-uaaOCek5Y5ZKam83ePoRNFdxLcqdonYxok-BkhA@mail.gmail.com>
+ <alpine.LFD.2.02.1204021111070.2542@ionos> <1333391754.2960.70.camel@laptop>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 2 Apr 2012 21:05:57 +0200
+Message-ID: <CA+1xoqe=E6=RC1PotczxFuGDxgqYt3A_XfQjgiQS=wVB83TqLQ@mail.gmail.com>
+Subject: Re: [PATCH] debugobjects: Use GFP_ATOMIC to allocate when initializing
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 04/02/2012 03:13 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-
-> Move HAS option before menuconfig so the USB option will show in the sub menu
-> and not the drivers menu.
-> Introduce in commit 53c6bc24fdc8db87109a5760579cbb060fa644cf usb: Don't make
-> USB_ARCH_HAS_{XHCI,OHCI,EHCI} depend on USB_SUPPORT.
-
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
-> Cc: linux-usb@vger.kernel.org
+On Mon, Apr 2, 2012 at 8:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2012-04-02 at 11:12 +0200, Thomas Gleixner wrote:
+>> On Sun, 1 Apr 2012, Sasha Levin wrote:
+>> > On Sun, Apr 1, 2012 at 7:36 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > > On Sat, 31 Mar 2012, Sasha Levin wrote:
+>>
+>> Peter ????
+>>
+>> > >> During the init stage, we have only 1 cpu and run with IRQs disabled,
+>> > >> we can't allocate with GFP_KERNEL.
+>> > >>
+>> > >> This also fixes the related warning on boot.
+>> > >
+>> > > Hrmm. This should not be the case. In early boot GFP_KERNEL
+>> > > allocations should not trigger a warning when interrupts are
+>> > > disabled. Which kind of warning are you observing ?
+>> >
+>> > There were two, both pointing at the same WARN(). I don't have the
+>> > first one which was fixed in this patch handy, but the second one is:
+>> >
+>> > [    0.000000] WARNING: at kernel/lockdep.c:2739
+>> > lockdep_trace_alloc+0x11f/0x130()
+>> > [    0.000000] Pid: 0, comm: swapper/0 Not tainted
+>> > 3.3.0-next-20120330-sasha-dirty #40
+>> > [    0.000000] Call Trace:
+>> > [    0.000000]  [<ffffffff810b4175>] warn_slowpath_common+0x75/0xb0
+>> > [    0.000000]  [<ffffffff810b41c5>] warn_slowpath_null+0x15/0x20
+>> > [    0.000000]  [<ffffffff8111999f>] lockdep_trace_alloc+0x11f/0x130
+>> > [    0.000000]  [<ffffffff81182e0c>] __alloc_pages_nodemask+0x9c/0x260
+>> > [    0.000000]  [<ffffffff826bcea7>] ? retint_restore_args+0x6/0x13
+>> > [    0.000000]  [<ffffffff811cc2cd>] kmemcheck_alloc_shadow+0x4d/0xf0
+>> > [    0.000000]  [<ffffffff811c5597>] allocate_slab+0x197/0x270
+>> > [    0.000000]  [<ffffffff811c569b>] new_slab+0x2b/0x190
+>> > [    0.000000]  [<ffffffff811c7e7a>] ? __slab_alloc+0x5a/0x6b0
+>> > [    0.000000]  [<ffffffff811c82b3>] __slab_alloc+0x493/0x6b0
+>> > [    0.000000]  [<ffffffff81114f61>] ? trace_hardirqs_off_caller+0xe1/0x150
+>> > [    0.000000]  [<ffffffff81886f1d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+>> > [    0.000000]  [<ffffffff8395eb55>] ?
+>> > debug_objects_replace_static_objects+0x2a/0x1f5
+>> > [    0.000000]  [<ffffffff8395eb55>] ?
+>> > debug_objects_replace_static_objects+0x2a/0x1f5
+>> > [    0.000000]  [<ffffffff811c900e>] kmem_cache_alloc+0x17e/0x1a0
+>> > [    0.000000]  [<ffffffff8395eb55>]
+>> > debug_objects_replace_static_objects+0x2a/0x1f5
+>> > [    0.000000]  [<ffffffff8395ed59>] debug_objects_mem_init+0x39/0x68
+>> > [    0.000000]  [<ffffffff8392af65>] start_kernel+0x33a/0x3f8
+>> > [    0.000000]  [<ffffffff8392aa13>] ? kernel_init+0x280/0x280
+>> > [    0.000000]  [<ffffffff8392a2b6>] x86_64_start_reservations+0xa1/0xa6
+>> > [    0.000000]  [<ffffffff8392a410>] x86_64_start_kernel+0x155/0x164
+>> > [    0.000000] ---[ end trace a7919e7f17c0a725 ]---
+>>
+>>
+>
+> Something like so?
+>
 > ---
->   drivers/usb/Kconfig |   16 ++++++++--------
->   1 files changed, 8 insertions(+), 8 deletions(-)
-
-> diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-> index cbd8f5f..76316a3 100644
-> --- a/drivers/usb/Kconfig
-> +++ b/drivers/usb/Kconfig
-> @@ -2,14 +2,6 @@
->   # USB device configuration
->   #
+>  kernel/lockdep.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
 >
-> -menuconfig USB_SUPPORT
-> -	bool "USB support"
-> -	depends on HAS_IOMEM
-> -	default y
-> -	---help---
-> -	  This option adds core support for Universal Serial Bus (USB).
-> -	  You will also need drivers from the following menu to make use of it.
-> -
->   # many non-PCI SOC chips embed OHCI
->   config USB_ARCH_HAS_OHCI
->   	boolean
-> @@ -63,6 +55,14 @@ config USB_ARCH_HAS_XHCI
->   	boolean
->   	default PCI
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index ea9ee45..a028ba9 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -2718,6 +2718,13 @@ static void __lockdep_trace_alloc(gfp_t gfp_mask, unsigned long flags)
+>  {
+>        struct task_struct *curr = current;
 >
-> +menuconfig USB_SUPPORT
-> +	bool "USB support"
-> +	depends on HAS_IOMEM
-> +	default y
-> +	---help---
-> +	  This option adds core support for Universal Serial Bus (USB).
-> +	  You will also need drivers from the following menu to make use of it.
+> +       /*
+> +        * We do GFP_KERNEL allocations with IRQs disabled during system
+> +        * bringup..
+> +        */
+> +       if (unlikely(system_state != SYSTEM_RUNNING))
+> +               return;
 > +
->   if USB_SUPPORT
->
->   config USB_COMMON
+>        if (unlikely(!debug_locks))
+>                return;
 
-    Analogous patch has been already submitted by David Daney, author of the 
-original breakage.
-
-WBR, Sergei
+Does the trick here.
