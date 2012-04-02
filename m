@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2DBR4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:56:01 -0400
-Received: from server1.neighborhoods.net ([207.154.13.48]:33115 "EHLO
-	server1.neighborhoods.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab2DBR4A (ORCPT
+	id S1753867Ab2DBR4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:56:36 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:49598
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753112Ab2DBR4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:56:00 -0400
-X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 13:56:00 EDT
-Message-ID: <4F79E6BE.4030302@meetinghouse.net>
-Date: Mon, 02 Apr 2012 13:49:50 -0400
-From: Miles Fidelman <mfidelman@meetinghouse.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	Mon, 2 Apr 2012 13:56:33 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zzbb2dI1432N1418M98dKzz1202hzzz2dh668h839hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1V5TM-02-1G1-02
+X-M-MSG: 
+Message-ID: <4F79E83C.5090506@amd.com>
+Date: Mon, 2 Apr 2012 13:56:12 -0400
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: QUESTION: reboot.c and X86-64 architectures
-References: <S1753510Ab2DBRUx/20120402172053Z+301@vger.kernel.org>
-In-Reply-To: <S1753510Ab2DBRUx/20120402172053Z+301@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tony Luck <tony.luck@intel.com>
+CC: Len Brown <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 58/76] idle, x86: Allow off-lined CPU to enter deeper
+ C states
+References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>	<1333102459-23750-1-git-send-email-lenb@kernel.org>	<1a022e3f1be11730bd8747b1af96a0274bf6356e.1333101989.git.len.brown@intel.com>	<CA+8MBbLROfbyfAGZ0xn1tZVHsndeTUNrn=-gHhsfzkocBLh=iQ@mail.gmail.com> <CA+8MBbJnrhKmy5f_pbL8Ogi1ihM-51hfqCDY5gUQ1hkvw7p22Q@mail.gmail.com>
+In-Reply-To: <CA+8MBbJnrhKmy5f_pbL8Ogi1ihM-51hfqCDY5gUQ1hkvw7p22Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Folks,
+On 04/02/12 13:25, Tony Luck wrote:
+>>> +       while (1) {
+>>> +
+>>> +               if (cx->entry_method == ACPI_CSTATE_HALT)
+>>> +                       halt();
+>
+> What's the intent here?  I think that I can just set up a function pointer
+> named "halt" on ia64 and point it to my cpu_halt() function (which looks
+> for the deepest C-state, and then calls PAL to enter it. Is that equivalent
+> to what the x86 "halt()" function does?
 
-I hope this is an appropriate question here, I've exhausted other resources:
 
-I've recently migrated from running a 32bit kernel to a 64bit one 
-(specifically Debian Lenny 32bit environment to 2.6.32-5-xen-amd64 on 
-top of xen-4.0-amd64 hypervisor build).
+x86 halt() causes processor to go to C1 state (which is often not the 
+deepest). But other than that it seems similar to what you are describing.
 
-This is a somewhat older, and apparently quirky, hardware box.  I've 
-found that the only way to reboot it, short of power cycling, is jumping 
-through the bios - using the "reboot=bios" kernel option at boot time 
-works just fine for an X86_32 kernel.  But... this doesn't work with the 
-64bit kernel.
+However, the fix that you are proposing will only help ia64 and I wonder 
+whether others architectures may have the same problem?
 
-Pouring through both the documentation and the code for linux 
-<http://lxr.linux.no/linux+*/>/arch 
-<http://lxr.linux.no/linux+*/arch>/x86 
-<http://lxr.linux.no/linux+*/arch/x86>/kernel 
-<http://lxr.linux.no/linux+*/arch/x86/kernel>/reboot.c 
-<http://lxr.linux.no/linux+*/arch/x86/kernel/reboot.c> yields the very 
-specific admonition "bios Reboot by jumping through the BIOS (only for 
-X86_32)", and the code seems to support this (though I haven't quite 
-waded through all the paths that might execute machine_real_restart).
+(And I don't think inb/inl should cause you any trouble since they are 
+already used, for example, in acpi_idle_do_entry())
 
-None of the other available command line options seem to work with this 
-hardware, which leads to two questions:
-
-1. What's the logic behind this?  Why not enable a bios reboot for 64bit 
-kernels?
-
-2. Anybody know a workaround, short of patching and compiling a custom 
-kernel? (Note: None of the available command line options seem to work on
-this particular box/bios combination, and kexec-reboot is not available 
-for this combination of kernel and hypervisor).
-
-Thank you very much,
-
-Miles Fidelman
-
--- 
-In theory, there is no difference between theory and practice.
-In practice, there is.   .... Yogi Berra
+-boris
 
 
