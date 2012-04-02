@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab2DBUam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 16:30:42 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35084 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2DBUal (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 16:30:41 -0400
-Subject: Re: Linux 3.4-rc1
-From: Carlos Chinea <cch.devel@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        carlos.chinea@nokia.com
-In-Reply-To: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
-References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-lQxRmz6xi1Nez02CUZ4k"
-Date: Mon, 02 Apr 2012 23:30:35 +0300
-Message-ID: <1333398635.15253.37.camel@Groo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752511Ab2DBUcR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 16:32:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33389 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751887Ab2DBUcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 16:32:15 -0400
+Date: Mon, 2 Apr 2012 22:32:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: CONFIG_RTLWIFI_DEBUG default y
+Message-ID: <20120402203211.GA27889@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Larry Finger <Larry.Finger@lwfinger.net>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+	Joe Perches <joe@perches.com>
+References: <20120402164920.GA13264@x1.osrc.amd.com>
+ <1333385618.15422.17.camel@joe2Laptop>
+ <20120402171733.GB13264@x1.osrc.amd.com>
+ <4F79E5A5.9000004@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4F79E5A5.9000004@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 02, 2012 at 12:45:09PM -0500, Larry Finger wrote:
+> The current situation is fine with me. Any user with an embedded
+> system can save a lot of memory by setting CONFIG_RTLWIFI_DEBUG to
+> n. If a normal distro chooses to do that, then when some user of
+> that distro reports a problem and is unable to run with the module
+> parameter "debug=X", I get to say "Sorry, I cannot help you." :)
+> 
+> Of course, if you want to go through the source and convert every
+> instance of "RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ...)" to the
+> equivalent "pr_err(...), then I would probably sign off on it.
 
---=-lQxRmz6xi1Nez02CUZ4k
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I see. Well, I suppose when the driver matures, you're probably going
+to remove most of the debugging code yourself because you won't need it
+anymore and turn important printk statements into pr_err or pr_info or
+whatever.
 
-Hi Linus,
+However, the way it is default y now, people who do 'yes "" | make
+oldconfig' will be surprised to see a whole lot of debugging output
+spewed from the wireless driver upon next reboot, and I don't think you
+want that.
 
->  - HSI (High Speed Synchronous Serial Interface) framework. I'm
-> planning on pulling this into 3.4, it's in my queue, but I wanted to
-> bring it up one more time in case somebody has issues with it. Ping?
->=20
+I dunno, maybe CONFIG_DYNAMIC_DEBUG could be of help. There's also a
+howto: <Documentation/dynamic-debug-howto.txt>
 
-Just in case, I still want this pull request to go ahead.
+HTH.
 
-Thanks and br,
-Carlos Chinea
-
-
---=-lQxRmz6xi1Nez02CUZ4k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAABAgAGBQJPegxTAAoJEB6f1gasKaUubVUQAK8ARY3Yyat49xIZq4YUAq7n
-VBGwCQC2O35CG8w/MlbAaRv8ibzUbfCShbvZJ50otY+bZr1exMUly0wRcdtAHEcR
-qNsvCK0Eu+8/gmhXn0M3vrsBaz6rt20TUY1AiMW4A10mkWdleGsmyWbJaOzhRz35
-nu0rlxHvKJmNTpbFWLIfORGzZpRx6j1+zWJLNHnGllwT/zuTI/bNgS5BCtwo79kl
-Q3c1W7WZFk+CCMzu36TUa+rXMHnvMPm73NU4phMnb2uToC5cNbNVO8zwFjzprM3Y
-LHg0cC+/WujMR/QpOtMkBflwD2PIgfQUP3RH0dgxxY90phG9cA3nHL8exZ/vu2MO
-eQ6qI2dSeWvopM5IzLFxTE23OWcsBx5HJL9M9h/I+x32hD0+uaJQUENt/L1M0qLn
-fKgGwz1vRBA0Agx7TAtQ8gRcK3tRBBGopHavbsquhGZcCmCn/CwMr8Urw63yympl
-blylrbeRFPizO4PqVJNBSxifOdPOlGM4NvJ/fSfz5vBVkgdaKo6/Qeflk9qe36tV
-XSWOekNm7FFM64GYp2T4dP3PaZbm7f43btZpj1qvEkAcRtTU6RIXvQoZ5xvjlpTw
-0P9w7CkRtnSoED8HzzasP4Sa/OIhzuvW5EuQgcjPyoZyBv7Om4U7etrEwZiTTLS6
-rLIdvFafR6fLWFtXzGxC
-=tqcF
------END PGP SIGNATURE-----
-
---=-lQxRmz6xi1Nez02CUZ4k--
-
+-- 
+Regards/Gruss,
+    Boris.
