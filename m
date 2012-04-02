@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab2DBVtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 17:49:49 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:65216 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab2DBVts (ORCPT
+	id S1753480Ab2DBVva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 17:51:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38936 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab2DBVv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 17:49:48 -0400
-Date: Mon, 2 Apr 2012 14:49:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tao Ma <tm@tao.ma>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+	Mon, 2 Apr 2012 17:51:29 -0400
+Message-ID: <4F7A1F52.50706@kernel.dk>
+Date: Mon, 02 Apr 2012 14:51:14 -0700
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org
-Subject: Re: [PATCH 18/21] blkcg: move blkio_group_conf->weight to cfq
-Message-ID: <20120402214938.GA19634@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1332975091-10950-1-git-send-email-tj@kernel.org>
- <1332975091-10950-19-git-send-email-tj@kernel.org>
- <4F7A1C8B.3010402@tao.ma>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7A1C8B.3010402@tao.ma>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: Re: [PATCHSET] block: modularize blkcg config and stat file handling
+References: <1332975091-10950-1-git-send-email-tj@kernel.org> <4F741AED.6090901@kernel.dk> <20120402200233.GB17175@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120402200233.GB17175@dhcp-172-17-108-109.mtv.corp.google.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 2012-04-02 13:02, Tejun Heo wrote:
+> Hey, Jens.
+> 
+> On Thu, Mar 29, 2012 at 10:18:53AM +0200, Jens Axboe wrote:
+>> The diffstat is very tasty... I'll leave this on out until the cgroup
+>> merge mess is settled, though.
+> 
+> The following branch contains this patchset on top of the current
+> block/for-3.5/core 959d851caa "Merge branch 'for-3.5' of ../cgroup
+> into block/for-3.5/core-merged".
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-files
+> 
+> Other than $SUBJ update on the eigth patch from "blkcg:
+> blkg_conf_prep()" to "blkcg: simplify blkg_conf_prep()", the patchset
+> can be applied as-is on top of the current block/for-3.5/core.
 
-On Tue, Apr 03, 2012 at 05:39:23AM +0800, Tao Ma wrote:
-> I guess blkio->weight is a generic way of abstracting the weight between
-> different block cgroups.
-
-It isn't and can't be.  There's nothing generic about it across
-different policies and it's not even clear what that means.  If the
-user chooses combine, iops limit with cfq weights, what the hell is
-"generic" about that weight?
-
-> Yes, currently, only cfq uses it, but I am
-> trying to improve Shaohua's original fiops scheduler and add cgroup
-> support to it. So please leave it there so that future scheduler(if
-> other than the fiops scheduler) can use the framework.
-
-So, if you want to implement a new blkcg policy, add the config
-parameters and export the stats the policy wants *yourself*.  Not
-having clear separation between policies and generic stuff was what
-led us to this yucky mess and there's no way we're going back there.
-So, NO.
-
-Thanks.
+Alright, pulled in as well. I'm glad we pushed this to 3.5 :-)
 
 -- 
-tejun
+Jens Axboe
+
