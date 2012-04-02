@@ -1,288 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab2DBJIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:08:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34794 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2DBJIQ (ORCPT
+	id S1751475Ab2DBJME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:12:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48678 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab2DBJMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:08:16 -0400
-Date: Mon, 2 Apr 2012 11:08:13 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alex Gershgorin <alexg@meprolight.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        broonie@opensource.wolfsonmicro.com, fabio.estevam@freescale.com
-Subject: Re: [PATCH v3] ARM: regulator: i.MX35-PDK Add regulator support
-Message-ID: <20120402090813.GP3852@pengutronix.de>
-References: <1333008765-26114-1-git-send-email-alexg@meprolight.com>
+	Mon, 2 Apr 2012 05:12:01 -0400
+Date: Mon, 2 Apr 2012 11:12:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] debugobjects: Use GFP_ATOMIC to allocate when
+ initializing
+In-Reply-To: <CA+1xoqeTJu-uaaOCek5Y5ZKam83ePoRNFdxLcqdonYxok-BkhA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1204021111070.2542@ionos>
+References: <1333228972-4594-1-git-send-email-levinsasha928@gmail.com> <alpine.LFD.2.02.1204011935190.2542@ionos> <CA+1xoqeTJu-uaaOCek5Y5ZKam83ePoRNFdxLcqdonYxok-BkhA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333008765-26114-1-git-send-email-alexg@meprolight.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:07:41 up 141 days, 16:54, 37 users,  load average: 0.07, 0.05,
- 0.20
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 10:12:45AM +0200, Alex Gershgorin wrote:
-> Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
-> ---
-> Applies to v3.4
-> 
-> Changes since v2:
->  * Renaming dev_name from "1-000a" to "0-000a"
+On Sun, 1 Apr 2012, Sasha Levin wrote:
+> On Sun, Apr 1, 2012 at 7:36 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Sat, 31 Mar 2012, Sasha Levin wrote:
 
-Applied, thanks
+Peter ????
 
-Sascha
+> >> During the init stage, we have only 1 cpu and run with IRQs disabled,
+> >> we can't allocate with GFP_KERNEL.
+> >>
+> >> This also fixes the related warning on boot.
+> >
+> > Hrmm. This should not be the case. In early boot GFP_KERNEL
+> > allocations should not trigger a warning when interrupts are
+> > disabled. Which kind of warning are you observing ?
+> 
+> There were two, both pointing at the same WARN(). I don't have the
+> first one which was fixed in this patch handy, but the second one is:
+> 
+> [    0.000000] WARNING: at kernel/lockdep.c:2739
+> lockdep_trace_alloc+0x11f/0x130()
+> [    0.000000] Pid: 0, comm: swapper/0 Not tainted
+> 3.3.0-next-20120330-sasha-dirty #40
+> [    0.000000] Call Trace:
+> [    0.000000]  [<ffffffff810b4175>] warn_slowpath_common+0x75/0xb0
+> [    0.000000]  [<ffffffff810b41c5>] warn_slowpath_null+0x15/0x20
+> [    0.000000]  [<ffffffff8111999f>] lockdep_trace_alloc+0x11f/0x130
+> [    0.000000]  [<ffffffff81182e0c>] __alloc_pages_nodemask+0x9c/0x260
+> [    0.000000]  [<ffffffff826bcea7>] ? retint_restore_args+0x6/0x13
+> [    0.000000]  [<ffffffff811cc2cd>] kmemcheck_alloc_shadow+0x4d/0xf0
+> [    0.000000]  [<ffffffff811c5597>] allocate_slab+0x197/0x270
+> [    0.000000]  [<ffffffff811c569b>] new_slab+0x2b/0x190
+> [    0.000000]  [<ffffffff811c7e7a>] ? __slab_alloc+0x5a/0x6b0
+> [    0.000000]  [<ffffffff811c82b3>] __slab_alloc+0x493/0x6b0
+> [    0.000000]  [<ffffffff81114f61>] ? trace_hardirqs_off_caller+0xe1/0x150
+> [    0.000000]  [<ffffffff81886f1d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+> [    0.000000]  [<ffffffff8395eb55>] ?
+> debug_objects_replace_static_objects+0x2a/0x1f5
+> [    0.000000]  [<ffffffff8395eb55>] ?
+> debug_objects_replace_static_objects+0x2a/0x1f5
+> [    0.000000]  [<ffffffff811c900e>] kmem_cache_alloc+0x17e/0x1a0
+> [    0.000000]  [<ffffffff8395eb55>]
+> debug_objects_replace_static_objects+0x2a/0x1f5
+> [    0.000000]  [<ffffffff8395ed59>] debug_objects_mem_init+0x39/0x68
+> [    0.000000]  [<ffffffff8392af65>] start_kernel+0x33a/0x3f8
+> [    0.000000]  [<ffffffff8392aa13>] ? kernel_init+0x280/0x280
+> [    0.000000]  [<ffffffff8392a2b6>] x86_64_start_reservations+0xa1/0xa6
+> [    0.000000]  [<ffffffff8392a410>] x86_64_start_kernel+0x155/0x164
+> [    0.000000] ---[ end trace a7919e7f17c0a725 ]---
 
-> ---
->  arch/arm/mach-imx/mach-mx35_3ds.c |  193 +++++++++++++++++++++++++++++++++++++
->  1 files changed, 193 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/mach-mx35_3ds.c b/arch/arm/mach-imx/mach-mx35_3ds.c
-> index e14291d..9247a79 100644
-> --- a/arch/arm/mach-imx/mach-mx35_3ds.c
-> +++ b/arch/arm/mach-imx/mach-mx35_3ds.c
-> @@ -34,6 +34,8 @@
->  #include <linux/usb/otg.h>
->  
->  #include <linux/mtd/physmap.h>
-> +#include <linux/mfd/mc13892.h>
-> +#include <linux/regulator/machine.h>
->  
->  #include <asm/mach-types.h>
->  #include <asm/mach/arch.h>
-> @@ -253,6 +255,8 @@ static iomux_v3_cfg_t mx35pdk_pads[] = {
->  	MX35_PAD_CSI_MCLK__IPU_CSI_MCLK,
->  	MX35_PAD_CSI_PIXCLK__IPU_CSI_PIXCLK,
->  	MX35_PAD_CSI_VSYNC__IPU_CSI_VSYNC,
-> +	/*PMIC IRQ*/
-> +	MX35_PAD_GPIO2_0__GPIO2_0,
->  };
->  
->  /*
-> @@ -317,6 +321,193 @@ static struct platform_device mx35_3ds_ov2640 = {
->  	},
->  };
->  
-> +static struct regulator_consumer_supply sw1_consumers[] = {
-> +	{
-> +		.supply = "cpu_vcc",
-> +	}
-> +};
-> +
-> +static struct regulator_consumer_supply vcam_consumers[] = {
-> +	/* sgtl5000 */
-> +	REGULATOR_SUPPLY("VDDA", "0-000a"),
-> +};
-> +
-> +static struct regulator_consumer_supply vaudio_consumers[] = {
-> +	REGULATOR_SUPPLY("cmos_vio", "soc-camera-pdrv.0"),
-> +};
-> +
-> +static struct regulator_init_data sw1_init = {
-> +	.constraints = {
-> +		.name = "SW1",
-> +		.min_uV = 600000,
-> +		.max_uV = 1375000,
-> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-> +		.valid_modes_mask = 0,
-> +		.always_on = 1,
-> +		.boot_on = 1,
-> +	},
-> +	.num_consumer_supplies = ARRAY_SIZE(sw1_consumers),
-> +	.consumer_supplies = sw1_consumers,
-> +};
-> +
-> +static struct regulator_init_data sw2_init = {
-> +	.constraints = {
-> +		.name = "SW2",
-> +		.always_on = 1,
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data sw3_init = {
-> +	.constraints = {
-> +		.name = "SW3",
-> +		.always_on = 1,
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data sw4_init = {
-> +	.constraints = {
-> +		.name = "SW4",
-> +		.always_on = 1,
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data viohi_init = {
-> +	.constraints = {
-> +		.name = "VIOHI",
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vusb_init = {
-> +	.constraints = {
-> +		.name = "VUSB",
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vdig_init = {
-> +	.constraints = {
-> +		.name = "VDIG",
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vpll_init = {
-> +	.constraints = {
-> +		.name = "VPLL",
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vusb2_init = {
-> +	.constraints = {
-> +		.name = "VUSB2",
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vvideo_init = {
-> +	.constraints = {
-> +		.name = "VVIDEO",
-> +		.boot_on = 1
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vaudio_init = {
-> +	.constraints = {
-> +		.name = "VAUDIO",
-> +		.min_uV = 2300000,
-> +		.max_uV = 3000000,
-> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-> +		.boot_on = 1
-> +	},
-> +	.num_consumer_supplies = ARRAY_SIZE(vaudio_consumers),
-> +	.consumer_supplies = vaudio_consumers,
-> +};
-> +
-> +static struct regulator_init_data vcam_init = {
-> +	.constraints = {
-> +		.name = "VCAM",
-> +		.min_uV = 2500000,
-> +		.max_uV = 3000000,
-> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-> +					REGULATOR_CHANGE_MODE,
-> +		.valid_modes_mask = REGULATOR_MODE_FAST | REGULATOR_MODE_NORMAL,
-> +		.boot_on = 1
-> +	},
-> +	.num_consumer_supplies = ARRAY_SIZE(vcam_consumers),
-> +	.consumer_supplies = vcam_consumers,
-> +};
-> +
-> +static struct regulator_init_data vgen1_init = {
-> +	.constraints = {
-> +		.name = "VGEN1",
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vgen2_init = {
-> +	.constraints = {
-> +		.name = "VGEN2",
-> +		.boot_on = 1,
-> +	}
-> +};
-> +
-> +static struct regulator_init_data vgen3_init = {
-> +	.constraints = {
-> +		.name = "VGEN3",
-> +	}
-> +};
-> +
-> +static struct mc13xxx_regulator_init_data mx35_3ds_regulators[] = {
-> +	{ .id = MC13892_SW1, .init_data = &sw1_init },
-> +	{ .id = MC13892_SW2, .init_data = &sw2_init },
-> +	{ .id = MC13892_SW3, .init_data = &sw3_init },
-> +	{ .id = MC13892_SW4, .init_data = &sw4_init },
-> +	{ .id = MC13892_VIOHI, .init_data = &viohi_init },
-> +	{ .id = MC13892_VPLL, .init_data = &vpll_init },
-> +	{ .id = MC13892_VDIG, .init_data = &vdig_init },
-> +	{ .id = MC13892_VUSB2, .init_data = &vusb2_init },
-> +	{ .id = MC13892_VVIDEO, .init_data = &vvideo_init },
-> +	{ .id = MC13892_VAUDIO, .init_data = &vaudio_init },
-> +	{ .id = MC13892_VCAM, .init_data = &vcam_init },
-> +	{ .id = MC13892_VGEN1, .init_data = &vgen1_init },
-> +	{ .id = MC13892_VGEN2, .init_data = &vgen2_init },
-> +	{ .id = MC13892_VGEN3, .init_data = &vgen3_init },
-> +	{ .id = MC13892_VUSB, .init_data = &vusb_init },
-> +};
-> +
-> +static struct mc13xxx_platform_data mx35_3ds_mc13892_data = {
-> +	.flags = MC13XXX_USE_RTC | MC13XXX_USE_TOUCHSCREEN,
-> +	.regulators = {
-> +		.num_regulators = ARRAY_SIZE(mx35_3ds_regulators),
-> +		.regulators = mx35_3ds_regulators,
-> +	},
-> +};
-> +
-> +#define GPIO_PMIC_INT IMX_GPIO_NR(2, 0)
-> +
-> +static struct i2c_board_info mx35_3ds_i2c_mc13892 = {
-> +
-> +	I2C_BOARD_INFO("mc13892", 0x08),
-> +	.platform_data = &mx35_3ds_mc13892_data,
-> +	.irq = IMX_GPIO_TO_IRQ(GPIO_PMIC_INT),
-> +};
-> +
-> +static void __init imx35_3ds_init_mc13892(void)
-> +{
-> +	int ret = gpio_request_one(GPIO_PMIC_INT, GPIOF_DIR_IN, "pmic irq");
-> +
-> +	if (ret) {
-> +		pr_err("failed to get pmic irq: %d\n", ret);
-> +		return;
-> +	}
-> +
-> +	i2c_register_board_info(0, &mx35_3ds_i2c_mc13892, 1);
-> +}
-> +
->  static int mx35_3ds_otg_init(struct platform_device *pdev)
->  {
->  	return mx35_initialize_usb_hw(pdev->id, MXC_EHCI_INTERNAL_PHY);
-> @@ -412,6 +603,8 @@ static void __init mx35_3ds_init(void)
->  	imx35_fb_pdev = imx35_add_mx3_sdc_fb(&mx3fb_pdata);
->  	mx35_3ds_lcd.dev.parent = &imx35_fb_pdev->dev;
->  	platform_device_register(&mx35_3ds_lcd);
-> +
-> +	imx35_3ds_init_mc13892();
->  }
->  
->  static void __init mx35pdk_timer_init(void)
-> -- 
-> 1.7.0.4
-> 
-> 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+ 
