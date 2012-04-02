@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab2DBOqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:46:18 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:54284 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab2DBOqR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:46:17 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 95.21.41.4
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Rl1xJHBDyhrCqDv8oBVER
-Date: Mon, 2 Apr 2012 16:46:11 +0200
-From: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
-To: linux-kernel@vger.kernel.org
-Subject: Hang opening a pipe written to by a child, with SIGCHLD
-Message-ID: <20120402144611.GY3029@vicerveza.homeunix.net>
+	id S1752580Ab2DBOsh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:48:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403Ab2DBOsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 10:48:36 -0400
+Date: Mon, 2 Apr 2012 16:48:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        "linux-security-module@vger.kernel.org"@jasper.es
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120402144821.GA3334@redhat.com>
+References: <20120331091049.19373.28994.stgit@zurg> <20120331092929.19920.54540.stgit@zurg> <20120331201324.GA17565@redhat.com> <20120331203912.GB687@moon> <4F79755B.3030703@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Accept-Language: ca, es, eo, ru, en, jbo, tokipona
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4F79755B.3030703@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 04/02, Konstantin Khlebnikov wrote:
+>
+> In this patch I leave mm->exe_file lockless.
+> After exec/fork we can change it only for current task and only if mm->mm_users == 1.
+>
+> something like this:
+>
+> task_lock(current);
 
-I had troubles running a simple bash script where a child wrote to a named pipe
-before dying, and the parent opened and read the pipe.
+OK, this protects against the race with get_task_mm()
 
-On a computer, my script hangs always. Also under 'strace'. Not under 'strace
--f'. Thinking of some race, I wrote a small script that hangs in the linuxes I
-could try (3.2.11 now):
+> if (atomic_read(&current->mm->mm_users) == 1)
 
-----------
-#!/var/run/current-system/sw/bin/bash
+this means PR_SET_MM_EXE_FILE can fail simply because someone did
+get_task_mm(). Or the caller is multithreaded.
 
-PIPE=/tmp/pipe
+> 	set_mm_exe_file(current->mm, new_file);
 
-rm -f $PIPE
-mkfifo $PIPE
+No, fput() can sleep.
 
-function spawn {
-    echo DONE > $PIPE
-}
+Oleg.
 
-spawn sleep 1 &
-
-while true; do
-    echo reading
-    while read LINE < $PIPE; do
-        echo $LINE
-        spawn &
-    done
-done
--------------
-
-bash uses SA_RESTART on SIGCHLD handler, and nevertheless the script halts at
-printing some amount of 'DONE'. Strace shows it's inside the open() call, while the open
-call has been interrupted by SIGCHLD. One of the computers I have hangs at the *first* DONE always, and that's why it's annoying to me.
-
-Can anyone reproduce this?
-
-Regards,
-Lluís.
