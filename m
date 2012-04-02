@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab2DBH2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 03:28:14 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57094 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab2DBH2M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 03:28:12 -0400
-Date: Mon, 2 Apr 2012 09:27:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Pavel Machek <pavel@ucw.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>, Igor Mammedov <imammedo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86: v3.4-rc1 s2ram regression
-Message-ID: <20120402072759.GA23234@gmail.com>
-References: <20120401132643.4922.79748.stgit@zurg>
- <20120401165354.GA18526@amt.cnet>
+	id S1751457Ab2DBH66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 03:58:58 -0400
+Received: from mout6.freenet.de ([195.4.92.96]:55069 "EHLO mout6.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082Ab2DBH65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 03:58:57 -0400
+Message-ID: <4F795BA8.7020404@01019freenet.de>
+Date: Mon, 02 Apr 2012 09:56:24 +0200
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120401165354.GA18526@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KVM <kvm@vger.kernel.org>,
+        Kernel-Mailingliste <linux-kernel@vger.kernel.org>
+Subject: AMD iommu: Difference between setting iommu=pt and not setting this
+ option
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Marcelo Tosatti <mtosatti@redhat.com> wrote:
+please, could somebody explain the difference in behaviour between
+setting the boot option iommu=pt and not setting it?
 
-> On Sun, Apr 01, 2012 at 05:26:43PM +0400, Konstantin Khlebnikov wrote:
-> > commit b74f05d61b73af584d0c39121980171389ecfaaa
-> > ("x86: kvmclock: abstract save/restore sched_clock_state")
-> > breaks s2ram for my notebook. It hangs (maybe panic) somewhere on resume stage
-> > and blinks with all possible leds =) Screen is black, so I don't know what happened.
-> > 
-> > reverting or following patch helps
-> > 
-> > Bisected-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> > Cc: Avi Kivity <avi@redhat.com>
-> > Cc: Igor Mammedov <imammedo@redhat.com>
-> > ---
-> >  arch/x86/power/cpu.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-> > index 4793683..2bc5a82 100644
-> > --- a/arch/x86/power/cpu.c
-> > +++ b/arch/x86/power/cpu.c
-> > @@ -231,8 +231,8 @@ static void __restore_processor_state(struct saved_context *ctxt)
-> >  /* Needed by apm.c */
-> >  void restore_processor_state(void)
-> >  {
-> > -	x86_platform.restore_sched_clock_state();
-> >  	__restore_processor_state(&saved_context);
-> > +	x86_platform.restore_sched_clock_state();
-> >  }
-> >  #ifdef CONFIG_X86_32
-> >  EXPORT_SYMBOL(restore_processor_state);
-> 
-> The correct fix is in kvm.git (see below).
-> 
-> Ingo, can you please merge it through x86 tree while the
-> kvm.git issues are resolved? It has been forward to you directly.
-> 
->     x86: call restore_sched_clock_state after %gs is initialized
->     
->     restore_sched_clock_state methods use percpu data, therefore they
->     must run after %gs is initialized, but before mtrr_bp_restore (due to
->     lockstat using sched_clock).
->     
->     Move it to the correct place.
->     
->     Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
->     Signed-off-by: Avi Kivity <avi@redhat.com>
+I can see the following differences:
 
-Ok, will queue it up.
+w/ iommu=pt:
 
-Thanks,
+[    0.832946] AMD-Vi: Enabling IOMMU at 0000:00:00.2 cap 0x40
+[    0.883983] AMD-Vi: Initialized for Passthrough Mode
 
-	Ingo
+
+w/o iommu=pt:
+
+[    0.834905] AMD-Vi: Enabling IOMMU at 0000:00:00.2 cap 0x40
+[    0.894172] AMD-Vi: Lazy IO/TLB flushing enabled
+
+
+
+In both cases, I can pass through a PCIe device but not a PCI device (->
+no problem with IRQ-sharing - the PCI device has its own exclusive IRQ).
+
+If I use iommu=pt, the passed PCIe device is broken after the VM has
+been shutdown and started again.
+
+
+
+Thank you,
+kind regards,
+Andreas
