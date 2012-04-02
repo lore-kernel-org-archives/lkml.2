@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab2DBI1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 04:27:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40296 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2DBI1t (ORCPT
+	id S1751764Ab2DBI3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 04:29:53 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:33351 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab2DBI3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 04:27:49 -0400
-Message-ID: <4F796300.5040905@openvz.org>
-Date: Mon, 02 Apr 2012 12:27:44 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Mon, 2 Apr 2012 04:29:52 -0400
+Message-ID: <4F796377.2050008@ahsoftware.de>
+Date: Mon, 02 Apr 2012 10:29:43 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120303 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Pavel Machek <pavel@ucw.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>, Igor Mammedov <imammedo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86: v3.4-rc1 s2ram regression
-References: <20120401132643.4922.79748.stgit@zurg> <20120401165354.GA18526@amt.cnet>
-In-Reply-To: <20120401165354.GA18526@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+CC: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: Re: bluetooth: fix deadlock on device reset and power down
+References: <4F77055A.2070502@ahsoftware.de> <20120402065525.GA29687@aemeltch-MOBL1>
+In-Reply-To: <20120402065525.GA29687@aemeltch-MOBL1>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcelo Tosatti wrote:
-> On Sun, Apr 01, 2012 at 05:26:43PM +0400, Konstantin Khlebnikov wrote:
->> commit b74f05d61b73af584d0c39121980171389ecfaaa
->> ("x86: kvmclock: abstract save/restore sched_clock_state")
->> breaks s2ram for my notebook. It hangs (maybe panic) somewhere on resume stage
->> and blinks with all possible leds =) Screen is black, so I don't know what happened.
+Am 02.04.2012 08:55, schrieb Andrei Emeltchenko:
+> Hi Alexander,
+> 
+> On Sat, Mar 31, 2012 at 03:23:38PM +0200, Alexander Holler wrote:
+>> I've experienced a deadlock on shutdown using kernel 3.3 and tracked
+>> it down. Because I'm not very familiar with the bluetooth stack I'm
+>> not sure if the below patch is correct, but it fixed the problem
+>> here.
+> 
+> Could you please attach deadlock dump?
+> 
 >>
->> reverting or following patch helps
+>> Commit 09fd0de5bd8f8ef3317e5365f92f1a13dcd89aa9 introduced a deadlock:
 >>
->> Bisected-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Cc: Thomas Gleixner<tglx@linutronix.de>
->> Cc: Marcelo Tosatti<mtosatti@redhat.com>
->> Cc: Avi Kivity<avi@redhat.com>
->> Cc: Igor Mammedov<imammedo@redhat.com>
->> ---
->>   arch/x86/power/cpu.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
->> index 4793683..2bc5a82 100644
->> --- a/arch/x86/power/cpu.c
->> +++ b/arch/x86/power/cpu.c
->> @@ -231,8 +231,8 @@ static void __restore_processor_state(struct saved_context *ctxt)
->>   /* Needed by apm.c */
->>   void restore_processor_state(void)
->>   {
->> -	x86_platform.restore_sched_clock_state();
->>   	__restore_processor_state(&saved_context);
->> +	x86_platform.restore_sched_clock_state();
->>   }
->>   #ifdef CONFIG_X86_32
->>   EXPORT_SYMBOL(restore_processor_state);
->
-> The correct fix is in kvm.git (see below).
+>> bluetoothd calls ioctl HCIDEVDOWN
+>>     hci_sock_ioctl()
+>>         hci_dev_close()
+>>             hci_dev_do_close()
+>>                 hci_dev_lock(hdev);
+>>                 inquiry_cache_flush();
+>>                 hci_conn_hash_flush();
+>>                     hci_conn_del()
+>>                         cancel_delayed_work_sync()
+>>                             hci_conn_timeout()
+>>                                 hci_dev_lock(hdev); /* DEADLOCK */
+> 
+> I am actually not sure that hci_conn_timeout locks hdev. Why do you think
+> so?
 
-Thanks. Your patch works for me too.
+By reading the source, printk and suffering through the deadlock. It's
+especially painfull when using a bt-keyboard and systemd, because
+systemd tries 4 times (~ some minutes) to kill bluetoothd before it
+marks the service as failed and finally continues to shut down.
 
->
-> Ingo, can you please merge it through x86 tree while the
-> kvm.git issues are resolved? It has been forward to you directly.
->
->      x86: call restore_sched_clock_state after %gs is initialized
->
->      restore_sched_clock_state methods use percpu data, therefore they
->      must run after %gs is initialized, but before mtrr_bp_restore (due to
->      lockstat using sched_clock).
->
->      Move it to the correct place.
->
->      Signed-off-by: Marcelo Tosatti<mtosatti@redhat.com>
->      Signed-off-by: Avi Kivity<avi@redhat.com>
->
->
+Just try to kill bluetoothd while a bt-mouse or bt-keyboard is connected.
 
+But I have to admit, that my patch is likely the wrong solution as I
+think it will introduce some race conditions. Anyway, I prefer to live
+with them (the race conditions) instead of the deadlock. So for
+inclusion into the kernel a proper solution is needed.
+But already said, I'm not familiar with the bt-stack and don't know
+about the locking strategies inside the stack, so it's hard for me to
+find my way through the source.
+
+Regards,
+
+Alexander
