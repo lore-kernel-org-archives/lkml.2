@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab2DBDi2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 23:38:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56923 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018Ab2DBDi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 23:38:27 -0400
-Message-ID: <1333337899.30734.31.camel@pasglop>
-Subject: [PATCH] nouveau/bios: Fix tracking of BIOS image data
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: dri-devel@lists.freedesktop.org
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>
-Date: Mon, 02 Apr 2012 13:38:19 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754016Ab2DBDkl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 23:40:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50648 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783Ab2DBDkk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 23:40:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAN_cFWMcttuebg_i8iWc+szDYMFT7gR=VJW0VtRj0Dh061Ob=A@mail.gmail.com>
+References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
+	<CAN_cFWMcttuebg_i8iWc+szDYMFT7gR=VJW0VtRj0Dh061Ob=A@mail.gmail.com>
+Date: Mon, 2 Apr 2012 12:40:39 +0900
+X-Google-Sender-Auth: 0auCsR9CM-nHx8MF5PpwwrMUWBU
+Message-ID: <CAH9JG2VujPUQfJ=7nyqM90jzuf60qqNYVi4fN40F1SpDua75gg@mail.gmail.com>
+Subject: Re: Linux 3.4-rc1
+From: Kyungmin Park <kmpark@infradead.org>
+To: Rob Clark <rob.clark@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linaro-dev@lists.linaro.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code tries various methods for retreiving the BIOS data. However
-it doesn't clear the bios->data pointer between the iterations.
+On Mon, Apr 2, 2012 at 12:34 AM, Rob Clark <rob.clark@linaro.org> wrote:
+> On Sat, Mar 31, 2012 at 6:58 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>  - drm dma-buf prime support. Dave Airlie sent me the pull request but
+>> didn't push very hard for it, it's in my "ok, I can still pull it for
+>> 3.4 if individual DRM driver people tell me that it will make their
+>> lives easier." So this is in limbo - I have nothing against it, but I
+>> won't pull unless I get a few people say "yes, please".
+>
+> yes, please :-)
+>
+> Note that the core drm dma-buf/prime support has already been reviewed
+> by a lot of folks, and tested with a few different drivers (exynos,
+> omapdrm, i915, nouveau, udl) with some driver support that could be
+> pushed for 3.5 cycle if the core support makes it in for 3.4 cycle.
+Yes, Please.
 
-In some cases, the shadow() method will fail and not update bios->data
-at all, which will cause us to "score" the old data and incorrectly
-attribute that score to the new method. This can cause double frees
-later when disposing of the unused data.
+It's used for exynos display and multimedia.
 
-Additionally, we were not freeing the data for methods that fail the
-score test (we only freed when a "best" is superseeded, not when the
-new method has a lower score than the exising "best"). Fix that as well.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
-
-This was found by code inspection while chasing a different bug,
-I do not hit the problem path on my machine.
-
- drivers/gpu/drm/nouveau/nouveau_bios.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/nouveau/nouveau_bios.c b/drivers/gpu/drm/nouveau/nouveau_bios.c
-index 80963d0..1947d61 100644
---- a/drivers/gpu/drm/nouveau/nouveau_bios.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bios.c
-@@ -273,6 +273,7 @@ bios_shadow(struct drm_device *dev)
- 		mthd->score = score_vbios(bios, mthd->rw);
- 		mthd->size = bios->length;
- 		mthd->data = bios->data;
-+		bios->data = NULL;
- 	} while (mthd->score != 3 && (++mthd)->shadow);
- 
- 	mthd = shadow_methods;
-@@ -281,7 +282,8 @@ bios_shadow(struct drm_device *dev)
- 		if (mthd->score > best->score) {
- 			kfree(best->data);
- 			best = mthd;
--		}
-+		} else
-+			kfree(mthd->data);
- 	} while ((++mthd)->shadow);
- 
- 	if (best->score) {
--- 
-1.7.9.5
-
-
-
+Thank you,
+Kyungmin Park
+>
+> BR,
+> -R
+>
+> _______________________________________________
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
