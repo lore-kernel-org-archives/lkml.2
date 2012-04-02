@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2DBOyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:54:21 -0400
-Received: from host171.canaca.com ([67.55.55.225]:39678 "EHLO
+	id S1752818Ab2DBOy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:54:27 -0400
+Received: from host171.canaca.com ([67.55.55.225]:39681 "EHLO
 	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab2DBOyU (ORCPT
+	with ESMTP id S1751506Ab2DBOyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:54:20 -0400
+	Mon, 2 Apr 2012 10:54:24 -0400
 From: Simon Wood <simon@mungewell.org>
 To: linux-input@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
         Michael Bauer <michael@m-bauer.org>,
         Michal Maly <madcatxster@gmail.com>, Simon Wood <simon@mungewell.org>
-Subject: [PATCH 1/2] HID: hid-lg4ff: Use Private Data
-Date: Mon,  2 Apr 2012 07:54:03 -0700
-Message-Id: <1333378444-3117-1-git-send-email-simon@mungewell.org>
+Subject: [PATCH 2/2] HID: hid-lg4ff: Add support for G27 leds
+Date: Mon,  2 Apr 2012 07:54:04 -0700
+Message-Id: <1333378444-3117-2-git-send-email-simon@mungewell.org>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <a4e40aa5c43be934d83240849aa25f3b.squirrel@mungewell.org>
+In-Reply-To: <1333378444-3117-1-git-send-email-simon@mungewell.org>
 References: <a4e40aa5c43be934d83240849aa25f3b.squirrel@mungewell.org>
+ <1333378444-3117-1-git-send-email-simon@mungewell.org>
 X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
 X-AntiAbuse: Primary Hostname - host171.canaca.com
 X-AntiAbuse: Original Domain - vger.kernel.org
@@ -30,188 +31,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use private data in hid-lg4ff to store device properties.
+This patch adds supports for controlling the LED 'tachometer' on
+the G27 wheel, via the LED subsystem.
 
-This code was writen by Michal, he asked me to check it and forward
-it on to the list.
+The 5 LEDs are arranged from right (1=grn, 2=grn, 3=yel, 4=yel, 5=red)
+and 'mirrored' to the left (10 LEDs in total).
 
-Signed-off-by: Michal Maly <madcatxster@gmail.com>
 Signed-off-by: Simon Wood <simon@mungewell.org>
 ---
- drivers/hid/hid-lg4ff.c |   96 +++++++++++++++++++++-------------------------
- 1 files changed, 44 insertions(+), 52 deletions(-)
+ drivers/hid/hid-lg4ff.c |  159 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 158 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-index 1145292..c3146e0 100644
+index c3146e0..afd13ee 100644
 --- a/drivers/hid/hid-lg4ff.c
 +++ b/drivers/hid/hid-lg4ff.c
-@@ -51,10 +51,7 @@ static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *at
- 
- static DEVICE_ATTR(range, S_IRWXU | S_IRWXG | S_IRWXO, lg4ff_range_show, lg4ff_range_store);
- 
--static bool list_inited;
--
- struct lg4ff_device_entry {
--	char  *device_id;	/* Use name in respective kobject structure's address as the ID */
+@@ -55,7 +55,8 @@ struct lg4ff_device_entry {
  	__u16 range;
  	__u16 min_range;
  	__u16 max_range;
-@@ -63,8 +60,6 @@ struct lg4ff_device_entry {
+-	__u8  leds;
++	__u8  led_state;
++	struct led_classdev *led[5];
+ 	struct list_head list;
  	void (*set_range)(struct hid_device *hid, u16 range);
  };
+@@ -335,6 +336,92 @@ static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *at
+ 	return count;
+ }
  
--static struct lg4ff_device_entry device_list;
--
- static const signed short lg4ff_wheel_effects[] = {
- 	FF_CONSTANT,
- 	FF_AUTOCENTER,
-@@ -285,18 +280,20 @@ static void hid_lg4ff_switch_native(struct hid_device *hid, const struct lg4ff_n
- /* Read current range and display it in terminal */
- static ssize_t lg4ff_range_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
--	struct lg4ff_device_entry *uninitialized_var(entry);
--	struct list_head *h;
- 	struct hid_device *hid = to_hid_device(dev);
-+	struct lg4ff_device_entry *uninitialized_var(entry);
-+	struct lg_drv_data *uninitialized_var(drv_data);
- 	size_t count;
- 
--	list_for_each(h, &device_list.list) {
--		entry = list_entry(h, struct lg4ff_device_entry, list);
--		if (strcmp(entry->device_id, (&hid->dev)->kobj.name) == 0)
--			break;
-+	drv_data = hid_get_drvdata(hid);
-+	if (!drv_data) {
-+		hid_err(hid, "Private driver data not found!\n");
-+		return 0;
- 	}
--	if (h == &device_list.list) {
--		dbg_hid("Device not found!");
++static void lg4ff_set_leds(struct hid_device *hid, __u8 leds)
++{
++	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
++	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
 +
-+	entry = drv_data->device_props;
-+	if (!entry) {
-+		hid_err(hid, "Device properties not found!\n");
- 		return 0;
- 	}
- 
-@@ -308,19 +305,21 @@ static ssize_t lg4ff_range_show(struct device *dev, struct device_attribute *att
-  * according to the type of the wheel */
- static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
- {
--	struct lg4ff_device_entry *uninitialized_var(entry);
--	struct list_head *h;
- 	struct hid_device *hid = to_hid_device(dev);
-+	struct lg4ff_device_entry *uninitialized_var(entry);
-+	struct lg_drv_data *drv_data;
- 	__u16 range = simple_strtoul(buf, NULL, 10);
- 
--	list_for_each(h, &device_list.list) {
--		entry = list_entry(h, struct lg4ff_device_entry, list);
--		if (strcmp(entry->device_id, (&hid->dev)->kobj.name) == 0)
--			break;
-+	drv_data = hid_get_drvdata(hid);
-+	if (!drv_data) {
-+		hid_err(hid, "Private driver data not found!\n");
-+		return 0;
- 	}
--	if (h == &device_list.list) {
--		dbg_hid("Device not found!");
--		return count;
++	report->field[0]->value[0] = 0xf8;
++	report->field[0]->value[1] = 0x12;
++	report->field[0]->value[2] = leds;
++	report->field[0]->value[3] = 0x00;
++	report->field[0]->value[4] = 0x00;
++	report->field[0]->value[5] = 0x00;
++	report->field[0]->value[6] = 0x00;
++	usbhid_submit_report(hid, report, USB_DIR_OUT);
++}
 +
-+	entry = drv_data->device_props;
++static void lg4ff_led_set_brightness(struct led_classdev *led_cdev,
++			enum led_brightness value)
++{
++	struct device *dev;
++	struct hid_device *hid;
++	struct lg4ff_device_entry *uninitialized_var(entry);
++	int i, state = 0;
++	struct lg_drv_data* drv_data;
++	dev = led_cdev->dev->parent;
++	hid = container_of(dev, struct hid_device, dev);
++	drv_data = (struct lg_drv_data *)hid_get_drvdata(hid);
++
++	if (!drv_data) {
++		hid_err(hid, "Device data not found.");
++		return;
++	}
++
++	entry = (struct lg4ff_device_entry *)drv_data->device_props; 
++
 +	if (!entry) {
-+		hid_err(hid, "Device properties not found!\n");
-+		return 0;
- 	}
- 
- 	if (range == 0)
-@@ -344,6 +343,7 @@ int lg4ff_init(struct hid_device *hid)
- 	struct hid_report *report;
- 	struct hid_field *field;
- 	struct lg4ff_device_entry *entry;
-+	struct lg_drv_data *drv_data;
++		hid_err(hid, "Device properties not found.");
++		return;
++	}
++
++	for (i = 0; i < 5; i++) {
++		if (led_cdev != entry->led[i])
++			continue;
++		state = (entry->led_state >> i) & 1;
++		if (value == LED_OFF && state) {
++			entry->led_state &= ~(1 << i);
++			lg4ff_set_leds(hid, entry->led_state);
++		} else if (value != LED_OFF && !state) {
++			entry->led_state |= 1 << i;
++			lg4ff_set_leds(hid, entry->led_state);
++		}
++		break;
++	}
++}
++
++static enum led_brightness lg4ff_led_get_brightness(struct led_classdev *led_cdev)
++{
++	struct device *dev;
++	struct hid_device *hid;
++	struct lg4ff_device_entry *uninitialized_var(entry);
++	int i, value = 0;
++	struct lg_drv_data* drv_data;
++	dev = led_cdev->dev->parent;
++	hid = container_of(dev, struct hid_device, dev);
++	drv_data = (struct lg_drv_data *)hid_get_drvdata(hid);
++
++	if (!drv_data) {
++		hid_err(hid, "Device data not found.");
++		return LED_OFF;
++	}
++
++	entry = (struct lg4ff_device_entry *)drv_data->device_props; 
++
++	if (!entry) {
++		hid_err(hid, "Device properties not found.");
++		return LED_OFF;
++	}
++
++	for (i = 0; i < 5; i++)
++		if (led_cdev == entry->led[i]) {
++			value = (entry->led_state >> i) & 1;
++			break;
++		}
++
++	return value ? LED_FULL : LED_OFF;
++}
++
+ int lg4ff_init(struct hid_device *hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+@@ -347,6 +434,9 @@ int lg4ff_init(struct hid_device *hid)
  	struct usb_device_descriptor *udesc;
  	int error, i, j;
  	__u16 bcdDevice, rev_maj, rev_min;
-@@ -423,28 +423,24 @@ int lg4ff_init(struct hid_device *hid)
- 		dev->ff->set_autocenter(dev, 0);
- 	}
++	struct led_classdev *led;
++	size_t name_sz;
++	char *name;
  
--		/* Initialize device_list if this is the first device to handle by lg4ff */
--	if (!list_inited) {
--		INIT_LIST_HEAD(&device_list.list);
--		list_inited = 1;
-+	/* Get private driver data */
-+	drv_data = hid_get_drvdata(hid);
-+	if (!drv_data) {
-+		hid_err(hid, "Cannot add device, private driver data not allocated\n");
-+		return -1;
- 	}
--
--	/* Add the device to device_list */
-+	
-+	/* Initialize device properties */
- 	entry = kzalloc(sizeof(struct lg4ff_device_entry), GFP_KERNEL);
- 	if (!entry) {
--		hid_err(hid, "Cannot add device, insufficient memory.\n");
--		return -ENOMEM;
--	}
--	entry->device_id = kstrdup((&hid->dev)->kobj.name, GFP_KERNEL);
--	if (!entry->device_id) {
--		hid_err(hid, "Cannot set device_id, insufficient memory.\n");
--		kfree(entry);
-+		hid_err(hid, "Cannot add device, insufficient memory to allocate device properties.\n");
- 		return -ENOMEM;
- 	}
-+	drv_data->device_props = entry;
+ 	/* Find the report to use */
+ 	if (list_empty(report_list)) {
+@@ -453,14 +543,70 @@ int lg4ff_init(struct hid_device *hid)
+ 	if (entry->set_range != NULL)
+ 		entry->set_range(hid, entry->range);
+ 
++	/* register led subsystem - G27 only */
++	entry->led_state = 0;
++	entry->led[0] = NULL;
++	entry->led[1] = NULL;
++	entry->led[2] = NULL;
++	entry->led[3] = NULL;
++	entry->led[4] = NULL;
++	entry->led[5] = NULL;
 +
- 	entry->min_range = lg4ff_devices[i].min_range;
- 	entry->max_range = lg4ff_devices[i].max_range;
- 	entry->set_range = lg4ff_devices[i].set_range;
--	list_add(&entry->list, &device_list.list);
- 
- 	/* Create sysfs interface */
- 	error = device_create_file(&hid->dev, &dev_attr_range);
-@@ -463,27 +459,23 @@ int lg4ff_init(struct hid_device *hid)
++	if (lg4ff_devices[i].product_id == USB_DEVICE_ID_LOGITECH_G27_WHEEL) {
++		lg4ff_set_leds(hid, 0);
++
++		name_sz = strlen(dev_name(&hid->dev)) + 8;
++
++		for (i = 0; i < 5; i++) {
++			led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
++			if (!led) {
++				hid_err(hid, "can't allocate memory for LED %d\n", i);
++				error = -ENOMEM;
++				goto err;
++			}
++
++			name = (void *)(&led[1]);
++			snprintf(name, name_sz, "%s::RPM%d", dev_name(&hid->dev), i+1);
++			led->name = name;
++			led->brightness = 0;
++			led->max_brightness = 1;
++			led->brightness_get = lg4ff_led_get_brightness;
++			led->brightness_set = lg4ff_led_set_brightness;
++
++			entry->led[i] = led;
++			error = led_classdev_register(&hid->dev, led);
++			if (error) {
++				hid_err(hid, "failed to register LED %d. Aborting.\n", i);
++				goto err;
++			}
++		}
++
++		dbg_hid("sysfs interface created for leds\n");
++	}
++
+ 	hid_info(hid, "Force feedback for Logitech Speed Force Wireless by Simon Wood <simon@mungewell.org>\n");
+ 	return 0;
++
++err:
++	/* Deregister LEDs (if any) but let the driver continue */
++	for (i = 0; i < 5; i++) {
++		led = entry->led[i];
++		entry->led[i] = NULL;
++		if (!led)
++			continue;
++		led_classdev_unregister(led);
++		kfree(led);
++	}
++
++	return 0;
+ }
  
  int lg4ff_deinit(struct hid_device *hid)
  {
--	bool found = 0;
--	struct lg4ff_device_entry *entry;
--	struct list_head *h, *g;
-+	struct lg4ff_device_entry *uninitialized_var(entry);
-+	struct lg_drv_data *uninitialized_var(drv_data);
+ 	struct lg4ff_device_entry *uninitialized_var(entry);
+ 	struct lg_drv_data *uninitialized_var(drv_data);
++	int i;
++	struct led_classdev *led;
  	
  	device_remove_file(&hid->dev, &dev_attr_range);
--
--	list_for_each_safe(h, g, &device_list.list) {
--		entry = list_entry(h, struct lg4ff_device_entry, list);
--		if (strcmp(entry->device_id, (&hid->dev)->kobj.name) == 0) {
--			list_del(h);
--			kfree(entry->device_id);
--			kfree(entry);
--			found = 1;
--			break;
--		}
-+	
-+	drv_data = hid_get_drvdata(hid);
-+	if (!drv_data) {
-+		hid_err(hid, "Error while deinitializing device, no private driver data.\n");
-+		return -1;
- 	}
--
--	if (!found) {
--		hid_err(hid, "Device entry not found!\n");
-+	entry = drv_data->device_props;
-+	if (!entry) {
-+		hid_err(hid, "Error while deinitializing device, no device properties data.\n");
+ 	
+@@ -474,6 +620,17 @@ int lg4ff_deinit(struct hid_device *hid)
+ 		hid_err(hid, "Error while deinitializing device, no device properties data.\n");
  		return -1;
  	}
-+	/* Deallocate memory */
-+	kfree(entry);
++
++	/* Deregister LEDs (if any) */
++	for (i = 0; i < 5; i++) {
++		led = entry->led[i];
++		entry->led[i] = NULL;
++		if (!led)
++			continue;
++		led_classdev_unregister(led);
++		kfree(led);
++	}
++
+ 	/* Deallocate memory */
+ 	kfree(entry);
  
- 	dbg_hid("Device successfully unregistered\n");
- 	return 0;
 -- 
 1.7.4.1
 
