@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab2DBQYy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 12:24:54 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56962 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab2DBQYv (ORCPT
+	id S1753225Ab2DBQ1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 12:27:40 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55471 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab2DBQ1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 12:24:51 -0400
-Date: Mon, 2 Apr 2012 09:24:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Tuttle <ttuttle@chromium.org>
-Subject: Re: [ 032/149] USB: qcserial: add several new serial devices
-Message-ID: <20120402162446.GB10138@kroah.com>
-References: <20120330194840.189874097@linuxfoundation.org>
- <1333296015.3500.367.camel@deadeye>
+	Mon, 2 Apr 2012 12:27:39 -0400
+Date: Mon, 2 Apr 2012 20:27:33 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120402162733.GI7607@moon>
+References: <20120331091049.19373.28994.stgit@zurg>
+ <20120331092929.19920.54540.stgit@zurg>
+ <20120331201324.GA17565@redhat.com>
+ <20120331203912.GB687@moon>
+ <4F79755B.3030703@openvz.org>
+ <20120402144821.GA3334@redhat.com>
+ <4F79D1AF.7080100@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333296015.3500.367.camel@deadeye>
+In-Reply-To: <4F79D1AF.7080100@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 05:00:15PM +0100, Ben Hutchings wrote:
-> On Fri, 2012-03-30 at 12:49 -0700, Greg KH wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Thomas Tuttle <ttuttle@chromium.org>
-> > 
-> > commit 2db4d87070e87d198ab630e66a898b45eff316d9 upstream.
-> > 
-> > Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > 
-> > ---
-> >  drivers/usb/serial/qcserial.c |   14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> > 
-> > --- a/drivers/usb/serial/qcserial.c
-> > +++ b/drivers/usb/serial/qcserial.c
-> > @@ -36,6 +36,11 @@ static const struct usb_device_id id_tab
-> >  	{USB_DEVICE(0x413c, 0x8171)},	/* Dell Gobi QDL device */
-> >  	{USB_DEVICE(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
-> >  	{USB_DEVICE(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
-> > +	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi QDL device */
-> [...]
+On Mon, Apr 02, 2012 at 08:19:59PM +0400, Konstantin Khlebnikov wrote:
+> Oleg Nesterov wrote:
+> >On 04/02, Konstantin Khlebnikov wrote:
+> >>
+> >>In this patch I leave mm->exe_file lockless.
+> >>After exec/fork we can change it only for current task and only if mm->mm_users == 1.
+> >>
+> >>something like this:
+> >>
+> >>task_lock(current);
+> >
+> >OK, this protects against the race with get_task_mm()
+> >
+> >>if (atomic_read(&current->mm->mm_users) == 1)
+> >
+> >this means PR_SET_MM_EXE_FILE can fail simply because someone did
+> >get_task_mm(). Or the caller is multithreaded.
 > 
-> This one is already claimed by option as:
-> 
-> 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) }
-> 
-> Seems there's some confusion here...
+> This is sad, seems like we should keep mm->exe_file protection by mm->mmap_sem.
+> So, I'll rework this patch...
 
-Yes, but that's what is in Linus's tree right now, right?
+Ah, it's about locking. I misundertand it at first.
+Oleg, forget about my email then.
 
-One of them should be removed, but I don't know which one :(
-
-thanks,
-
-greg k-h
+	Cyrill
