@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab2DBSWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:22:06 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:16484 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754004Ab2DBSUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754199Ab2DBSUB (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 2 Apr 2012 14:20:01 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:43033 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754004Ab2DBST7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 14:19:59 -0400
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24h)
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1V6X1-02-33D-02
+X-WSS-ID: 0M1V6X2-02-33L-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Ingo Molnar <mingo@elte.hu>
@@ -19,9 +19,9 @@ CC: Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 02/12] perf: Pass last sampling period to perf_sample_data_init()
-Date: Mon, 2 Apr 2012 20:19:08 +0200
-Message-ID: <1333390758-10893-3-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 07/12] perf/x86-ibs: Rename some variables
+Date: Mon, 2 Apr 2012 20:19:13 +0200
+Message-ID: <1333390758-10893-8-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
 References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
@@ -32,377 +32,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We always need to pass the last sample period to
-perf_sample_data_init(), otherwise the event distribution will be
-wrong. Thus, modifiyng the function interface with the required period
-as argument. So basically a pattern like this:
-
-        perf_sample_data_init(&data, ~0ULL);
-        data.period = event->hw.last_period;
-
-will now be like that:
-
-        perf_sample_data_init(&data, ~0ULL, event->hw.last_period);
-
-Avoids unininitialized data.period and simplifies code.
+Simple patch that just renames some variables for better
+understanding.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/alpha/kernel/perf_event.c            |    3 +--
- arch/arm/kernel/perf_event_v6.c           |    4 +---
- arch/arm/kernel/perf_event_v7.c           |    4 +---
- arch/arm/kernel/perf_event_xscale.c       |    8 ++------
- arch/mips/kernel/perf_event_mipsxx.c      |    2 +-
- arch/powerpc/kernel/perf_event.c          |    3 +--
- arch/powerpc/kernel/perf_event_fsl_emb.c  |    3 +--
- arch/sparc/kernel/perf_event.c            |    4 +---
- arch/x86/kernel/cpu/perf_event.c          |    4 +---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c  |    3 +--
- arch/x86/kernel/cpu/perf_event_intel.c    |    4 +---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    6 ++----
- arch/x86/kernel/cpu/perf_event_p4.c       |    6 +++---
- include/linux/perf_event.h                |    5 ++++-
- kernel/events/core.c                      |    9 ++++-----
- 15 files changed, 25 insertions(+), 43 deletions(-)
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
-index 0dae252..d821b17 100644
---- a/arch/alpha/kernel/perf_event.c
-+++ b/arch/alpha/kernel/perf_event.c
-@@ -824,7 +824,6 @@ static void alpha_perf_event_irq_handler(unsigned long la_ptr,
- 
- 	idx = la_ptr;
- 
--	perf_sample_data_init(&data, 0);
- 	for (j = 0; j < cpuc->n_events; j++) {
- 		if (cpuc->current_idx[j] == idx)
- 			break;
-@@ -848,7 +847,7 @@ static void alpha_perf_event_irq_handler(unsigned long la_ptr,
- 
- 	hwc = &event->hw;
- 	alpha_perf_event_update(event, hwc, idx, alpha_pmu->pmc_max_period[idx]+1);
--	data.period = event->hw.last_period;
-+	perf_sample_data_init(&data, 0, hwc->last_period);
- 
- 	if (alpha_perf_event_set_period(event, hwc, idx)) {
- 		if (perf_event_overflow(event, &data, regs)) {
-diff --git a/arch/arm/kernel/perf_event_v6.c b/arch/arm/kernel/perf_event_v6.c
-index b78af0c..ab627a7 100644
---- a/arch/arm/kernel/perf_event_v6.c
-+++ b/arch/arm/kernel/perf_event_v6.c
-@@ -489,8 +489,6 @@ armv6pmu_handle_irq(int irq_num,
- 	 */
- 	armv6_pmcr_write(pmcr);
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
- 		struct perf_event *event = cpuc->events[idx];
-@@ -509,7 +507,7 @@ armv6pmu_handle_irq(int irq_num,
- 
- 		hwc = &event->hw;
- 		armpmu_event_update(event, hwc, idx);
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, hwc->last_period);
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
-diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
-index 4d7095a..ec0c6cc 100644
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -953,8 +953,6 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
- 	 */
- 	regs = get_irq_regs();
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
- 		struct perf_event *event = cpuc->events[idx];
-@@ -973,7 +971,7 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
- 
- 		hwc = &event->hw;
- 		armpmu_event_update(event, hwc, idx);
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, hwc->last_period);
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
-diff --git a/arch/arm/kernel/perf_event_xscale.c b/arch/arm/kernel/perf_event_xscale.c
-index 71a21e6..e34e725 100644
---- a/arch/arm/kernel/perf_event_xscale.c
-+++ b/arch/arm/kernel/perf_event_xscale.c
-@@ -248,8 +248,6 @@ xscale1pmu_handle_irq(int irq_num, void *dev)
- 
- 	regs = get_irq_regs();
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
- 		struct perf_event *event = cpuc->events[idx];
-@@ -263,7 +261,7 @@ xscale1pmu_handle_irq(int irq_num, void *dev)
- 
- 		hwc = &event->hw;
- 		armpmu_event_update(event, hwc, idx);
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, hwc->last_period);
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
-@@ -588,8 +586,6 @@ xscale2pmu_handle_irq(int irq_num, void *dev)
- 
- 	regs = get_irq_regs();
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
- 		struct perf_event *event = cpuc->events[idx];
-@@ -603,7 +599,7 @@ xscale2pmu_handle_irq(int irq_num, void *dev)
- 
- 		hwc = &event->hw;
- 		armpmu_event_update(event, hwc, idx);
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, hwc->last_period);
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
-diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index 811084f..ab73fa2 100644
---- a/arch/mips/kernel/perf_event_mipsxx.c
-+++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -1325,7 +1325,7 @@ static int mipsxx_pmu_handle_shared_irq(void)
- 
- 	regs = get_irq_regs();
- 
--	perf_sample_data_init(&data, 0);
-+	perf_sample_data_init(&data, 0, 0);
- 
- 	switch (counters) {
- #define HANDLE_COUNTER(n)						\
-diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-index c2e27ed..df2b284 100644
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -1268,8 +1268,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 	if (record) {
- 		struct perf_sample_data data;
- 
--		perf_sample_data_init(&data, ~0ULL);
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, ~0ULL, event->hw.last_period);
- 
- 		if (event->attr.sample_type & PERF_SAMPLE_ADDR)
- 			perf_get_data_addr(regs, &data.addr);
-diff --git a/arch/powerpc/kernel/perf_event_fsl_emb.c b/arch/powerpc/kernel/perf_event_fsl_emb.c
-index 0a6d2a9..106c533 100644
---- a/arch/powerpc/kernel/perf_event_fsl_emb.c
-+++ b/arch/powerpc/kernel/perf_event_fsl_emb.c
-@@ -613,8 +613,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 	if (record) {
- 		struct perf_sample_data data;
- 
--		perf_sample_data_init(&data, 0);
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, event->hw.last_period);
- 
- 		if (perf_event_overflow(event, &data, regs))
- 			fsl_emb_pmu_stop(event, 0);
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index 8e16a4a..333a14a 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1294,8 +1294,6 @@ static int __kprobes perf_event_nmi_handler(struct notifier_block *self,
- 
- 	regs = args->regs;
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	/* If the PMU has the TOE IRQ enable bits, we need to do a
-@@ -1319,7 +1317,7 @@ static int __kprobes perf_event_nmi_handler(struct notifier_block *self,
- 		if (val & (1ULL << 31))
- 			continue;
- 
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, hwc->last_period);
- 		if (!sparc_perf_event_set_period(event, hwc, idx))
- 			continue;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 453ac94..56ae3af 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1187,8 +1187,6 @@ int x86_pmu_handle_irq(struct pt_regs *regs)
- 	int idx, handled = 0;
- 	u64 val;
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	/*
-@@ -1223,7 +1221,7 @@ int x86_pmu_handle_irq(struct pt_regs *regs)
- 		 * event overflow
- 		 */
- 		handled++;
--		data.period	= event->hw.last_period;
-+		perf_sample_data_init(&data, 0, event->hw.last_period);
- 
- 		if (!x86_perf_event_set_period(event))
- 			continue;
 diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index 6eb6451..74b663c 100644
+index 05a359f..6591b77 100644
 --- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
 +++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -398,8 +398,7 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
- 	}
- 
- 	perf_ibs_event_update(perf_ibs, event, config);
--	perf_sample_data_init(&data, 0);
--	data.period = event->hw.last_period;
-+	perf_sample_data_init(&data, 0, hwc->last_period);
- 
- 	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
- 		ibs_data.caps = ibs_caps;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 26b3e2f..166546e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1027,8 +1027,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 	u64 status;
- 	int handled;
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	/*
-@@ -1082,7 +1080,7 @@ again:
- 		if (!intel_pmu_save_and_restart(event))
- 			continue;
- 
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, event->hw.last_period);
- 
- 		if (has_branch_stack(event))
- 			data.br_stack = &cpuc->lbr_stack;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 7f64df1..5a3edc2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -316,8 +316,7 @@ int intel_pmu_drain_bts_buffer(void)
- 
- 	ds->bts_index = ds->bts_buffer_base;
- 
--	perf_sample_data_init(&data, 0);
--	data.period = event->hw.last_period;
-+	perf_sample_data_init(&data, 0, event->hw.last_period);
- 	regs.ip     = 0;
- 
- 	/*
-@@ -564,8 +563,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	if (!intel_pmu_save_and_restart(event))
- 		return;
- 
--	perf_sample_data_init(&data, 0);
--	data.period = event->hw.last_period;
-+	perf_sample_data_init(&data, 0, event->hw.last_period);
- 
- 	/*
- 	 * We use the interrupt regs as a base because the PEBS record
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index ef484d9..ed301c7 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -1005,8 +1005,6 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 	int idx, handled = 0;
- 	u64 val;
- 
--	perf_sample_data_init(&data, 0);
--
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-@@ -1034,10 +1032,12 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 		handled += overflow;
- 
- 		/* event overflow for sure */
--		data.period = event->hw.last_period;
-+		perf_sample_data_init(&data, 0, hwc->last_period);
- 
- 		if (!x86_perf_event_set_period(event))
- 			continue;
-+
-+
- 		if (perf_event_overflow(event, &data, regs))
- 			x86_pmu_stop(event, 0);
- 	}
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 57ae485..12ac652 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1076,11 +1076,14 @@ struct perf_sample_data {
- 	struct perf_branch_stack	*br_stack;
+@@ -62,7 +62,7 @@ struct perf_ibs_data {
  };
  
--static inline void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
-+static inline void perf_sample_data_init(struct perf_sample_data *data,
-+					 u64 addr, u64 period)
+ static int
+-perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *count)
++perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *hw_period)
  {
-+	/* remaining struct members initialized in perf_prepare_sample() */
- 	data->addr = addr;
- 	data->raw  = NULL;
- 	data->br_stack = NULL;
-+	data->period	= period;
+ 	s64 left = local64_read(&hwc->period_left);
+ 	s64 period = hwc->sample_period;
+@@ -91,7 +91,7 @@ perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *count)
+ 	if (left > max)
+ 		left = max;
+ 
+-	*count = (u64)left;
++	*hw_period = (u64)left;
+ 
+ 	return overflow;
+ }
+@@ -264,13 +264,13 @@ static int perf_ibs_init(struct perf_event *event)
+ static int perf_ibs_set_period(struct perf_ibs *perf_ibs,
+ 			       struct hw_perf_event *hwc, u64 *period)
+ {
+-	int ret;
++	int overflow;
+ 
+ 	/* ignore lower 4 bits in min count: */
+-	ret = perf_event_set_period(hwc, 1<<4, perf_ibs->max_period, period);
++	overflow = perf_event_set_period(hwc, 1<<4, perf_ibs->max_period, period);
+ 	local64_set(&hwc->prev_count, 0);
+ 
+-	return ret;
++	return overflow;
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index c61234b..8833198 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4957,7 +4957,7 @@ void __perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)
- 	if (rctx < 0)
- 		return;
- 
--	perf_sample_data_init(&data, addr);
-+	perf_sample_data_init(&data, addr, 0);
- 
- 	do_perf_sw_event(PERF_TYPE_SOFTWARE, event_id, nr, &data, regs);
- 
-@@ -5215,7 +5215,7 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
- 		.data = record,
- 	};
- 
--	perf_sample_data_init(&data, addr);
-+	perf_sample_data_init(&data, addr, 0);
- 	data.raw = &raw;
- 
- 	hlist_for_each_entry_rcu(event, node, head, hlist_entry) {
-@@ -5318,7 +5318,7 @@ void perf_bp_event(struct perf_event *bp, void *data)
- 	struct perf_sample_data sample;
- 	struct pt_regs *regs = data;
- 
--	perf_sample_data_init(&sample, bp->attr.bp_addr);
-+	perf_sample_data_init(&sample, bp->attr.bp_addr, 0);
- 
- 	if (!bp->hw.state && !perf_exclude_event(bp, regs))
- 		perf_swevent_event(bp, 1, &sample, regs);
-@@ -5344,8 +5344,7 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
- 
- 	event->pmu->read(event);
- 
--	perf_sample_data_init(&data, 0);
--	data.period = event->hw.last_period;
-+	perf_sample_data_init(&data, 0, event->hw.last_period);
- 	regs = get_irq_regs();
- 
- 	if (regs && !perf_exclude_event(event, regs)) {
+ static u64 get_ibs_fetch_count(u64 config)
 -- 
 1.7.8.4
 
