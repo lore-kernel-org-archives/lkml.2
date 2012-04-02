@@ -1,42 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab2DBVqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 17:46:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34687 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab2DBVqr (ORCPT
+	id S1753415Ab2DBVtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 17:49:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60704 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753297Ab2DBVtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 17:46:47 -0400
-Subject: Re: [3.4-rc1 crash]: NULL pointer deref in
- fs/sysfs/group.c:create_files -- sysctl related?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-In-Reply-To: <1333401898.2960.78.camel@laptop>
-References: <20120402162716.4c93bfd3@pluto.restena.lu>
-	 <20120402165036.2bc987ad@pluto.restena.lu>
-	 <m17gxyklfm.fsf@fess.ebiederm.org>  <20120402213440.49e9de74@neptune>
-	 <1333401898.2960.78.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Apr 2012 23:46:33 +0200
-Message-ID: <1333403193.2960.80.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 2 Apr 2012 17:49:50 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] clkdev: Implement managed clk_get()
+Date: Mon,  2 Apr 2012 22:49:45 +0100
+Message-Id: <1333403385-24133-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 23:24 +0200, Peter Zijlstra wrote:
-> On Mon, 2012-04-02 at 21:34 +0200, Bruno Prémont wrote:
-> > > >> [    0.996198] Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant DL360 G4
-> 
-> Is this a netburst based space heater?
+Allow clk API users to simplify their cleanup paths by providing a
+managed version of clk_get() and clk_put().
 
-In particular, does: https://lkml.org/lkml/2012/3/27/182 , sort it?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ Documentation/driver-model/devres.txt |    3 ++
+ drivers/clk/clkdev.c                  |   45 +++++++++++++++++++++++++++++++++
+ include/linux/clk.h                   |   32 +++++++++++++++++++++++
+ 3 files changed, 80 insertions(+), 0 deletions(-)
 
-Ingo, could you pick that one up and route it Linus wards?
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 2a596a4..3a10848 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -276,3 +276,6 @@ REGULATOR
+   devm_regulator_get()
+   devm_regulator_put()
+   devm_regulator_bulk_get()
++
++CLOCK
++  devm_clk_get()
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index 6db161f..a9a1137 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -89,6 +89,51 @@ void clk_put(struct clk *clk)
+ }
+ EXPORT_SYMBOL(clk_put);
+ 
++static void devm_clk_release(struct device *dev, void *res)
++{
++	clk_put(*(struct clk **)res);
++}
++
++struct clk *devm_clk_get(struct device *dev, const char *id)
++{
++	struct clk **ptr, *clk;
++
++	ptr = devres_alloc(devm_clk_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	clk = clk_get(dev, id);
++	if (!IS_ERR(clk)) {
++		*ptr = clk;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return clk;
++}
++EXPORT_SYMBOL(devm_clk_get);
++
++static int devm_clk_match(struct device *dev, void *res, void *data)
++{
++	struct clk **c = res;
++	if (!c || !*c) {
++		WARN_ON(!c || !*c);
++		return 0;
++	}
++	return *c == data;
++}
++
++void devm_clk_put(struct device *dev, struct clk *clk)
++{
++	int ret;
++
++	ret = devres_destroy(dev, devm_clk_release, devm_clk_match, clk);
++
++	WARN_ON(ret);
++}
++EXPORT_SYMBOL(devm_clk_put);
++
+ void clkdev_add(struct clk_lookup *cl)
+ {
+ 	mutex_lock(&clocks_mutex);
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index c9547d9..62b0bb0 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -101,6 +101,26 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
+ struct clk *clk_get(struct device *dev, const char *id);
+ 
+ /**
++ * devm_clk_get - lookup and obtain a managed reference to a clock producer.
++ * @dev: device for clock "consumer"
++ * @id: clock comsumer ID
++ *
++ * Returns a struct clk corresponding to the clock producer, or
++ * valid IS_ERR() condition containing errno.  The implementation
++ * uses @dev and @id to determine the clock consumer, and thereby
++ * the clock producer.  (IOW, @id may be identical strings, but
++ * clk_get may return different clock producers depending on @dev.)
++ *
++ * Drivers must assume that the clock source is not enabled.
++ *
++ * devm_clk_get should not be called from within interrupt context.
++ *
++ * The clock will automatically be freed when the device is unbound
++ * from the bus.
++ */
++struct clk *devm_clk_get(struct device *dev, const char *id);
++
++/**
+  * clk_prepare - prepare a clock source
+  * @clk: clock source
+  *
+@@ -206,6 +226,18 @@ unsigned long clk_get_rate(struct clk *clk);
+  */
+ void clk_put(struct clk *clk);
+ 
++/**
++ * clk_put	- "free" a managed clock source
++ * @dev: device used to acuqire the clock
++ * @clk: clock source acquired with devm_clk_get()
++ *
++ * Note: drivers must ensure that all clk_enable calls made on this
++ * clock source are balanced by clk_disable calls prior to calling
++ * this function.
++ *
++ * clk_put should not be called from within interrupt context.
++ */
++void devm_clk_put(struct device *dev, struct clk *clk);
+ 
+ /*
+  * The remaining APIs are optional for machine class support.
+-- 
+1.7.9.1
 
