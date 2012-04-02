@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab2DBPbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 11:31:37 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49050 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2DBPbg convert rfc822-to-8bit (ORCPT
+	id S1752778Ab2DBPcg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 11:32:36 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:59962 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751648Ab2DBPce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 11:31:36 -0400
+	Mon, 2 Apr 2012 11:32:34 -0400
+Message-ID: <4F79C68C.1070100@xenotime.net>
+Date: Mon, 02 Apr 2012 08:32:28 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <CAF8ieYVORFvYM3yHVgJD+E9p99nLLWK+uBkdH=4WkdpXm=6bGg@mail.gmail.com>
-References: <1333195133-4944-1-git-send-email-consul.kautuk@gmail.com>
-	<CAF8ieYX0h2zaJN7ns345uXwZWoa3hzEZAJ331eJOTX4_pj-ZdQ@mail.gmail.com>
-	<CAF8ieYVORFvYM3yHVgJD+E9p99nLLWK+uBkdH=4WkdpXm=6bGg@mail.gmail.com>
-Date: Mon, 2 Apr 2012 21:01:35 +0530
-Message-ID: <CAFPAmTRW7ptY53zO1CoH7JvG4idKPBgRViV5Af86AMfNT_+Ghg@mail.gmail.com>
-Subject: Re: [PATCH 01/19 v2] avr32/mm/fault.c: Port OOM changes to do_page_fault
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel@vger.kernel.org, "Mohd. Faris" <mohdfarisq2010@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: linux-next: Tree for Apr 2 (uml)
+References: <20120402135538.502e6c73f0cb3e6ae0b3436f@canb.auug.org.au>
+In-Reply-To: <20120402135538.502e6c73f0cb3e6ae0b3436f@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 8:28 AM, Håvard Skinnemoen <hskinnemoen@gmail.com> wrote:
-> On Sun, Apr 1, 2012 at 7:08 PM, Håvard Skinnemoen <hskinnemoen@gmail.com> wrote:
->> Ug...the avr32 arch is in a terrible state. Someone appears to have
->> removed the atmel_nand driver...
->
-> Never mind; Paul Gortmaker already fixed it :)
->
+On 04/01/2012 08:55 PM, Stephen Rothwell wrote:
 
-Great.
+> Hi all,
+> 
+> The merge window has closed, so -next is open for busniess.
+> 
+> Changes since 20120330:
 
-> Your patch doesn't cause anything to blow up in any obvious way, so it
-> should be good to go as far as I can tell (although it would be great
-> if you could do that tiny cleanup I mentioned).
 
-Ok, Ill make that change and resend v2.1 of this to the mailing list.
-Can you please ACK that if you find it to be okay ?
-Thanks !
 
->
-> Havard
+uml defconfig on x86_64:
+
+  CC      arch/um/drivers/mconsole_kern.o
+arch/um/drivers/mconsole_kern.c: In function 'stack_proc':
+arch/um/drivers/mconsole_kern.c:707:2: error: implicit declaration of function 'switch_to'
+make[2]: *** [arch/um/drivers/mconsole_kern.o] Error 1
+
+
+-- 
+~Randy
