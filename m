@@ -1,262 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2DBMMU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 08:12:20 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:47931 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab2DBLzA (ORCPT
+	id S1752771Ab2DBMQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 08:16:17 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:33164 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab2DBMQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:55:00 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: [PATCH 08/69] TTY: isdn, make some functions readable
-Date: Mon,  2 Apr 2012 13:53:52 +0200
-Message-Id: <1333367693-3244-9-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
-References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
+	Mon, 2 Apr 2012 08:16:15 -0400
+Message-ID: <4F79985F.5030600@linux.vnet.ibm.com>
+Date: Mon, 02 Apr 2012 17:45:27 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Alan Meadows <alan.meadows@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com> <4F73568D.7000703@linux.vnet.ibm.com> <4F743247.5080407@redhat.com> <4F74A405.2040609@linux.vnet.ibm.com> <4F7585EE.7060203@linux.vnet.ibm.com> <4F7855A1.80107@redhat.com> <4F785CC9.7070204@linux.vnet.ibm.com> <4F785DCF.7020809@redhat.com> <4F7976B6.5050000@linux.vnet.ibm.com>
+In-Reply-To: <4F7976B6.5050000@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12040212-8256-0000-0000-000001DF3362
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Huh, this was a mess.
+On 04/02/2012 03:21 PM, Raghavendra K T wrote:
+> On 04/01/2012 07:23 PM, Avi Kivity wrote:
+>  > On 04/01/2012 04:48 PM, Raghavendra K T wrote:
+>  >>>> I have patch something like below in mind to try:
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 5127668..3fa912a 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1557,12 +1557,17 @@ void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
+> mark_page_dirty_in_slot(kvm, memslot, gfn);
+> }
+>
+> +#define YIELD_THRESHOLD 2048
+> +static void kvm_vcpu_try_yield_to(struct kvm_vcpu *me);
+> /*
+> * The vCPU has executed a HLT instruction with in-kernel mode enabled.
+> */
+> void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+> {
+[...]
+> + if (loop_count++ % YIELD_THRESHOLD)
+> + schedule();
+> + else
+> + kvm_vcpu_try_yield_to(vcpu);
+> }
+>
+> +static void kvm_vcpu_try_yield(struct kvm_vcpu *me)
 
-* Remove the 5 indent levels by just returning from isdn_tty_try_read
-  when the conditions there are not satisfied.
-* Use 'continue' in loop in isdn_tty_readmodem to save 2 levels.
-* Chain 'if's in isdn_tty_modem_escape.
-* Use 'continue' in loop in isdn_tty_carrier_timeout to save 1 level.
-
-Better to look at this patch with -w -b.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Karsten Keil <isdn@linux-pingi.de>
----
- drivers/isdn/i4l/isdn_tty.c |  178 ++++++++++++++++++++++---------------------
- 1 file changed, 93 insertions(+), 85 deletions(-)
-
-diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
-index 1ff3072..74b0518 100644
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -65,49 +65,54 @@ isdn_tty_try_read(modem_info *info, struct sk_buff *skb)
- 	struct tty_struct *tty;
- 	char last;
- 
--	if (info->online) {
--		if ((tty = info->tty)) {
--			if (info->mcr & UART_MCR_RTS) {
--				len = skb->len
-+	if (!info->online)
-+		return 0;
-+
-+	tty = info->tty;
-+	if (!tty)
-+		return 0;
-+
-+	if (!(info->mcr & UART_MCR_RTS))
-+		return 0;
-+
-+	len = skb->len
- #ifdef CONFIG_ISDN_AUDIO
--					+ ISDN_AUDIO_SKB_DLECOUNT(skb)
-+		+ ISDN_AUDIO_SKB_DLECOUNT(skb)
- #endif
--					;
-+		;
-+
-+	c = tty_buffer_request_room(tty, len);
-+	if (c < len)
-+		return 0;
- 
--				c = tty_buffer_request_room(tty, len);
--				if (c >= len) {
--#ifdef CONFIG_ISDN_AUDIO
--					if (ISDN_AUDIO_SKB_DLECOUNT(skb)) {
--						int l = skb->len;
--						unsigned char *dp = skb->data;
--						while (--l) {
--							if (*dp == DLE)
--								tty_insert_flip_char(tty, DLE, 0);
--							tty_insert_flip_char(tty, *dp++, 0);
--						}
--						if (*dp == DLE)
--							tty_insert_flip_char(tty, DLE, 0);
--						last = *dp;
--					} else {
--#endif
--						if (len > 1)
--							tty_insert_flip_string(tty, skb->data, len - 1);
--						last = skb->data[len - 1];
- #ifdef CONFIG_ISDN_AUDIO
--					}
-+	if (ISDN_AUDIO_SKB_DLECOUNT(skb)) {
-+		int l = skb->len;
-+		unsigned char *dp = skb->data;
-+		while (--l) {
-+			if (*dp == DLE)
-+				tty_insert_flip_char(tty, DLE, 0);
-+			tty_insert_flip_char(tty, *dp++, 0);
-+		}
-+		if (*dp == DLE)
-+			tty_insert_flip_char(tty, DLE, 0);
-+		last = *dp;
-+	} else {
- #endif
--					if (info->emu.mdmreg[REG_CPPP] & BIT_CPPP)
--						tty_insert_flip_char(tty, last, 0xFF);
--					else
--						tty_insert_flip_char(tty, last, TTY_NORMAL);
--					tty_flip_buffer_push(tty);
--					kfree_skb(skb);
--					return 1;
--				}
--			}
--		}
-+		if (len > 1)
-+			tty_insert_flip_string(tty, skb->data, len - 1);
-+		last = skb->data[len - 1];
-+#ifdef CONFIG_ISDN_AUDIO
- 	}
--	return 0;
-+#endif
-+	if (info->emu.mdmreg[REG_CPPP] & BIT_CPPP)
-+		tty_insert_flip_char(tty, last, 0xFF);
-+	else
-+		tty_insert_flip_char(tty, last, TTY_NORMAL);
-+	tty_flip_buffer_push(tty);
-+	kfree_skb(skb);
-+
-+	return 1;
- }
- 
- /* isdn_tty_readmodem() is called periodically from within timer-interrupt.
-@@ -125,35 +130,39 @@ isdn_tty_readmodem(void)
- 	modem_info *info;
- 
- 	for (i = 0; i < ISDN_MAX_CHANNELS; i++) {
--		if ((midx = dev->m_idx[i]) >= 0) {
--			info = &dev->mdm.info[midx];
--			if (info->online) {
--				r = 0;
-+		midx = dev->m_idx[i];
-+		if (midx < 0)
-+			continue;
-+
-+		info = &dev->mdm.info[midx];
-+		if (!info->online)
-+			continue;
-+
-+		r = 0;
- #ifdef CONFIG_ISDN_AUDIO
--				isdn_audio_eval_dtmf(info);
--				if ((info->vonline & 1) && (info->emu.vpar[1]))
--					isdn_audio_eval_silence(info);
--#endif
--				if ((tty = info->tty)) {
--					if (info->mcr & UART_MCR_RTS) {
--						/* CISCO AsyncPPP Hack */
--						if (!(info->emu.mdmreg[REG_CPPP] & BIT_CPPP))
--							r = isdn_readbchan_tty(info->isdn_driver, info->isdn_channel, tty, 0);
--						else
--							r = isdn_readbchan_tty(info->isdn_driver, info->isdn_channel, tty, 1);
--						if (r)
--							tty_flip_buffer_push(tty);
--					} else
--						r = 1;
--				} else
--					r = 1;
--				if (r) {
--					info->rcvsched = 0;
--					resched = 1;
--				} else
--					info->rcvsched = 1;
--			}
--		}
-+		isdn_audio_eval_dtmf(info);
-+		if ((info->vonline & 1) && (info->emu.vpar[1]))
-+			isdn_audio_eval_silence(info);
-+#endif
-+		tty = info->tty;
-+		if (tty) {
-+			if (info->mcr & UART_MCR_RTS) {
-+				/* CISCO AsyncPPP Hack */
-+				if (!(info->emu.mdmreg[REG_CPPP] & BIT_CPPP))
-+					r = isdn_readbchan_tty(info->isdn_driver, info->isdn_channel, tty, 0);
-+				else
-+					r = isdn_readbchan_tty(info->isdn_driver, info->isdn_channel, tty, 1);
-+				if (r)
-+					tty_flip_buffer_push(tty);
-+			} else
-+				r = 1;
-+		} else
-+			r = 1;
-+		if (r) {
-+			info->rcvsched = 0;
-+			resched = 1;
-+		} else
-+			info->rcvsched = 1;
- 	}
- 	if (!resched)
- 		isdn_timer_ctrl(ISDN_TIMER_MODEMREAD, 0);
-@@ -3769,19 +3778,19 @@ isdn_tty_modem_escape(void)
- 	int midx;
- 
- 	for (i = 0; i < ISDN_MAX_CHANNELS; i++)
--		if (USG_MODEM(dev->usage[i]))
--			if ((midx = dev->m_idx[i]) >= 0) {
--				modem_info *info = &dev->mdm.info[midx];
--				if (info->online) {
--					ton = 1;
--					if ((info->emu.pluscount == 3) &&
--					    time_after(jiffies , info->emu.lastplus + PLUSWAIT2)) {
--						info->emu.pluscount = 0;
--						info->online = 0;
--						isdn_tty_modem_result(RESULT_OK, info);
--					}
-+		if (USG_MODEM(dev->usage[i]) && (midx = dev->m_idx[i]) >= 0) {
-+			modem_info *info = &dev->mdm.info[midx];
-+			if (info->online) {
-+				ton = 1;
-+				if ((info->emu.pluscount == 3) &&
-+				    time_after(jiffies,
-+					    info->emu.lastplus + PLUSWAIT2)) {
-+					info->emu.pluscount = 0;
-+					info->online = 0;
-+					isdn_tty_modem_result(RESULT_OK, info);
- 				}
- 			}
-+		}
- 	isdn_timer_ctrl(ISDN_TIMER_MODEMPLUS, ton);
- }
- 
-@@ -3839,15 +3848,14 @@ isdn_tty_carrier_timeout(void)
- 
- 	for (i = 0; i < ISDN_MAX_CHANNELS; i++) {
- 		modem_info *info = &dev->mdm.info[i];
--		if (info->dialing) {
--			if (info->emu.carrierwait++ > info->emu.mdmreg[REG_WAITC]) {
--				info->dialing = 0;
--				isdn_tty_modem_result(RESULT_NO_CARRIER, info);
--				isdn_tty_modem_hup(info, 1);
--			}
--			else
--				ton = 1;
--		}
-+		if (!info->dialing)
-+			continue;
-+		if (info->emu.carrierwait++ > info->emu.mdmreg[REG_WAITC]) {
-+			info->dialing = 0;
-+			isdn_tty_modem_result(RESULT_NO_CARRIER, info);
-+			isdn_tty_modem_hup(info, 1);
-+		} else
-+			ton = 1;
- 	}
- 	isdn_timer_ctrl(ISDN_TIMER_CARRIER, ton);
- }
--- 
-1.7.9.2
-
+yes, it is kvm_vcpu_try_yield_to. had changed the name just before
+sending. sorry.
 
