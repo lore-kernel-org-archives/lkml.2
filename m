@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2DBL43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:29 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48122 "EHLO
+	id S1753709Ab2DBL42 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:28 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48121 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab2DBLzN (ORCPT
+	with ESMTP id S1752694Ab2DBLzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:13 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Jiri Kosina <jkosina@suse.cz>, David Sterba <dsterba@suse.cz>
-Subject: [PATCH 48/69] TTY: ipwireless, move prints to appropriate places
-Date: Mon,  2 Apr 2012 13:54:32 +0200
-Message-Id: <1333367693-3244-49-git-send-email-jslaby@suse.cz>
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: [PATCH 01/69] TTY: crisv10, remove unused tmp_buf
+Date: Mon,  2 Apr 2012 13:53:45 +0200
+Message-Id: <1333367693-3244-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,72 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two functions which only print a status. Let us do that
-directly at places where they are called.
+This used to be a helper buffer for generic_serial. generic_serial is
+gone, tmp_buf shall be removed.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: David Sterba <dsterba@suse.cz>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com
 ---
- drivers/tty/ipwireless/tty.c |   31 ++++++++++---------------------
- 1 file changed, 10 insertions(+), 21 deletions(-)
+ drivers/tty/serial/crisv10.c |   27 +--------------------------
+ 1 file changed, 1 insertion(+), 26 deletions(-)
 
-diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
-index e539621..4270bfd 100644
---- a/drivers/tty/ipwireless/tty.c
-+++ b/drivers/tty/ipwireless/tty.c
-@@ -73,23 +73,6 @@ static char *tty_type_name(int tty_type)
- 	return channel_names[tty_type];
- }
+diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+index 5b07c0c..004ee2e 100644
+--- a/drivers/tty/serial/crisv10.c
++++ b/drivers/tty/serial/crisv10.c
+@@ -952,19 +952,6 @@ static const struct control_pins e100_modem_pins[NR_PORTS] =
+ /* Input */
+ #define E100_DSR_GET(info) ((*e100_modem_pins[(info)->line].dsr_port) & e100_modem_pins[(info)->line].dsr_mask)
  
--static void report_registering(struct ipw_tty *tty)
--{
--	char *iftype = tty_type_name(tty->tty_type);
 -
--	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
--	       ": registering %s device ttyIPWp%d\n", iftype, tty->index);
--}
+-/*
+- * tmp_buf is used as a temporary buffer by serial_write.  We need to
+- * lock it in case the memcpy_fromfs blocks while swapping in a page,
+- * and some other program tries to do a serial write at the same time.
+- * Since the lock will only come under contention when the system is
+- * swapping and available memory is low, it makes sense to share one
+- * buffer across all the serial ports, since it significantly saves
+- * memory if large numbers of serial ports are open.
+- */
+-static unsigned char *tmp_buf;
+-static DEFINE_MUTEX(tmp_buf_mutex);
 -
--static void report_deregistering(struct ipw_tty *tty)
--{
--	char *iftype = tty_type_name(tty->tty_type);
--
--	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
--	       ": deregistering %s device ttyIPWp%d\n", iftype,
--	       tty->index);
--}
--
- static struct ipw_tty *get_tty(int index)
+ /* Calculate the chartime depending on baudrate, numbor of bits etc. */
+ static void update_char_time(struct e100_serial * info)
  {
+@@ -3150,7 +3137,7 @@ static int rs_raw_write(struct tty_struct *tty,
+ 
+ 	/* first some sanity checks */
+ 
+-	if (!tty || !info->xmit.buf || !tmp_buf)
++	if (!tty || !info->xmit.buf)
+ 		return 0;
+ 
+ #ifdef SERIAL_DEBUG_DATA
+@@ -4106,7 +4093,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
+ {
+ 	struct e100_serial	*info;
+ 	int 			retval;
+-	unsigned long           page;
+ 	int                     allocated_resources = 0;
+ 
+ 	info = rs_table + tty->index;
+@@ -4124,17 +4110,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
+ 
+ 	tty->low_latency = !!(info->flags & ASYNC_LOW_LATENCY);
+ 
+-	if (!tmp_buf) {
+-		page = get_zeroed_page(GFP_KERNEL);
+-		if (!page) {
+-			return -ENOMEM;
+-		}
+-		if (tmp_buf)
+-			free_page(page);
+-		else
+-			tmp_buf = (unsigned char *) page;
+-	}
+-
  	/*
-@@ -500,8 +483,12 @@ static int add_tty(int j,
- 		ipwireless_associate_network_tty(network,
- 						 secondary_channel_idx,
- 						 ttys[j]);
--	if (get_tty(j) == ttys[j])
--		report_registering(ttys[j]);
-+	/* check if we provide raw device (if loopback is enabled) */
-+	if (get_tty(j))
-+		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
-+		       ": registering %s device ttyIPWp%d\n",
-+		       tty_type_name(tty_type), j);
-+
- 	return 0;
- }
- 
-@@ -560,8 +547,10 @@ void ipwireless_tty_free(struct ipw_tty *tty)
- 
- 		if (ttyj) {
- 			mutex_lock(&ttyj->ipw_tty_mutex);
--			if (get_tty(j) == ttyj)
--				report_deregistering(ttyj);
-+			if (get_tty(j))
-+				printk(KERN_INFO IPWIRELESS_PCCARD_NAME
-+				       ": deregistering %s device ttyIPWp%d\n",
-+				       tty_type_name(ttyj->tty_type), j);
- 			ttyj->closing = 1;
- 			if (ttyj->linux_tty != NULL) {
- 				mutex_unlock(&ttyj->ipw_tty_mutex);
+ 	 * If the port is in the middle of closing, bail out now
+ 	 */
 -- 
 1.7.9.2
 
