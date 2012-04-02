@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2DBSeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:34:23 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:29656 "EHLO
+	id S1754107Ab2DBSej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:34:39 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:41945 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751212Ab2DBSeV (ORCPT
+	with ESMTP id S1753925Ab2DBSeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:34:21 -0400
+	Mon, 2 Apr 2012 14:34:37 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         rtc-linux@googlegroups.com, a.zummo@towertech.it,
         linux-watchdog@vger.kernel.org, wim@iguana.be, jonsmirl@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v2 1/8] iio: Add device tree support to LPC32xx ADC
-Date: Mon,  2 Apr 2012 20:33:00 +0200
-Message-Id: <1333391587-26290-2-git-send-email-stigge@antcom.de>
+Subject: [PATCH v2 4/8] wdt: Device tree support for pnx4008-wdt
+Date: Mon,  2 Apr 2012 20:33:03 +0200
+Message-Id: <1333391587-26290-5-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1333391587-26290-1-git-send-email-stigge@antcom.de>
 References: <1333391587-26290-1-git-send-email-stigge@antcom.de>
@@ -26,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support to the LPC32xx's ADC.
+This patch adds watchdog support to pnx4008-wdt.c
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
@@ -34,58 +34,53 @@ Signed-off-by: Roland Stigge <stigge@antcom.de>
 
  Applies to v3.4-rc1
 
- Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt |   16 ++++++++++
- drivers/staging/iio/adc/lpc32xx_adc.c                             |   10 ++++++
- 2 files changed, 26 insertions(+)
+ Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt |   13 +++++++++++++
+ drivers/watchdog/pnx4008_wdt.c                             |   10 ++++++++++
+ 2 files changed, 23 insertions(+)
 
 --- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt
-@@ -0,0 +1,16 @@
-+* NXP LPC32xx SoC ADC controller
++++ linux-2.6/Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt
+@@ -0,0 +1,13 @@
++* NXP PNX watchdog timer
 +
 +Required properties:
-+- compatible: must be "nxp,lpc32xx-adc"
++- compatible: must be "nxp,pnx4008-wdt"
 +- reg: physical base address of the controller and length of memory mapped
 +  region.
-+- interrupts: The ADC interrupt
 +
 +Example:
 +
-+	adc@40048000 {
-+		compatible = "nxp,lpc32xx-adc";
-+		reg = <0x40048000 0x1000>;
-+		interrupt-parent = <&mic>;
-+		interrupts = <39 0>;
++	watchdog@4003C000 {
++		compatible = "nxp,pnx4008-wdt";
++		reg = <0x4003C000 0x1000>;
 +	};
---- linux-2.6.orig/drivers/staging/iio/adc/lpc32xx_adc.c
-+++ linux-2.6/drivers/staging/iio/adc/lpc32xx_adc.c
-@@ -30,6 +30,7 @@
- #include <linux/clk.h>
+--- linux-2.6.orig/drivers/watchdog/pnx4008_wdt.c
++++ linux-2.6/drivers/watchdog/pnx4008_wdt.c
+@@ -32,6 +32,7 @@
+ #include <linux/io.h>
+ #include <linux/slab.h>
  #include <linux/err.h>
- #include <linux/completion.h>
 +#include <linux/of.h>
+ #include <mach/hardware.h>
  
- #include "../iio.h"
- #include "../sysfs.h"
-@@ -221,12 +222,21 @@ static int __devexit lpc32xx_adc_remove(
+ /* WatchDog Timer - Chapter 23 Page 207 */
+@@ -201,10 +202,19 @@ static int __devexit pnx4008_wdt_remove(
  	return 0;
  }
  
 +#ifdef CONFIG_OF
-+static const struct of_device_id lpc32xx_adc_match[] = {
-+	{ .compatible = "nxp,lpc32xx-adc" },
-+	{},
++static const struct of_device_id pnx4008_wdt_match[] = {
++	{ .compatible = "nxp,pnx4008-wdt" },
++	{ }
 +};
-+MODULE_DEVICE_TABLE(of, lpc32xx_adc_match);
++MODULE_DEVICE_TABLE(of, pnx4008_wdt_match);
 +#endif
 +
- static struct platform_driver lpc32xx_adc_driver = {
- 	.probe		= lpc32xx_adc_probe,
- 	.remove		= __devexit_p(lpc32xx_adc_remove),
- 	.driver		= {
- 		.name	= MOD_NAME,
+ static struct platform_driver platform_wdt_driver = {
+ 	.driver = {
+ 		.name = "pnx4008-watchdog",
  		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(lpc32xx_adc_match),
++		.of_match_table = of_match_ptr(pnx4008_wdt_match),
  	},
- };
- 
+ 	.probe = pnx4008_wdt_probe,
+ 	.remove = __devexit_p(pnx4008_wdt_remove),
