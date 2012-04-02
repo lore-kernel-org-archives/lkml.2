@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab2DBTj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 15:39:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58519 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab2DBTjZ (ORCPT
+	id S1752026Ab2DBTkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 15:40:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43363 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab2DBTkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 15:39:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v2 0/8]: arm: lpc32xx: Device tree support
-Date: Mon, 2 Apr 2012 19:39:12 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, srinivas.bakki@nxp.com, kevin.wells@nxp.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        rtc-linux@googlegroups.com, a.zummo@towertech.it,
-        linux-watchdog@vger.kernel.org, wim@iguana.be, jonsmirl@gmail.com
-References: <1333391587-26290-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1333391587-26290-1-git-send-email-stigge@antcom.de>
+	Mon, 2 Apr 2012 15:40:02 -0400
+Date: Mon, 2 Apr 2012 14:39:52 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Akio Idehara <zbe64533@gmail.com>
+Cc: mjg59@srcf.ucam.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] toshiba_acpi: Add support for transflective LCD
+Message-ID: <20120402193952.GD24020@thinkpad-t410>
+Mail-Followup-To: Akio Idehara <zbe64533@gmail.com>, mjg59@srcf.ucam.org,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1333120590-4868-1-git-send-email-zbe64533@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204021939.12731.arnd@arndb.de>
-X-Provags-ID: V02:K0:klk0PrYYrCICucqk7zIB4skI4KlezHoXppvSsP8x6cO
- +UpVzhUHkbG1PhkN2IuihIcdz7XDMoxwvgMOuXpGqoPtGAKJS3
- 3epccAWGyPGQH6fZuj5/B4PHZOGNcBCOp2uibWoNgvrExzDhBK
- 52kggy7CqxtD4E3SoqEcuSnAO6DNNWthJSk7xhRS9ezsKa+emK
- Nw2gmNtZe4G/lAtLTIEG8puPzWJcfA4EZRopbXCRk+PbWanhOa
- 75BtbMDdFRfpkJRv03JmVni1kf18q1GYllMadfioIqtuZGa6aZ
- IdW6F4GpdBwbEN7YWu/tPt8ncGRrJ8ajzPiSklGpW1YEZhT8fZ
- Q+8Zq60Bwfyvwsr4R3YU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333120590-4868-1-git-send-email-zbe64533@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 April 2012, Roland Stigge wrote:
-> This is the first series of patches to introduce device tree support for the
-> LPC32xx SoC. This series includes patches for the various subsystems to support
-> device tree to be used later by the machine's initialization.
-> 
-> The patches apply to various subsystems:
-> 
->  * staging/iio/adc (1)
->  * rtc (1)
->  * net (1)
->  * wdt (1)
->  * i2c (4)
->  * arm-soc (i2c related in the former, to be merged via i2c, as suggested by
->             Arnd Bergmann)
+On Sat, Mar 31, 2012 at 12:16:30AM +0900, Akio Idehara wrote:
+> +static int get_tr_backlight_status(struct toshiba_acpi_dev *dev, u32 *status)
+> +{
+> +	u32 hci_result;
+> +
+> +	hci_read1(dev, HCI_TR_BACKLIGHT, status, &hci_result);
+> +	return hci_result == HCI_SUCCESS ? 0 : -EIO;
+> +}
+> +
+> +static int set_tr_backlight_status(struct toshiba_acpi_dev *dev, int value)
+> +{
+> +	u32 hci_result;
+> +
+> +	hci_write1(dev, HCI_TR_BACKLIGHT, value, &hci_result);
+> +	return hci_result == HCI_SUCCESS ? 0 : -EIO;
+> +}
 
-Looks good, please add
+I think the code will be easier to read if you change both of these to
+use boolean arguments, since that's essentially how they're being used
+anyway. I.e.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+static int get_tr_backlight_status(struct toshiba_acpi_dev *dev, boolean *enabled);
+static int set_tr_backlight_status(struct toshiba_acpi_dev *dev, boolean enable);
 
-for the entire series.
+> @@ -497,15 +527,18 @@ static int lcd_proc_show(struct seq_file *m, void *v)
+>  {
+>  	struct toshiba_acpi_dev *dev = m->private;
+>  	int value;
+> +	int levels = HCI_LCD_BRIGHTNESS_LEVELS;
+>  
+>  	if (!dev->backlight_dev)
+>  		return -ENODEV;
+>  
+> +	if (dev->tr_backlight_supported)
+> +		levels++;
 
-	Arnd
+dev->backlight_dev->props.max_brightness + 1? That seems nicer than
+having to duplicate the "tr backlight gives me an additional brightness
+level" logic throughout the file.
+
+> @@ -1104,8 +1148,15 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
+>  
+>  	mutex_init(&dev->mutex);
+>  
+> +	/* Determine whether or not BIOS supports transflective backlight */
+> +	ret = get_tr_backlight_status(dev, &dummy) ? false : true;
+> +	dev->tr_backlight_supported = ret;
+
+I'd personally prefer
+
+	ret = get_tr_backlight_status(dev, &dummy);
+	dev->tr_backlight_supported = !ret;
+
+to be consistent with how this is done other places in the file.
+
+Cheers,
+Seth
+
