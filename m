@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2DBL4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:19 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48066 "EHLO
+	id S1753855Ab2DBL4Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:16 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48065 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab2DBLzL (ORCPT
+	with ESMTP id S1752511Ab2DBLzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:55:11 -0400
+	Mon, 2 Apr 2012 07:55:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH 32/69] TTY: tty3270, get rid of ugly aliasing
-Date: Mon,  2 Apr 2012 13:54:16 +0200
-Message-Id: <1333367693-3244-33-git-send-email-jslaby@suse.cz>
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 39/69] TTY: HVC, use count from tty_port
+Date: Mon,  2 Apr 2012 13:54:23 +0200
+Message-Id: <1333367693-3244-40-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -23,165 +21,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Blah, do not assume that raw3270_view is at the beginning of tty3270.
-Use proper types and container_of wherever needed.
+Now, count is used from tty_port and protected by tty_port->lock.
+
+n_outbuf is left unprotected in hvc_hangup now, because there is no
+point to hold any lock, since other uses are unprotected too.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- drivers/s390/char/tty3270.c |   42 +++++++++++++++++++-----------------------
- 1 file changed, 19 insertions(+), 23 deletions(-)
+ drivers/tty/hvc/hvc_console.c |   40 +++++++++++++++++++++-------------------
+ drivers/tty/hvc/hvc_console.h |    1 -
+ 2 files changed, 21 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/s390/char/tty3270.c b/drivers/s390/char/tty3270.c
-index f3837da..bb1514a 100644
---- a/drivers/s390/char/tty3270.c
-+++ b/drivers/s390/char/tty3270.c
-@@ -324,9 +324,8 @@ tty3270_blank_line(struct tty3270 *tp)
- static void
- tty3270_write_callback(struct raw3270_request *rq, void *data)
- {
--	struct tty3270 *tp;
-+	struct tty3270 *tp = container_of(rq->view, struct tty3270, view);
- 
--	tp = (struct tty3270 *) rq->view;
- 	if (rq->rc != 0) {
- 		/* Write wasn't successful. Refresh all. */
- 		tp->update_flags = TTY_UPDATE_ALL;
-@@ -537,11 +536,10 @@ static void
- tty3270_read_tasklet(struct raw3270_request *rrq)
- {
- 	static char kreset_data = TW_KR;
--	struct tty3270 *tp;
-+	struct tty3270 *tp = container_of(rrq->view, struct tty3270, view);
- 	char *input;
- 	int len;
- 
--	tp = (struct tty3270 *) rrq->view;
- 	spin_lock_bh(&tp->view.lock);
- 	/*
- 	 * Two AID keys are special: For 0x7d (enter) the input line
-@@ -596,9 +594,10 @@ tty3270_read_tasklet(struct raw3270_request *rrq)
- static void
- tty3270_read_callback(struct raw3270_request *rq, void *data)
- {
-+	struct tty3270 *tp = container_of(rq->view, struct tty3270, view);
- 	raw3270_get_view(rq->view);
- 	/* Schedule tasklet to pass input to tty. */
--	tasklet_schedule(&((struct tty3270 *) rq->view)->readlet);
-+	tasklet_schedule(&tp->readlet);
- }
- 
- /*
-@@ -635,9 +634,8 @@ tty3270_issue_read(struct tty3270 *tp, int lock)
- static int
- tty3270_activate(struct raw3270_view *view)
- {
--	struct tty3270 *tp;
-+	struct tty3270 *tp = container_of(view, struct tty3270, view);
- 
--	tp = (struct tty3270 *) view;
- 	tp->update_flags = TTY_UPDATE_ALL;
- 	tty3270_set_timer(tp, 1);
- 	return 0;
-@@ -646,9 +644,8 @@ tty3270_activate(struct raw3270_view *view)
- static void
- tty3270_deactivate(struct raw3270_view *view)
- {
--	struct tty3270 *tp;
-+	struct tty3270 *tp = container_of(view, struct tty3270, view);
- 
--	tp = (struct tty3270 *) view;
- 	del_timer(&tp->timer);
- }
- 
-@@ -804,10 +801,9 @@ tty3270_free_screen(struct tty3270 *tp)
- static void
- tty3270_release(struct raw3270_view *view)
- {
--	struct tty3270 *tp;
-+	struct tty3270 *tp = container_of(view, struct tty3270, view);
- 	struct tty_struct *tty;
- 
--	tp = (struct tty3270 *) view;
- 	tty = tp->tty;
- 	if (tty) {
- 		tty->driver_data = NULL;
-@@ -823,8 +819,9 @@ tty3270_release(struct raw3270_view *view)
- static void
- tty3270_free(struct raw3270_view *view)
- {
--	tty3270_free_screen((struct tty3270 *) view);
--	tty3270_free_view((struct tty3270 *) view);
-+	struct tty3270 *tp = container_of(view, struct tty3270, view);
-+	tty3270_free_screen(tp);
-+	tty3270_free_view(tp);
- }
- 
- /*
-@@ -833,14 +830,13 @@ tty3270_free(struct raw3270_view *view)
- static void
- tty3270_del_views(void)
- {
--	struct tty3270 *tp;
- 	int i;
- 
- 	for (i = 0; i < tty3270_max_index; i++) {
--		tp = (struct tty3270 *)
-+		struct raw3270_view *view =
- 			raw3270_find_view(&tty3270_fn, i + RAW3270_FIRSTMINOR);
--		if (!IS_ERR(tp))
--			raw3270_del_view(&tp->view);
-+		if (!IS_ERR(view))
-+			raw3270_del_view(view);
- 	}
- }
- 
-@@ -858,16 +854,17 @@ static struct raw3270_fn tty3270_fn = {
- static int
- tty3270_open(struct tty_struct *tty, struct file * filp)
- {
-+	struct raw3270_view *view;
- 	struct tty3270 *tp;
- 	int i, rc;
- 
- 	if (tty->count > 1)
- 		return 0;
- 	/* Check if the tty3270 is already there. */
--	tp = (struct tty3270 *)
--		raw3270_find_view(&tty3270_fn,
-+	view = raw3270_find_view(&tty3270_fn,
- 				  tty->index + RAW3270_FIRSTMINOR);
--	if (!IS_ERR(tp)) {
-+	if (!IS_ERR(view)) {
-+		tp = container_of(view, struct tty3270, view);
- 		tty->driver_data = tp;
- 		tty->winsize.ws_row = tp->view.rows - 2;
- 		tty->winsize.ws_col = tp->view.cols;
-@@ -881,7 +878,7 @@ tty3270_open(struct tty_struct *tty, struct file * filp)
- 		tty3270_max_index = tty->index + 1;
- 
- 	/* Quick exit if there is no device for tty->index. */
--	if (PTR_ERR(tp) == -ENODEV)
-+	if (PTR_ERR(view) == -ENODEV)
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 92b7f5d..6c45cbf 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -313,18 +313,18 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
+ 	if (!(hp = hvc_get_by_index(tty->index)))
  		return -ENODEV;
  
- 	/* Allocate tty3270 structure on first open. */
-@@ -935,11 +932,10 @@ tty3270_open(struct tty_struct *tty, struct file * filp)
- static void
- tty3270_close(struct tty_struct *tty, struct file * filp)
- {
--	struct tty3270 *tp;
-+	struct tty3270 *tp = tty->driver_data;
+-	spin_lock_irqsave(&hp->lock, flags);
++	spin_lock_irqsave(&hp->port.lock, flags);
+ 	/* Check and then increment for fast path open. */
+-	if (hp->count++ > 0) {
++	if (hp->port.count++ > 0) {
++		spin_unlock_irqrestore(&hp->port.lock, flags);
++		/* FIXME why taking a reference here? */
+ 		tty_kref_get(tty);
+-		spin_unlock_irqrestore(&hp->lock, flags);
+ 		hvc_kick();
+ 		return 0;
+ 	} /* else count == 0 */
++	spin_unlock_irqrestore(&hp->port.lock, flags);
  
- 	if (tty->count > 1)
+ 	tty->driver_data = hp;
+-	spin_unlock_irqrestore(&hp->lock, flags);
+-
+ 	tty_port_tty_set(&hp->port, tty);
+ 
+ 	if (hp->ops->notifier_add)
+@@ -367,10 +367,10 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
+ 
+ 	hp = tty->driver_data;
+ 
+-	spin_lock_irqsave(&hp->lock, flags);
++	spin_lock_irqsave(&hp->port.lock, flags);
+ 
+-	if (--hp->count == 0) {
+-		spin_unlock_irqrestore(&hp->lock, flags);
++	if (--hp->port.count == 0) {
++		spin_unlock_irqrestore(&hp->port.lock, flags);
+ 		/* We are done with the tty pointer now. */
+ 		tty_port_tty_set(&hp->port, NULL);
+ 
+@@ -387,10 +387,10 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
+ 		 */
+ 		tty_wait_until_sent_from_close(tty, HVC_CLOSE_WAIT);
+ 	} else {
+-		if (hp->count < 0)
++		if (hp->port.count < 0)
+ 			printk(KERN_ERR "hvc_close %X: oops, count is %d\n",
+-				hp->vtermno, hp->count);
+-		spin_unlock_irqrestore(&hp->lock, flags);
++				hp->vtermno, hp->port.count);
++		spin_unlock_irqrestore(&hp->port.lock, flags);
+ 	}
+ 
+ 	tty_kref_put(tty);
+@@ -409,24 +409,25 @@ static void hvc_hangup(struct tty_struct *tty)
+ 	/* cancel pending tty resize work */
+ 	cancel_work_sync(&hp->tty_resize);
+ 
+-	spin_lock_irqsave(&hp->lock, flags);
++	spin_lock_irqsave(&hp->port.lock, flags);
+ 
+ 	/*
+ 	 * The N_TTY line discipline has problems such that in a close vs
+ 	 * open->hangup case this can be called after the final close so prevent
+ 	 * that from happening for now.
+ 	 */
+-	if (hp->count <= 0) {
+-		spin_unlock_irqrestore(&hp->lock, flags);
++	if (hp->port.count <= 0) {
++		spin_unlock_irqrestore(&hp->port.lock, flags);
  		return;
--	tp = (struct tty3270 *) tty->driver_data;
- 	if (tp) {
- 		tty->driver_data = NULL;
- 		tp->tty = tp->kbd->tty = NULL;
+ 	}
+ 
+-	temp_open_count = hp->count;
+-	hp->count = 0;
+-	hp->n_outbuf = 0;
+-	spin_unlock_irqrestore(&hp->lock, flags);
++	temp_open_count = hp->port.count;
++	hp->port.count = 0;
++	spin_unlock_irqrestore(&hp->port.lock, flags);
+ 	tty_port_tty_set(&hp->port, NULL);
+ 
++	hp->n_outbuf = 0;
++
+ 	if (hp->ops->notifier_hangup)
+ 		hp->ops->notifier_hangup(hp, hp->data);
+ 
+@@ -474,7 +475,8 @@ static int hvc_write(struct tty_struct *tty, const unsigned char *buf, int count
+ 	if (!hp)
+ 		return -EPIPE;
+ 
+-	if (hp->count <= 0)
++	/* FIXME what's this (unprotected) check for? */
++	if (hp->port.count <= 0)
+ 		return -EIO;
+ 
+ 	spin_lock_irqsave(&hp->lock, flags);
+diff --git a/drivers/tty/hvc/hvc_console.h b/drivers/tty/hvc/hvc_console.h
+index 594a28f..674d23c 100644
+--- a/drivers/tty/hvc/hvc_console.h
++++ b/drivers/tty/hvc/hvc_console.h
+@@ -49,7 +49,6 @@ struct hvc_struct {
+ 	struct tty_port port;
+ 	spinlock_t lock;
+ 	int index;
+-	int count;
+ 	int do_wakeup;
+ 	char *outbuf;
+ 	int outbuf_size;
 -- 
 1.7.9.2
 
