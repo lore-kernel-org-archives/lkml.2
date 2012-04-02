@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2DBQ1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 12:27:40 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55471 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab2DBQ1j (ORCPT
+	id S1753260Ab2DBQ2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 12:28:21 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49931 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab2DBQ2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 12:27:39 -0400
-Date: Mon, 2 Apr 2012 20:27:33 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
-Message-ID: <20120402162733.GI7607@moon>
-References: <20120331091049.19373.28994.stgit@zurg>
- <20120331092929.19920.54540.stgit@zurg>
- <20120331201324.GA17565@redhat.com>
- <20120331203912.GB687@moon>
- <4F79755B.3030703@openvz.org>
- <20120402144821.GA3334@redhat.com>
- <4F79D1AF.7080100@openvz.org>
+	Mon, 2 Apr 2012 12:28:19 -0400
+Date: Mon, 2 Apr 2012 09:23:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Chanho Min <chanho0207@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jong-Sung Kim <neidhard.kim@lge.com>
+Subject: Re: [ 033/108] serial: PL011: clear pending interrupts
+Message-ID: <20120402162302.GA10138@kroah.com>
+References: <20120330195812.GA31833@kroah.com>
+ <20120330195726.845212875@linuxfoundation.org>
+ <CACRpkda-feATvkKnSb68PDkQrvqNnbsVSG=naxtdW7FHdRUX2A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4F79D1AF.7080100@openvz.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkda-feATvkKnSb68PDkQrvqNnbsVSG=naxtdW7FHdRUX2A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 08:19:59PM +0400, Konstantin Khlebnikov wrote:
-> Oleg Nesterov wrote:
-> >On 04/02, Konstantin Khlebnikov wrote:
-> >>
-> >>In this patch I leave mm->exe_file lockless.
-> >>After exec/fork we can change it only for current task and only if mm->mm_users == 1.
-> >>
-> >>something like this:
-> >>
-> >>task_lock(current);
-> >
-> >OK, this protects against the race with get_task_mm()
-> >
-> >>if (atomic_read(&current->mm->mm_users) == 1)
-> >
-> >this means PR_SET_MM_EXE_FILE can fail simply because someone did
-> >get_task_mm(). Or the caller is multithreaded.
+On Sun, Apr 01, 2012 at 01:43:18PM +0200, Linus Walleij wrote:
+> On Fri, Mar 30, 2012 at 9:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
 > 
-> This is sad, seems like we should keep mm->exe_file protection by mm->mmap_sem.
-> So, I'll rework this patch...
+> > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> 
+> Objections: do not add this to the stable series unless the currently
+> under-review patch "serial: PL011: move interrupt clearing" is
+> also included.
+> 
+> Together they solve a real problem, but alone this causes a new
+> problem.
 
-Ah, it's about locking. I misundertand it at first.
-Oleg, forget about my email then.
+Ok, sorry about that, now removed from the 3.0, 3.2, and 3.3-stable
+trees.
 
-	Cyrill
+When the other fix makes it into Linus's tree, care to remind me about
+this one so I can add it back?
+
+thanks,
+
+greg k-h
