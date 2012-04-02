@@ -1,199 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab2DBPzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 11:55:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63538 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab2DBPzt (ORCPT
+	id S1752726Ab2DBP4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 11:56:21 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:52754 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751548Ab2DBP4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 11:55:49 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: sameo@linux.intel.com
-Cc: srinidhi.kasagar@stericsson.com, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd : dbx500 : fix compilation error
-Date: Mon,  2 Apr 2012 17:55:48 +0200
-Message-Id: <1333382148-14137-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 2 Apr 2012 11:56:20 -0400
+Date: Mon, 2 Apr 2012 11:56:06 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Keith Packard <keithp@keithp.com>
+Subject: Re: Linux 3.3-rc2
+Message-ID: <20120402155605.GA3155@elliptictech.com>
+References: <CA+55aFye5iedspjus4YLi+r77Xq74bCq+MqU0HrTmDC5Dveivg@mail.gmail.com>
+ <20120201175651.GA3300@elliptictech.com>
+ <20120202033524.GA11360@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202033524.GA11360@localhost>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ux500 default config enables the db5500 and the db8500.
-The incoming cpuidle driver uses the 'prcmu_enable_wakeups'
-and the 'prcmu_set_power_state' functions but these ones
-are defined but not implemented for the db5500, leading to
-an unresolved symbol error at link time. In order to compile,
-we have to disable the db5500 support which is not acceptable
-for the default config.
+On 2012-02-02 11:35 +0800, Wu Fengguang wrote:
+> Nick,
+> 
+> [snip]
+> > However, the _very next commit_:
+> > 
+> >   2deed761188d ("drm/i915: HDMI hot remove notification to audio driver")
+> > 
+> > reintroduces the log spam every mode change, with two additional lines
+> > printed each time (the lines prefixed with an asterisk are new):
+> > 
+> > * HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=0 ELD_Valid=1
+> > * HDMI status: Codec=3 Pin=3 Presence_Detect=0 ELD_Valid=0
+> >   HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
+> >   HDMI status: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
+> >   HDMI: detected monitor W2253 at connection type HDMI
+> >   HDMI: available speakers: FL/FR
+> >   HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
+> 
+> Actually we have another patch to disable all the above printk lines:
+> 
+> alsa: hide HDMI/ELD printks unless in debug kernels
+> http://lists.freedesktop.org/archives/intel-gfx/2011-November/013322.html
+> 
+> And the plan is to merge it in the next release of all the ELD fixes,
+> which should be 3.4.
 
-I noticed there are also some other functions which are
-defined but not implemented.
+Ping?
 
-This patch fix this by removing the functions definitions
-and move out of the config section the empty functions which
-are normally used when the DB550 config is disabled.
-Only the functions which are not implemented are concerned
-by this modification.
+3.4-rc1 is out and my logs are still being filled with this noise :(
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- include/linux/mfd/db5500-prcmu.h |   88 ++++++++++++++++----------------------
- 1 files changed, 37 insertions(+), 51 deletions(-)
-
-diff --git a/include/linux/mfd/db5500-prcmu.h b/include/linux/mfd/db5500-prcmu.h
-index 9890687..5a049df 100644
---- a/include/linux/mfd/db5500-prcmu.h
-+++ b/include/linux/mfd/db5500-prcmu.h
-@@ -8,41 +8,14 @@
- #ifndef __MFD_DB5500_PRCMU_H
- #define __MFD_DB5500_PRCMU_H
- 
--#ifdef CONFIG_MFD_DB5500_PRCMU
--
--void db5500_prcmu_early_init(void);
--int db5500_prcmu_set_epod(u16 epod_id, u8 epod_state);
--int db5500_prcmu_set_display_clocks(void);
--int db5500_prcmu_disable_dsipll(void);
--int db5500_prcmu_enable_dsipll(void);
--int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
--int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
--void db5500_prcmu_enable_wakeups(u32 wakeups);
--int db5500_prcmu_request_clock(u8 clock, bool enable);
--void db5500_prcmu_config_abb_event_readout(u32 abb_events);
--void db5500_prcmu_get_abb_event_buffer(void __iomem **buf);
--int prcmu_resetout(u8 resoutn, u8 state);
--int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk,
--	bool keep_ap_pll);
--int db5500_prcmu_config_esram0_deep_sleep(u8 state);
--void db5500_prcmu_system_reset(u16 reset_code);
--u16 db5500_prcmu_get_reset_code(void);
--bool db5500_prcmu_is_ac_wake_requested(void);
--int db5500_prcmu_set_arm_opp(u8 opp);
--int db5500_prcmu_get_arm_opp(void);
--
--#else /* !CONFIG_UX500_SOC_DB5500 */
--
--static inline void db5500_prcmu_early_init(void) {}
--
--static inline int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
-+static inline int prcmu_resetout(u8 resoutn, u8 state)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
--static inline int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
-+static inline int db5500_prcmu_set_epod(u16 epod_id, u8 epod_state)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int db5500_prcmu_request_clock(u8 clock, bool enable)
-@@ -50,69 +23,82 @@ static inline int db5500_prcmu_request_clock(u8 clock, bool enable)
- 	return 0;
- }
- 
--static inline int db5500_prcmu_set_display_clocks(void)
-+static inline int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk,
-+	bool keep_ap_pll)
- {
- 	return 0;
- }
- 
--static inline int db5500_prcmu_disable_dsipll(void)
-+static inline int db5500_prcmu_config_esram0_deep_sleep(u8 state)
- {
- 	return 0;
- }
- 
--static inline int db5500_prcmu_enable_dsipll(void)
-+static inline u16 db5500_prcmu_get_reset_code(void)
- {
- 	return 0;
- }
- 
--static inline int db5500_prcmu_config_esram0_deep_sleep(u8 state)
-+static inline bool db5500_prcmu_is_ac_wake_requested(void)
- {
- 	return 0;
- }
- 
--static inline void db5500_prcmu_enable_wakeups(u32 wakeups) {}
--
--static inline int prcmu_resetout(u8 resoutn, u8 state)
-+static inline int db5500_prcmu_set_arm_opp(u8 opp)
- {
- 	return 0;
- }
- 
--static inline int db5500_prcmu_set_epod(u16 epod_id, u8 epod_state)
-+static inline int db5500_prcmu_get_arm_opp(void)
- {
- 	return 0;
- }
- 
--static inline void db5500_prcmu_get_abb_event_buffer(void __iomem **buf) {}
- static inline void db5500_prcmu_config_abb_event_readout(u32 abb_events) {}
- 
--static inline int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk,
--	bool keep_ap_pll)
--{
--	return 0;
--}
-+static inline void db5500_prcmu_get_abb_event_buffer(void __iomem **buf) {}
- 
- static inline void db5500_prcmu_system_reset(u16 reset_code) {}
- 
--static inline u16 db5500_prcmu_get_reset_code(void)
-+static inline void db5500_prcmu_enable_wakeups(u32 wakeups) {}
-+
-+#ifdef CONFIG_MFD_DB5500_PRCMU
-+
-+void db5500_prcmu_early_init(void);
-+int db5500_prcmu_set_display_clocks(void);
-+int db5500_prcmu_disable_dsipll(void);
-+int db5500_prcmu_enable_dsipll(void);
-+int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
-+int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
-+
-+#else /* !CONFIG_UX500_SOC_DB5500 */
-+
-+static inline void db5500_prcmu_early_init(void) {}
-+
-+static inline int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
- {
--	return 0;
-+	return -ENOSYS;
- }
- 
--static inline bool db5500_prcmu_is_ac_wake_requested(void)
-+static inline int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
- {
--	return 0;
-+	return -ENOSYS;
- }
- 
--static inline int db5500_prcmu_set_arm_opp(u8 opp)
-+static inline int db5500_prcmu_set_display_clocks(void)
- {
- 	return 0;
- }
- 
--static inline int db5500_prcmu_get_arm_opp(void)
-+static inline int db5500_prcmu_disable_dsipll(void)
- {
- 	return 0;
- }
- 
-+static inline int db5500_prcmu_enable_dsipll(void)
-+{
-+	return 0;
-+}
- 
- #endif /* CONFIG_MFD_DB5500_PRCMU */
- 
+Cheers,
 -- 
-1.7.5.4
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
