@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab2DBSej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:34:39 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:41945 "EHLO
+	id S1754310Ab2DBSet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:34:49 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:35804 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753925Ab2DBSeh (ORCPT
+	with ESMTP id S1753925Ab2DBSeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:34:37 -0400
+	Mon, 2 Apr 2012 14:34:46 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         rtc-linux@googlegroups.com, a.zummo@towertech.it,
         linux-watchdog@vger.kernel.org, wim@iguana.be, jonsmirl@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v2 4/8] wdt: Device tree support for pnx4008-wdt
-Date: Mon,  2 Apr 2012 20:33:03 +0200
-Message-Id: <1333391587-26290-5-git-send-email-stigge@antcom.de>
+Subject: [PATCH v2 7/8] i2c-pnx.c: Remove duplicated i2c.h
+Date: Mon,  2 Apr 2012 20:33:06 +0200
+Message-Id: <1333391587-26290-8-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1333391587-26290-1-git-send-email-stigge@antcom.de>
 References: <1333391587-26290-1-git-send-email-stigge@antcom.de>
@@ -26,7 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds watchdog support to pnx4008-wdt.c
+The platforms using i2c-pnx.c both defined a duplicated i2c.h (used nowhere
+else). This patch removes those and integrates the contents into the driver
+itself.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
@@ -34,53 +36,203 @@ Signed-off-by: Roland Stigge <stigge@antcom.de>
 
  Applies to v3.4-rc1
 
- Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt |   13 +++++++++++++
- drivers/watchdog/pnx4008_wdt.c                             |   10 ++++++++++
- 2 files changed, 23 insertions(+)
+ arch/arm/mach-lpc32xx/include/mach/i2c.h |   63 ------------------------------
+ arch/arm/mach-pnx4008/include/mach/i2c.h |   64 -------------------------------
+ drivers/i2c/busses/i2c-pnx.c             |   49 ++++++++++++++++++++++-
+ 3 files changed, 46 insertions(+), 130 deletions(-)
 
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt
-@@ -0,0 +1,13 @@
-+* NXP PNX watchdog timer
-+
-+Required properties:
-+- compatible: must be "nxp,pnx4008-wdt"
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+Example:
-+
-+	watchdog@4003C000 {
-+		compatible = "nxp,pnx4008-wdt";
-+		reg = <0x4003C000 0x1000>;
-+	};
---- linux-2.6.orig/drivers/watchdog/pnx4008_wdt.c
-+++ linux-2.6/drivers/watchdog/pnx4008_wdt.c
-@@ -32,6 +32,7 @@
- #include <linux/io.h>
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/i2c.h
++++ /dev/null
+@@ -1,63 +0,0 @@
+-/*
+- * PNX4008-specific tweaks for I2C IP3204 block
+- *
+- * Author: Vitaly Wool <vwool@ru.mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#ifndef __ASM_ARCH_I2C_H
+-#define __ASM_ARCH_I2C_H
+-
+-enum {
+-	mstatus_tdi = 0x00000001,
+-	mstatus_afi = 0x00000002,
+-	mstatus_nai = 0x00000004,
+-	mstatus_drmi = 0x00000008,
+-	mstatus_active = 0x00000020,
+-	mstatus_scl = 0x00000040,
+-	mstatus_sda = 0x00000080,
+-	mstatus_rff = 0x00000100,
+-	mstatus_rfe = 0x00000200,
+-	mstatus_tff = 0x00000400,
+-	mstatus_tfe = 0x00000800,
+-};
+-
+-enum {
+-	mcntrl_tdie = 0x00000001,
+-	mcntrl_afie = 0x00000002,
+-	mcntrl_naie = 0x00000004,
+-	mcntrl_drmie = 0x00000008,
+-	mcntrl_daie = 0x00000020,
+-	mcntrl_rffie = 0x00000040,
+-	mcntrl_tffie = 0x00000080,
+-	mcntrl_reset = 0x00000100,
+-	mcntrl_cdbmode = 0x00000400,
+-};
+-
+-enum {
+-	rw_bit = 1 << 0,
+-	start_bit = 1 << 8,
+-	stop_bit = 1 << 9,
+-};
+-
+-#define I2C_REG_RX(a)	((a)->ioaddr)		/* Rx FIFO reg (RO) */
+-#define I2C_REG_TX(a)	((a)->ioaddr)		/* Tx FIFO reg (WO) */
+-#define I2C_REG_STS(a)	((a)->ioaddr + 0x04)	/* Status reg (RO) */
+-#define I2C_REG_CTL(a)	((a)->ioaddr + 0x08)	/* Ctl reg */
+-#define I2C_REG_CKL(a)	((a)->ioaddr + 0x0c)	/* Clock divider low */
+-#define I2C_REG_CKH(a)	((a)->ioaddr + 0x10)	/* Clock divider high */
+-#define I2C_REG_ADR(a)	((a)->ioaddr + 0x14)	/* I2C address */
+-#define I2C_REG_RFL(a)	((a)->ioaddr + 0x18)	/* Rx FIFO level (RO) */
+-#define I2C_REG_TFL(a)	((a)->ioaddr + 0x1c)	/* Tx FIFO level (RO) */
+-#define I2C_REG_RXB(a)	((a)->ioaddr + 0x20)	/* Num of bytes Rx-ed (RO) */
+-#define I2C_REG_TXB(a)	((a)->ioaddr + 0x24)	/* Num of bytes Tx-ed (RO) */
+-#define I2C_REG_TXS(a)	((a)->ioaddr + 0x28)	/* Tx slave FIFO (RO) */
+-#define I2C_REG_STFL(a)	((a)->ioaddr + 0x2c)	/* Tx slave FIFO level (RO) */
+-
+-#define I2C_CHIP_NAME		"PNX4008-I2C"
+-
+-#endif				/* __ASM_ARCH_I2C_H */
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/i2c.h
++++ /dev/null
+@@ -1,64 +0,0 @@
+-/*
+- * PNX4008-specific tweaks for I2C IP3204 block
+- *
+- * Author: Vitaly Wool <vwool@ru.mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#ifndef __ASM_ARCH_I2C_H__
+-#define __ASM_ARCH_I2C_H__
+-
+-enum {
+-	mstatus_tdi = 0x00000001,
+-	mstatus_afi = 0x00000002,
+-	mstatus_nai = 0x00000004,
+-	mstatus_drmi = 0x00000008,
+-	mstatus_active = 0x00000020,
+-	mstatus_scl = 0x00000040,
+-	mstatus_sda = 0x00000080,
+-	mstatus_rff = 0x00000100,
+-	mstatus_rfe = 0x00000200,
+-	mstatus_tff = 0x00000400,
+-	mstatus_tfe = 0x00000800,
+-};
+-
+-enum {
+-	mcntrl_tdie = 0x00000001,
+-	mcntrl_afie = 0x00000002,
+-	mcntrl_naie = 0x00000004,
+-	mcntrl_drmie = 0x00000008,
+-	mcntrl_daie = 0x00000020,
+-	mcntrl_rffie = 0x00000040,
+-	mcntrl_tffie = 0x00000080,
+-	mcntrl_reset = 0x00000100,
+-	mcntrl_cdbmode = 0x00000400,
+-};
+-
+-enum {
+-	rw_bit = 1 << 0,
+-	start_bit = 1 << 8,
+-	stop_bit = 1 << 9,
+-};
+-
+-#define I2C_REG_RX(a)	((a)->ioaddr)		/* Rx FIFO reg (RO) */
+-#define I2C_REG_TX(a)	((a)->ioaddr)		/* Tx FIFO reg (WO) */
+-#define I2C_REG_STS(a)	((a)->ioaddr + 0x04)	/* Status reg (RO) */
+-#define I2C_REG_CTL(a)	((a)->ioaddr + 0x08)	/* Ctl reg */
+-#define I2C_REG_CKL(a)	((a)->ioaddr + 0x0c)	/* Clock divider low */
+-#define I2C_REG_CKH(a)	((a)->ioaddr + 0x10)	/* Clock divider high */
+-#define I2C_REG_ADR(a)	((a)->ioaddr + 0x14)	/* I2C address */
+-#define I2C_REG_RFL(a)	((a)->ioaddr + 0x18)	/* Rx FIFO level (RO) */
+-#define I2C_REG_TFL(a)	((a)->ioaddr + 0x1c)	/* Tx FIFO level (RO) */
+-#define I2C_REG_RXB(a)	((a)->ioaddr + 0x20)	/* Num of bytes Rx-ed (RO) */
+-#define I2C_REG_TXB(a)	((a)->ioaddr + 0x24)	/* Num of bytes Tx-ed (RO) */
+-#define I2C_REG_TXS(a)	((a)->ioaddr + 0x28)	/* Tx slave FIFO (RO) */
+-#define I2C_REG_STFL(a)	((a)->ioaddr + 0x2c)	/* Tx slave FIFO level (RO) */
+-
+-#define HCLK_MHZ		13
+-#define I2C_CHIP_NAME		"PNX4008-I2C"
+-
+-#endif				/* __ASM_ARCH_I2C_H___ */
+--- linux-2.6.orig/drivers/i2c/busses/i2c-pnx.c
++++ linux-2.6/drivers/i2c/busses/i2c-pnx.c
+@@ -24,13 +24,56 @@
+ #include <linux/clk.h>
  #include <linux/slab.h>
- #include <linux/err.h>
-+#include <linux/of.h>
- #include <mach/hardware.h>
  
- /* WatchDog Timer - Chapter 23 Page 207 */
-@@ -201,10 +202,19 @@ static int __devexit pnx4008_wdt_remove(
- 	return 0;
- }
+-#include <mach/hardware.h>
+-#include <mach/i2c.h>
+-
+ #define I2C_PNX_TIMEOUT		10 /* msec */
+ #define I2C_PNX_SPEED_KHZ	100
+ #define I2C_PNX_REGION_SIZE	0x100
  
-+#ifdef CONFIG_OF
-+static const struct of_device_id pnx4008_wdt_match[] = {
-+	{ .compatible = "nxp,pnx4008-wdt" },
-+	{ }
++enum {
++	mstatus_tdi = 0x00000001,
++	mstatus_afi = 0x00000002,
++	mstatus_nai = 0x00000004,
++	mstatus_drmi = 0x00000008,
++	mstatus_active = 0x00000020,
++	mstatus_scl = 0x00000040,
++	mstatus_sda = 0x00000080,
++	mstatus_rff = 0x00000100,
++	mstatus_rfe = 0x00000200,
++	mstatus_tff = 0x00000400,
++	mstatus_tfe = 0x00000800,
 +};
-+MODULE_DEVICE_TABLE(of, pnx4008_wdt_match);
-+#endif
 +
- static struct platform_driver platform_wdt_driver = {
- 	.driver = {
- 		.name = "pnx4008-watchdog",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(pnx4008_wdt_match),
- 	},
- 	.probe = pnx4008_wdt_probe,
- 	.remove = __devexit_p(pnx4008_wdt_remove),
++enum {
++	mcntrl_tdie = 0x00000001,
++	mcntrl_afie = 0x00000002,
++	mcntrl_naie = 0x00000004,
++	mcntrl_drmie = 0x00000008,
++	mcntrl_daie = 0x00000020,
++	mcntrl_rffie = 0x00000040,
++	mcntrl_tffie = 0x00000080,
++	mcntrl_reset = 0x00000100,
++	mcntrl_cdbmode = 0x00000400,
++};
++
++enum {
++	rw_bit = 1 << 0,
++	start_bit = 1 << 8,
++	stop_bit = 1 << 9,
++};
++
++#define I2C_REG_RX(a)	((a)->ioaddr)		/* Rx FIFO reg (RO) */
++#define I2C_REG_TX(a)	((a)->ioaddr)		/* Tx FIFO reg (WO) */
++#define I2C_REG_STS(a)	((a)->ioaddr + 0x04)	/* Status reg (RO) */
++#define I2C_REG_CTL(a)	((a)->ioaddr + 0x08)	/* Ctl reg */
++#define I2C_REG_CKL(a)	((a)->ioaddr + 0x0c)	/* Clock divider low */
++#define I2C_REG_CKH(a)	((a)->ioaddr + 0x10)	/* Clock divider high */
++#define I2C_REG_ADR(a)	((a)->ioaddr + 0x14)	/* I2C address */
++#define I2C_REG_RFL(a)	((a)->ioaddr + 0x18)	/* Rx FIFO level (RO) */
++#define I2C_REG_TFL(a)	((a)->ioaddr + 0x1c)	/* Tx FIFO level (RO) */
++#define I2C_REG_RXB(a)	((a)->ioaddr + 0x20)	/* Num of bytes Rx-ed (RO) */
++#define I2C_REG_TXB(a)	((a)->ioaddr + 0x24)	/* Num of bytes Tx-ed (RO) */
++#define I2C_REG_TXS(a)	((a)->ioaddr + 0x28)	/* Tx slave FIFO (RO) */
++#define I2C_REG_STFL(a)	((a)->ioaddr + 0x2c)	/* Tx slave FIFO level (RO) */
++
+ static inline int wait_timeout(long timeout, struct i2c_pnx_algo_data *data)
+ {
+ 	while (timeout > 0 &&
