@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab2DBUvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 16:51:31 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54235 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab2DBUva (ORCPT
+	id S1752708Ab2DBUwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 16:52:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51473 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab2DBUwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 16:51:30 -0400
+	Mon, 2 Apr 2012 16:52:40 -0400
+Date: Mon, 2 Apr 2012 22:52:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andreas Schwab <schwab@linux-m68k.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+In-Reply-To: <m2hax2qeqs.fsf@igel.home>
+Message-ID: <alpine.LFD.2.02.1204022251420.2542@ionos>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca> <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1333399194.6431.3.camel@lorien2>
-References: <20120117235852.GA4877@www.outflux.net>
-	<20120118140603.0fc22302.akpm@linux-foundation.org>
-	<CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
-	<5C4C569E8A4B9B42A84A977CF070A35B2DA7A7F226@USINDEVS01.corp.hds.com>
-	<4F1A7854.7010808@gmail.com>
-	<1333399194.6431.3.camel@lorien2>
-Date: Mon, 2 Apr 2012 13:51:29 -0700
-X-Google-Sender-Auth: sRNgmOzk_tRe_0Bl-mZOa_wlYRw
-Message-ID: <CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
-Subject: Re: [PATCH v5] ramoops: use pstore interface
-From: Kees Cook <keescook@chromium.org>
-To: shuahkhan@gmail.com, Matt Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 1:39 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
->> First of all ramoops was born mainly for debug purpose and to help the
->> maintainability of a product. I used it in systems where the uptime (so
->> no reboot) was important. So it can be very useful for me load the
->> module, gather logs and unload it for example. A kernel panic is not
->> recoverable so the reboot is needed but it's not always true for a
->> kernel oops.
->>
->> Marco
->
-> What is the status of this patch? Don't see it in 3.3 and haven't
-> checked 3.4-rc1 yet.
+On Mon, 2 Apr 2012, Andreas Schwab wrote:
 
-Hi,
+> Andreas Schwab <schwab@linux-m68k.org> writes:
+> 
+> > Grant Likely <grant.likely@secretlab.ca> writes:
+> >
+> >> This patch drops the powerpc-specific irq_map table and replaces it with
+> >> directly using the irq_alloc_desc()/irq_free_desc() interfaces for allocating
+> >> and freeing irq_desc structures.
+> >
+> > This breaks irqs on PowerMac G5.  I see lost irq errors from the sata
+> > driver.
+> 
+> When I revert a09b659cd68c10ec6a30cb91ebd2c327fcd5bfe5 ("genirq: Fix
+> long-term regression in genirq irq_set_irq_type() handling") on top of
+> 3.4-rc1 the sata irq errors disappear, but I see a lot of spurious
 
-I've been hoping it would get into 3.4. It's in the -mm tree, and has
-been living in linux-next for a while. I'm not sure why it hasn't been
-merged into Linus's tree yet. Andrew, is there a reason it hasn't been
-merged?
+Hmm. Which irq chip is handling the interrupt for that sata irq ?
 
-http://marc.info/?l=linux-mm-commits&m=132692455101733&w=4
+Thanks,
 
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=07eff225ead22b21fe5aba32cd2695248a9e4d1f
-
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
+	tglx
