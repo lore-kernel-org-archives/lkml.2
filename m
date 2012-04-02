@@ -1,140 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab2DBMJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 08:09:32 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:47942 "EHLO
+	id S1753146Ab2DBMJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 08:09:29 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:47941 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2DBLzB (ORCPT
+	with ESMTP id S1751583Ab2DBLzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:01 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Jan Dumon <j.dumon@option.com>
-Subject: [PATCH 21/69] TTY: hso, add tty_port
-Date: Mon,  2 Apr 2012 13:54:05 +0200
-Message-Id: <1333367693-3244-22-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 00/69] TTY buffer in tty_port -- prep no. 2
+Date: Mon,  2 Apr 2012 13:53:44 +0200
+Message-Id: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
-References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And use open count from there. Other members will follow.
+Hi,
 
-Remark: port.count is (and never was) properly protected. Only a mutex
-is held, so ISR and all the functions it calls may see an invalid
-state.
+this is the second series of patches which allow tty buffers to be
+moved from tty_struct (present from open to close/hangup) to tty_port
+(present as long as the device). This will allow us to get rid of the
+tty refcounting in the interrupt service routines and other hot paths
+after we are done. This is because we won't need to handle races among
+ISRs, timers, hangups and others, because tty_port lives as long as an
+interrupt/timer tick may occur. Unlike tty_struct.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Jan Dumon <j.dumon@option.com>
----
- drivers/net/usb/hso.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+In this series, second batch of drivers is converted to use tty_port.
+The final few pieces are to come in the next window. Read: only very
+few drivers are remaining. Then the whole switch will start.
 
-diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index cdc589e..0b26d75 100644
---- a/drivers/net/usb/hso.c
-+++ b/drivers/net/usb/hso.c
-@@ -255,9 +255,9 @@ struct hso_serial {
- 	u8 dtr_state;
- 	unsigned tx_urb_used:1;
- 
-+	struct tty_port port;
- 	/* from usb_serial_port */
- 	struct tty_struct *tty;
--	int open_count;
- 	spinlock_t serial_lock;
- 
- 	int (*write_data) (struct hso_serial *serial);
-@@ -1190,7 +1190,7 @@ static void put_rxbuf_data_and_resubmit_ctrl_urb(struct hso_serial *serial)
- 	struct urb *urb;
- 
- 	urb = serial->rx_urb[0];
--	if (serial->open_count > 0) {
-+	if (serial->port.count > 0) {
- 		count = put_rxbuf_data(urb, serial);
- 		if (count == -1)
- 			return;
-@@ -1226,7 +1226,7 @@ static void hso_std_serial_read_bulk_callback(struct urb *urb)
- 	DUMP1(urb->transfer_buffer, urb->actual_length);
- 
- 	/* Anyone listening? */
--	if (serial->open_count == 0)
-+	if (serial->port.count == 0)
- 		return;
- 
- 	if (status == 0) {
-@@ -1311,8 +1311,8 @@ static int hso_serial_open(struct tty_struct *tty, struct file *filp)
- 	spin_unlock_irq(&serial->serial_lock);
- 
- 	/* check for port already opened, if not set the termios */
--	serial->open_count++;
--	if (serial->open_count == 1) {
-+	serial->port.count++;
-+	if (serial->port.count == 1) {
- 		serial->rx_state = RX_IDLE;
- 		/* Force default termio settings */
- 		_hso_serial_set_termios(tty, NULL);
-@@ -1324,7 +1324,7 @@ static int hso_serial_open(struct tty_struct *tty, struct file *filp)
- 		result = hso_start_serial_device(serial->parent, GFP_KERNEL);
- 		if (result) {
- 			hso_stop_serial_device(serial->parent);
--			serial->open_count--;
-+			serial->port.count--;
- 			kref_put(&serial->parent->ref, hso_serial_ref_free);
- 		}
- 	} else {
-@@ -1361,10 +1361,10 @@ static void hso_serial_close(struct tty_struct *tty, struct file *filp)
- 
- 	/* reset the rts and dtr */
- 	/* do the actual close */
--	serial->open_count--;
-+	serial->port.count--;
- 
--	if (serial->open_count <= 0) {
--		serial->open_count = 0;
-+	if (serial->port.count <= 0) {
-+		serial->port.count = 0;
- 		spin_lock_irq(&serial->serial_lock);
- 		if (serial->tty == tty) {
- 			serial->tty->driver_data = NULL;
-@@ -1446,7 +1446,7 @@ static void hso_serial_set_termios(struct tty_struct *tty, struct ktermios *old)
- 
- 	/* the actual setup */
- 	spin_lock_irqsave(&serial->serial_lock, flags);
--	if (serial->open_count)
-+	if (serial->port.count)
- 		_hso_serial_set_termios(tty, old);
- 	else
- 		tty->termios = old;
-@@ -1905,7 +1905,7 @@ static void intr_callback(struct urb *urb)
- 				D1("Pending read interrupt on port %d\n", i);
- 				spin_lock(&serial->serial_lock);
- 				if (serial->rx_state == RX_IDLE &&
--					serial->open_count > 0) {
-+					serial->port.count > 0) {
- 					/* Setup and send a ctrl req read on
- 					 * port i */
- 					if (!serial->rx_urb_filled[0]) {
-@@ -2320,6 +2320,7 @@ static int hso_serial_common_create(struct hso_serial *serial, int num_urbs,
- 	serial->minor = minor;
- 	serial->magic = HSO_SERIAL_MAGIC;
- 	spin_lock_init(&serial->serial_lock);
-+	tty_port_init(&serial->port);
- 	serial->num_rx_urbs = num_urbs;
- 
- 	/* RX, allocate urb and initialize */
-@@ -3098,7 +3099,7 @@ static int hso_resume(struct usb_interface *iface)
- 	/* Start all serial ports */
- 	for (i = 0; i < HSO_SERIAL_TTY_MINORS; i++) {
- 		if (serial_table[i] && (serial_table[i]->interface == iface)) {
--			if (dev2ser(serial_table[i])->open_count) {
-+			if (dev2ser(serial_table[i])->port.count) {
- 				result =
- 				    hso_start_serial_device(serial_table[i], GFP_NOIO);
- 				hso_kick_transmit(dev2ser(serial_table[i]));
+Standard x86 stuff was runtime-tested. The rest is only checked to be
+compilation-errors free.
+
+Jiri Slaby (69):
+  TTY: crisv10, remove unused tmp_buf
+  TTY: crisv10, initialize tty_port
+  TTY: deprecate linux/generic_serial.h
+  ISDN: i4l, remove cvs crap
+  TTY: isdn, remove callout
+  TTY: isdn, remove ISDN_ASYNC_* flags
+  TTY: isdn, do not play with module refcounts
+  TTY: isdn, make some functions readable
+  TTY: isdn, remove unused members from modem_info
+  TTY: isdn, add tty_port
+  TTY: isdn, use open/close_wait from tty_port
+  TTY: isdn, use counts from tty_port
+  TTY: isdn, use tty from tty_port
+  TTY: isdn, use xmit_buf from tty_port
+  TTY: isdn, define local tty_port
+  TTY: isdn, use tty_port_close_end helper
+  TTY: isdn, define tty_port_operations
+  TTY: isdn, use tty_port_block_til_ready helper
+  TTY: hso, do not set TTY MAGIC
+  TTY: hso, free tty_driver
+  TTY: hso, add tty_port
+  TTY: hso, remove tty NULL checks fro tty->ops
+  TTY: hso, use tty from tty_port
+  TTY: con3215, centralize allocation
+  TTY: con3215, remove tasklet for tty_wakeup
+  TTY: con3215, add tty_port
+  TTY: con3215, use tty from tty_port
+  TTY: sclp_tty, add tty_port
+  TTY: sclp_vt220, add tty_port
+  TTY: sclp_vt220, remove unused allocation
+  TTY: tty3270, move initialization to allocation
+  TTY: tty3270, get rid of ugly aliasing
+  TTY: tty3270, push tty down to tty3270_do_write
+  TTY: tty3270, add tty_port
+  TTY: bfin_jtag_comm, add tty_port
+  TTY: bfin_jtag_comm, use tty from tty_port
+  TTY: HVC, add tty_port
+  TTY: HVC, use tty from tty_port
+  TTY: HVC, use count from tty_port
+  TTY: hvcs, add tty_port
+  TTY: hvcs, use kref from tty_port
+  TTY: hvcs, use tty from tty_port
+  TTY: hvsi, CLOCAL is not in tty->flags
+  TTY: hvsi, add tty_port
+  TTY: hvsi, sanitize uses of tty
+  TTY: hvsi, use tty from tty_port
+  TTY: ipwireless, use synchronous hangup
+  TTY: ipwireless, move prints to appropriate places
+  TTY: ipwireless, add tty_port
+  TTY: ipwireless, use tty from tty_port
+  TTY: 68328serial, remove serial_state and friends
+  TTY: 68328serial, remove unused stuff from m68k_serial
+  TTY: 68328serial, remove garbage
+  TTY: 68328serial, use ulong flags for interrupts status
+  TTY: 68328serial, remove 68328serial.h
+  TTY: 68328serial, add tty_port
+  TTY: 68328serial, use open/close_wait from tty_port
+  TTY: 68328serial, use close_delay/closing_wait from tty_port
+  TTY: 68328serial, use flags from tty_port
+  TTY: 68328serial, propagate tty
+  TTY: 68328serial, use tty from tty_port
+  TTY: 68328serial, use tty_port_block_til_ready
+  TTY: usb/u_serial, add tty_port
+  TTY: usb/u_serial, use tty from tty_port
+  TTY: usb/u_serial use close_wait from tty_port
+  TTY: rfcomm/tty, add tty_port
+  TTY: rfcomm/tty, use tty_port refcounting
+  TTY: rfcomm/tty, remove work for tty_wakeup
+  TTY: rfcomm/tty, use count from tty_port
+
+ drivers/isdn/i4l/isdn_common.c   |    2 -
+ drivers/isdn/i4l/isdn_tty.c      |  466 +++++++++++++++-----------------------
+ drivers/net/usb/hso.c            |  105 ++++-----
+ drivers/s390/char/con3215.c      |  148 ++++++------
+ drivers/s390/char/keyboard.c     |   30 +--
+ drivers/s390/char/keyboard.h     |   14 +-
+ drivers/s390/char/sclp_tty.c     |   33 +--
+ drivers/s390/char/sclp_vt220.c   |   33 ++-
+ drivers/s390/char/tty3270.c      |  121 +++++-----
+ drivers/tty/bfin_jtag_comm.c     |   44 ++--
+ drivers/tty/hvc/hvc_console.c    |   93 ++++----
+ drivers/tty/hvc/hvc_console.h    |    4 +-
+ drivers/tty/hvc/hvcs.c           |   74 +++---
+ drivers/tty/hvc/hvsi.c           |  128 +++++------
+ drivers/tty/hvc/hvsi_lib.c       |    2 +-
+ drivers/tty/ipwireless/tty.c     |   81 +++----
+ drivers/tty/serial/68328serial.c |  383 +++++++++++++------------------
+ drivers/tty/serial/68328serial.h |  186 ---------------
+ drivers/tty/serial/crisv10.c     |   28 +--
+ drivers/usb/gadget/u_serial.c    |   51 ++---
+ include/linux/generic_serial.h   |   64 +-----
+ include/linux/isdn.h             |   26 +--
+ net/bluetooth/rfcomm/tty.c       |  133 +++++------
+ 23 files changed, 851 insertions(+), 1398 deletions(-)
+ delete mode 100644 drivers/tty/serial/68328serial.h
+
 -- 
 1.7.9.2
 
