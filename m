@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab2DBLh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:37:59 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:59461 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2DBLh6 convert rfc822-to-8bit (ORCPT
+	id S1752600Ab2DBLkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:40:23 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:38414 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078Ab2DBLkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:37:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGZ=bqJ4mAwzuHk5rDbvKTfR_Qi=QiPt6MrwbVhe7H63Yba2Wg@mail.gmail.com>
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
- <CAGZ=bqJ4mAwzuHk5rDbvKTfR_Qi=QiPt6MrwbVhe7H63Yba2Wg@mail.gmail.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Mon, 2 Apr 2012 07:37:37 -0400
-Message-ID: <CAOPLpQeJPxD4uVncY5tcheTizZzZ1xbWfwm1BKTqXMH56FP_3w@mail.gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Apr 2012 07:40:22 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: starvik@axis.com
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: [PATCH 1/1] cris: posix_types.h, include asm-generic/posix_types.h
+Date: Mon,  2 Apr 2012 13:40:17 +0200
+Message-Id: <1333366817-26121-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 1, 2012 at 21:19, Kyle Moffett <kyle@moffetthome.net> wrote:
-> Well, I imagine one typical usecase for closing all FDs is for
-> security isolation purposes (EG: chroot()+etc),
+Without that I cannot build anything:
+In file included from include/linux/page-flags.h:8:0,
+                 from kernel/bounds.c:9:
+include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
+include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
+...
 
-chroot and security in the same sentence...?
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com
+---
+ arch/cris/include/asm/posix_types.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/cris/include/asm/posix_types.h b/arch/cris/include/asm/posix_types.h
+index 72b3cd6..234891c 100644
+--- a/arch/cris/include/asm/posix_types.h
++++ b/arch/cris/include/asm/posix_types.h
+@@ -33,4 +33,6 @@ typedef int		__kernel_ptrdiff_t;
+ typedef unsigned short	__kernel_old_dev_t;
+ #define __kernel_old_dev_t __kernel_old_dev_t
+ 
++#include <asm-generic/posix_types.h>
++
+ #endif /* __ARCH_CRIS_POSIX_TYPES_H */
+-- 
+1.7.9.2
 
 
-> and in a great deal of
-> chroot environments you don't have /proc available.  In particular
-> /proc has been a source of a lot of privilege escalations in the past,
-> so avoiding mounting it in a chroot is good security policy if
-> possible.
-
-The problem is that the kernel exports quite a bit of information only
-through the /proc and /sys filesystems.  I might try to finish my
-comprehensive list of functionality depending on /proc sometime soon.
-The list is quite long.
-
-Not mounting /proc is inconvenient at best, it renders the environment
-unusable quite often and in some cases is outright insecure..  I don't
-think you can use not mounting /proc as an argument.  And, as Peter
-said, the loop over the directory content is quite efficient.
-
-If you want to avoid /proc I suggest you first work on removing the
-dependencies.  Of just secure /proc itself.
