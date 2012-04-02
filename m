@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab2DBLzR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:55:17 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48043 "EHLO
+	id S1752343Ab2DBLzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:55:07 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:47974 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab2DBLzJ (ORCPT
+	with ESMTP id S1750877Ab2DBLzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:55:09 -0400
+	Mon, 2 Apr 2012 07:55:06 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: [PATCH 11/69] TTY: isdn, use open/close_wait from tty_port
-Date: Mon,  2 Apr 2012 13:53:55 +0200
-Message-Id: <1333367693-3244-12-git-send-email-jslaby@suse.cz>
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 38/69] TTY: HVC, use tty from tty_port
+Date: Mon,  2 Apr 2012 13:54:22 +0200
+Message-Id: <1333367693-3244-39-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,111 +21,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm, the isdn ones were initialized twice.
+The driver already used refcounting. So we just switch it to tty_port
+helpers. And switch to tty_port->lock for tty.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- drivers/isdn/i4l/isdn_common.c |    2 --
- drivers/isdn/i4l/isdn_tty.c    |   16 +++++++---------
- include/linux/isdn.h           |    1 -
- 3 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/tty/hvc/hvc_console.c |   36 +++++++++++++++---------------------
+ drivers/tty/hvc/hvc_console.h |    1 -
+ drivers/tty/hvc/hvsi_lib.c    |    2 +-
+ 3 files changed, 16 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
-index d9f5524..2ffa0b73 100644
---- a/drivers/isdn/i4l/isdn_common.c
-+++ b/drivers/isdn/i4l/isdn_common.c
-@@ -2327,8 +2327,6 @@ static int __init isdn_init(void)
- 		dev->chanmap[i] = -1;
- 		dev->m_idx[i] = -1;
- 		strcpy(dev->num[i], "???");
--		init_waitqueue_head(&dev->mdm.info[i].open_wait);
--		init_waitqueue_head(&dev->mdm.info[i].close_wait);
- 	}
- 	if (register_chrdev(ISDN_MAJOR, "isdn", &isdn_fops)) {
- 		printk(KERN_WARNING "isdn: Could not register control devices\n");
-diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
-index 8ba526d..33764d0 100644
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -1498,7 +1498,7 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
- 	if (tty_hung_up_p(filp) ||
- 	    (info->port.flags & ASYNC_CLOSING)) {
- 		if (info->port.flags & ASYNC_CLOSING)
--			interruptible_sleep_on(&info->close_wait);
-+			interruptible_sleep_on(&info->port.close_wait);
- #ifdef MODEM_DO_RESTART
- 		if (info->port.flags & ASYNC_HUP_NOTIFY)
- 			return -EAGAIN;
-@@ -1527,7 +1527,7 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
- 	 * exit, either normal or abnormal.
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 12a4273..92b7f5d 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -323,11 +323,10 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
+ 	} /* else count == 0 */
+ 
+ 	tty->driver_data = hp;
+-
+-	hp->tty = tty_kref_get(tty);
+-
+ 	spin_unlock_irqrestore(&hp->lock, flags);
+ 
++	tty_port_tty_set(&hp->port, tty);
++
+ 	if (hp->ops->notifier_add)
+ 		rc = hp->ops->notifier_add(hp, hp->data);
+ 
+@@ -338,9 +337,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
+ 	 * tty fields and return the kref reference.
  	 */
- 	retval = 0;
--	add_wait_queue(&info->open_wait, &wait);
-+	add_wait_queue(&info->port.open_wait, &wait);
- #ifdef ISDN_DEBUG_MODEM_OPEN
- 	printk(KERN_DEBUG "isdn_tty_block_til_ready before block: ttyi%d, count = %d\n",
- 	       info->line, info->count);
-@@ -1564,7 +1564,7 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
- 		schedule();
+ 	if (rc) {
+-		spin_lock_irqsave(&hp->lock, flags);
+-		hp->tty = NULL;
+-		spin_unlock_irqrestore(&hp->lock, flags);
++		tty_port_tty_set(&hp->port, NULL);
+ 		tty_kref_put(tty);
+ 		tty->driver_data = NULL;
+ 		tty_port_put(&hp->port);
+@@ -373,9 +370,9 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
+ 	spin_lock_irqsave(&hp->lock, flags);
+ 
+ 	if (--hp->count == 0) {
+-		/* We are done with the tty pointer now. */
+-		hp->tty = NULL;
+ 		spin_unlock_irqrestore(&hp->lock, flags);
++		/* We are done with the tty pointer now. */
++		tty_port_tty_set(&hp->port, NULL);
+ 
+ 		if (hp->ops->notifier_del)
+ 			hp->ops->notifier_del(hp, hp->data);
+@@ -427,9 +424,8 @@ static void hvc_hangup(struct tty_struct *tty)
+ 	temp_open_count = hp->count;
+ 	hp->count = 0;
+ 	hp->n_outbuf = 0;
+-	hp->tty = NULL;
+-
+ 	spin_unlock_irqrestore(&hp->lock, flags);
++	tty_port_tty_set(&hp->port, NULL);
+ 
+ 	if (hp->ops->notifier_hangup)
+ 		hp->ops->notifier_hangup(hp, hp->data);
+@@ -526,13 +522,12 @@ static void hvc_set_winsz(struct work_struct *work)
+ 
+ 	hp = container_of(work, struct hvc_struct, tty_resize);
+ 
+-	spin_lock_irqsave(&hp->lock, hvc_flags);
+-	if (!hp->tty) {
+-		spin_unlock_irqrestore(&hp->lock, hvc_flags);
++	tty = tty_port_tty_get(&hp->port);
++	if (!tty)
+ 		return;
+-	}
+-	ws  = hp->ws;
+-	tty = tty_kref_get(hp->tty);
++
++	spin_lock_irqsave(&hp->lock, hvc_flags);
++	ws = hp->ws;
+ 	spin_unlock_irqrestore(&hp->lock, hvc_flags);
+ 
+ 	tty_do_resize(tty, &ws);
+@@ -601,7 +596,7 @@ int hvc_poll(struct hvc_struct *hp)
  	}
- 	current->state = TASK_RUNNING;
--	remove_wait_queue(&info->open_wait, &wait);
-+	remove_wait_queue(&info->port.open_wait, &wait);
- 	if (!tty_hung_up_p(filp))
- 		info->count++;
- 	info->blocked_open--;
-@@ -1697,10 +1697,10 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
- 	tty->closing = 0;
- 	if (info->blocked_open) {
- 		msleep_interruptible(500);
--		wake_up_interruptible(&info->open_wait);
-+		wake_up_interruptible(&info->port.open_wait);
+ 
+ 	/* No tty attached, just skip */
+-	tty = tty_kref_get(hp->tty);
++	tty = tty_port_tty_get(&hp->port);
+ 	if (tty == NULL)
+ 		goto bail;
+ 
+@@ -681,8 +676,7 @@ int hvc_poll(struct hvc_struct *hp)
+ 
+ 		tty_flip_buffer_push(tty);
  	}
- 	info->port.flags &= ~(ASYNC_NORMAL_ACTIVE | ASYNC_CLOSING);
--	wake_up_interruptible(&info->close_wait);
-+	wake_up_interruptible(&info->port.close_wait);
- #ifdef ISDN_DEBUG_MODEM_OPEN
- 	printk(KERN_DEBUG "isdn_tty_close normal exit\n");
- #endif
-@@ -1720,7 +1720,7 @@ isdn_tty_hangup(struct tty_struct *tty)
- 	info->count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->tty = NULL;
--	wake_up_interruptible(&info->open_wait);
-+	wake_up_interruptible(&info->port.open_wait);
+-	if (tty)
+-		tty_kref_put(tty);
++	tty_kref_put(tty);
+ 
+ 	return poll_mask;
  }
+@@ -880,9 +874,9 @@ int hvc_remove(struct hvc_struct *hp)
+ 	unsigned long flags;
+ 	struct tty_struct *tty;
  
- /* This routine initializes all emulator-data.
-@@ -1898,8 +1898,6 @@ isdn_tty_modem_init(void)
- 		info->x_char = 0;
- 		info->count = 0;
- 		info->blocked_open = 0;
--		init_waitqueue_head(&info->open_wait);
--		init_waitqueue_head(&info->close_wait);
- 		info->isdn_driver = -1;
- 		info->isdn_channel = -1;
- 		info->drv_index = -1;
-@@ -2194,7 +2192,7 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
- 			 */
- 			if (info->blocked_open &&
- 			    (info->emu.mdmreg[REG_DCD] & BIT_DCD)) {
--				wake_up_interruptible(&info->open_wait);
-+				wake_up_interruptible(&info->port.open_wait);
- 			}
+-	spin_lock_irqsave(&hp->lock, flags);
+-	tty = tty_kref_get(hp->tty);
++	tty = tty_port_tty_get(&hp->port);
  
- 			/* Schedule CONNECT-Message to any tty
-diff --git a/include/linux/isdn.h b/include/linux/isdn.h
-index bb71041..c3ddf20 100644
---- a/include/linux/isdn.h
-+++ b/include/linux/isdn.h
-@@ -483,7 +483,6 @@ typedef struct modem_info {
- #endif
-   struct tty_struct 	*tty;            /* Pointer to corresponding tty   */
-   atemu                 emu;             /* AT-emulator data               */
--  wait_queue_head_t	open_wait, close_wait;
-   spinlock_t	        readlock;
- } modem_info;
++	spin_lock_irqsave(&hp->lock, flags);
+ 	if (hp->index < MAX_NR_HVC_CONSOLES)
+ 		vtermnos[hp->index] = -1;
+ 
+diff --git a/drivers/tty/hvc/hvc_console.h b/drivers/tty/hvc/hvc_console.h
+index 926d9e4..594a28f 100644
+--- a/drivers/tty/hvc/hvc_console.h
++++ b/drivers/tty/hvc/hvc_console.h
+@@ -49,7 +49,6 @@ struct hvc_struct {
+ 	struct tty_port port;
+ 	spinlock_t lock;
+ 	int index;
+-	struct tty_struct *tty;
+ 	int count;
+ 	int do_wakeup;
+ 	char *outbuf;
+diff --git a/drivers/tty/hvc/hvsi_lib.c b/drivers/tty/hvc/hvsi_lib.c
+index 6f4dd83..59c135d 100644
+--- a/drivers/tty/hvc/hvsi_lib.c
++++ b/drivers/tty/hvc/hvsi_lib.c
+@@ -377,7 +377,7 @@ int hvsilib_open(struct hvsi_priv *pv, struct hvc_struct *hp)
+ 	pr_devel("HVSI@%x: open !\n", pv->termno);
+ 
+ 	/* Keep track of the tty data structure */
+-	pv->tty = tty_kref_get(hp->tty);
++	pv->tty = tty_port_tty_get(&hp->port);
+ 
+ 	hvsilib_establish(pv);
  
 -- 
 1.7.9.2
