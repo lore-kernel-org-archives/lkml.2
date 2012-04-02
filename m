@@ -1,152 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab2DBVtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 17:49:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60704 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753297Ab2DBVtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 17:49:50 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] clkdev: Implement managed clk_get()
-Date: Mon,  2 Apr 2012 22:49:45 +0100
-Message-Id: <1333403385-24133-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1753535Ab2DBVuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 17:50:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59634 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753297Ab2DBVuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 17:50:01 -0400
+Date: Mon, 2 Apr 2012 23:49:51 +0200
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Ted Tso <tytso@mit.edu>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH v2 3/4] ext4: remove unnecessary superblock dirtying
+Message-ID: <20120402214951.GA5270@quack.suse.cz>
+References: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
+ <1333367140-28370-5-git-send-email-artem.bityutskiy@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333367140-28370-5-git-send-email-artem.bityutskiy@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow clk API users to simplify their cleanup paths by providing a
-managed version of clk_get() and clk_put().
+On Mon 02-04-12 14:45:39, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> 
+> This patch changes the '__ext4_handle_dirty_super()' function which is used
+> by ext4 to update the super-block via the journal in the following cases:
+> 
+> 1. When creating the first large file on a file
+>    system without EXT4_FEATURE_RO_COMPAT_LARGE_FILE feature.
+> 2. When re-sizing the file-system
+> 3. When creating an xattr on a file-system without the
+>    EXT4_FEATURE_COMPAT_EXT_ATTR feature.
+> 
+> This function, however, falls back to just marking the superblock as dirty
+> if the file-system has no journal. But it is user really rarely and it does not
+> give any benefit to use the delayed superblock write (via the VFS's
+> 'sync_supers()' kernel thread) in these cases. We can just write out the
+> superblock asynchronously instead.
+> 
+> This patch also removes 's_dirt' condition on the unmount path because we never
+> set it anymore, so we should not test it.
+> 
+> Tested using xfstests for both journalled and non-journalled ext4.
+> 
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+  Looks good.
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- Documentation/driver-model/devres.txt |    3 ++
- drivers/clk/clkdev.c                  |   45 +++++++++++++++++++++++++++++++++
- include/linux/clk.h                   |   32 +++++++++++++++++++++++
- 3 files changed, 80 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index 2a596a4..3a10848 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -276,3 +276,6 @@ REGULATOR
-   devm_regulator_get()
-   devm_regulator_put()
-   devm_regulator_bulk_get()
-+
-+CLOCK
-+  devm_clk_get()
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 6db161f..a9a1137 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -89,6 +89,51 @@ void clk_put(struct clk *clk)
- }
- EXPORT_SYMBOL(clk_put);
- 
-+static void devm_clk_release(struct device *dev, void *res)
-+{
-+	clk_put(*(struct clk **)res);
-+}
-+
-+struct clk *devm_clk_get(struct device *dev, const char *id)
-+{
-+	struct clk **ptr, *clk;
-+
-+	ptr = devres_alloc(devm_clk_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	clk = clk_get(dev, id);
-+	if (!IS_ERR(clk)) {
-+		*ptr = clk;
-+		devres_add(dev, ptr);
-+	} else {
-+		devres_free(ptr);
-+	}
-+
-+	return clk;
-+}
-+EXPORT_SYMBOL(devm_clk_get);
-+
-+static int devm_clk_match(struct device *dev, void *res, void *data)
-+{
-+	struct clk **c = res;
-+	if (!c || !*c) {
-+		WARN_ON(!c || !*c);
-+		return 0;
-+	}
-+	return *c == data;
-+}
-+
-+void devm_clk_put(struct device *dev, struct clk *clk)
-+{
-+	int ret;
-+
-+	ret = devres_destroy(dev, devm_clk_release, devm_clk_match, clk);
-+
-+	WARN_ON(ret);
-+}
-+EXPORT_SYMBOL(devm_clk_put);
-+
- void clkdev_add(struct clk_lookup *cl)
- {
- 	mutex_lock(&clocks_mutex);
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index c9547d9..62b0bb0 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -101,6 +101,26 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
- struct clk *clk_get(struct device *dev, const char *id);
- 
- /**
-+ * devm_clk_get - lookup and obtain a managed reference to a clock producer.
-+ * @dev: device for clock "consumer"
-+ * @id: clock comsumer ID
-+ *
-+ * Returns a struct clk corresponding to the clock producer, or
-+ * valid IS_ERR() condition containing errno.  The implementation
-+ * uses @dev and @id to determine the clock consumer, and thereby
-+ * the clock producer.  (IOW, @id may be identical strings, but
-+ * clk_get may return different clock producers depending on @dev.)
-+ *
-+ * Drivers must assume that the clock source is not enabled.
-+ *
-+ * devm_clk_get should not be called from within interrupt context.
-+ *
-+ * The clock will automatically be freed when the device is unbound
-+ * from the bus.
-+ */
-+struct clk *devm_clk_get(struct device *dev, const char *id);
-+
-+/**
-  * clk_prepare - prepare a clock source
-  * @clk: clock source
-  *
-@@ -206,6 +226,18 @@ unsigned long clk_get_rate(struct clk *clk);
-  */
- void clk_put(struct clk *clk);
- 
-+/**
-+ * clk_put	- "free" a managed clock source
-+ * @dev: device used to acuqire the clock
-+ * @clk: clock source acquired with devm_clk_get()
-+ *
-+ * Note: drivers must ensure that all clk_enable calls made on this
-+ * clock source are balanced by clk_disable calls prior to calling
-+ * this function.
-+ *
-+ * clk_put should not be called from within interrupt context.
-+ */
-+void devm_clk_put(struct device *dev, struct clk *clk);
- 
- /*
-  * The remaining APIs are optional for machine class support.
+									Honza
+> ---
+>  fs/ext4/ext4.h      |    1 +
+>  fs/ext4/ext4_jbd2.c |    2 +-
+>  fs/ext4/super.c     |    5 ++---
+>  3 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index aba3749..ba2cf3f 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -1953,6 +1953,7 @@ extern int ext4_group_extend(struct super_block *sb,
+>  extern int ext4_resize_fs(struct super_block *sb, ext4_fsblk_t n_blocks_count);
+>  
+>  /* super.c */
+> +int ext4_commit_super(struct super_block *sb, int sync);
+>  extern void *ext4_kvmalloc(size_t size, gfp_t flags);
+>  extern void *ext4_kvzalloc(size_t size, gfp_t flags);
+>  extern void ext4_kvfree(void *ptr);
+> diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
+> index aca1790..a85f46f 100644
+> --- a/fs/ext4/ext4_jbd2.c
+> +++ b/fs/ext4/ext4_jbd2.c
+> @@ -149,6 +149,6 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
+>  			ext4_journal_abort_handle(where, line, __func__,
+>  						  bh, handle, err);
+>  	} else
+> -		sb->s_dirt = 1;
+> +		err = ext4_commit_super(sb, 0);
+>  	return err;
+>  }
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index ceebaf8..6b45785 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -63,7 +63,6 @@ static struct ext4_features *ext4_feat;
+>  static int ext4_load_journal(struct super_block *, struct ext4_super_block *,
+>  			     unsigned long journal_devnum);
+>  static int ext4_show_options(struct seq_file *seq, struct dentry *root);
+> -static int ext4_commit_super(struct super_block *sb, int sync);
+>  static void ext4_mark_recovery_complete(struct super_block *sb,
+>  					struct ext4_super_block *es);
+>  static void ext4_clear_journal_err(struct super_block *sb,
+> @@ -853,7 +852,7 @@ static void ext4_put_super(struct super_block *sb)
+>  		EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+>  		es->s_state = cpu_to_le16(sbi->s_mount_state);
+>  	}
+> -	if (sb->s_dirt || !(sb->s_flags & MS_RDONLY))
+> +	if (!(sb->s_flags & MS_RDONLY))
+>  		ext4_commit_super(sb, 1);
+>  
+>  	if (sbi->s_proc) {
+> @@ -3991,7 +3990,7 @@ static int ext4_load_journal(struct super_block *sb,
+>  	return 0;
+>  }
+>  
+> -static int ext4_commit_super(struct super_block *sb, int sync)
+> +int ext4_commit_super(struct super_block *sb, int sync)
+>  {
+>  	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
+>  	struct buffer_head *sbh = EXT4_SB(sb)->s_sbh;
+> -- 
+> 1.7.7.6
+> 
 -- 
-1.7.9.1
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
