@@ -1,107 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2DBSgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:36:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43626 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554Ab2DBSgF (ORCPT
+	id S1754644Ab2DBSgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:36:33 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:37853 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754227Ab2DBSes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:36:05 -0400
-Subject: Re: [PATCH] debugobjects: Use GFP_ATOMIC to allocate when
- initializing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sasha Levin <levinsasha928@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.02.1204021111070.2542@ionos>
-References: <1333228972-4594-1-git-send-email-levinsasha928@gmail.com>
-	 <alpine.LFD.2.02.1204011935190.2542@ionos>
-	 <CA+1xoqeTJu-uaaOCek5Y5ZKam83ePoRNFdxLcqdonYxok-BkhA@mail.gmail.com>
-	 <alpine.LFD.2.02.1204021111070.2542@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Apr 2012 20:35:54 +0200
-Message-ID: <1333391754.2960.70.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Apr 2012 14:34:48 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, srinivas.bakki@nxp.com, kevin.wells@nxp.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-watchdog@vger.kernel.org, wim@iguana.be, jonsmirl@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v2 8/8] i2c: Add device tree support to i2c-pnx.c
+Date: Mon,  2 Apr 2012 20:33:07 +0200
+Message-Id: <1333391587-26290-9-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1333391587-26290-1-git-send-email-stigge@antcom.de>
+References: <1333391587-26290-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 11:12 +0200, Thomas Gleixner wrote:
-> On Sun, 1 Apr 2012, Sasha Levin wrote:
-> > On Sun, Apr 1, 2012 at 7:36 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > On Sat, 31 Mar 2012, Sasha Levin wrote:
-> 
-> Peter ????
-> 
-> > >> During the init stage, we have only 1 cpu and run with IRQs disabled,
-> > >> we can't allocate with GFP_KERNEL.
-> > >>
-> > >> This also fixes the related warning on boot.
-> > >
-> > > Hrmm. This should not be the case. In early boot GFP_KERNEL
-> > > allocations should not trigger a warning when interrupts are
-> > > disabled. Which kind of warning are you observing ?
-> > 
-> > There were two, both pointing at the same WARN(). I don't have the
-> > first one which was fixed in this patch handy, but the second one is:
-> > 
-> > [    0.000000] WARNING: at kernel/lockdep.c:2739
-> > lockdep_trace_alloc+0x11f/0x130()
-> > [    0.000000] Pid: 0, comm: swapper/0 Not tainted
-> > 3.3.0-next-20120330-sasha-dirty #40
-> > [    0.000000] Call Trace:
-> > [    0.000000]  [<ffffffff810b4175>] warn_slowpath_common+0x75/0xb0
-> > [    0.000000]  [<ffffffff810b41c5>] warn_slowpath_null+0x15/0x20
-> > [    0.000000]  [<ffffffff8111999f>] lockdep_trace_alloc+0x11f/0x130
-> > [    0.000000]  [<ffffffff81182e0c>] __alloc_pages_nodemask+0x9c/0x260
-> > [    0.000000]  [<ffffffff826bcea7>] ? retint_restore_args+0x6/0x13
-> > [    0.000000]  [<ffffffff811cc2cd>] kmemcheck_alloc_shadow+0x4d/0xf0
-> > [    0.000000]  [<ffffffff811c5597>] allocate_slab+0x197/0x270
-> > [    0.000000]  [<ffffffff811c569b>] new_slab+0x2b/0x190
-> > [    0.000000]  [<ffffffff811c7e7a>] ? __slab_alloc+0x5a/0x6b0
-> > [    0.000000]  [<ffffffff811c82b3>] __slab_alloc+0x493/0x6b0
-> > [    0.000000]  [<ffffffff81114f61>] ? trace_hardirqs_off_caller+0xe1/0x150
-> > [    0.000000]  [<ffffffff81886f1d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> > [    0.000000]  [<ffffffff8395eb55>] ?
-> > debug_objects_replace_static_objects+0x2a/0x1f5
-> > [    0.000000]  [<ffffffff8395eb55>] ?
-> > debug_objects_replace_static_objects+0x2a/0x1f5
-> > [    0.000000]  [<ffffffff811c900e>] kmem_cache_alloc+0x17e/0x1a0
-> > [    0.000000]  [<ffffffff8395eb55>]
-> > debug_objects_replace_static_objects+0x2a/0x1f5
-> > [    0.000000]  [<ffffffff8395ed59>] debug_objects_mem_init+0x39/0x68
-> > [    0.000000]  [<ffffffff8392af65>] start_kernel+0x33a/0x3f8
-> > [    0.000000]  [<ffffffff8392aa13>] ? kernel_init+0x280/0x280
-> > [    0.000000]  [<ffffffff8392a2b6>] x86_64_start_reservations+0xa1/0xa6
-> > [    0.000000]  [<ffffffff8392a410>] x86_64_start_kernel+0x155/0x164
-> > [    0.000000] ---[ end trace a7919e7f17c0a725 ]---
-> 
->  
+This patch adds device tree support to the pnx-i2c driver by using platform
+resources for memory region and irq and removing dependency on mach includes.
 
-Something like so?
+The following platforms are affected:
+
+* PNX
+* LPC31xx (WIP)
+* LPC32xx
+
+The patch is based on a patch by Jon Smirl, working on lpc31xx integration
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
- kernel/lockdep.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index ea9ee45..a028ba9 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2718,6 +2718,13 @@ static void __lockdep_trace_alloc(gfp_t gfp_mask, unsigned long flags)
- {
- 	struct task_struct *curr = current;
- 
-+	/*
-+	 * We do GFP_KERNEL allocations with IRQs disabled during system
-+	 * bringup..
-+	 */
-+	if (unlikely(system_state != SYSTEM_RUNNING))
-+		return;
+ Applies to v3.4-rc1
+
+ Documentation/devicetree/bindings/i2c/pnx.txt |   40 ++++++++++++++++
+ drivers/i2c/busses/i2c-pnx.c                  |   65 +++++++++++++++++++-------
+ include/linux/i2c-pnx.h                       |    1 
+ 3 files changed, 89 insertions(+), 17 deletions(-)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/i2c/pnx.txt
+@@ -0,0 +1,40 @@
++* NXP PNX I2C Controller
 +
- 	if (unlikely(!debug_locks))
- 		return;
++Required properties:
++
++ - reg: Offset and length of the register set for the device
++ - compatible: should be "nxp,pnx-i2c"
++ - interrupts: configure one interrupt line
++ - #address-cells: always 1 (for i2c addresses)
++ - #size-cells: always 0
++
++Optional properties:
++
++ - interrupt-parent: the phandle for the interrupt controller that
++   services interrupts for this device.
++ - clock-frequency: desired I2C bus clock frequency in Hz, Default: 100000 Hz
++ - pnx,timeout: I2C bus timeout in milliseconds, Default: 10 ms
++ - slave-addr: Address used by the controller, Hardware default: 110
++
++Examples:
++
++	i2c1: i2c@400a0000 {
++		compatible = "nxp,pnx-i2c";
++		reg = <0x400a0000 0x100>;
++		interrupt-parent = <&mic>;
++		interrupts = <51 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++
++	i2c2: i2c@400a8000 {
++		compatible = "nxp,pnx-i2c";
++		reg = <0x400a8000 0x100>;
++		interrupt-parent = <&mic>;
++		interrupts = <50 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		clock-frequency = <0x186a0>;
++		pnx,timeout = <0x64>;
++		slave-addr = <0x11>;
++	};
+--- linux-2.6.orig/drivers/i2c/busses/i2c-pnx.c
++++ linux-2.6/drivers/i2c/busses/i2c-pnx.c
+@@ -23,10 +23,11 @@
+ #include <linux/err.h>
+ #include <linux/clk.h>
+ #include <linux/slab.h>
++#include <linux/of_i2c.h>
  
-
-
+-#define I2C_PNX_TIMEOUT		10 /* msec */
+-#define I2C_PNX_SPEED_KHZ	100
+-#define I2C_PNX_REGION_SIZE	0x100
++#define I2C_PNX_TIMEOUT_DEFAULT		10 /* msec */
++#define I2C_PNX_SPEED_KHZ_DEFAULT	100
++#define I2C_PNX_REGION_SIZE		0x100
+ 
+ enum {
+ 	mstatus_tdi = 0x00000001,
+@@ -74,8 +75,9 @@ enum {
+ #define I2C_REG_TXS(a)	((a)->ioaddr + 0x28)	/* Tx slave FIFO (RO) */
+ #define I2C_REG_STFL(a)	((a)->ioaddr + 0x2c)	/* Tx slave FIFO level (RO) */
+ 
+-static inline int wait_timeout(long timeout, struct i2c_pnx_algo_data *data)
++static inline int wait_timeout(struct i2c_pnx_algo_data *data)
+ {
++	long timeout = data->timeout;
+ 	while (timeout > 0 &&
+ 			(ioread32(I2C_REG_STS(data)) & mstatus_active)) {
+ 		mdelay(1);
+@@ -84,8 +86,9 @@ static inline int wait_timeout(long time
+ 	return (timeout <= 0);
+ }
+ 
+-static inline int wait_reset(long timeout, struct i2c_pnx_algo_data *data)
++static inline int wait_reset(struct i2c_pnx_algo_data *data)
+ {
++	long timeout = data->timeout;
+ 	while (timeout > 0 &&
+ 			(ioread32(I2C_REG_CTL(data)) & mcntrl_reset)) {
+ 		mdelay(1);
+@@ -97,7 +100,7 @@ static inline int wait_reset(long timeou
+ static inline void i2c_pnx_arm_timer(struct i2c_pnx_algo_data *alg_data)
+ {
+ 	struct timer_list *timer = &alg_data->mif.timer;
+-	unsigned long expires = msecs_to_jiffies(I2C_PNX_TIMEOUT);
++	unsigned long expires = msecs_to_jiffies(alg_data->timeout);
+ 
+ 	if (expires <= 1)
+ 		expires = 2;
+@@ -135,7 +138,7 @@ static int i2c_pnx_start(unsigned char s
+ 	}
+ 
+ 	/* First, make sure bus is idle */
+-	if (wait_timeout(I2C_PNX_TIMEOUT, alg_data)) {
++	if (wait_timeout(alg_data)) {
+ 		/* Somebody else is monopolizing the bus */
+ 		dev_err(&alg_data->adapter.dev,
+ 			"%s: Bus busy. Slave addr = %02x, cntrl = %x, stat = %x\n",
+@@ -228,7 +231,7 @@ static int i2c_pnx_master_xmit(struct i2
+ 		if (alg_data->mif.len == 0) {
+ 			if (alg_data->last) {
+ 				/* Wait until the STOP is seen. */
+-				if (wait_timeout(I2C_PNX_TIMEOUT, alg_data))
++				if (wait_timeout(alg_data))
+ 					dev_err(&alg_data->adapter.dev,
+ 						"The bus is still active after timeout\n");
+ 			}
+@@ -326,7 +329,7 @@ static int i2c_pnx_master_rcv(struct i2c
+ 		if (alg_data->mif.len == 0) {
+ 			if (alg_data->last)
+ 				/* Wait until the STOP is seen. */
+-				if (wait_timeout(I2C_PNX_TIMEOUT, alg_data))
++				if (wait_timeout(alg_data))
+ 					dev_err(&alg_data->adapter.dev,
+ 						"The bus is still active after timeout\n");
+ 
+@@ -442,7 +445,7 @@ static void i2c_pnx_timeout(unsigned lon
+ 
+ 	ctl |= mcntrl_reset;
+ 	iowrite32(ctl, I2C_REG_CTL(alg_data));
+-	wait_reset(I2C_PNX_TIMEOUT, alg_data);
++	wait_reset(alg_data);
+ 	alg_data->mif.ret = -EIO;
+ 	complete(&alg_data->mif.complete);
+ }
+@@ -457,18 +460,18 @@ static inline void bus_reset_if_active(s
+ 			alg_data->adapter.name);
+ 		iowrite32(ioread32(I2C_REG_CTL(alg_data)) | mcntrl_reset,
+ 			  I2C_REG_CTL(alg_data));
+-		wait_reset(I2C_PNX_TIMEOUT, alg_data);
++		wait_reset(alg_data);
+ 	} else if (!(stat & mstatus_rfe) || !(stat & mstatus_tfe)) {
+ 		/* If there is data in the fifo's after transfer,
+ 		 * flush fifo's by reset.
+ 		 */
+ 		iowrite32(ioread32(I2C_REG_CTL(alg_data)) | mcntrl_reset,
+ 			  I2C_REG_CTL(alg_data));
+-		wait_reset(I2C_PNX_TIMEOUT, alg_data);
++		wait_reset(alg_data);
+ 	} else if (stat & mstatus_nai) {
+ 		iowrite32(ioread32(I2C_REG_CTL(alg_data)) | mcntrl_reset,
+ 			  I2C_REG_CTL(alg_data));
+-		wait_reset(I2C_PNX_TIMEOUT, alg_data);
++		wait_reset(alg_data);
+ 	}
+ }
+ 
+@@ -612,6 +615,8 @@ static int __devinit i2c_pnx_probe(struc
+ 	struct i2c_pnx_algo_data *alg_data;
+ 	unsigned long freq;
+ 	struct resource *res;
++	u32 speed = I2C_PNX_SPEED_KHZ_DEFAULT * 1000;
++	u32 slave_addr = ~0;
+ 
+ 	alg_data = kzalloc(sizeof(*alg_data), GFP_KERNEL);
+ 	if (!alg_data) {
+@@ -626,6 +631,18 @@ static int __devinit i2c_pnx_probe(struc
+ 	alg_data->adapter.algo_data = alg_data;
+ 	alg_data->adapter.nr = pdev->id;
+ 
++	alg_data->timeout = I2C_PNX_TIMEOUT_DEFAULT;
++#ifdef CONFIG_OF
++	alg_data->adapter.dev.of_node = of_node_get(pdev->dev.of_node);
++	if (pdev->dev.of_node) {
++		of_property_read_u32(pdev->dev.of_node, "pnx,timeout",
++				     &alg_data->timeout);
++		of_property_read_u32(pdev->dev.of_node, "clock-frequency",
++				     &speed);
++		of_property_read_u32(pdev->dev.of_node, "slave-addr",
++				     &slave_addr);
++	}
++#endif
+ 	alg_data->clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(alg_data->clk)) {
+ 		ret = PTR_ERR(alg_data->clk);
+@@ -651,7 +668,7 @@ static int __devinit i2c_pnx_probe(struc
+ 		dev_err(&pdev->dev,
+ 		       "I/O region 0x%08x for I2C already in use.\n",
+ 		       res->start);
+-		ret = -ENODEV;
++		ret = -ENOMEM;
+ 		goto out_clkget;
+ 	}
+ 
+@@ -667,6 +684,9 @@ static int __devinit i2c_pnx_probe(struc
+ 	if (ret)
+ 		goto out_unmap;
+ 
++	if (slave_addr != ~0)
++		iowrite32(slave_addr, I2C_REG_ADR(alg_data));
++
+ 	freq = clk_get_rate(alg_data->clk);
+ 
+ 	/*
+@@ -680,14 +700,14 @@ static int __devinit i2c_pnx_probe(struc
+ 	 * the deglitching filter length.
+ 	 */
+ 
+-	tmp = ((freq / 1000) / I2C_PNX_SPEED_KHZ) / 2 - 2;
++	tmp = (freq / speed) / 2 - 2;
+ 	if (tmp > 0x3FF)
+ 		tmp = 0x3FF;
+ 	iowrite32(tmp, I2C_REG_CKH(alg_data));
+ 	iowrite32(tmp, I2C_REG_CKL(alg_data));
+ 
+ 	iowrite32(mcntrl_reset, I2C_REG_CTL(alg_data));
+-	if (wait_reset(I2C_PNX_TIMEOUT, alg_data)) {
++	if (wait_reset(alg_data)) {
+ 		ret = -ENODEV;
+ 		goto out_clock;
+ 	}
+@@ -699,7 +719,7 @@ static int __devinit i2c_pnx_probe(struc
+ 		goto out_irq;
+ 	}
+ 	ret = request_irq(alg_data->irq, i2c_pnx_interrupt,
+-			0, pdev->name, alg_data);
++			  0, pdev->name, alg_data);
+ 	if (ret)
+ 		goto out_clock;
+ 
+@@ -710,6 +730,8 @@ static int __devinit i2c_pnx_probe(struc
+ 		goto out_irq;
+ 	}
+ 
++	of_i2c_register_devices(&alg_data->adapter);
++
+ 	dev_dbg(&pdev->dev, "%s: Master at %#8x, irq %d.\n",
+ 		alg_data->adapter.name, res->start, alg_data->irq);
+ 
+@@ -748,10 +770,19 @@ static int __devexit i2c_pnx_remove(stru
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id i2c_pnx_of_match[] = {
++	{ .compatible = "nxp,pnx-i2c" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, i2c_pnx_of_match);
++#endif
++
+ static struct platform_driver i2c_pnx_driver = {
+ 	.driver = {
+ 		.name = "pnx-i2c",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(i2c_pnx_of_match),
+ 	},
+ 	.probe = i2c_pnx_probe,
+ 	.remove = __devexit_p(i2c_pnx_remove),
+--- linux-2.6.orig/include/linux/i2c-pnx.h
++++ linux-2.6/include/linux/i2c-pnx.h
+@@ -32,6 +32,7 @@ struct i2c_pnx_algo_data {
+ 	struct i2c_adapter	adapter;
+ 	phys_addr_t		base;
+ 	int			irq;
++	u32			timeout;
+ };
+ 
+ #endif /* __I2C_PNX_H__ */
