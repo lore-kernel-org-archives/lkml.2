@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab2DBL4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:07 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48051 "EHLO
+	id S1753617Ab2DBL4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:05 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48001 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab2DBLzJ (ORCPT
+	with ESMTP id S1752229Ab2DBLzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:55:09 -0400
+	Mon, 2 Apr 2012 07:55:07 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: [PATCH 07/69] TTY: isdn, do not play with module refcounts
-Date: Mon,  2 Apr 2012 13:53:51 +0200
-Message-Id: <1333367693-3244-8-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 67/69] TTY: rfcomm/tty, use tty_port refcounting
+Date: Mon,  2 Apr 2012 13:54:51 +0200
+Message-Id: <1333367693-3244-68-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,87 +20,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The module which called allocate_tty_driver is already refcounted by
-the TTY layer automatically. And since THIS_MODULE is isdn_tty and it
-allocated the tty_driver, there is no need to do the counts in isdn's
-tty->ops->open/close.
+Switch the refcounting from manual atomic plays with refcounter to the
+one offered by tty_port.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Karsten Keil <isdn@linux-pingi.de>
 ---
- drivers/isdn/i4l/isdn_tty.c |   11 -----------
- include/linux/isdn.h        |    1 -
- 2 files changed, 12 deletions(-)
+ net/bluetooth/rfcomm/tty.c |   58 ++++++++++++++++++++------------------------
+ 1 file changed, 26 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
-index bcf4bbe..1ff3072 100644
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -1584,10 +1584,6 @@ isdn_tty_open(struct tty_struct *tty, struct file *filp)
- 	info = &dev->mdm.info[tty->index];
- 	if (isdn_tty_paranoia_check(info, tty->name, "isdn_tty_open"))
+diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
+index 97c2a08..da4f545 100644
+--- a/net/bluetooth/rfcomm/tty.c
++++ b/net/bluetooth/rfcomm/tty.c
+@@ -50,7 +50,6 @@ static struct tty_driver *rfcomm_tty_driver;
+ struct rfcomm_dev {
+ 	struct tty_port		port;
+ 	struct list_head	list;
+-	atomic_t		refcnt;
+ 
+ 	char			name[12];
+ 	int			id;
+@@ -85,8 +84,17 @@ static void rfcomm_dev_modem_status(struct rfcomm_dlc *dlc, u8 v24_sig);
+ static void rfcomm_tty_wakeup(struct work_struct *work);
+ 
+ /* ---- Device functions ---- */
+-static void rfcomm_dev_destruct(struct rfcomm_dev *dev)
++
++/*
++ * The reason this isn't actually a race, as you no doubt have a little voice
++ * screaming at you in your head, is that the refcount should never actually
++ * reach zero unless the device has already been taken off the list, in
++ * rfcomm_dev_del(). And if that's not true, we'll hit the BUG() in
++ * rfcomm_dev_destruct() anyway.
++ */
++static void rfcomm_dev_destruct(struct tty_port *port)
+ {
++	struct rfcomm_dev *dev = container_of(port, struct rfcomm_dev, port);
+ 	struct rfcomm_dlc *dlc = dev->dlc;
+ 
+ 	BT_DBG("dev %p dlc %p", dev, dlc);
+@@ -113,23 +121,9 @@ static void rfcomm_dev_destruct(struct rfcomm_dev *dev)
+ 	module_put(THIS_MODULE);
+ }
+ 
+-static inline void rfcomm_dev_hold(struct rfcomm_dev *dev)
+-{
+-	atomic_inc(&dev->refcnt);
+-}
+-
+-static inline void rfcomm_dev_put(struct rfcomm_dev *dev)
+-{
+-	/* The reason this isn't actually a race, as you no
+-	   doubt have a little voice screaming at you in your
+-	   head, is that the refcount should never actually
+-	   reach zero unless the device has already been taken
+-	   off the list, in rfcomm_dev_del(). And if that's not
+-	   true, we'll hit the BUG() in rfcomm_dev_destruct()
+-	   anyway. */
+-	if (atomic_dec_and_test(&dev->refcnt))
+-		rfcomm_dev_destruct(dev);
+-}
++static const struct tty_port_operations rfcomm_port_ops = {
++	.destruct = rfcomm_dev_destruct,
++};
+ 
+ static struct rfcomm_dev *__rfcomm_dev_get(int id)
+ {
+@@ -154,7 +148,7 @@ static inline struct rfcomm_dev *rfcomm_dev_get(int id)
+ 		if (test_bit(RFCOMM_TTY_RELEASED, &dev->flags))
+ 			dev = NULL;
+ 		else
+-			rfcomm_dev_hold(dev);
++			tty_port_get(&dev->port);
+ 	}
+ 
+ 	spin_unlock(&rfcomm_dev_lock);
+@@ -241,7 +235,6 @@ static int rfcomm_dev_add(struct rfcomm_dev_req *req, struct rfcomm_dlc *dlc)
+ 	sprintf(dev->name, "rfcomm%d", dev->id);
+ 
+ 	list_add(&dev->list, head);
+-	atomic_set(&dev->refcnt, 1);
+ 
+ 	bacpy(&dev->src, &req->src);
+ 	bacpy(&dev->dst, &req->dst);
+@@ -253,6 +246,7 @@ static int rfcomm_dev_add(struct rfcomm_dev_req *req, struct rfcomm_dlc *dlc)
+ 	atomic_set(&dev->opened, 0);
+ 
+ 	tty_port_init(&dev->port);
++	dev->port.ops = &rfcomm_port_ops;
+ 	init_waitqueue_head(&dev->wait);
+ 	INIT_WORK(&dev->wakeup_task, rfcomm_tty_wakeup);
+ 
+@@ -332,7 +326,7 @@ static void rfcomm_dev_del(struct rfcomm_dev *dev)
+ 	list_del_init(&dev->list);
+ 	spin_unlock(&rfcomm_dev_lock);
+ 
+-	rfcomm_dev_put(dev);
++	tty_port_put(&dev->port);
+ }
+ 
+ /* ---- Send buffer ---- */
+@@ -349,12 +343,12 @@ static void rfcomm_wfree(struct sk_buff *skb)
+ 	atomic_sub(skb->truesize, &dev->wmem_alloc);
+ 	if (test_bit(RFCOMM_TTY_ATTACHED, &dev->flags))
+ 		queue_work(system_nrt_wq, &dev->wakeup_task);
+-	rfcomm_dev_put(dev);
++	tty_port_put(&dev->port);
+ }
+ 
+ static inline void rfcomm_set_owner_w(struct sk_buff *skb, struct rfcomm_dev *dev)
+ {
+-	rfcomm_dev_hold(dev);
++	tty_port_get(&dev->port);
+ 	atomic_add(skb->truesize, &dev->wmem_alloc);
+ 	skb->sk = (void *) dev;
+ 	skb->destructor = rfcomm_wfree;
+@@ -433,7 +427,7 @@ static int rfcomm_release_dev(void __user *arg)
  		return -ENODEV;
--	if (!try_module_get(info->owner)) {
--		printk(KERN_WARNING "%s: cannot reserve module\n", __func__);
--		return -ENODEV;
--	}
- #ifdef ISDN_DEBUG_MODEM_OPEN
- 	printk(KERN_DEBUG "isdn_tty_open %s, count = %d\n", tty->name,
- 	       info->count);
-@@ -1603,7 +1599,6 @@ isdn_tty_open(struct tty_struct *tty, struct file *filp)
- #ifdef ISDN_DEBUG_MODEM_OPEN
- 		printk(KERN_DEBUG "isdn_tty_open return after startup\n");
- #endif
--		module_put(info->owner);
- 		return retval;
+ 
+ 	if (dev->flags != NOCAP_FLAGS && !capable(CAP_NET_ADMIN)) {
+-		rfcomm_dev_put(dev);
++		tty_port_put(&dev->port);
+ 		return -EPERM;
  	}
- 	retval = isdn_tty_block_til_ready(tty, filp, info);
-@@ -1611,7 +1606,6 @@ isdn_tty_open(struct tty_struct *tty, struct file *filp)
- #ifdef ISDN_DEBUG_MODEM_OPEN
- 		printk(KERN_DEBUG "isdn_tty_open return after isdn_tty_block_til_ready \n");
- #endif
--		module_put(info->owner);
- 		return retval;
- 	}
- #ifdef ISDN_DEBUG_MODEM_OPEN
-@@ -1659,7 +1653,6 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
- #ifdef ISDN_DEBUG_MODEM_OPEN
- 		printk(KERN_DEBUG "isdn_tty_close after info->count != 0\n");
- #endif
--		module_put(info->owner);
- 		return;
- 	}
- 	info->flags |= ASYNC_CLOSING;
-@@ -1692,7 +1685,6 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
- 	info->tty = NULL;
- 	info->ncarrier = 0;
- 	tty->closing = 0;
--	module_put(info->owner);
- 	if (info->blocked_open) {
- 		msleep_interruptible(500);
- 		wake_up_interruptible(&info->open_wait);
-@@ -1880,9 +1872,6 @@ isdn_tty_modem_init(void)
- 			goto err_unregister;
+ 
+@@ -446,7 +440,7 @@ static int rfcomm_release_dev(void __user *arg)
+ 
+ 	if (!test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags))
+ 		rfcomm_dev_del(dev);
+-	rfcomm_dev_put(dev);
++	tty_port_put(&dev->port);
+ 	return 0;
+ }
+ 
+@@ -524,7 +518,7 @@ static int rfcomm_get_dev_info(void __user *arg)
+ 	if (copy_to_user(arg, &di, sizeof(di)))
+ 		err = -EFAULT;
+ 
+-	rfcomm_dev_put(dev);
++	tty_port_put(&dev->port);
+ 	return err;
+ }
+ 
+@@ -592,7 +586,7 @@ static void rfcomm_dev_state_change(struct rfcomm_dlc *dlc, int err)
+ 				 * 1. rfcomm_dev_get will take rfcomm_dev_lock
+ 				 *    but in rfcomm_dev_add there's lock order:
+ 				 *    rfcomm_dev_lock -> dlc lock
+-				 * 2. rfcomm_dev_put will deadlock if it's
++				 * 2. tty_port_put will deadlock if it's
+ 				 *    the last reference
+ 				 */
+ 				rfcomm_dlc_unlock(dlc);
+@@ -602,7 +596,7 @@ static void rfcomm_dev_state_change(struct rfcomm_dlc *dlc, int err)
+ 				}
+ 
+ 				rfcomm_dev_del(dev);
+-				rfcomm_dev_put(dev);
++				tty_port_put(&dev->port);
+ 				rfcomm_dlc_lock(dlc);
+ 			}
+ 		} else
+@@ -771,11 +765,11 @@ static void rfcomm_tty_close(struct tty_struct *tty, struct file *filp)
+ 			list_del_init(&dev->list);
+ 			spin_unlock(&rfcomm_dev_lock);
+ 
+-			rfcomm_dev_put(dev);
++			tty_port_put(&dev->port);
  		}
- #endif
--#ifdef MODULE
--		info->owner = THIS_MODULE;
--#endif
- 		spin_lock_init(&info->readlock);
- 		sprintf(info->last_cause, "0000");
- 		sprintf(info->last_num, "none");
-diff --git a/include/linux/isdn.h b/include/linux/isdn.h
-index 1b4b4c1..66d9d71 100644
---- a/include/linux/isdn.h
-+++ b/include/linux/isdn.h
-@@ -435,7 +435,6 @@ typedef struct atemu {
- /* Private data (similar to async_struct in <linux/serial.h>) */
- typedef struct modem_info {
-   int			magic;
--  struct module		*owner;
-   int			flags;		 /* defined in tty.h               */
-   int			x_char;		 /* xon/xoff character             */
-   int			mcr;		 /* Modem control register         */
+ 	}
+ 
+-	rfcomm_dev_put(dev);
++	tty_port_put(&dev->port);
+ }
+ 
+ static int rfcomm_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
+@@ -1084,7 +1078,7 @@ static void rfcomm_tty_hangup(struct tty_struct *tty)
+ 		if (rfcomm_dev_get(dev->id) == NULL)
+ 			return;
+ 		rfcomm_dev_del(dev);
+-		rfcomm_dev_put(dev);
++		tty_port_put(&dev->port);
+ 	}
+ }
+ 
 -- 
 1.7.9.2
 
