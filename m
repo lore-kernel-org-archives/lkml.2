@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab2DBMb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 08:31:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45646 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab2DBMb5 convert rfc822-to-8bit (ORCPT
+	id S1752041Ab2DBMdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 08:33:33 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39115 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab2DBMdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 08:31:57 -0400
+	Mon, 2 Apr 2012 08:33:31 -0400
+Date: Mon, 2 Apr 2012 14:33:23 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/13] edac: Don't initialize csrow's first_page &
+ friends when not needed
+Message-ID: <20120402123323.GA24238@aftab>
+References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
+ <1333039546-5590-4-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAN_cFWMcttuebg_i8iWc+szDYMFT7gR=VJW0VtRj0Dh061Ob=A@mail.gmail.com>
-References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
-	<CAN_cFWMcttuebg_i8iWc+szDYMFT7gR=VJW0VtRj0Dh061Ob=A@mail.gmail.com>
-Date: Mon, 2 Apr 2012 08:31:57 -0400
-Message-ID: <CADnq5_PKyEZim-0bGqHjiP1X8-YqUd0_JTu1VaHUfufqroYGJQ@mail.gmail.com>
-Subject: Re: Linux 3.4-rc1
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Rob Clark <rob.clark@linaro.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linaro-dev@lists.linaro.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333039546-5590-4-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 1, 2012 at 11:34 AM, Rob Clark <rob.clark@linaro.org> wrote:
-> On Sat, Mar 31, 2012 at 6:58 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>  - drm dma-buf prime support. Dave Airlie sent me the pull request but
->> didn't push very hard for it, it's in my "ok, I can still pull it for
->> 3.4 if individual DRM driver people tell me that it will make their
->> lives easier." So this is in limbo - I have nothing against it, but I
->> won't pull unless I get a few people say "yes, please".
->
-> yes, please :-)
->
-> Note that the core drm dma-buf/prime support has already been reviewed
-> by a lot of folks, and tested with a few different drivers (exynos,
-> omapdrm, i915, nouveau, udl) with some driver support that could be
-> pushed for 3.5 cycle if the core support makes it in for 3.4 cycle.
+On Thu, Mar 29, 2012 at 01:45:36PM -0300, Mauro Carvalho Chehab wrote:
+> Almost all edac	drivers	initialize first_page, last_page and
+> page_mask.
 
-Please.  It's the first step in making hybrid laptops work properly in Linux.
+Please call them csrow_info->first_page ... or csrow_info.first_page...
+so that we can know of which struct they're members.
 
-Alex
+> Those vars are used inside the EDAC core, in	order to
+> calculate the csrow affected by	an error, by using the routine
+> edac_mc_find_csrow_by_page().
+> 
+> However, very few drivers actually use it:
+>         e752x_edac.c
+>         e7xxx_edac.c
+>         i3000_edac.c
+>         i82443bxgx_edac.c
+>         i82860_edac.c
+>         i82875p_edac.c
+>         i82975x_edac.c
+>         r82600_edac.c
+> 
+> There also a few other drivers that have their own calculus
+> formula internally using those vars.
+> 
+> All the others are just wasting time by initializing those
+> data.
+> 
+> While initializing data without using them won't cause any troubles, as
+> those information is stored at the wrong place (at csrows structure), it
+> is better to remove what is unused, in order to simplify the next patch.
+> 
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  drivers/edac/amd64_edac.c   |   38 ++------------------------------------
+
+For the amd64_edac.c bits:
+
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
