@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2DBSLC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:11:02 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:20491
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754026Ab2DBSK6 (ORCPT
+	id S1754009Ab2DBSOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:14:43 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:53655 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752329Ab2DBSOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:10:58 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzzz2dh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1V6I0-02-2FQ-02
-X-M-MSG: 
-Message-ID: <4F79EBAA.7040602@amd.com>
-Date: Mon, 2 Apr 2012 14:10:50 -0400
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Len Brown <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 58/76] idle, x86: Allow off-lined CPU to enter deeper
- C states
-References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>	<1333102459-23750-1-git-send-email-lenb@kernel.org>	<1a022e3f1be11730bd8747b1af96a0274bf6356e.1333101989.git.len.brown@intel.com>	<CA+8MBbLROfbyfAGZ0xn1tZVHsndeTUNrn=-gHhsfzkocBLh=iQ@mail.gmail.com>	<CA+8MBbJnrhKmy5f_pbL8Ogi1ihM-51hfqCDY5gUQ1hkvw7p22Q@mail.gmail.com>	<4F79E83C.5090506@amd.com> <CA+8MBbKv25Uu3fJeBhyj5cQvB6FN+KqgnP67UGhwvF+p635g7w@mail.gmail.com>
-In-Reply-To: <CA+8MBbKv25Uu3fJeBhyj5cQvB6FN+KqgnP67UGhwvF+p635g7w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 2 Apr 2012 14:14:42 -0400
+Message-ID: <1333390478.2623.44.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve
+ plug-in module EEPROM
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stuart Hodgson <smhodgson@solarflare.com>
+CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
+        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
+        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
+        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
+Date: Mon, 2 Apr 2012 19:14:38 +0100
+In-Reply-To: <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
+References: <4F71FE0A.3060203@solarflare.com>
+	 <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18812.005
+X-TM-AS-Result: No--18.149200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/12 14:02, Tony Luck wrote:
->> x86 halt() causes processor to go to C1 state (which is often not the
->> deepest). But other than that it seems similar to what you are describing.
->
-> OK - then Konrad's suggestion of using "safe_halt()" here rather than
-> "halt()" would work for ia64.
+On Mon, 2012-04-02 at 18:52 +0100, Ben Hutchings wrote:
+[...]
+> > +    ret = ops->get_module_eeprom(dev, &eeprom, data);
+> > +    if (ret)
+> > +        goto out;
+> > +
+> > +
+> > +    if (copy_to_user(userbuf, data, eeprom.len)) {
+> > +        ret = -EFAULT;
+> > +        goto out;
+> > +    }
+> > +
+> > +    if (copy_to_user(useraddr, &eeprom, sizeof(eeprom)))
+> > +        ret = -EFAULT;
+> [...]
+> 
+> I think you can drop this last copy as there's no information to return
+> in the eeprom structure itself.
+[...]
 
-I originally didn't want to use safe_halt() because the CPU will wake up 
-on an unmasked HW interrupt unlike halt(). But I guess we are not 
-supposed to get any such interrupts when we are off-lining a CPU so 
-safe_halt() should be OK.
+This is not the case because we need to cover short reads.
 
-Thanks.
--boris
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
