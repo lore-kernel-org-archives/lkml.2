@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab2DBU1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 16:27:15 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:57424 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751763Ab2DBU1O (ORCPT
+	id S1752468Ab2DBU2w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 16:28:52 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:39215 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab2DBU2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 16:27:14 -0400
-Date: Mon, 2 Apr 2012 21:27:10 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [ 06/41] PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
-Message-ID: <20120402202709.GA5970@milliways>
-References: <20120316233829.GA14022@kroah.com>
- <20120316233811.136320350@linuxfoundation.org>
- <20120331032356.GA6664@milliways>
- <20120401161108.GA6448@milliways>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120401161108.GA6448@milliways>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=wom5GMh1gUkA:10 a=2EL98pTPio4A:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=BV8SaKpQwGLlrb_eD1EA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Mon, 2 Apr 2012 16:28:51 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>
+In-Reply-To: <m2hax2qeqs.fsf@igel.home>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca> <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+Date: Mon, 02 Apr 2012 14:28:48 -0600
+Message-Id: <20120402202848.1EB833E02A7@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 05:11:08PM +0100, Ken Moffat wrote:
-> On Sat, Mar 31, 2012 at 04:23:56AM +0100, Ken Moffat wrote:
+On Mon, 02 Apr 2012 18:29:15 +0200, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> Andreas Schwab <schwab@linux-m68k.org> writes:
 > 
-> [ update : 3.4.0-rc1 boots without reverting this ]
+> > Grant Likely <grant.likely@secretlab.ca> writes:
+> >
+> >> This patch drops the powerpc-specific irq_map table and replaces it with
+> >> directly using the irq_alloc_desc()/irq_free_desc() interfaces for allocating
+> >> and freeing irq_desc structures.
+> >
+> > This breaks irqs on PowerMac G5.  I see lost irq errors from the sata
+> > driver.
+> 
+> When I revert a09b659cd68c10ec6a30cb91ebd2c327fcd5bfe5 ("genirq: Fix
+> long-term regression in genirq irq_set_irq_type() handling") on top of
+> 3.4-rc1 the sata irq errors disappear, but I see a lot of spurious
+> interrupts.  Also the X server is broken somehow, though I don't know
+> whether that is related or a different bug.
 
- Both 3.3.1 and 3.2.14 boot.  Thanks to whoever fixed this!
+That change is:
 
-ken
--- 
-das eine Mal als Tragödie, das andere Mal als Farce
+@@ -61,8 +61,7 @@ int irq_set_irq_type(unsigned int irq, unsigned int type)
+                return -EINVAL;
+ 
+        type &= IRQ_TYPE_SENSE_MASK;
+-       if (type != IRQ_TYPE_NONE)
+-               ret = __irq_set_trigger(desc, irq, type);
++       ret = __irq_set_trigger(desc, irq, type);
+        irq_put_desc_busunlock(desc, flags);
+        return ret;
+
+So presumably irq_set_irq_type() is getting called with type ==
+IRQ_TYPE_NONE.  From Russell's description, presumably that would mean
+the G5 sata driver isn't setting the correct type for the interrupt,
+but I have *no* idea how that intersects with the change removing the
+powerpc irq map.
+
+Can you dump out /debug/powerpc/virq_mapping from both before and
+after the irq_map patch is applied?
+
+g.
+
