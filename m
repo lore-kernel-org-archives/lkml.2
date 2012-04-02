@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab2DBKhc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 06:37:32 -0400
-Received: from clearmind.me ([109.169.77.6]:51375 "EHLO clearmind.me"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab2DBKhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 06:37:31 -0400
-X-Greylist: delayed 1308 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 06:37:31 EDT
-Subject: Re: [s2disk] Inappropriate ioctl on /dev/snapshot
-From: venom00 <venom00@setsun.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        pavel@users.sourceforge.net, rjwysocki@users.sourceforge.net
-In-Reply-To: <20120402100625.GA1216@elf.ucw.cz>
-References: <EV0ByeH8JeDWvk23_hS3M1XIjq7ZqojHm-IJJdI6CcZXMuZdq2gOAlqCGWMX1UCTpf9qG5vgeUMtaBztXYzLkQ@localhost.localdomain>
-	 <20120402100625.GA1216@elf.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Apr 2012 12:15:34 +0200
-Message-ID: <9Jr6_fKFH8Umxxs-dQGSOyRp3KqouVJ5VXrBfs1lJmHEgv6ITSoG7dqJWPT6sPGR8h5aOXDJHpJMUxXb0X1vvw@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752219Ab2DBKlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 06:41:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33700 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751407Ab2DBKlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 06:41:46 -0400
+Date: Mon, 2 Apr 2012 11:41:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
+Message-ID: <20120402104142.GB3172@opensource.wolfsonmicro.com>
+References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CACRpkdYRStgKo_e-4kZKA-V-OoMiV21jRS3R4g1Cq+4c+4=iQA@mail.gmail.com>
+ <20120401212750.GE8971@opensource.wolfsonmicro.com>
+ <CACRpkdbj_shuGWATGER+zxvA9MNDobGjWC3XHh+-5e0R6V4n4w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbj_shuGWATGER+zxvA9MNDobGjWC3XHh+-5e0R6V4n4w@mail.gmail.com>
+X-Cookie: You will be run over by a beer truck.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 12:06 +0200, Pavel Machek wrote:
-> 
-> Hi! If it worked on previous kernels, it is an  regression and
-> something for rjw to track.
 
-It's my first try with Xen.
+--Fba/0zbH8Xs+Fj9o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> By chance, are you using 32bit userland on 64bit kernel?
+On Mon, Apr 02, 2012 at 12:33:20AM +0200, Linus Walleij wrote:
 
-No.
+> Yeah ... but this sounds familiar, (searching searching) Yes! We did ask on
+> the lists if regulators were proper for modeling power domains in 2008:
+> http://marc.info/?l=linux-arm-kernel&m=121580531500758&w=2
 
-> (Rafael: Did we remove some compatibility code, recently?) 
+> But I should've pushed for a proper answer ...
 
-Sorry, I've updated suspend-1.0 and works fine ;)
+It's not unreasonable to use regulators to model the domains (or as part
+of modelling the domains, I'd imagine some systems will be able to do
+things to regulators as a result of power domain actions).  So long as
+the hookup which might affect other systems is done from SoC specific
+code and doesn't impact other systems) there shouldn't be an issue from
+a framework point of view.
 
-Thanks for answering!
+--Fba/0zbH8Xs+Fj9o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPeYIfAAoJEBus8iNuMP3dM7wP/10q9MUHzhes7xv2NH2AJsJ8
+PtFE1Qgu9Spk6VUZK9R77FTr1H+rXFX4+Ew/c9LKYtZBKZ2jyiAHLRjpWIzSLHYe
+b2X9z7ohA884V+nRgYDjSk22vdsKYa7vMqq4wxnGCM1Ta+2GS5xIkOk/mKrITban
+ugntz6dQfvS/42Q2BhFuW2seOtuX/9ppr5VhzkOQMdvNSRwTLDFZBUS5f72A5uau
+X6i3+C6q+CsQeYmdl8ohdzxQAnRvUMt9inlGwCdUP3ZYXM6vDZoqoXeKCHG9M0xp
+uSEgRQW4Iaq2F/EIojNipDYjxqnNPRa35UGuZ6v6W2JKnN4iyONEm4jnZ9/KPxBH
+hHVBNPEYcdgd9j04i41KOv3/kP5F7ZBHNUGVBavRC1A8k0Mb1kC/K6ardWessEay
+z0zOL7AL1GjJmw3l1KxnIiqISKDcSJfJbQSYex7vIuF2txP2gpYjd78IJptrHrdx
+0KF5A0OZhoEfKGBtq01L3zxsioMnXhsumEfws+CTqcI1DROiXmU+9wObDlJkORmL
+a+euOJ+fUR7LDULjpHjdghxoxFL5KmUjrnmNv+5UTTQs6OO39XSZ00HNDdt1saic
+CAKak9lTKdE45XyY5IjxaNvtjAWbNo+7JI4jsgy5aJoyscHq54xuHgbwqJcdHEzD
+A1ckpJCZ1aYDuWa6Yv+K
+=tpqN
+-----END PGP SIGNATURE-----
+
+--Fba/0zbH8Xs+Fj9o--
