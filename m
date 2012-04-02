@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab2DBX2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 19:28:05 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:59362 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab2DBX2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 19:28:03 -0400
-Date: Mon, 2 Apr 2012 16:27:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, mingo@elte.hu,
-        stable@vger.kernel.org
-Subject: Re: Don't apply 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 to stable
- please.
-Message-ID: <20120402232750.GB17821@kroah.com>
-References: <20120402224701.GA6961@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120402224701.GA6961@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753156Ab2DBXjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 19:39:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46571 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892Ab2DBXjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 19:39:32 -0400
+Message-ID: <1333409927.30734.62.camel@pasglop>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Tue, 03 Apr 2012 09:38:47 +1000
+In-Reply-To: <20120402225223.GN24211@n2100.arm.linux.org.uk>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
+	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+	 <20120402202848.1EB833E02A7@localhost>
+	 <20120402215524.GM24211@n2100.arm.linux.org.uk>
+	 <1333406005.30734.61.camel@pasglop>
+	 <20120402225223.GN24211@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 06:47:02PM -0400, Konrad Rzeszutek Wilk wrote:
-> Hey Greg,
+On Mon, 2012-04-02 at 23:52 +0100, Russell King - ARM Linux wrote:
+> If we want to fix it a better way, then sure, that'll be good.  But
+> what
+> we shouldn't do is re-introduce one regression to fix a different
+> regression.
 > 
-> The git commit 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 has CC stable@kernel.org
-> but it breaks Xen - we are working to fix it in 3.4, but the fix for it
-> does some architectual changes (136d249ef7dbf0fefa292082cc40be1ea864cbd6) that
-> I don't know if you are comfortable putting in stable tree.
-> 
+> So, Thomas, what do you think about providing a way that a disabled
+> interrupt could have its pending status cleared such that when it's
+> enabled, any queued events are ignored?  Maybe an
+> enable_and_clear_irq() ? 
 
-I have no idea what that git commit id referrs to, as it's not in
-Linus's tree at the moment.
+Ok. Doesn't matter anyway, this shouldn't be the problem in this
+specific case. IE. we shouldn't be setting that interrupt to NONE.
 
-Care to give me a subject?  diffstat?  Some kind of hint?
+We should have parsed the device-tree and set the trigger appropriately.
 
-And note, you forgot to send this to the stable@vger.kernel.org list,
-where the other stable kernel maintainers live, please do so next time.
+Cheers,
+Ben.
 
-thanks,
 
-greg k-h
