@@ -1,174 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab2DBT3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 15:29:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55937 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab2DBT3L (ORCPT
+	id S1751661Ab2DBTb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 15:31:28 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35367 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab2DBTb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 15:29:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC] gpio: Device tree support for LPC32xx
-Date: Mon, 2 Apr 2012 19:28:59 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linus.walleij@stericsson.com
-References: <1333376464-25712-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1333376464-25712-1-git-send-email-stigge@antcom.de>
+	Mon, 2 Apr 2012 15:31:26 -0400
+Message-ID: <4F79FE8F.1040708@linaro.org>
+Date: Mon, 02 Apr 2012 21:31:27 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204021929.00107.arnd@arndb.de>
-X-Provags-ID: V02:K0:+w4UklHpnJJNA2fDdzhMlYZGPRCmtB5VrgjD0zpBUux
- qzAW/PVBbAr5PiAvXt1Z2Pl6T9BuEgq4Sm9SrFQWmMqPcgOUYu
- PaJytcGGT1xtB3Q3o0IEUM1wQP5h47S27L9pDif3CbiQhjFrXs
- W1EFbsTzBf4y3Q2h+1DmPfgnQGfX0zQcjixEdf7S0Yt8C1kO4O
- soNQWXfAm41U1kNigBi9jZGHJEpx7lIbPmqEtuyqi8fuYJaGHa
- MMk01mdzq7lKIeylO/hECEqqoDRO+ep/Ej1lqOF5tJsdT2G5Iv
- erwwpCqFYu41r1w50bXWhN3U3ufFVvHenUAElJxjN/qAXEHdJx
- Z3mUA5jyY/dHqmL+jZr0=
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: lenb@kernel.org, khilman@ti.com, deepthi@linux.vnet.ibm.com,
+        g.trinabh@gmail.com, arjan@infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH] cpuidle: Avoid possible NULL pointer dereference in __cpuidle_register_device()
+References: <20120402144422.11574.83174.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120402144422.11574.83174.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 April 2012, Roland Stigge wrote:
+On 04/02/2012 04:44 PM, Srivatsa S. Bhat wrote:
+> In __cpuidle_register_device(), "dev->cpu" is used before checking if dev is
+> non-NULL. Fix it.
+>
+> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+> ---
 
-> 
-> I'm adding device tree support to the LPC32xx platform. Currently struggling
-> with GPIO, see patch below.
-> 
-> Generally, it works - GPIOs registered successfully like before:
-> 
-> ================================================================
-> gpiochip_add: registered GPIOs 0 to 7 on device: gpio_p0
-> gpiochip_add: registered GPIOs 8 to 31 on device: gpio_p1
-> gpiochip_add: registered GPIOs 32 to 44 on device: gpio_p2
-> gpiochip_add: registered GPIOs 45 to 50 on device: gpio_p3
-> gpiochip_add: registered GPIOs 51 to 78 on device: gpi_p3
-> gpiochip_add: registered GPIOs 79 to 102 on device: gpo_p3
-> ================================================================
-> 
-> But in connection with gpio-leds which I'm using like this:
-> 
->         leds {
->                 compatible = "gpio-leds";
->                 led0 {
->                         gpios = <&gpio 0x50 1>; /* GPIO 80, active low */
->                         linux,default-trigger = "heartbeat";
->                         default-state = "keep";
->                 };
->         };
-> 
-> I get the following error:
+That should be fixed at the caller level. Usually, static function does 
+not check the function parameters, it is up to the exported function to 
+do that. It is supposed the static functions are called with valid 
+parameters.
 
-The gpio number must be local to the gpio_chip.
-> 
-> I suspect the strategy to do several gpiochip_add()s, ported from the non-DT
-> platform code, doesn't work well with the of_* registration - e.g.,
-> gpiochip_find() compares the static structs I'm registering with gpiochip_add()
-> with another (of_node's) one not in the registeded list. Should the various
-> GPIO areas be moved from lpc32xx_gpiochip[] to a dts file? So many callbacks
-> and memory references in there...
+There are two callers for __cpuidle_register_device:
+  * cpuidle_register_device
+  * cpuidle_enable_device
 
-Well, in the end, you need to do exactly one gpiochip_add() per of_node,
-and you can get there either by increasing the number of of_nodes, or
-by registering only one gpio_chip.
+Both of them do not check 'dev' is a valid parameter. They should as 
+they are exported and could be used by an external module. IMHO, BUG_ON 
+could be used here if dev == NULL.
 
-Given the design of your hardware, I would recommend doing the first.
-If you don't want to fully describe all the differences between the
-chips using DT properties, you can keep the array you have now, and
-use sub-nodes that do not get turned into a platform_device, like
 
-/ {
-	gpio-controller@40028000 {
-		compatible = "nxp,lpc3250-gpio", "nxp,lpc32xx-gpio";
-		/* create a private address space for enumeration */
-		#address-cells = 1;
-		#size-cells = 0;
+>   drivers/cpuidle/cpuidle.c |    3 ++-
+>   1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 87411ce..75b381e 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -372,7 +372,7 @@ EXPORT_SYMBOL_GPL(cpuidle_disable_device);
+>   static int __cpuidle_register_device(struct cpuidle_device *dev)
+>   {
+>   	int ret;
+> -	struct device *cpu_dev = get_cpu_device((unsigned long)dev->cpu);
+> +	struct device *cpu_dev;
+>   	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+>
+>   	if (!dev)
+> @@ -380,6 +380,7 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+>   	if (!try_module_get(cpuidle_driver->owner))
+>   		return -EINVAL;
+>
+> +	cpu_dev = get_cpu_device((unsigned long)dev->cpu);
+>   	init_completion(&dev->kobj_unregister);
+>
+>   	per_cpu(cpuidle_devices, dev->cpu) = dev;
+>
 
-		reg = <0x40028000 0x1000>;
 
-		gpio-bank@0 {
-			gpio-controller;
-			#gpio-cells = <2>;
-			gpio-lines = <8>;
-			reg = <0>;
-			status = "okay";
-		};
-		
-		gpio-bank@1 {
-			gpio-controller;
-			#gpio-cells = <2>;
-			gpio-lines = <24>;
-			reg = <1>;
-			status = "okay";
-		};
-		
-		gpio-bank@2 {
-			gpio-controller;
-			#gpio-cells = <2>;
-			gpio-lines = <13>;
-			reg = <2>;
-			status = "okay";
-		};
-		
-		gpio-bank@3 {
-			gpio-controller;
-			#gpio-cells = <2>;
-			gpio-lines = <6>;
-			reg = <3>;
-			status = "okay";
-		};
-		
-		gpo-bank@4 {
-			gpio-controller;
-			#gpio-cells = <2>;
-			gpio-lines = <28>;
-			reg = <4>;
-			status = "okay";
-		};
-		
-		gpi-bank@5 {
-			gpio-controller;
-			#gpio-cells = <2>;
-			gpio-lines = <24>;
-			reg = <5>;
-			status = "okay";
-		};
-	};
-};
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-> -void __init lpc32xx_gpio_init(void)
-> +static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
->  {
->  	int i;
->  
-> -	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
-> +	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++) {
-> +#ifdef CONFIG_OF_GPIO
-> +		lpc32xx_gpiochip[i].chip.of_node = pdev->dev.of_node;
-> +#endif
->  		gpiochip_add(&lpc32xx_gpiochip[i].chip);
-> +	}
-> +
-> +	return 0;
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-Then this can become
-
-	for_each_child_of_node(pdev->dev.of_node, node) {
-		if (of_device_is_available(node)) {
-			u32 index;
-			struct gpio_chip *chip;
-			if (of_property_read_u32(node, reg, &index) < 0)
-				continue; 
-			if (index >= ARRAY_SIZE(lpc32xx_gpiochip)
-				continue;
-			chip = &lpc32xx_gpiochip[index].chip;
-			chip->of_node = of_node_get(node);
-			gpiochip_add(chip);
-		}
-	}
-
-	Arnd
