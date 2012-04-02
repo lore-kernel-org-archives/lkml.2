@@ -1,133 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2DBN7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 09:59:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38963 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751333Ab2DBN7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 09:59:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="124483058"
-Message-ID: <1333375338.22146.6.camel@sauron.fi.intel.com>
-Subject: Re: [patch] UBIFS: Add a encryption key parameter to the compress /
- decompress function.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Mon, 02 Apr 2012 17:02:18 +0300
-In-Reply-To: <alpine.DEB.2.00.1203291606450.912@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-	     <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>
-	    <1330531826.3545.128.camel@sauron.fi.intel.com>
-	    <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net>
-	   <1332511796.18717.72.camel@sauron.fi.intel.com>
-	   <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net>
-	  <1332521515.22278.2.camel@sauron.fi.intel.com>
-	  <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>
-	 <1332836863.31549.9.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1203291606450.912@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-GuAY6Oye8GgZrNz57ORi"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S1751974Ab2DBOAK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:00:10 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39417 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab2DBOAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 10:00:08 -0400
+Date: Mon, 2 Apr 2012 15:59:59 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [PATCH 00/13] Convert EDAC internal strutures to support all
+ types of Memory Controllers
+Message-ID: <20120402135959.GC24238@aftab>
+References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 29, 2012 at 01:45:33PM -0300, Mauro Carvalho Chehab wrote:
+> This is the 12th and final rebase of this patch series.
+> 
+> It is the first patchset for the EDAC rewrite. On this patchset,
+> there are all the internal changes at the EDAC core, needed
+> to properly represent memories at modern memory controllers that
+> aren't oriented per rank/channel.
+> 
+> It is needed in order to fix a long-term bug at the EDAC drivers
+> for the Intel memory controllers deployed since 2005 (well, in fact,
+> there is one Rambus that it is older, but also suffers from the same
+> syndrome), including the drivers for the recent Intel Nehalem and
+> Sandy Bridge architectures.
+> 
+> The new EDAC architecture supports both per rank/channel memory
+> controllers and per-DIMM ones.
+> 
+> On this changeset, there are no changes at the sysfs nodes. Just 
+> like before this changeset, non-per-rank memory controllers 
+> will expose memories as "virtual csrows/virtual channels[1].
+> 
+> [1] It sounds better to say "virtual" than to admit that all
+> EDAC Intel drivers since 2005 need to lie about their age to
+> the EDAC core, in order for the Kernel to accept them ;)
+> 
+> Mauro Carvalho Chehab (13):
+>   edac: Create a dimm struct and move the labels into it
+>   edac: move dimm properties to struct memset_info
+>   edac: Don't initialize csrow's first_page & friends when not needed
+>   edac: move nr_pages to dimm struct
+>   edac: Fix core support for MC's that see DIMMS instead of ranks
 
---=-GuAY6Oye8GgZrNz57ORi
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I was wondering why 6/13 doesn't apply cleanly but there's the patch
+above, 5/13 missing in the submission. It looks like vger has eaten it
+at least for the linux-edac mailing list - the patch is still on lkml
+though.
 
-On Thu, 2012-03-29 at 16:11 +0200, Joel Reardon wrote:
-> Added a crypto_key parameter to ubifs compress and decompress. Will be us=
-ed
-> later if non-NULL to encrypt / decrypt data nodes.
->=20
-> Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+And what a patch it is: almost 5000 lines.
 
-Hi,
+Please split it!
 
-thanks, pushed with the following amendments:
+And don't tell me it cannot be done: each patch needs to do one thing
+and one thing only. From looking at this monster, here's one possible
+way to split it:
 
-diff --git a/fs/ubifs/compress.c b/fs/ubifs/compress.c
-index c91974a..b796b8d 100644
---- a/fs/ubifs/compress.c
-+++ b/fs/ubifs/compress.c
-@@ -82,8 +82,8 @@ struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TY=
-PES_CNT];
-  * @out_len: output buffer length is returned here
-  * @compr_type: type of compression to use on enter, actually used compres=
-sion
-  *              type on exit
-- * @crypto_key: a pointer to bytes to use as the encryption key,
-- *              if NULL then no encryption is performed.
-+ * @crypto_key: a pointer to bytes to use as the encryption key, if NULL t=
-hen
-+ *              no encryption is performed
-  *
-  * This function compresses input buffer @in_buf of length @in_len and sto=
-res
-  * the result in the output buffer @out_buf and the resulting length in
-@@ -142,8 +142,8 @@ no_compr:
-  * @out_buf: output buffer where decompressed data should
-  * @out_len: output length is returned here
-  * @compr_type: type of compression
-- * @crypto_key: a pointer to bytes to use as the decryption key,
-- *             if NULL then no decryption is performed.
-+ * @crypto_key: a pointer to bytes to use as the decryption key, if NULL t=
-hen
-+ *              no decryption is performed.
-  *
-  * This function decompresses data from buffer @in_buf into buffer @out_bu=
-f.
-  * The length of the uncompressed data is returned in @out_len. This funct=
-ions
-diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
-index 9ece275..57c4d2f 100644
---- a/fs/ubifs/journal.c
-+++ b/fs/ubifs/journal.c
-@@ -1113,8 +1113,7 @@ static int recomp_data_node(struct ubifs_data_node *d=
-n, int *new_len)
-=20
-        len =3D le32_to_cpu(dn->ch.len) - UBIFS_DATA_NODE_SZ;
-        compr_type =3D le16_to_cpu(dn->compr_type);
--       err =3D ubifs_decompress(
--               &dn->data, len, buf, &out_len, compr_type, NULL);
-+       err =3D ubifs_decompress(&dn->data, len, buf, &out_len, compr_type,=
- NULL);
-        if (err)
-                goto out;
+* add all changes to include/linux/edac.h
+* a bunch of changes to edac_mc.c like edac_align_ptr etc
+* changes to edac_mc_alloc
+* add edac_mc_handle_error
+* switch old edac_mc_handle* stuff to edac_mc_handle_error
+...<a bunch more>
 
---=20
-Best Regards,
-Artem Bityutskiy
+This way the code will be much easier to review.
 
---=-GuAY6Oye8GgZrNz57ORi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+-- 
+Regards/Gruss,
+Boris.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPebFqAAoJECmIfjd9wqK0qPMQAJar+Nk0465TDo5O5hSdlEwv
-E+ZuJ/XvQAYcHrCi7oQhd9a8v3lhTNTuvZNCpN6Hj5mTQIqQ/T98s0jGiwXI9+I9
-HQgdMeF/HLrbj0gNHg66dqKX+BA0fS/FrXosNIzkFjvj+ybXjzmBeZiXOKSnWHAd
-SgVA/71aXVlY77n0PGvo4qhJ4eFSE6bcV4zExSuCYGj1wQ26wX9NLknoqUHnq66W
-NPxJH5ipD0iO2LO9d2OZaUJtPp5HE4lQS4chEzVYk22isAfOieuR7agJgTozL65G
-NsGx9wHDsNd3/mjhSW8ve7Fd6dCXaO+ng/+U08aor0NEW8sQO6qmCNNCNYaPg+8d
-ytqPKJTnutDfttgomqhXd6HJv/JRFrohrinPipC1DssrI6rJpD9OEhbux91jdN/4
-oj8DefY3mem3cBQsLve2tYJdOekoBpMehzuCJsyu97w+IYhsxnAaX3eI3SS8QOR7
-ZgWB+b+Pp47towo1KPSD4y9jOet6fZVJRpeVeVVt6mXZwaMIPCOdMIHLudwUw8nI
-9VxIh3YGrn6JYibAi45zXMf+YAQd5y+dARSU25JvAXvj1fQ+lAP2IyaYfcnd+UHc
-PY5PEFZi6XakfvpFc7b0yVe1LucCM8uTLXZLJNuXaaTP14ag0R24C6TVLdKVmKBD
-8Y4lmwrAX2WrN9dIVXOU
-=qe7E
------END PGP SIGNATURE-----
-
---=-GuAY6Oye8GgZrNz57ORi--
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
