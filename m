@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab2DBGvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 02:51:51 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:47662 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab2DBGvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 02:51:49 -0400
-Date: Mon, 2 Apr 2012 08:51:18 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com, mhocko@suse.cz,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/core] proc: stats: Use arch_idle_time for idle and
- iowait times if available
-Message-ID: <20120402085118.4da62dfe@de.ibm.com>
-In-Reply-To: <20120330155455.786e8963.akpm@linux-foundation.org>
-References: <20120330122308.18720283@de.ibm.com>
-	<tip-cb85a6ed67e979c59a29b7b4e8217e755b951cf4@git.kernel.org>
-	<20120330155455.786e8963.akpm@linux-foundation.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12040206-0542-0000-0000-0000016EB283
+	id S1751323Ab2DBGzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 02:55:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24695 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab2DBGzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 02:55:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="124372734"
+Date: Mon, 2 Apr 2012 09:55:27 +0300
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: bluetooth: fix deadlock on device reset and power down
+Message-ID: <20120402065525.GA29687@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	Alexander Holler <holler@ahsoftware.de>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <4F77055A.2070502@ahsoftware.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F77055A.2070502@ahsoftware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Mar 2012 15:54:55 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hi Alexander,
 
-> On Fri, 30 Mar 2012 06:58:25 -0700
-> tip-bot for Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+On Sat, Mar 31, 2012 at 03:23:38PM +0200, Alexander Holler wrote:
+> I've experienced a deadlock on shutdown using kernel 3.3 and tracked
+> it down. Because I'm not very familiar with the bluetooth stack I'm
+> not sure if the below patch is correct, but it fixed the problem
+> here.
+
+Could you please attach deadlock dump?
+
 > 
-> > Commit-ID:  cb85a6ed67e979c59a29b7b4e8217e755b951cf4
-> > Gitweb:     http://git.kernel.org/tip/cb85a6ed67e979c59a29b7b4e8217e755b951cf4
-> > Author:     Martin Schwidefsky <schwidefsky@de.ibm.com>
-> > AuthorDate: Fri, 30 Mar 2012 12:23:08 +0200
-> > Committer:  Thomas Gleixner <tglx@linutronix.de>
-> > CommitDate: Fri, 30 Mar 2012 15:43:33 +0200
-> > 
-> > proc: stats: Use arch_idle_time for idle and iowait times if available
-> > 
-> > Git commit a25cac5198d4ff28 "proc: Consider NO_HZ when printing idle and
-> > iowait times" changes the code for /proc/stat to use get_cpu_idle_time_us
-> > and get_cpu_iowait_time_us if the system is running with nohz enabled.
-> > For architectures which define arch_idle_time (currently s390 only)
-> > this is a change for the worse. The result of arch_idle_time is supposed
-> > to be the exact sleep time of the target cpu and should be used instead
-> > of the value kept by the scheduler.
+> Commit 09fd0de5bd8f8ef3317e5365f92f1a13dcd89aa9 introduced a deadlock:
 > 
-> So it appears that this patch is a superset of "nohz: fix idle ticks in
-> cpu summary line of /proc/stat" (below), yes?
+> bluetoothd calls ioctl HCIDEVDOWN
+>     hci_sock_ioctl()
+>         hci_dev_close()
+>             hci_dev_do_close()
+>                 hci_dev_lock(hdev);
+>                 inquiry_cache_flush();
+>                 hci_conn_hash_flush();
+>                     hci_conn_del()
+>                         cancel_delayed_work_sync()
+>                             hci_conn_timeout()
+>                                 hci_dev_lock(hdev); /* DEADLOCK */
 
-"proc:stats: Use arch_idle_time.." goes on top of "nohz: fix idle ticks..".
-If the second patch is applied, s390 does not need the first one anymore.
-So for s390 the second one is a superset of the first, on x86 the first
-patch is the important one.
- 
-> > Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> > Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > Link: http://lkml.kernel.org/r/20120330122308.18720283@de.ibm.com
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+I am actually not sure that hci_conn_timeout locks hdev. Why do you think
+so?
+
+Best regards 
+Andrei Emeltchenko 
+
+>                 hci_dev_unlock(hdev);
 > 
-> No cc:stable?  Both 09a1d34f8535ecf9 and a25cac5198d date from
-> September '11 and 09a1d34f8535ecf9 (at least) was a regression.
- 
-The regression is fixed by "proc:stats: User arch_idle_time..", the
-second patch gets us back the improved values for s390, you could argue
-if this is a regression or not.
-Anyway I would not complain if both patches are included the stable
-releases. 
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> ---
+>  net/bluetooth/hci_core.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+> index 5aeb624..3428036 100644
+> --- a/net/bluetooth/hci_core.c
+> +++ b/net/bluetooth/hci_core.c
+> @@ -629,8 +629,8 @@ static int hci_dev_do_close(struct hci_dev *hdev)
+> 
+>  	hci_dev_lock(hdev);
+>  	inquiry_cache_flush(hdev);
+> -	hci_conn_hash_flush(hdev);
+>  	hci_dev_unlock(hdev);
+> +	hci_conn_hash_flush(hdev);
+> 
+>  	hci_notify(hdev, HCI_DEV_DOWN);
+> 
+> @@ -713,8 +713,8 @@ int hci_dev_reset(__u16 dev)
+> 
+>  	hci_dev_lock(hdev);
+>  	inquiry_cache_flush(hdev);
+> -	hci_conn_hash_flush(hdev);
+>  	hci_dev_unlock(hdev);
+> +	hci_conn_hash_flush(hdev);
+> 
+>  	if (hdev->flush)
+>  		hdev->flush(hdev);
 
