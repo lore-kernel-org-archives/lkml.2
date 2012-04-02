@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab2DBNlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 09:41:10 -0400
-Received: from 124-248-200-68.sunnyvision.com ([124.248.200.68]:58178 "EHLO
-	teamb02.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2DBNlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 09:41:05 -0400
-X-Greylist: delayed 1937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 09:41:04 EDT
-X-DKIM: OpenDKIM Filter v2.4.1 teamb02.edmhongkong.com ADDB051870
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 516E04FB13
-Message-ID: <P5lKJ@tcts1.seed.net.tw>
-From: woody@dedicatedserver.com.hk
-Subject: Cloud Hosting and Cloud Server
-X-Mailer: bANDWJ0kJtuBJSFB187mrK16
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Mon,  2 Apr 2012 21:07:35 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	id S1752513Ab2DBNnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 09:43:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43621 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751737Ab2DBNnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 09:43:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="126110644"
+Message-ID: <1333374418.22146.5.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v1 0/9] do not use s_dirt in ext4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Ted Tso <tytso@mit.edu>, Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Apr 2012 16:46:58 +0300
+In-Reply-To: <20120331114926.GA4569@quack.suse.cz>
+References: <1332254489-2300-1-git-send-email-dedekind1@gmail.com>
+	 <20120322095342.GC14485@quack.suse.cz>
+	 <1332410747.18717.12.camel@sauron.fi.intel.com>
+	 <20120322103309.GA14484@quack.suse.cz>
+	 <1332854998.31549.40.camel@sauron.fi.intel.com>
+	 <20120327201401.GF5020@quack.suse.cz>
+	 <1333121035.5440.49.camel@sauron.fi.intel.com>
+	 <20120330153530.GH5587@quack.suse.cz>
+	 <1333122195.5440.60.camel@sauron.fi.intel.com>
+	 <20120331114926.GA4569@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-U+0zOUbbIg/K1UOhMPwd"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q32DfGnd003872
 
-Dear All,
 
-We are one of the top Cloud Solution provider base in Hong Kong, with over 10+ years experience,
-we providing better than good and lower cost service of CLoud Hosting (Cloud Server / Hosting / CDN)
+--=-U+0zOUbbIg/K1UOhMPwd
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Starting at $1.99, let's come to experience and enjoy our powerful cloud system.
+On Sat, 2012-03-31 at 13:49 +0200, Jan Kara wrote:
+> > Well, I ran vanilla the tests in vanilla 3.3 overnight, they were fine.
+> > But may be I was lucky. I'll try to run the tests with vanilla kernel
+> > some more. I mean, it would make more sense to report something against
+> > vanilla 3.3, not a patched 3.3.
+>   That's true. Frankly I think you were lucky with hitting the bug with
+> patched kernel rather than not hitting it with vanilla :). What test did
+> you run exactly?
 
-Thanks for your time and appreciated to look arround our website.
+I've sent a separate report (Subject: 3.3 oops). The oops there is a bit
+different comparing to this one, though. For this oops I used the same
+kvm setup.
 
-http://www.dedicatedserver.com.hk/ 
-
+--=20
 Best Regards,
-The 36cloud Team
+Artem Bityutskiy
 
+--=-U+0zOUbbIg/K1UOhMPwd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAABAgAGBQJPea3SAAoJECmIfjd9wqK0NF4P/i4Ab7tylwTOhX62OIl9O/jl
+4/ClO2jvq4QBzWCuusX+V4hxVgY7BW6MydX1GmRQYBGjRzZg5zA/7lVa/TEN8I44
+wATap01cm7wUDHMyBxDa7naR84gT8ODny50VJs9Ihsqwo56x9X4dMvIAhDxYea5j
+Ldy1TXVfiGyEWUvbcUVLNAxQ4A2z/i2CDPP6Q2bd1U16HmNGQMGCEwvEEmM0rno3
+cqDXh0xv6nEpvcGfsMk/iLOjMqWPuqPCYjeveB05pkLhVBXzhhWBSmZC2xKOcA2Y
+1DBJxtXHJrayfZeiFbVy9Oh554wxe74JZNVAkQZxX0huvboZcMWolB8zJ3kp61LW
+N7EDw7ARCpWEFaDT8x72c1pYXxHmuhiHFcgZm8jpNEQzBCYa2Y4wrj8aqmlCBZFi
+TM2R+B8+ECwswWeF68Yd32fxaMvtb0FftO2goes5kXWJq2yo00xVNNK+AeRV0yTx
+8WGdi537LMW0ZZbddg0rkUFgj3oi+OQeXImBjas7PW8nH/IXbjJUwI5hkH5yAspc
+XL0Z5hGoMGYmGGQJMPv09LkI8nznIrOfsmgb16NmKMvhb3hbzwLrJ8DnWz3Lrb1Z
+XakkjDs/9xRCeBHEzCO5432ULfaqJfwd+OG4vH7OJ+2uxrYuanjhL5dHOipQZ3ul
++CSW8lZXSyOPgj815gN/
+=PqxT
+-----END PGP SIGNATURE-----
 
-
-If you do not wish to further receive this event message, email "subscriber@dedicatedserver.com.hk" to unsubscribe this message or revoe your email from the list.
-
-Any questions, please feel free to contact our CS at cs@36cloud.com . 
-
-We are highly appreciated your attention, and just come to experience our powerful cloud server service.
-
-Best Regards,
-The 36cloud CS team
-Email: cs@36cloud.com 
-Website: http://www.36cloud.com
-**************************************************************************
-
-
-If you do not wish to further receive this event message, email "subscriber@dedicatedserver.com.hk" to unsubscribe this message or revoe your email from the list.
-
+--=-U+0zOUbbIg/K1UOhMPwd--
 
