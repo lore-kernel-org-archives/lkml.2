@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab2DBBTr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 21:19:47 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37068 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772Ab2DBBTp convert rfc822-to-8bit (ORCPT
+	id S1754081Ab2DBBUS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 21:20:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51356 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab2DBBUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 21:19:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F78D0BA.9040709@zytor.com>
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Sun, 1 Apr 2012 18:19:24 -0700
-Message-ID: <CAGZ=bqJ4mAwzuHk5rDbvKTfR_Qi=QiPt6MrwbVhe7H63Yba2Wg@mail.gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        drepper@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 1 Apr 2012 21:20:17 -0400
+Date: Mon, 2 Apr 2012 11:20:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: clean up time
+Message-Id: <20120402112009.3477dad7deff0f4d87f49b29@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Apr_2012_11_20_09_+1000_Mu=BDnp9bzB_mucl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 1, 2012 at 15:03, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/01/2012 05:57 AM, Alexey Dobriyan wrote:
->> * /proc/self/fd is unreliable:
->>   proc may be unconfigured or not mounted at expected place.
->>   Looking at /proc/self/fd requires opening directory
->>   which may not be available due to malicious rlimit drop or ENOMEM situations.
->>   Not opening directory is equivalent to dumb close(2) loop except slower.
->
-> This is really the motivation for this... the real question is how much
-> functionality is actually available in the system without /proc mounted,
-> and in particular if this particular subcase is worth optimizing ...
-> after all, if someone is maliciously setting rlimit, we can just abort
-> (if someone can set an rlimit they can also force an abort) or revert to
-> the slow path.
+--Signature=_Mon__2_Apr_2012_11_20_09_+1000_Mu=BDnp9bzB_mucl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, I imagine one typical usecase for closing all FDs is for
-security isolation purposes (EG: chroot()+etc), and in a great deal of
-chroot environments you don't have /proc available.  In particular
-/proc has been a source of a lot of privilege escalations in the past,
-so avoiding mounting it in a chroot is good security policy if
-possible.
+Hi all,
 
+Can people please clean up stuff in their trees that has been merged by
+their upstream.   This is especially useful where the upstream merged (or
+applied) a slightly different version of their tree.
+
+--=20
 Cheers,
-Kyle Moffett
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__2_Apr_2012_11_20_09_+1000_Mu=BDnp9bzB_mucl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPeP7JAAoJEECxmPOUX5FErCEQAIDIH8mDTmTFasyEncHvA3E9
+XmApIqWNVIFpNhj2wBZkqJSZuOwsteyiBdBXvSP+B7MM0oDeG4ioGdQWEOnAzvP9
+zzyxCzQwNQUxmyvxUFXdv101N06cRM5GvpvIwjzyIC0C/6AEkszgnnGWCsFqImZi
+6QSllweT8efVpEkxm6af6RjhcZdtuXwZ5JUkXI6VfJ4IqpVHYIn/iQ+imt7fTKhj
+zH/0P0Lht81n75xmrLiQTcw/tEgt2Tx6sQYPgOgidcD34VUrp4UoQw3OOHGt3/Mo
+0JDBsdd3h/UxJs8lhmrTiAu+6oP3qvViwXfj6AhmcYoRtNApTybNF5QJ5Cz7N+Ur
+a3ukIzj4nv/HSdNbfAn+MYWYen1yEY08LzkbZM7/KxGEbXmAl0JmUUUvIwDgnSVJ
+u3cOLcu2QYuBDhYJO0ek/o/0HQ0LdHpvF7OSkcG7IGddUxFV42ey2PoroRXw4FLq
+PShNGs+jSw6RQXeCmphCHl+gmjH0n+cvj9sLHLcGPyRFLMBm3ziSDl+oC76fk99g
+8bV2zR0bj4Q0nGFCOYkZ91LpkQpkN6jZExnEz1byo6hGHuWC2UIBXAwLIScPyo1T
+M/P164VQ9JSbdlkt0/XmMpD0VaL/O1QrwvzNBcr1NdMp67v4XgXmu1gsqbTGx/tt
+jZX5YBPGmK7mW2kFF1k9
+=g7o9
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Apr_2012_11_20_09_+1000_Mu=BDnp9bzB_mucl--
