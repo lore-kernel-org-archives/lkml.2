@@ -1,124 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121Ab2DBEkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 00:40:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48692 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752Ab2DBEkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 00:40:04 -0400
-Message-ID: <1333341590.30734.47.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Mon, 02 Apr 2012 14:39:50 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1751557Ab2DBEqL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 00:46:11 -0400
+Received: from dgate10.ts.fujitsu.com ([80.70.172.49]:64668 "EHLO
+	dgate10.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab2DBEqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 00:46:08 -0400
+X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 00:46:07 EDT
+DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
+  h=X-SBRSScore:X-IronPort-AV:Received:X-IronPort-AV:
+   Received:Received:Message-ID:Date:From:Organization:
+   User-Agent:MIME-Version:To:CC:Subject:References:
+   In-Reply-To:Content-Type:Content-Transfer-Encoding;
+  b=hNLpKMTrts1AMurHRPQF3jd8x6CSfokvRnHybgtttQKL2t1N88uT0yp5
+   UdIjXaaMYeMFgNyWd1j13pWMVpHdE34amj9nX6sN3PLpN/SF7JKhhoqyl
+   2nFhO+tjb1YJIgusuaa5MTqLOl32GVJTpT/6Unt6wfAJevzrfUggJ01uQ
+   n/ULTJUikZD4V9oDsYCgbXKlJIO/I3IgvOYZgaKR7pQ8VMkSvGILzyXSZ
+   8A+KVgGXOklnM7cuxU9vi2YCX/yF0;
+X-SBRSScore: None
+X-IronPort-AV: E=Sophos;i="4.75,355,1330902000"; 
+   d="scan'208";a="106495614"
+X-IronPort-AV: E=Sophos;i="4.75,355,1330902000"; 
+   d="scan'208";a="131759793"
+Message-ID: <4F792CBA.1010402@ts.fujitsu.com>
+Date: Mon, 02 Apr 2012 06:36:10 +0200
+From: Juergen Gross <juergen.gross@ts.fujitsu.com>
+Organization: Fujitsu Technology Solutions
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Attilio Rao <attilio.rao@citrix.com>, Ingo Molnar <mingo@elte.hu>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Subject: Re: [Xen-devel] [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>	<4F7616F5.4070000@zytor.com> <alpine.LFD.2.02.1203302333560.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1203302333560.2542@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On 03/31/2012 12:07 AM, Thomas Gleixner wrote:
+> On Fri, 30 Mar 2012, H. Peter Anvin wrote:
+>
+>> What is the current status of this patchset?  I haven't looked at it too
+>> closely because I have been focused on 3.4 up until now...
+> The real question is whether these heuristics are the correct approach
+> or not.
+>
+> If I look at it from the non virtualized kernel side then this is ass
+> backwards. We know already that we are holding a spinlock which might
+> cause other (v)cpus going into eternal spin. The non virtualized
+> kernel solves this by disabling preemption and therefor getting out of
+> the critical section as fast as possible,
+>
+> The virtualization problem reminds me a lot of the problem which RT
+> kernels are observing where non raw spinlocks are turned into
+> "sleeping spinlocks" and therefor can cause throughput issues for non
+> RT workloads.
+>
+> Though the virtualized situation is even worse. Any preempted guest
+> section which holds a spinlock is prone to cause unbound delays.
+>
+> The paravirt ticketlock solution can only mitigate the problem, but
+> not solve it. With massive overcommit there is always a way to trigger
+> worst case scenarious unless you are educating the scheduler to cope
+> with that.
+>
+> So if we need to fiddle with the scheduler and frankly that's the only
+> way to get a real gain (the numbers, which are achieved by this
+> patches, are not that impressive) then the question arises whether we
+> should turn the whole thing around.
+>
+> I know that Peter is going to go berserk on me, but if we are running
+> a paravirt guest then it's simple to provide a mechanism which allows
+> the host (aka hypervisor) to check that in the guest just by looking
+> at some global state.
+>
+> So if a guest exits due to an external event it's easy to inspect the
+> state of that guest and avoid to schedule away when it was interrupted
+> in a spinlock held section. That guest/host shared state needs to be
+> modified to indicate the guest to invoke an exit when the last nested
+> lock has been released.
+>
+> Of course this needs to be time bound, so a rogue guest cannot
+> monopolize the cpu forever, but that's the least to worry about
+> problem simply because a guest which does not get out of a spinlocked
+> region within a certain amount of time is borked and elegible to
+> killing anyway.
+>
+> Thoughts ?
 
-This contains a couple more fixes for the system.h disintegration,
-a trivial section mismatch fix, a couple of patches from akpm that I
-didn't quite get he expected me to pickup, and a few more trivialities
-form Kumar that he appear to have forgotten to send me in the previous
-batch.
+I used this approach in 2008:
 
-Cheers,
-Ben.
+http://lists.xen.org/archives/html/xen-devel/2008-12/msg00740.html
 
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
+It worked very well, but it was rejected at that time. I wouldn't mind trying
+it again if there is some support from your side. :-)
 
-  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
 
-are available in the git repository at:
+Juergen
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+-- 
 
-for you to fetch changes up to 9b218f63e50e590fe0c7724a0838d7eaa6dae5ce:
-
-  powerpc/eeh: Fix use of set_current_state() in eeh event handling set_current_state() wart (2012-04-02 14:31:19 +1000)
-
-----------------------------------------------------------------
-Andrew Morton (1):
-      powerpc/eeh: Fix use of set_current_state() in eeh event handling set_current_state() wart
-
-Benjamin Herrenschmidt (2):
-      Merge remote-tracking branch 'kumar/next' into merge
-      powerpc/kvm: Fallout from system.h disintegration
-
-Dave Liu (1):
-      powerpc/qe: Update the SNUM table for MPC8569 Rev2.0
-
-Diana CRACIUN (1):
-      powerpc/dts: Removed fsl,msi property from dts.
-
-Jerry Huang (2):
-      powerpc/85xx: add the P1020MBG-PC DTS support
-      powerpc/85xx: add the P1020UTM-PC DTS support
-
-Oleg Nesterov (1):
-      powerpc/eeh: Remove eeh_event_handler()->daemonize()
-
-Shaveta Leekha (1):
-      powerpc/85xx: Enable I2C_CHARDEV and I2C_MPC options in defconfigs
-
-Stephen Rothwell (1):
-      powerpc: Fix fallout from system.h split up
-
-Timur Tabi (2):
-      powerpc/8xxx: remove 85xx/86xx restrictions from fsl_guts.h
-      powerpc/epapr: add "memory" as a clobber to all hypercalls
-
-Uwe Kleine-König (1):
-      powerpc: Mark const init data with __initconst instead of __initdata
-
- arch/powerpc/boot/dts/p1020mbg-pc.dtsi       |  151 ++++++++++++++++++++++++++
- arch/powerpc/boot/dts/p1020mbg-pc_32b.dts    |   89 +++++++++++++++
- arch/powerpc/boot/dts/p1020mbg-pc_36b.dts    |   89 +++++++++++++++
- arch/powerpc/boot/dts/p1020utm-pc.dtsi       |  140 ++++++++++++++++++++++++
- arch/powerpc/boot/dts/p1020utm-pc_32b.dts    |   89 +++++++++++++++
- arch/powerpc/boot/dts/p1020utm-pc_36b.dts    |   89 +++++++++++++++
- arch/powerpc/boot/dts/p2041rdb.dts           |    3 -
- arch/powerpc/boot/dts/p3041ds.dts            |    4 -
- arch/powerpc/boot/dts/p3060qds.dts           |    2 -
- arch/powerpc/boot/dts/p4080ds.dts            |    3 -
- arch/powerpc/boot/dts/p5020ds.dts            |    4 -
- arch/powerpc/configs/corenet32_smp_defconfig |    1 +
- arch/powerpc/configs/corenet64_smp_defconfig |    2 +
- arch/powerpc/configs/mpc85xx_defconfig       |    1 +
- arch/powerpc/configs/mpc85xx_smp_defconfig   |    1 +
- arch/powerpc/include/asm/epapr_hcalls.h      |    7 +-
- arch/powerpc/include/asm/fsl_guts.h          |   26 +----
- arch/powerpc/kernel/fadump.c                 |    2 +
- arch/powerpc/kernel/kgdb.c                   |    1 +
- arch/powerpc/kvm/book3s_emulate.c            |    1 +
- arch/powerpc/kvm/book3s_paired_singles.c     |    1 +
- arch/powerpc/kvm/book3s_pr.c                 |    1 +
- arch/powerpc/platforms/52xx/mpc52xx_pci.c    |    2 +-
- arch/powerpc/platforms/85xx/mpc85xx_mds.c    |    2 +-
- arch/powerpc/platforms/85xx/mpc85xx_rdb.c    |    2 +-
- arch/powerpc/platforms/85xx/p1022_ds.c       |    4 +-
- arch/powerpc/platforms/86xx/mpc8610_hpcd.c   |    2 +-
- arch/powerpc/platforms/cell/qpace_setup.c    |    2 +-
- arch/powerpc/platforms/cell/setup.c          |    2 +-
- arch/powerpc/platforms/pseries/eeh_event.c   |    4 +-
- arch/powerpc/sysdev/qe_lib/qe.c              |   22 +++-
- drivers/net/ethernet/freescale/ucc_geth.c    |    6 +-
- sound/soc/fsl/mpc8610_hpcd.c                 |    8 +-
- sound/soc/fsl/p1022_ds.c                     |   10 +-
- 34 files changed, 712 insertions(+), 61 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/p1020mbg-pc.dtsi
- create mode 100644 arch/powerpc/boot/dts/p1020mbg-pc_32b.dts
- create mode 100644 arch/powerpc/boot/dts/p1020mbg-pc_36b.dts
- create mode 100644 arch/powerpc/boot/dts/p1020utm-pc.dtsi
- create mode 100644 arch/powerpc/boot/dts/p1020utm-pc_32b.dts
- create mode 100644 arch/powerpc/boot/dts/p1020utm-pc_36b.dts
-
+Juergen Gross                 Principal Developer Operating Systems
+PDG ES&S SWE OS6                       Telephone: +49 (0) 89 3222 2967
+Fujitsu Technology Solutions              e-mail: juergen.gross@ts.fujitsu.com
+Domagkstr. 28                           Internet: ts.fujitsu.com
+D-80807 Muenchen                 Company details: ts.fujitsu.com/imprint.html
 
