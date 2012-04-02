@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab2DBTEk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 15:04:40 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34052 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab2DBTEj (ORCPT
+	id S1752234Ab2DBTGE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 15:06:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58937 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab2DBTGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 15:04:39 -0400
-Date: Mon, 2 Apr 2012 21:05:23 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [3.4-rc1][Regression][intel] Resume from suspend to disk hangs
- on restoring backlight state
-Message-ID: <20120402190523.GB5260@phenom.ffwll.local>
-Mail-Followup-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <201204021939.39603.maciej.rutecki@gmail.com>
- <20120402175402.GA5260@phenom.ffwll.local>
- <201204022100.11096.maciej.rutecki@gmail.com>
+	Mon, 2 Apr 2012 15:06:01 -0400
+Message-ID: <4F79F859.8080002@mvista.com>
+Date: Mon, 02 Apr 2012 23:04:57 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201204022100.11096.maciej.rutecki@gmail.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb: Kconfig fix display
+References: <1333365230-15450-1-git-send-email-plagnioj@jcrosoft.com>
+In-Reply-To: <1333365230-15450-1-git-send-email-plagnioj@jcrosoft.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 09:00:11PM +0200, Maciej Rutecki wrote:
-> On poniedziałek, 2 kwietnia 2012 o 19:54:02 Daniel Vetter wrote:
-> > On Mon, Apr 02, 2012 at 07:39:39PM +0200, Maciej Rutecki wrote:
-> > > Last known good: 3.3
-> > > Bad kernel: 3.4-rc1
-> > > Subsystem: power management/suspend/dri(intel)
-> > > 
-> > > When I resume from suspend to disk then system hangs on this screen:
-> > > http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/DSC_5479.jpg
-> > > 
-> > > It does not help SysRq keys. Only I can force power off by hold power
-> > > button.
-> > > 
-> > > Dmesg:
-> > > http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/dmesg-3.4-rc1.t
-> > > xt
-> > > 
-> > > Config:
-> > > http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/config-3.4.0-rc
-> > > 1
-> > 
-> > Likely a known regression, ppgtt support broke hibernate because my code
-> > doesn't restore the ppgtt page directory correctly in the thaw function.
-> > 
-> > Patch:
-> > http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-fixes&id=
-> > 55a254ac63a3ac1867d1501030e7fba69c7d4aeb
-> > 
-> > Please test whether this fixes your issue. You can also try adding
-> > i915.i915_enable_ppgtt=0 to your kernel cmdline.
-> > 
-> > Thanks, Daniel
-> 
-> Patch solves problem.
-> 
-> Now resume hangs later on another subsystem: wireless :D
+Hello.
 
-Woot, I'm off the hook ;-) Thanks for reporting this issue and testing the
-patch.
+On 04/02/2012 03:13 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-Yours, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+> Move HAS option before menuconfig so the USB option will show in the sub menu
+> and not the drivers menu.
+> Introduce in commit 53c6bc24fdc8db87109a5760579cbb060fa644cf usb: Don't make
+> USB_ARCH_HAS_{XHCI,OHCI,EHCI} depend on USB_SUPPORT.
+
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
+> Cc: linux-usb@vger.kernel.org
+> ---
+>   drivers/usb/Kconfig |   16 ++++++++--------
+>   1 files changed, 8 insertions(+), 8 deletions(-)
+
+> diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+> index cbd8f5f..76316a3 100644
+> --- a/drivers/usb/Kconfig
+> +++ b/drivers/usb/Kconfig
+> @@ -2,14 +2,6 @@
+>   # USB device configuration
+>   #
+>
+> -menuconfig USB_SUPPORT
+> -	bool "USB support"
+> -	depends on HAS_IOMEM
+> -	default y
+> -	---help---
+> -	  This option adds core support for Universal Serial Bus (USB).
+> -	  You will also need drivers from the following menu to make use of it.
+> -
+>   # many non-PCI SOC chips embed OHCI
+>   config USB_ARCH_HAS_OHCI
+>   	boolean
+> @@ -63,6 +55,14 @@ config USB_ARCH_HAS_XHCI
+>   	boolean
+>   	default PCI
+>
+> +menuconfig USB_SUPPORT
+> +	bool "USB support"
+> +	depends on HAS_IOMEM
+> +	default y
+> +	---help---
+> +	  This option adds core support for Universal Serial Bus (USB).
+> +	  You will also need drivers from the following menu to make use of it.
+> +
+>   if USB_SUPPORT
+>
+>   config USB_COMMON
+
+    Analogous patch has been already submitted by David Daney, author of the 
+original breakage.
+
+WBR, Sergei
