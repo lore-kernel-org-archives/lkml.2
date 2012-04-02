@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab2DBL4Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:16 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48065 "EHLO
+	id S1753810Ab2DBL4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:15 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48061 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab2DBLzK (ORCPT
+	with ESMTP id S1752489Ab2DBLzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:55:10 -0400
+	Mon, 2 Apr 2012 07:55:09 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 39/69] TTY: HVC, use count from tty_port
-Date: Mon,  2 Apr 2012 13:54:23 +0200
-Message-Id: <1333367693-3244-40-git-send-email-jslaby@suse.cz>
+        Karsten Keil <isdn@linux-pingi.de>
+Subject: [PATCH 17/69] TTY: isdn, define tty_port_operations
+Date: Mon,  2 Apr 2012 13:54:01 +0200
+Message-Id: <1333367693-3244-18-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,129 +21,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, count is used from tty_port and protected by tty_port->lock.
-
-n_outbuf is left unprotected in hvc_hangup now, because there is no
-point to hold any lock, since other uses are unprotected too.
+Add there .carrier_raised. It is taken from current block_til_ready.
+We will need tty_port->ops->carrier_raised for
+tty_port_block_til_ready helper.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Karsten Keil <isdn@linux-pingi.de>
 ---
- drivers/tty/hvc/hvc_console.c |   40 +++++++++++++++++++++-------------------
- drivers/tty/hvc/hvc_console.h |    1 -
- 2 files changed, 21 insertions(+), 20 deletions(-)
+ drivers/isdn/i4l/isdn_tty.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index 92b7f5d..6c45cbf 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -313,18 +313,18 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
- 	if (!(hp = hvc_get_by_index(tty->index)))
- 		return -ENODEV;
- 
--	spin_lock_irqsave(&hp->lock, flags);
-+	spin_lock_irqsave(&hp->port.lock, flags);
- 	/* Check and then increment for fast path open. */
--	if (hp->count++ > 0) {
-+	if (hp->port.count++ > 0) {
-+		spin_unlock_irqrestore(&hp->port.lock, flags);
-+		/* FIXME why taking a reference here? */
- 		tty_kref_get(tty);
--		spin_unlock_irqrestore(&hp->lock, flags);
- 		hvc_kick();
- 		return 0;
- 	} /* else count == 0 */
-+	spin_unlock_irqrestore(&hp->port.lock, flags);
- 
- 	tty->driver_data = hp;
--	spin_unlock_irqrestore(&hp->lock, flags);
--
- 	tty_port_tty_set(&hp->port, tty);
- 
- 	if (hp->ops->notifier_add)
-@@ -367,10 +367,10 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
- 
- 	hp = tty->driver_data;
- 
--	spin_lock_irqsave(&hp->lock, flags);
-+	spin_lock_irqsave(&hp->port.lock, flags);
- 
--	if (--hp->count == 0) {
--		spin_unlock_irqrestore(&hp->lock, flags);
-+	if (--hp->port.count == 0) {
-+		spin_unlock_irqrestore(&hp->port.lock, flags);
- 		/* We are done with the tty pointer now. */
- 		tty_port_tty_set(&hp->port, NULL);
- 
-@@ -387,10 +387,10 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
- 		 */
- 		tty_wait_until_sent_from_close(tty, HVC_CLOSE_WAIT);
- 	} else {
--		if (hp->count < 0)
-+		if (hp->port.count < 0)
- 			printk(KERN_ERR "hvc_close %X: oops, count is %d\n",
--				hp->vtermno, hp->count);
--		spin_unlock_irqrestore(&hp->lock, flags);
-+				hp->vtermno, hp->port.count);
-+		spin_unlock_irqrestore(&hp->port.lock, flags);
- 	}
- 
- 	tty_kref_put(tty);
-@@ -409,24 +409,25 @@ static void hvc_hangup(struct tty_struct *tty)
- 	/* cancel pending tty resize work */
- 	cancel_work_sync(&hp->tty_resize);
- 
--	spin_lock_irqsave(&hp->lock, flags);
-+	spin_lock_irqsave(&hp->port.lock, flags);
- 
- 	/*
- 	 * The N_TTY line discipline has problems such that in a close vs
- 	 * open->hangup case this can be called after the final close so prevent
- 	 * that from happening for now.
- 	 */
--	if (hp->count <= 0) {
--		spin_unlock_irqrestore(&hp->lock, flags);
-+	if (hp->port.count <= 0) {
-+		spin_unlock_irqrestore(&hp->port.lock, flags);
- 		return;
- 	}
- 
--	temp_open_count = hp->count;
--	hp->count = 0;
--	hp->n_outbuf = 0;
--	spin_unlock_irqrestore(&hp->lock, flags);
-+	temp_open_count = hp->port.count;
-+	hp->port.count = 0;
-+	spin_unlock_irqrestore(&hp->port.lock, flags);
- 	tty_port_tty_set(&hp->port, NULL);
- 
-+	hp->n_outbuf = 0;
+diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
+index 50d7246..b41a80a 100644
+--- a/drivers/isdn/i4l/isdn_tty.c
++++ b/drivers/isdn/i4l/isdn_tty.c
+@@ -1485,6 +1485,7 @@ isdn_tty_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+  * isdn_tty_open() and friends
+  * ------------------------------------------------------------
+  */
 +
- 	if (hp->ops->notifier_hangup)
- 		hp->ops->notifier_hangup(hp, hp->data);
+ static int
+ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *info)
+ {
+@@ -1552,7 +1553,7 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
+ 			break;
+ 		}
+ 		if (!(port->flags & ASYNC_CLOSING) &&
+-		    (do_clocal || (info->msr & UART_MSR_DCD))) {
++		    (do_clocal || tty_port_carrier_raised(port))) {
+ 			break;
+ 		}
+ 		if (signal_pending(current)) {
+@@ -1848,6 +1849,16 @@ static const struct tty_operations modem_ops = {
+ 	.tiocmset = isdn_tty_tiocmset,
+ };
  
-@@ -474,7 +475,8 @@ static int hvc_write(struct tty_struct *tty, const unsigned char *buf, int count
- 	if (!hp)
- 		return -EPIPE;
- 
--	if (hp->count <= 0)
-+	/* FIXME what's this (unprotected) check for? */
-+	if (hp->port.count <= 0)
- 		return -EIO;
- 
- 	spin_lock_irqsave(&hp->lock, flags);
-diff --git a/drivers/tty/hvc/hvc_console.h b/drivers/tty/hvc/hvc_console.h
-index 594a28f..674d23c 100644
---- a/drivers/tty/hvc/hvc_console.h
-+++ b/drivers/tty/hvc/hvc_console.h
-@@ -49,7 +49,6 @@ struct hvc_struct {
- 	struct tty_port port;
- 	spinlock_t lock;
- 	int index;
--	int count;
- 	int do_wakeup;
- 	char *outbuf;
- 	int outbuf_size;
++static int isdn_tty_carrier_raised(struct tty_port *port)
++{
++	modem_info *info = container_of(port, modem_info, port);
++	return info->msr & UART_MSR_DCD;
++}
++
++static const struct tty_port_operations isdn_tty_port_ops = {
++	.carrier_raised = isdn_tty_carrier_raised,
++};
++
+ int
+ isdn_tty_modem_init(void)
+ {
+@@ -1884,6 +1895,7 @@ isdn_tty_modem_init(void)
+ 		}
+ #endif
+ 		tty_port_init(&info->port);
++		info->port.ops = &isdn_tty_port_ops;
+ 		spin_lock_init(&info->readlock);
+ 		sprintf(info->last_cause, "0000");
+ 		sprintf(info->last_num, "none");
 -- 
 1.7.9.2
 
