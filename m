@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab2DBL4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:47 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48200 "EHLO
+	id S1754592Ab2DBL4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:45 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48198 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab2DBLzS (ORCPT
+	with ESMTP id S1752846Ab2DBLzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:18 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 41/69] TTY: hvcs, use kref from tty_port
-Date: Mon,  2 Apr 2012 13:54:25 +0200
-Message-Id: <1333367693-3244-42-git-send-email-jslaby@suse.cz>
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
+Subject: [PATCH 51/69] TTY: 68328serial, remove serial_state and friends
+Date: Mon,  2 Apr 2012 13:54:35 +0200
+Message-Id: <1333367693-3244-52-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,150 +21,298 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A simple switch. Except we convert destroy_hvcs_struct to be
-tty_port_operations->destruct...
+serial_state in 68328serial.h is a duplicated structure. One is
+defined in linux/serial.h. So let us use that instead. And since the
+serial flags are identical, use ones from there too.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@lists.linux-m68k.org
 ---
- drivers/tty/hvc/hvcs.c |   34 ++++++++++++++++------------------
- 1 file changed, 16 insertions(+), 18 deletions(-)
+ drivers/tty/serial/68328serial.c |   55 +++++++++++----------------
+ drivers/tty/serial/68328serial.h |   76 --------------------------------------
+ 2 files changed, 22 insertions(+), 109 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvcs.c b/drivers/tty/hvc/hvcs.c
-index a049ced..817f94b 100644
---- a/drivers/tty/hvc/hvcs.c
-+++ b/drivers/tty/hvc/hvcs.c
-@@ -290,12 +290,11 @@ struct hvcs_struct {
- 	int chars_in_buffer;
+diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
+index 5ce7825..bf5f811 100644
+--- a/drivers/tty/serial/68328serial.c
++++ b/drivers/tty/serial/68328serial.c
+@@ -17,6 +17,7 @@
+ #include <asm/dbg.h>
+ #include <linux/module.h>
+ #include <linux/errno.h>
++#include <linux/serial.h>
+ #include <linux/signal.h>
+ #include <linux/sched.h>
+ #include <linux/timer.h>
+@@ -79,18 +80,6 @@ struct m68k_serial *m68k_consinfo = 0;
  
- 	/*
--	 * Any variable below the kref is valid before a tty is connected and
-+	 * Any variable below is valid before a tty is connected and
- 	 * stays valid after the tty is disconnected.  These shouldn't be
- 	 * whacked until the kobject refcount reaches zero though some entries
- 	 * may be changed via sysfs initiatives.
+ struct tty_driver *serial_driver;
+ 
+-/* number of characters left in xmit buffer before we ask for more */
+-#define WAKEUP_CHARS 256
+-
+-/* Debugging... DEBUG_INTR is bad to use when one of the zs
+- * lines is your console ;(
+- */
+-#undef SERIAL_DEBUG_INTR
+-#undef SERIAL_DEBUG_OPEN
+-#undef SERIAL_DEBUG_FLOW
+-
+-#define RS_ISR_PASS_LIMIT 256
+-
+ static void change_speed(struct m68k_serial *info);
+ 
+ /*
+@@ -363,7 +352,7 @@ static int startup(struct m68k_serial * info)
+ 	m68328_uart *uart = &uart_addr[info->line];
+ 	unsigned long flags;
+ 	
+-	if (info->flags & S_INITIALIZED)
++	if (info->flags & ASYNC_INITIALIZED)
+ 		return 0;
+ 
+ 	if (!info->xmit_buf) {
+@@ -404,7 +393,7 @@ static int startup(struct m68k_serial * info)
+ 
+ 	change_speed(info);
+ 
+-	info->flags |= S_INITIALIZED;
++	info->flags |= ASYNC_INITIALIZED;
+ 	local_irq_restore(flags);
+ 	return 0;
+ }
+@@ -419,7 +408,7 @@ static void shutdown(struct m68k_serial * info)
+ 	unsigned long	flags;
+ 
+ 	uart->ustcnt = 0; /* All off! */
+-	if (!(info->flags & S_INITIALIZED))
++	if (!(info->flags & ASYNC_INITIALIZED))
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -432,7 +421,7 @@ static void shutdown(struct m68k_serial * info)
+ 	if (info->tty)
+ 		set_bit(TTY_IO_ERROR, &info->tty->flags);
+ 	
+-	info->flags &= ~S_INITIALIZED;
++	info->flags &= ~ASYNC_INITIALIZED;
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -835,11 +824,11 @@ static int set_serial_info(struct m68k_serial * info,
+ 		if ((new_serial.baud_base != info->baud_base) ||
+ 		    (new_serial.type != info->type) ||
+ 		    (new_serial.close_delay != info->close_delay) ||
+-		    ((new_serial.flags & ~S_USR_MASK) !=
+-		     (info->flags & ~S_USR_MASK)))
++		    ((new_serial.flags & ~ASYNC_USR_MASK) !=
++		     (info->flags & ~ASYNC_USR_MASK)))
+ 			return -EPERM;
+-		info->flags = ((info->flags & ~S_USR_MASK) |
+-			       (new_serial.flags & S_USR_MASK));
++		info->flags = ((info->flags & ~ASYNC_USR_MASK) |
++			       (new_serial.flags & ASYNC_USR_MASK));
+ 		info->custom_divisor = new_serial.custom_divisor;
+ 		goto check_and_exit;
+ 	}
+@@ -853,8 +842,8 @@ static int set_serial_info(struct m68k_serial * info,
  	 */
--	struct kref kref; /* ref count & hvcs_struct lifetime */
- 	int connected; /* is the vty-server currently connected to a vty? */
- 	uint32_t p_unit_address; /* partner unit address */
- 	uint32_t p_partition_ID; /* partner partition ID */
-@@ -304,9 +303,6 @@ struct hvcs_struct {
- 	struct vio_dev *vdev;
+ 
+ 	info->baud_base = new_serial.baud_base;
+-	info->flags = ((info->flags & ~S_FLAGS) |
+-			(new_serial.flags & S_FLAGS));
++	info->flags = ((info->flags & ~ASYNC_FLAGS) |
++			(new_serial.flags & ASYNC_FLAGS));
+ 	info->type = new_serial.type;
+ 	info->close_delay = new_serial.close_delay;
+ 	info->closing_wait = new_serial.closing_wait;
+@@ -1022,13 +1011,13 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 		local_irq_restore(flags);
+ 		return;
+ 	}
+-	info->flags |= S_CLOSING;
++	info->flags |= ASYNC_CLOSING;
+ 	/*
+ 	 * Now we wait for the transmit buffer to clear; and we notify 
+ 	 * the line discipline to only process XON/XOFF characters.
+ 	 */
+ 	tty->closing = 1;
+-	if (info->closing_wait != S_CLOSING_WAIT_NONE)
++	if (info->closing_wait != ASYNC_CLOSING_WAIT_NONE)
+ 		tty_wait_until_sent(tty, info->closing_wait);
+ 	/*
+ 	 * At this point we stop accepting input.  To do this, we
+@@ -1064,7 +1053,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 		}
+ 		wake_up_interruptible(&info->open_wait);
+ 	}
+-	info->flags &= ~(S_NORMAL_ACTIVE|S_CLOSING);
++	info->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
+ 	wake_up_interruptible(&info->close_wait);
+ 	local_irq_restore(flags);
+ }
+@@ -1083,7 +1072,7 @@ void rs_hangup(struct tty_struct *tty)
+ 	shutdown(info);
+ 	info->event = 0;
+ 	info->count = 0;
+-	info->flags &= ~S_NORMAL_ACTIVE;
++	info->flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	info->tty = NULL;
+ 	wake_up_interruptible(&info->open_wait);
+ }
+@@ -1104,10 +1093,10 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ 	 * If the device is in the middle of being closed, then block
+ 	 * until it's done, and then try again.
+ 	 */
+-	if (info->flags & S_CLOSING) {
++	if (info->flags & ASYNC_CLOSING) {
+ 		interruptible_sleep_on(&info->close_wait);
+ #ifdef SERIAL_DO_RESTART
+-		if (info->flags & S_HUP_NOTIFY)
++		if (info->flags & ASYNC_HUP_NOTIFY)
+ 			return -EAGAIN;
+ 		else
+ 			return -ERESTARTSYS;
+@@ -1122,7 +1111,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ 	 */
+ 	if ((filp->f_flags & O_NONBLOCK) ||
+ 	    (tty->flags & (1 << TTY_IO_ERROR))) {
+-		info->flags |= S_NORMAL_ACTIVE;
++		info->flags |= ASYNC_NORMAL_ACTIVE;
+ 		return 0;
+ 	}
+ 
+@@ -1147,9 +1136,9 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ 		local_irq_enable();
+ 		current->state = TASK_INTERRUPTIBLE;
+ 		if (tty_hung_up_p(filp) ||
+-		    !(info->flags & S_INITIALIZED)) {
++		    !(info->flags & ASYNC_INITIALIZED)) {
+ #ifdef SERIAL_DO_RESTART
+-			if (info->flags & S_HUP_NOTIFY)
++			if (info->flags & ASYNC_HUP_NOTIFY)
+ 				retval = -EAGAIN;
+ 			else
+ 				retval = -ERESTARTSYS;	
+@@ -1158,7 +1147,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ #endif
+ 			break;
+ 		}
+-		if (!(info->flags & S_CLOSING) && do_clocal)
++		if (!(info->flags & ASYNC_CLOSING) && do_clocal)
+ 			break;
+                 if (signal_pending(current)) {
+ 			retval = -ERESTARTSYS;
+@@ -1176,7 +1165,7 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
+ 
+ 	if (retval)
+ 		return retval;
+-	info->flags |= S_NORMAL_ACTIVE;
++	info->flags |= ASYNC_NORMAL_ACTIVE;
+ 	return 0;
+ }	
+ 
+diff --git a/drivers/tty/serial/68328serial.h b/drivers/tty/serial/68328serial.h
+index 3d2faab..a804ea5 100644
+--- a/drivers/tty/serial/68328serial.h
++++ b/drivers/tty/serial/68328serial.h
+@@ -11,69 +11,6 @@
+ #ifndef _MC683XX_SERIAL_H
+ #define _MC683XX_SERIAL_H
+ 
+-
+-struct serial_struct {
+-	int	type;
+-	int	line;
+-	int	port;
+-	int	irq;
+-	int	flags;
+-	int	xmit_fifo_size;
+-	int	custom_divisor;
+-	int	baud_base;
+-	unsigned short	close_delay;
+-	char	reserved_char[2];
+-	int	hub6;  /* FIXME: We don't have AT&T Hub6 boards! */
+-	unsigned short	closing_wait; /* time to wait before closing */
+-	unsigned short	closing_wait2; /* no longer used... */
+-	int	reserved[4];
+-};
+-
+-/*
+- * For the close wait times, 0 means wait forever for serial port to
+- * flush its output.  65535 means don't wait at all.
+- */
+-#define S_CLOSING_WAIT_INF	0
+-#define S_CLOSING_WAIT_NONE	65535
+-
+-/*
+- * Definitions for S_struct (and serial_struct) flags field
+- */
+-#define S_HUP_NOTIFY 0x0001 /* Notify getty on hangups and closes 
+-				   on the callout port */
+-#define S_FOURPORT  0x0002	/* Set OU1, OUT2 per AST Fourport settings */
+-#define S_SAK	0x0004	/* Secure Attention Key (Orange book) */
+-#define S_SPLIT_TERMIOS 0x0008 /* Separate termios for dialin/callout */
+-
+-#define S_SPD_MASK	0x0030
+-#define S_SPD_HI	0x0010	/* Use 56000 instead of 38400 bps */
+-
+-#define S_SPD_VHI	0x0020  /* Use 115200 instead of 38400 bps */
+-#define S_SPD_CUST	0x0030  /* Use user-specified divisor */
+-
+-#define S_SKIP_TEST	0x0040 /* Skip UART test during autoconfiguration */
+-#define S_AUTO_IRQ  0x0080 /* Do automatic IRQ during autoconfiguration */
+-#define S_SESSION_LOCKOUT 0x0100 /* Lock out cua opens based on session */
+-#define S_PGRP_LOCKOUT    0x0200 /* Lock out cua opens based on pgrp */
+-#define S_CALLOUT_NOHUP   0x0400 /* Don't do hangups for cua device */
+-
+-#define S_FLAGS	0x0FFF	/* Possible legal S flags */
+-#define S_USR_MASK 0x0430	/* Legal flags that non-privileged
+-				 * users can set or reset */
+-
+-/* Internal flags used only by kernel/chr_drv/serial.c */
+-#define S_INITIALIZED	0x80000000 /* Serial port was initialized */
+-#define S_CALLOUT_ACTIVE	0x40000000 /* Call out device is active */
+-#define S_NORMAL_ACTIVE	0x20000000 /* Normal device is active */
+-#define S_BOOT_AUTOCONF	0x10000000 /* Autoconfigure port on bootup */
+-#define S_CLOSING		0x08000000 /* Serial port is closing */
+-#define S_CTS_FLOW		0x04000000 /* Do CTS flow control */
+-#define S_CHECK_CD		0x02000000 /* i.e., CLOCAL */
+-
+-/* Software state per channel */
+-
+-#ifdef __KERNEL__
+-
+ /*
+  * I believe this is the optimal setting that reduces the number of interrupts.
+  * At high speeds the output might become a little "bursted" (use USTCNT_TXHE
+@@ -162,25 +99,12 @@ struct m68k_serial {
+ 	wait_queue_head_t	close_wait;
  };
  
--/* Required to back map a kref to its containing object */
--#define from_kref(k) container_of(k, struct hvcs_struct, kref)
 -
- static LIST_HEAD(hvcs_structs);
- static DEFINE_SPINLOCK(hvcs_structs_lock);
- static DEFINE_MUTEX(hvcs_init_mutex);
-@@ -701,10 +697,9 @@ static void hvcs_return_index(int index)
- 		hvcs_index_list[index] = -1;
- }
+ #define SERIAL_MAGIC 0x5301
  
--/* callback when the kref ref count reaches zero */
--static void destroy_hvcs_struct(struct kref *kref)
-+static void hvcs_destruct_port(struct tty_port *p)
- {
--	struct hvcs_struct *hvcsd = from_kref(kref);
-+	struct hvcs_struct *hvcsd = container_of(p, struct hvcs_struct, port);
- 	struct vio_dev *vdev;
- 	unsigned long flags;
+-/*
+- * The size of the serial xmit buffer is 1 page, or 4096 bytes
+- */
+-#define SERIAL_XMIT_SIZE 4096
+-
+-/*
+- * Events are used to schedule things to happen at timer-interrupt
+- * time, instead of at rs interrupt time.
+- */
+-#define RS_EVENT_WRITE_WAKEUP	0
+-
+ /* 
+  * Define the number of ports supported and their irqs.
+  */
+ #define NR_PORTS 1
+ #define UART_IRQ_DEFNS {UART_IRQ_NUM}
  
-@@ -741,6 +736,10 @@ static void destroy_hvcs_struct(struct kref *kref)
- 	kfree(hvcsd);
- }
- 
-+static const struct tty_port_operations hvcs_port_ops = {
-+	.destruct = hvcs_destruct_port,
-+};
-+
- static int hvcs_get_index(void)
- {
- 	int i;
-@@ -790,9 +789,8 @@ static int __devinit hvcs_probe(
- 		return -ENODEV;
- 
- 	tty_port_init(&hvcsd->port);
-+	hvcsd->port.ops = &hvcs_port_ops;
- 	spin_lock_init(&hvcsd->lock);
--	/* Automatically incs the refcount the first time */
--	kref_init(&hvcsd->kref);
- 
- 	hvcsd->vdev = dev;
- 	dev_set_drvdata(&dev->dev, hvcsd);
-@@ -860,7 +858,7 @@ static int __devexit hvcs_remove(struct vio_dev *dev)
- 	 * Let the last holder of this object cause it to be removed, which
- 	 * would probably be tty_hangup below.
- 	 */
--	kref_put(&hvcsd->kref, destroy_hvcs_struct);
-+	tty_port_put(&hvcsd->port);
- 
- 	/*
- 	 * The hangup is a scheduled function which will auto chain call
-@@ -1094,7 +1092,7 @@ static struct hvcs_struct *hvcs_get_by_index(int index)
- 	list_for_each_entry(hvcsd, &hvcs_structs, next) {
- 		spin_lock_irqsave(&hvcsd->lock, flags);
- 		if (hvcsd->index == index) {
--			kref_get(&hvcsd->kref);
-+			tty_port_get(&hvcsd->port);
- 			spin_unlock_irqrestore(&hvcsd->lock, flags);
- 			spin_unlock(&hvcs_structs_lock);
- 			return hvcsd;
-@@ -1160,7 +1158,7 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
- 	 * and will grab the spinlock and free the connection if it fails.
- 	 */
- 	if (((rc = hvcs_enable_device(hvcsd, unit_address, irq, vdev)))) {
--		kref_put(&hvcsd->kref, destroy_hvcs_struct);
-+		tty_port_put(&hvcsd->port);
- 		printk(KERN_WARNING "HVCS: enable device failed.\n");
- 		return rc;
- 	}
-@@ -1171,7 +1169,7 @@ fast_open:
- 	hvcsd = tty->driver_data;
- 
- 	spin_lock_irqsave(&hvcsd->lock, flags);
--	kref_get(&hvcsd->kref);
-+	tty_port_get(&hvcsd->port);
- 	hvcsd->port.count++;
- 	hvcsd->todo_mask |= HVCS_SCHED_READ;
- 	spin_unlock_irqrestore(&hvcsd->lock, flags);
-@@ -1186,7 +1184,7 @@ open_success:
- 
- error_release:
- 	spin_unlock_irqrestore(&hvcsd->lock, flags);
--	kref_put(&hvcsd->kref, destroy_hvcs_struct);
-+	tty_port_put(&hvcsd->port);
- 
- 	printk(KERN_WARNING "HVCS: partner connect failed.\n");
- 	return retval;
-@@ -1240,7 +1238,7 @@ static void hvcs_close(struct tty_struct *tty, struct file *filp)
- 		tty->driver_data = NULL;
- 
- 		free_irq(irq, hvcsd);
--		kref_put(&hvcsd->kref, destroy_hvcs_struct);
-+		tty_port_put(&hvcsd->port);
- 		return;
- 	} else if (hvcsd->port.count < 0) {
- 		printk(KERN_ERR "HVCS: vty-server@%X open_count: %d"
-@@ -1249,7 +1247,7 @@ static void hvcs_close(struct tty_struct *tty, struct file *filp)
- 	}
- 
- 	spin_unlock_irqrestore(&hvcsd->lock, flags);
--	kref_put(&hvcsd->kref, destroy_hvcs_struct);
-+	tty_port_put(&hvcsd->port);
- }
- 
- static void hvcs_hangup(struct tty_struct * tty)
-@@ -1301,7 +1299,7 @@ static void hvcs_hangup(struct tty_struct * tty)
- 		 * NOTE:  If this hangup was signaled from user space then the
- 		 * final put will never happen.
- 		 */
--		kref_put(&hvcsd->kref, destroy_hvcs_struct);
-+		tty_port_put(&hvcsd->port);
- 	}
- }
- 
+-#endif /* __KERNEL__ */
+ #endif /* !(_MC683XX_SERIAL_H) */
 -- 
 1.7.9.2
 
