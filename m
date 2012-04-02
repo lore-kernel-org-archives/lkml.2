@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab2DBRZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:25:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41862 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2DBRZ2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:25:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+8MBbLROfbyfAGZ0xn1tZVHsndeTUNrn=-gHhsfzkocBLh=iQ@mail.gmail.com>
-References: <09f98a825a821f7a3f1b162f9ed023f37213a63b.1333101989.git.len.brown@intel.com>
-	<1333102459-23750-1-git-send-email-lenb@kernel.org>
-	<1a022e3f1be11730bd8747b1af96a0274bf6356e.1333101989.git.len.brown@intel.com>
-	<CA+8MBbLROfbyfAGZ0xn1tZVHsndeTUNrn=-gHhsfzkocBLh=iQ@mail.gmail.com>
-Date: Mon, 2 Apr 2012 10:25:27 -0700
-X-Google-Sender-Auth: tEI2LWmf53rRMTAcfZ6GcyH0ARo
-Message-ID: <CA+8MBbJnrhKmy5f_pbL8Ogi1ihM-51hfqCDY5gUQ1hkvw7p22Q@mail.gmail.com>
-Subject: Re: [PATCH 58/76] idle, x86: Allow off-lined CPU to enter deeper C states
-From: Tony Luck <tony.luck@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753738Ab2DBR3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:29:31 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50300 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751553Ab2DBR3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 13:29:30 -0400
+Message-ID: <1333387768.20402.7.camel@joe2Laptop>
+Subject: Re: CONFIG_RTLWIFI_DEBUG default y
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Apr 2012 10:29:28 -0700
+In-Reply-To: <20120402171733.GB13264@x1.osrc.amd.com>
+References: <20120402164920.GA13264@x1.osrc.amd.com>
+	 <1333385618.15422.17.camel@joe2Laptop>
+	 <20120402171733.GB13264@x1.osrc.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +       while (1) {
->> +
->> +               if (cx->entry_method == ACPI_CSTATE_HALT)
->> +                       halt();
+On Mon, 2012-04-02 at 19:17 +0200, Borislav Petkov wrote:
+> On Mon, Apr 02, 2012 at 09:53:38AM -0700, Joe Perches wrote:
+> > To keep all the "printk(KERN_DEBUG" to "pr_debug(" conversion
+> > output the same as the it was prior to the patch.
+> > 
+> > Larry can default it to off if he wants.
+> 
+> >From looking at one user of this -
+> drivers/net/wireless/rtlwifi/rtl8192ce/hw.c - some of the messages look
+> like important ones which you wanna have enabled always, f.e. error
+> handling in rtl92ce_hw_init().
+> 
+> It probably needs splitting into debugging messages which are default n
+> and always-on messages.
 
-What's the intent here?  I think that I can just set up a function pointer
-named "halt" on ia64 and point it to my cpu_halt() function (which looks
-for the deepest C-state, and then calls PAL to enter it. Is that equivalent
-to what the x86 "halt()" function does?
+>From my perspective, anything KERN_DEBUG that should always be
+output should not be KERN_DEBUG but some other KERN_<LEVEL>.
 
--Tony
