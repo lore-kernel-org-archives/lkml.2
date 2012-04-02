@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab2DBNhO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 09:37:14 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60791 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab2DBNhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 09:37:12 -0400
-Date: Mon, 2 Apr 2012 06:09:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kmemleak: illegal RCU use assertion error
-Message-ID: <20120402130936.GF2450@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120402070911.GB3464@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120402070911.GB3464@swordfish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040213-4242-0000-0000-000001395F66
+	id S1752457Ab2DBNk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 09:40:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63196 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751550Ab2DBNk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 09:40:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="148689583"
+Message-ID: <1333374249.22146.2.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 3/8] ext2: write superblock only once on unmount
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Apr 2012 16:44:09 +0300
+In-Reply-To: <20120331115332.GB4569@quack.suse.cz>
+References: <1332346475-1441-1-git-send-email-dedekind1@gmail.com>
+	 <1332346475-1441-4-git-send-email-dedekind1@gmail.com>
+	 <20120331115332.GB4569@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-jU81SvMyQCnDSK4700vl"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 10:09:11AM +0300, Sergey Senozhatsky wrote:
-> Hello,
-> 
-> commit e5601400081651060a59bd1f45f2821bb8e97f95
-> Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> Date:   Sat Jan 7 11:03:57 2012 -0800
-> 
->     rcu: Simplify offline processing
->     
->     Move ->qsmaskinit and blkd_tasks[] manipulation to the CPU_DYING
->     notifier.  This simplifies the code by eliminating a potential
->     deadlock and by reducing the responsibilities of force_quiescent_state().
->     Also rename functions to make their connection to the CPU-hotplug
->     stages explicit.
->     
->     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
->     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> 
-> introduced WARN_ON_ONCE(cpu_is_offline(smp_processor_id())); to __call_rcu()
-> function, Paul also added cpu_offline checks to other routines (e.g. callbacks)
-> in later commits. It happens that kmemleak() triggers one of them.
-> 
-> During cpu core offline, kfree()->kmemleak_free()->put_object()-->__call_rcu() chain
-> for struct intel_shared_regs * is executed when no struct users left on this core -- 
-> all CPUs are dead or dying.
-> 
-> 
-> [ 4703.342462] CPU 3 is now offline
-> [ 4705.588116] ------------[ cut here ]------------
-> [ 4705.588129] WARNING: at kernel/rcutree.c:1823 __call_rcu+0x9d/0x1d2()
-> [..]
-> [ 4705.588196] Call Trace:
-> [ 4705.588207]  [<ffffffff81059a00>] ? synchronize_srcu+0x6/0x17
-> [ 4705.588215]  [<ffffffff8103364e>] warn_slowpath_common+0x83/0x9c
-> [ 4705.588223]  [<ffffffff8111e627>] ? get_object+0x31/0x31
-> [ 4705.588229]  [<ffffffff81033681>] warn_slowpath_null+0x1a/0x1c
-> [ 4705.588235]  [<ffffffff810af770>] __call_rcu+0x9d/0x1d2
-> [ 4705.588243]  [<ffffffff81013f52>] ? intel_pmu_cpu_dying+0x3b/0x5d
-> [ 4705.588249]  [<ffffffff810af8f1>] call_rcu_sched+0x17/0x19
-> [ 4705.588255]  [<ffffffff8111eb7e>] put_object+0x47/0x4b
-> [ 4705.588261]  [<ffffffff8111ed8b>] delete_object_full+0x2a/0x2e
-> [ 4705.588269]  [<ffffffff81491dc8>] kmemleak_free+0x26/0x45
-> [ 4705.588274]  [<ffffffff8111691f>] kfree+0x130/0x221
-> [ 4705.588280]  [<ffffffff81013f52>] intel_pmu_cpu_dying+0x3b/0x5d
-> [ 4705.588287]  [<ffffffff8149cb83>] x86_pmu_notifier+0xaf/0xb9
-> [ 4705.588296]  [<ffffffff814b0e9d>] notifier_call_chain+0xac/0xd9
-> [ 4705.588303]  [<ffffffff81059c9e>] __raw_notifier_call_chain+0xe/0x10
-> [ 4705.588309]  [<ffffffff810354ec>] __cpu_notify+0x20/0x37
-> [ 4705.588314]  [<ffffffff81035516>] cpu_notify+0x13/0x15
-> [ 4705.588320]  [<ffffffff81490fab>] take_cpu_down+0x28/0x2e
-> [ 4705.588326]  [<ffffffff8109ef7f>] stop_machine_cpu_stop+0x96/0xf1
-> [ 4705.588332]  [<ffffffff8109ece3>] cpu_stopper_thread+0xe3/0x183
-> [ 4705.588338]  [<ffffffff8109eee9>] ? queue_stop_cpus_work+0xd0/0xd0
-> [ 4705.588344]  [<ffffffff814ad382>] ? _raw_spin_unlock_irqrestore+0x47/0x65
-> [ 4705.588353]  [<ffffffff81087d0d>] ? trace_hardirqs_on_caller+0x119/0x175
-> [ 4705.588358]  [<ffffffff81087d76>] ? trace_hardirqs_on+0xd/0xf
-> [ 4705.588364]  [<ffffffff8109ec00>] ? cpu_stop_signal_done+0x2c/0x2c
-> [ 4705.588370]  [<ffffffff810544a9>] kthread+0x8b/0x93
-> [ 4705.588378]  [<ffffffff814b5f34>] kernel_thread_helper+0x4/0x10
-> [ 4705.588385]  [<ffffffff814ad7f0>] ? retint_restore_args+0x13/0x13
-> [ 4705.588391]  [<ffffffff8105441e>] ? __init_kthread_worker+0x5a/0x5a
-> [ 4705.588397]  [<ffffffff814b5f30>] ? gs_change+0x13/0x13
-> [ 4705.588400] ---[ end trace 720328982e35a713 ]---
-> [ 4705.588507] CPU 2 is now offline
-> 
-> 
-> My first solution was to return from delete_object() if object deallocation
-> performed on cpu_is_offline(smp_processor_id()), marking object with special
-> flag, say OBJECT_ORPHAN. And issue real object_delete() during scan (for example)
-> when we see OBJECT_ORPHAN object.  
-> That, however, requires to handle special case when cpu core offlined
-> for small period of time, leading to object insertion error in
-> create_object(), which either may be handled in 2 possible ways (assuming
-> that lookup_object() returned OBJECT_ORPHAN):
-> #1 delete orphaned object and retry with insertion (*)
-> #2 re-set existing orphan object
-> 
-> 
-> (*) performing delete_object() from within create_object() requires releasing
-> of held kmemleak and object locks, which is racy with other create_object() and
-> any possible scan() activities.
-> 
-> Yet I'm not exactly sure that option #2 is the correct one.
-> (I've kind of a patch [not properly tested, etc.] for #2 option).
 
-Alternatively, I can make RCU tolerate __call_rcu() from late in the
-CPU_DYING notifiers without too much trouble.
+--=-jU81SvMyQCnDSK4700vl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-							Thanx, Paul
+On Sat, 2012-03-31 at 13:53 +0200, Jan Kara wrote:
+> On Wed 21-03-12 18:14:30, Artem Bityutskiy wrote:
+> > From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> >=20
+> > Currently on unmount if we are mounted R/W, we first write the superblo=
+ck to
+> > the media if it is dirty, and then write it again, which is not optimal=
+. This
+> > patch makes ext2 write the superblock on unmount less times.
+>   Looks good. I've added the patch to my tree.
+
+I would like to test v2 against your tree, I found this one:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git
+
+but I do not see this patch there - is that the right tree, or may be
+you did not push out? Which branch should I use?
+
+Thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-jU81SvMyQCnDSK4700vl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPea0pAAoJECmIfjd9wqK0TbYQAKEyoh4m9A6fNd/As+aqwsHv
+WKQdCdWC5h6BZbZPwB0XUJf6Umj41rUbYhySqIV2ucVCPszEMIk+ZBw20FHyPZxE
+06gL6qFKSKcWqeJF2p+azZWSVHjsjGkEJUKvveYg9+ugWctHFBuRiQUEHJjNH5cd
+EYHGW9ti+3s/4sSqPVAQZAyy2wtfoNP84qYvq3svkTv8O52RgYJWbajIkPSYOtZP
+ao4Ww9x0FUOSsHbZCQd42YOrhPAjmj/oieUCHEYqD9qetLc+koMRZASz5ZHAZT8Y
+QJIRItiFtBqyG6LbfB57As1hiiehmyhU0WA7Cyf2fbrG96swRHBGAa9v503egb9W
+STrfacEGcAtyYSOX4V56ZSGIB2UYl3IQU8RbegQYPmIEvakAlQLB8poeuEhHRstd
+pJpX7nkJtX3RlMzx/wJVdQxHmlf5rqCagJaDpcqsJjKvVbytw8m2GJnal0tqqUCd
+bwgO662pRD1mTsZHPnJDZsi2+3WtQd5IPeYt9aVFjxwO5i0pl4BfR7Qtw00Rfoez
+H5e6Euq36+F6U6PmYJapKKOJUE2WWgy1X23Jrfp7dPmT+KgkesfpquX7tzv0nE0A
+WJ9swkp74d/QjJc/HfYfcMSQ3eJG4SgaL8mU1tWzf/vu0fnatuY9BWZor2Oy4q2T
+DU2qL0cHroBe9hqDkYUZ
+=/lf3
+-----END PGP SIGNATURE-----
+
+--=-jU81SvMyQCnDSK4700vl--
 
