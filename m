@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab2DBUrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 16:47:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38063 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab2DBUq6 (ORCPT
+	id S1752676Ab2DBUvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 16:51:31 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54235 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab2DBUva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 16:46:58 -0400
-Message-ID: <4F7A103E.90007@lwfinger.net>
-Date: Mon, 02 Apr 2012 15:46:54 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Mon, 2 Apr 2012 16:51:30 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: CONFIG_RTLWIFI_DEBUG default y
-References: <20120402164920.GA13264@x1.osrc.amd.com> <1333385618.15422.17.camel@joe2Laptop> <20120402171733.GB13264@x1.osrc.amd.com> <4F79E5A5.9000004@lwfinger.net> <20120402203211.GA27889@liondog.tnic>
-In-Reply-To: <20120402203211.GA27889@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1333399194.6431.3.camel@lorien2>
+References: <20120117235852.GA4877@www.outflux.net>
+	<20120118140603.0fc22302.akpm@linux-foundation.org>
+	<CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
+	<5C4C569E8A4B9B42A84A977CF070A35B2DA7A7F226@USINDEVS01.corp.hds.com>
+	<4F1A7854.7010808@gmail.com>
+	<1333399194.6431.3.camel@lorien2>
+Date: Mon, 2 Apr 2012 13:51:29 -0700
+X-Google-Sender-Auth: sRNgmOzk_tRe_0Bl-mZOa_wlYRw
+Message-ID: <CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
+Subject: Re: [PATCH v5] ramoops: use pstore interface
+From: Kees Cook <keescook@chromium.org>
+To: shuahkhan@gmail.com, Matt Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2012 03:32 PM, Borislav Petkov wrote:
-> On Mon, Apr 02, 2012 at 12:45:09PM -0500, Larry Finger wrote:
->> The current situation is fine with me. Any user with an embedded
->> system can save a lot of memory by setting CONFIG_RTLWIFI_DEBUG to
->> n. If a normal distro chooses to do that, then when some user of
->> that distro reports a problem and is unable to run with the module
->> parameter "debug=X", I get to say "Sorry, I cannot help you." :)
+On Mon, Apr 2, 2012 at 1:39 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+>> First of all ramoops was born mainly for debug purpose and to help the
+>> maintainability of a product. I used it in systems where the uptime (so
+>> no reboot) was important. So it can be very useful for me load the
+>> module, gather logs and unload it for example. A kernel panic is not
+>> recoverable so the reboot is needed but it's not always true for a
+>> kernel oops.
 >>
->> Of course, if you want to go through the source and convert every
->> instance of "RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ...)" to the
->> equivalent "pr_err(...), then I would probably sign off on it.
+>> Marco
 >
-> I see. Well, I suppose when the driver matures, you're probably going
-> to remove most of the debugging code yourself because you won't need it
-> anymore and turn important printk statements into pr_err or pr_info or
-> whatever.
->
-> However, the way it is default y now, people who do 'yes "" | make
-> oldconfig' will be surprised to see a whole lot of debugging output
-> spewed from the wireless driver upon next reboot, and I don't think you
-> want that.
->
-> I dunno, maybe CONFIG_DYNAMIC_DEBUG could be of help. There's also a
-> howto:<Documentation/dynamic-debug-howto.txt>
+> What is the status of this patch? Don't see it in 3.3 and haven't
+> checked 3.4-rc1 yet.
 
-Users will see nothing more than before!
+Hi,
 
-Before CONFIG_RTLWIFI_DEBUG was allowed to be set, the driver always compiled in 
-the debug code, but only those messages with the DBG_EMERG code were actually 
-output. With the parameter set to Y, nothing changed. If the module is loaded 
-with the "debug=X" option, where X is greater than 0, then other messages will 
-be seen. That dynamic setting of the level is enough.
+I've been hoping it would get into 3.4. It's in the -mm tree, and has
+been living in linux-next for a while. I'm not sure why it hasn't been
+merged into Linus's tree yet. Andrew, is there a reason it hasn't been
+merged?
 
-The only change when the configuration parameter is set to N is that the entire 
-debug setup compiles away. The driver is a lot smaller, but there is no debugging.
+http://marc.info/?l=linux-mm-commits&m=132692455101733&w=4
 
-Larry
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=07eff225ead22b21fe5aba32cd2695248a9e4d1f
+
+-Kees
+
+-- 
+Kees Cook
+ChromeOS Security
