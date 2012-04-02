@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab2DBDhX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 23:37:23 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35226 "EHLO gate.crashing.org"
+	id S1754592Ab2DBDi2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 23:38:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56923 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753850Ab2DBDhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 23:37:22 -0400
-Message-ID: <1333337833.30734.29.camel@pasglop>
-Subject: [PATCH] nouveau: Fix crash when pci_ram_rom() returns a size of 0
+	id S1754018Ab2DBDi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 23:38:27 -0400
+Message-ID: <1333337899.30734.31.camel@pasglop>
+Subject: [PATCH] nouveau/bios: Fix tracking of BIOS image data
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: dri-devel@lists.freedesktop.org
 Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
         Dave Airlie <airlied@gmail.com>
-Date: Mon, 02 Apr 2012 13:37:13 +1000
+Date: Mon, 02 Apr 2012 13:38:19 +1000
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -21,47 +21,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From b15b244d6e6e20964bd4b85306722cb60c3c0809 Mon Sep 17 00:00:00 2001
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Mon, 2 Apr 2012 13:28:18 +1000
-Subject: 
+The code tries various methods for retreiving the BIOS data. However
+it doesn't clear the bios->data pointer between the iterations.
 
-Under some circumstances, pci_map_rom() can return a valid mapping
-but a size of 0 (if it cannot find an image in the header).
+In some cases, the shadow() method will fail and not update bios->data
+at all, which will cause us to "score" the old data and incorrectly
+attribute that score to the new method. This can cause double frees
+later when disposing of the unused data.
 
-This causes nouveau to try to kmalloc() a 0 sized pointer and
-dereference it, which crashes.
+Additionally, we were not freeing the data for methods that fail the
+score test (we only freed when a "best" is superseeded, not when the
+new method has a lower score than the exising "best"). Fix that as well.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
 
-Please send to Linus asap, without this, it crashes on the G5
+This was found by code inspection while chasing a different bug,
+I do not hit the problem path on my machine.
 
- drivers/gpu/drm/nouveau/nouveau_bios.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_bios.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/gpu/drm/nouveau/nouveau_bios.c b/drivers/gpu/drm/nouveau/nouveau_bios.c
-index 637afe7..80963d0 100644
+index 80963d0..1947d61 100644
 --- a/drivers/gpu/drm/nouveau/nouveau_bios.c
 +++ b/drivers/gpu/drm/nouveau/nouveau_bios.c
-@@ -177,14 +177,15 @@ bios_shadow_pci(struct nvbios *bios)
+@@ -273,6 +273,7 @@ bios_shadow(struct drm_device *dev)
+ 		mthd->score = score_vbios(bios, mthd->rw);
+ 		mthd->size = bios->length;
+ 		mthd->data = bios->data;
++		bios->data = NULL;
+ 	} while (mthd->score != 3 && (++mthd)->shadow);
  
- 	if (!pci_enable_rom(pdev)) {
- 		void __iomem *rom = pci_map_rom(pdev, &length);
--		if (rom) {
-+		if (rom && length) {
- 			bios->data = kmalloc(length, GFP_KERNEL);
- 			if (bios->data) {
- 				memcpy_fromio(bios->data, rom, length);
- 				bios->length = length;
- 			}
--			pci_unmap_rom(pdev, rom);
- 		}
-+		if (rom)
-+			pci_unmap_rom(pdev, rom);
+ 	mthd = shadow_methods;
+@@ -281,7 +282,8 @@ bios_shadow(struct drm_device *dev)
+ 		if (mthd->score > best->score) {
+ 			kfree(best->data);
+ 			best = mthd;
+-		}
++		} else
++			kfree(mthd->data);
+ 	} while ((++mthd)->shadow);
  
- 		pci_disable_rom(pdev);
- 	}
+ 	if (best->score) {
 -- 
 1.7.9.5
 
