@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab2DBKOm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 06:14:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45682 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752074Ab2DBKOb (ORCPT
+	id S1752161Ab2DBKOl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 06:14:41 -0400
+Received: from 124-248-200-71.sunnyvision.com ([124.248.200.71]:59751 "EHLO
+	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752035Ab2DBKOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 06:14:31 -0400
-Date: Mon, 2 Apr 2012 11:14:28 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rabin Vincent <rabin@rab.in>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
-Message-ID: <20120402101427.GA3172@opensource.wolfsonmicro.com>
-References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <CACRpkdYRStgKo_e-4kZKA-V-OoMiV21jRS3R4g1Cq+4c+4=iQA@mail.gmail.com>
- <CAH+eYFC+q4xFuSdRBkO9nb0XZWU4pQ_yCyinMy2X3ds9WQd1kw@mail.gmail.com>
- <CACRpkda2zh=zR+A9bwhRXYHtQdFeUpiqG4d5g1i82mPCs1mXaQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-In-Reply-To: <CACRpkda2zh=zR+A9bwhRXYHtQdFeUpiqG4d5g1i82mPCs1mXaQ@mail.gmail.com>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Apr 2012 06:14:06 -0400
+X-Greylist: delayed 1573 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 06:14:06 EDT
+X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 7D69050E69
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 871364FB16
+Message-ID: <9TOvPYJ@tcts1.seed.net.tw>
+From: boris@cloudluca.com
+Subject: Server Rental Service in HK
+X-Mailer: wNPP6BK10Cmxr2zaeCBzKhXuG
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Mon,  2 Apr 2012 17:47:47 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q32AF7rI002535
+
+Dear All,
+
+We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
+
+Dell? PowerEdge? EnterpriseRack Mount Server
+-Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
+-8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
+-500GB, 3.5", 6Gbps SAS x 2
+-Raid 1 Mirroring Protection
+-Remote KVM (iDRAC6 Enterprise)
+
+Dell(TM) PowerEdge(TM) R410 Rack Mount Server
+-Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
+-4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
+-500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
+-iDRAC6 Enterprise or Express (Remote KVM Management)
+
+Every Dedicated Server Hosting Solution Also Includes: 
+ 
+Software Specification 
+- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
+- Full root-level access 
+- Data Center Facilities 
+- Shared Local & International Bandwidth 
+- 2 IP Addresses Allocation 
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
+- FM200¡§based fire suppression system 
+- 24x7 CRAC Air Conditioning and Humidity Control 
+- 24x7 Security Control 
+- 24x7 Remote Hand Service 
+
+Pls send us email for further information.Thanks,
+
+Boris 
+boris@cloudluca.com
+
+If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
 
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Apr 02, 2012 at 12:39:11AM +0200, Linus Walleij wrote:
-
-> Mark: as Rabin says the v1 patch is probably fine, are you pushing this
-> to ARM SoC or into Russell's patch tracker?
-
-I was waiting for some pronouncement from Russell - looking at the git
-logs it seems the patch tracker is the normal way to merge things.
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPeXv9AAoJEBus8iNuMP3dkCAQAI3tbIQ54EOZZCb3+IrnOJp8
-36FXqbsmoPiwRgsJeLrgD6Bj3pbF0afQrdPk+7BTHB97s9Z5Letqxul/HC1DPl0K
-Jxv7ZIYrnJI19wYEnvctTf4svytP87yZj8u5G+cvM5gZZXW2EjwcsDAqAjVfQhIM
-fjw40v6g/rHopkLYOPGrqlCUiaNO/FnBmsYrtUYtu+SctIa0DKvl9X6bCZin095e
-1tEESIHrOJY5azHZCXM7qUIlmUFoKTvW/366cLpSwrwgDSoOs4lrsQSEcVchQcyO
-jtP+1zPsNGyAQv5W0WIbgLlUNJ+CqV7UUV9WdKssBvgL13axpLdtUHztFPyAoFJ/
-C9f5k5qqmCCmKzEuU09hahm9jqCCgwFCl/uplkHI8NqCBeopKUeP9t5AjX/4mSrJ
-NK0jhuwVjBUZQrph3we3gOSJqdM3ghvkNsedDI/vSShKrO7YqFxC9v9lYn7Rwcn+
-bIWhr57l/izVVbmrBmDKm8n0Ju0MscsJL+nNbOVPhDsC2xFX2qTEoserZH3XpLAo
-HLYW6KxTE/tBFjc9Ts9gh00ONA4Vpxh7XNjCx5vbNiFT1Xl5k2VGp/no7j0H8pEm
-ejAvD46rSdsPIdxujTKXO/INa9I5E3GL1z1mU+0drrTU9DZ2DBXK7qKcwb5Qi65x
-C+mcG0Si/kAn8OpdAJ7m
-=l0mE
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
