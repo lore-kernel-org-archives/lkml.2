@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab2DBOsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:48:46 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:46120
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752644Ab2DBOsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:48:45 -0400
-Date: Mon, 2 Apr 2012 16:48:42 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch] UBIFS: Add cryptographic functionality when a key is
- passed to the compress / decompress functions
-In-Reply-To: <1333377383.22146.14.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1204021645070.29393@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>      <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>     <1330531826.3545.128.camel@sauron.fi.intel.com>     <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net> 
-   <1332511796.18717.72.camel@sauron.fi.intel.com>    <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net>   <1332521515.22278.2.camel@sauron.fi.intel.com>   <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net>  
- <alpine.DEB.2.00.1203252325100.5527@eristoteles.iwoars.net>  <1332837188.31549.14.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203291639200.912@eristoteles.iwoars.net> <1333377383.22146.14.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752725Ab2DBOtX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:49:23 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:52183 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751047Ab2DBOtW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 10:49:22 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1333376719-8383-1-git-send-email-justinmattock@gmail.com>
+References: <1333376719-8383-1-git-send-email-justinmattock@gmail.com>
+Date: Mon, 2 Apr 2012 09:49:19 -0500
+Message-ID: <CAO8GWqnyQLmfRG-yF9kU5csw5tQiUCLfj00dtBQe_PdYrDbf+w@mail.gmail.com>
+Subject: Re: [PATCH]NEXT:drivers:staging:omapdrm Fix typos in drivers:omapdrm
+From: "Clark, Rob" <rob@ti.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 2, 2012 at 9:25 AM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
+>
+> The below patch fixes some typos that I found while reading.
+> Note: I was told to hold off sending anything until *rc1 so hopefully
+> now its alright.(wasnt sure what kernel *rc*)
+>
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+Thanks
+
+Reviewed-by: Rob Clark <rob@ti.com>
 
 >
-> You support only one length - please, kill ivlen parameter.
+> ---
+>  drivers/staging/omapdrm/omap_fb.c  |    2 +-
+>  drivers/staging/omapdrm/tcm-sita.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 >
-> Also, should ubifs_aes_crypt be static? I do not see any users outside
-> of compress.c. In this case remove the "ubifs_" prefix. But a
-> non-written convention, in UBIFS we _tend_ to prefix only non-static
-> functions with "ubifs_" and avoid having it for static functions.
+> diff --git a/drivers/staging/omapdrm/omap_fb.c b/drivers/staging/omapdrm/omap_fb.c
+> index 04b235b..0c53a3c 100644
+> --- a/drivers/staging/omapdrm/omap_fb.c
+> +++ b/drivers/staging/omapdrm/omap_fb.c
+> @@ -167,7 +167,7 @@ void omap_framebuffer_update_scanout(struct drm_framebuffer *fb, int x, int y,
+>  }
 >
-
-Should length for key remain, and the IV is just the same? Or should the
-global #define just be used inside the aes function.
-
-There is another use where the data is decrypted and reencrypted with a
-different key. (during GC and if an erase block becomes bad.) In this
-case, the data is not decompressed and recompressed, only the encryption
-changes. However, for simplicity, and because its not frequent, we can
-make it static and use the compress functions to handle this.
-
+>  /* Call for unpin 'a' (if not NULL), and pin 'b' (if not NULL).  Although
+> - * buffers to unpin are just just pushed to the unpin fifo so that the
+> + * buffers to unpin are just pushed to the unpin fifo so that the
+>  * caller can defer unpin until vblank.
+>  *
+>  * Note if this fails (ie. something went very wrong!), all buffers are
+> diff --git a/drivers/staging/omapdrm/tcm-sita.c b/drivers/staging/omapdrm/tcm-sita.c
+> index 10d5ac3..efb6095 100644
+> --- a/drivers/staging/omapdrm/tcm-sita.c
+> +++ b/drivers/staging/omapdrm/tcm-sita.c
+> @@ -200,7 +200,7 @@ static s32 sita_reserve_1d(struct tcm *tcm, u32 num_slots,
+>  *
+>  * @param w    width
+>  * @param h    height
+> - * @param area pointer to the area that will be populated with the reesrved
+> + * @param area pointer to the area that will be populated with the reserved
+>  *             area
+>  *
+>  * @return 0 on success, non-0 error value on failure.
+> --
+> 1.7.5.4
 >
-> I guess the above goto is redundant?
->
-
-It is, but I put it in for future developers who may add a new control
-case there after without expecting the above to 'fall through'.
-
-
-
