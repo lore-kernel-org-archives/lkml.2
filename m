@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab2DBJqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:46:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51229 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab2DBJqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:46:08 -0400
-Message-ID: <4F79755B.3030703@openvz.org>
-Date: Mon, 02 Apr 2012 13:46:03 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Oleg Nesterov <oleg@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        Matt Helsley <matthltc@us.ibm.com>,
+	id S1752094Ab2DBJqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:46:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45858 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082Ab2DBJqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 05:46:48 -0400
+Message-ID: <1333359979.30734.48.camel@pasglop>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
-References: <20120331091049.19373.28994.stgit@zurg> <20120331092929.19920.54540.stgit@zurg> <20120331201324.GA17565@redhat.com> <20120331203912.GB687@moon>
-In-Reply-To: <20120331203912.GB687@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>, Alexander Graf <agraf@suse.de>
+Date: Mon, 02 Apr 2012 19:46:19 +1000
+In-Reply-To: <4F796C18.2040209@redhat.com>
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>
+	 <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>
+	 <4F6EEEC1.4030608@redhat.com>
+	 <20120326213809.GA29788@bloggs.ozlabs.ibm.com>
+	 <4F7191E8.7020804@redhat.com>
+	 <20120330120107.GA28503@bloggs.ozlabs.ibm.com>
+	 <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop>
+	 <4F796C18.2040209@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov wrote:
-> On Sat, Mar 31, 2012 at 10:13:24PM +0200, Oleg Nesterov wrote:
->>
->> Add Cyrill. This conflicts with
->> c-r-prctl-add-ability-to-set-new-mm_struct-exe_file.patch in -mm.
->
-> Thanks for CC'ing, Oleg. I think if thise series go in it won't
-> be a problem to update my patch accordingly.
+On Mon, 2012-04-02 at 12:06 +0300, Avi Kivity wrote:
+> > The current process is such that it takes absolutely forever for our
+> > patches to get in, which is a major PITA for something in such state of
+> > active development.
+> 
+> If the patches were posted two weeks earlier, they would have gone in.
 
-In this patch I leave mm->exe_file lockless.
-After exec/fork we can change it only for current task and only if mm->mm_users == 1.
+I believe on our side they were, but Alex took a while to make up his
+tree ... oh well..
 
-something like this:
+> > Why don't we have Alex tree go straight to -next like I do with Kumar
+> > for example ? That way I don't need to have his branch sit in my tree
+> > for weeks before I push it out to Linus.
+> 
+> There isn't a lot of common kvm code, but what there is needs to be
+> synchronized.
 
-task_lock(current);
-if (atomic_read(&current->mm->mm_users) == 1)
-	set_mm_exe_file(current->mm, new_file);
-else
-	ret = -EBUSY;
-task_unlock(current);
+At least we should be able to get the important bug fixes in now, I see
+that you agree in your reply to Paulus so that's good :-)
 
-task_lock() protect this code against get_task_mm()
+Cheers,
+Ben.
+
+
