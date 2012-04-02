@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab2DBRRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:17:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39956 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab2DBRRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:17:39 -0400
-Date: Mon, 2 Apr 2012 19:17:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: CONFIG_RTLWIFI_DEBUG default y
-Message-ID: <20120402171733.GB13264@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Joe Perches <joe@perches.com>
-References: <20120402164920.GA13264@x1.osrc.amd.com>
- <1333385618.15422.17.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1333385618.15422.17.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753635Ab2DBRSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:18:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59889 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752676Ab2DBRSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 13:18:16 -0400
+Message-ID: <1333387094.20402.2.camel@joe2Laptop>
+Subject: Re: [PATCH] [trivial] Fix typo in tty, arm, hotplug, sound and
+ others.
+From: Joe Perches <joe@perches.com>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, tiwai@suse.de
+Date: Mon, 02 Apr 2012 10:18:14 -0700
+In-Reply-To: <1333385748-27692-1-git-send-email-standby24x7@gmail.com>
+References: <1333385748-27692-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 09:53:38AM -0700, Joe Perches wrote:
-> To keep all the "printk(KERN_DEBUG" to "pr_debug(" conversion
-> output the same as the it was prior to the patch.
-> 
-> Larry can default it to off if he wants.
+On Tue, 2012-04-03 at 01:55 +0900, Masanari Iida wrote:
+> Fix multiple typo on printk messages on tty, arm, hotplug
+> sound and others.
+[]
+> diff --git a/arch/ia64/Makefile b/arch/ia64/Makefile
+[]
+> @@ -34,7 +34,7 @@ GAS_STATUS	= $(shell $(srctree)/arch/ia64/scripts/check-gas "$(CC)" "$(OBJDUMP)"
+>  KBUILD_CPPFLAGS += $(shell $(srctree)/arch/ia64/scripts/toolchain-flags "$(CC)" "$(OBJDUMP)" "$(READELF)")
+>  
+>  ifeq ($(GAS_STATUS),buggy)
+> -$(error Sorry, you need a newer version of the assember, one that is built from	\
+> +$(error Sorry, you need a newer version of the assembler, one that is built from	\
+>  	a source-tree that post-dates 18-Dec-2002.  You can find a pre-compiled	\
+>  	static binary of such an assembler at:					\
 
->From looking at one user of this -
-drivers/net/wireless/rtlwifi/rtl8192ce/hw.c - some of the messages look
-like important ones which you wanna have enabled always, f.e. error
-handling in rtl92ce_hw_init().
+trivia:
 
-It probably needs splitting into debugging messages which are default n
-and always-on messages.
+The error message has strange whitespace.
+This should be on a single line.
 
-Thanks.
+I doubt anyone actually gets this error though.
 
--- 
-Regards/Gruss,
-Boris.
