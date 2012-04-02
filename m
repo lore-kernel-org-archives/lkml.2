@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab2DBVXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 17:23:20 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59199 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab2DBVXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 17:23:18 -0400
-Message-ID: <1333401767.30734.58.camel@pasglop>
-Subject: Re: [PATCH 08/18] PCI, powerpc: Register busn_res for root buses
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Milton Miller <miltonm@bga.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartmann <greg@kroah.com>,
-        lkml <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Date: Tue, 03 Apr 2012 07:22:47 +1000
-In-Reply-To: <powerpc-pci-domains-by-busnumber-resend@mdm.bga.com>
-References: <1330472496.11728.31.camel@pasglop>
-	 <1330395009-29260-1-git-send-email-yinghai@kernel.org>
-	 <1330395009-29260-9-git-send-email-yinghai@kernel.org>
-	 <CAErSpo4bw-V=SM+h5iP4nfv3HaAnHjwvNwu+4Oz8iyQcY_3gOQ@mail.gmail.com>
-	 <CAErSpo72_JnUkWXrzbNdbX9wiWZtQdX2tuNjEpYrSd+sGzxfzA@mail.gmail.com>
-	 <powerpc-pci-domains-by-busnumber-resend@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753194Ab2DBVYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 17:24:13 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:44932 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2DBVYL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 17:24:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1333401674-26007-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1333401674-26007-1-git-send-email-paul.gortmaker@windriver.com>
+From: Matt Turner <mattst88@gmail.com>
+Date: Mon, 2 Apr 2012 17:23:50 -0400
+Message-ID: <CAEdQ38G=uwPuN1fmZca1w+1q0HGiLzLYP8DkZ-AFiRQcPJT+JA@mail.gmail.com>
+Subject: Re: [PATCH] alpha: fix build failures from system.h dismemberment
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 05:19 -0500, Milton Miller wrote:
-> 
-> In the POWER3 era we had several boxes that split the pci bus number
-> space across domains and RTAS used the bus number to find the correct
-> PHB.   This contineed to the first RS64 boxes.  By S80 and RS64-III
-> it was obvious that we didn't have enough numbers to continue this
-> ilusion and we added the presently used RTAS calls that take the pci
-> domain as well as bus, device, and function numbers.
-> 
-> The bus numbers split across pci domains started with the F50
-> F50 chrp 32 bit platforms. 
+On Mon, Apr 2, 2012 at 5:21 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> commit ec2212088c42ff7d1362629ec26dda4f3e8bdad3
+>
+>    "Disintegrate asm/system.h for Alpha"
+>
+> combined with commit b4816afa3986704d1404fc48e931da5135820472
+>
+>    "Move the asm-generic/system.h xchg() implementation to asm-generic/cmpxchg.h"
+>
+> introduced the concept of asm/cmpxchg.h but the alpha arch
+> never got one.  Fork the cmpxchg content out of the asm/atomic.h
+> file to create one.
+>
+> Some minor whitespace fixups were done on the block of code that
+> created the new file.
+>
+> Cc: Richard Henderson <rth@twiddle.net>
+> Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+> Cc: Matt Turner <mattst88@gmail.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Ok, so old CHRPs would have a split as well...
-
-I think the best is to honor the bus-range property of the PHB as min &
-max values, and if we feel a need to allow the kernel to assign busses
-beyond that, we can always quirk the appropriate platform code.
-
-Cheers,
-Ben.
-
-
+Acked-by: Matt Turner <mattst88@gmail.com>
