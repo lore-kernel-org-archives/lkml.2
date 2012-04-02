@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab2DBL4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:56:35 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:48123 "EHLO
+	id S1754233Ab2DBL4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:56:33 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:48125 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab2DBLzO (ORCPT
+	with ESMTP id S1752711Ab2DBLzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:14 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 66/69] TTY: rfcomm/tty, add tty_port
-Date: Mon,  2 Apr 2012 13:54:50 +0200
-Message-Id: <1333367693-3244-67-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Jiri Kosina <jkosina@suse.cz>, David Sterba <dsterba@suse.cz>
+Subject: [PATCH 49/69] TTY: ipwireless, add tty_port
+Date: Mon,  2 Apr 2012 13:54:33 +0200
+Message-Id: <1333367693-3244-50-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -20,126 +21,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And use tty from there.
+And use count from that.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: David Sterba <dsterba@suse.cz>
 ---
- net/bluetooth/rfcomm/tty.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/tty/ipwireless/tty.c |   29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
 
-diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
-index 4bf54b3..97c2a08 100644
---- a/net/bluetooth/rfcomm/tty.c
-+++ b/net/bluetooth/rfcomm/tty.c
-@@ -48,6 +48,7 @@
- static struct tty_driver *rfcomm_tty_driver;
+diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
+index 4270bfd..0b4964d 100644
+--- a/drivers/tty/ipwireless/tty.c
++++ b/drivers/tty/ipwireless/tty.c
+@@ -44,6 +44,7 @@
+ #define TTYTYPE_RAS_RAW  (2)
  
- struct rfcomm_dev {
-+	struct tty_port		port;
- 	struct list_head	list;
- 	atomic_t		refcnt;
- 
-@@ -64,7 +65,6 @@ struct rfcomm_dev {
- 	uint			modem_status;
- 
- 	struct rfcomm_dlc	*dlc;
--	struct tty_struct	*tty;
- 	wait_queue_head_t       wait;
- 	struct work_struct	wakeup_task;
- 
-@@ -252,6 +252,7 @@ static int rfcomm_dev_add(struct rfcomm_dev_req *req, struct rfcomm_dlc *dlc)
- 
- 	atomic_set(&dev->opened, 0);
- 
-+	tty_port_init(&dev->port);
- 	init_waitqueue_head(&dev->wait);
- 	INIT_WORK(&dev->wakeup_task, rfcomm_tty_wakeup);
- 
-@@ -440,8 +441,8 @@ static int rfcomm_release_dev(void __user *arg)
- 		rfcomm_dlc_close(dev->dlc, 0);
- 
- 	/* Shut down TTY synchronously before freeing rfcomm_dev */
--	if (dev->tty)
--		tty_vhangup(dev->tty);
-+	if (dev->port.tty)
-+		tty_vhangup(dev->port.tty);
- 
- 	if (!test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags))
- 		rfcomm_dev_del(dev);
-@@ -559,7 +560,7 @@ static void rfcomm_dev_data_ready(struct rfcomm_dlc *dlc, struct sk_buff *skb)
- 		return;
+ struct ipw_tty {
++	struct tty_port port;
+ 	int index;
+ 	struct ipw_hardware *hardware;
+ 	unsigned int channel_idx;
+@@ -51,7 +52,6 @@ struct ipw_tty {
+ 	int tty_type;
+ 	struct ipw_network *network;
+ 	struct tty_struct *linux_tty;
+-	int open_count;
+ 	unsigned int control_lines;
+ 	struct mutex ipw_tty_mutex;
+ 	int tx_bytes_queued;
+@@ -100,10 +100,10 @@ static int ipw_open(struct tty_struct *linux_tty, struct file *filp)
+ 		mutex_unlock(&tty->ipw_tty_mutex);
+ 		return -ENODEV;
  	}
+-	if (tty->open_count == 0)
++	if (tty->port.count == 0)
+ 		tty->tx_bytes_queued = 0;
  
--	tty = dev->tty;
-+	tty = dev->port.tty;
- 	if (!tty || !skb_queue_empty(&dev->pending)) {
- 		skb_queue_tail(&dev->pending, skb);
- 		return;
-@@ -585,7 +586,7 @@ static void rfcomm_dev_state_change(struct rfcomm_dlc *dlc, int err)
- 	wake_up_interruptible(&dev->wait);
+-	tty->open_count++;
++	tty->port.count++;
  
- 	if (dlc->state == BT_CLOSED) {
--		if (!dev->tty) {
-+		if (!dev->port.tty) {
- 			if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags)) {
- 				/* Drop DLC lock here to avoid deadlock
- 				 * 1. rfcomm_dev_get will take rfcomm_dev_lock
-@@ -605,7 +606,7 @@ static void rfcomm_dev_state_change(struct rfcomm_dlc *dlc, int err)
- 				rfcomm_dlc_lock(dlc);
- 			}
- 		} else
--			tty_hangup(dev->tty);
-+			tty_hangup(dev->port.tty);
- 	}
- }
+ 	tty->linux_tty = linux_tty;
+ 	linux_tty->driver_data = tty;
+@@ -119,9 +119,9 @@ static int ipw_open(struct tty_struct *linux_tty, struct file *filp)
  
-@@ -618,8 +619,8 @@ static void rfcomm_dev_modem_status(struct rfcomm_dlc *dlc, u8 v24_sig)
- 	BT_DBG("dlc %p dev %p v24_sig 0x%02x", dlc, dev, v24_sig);
- 
- 	if ((dev->modem_status & TIOCM_CD) && !(v24_sig & RFCOMM_V24_DV)) {
--		if (dev->tty && !C_CLOCAL(dev->tty))
--			tty_hangup(dev->tty);
-+		if (dev->port.tty && !C_CLOCAL(dev->port.tty))
-+			tty_hangup(dev->port.tty);
- 	}
- 
- 	dev->modem_status =
-@@ -634,7 +635,7 @@ static void rfcomm_tty_wakeup(struct work_struct *work)
+ static void do_ipw_close(struct ipw_tty *tty)
  {
- 	struct rfcomm_dev *dev = container_of(work, struct rfcomm_dev,
- 								wakeup_task);
--	struct tty_struct *tty = dev->tty;
-+	struct tty_struct *tty = dev->port.tty;
+-	tty->open_count--;
++	tty->port.count--;
+ 
+-	if (tty->open_count == 0) {
++	if (tty->port.count == 0) {
+ 		struct tty_struct *linux_tty = tty->linux_tty;
+ 
+ 		if (linux_tty != NULL) {
+@@ -142,7 +142,7 @@ static void ipw_hangup(struct tty_struct *linux_tty)
+ 		return;
+ 
+ 	mutex_lock(&tty->ipw_tty_mutex);
+-	if (tty->open_count == 0) {
++	if (tty->port.count == 0) {
+ 		mutex_unlock(&tty->ipw_tty_mutex);
+ 		return;
+ 	}
+@@ -171,7 +171,7 @@ void ipwireless_tty_received(struct ipw_tty *tty, unsigned char *data,
+ 		return;
+ 	}
+ 
+-	if (!tty->open_count) {
++	if (!tty->port.count) {
+ 		mutex_unlock(&tty->ipw_tty_mutex);
+ 		return;
+ 	}
+@@ -213,7 +213,7 @@ static int ipw_write(struct tty_struct *linux_tty,
+ 		return -ENODEV;
+ 
+ 	mutex_lock(&tty->ipw_tty_mutex);
+-	if (!tty->open_count) {
++	if (!tty->port.count) {
+ 		mutex_unlock(&tty->ipw_tty_mutex);
+ 		return -EINVAL;
+ 	}
+@@ -253,7 +253,7 @@ static int ipw_write_room(struct tty_struct *linux_tty)
  	if (!tty)
- 		return;
+ 		return -ENODEV;
  
-@@ -644,7 +645,7 @@ static void rfcomm_tty_wakeup(struct work_struct *work)
+-	if (!tty->open_count)
++	if (!tty->port.count)
+ 		return -EINVAL;
  
- static void rfcomm_tty_copy_pending(struct rfcomm_dev *dev)
- {
--	struct tty_struct *tty = dev->tty;
-+	struct tty_struct *tty = dev->port.tty;
- 	struct sk_buff *skb;
- 	int inserted = 0;
+ 	room = IPWIRELESS_TX_QUEUE_SIZE - tty->tx_bytes_queued;
+@@ -295,7 +295,7 @@ static int ipw_chars_in_buffer(struct tty_struct *linux_tty)
+ 	if (!tty)
+ 		return 0;
  
-@@ -697,7 +698,7 @@ static int rfcomm_tty_open(struct tty_struct *tty, struct file *filp)
+-	if (!tty->open_count)
++	if (!tty->port.count)
+ 		return 0;
  
- 	rfcomm_dlc_lock(dlc);
- 	tty->driver_data = dev;
--	dev->tty = tty;
-+	dev->port.tty = tty;
- 	rfcomm_dlc_unlock(dlc);
- 	set_bit(RFCOMM_TTY_ATTACHED, &dev->flags);
+ 	return tty->tx_bytes_queued;
+@@ -376,7 +376,7 @@ static int ipw_tiocmget(struct tty_struct *linux_tty)
+ 	if (!tty)
+ 		return -ENODEV;
  
-@@ -762,7 +763,7 @@ static void rfcomm_tty_close(struct tty_struct *tty, struct file *filp)
+-	if (!tty->open_count)
++	if (!tty->port.count)
+ 		return -EINVAL;
  
- 		rfcomm_dlc_lock(dev->dlc);
- 		tty->driver_data = NULL;
--		dev->tty = NULL;
-+		dev->port.tty = NULL;
- 		rfcomm_dlc_unlock(dev->dlc);
+ 	return get_control_lines(tty);
+@@ -392,7 +392,7 @@ ipw_tiocmset(struct tty_struct *linux_tty,
+ 	if (!tty)
+ 		return -ENODEV;
  
- 		if (test_bit(RFCOMM_TTY_RELEASED, &dev->flags)) {
+-	if (!tty->open_count)
++	if (!tty->port.count)
+ 		return -EINVAL;
+ 
+ 	return set_control_lines(tty, set, clear);
+@@ -406,7 +406,7 @@ static int ipw_ioctl(struct tty_struct *linux_tty,
+ 	if (!tty)
+ 		return -ENODEV;
+ 
+-	if (!tty->open_count)
++	if (!tty->port.count)
+ 		return -EINVAL;
+ 
+ 	/* FIXME: Exactly how is the tty object locked here .. */
+@@ -475,6 +475,7 @@ static int add_tty(int j,
+ 	ttys[j]->network = network;
+ 	ttys[j]->tty_type = tty_type;
+ 	mutex_init(&ttys[j]->ipw_tty_mutex);
++	tty_port_init(&ttys[j]->port);
+ 
+ 	tty_register_device(ipw_tty_driver, j, NULL);
+ 	ipwireless_associate_network_tty(network, channel_idx, ttys[j]);
+@@ -561,7 +562,7 @@ void ipwireless_tty_free(struct ipw_tty *tty)
+ 				 * are gone */
+ 				mutex_lock(&ttyj->ipw_tty_mutex);
+ 			}
+-			while (ttyj->open_count)
++			while (ttyj->port.count)
+ 				do_ipw_close(ttyj);
+ 			ipwireless_disassociate_network_ttys(network,
+ 							     ttyj->channel_idx);
 -- 
 1.7.9.2
 
