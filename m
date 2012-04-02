@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab2DBLqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:46:06 -0400
+	id S1752771Ab2DBLqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:46:04 -0400
 Received: from mga09.intel.com ([134.134.136.24]:58478 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab2DBLpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:45:17 -0400
+	id S1752652Ab2DBLpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 07:45:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="124444297"
+   d="scan'208";a="124444294"
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 To: Ted Tso <tytso@mit.edu>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
@@ -16,8 +16,8 @@ Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         Ext4 Mailing List <linux-ext4@vger.kernel.org>,
         Jan Kara <jack@suse.cz>
 Subject: [PATCH v2 2/4] ext4: Convert last user of ext4_mark_super_dirty() to ext4_handle_dirty_super()
-Date: Mon,  2 Apr 2012 14:45:38 +0300
-Message-Id: <1333367140-28370-4-git-send-email-artem.bityutskiy@linux.intel.com>
+Date: Mon,  2 Apr 2012 14:45:37 +0300
+Message-Id: <1333367140-28370-3-git-send-email-artem.bityutskiy@linux.intel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
 References: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
@@ -31,7 +31,7 @@ The last user of ext4_mark_super_dirty() in ext4_file_open() is so rare it
 can well be modifying the superblock properly by journalling the change.
 Change it and get rid of ext4_mark_super_dirty() as it's not needed anymore.
 
-Artem: small amensdments.
+Artem: small amendments.
 Artem: tested using xfstests for both journalled and non-journalled ext4.
 
 Signed-off-by: Jan Kara <jack@suse.cz>
