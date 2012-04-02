@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab2DBTLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 15:11:08 -0400
-Received: from oyp.chewa.net ([91.121.6.101]:58904 "EHLO oyp.chewa.net"
+	id S1752502Ab2DBTLJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 15:11:09 -0400
+Received: from oyp.chewa.net ([91.121.6.101]:58905 "EHLO oyp.chewa.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742Ab2DBTLG convert rfc822-to-8bit (ORCPT
+	id S1751669Ab2DBTLG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 15:11:06 -0400
+X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Apr 2012 15:11:06 EDT
 From: "=?iso-8859-15?q?R=E9mi?= Denis-Courmont" <remi@remlab.net>
 Organization: Remlab.net
 To: Sasha Levin <levinsasha928@gmail.com>
 Subject: Re: [PATCH] phonet: Check input from user before allocating
-Date: Mon, 2 Apr 2012 22:01:40 +0300
+Date: Mon, 2 Apr 2012 22:00:40 +0300
 User-Agent: KMail/1.13.7 (Linux/3.3.0basile-00001-g000ecb0; KDE/4.7.4; i686; ; )
 Cc: remi.denis-courmont@nokia.com, davem@davemloft.net, davej@redhat.com,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
@@ -21,7 +22,7 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-15"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201204022201.41808.remi@remlab.net>
+Message-Id: <201204022200.41351.remi@remlab.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,11 +32,69 @@ Le lundi 2 avril 2012 23:31:00 Sasha Levin, vous avez écrit :
 > tx which means that the user can specify any size he wishes, and the kernel
 > will attempt to allocate that size.
 
-Does this really solve the problem?  I guess 128kb is still possible with 
-USHRT_MAX plus skbuff overhead, which might still trigger OOM relatively 
-easily once the memory gets sufficiently fragmented.
+> 
+> In the good case, it'll lead to the following warning, but it may also
+> cause the kernel to kick in the OOM and kill a random task on the server.
+> 
+> [ 8921.744094] WARNING: at mm/page_alloc.c:2255
+> __alloc_pages_slowpath+0x65/0x730() [ 8921.749770] Pid: 5081, comm:
+> trinity Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46 [
+> 8921.756672] Call Trace:
+> [ 8921.758185]  [<ffffffff810b2ba7>] warn_slowpath_common+0x87/0xb0
+> [ 8921.762868]  [<ffffffff810b2be5>] warn_slowpath_null+0x15/0x20
+> [ 8921.765399]  [<ffffffff8117eae5>] __alloc_pages_slowpath+0x65/0x730
+> [ 8921.769226]  [<ffffffff81179c8a>] ? zone_watermark_ok+0x1a/0x20
+> [ 8921.771686]  [<ffffffff8117d045>] ? get_page_from_freelist+0x625/0x660
+> [ 8921.773919]  [<ffffffff8117f3a8>] __alloc_pages_nodemask+0x1f8/0x240
+> [ 8921.776248]  [<ffffffff811c03e0>] kmalloc_large_node+0x70/0xc0
+> [ 8921.778294]  [<ffffffff811c4bd4>] __kmalloc_node_track_caller+0x34/0x1c0
+> [ 8921.780847]  [<ffffffff821b0e3c>] ? sock_alloc_send_pskb+0xbc/0x260
+> [ 8921.783179]  [<ffffffff821b3c65>] __alloc_skb+0x75/0x170
+> [ 8921.784971]  [<ffffffff821b0e3c>] sock_alloc_send_pskb+0xbc/0x260
+> [ 8921.787111]  [<ffffffff821b002e>] ? release_sock+0x7e/0x90
+> [ 8921.788973]  [<ffffffff821b0ff0>] sock_alloc_send_skb+0x10/0x20
+> [ 8921.791052]  [<ffffffff824cfc20>] pep_sendmsg+0x60/0x380
+> [ 8921.792931]  [<ffffffff824cb4a6>] ? pn_socket_bind+0x156/0x180
+> [ 8921.794917]  [<ffffffff824cb50f>] ? pn_socket_autobind+0x3f/0x90
+> [ 8921.797053]  [<ffffffff824cb63f>] pn_socket_sendmsg+0x4f/0x70
+> [ 8921.798992]  [<ffffffff821ab8e7>] sock_aio_write+0x187/0x1b0
+> [ 8921.801395]  [<ffffffff810e325e>] ? sub_preempt_count+0xae/0xf0
+> [ 8921.803501]  [<ffffffff8111842c>] ? __lock_acquire+0x42c/0x4b0
+> [ 8921.805505]  [<ffffffff821ab760>] ? __sock_recv_ts_and_drops+0x140/0x140
+> [ 8921.807860]  [<ffffffff811e07cc>] do_sync_readv_writev+0xbc/0x110
+> [ 8921.809986]  [<ffffffff811958e7>] ? might_fault+0x97/0xa0
+> [ 8921.811998]  [<ffffffff817bd99e>] ? security_file_permission+0x1e/0x90
+> [ 8921.814595]  [<ffffffff811e17e2>] do_readv_writev+0xe2/0x1e0
+> [ 8921.816702]  [<ffffffff810b8dac>] ? do_setitimer+0x1ac/0x200
+> [ 8921.818819]  [<ffffffff810e2ec1>] ? get_parent_ip+0x11/0x50
+> [ 8921.820863]  [<ffffffff810e325e>] ? sub_preempt_count+0xae/0xf0
+> [ 8921.823318]  [<ffffffff811e1926>] vfs_writev+0x46/0x60
+> [ 8921.825219]  [<ffffffff811e1a3f>] sys_writev+0x4f/0xb0
+> [ 8921.827127]  [<ffffffff82658039>] system_call_fastpath+0x16/0x1b
+> [ 8921.829384] ---[ end trace dffe390f30db9eb7 ]---
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  net/phonet/pep.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/phonet/pep.c b/net/phonet/pep.c
+> index 9f60008..caee99e 100644
+> --- a/net/phonet/pep.c
+> +++ b/net/phonet/pep.c
+> @@ -1130,6 +1130,9 @@ static int pep_sendmsg(struct kiocb *iocb, struct
+> sock *sk, int flags = msg->msg_flags;
+>  	int err, done;
+> 
+> +	if (len > USHRT_MAX)
+> +		return -E2BIG;
 
-How does UDP deal with this?
+I think EMSGSIZE is specified in that case.
+
+> +
+>  	if ((msg->msg_flags & ~(MSG_DONTWAIT|MSG_EOR|MSG_NOSIGNAL|
+>  				MSG_CMSG_COMPAT)) ||
+>  			!(msg->msg_flags & MSG_EOR))
 
 -- 
 Rémi Denis-Courmont
