@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab2DBBhm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 21:37:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47642 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab2DBBhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 21:37:41 -0400
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CAGZ=bqJ4mAwzuHk5rDbvKTfR_Qi=QiPt6MrwbVhe7H63Yba2Wg@mail.gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAGZ=bqJ4mAwzuHk5rDbvKTfR_Qi=QiPt6MrwbVhe7H63Yba2Wg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] nextfd(2)
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 01 Apr 2012 18:37:26 -0700
-To: Kyle Moffett <kyle@moffetthome.net>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        drepper@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Message-ID: <782e192e-e1b5-4c53-895d-1eac4a4c9097@email.android.com>
+	id S1753994Ab2DBB7Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 21:59:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51148 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab2DBB7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 21:59:17 -0400
+Date: Mon, 2 Apr 2012 11:59:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [GIT PULL] block/for-3.5/core: pull in cgroup/for-3.5
+Message-Id: <20120402115905.cbca9c04113e543163bdb5f2@canb.auug.org.au>
+In-Reply-To: <20120401200306.GB9230@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120401200306.GB9230@dhcp-172-17-108-109.mtv.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Apr_2012_11_59_05_+1000_LYv6o/9ZlFtAcREf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Are those use cases heavyweight enough to motivate a new interface?
+--Signature=_Mon__2_Apr_2012_11_59_05_+1000_LYv6o/9ZlFtAcREf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Kyle Moffett <kyle@moffetthome.net> wrote:
+Hi Tejun,
 
->On Sun, Apr 1, 2012 at 15:03, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/01/2012 05:57 AM, Alexey Dobriyan wrote:
->>> * /proc/self/fd is unreliable:
->>>   proc may be unconfigured or not mounted at expected place.
->>>   Looking at /proc/self/fd requires opening directory
->>>   which may not be available due to malicious rlimit drop or ENOMEM
->situations.
->>>   Not opening directory is equivalent to dumb close(2) loop except
->slower.
->>
->> This is really the motivation for this... the real question is how
->much
->> functionality is actually available in the system without /proc
->mounted,
->> and in particular if this particular subcase is worth optimizing ...
->> after all, if someone is maliciously setting rlimit, we can just
->abort
->> (if someone can set an rlimit they can also force an abort) or revert
->to
->> the slow path.
+On Sun, 1 Apr 2012 13:03:06 -0700 Tejun Heo <tj@kernel.org> wrote:
 >
->Well, I imagine one typical usecase for closing all FDs is for
->security isolation purposes (EG: chroot()+etc), and in a great deal of
->chroot environments you don't have /proc available.  In particular
->/proc has been a source of a lot of privilege escalations in the past,
->so avoiding mounting it in a chroot is good security policy if
->possible.
->
->Cheers,
->Kyle Moffett
+> cgroup/for-3.5 currently contains the following changes which
+> blk-cgroup needs to proceed with the on-going cleanup.
+>=20
+> * Dynamic addition and removal of cftypes to make config/stat file
+>   handling modular for policies.
+>=20
+> * cgroup removal update to not wait for css references to drain to fix
+>   blkcg removal hang caused by cfq caching cfqgs.
+>=20
+> Due to the extensive changes in blk-cgroup.c, the pull results in some
+> non-trivial conflicts which can be a bit tricky to resolve correctly.
+>=20
+> The following branch contains the merged commit.  Please feel free to
+> pull in as-is or use it as reference.  Stephen, cgroup and block next
+> branches will cause nasty conflicts until this merge happens, please
+> use this commit as merge reference or skip cgroup/for-3.5 for the time
+> being.
 
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+OK, I have moved the cgroup tree to before the block tree (just so we see
+failures in that tree independently of failures in the block tree).
+Currently the block tree contains nothing, so we have no conflicts
+today.  The best way to proceed is for the parts of the cgroup tree that
+the block tree will depend on (which may be the entire current cgroup
+tree) should be in a separate, stable (i.e. non rebasing/rewriting)
+branch that can be merged into both the cgroup and block trees.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__2_Apr_2012_11_59_05_+1000_LYv6o/9ZlFtAcREf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPeQfpAAoJEECxmPOUX5FEa4YP/3s5lrTj/LlU2qnz6iUp0pwV
+GkSzO7Uyl8NeKIO8lgLSXTJCL2cEYhHcn0LZb0c6+SYEaSPRsIxB+7wGCqKdAXeA
+oM1z7/sjCgfEbkAOxM9KwnPJh+t1Q8P/+M9V/WXnpp56lDMake7ZTRpiWcp4Gs08
+TRA6SyY4Sygf4F0DX6j3OsQvXLTpaji2n8RS96oH1SdHRwaMVR4EUXd61dDSkO/b
++8IH93mnBNa2JJ8RVdDrYWYWAAMIUIwhqOwoLkb3CNtXfrZw7mv2ZAFeW093a8O8
+BIYKN40Yj27i5+85frbcqYgImp7MOT6n0gyO3CV+gT9q8Xtk3Rrs0mhJRF7n6aQp
+/9v3VXbMpEcBF8WQ4Ns48iWuauSRsiYdlKQARMDK7SEZJomlIQzmGjmdbo8mtt4n
+qQMudJp8148xxMQaXpxQRLyVcA8qnsNkDunmbGu0vXZozJuAZ9MQpbVQmCQjKO0a
+anweOZia/Dom8lZvtFHAXAWx2mU8uPm02oGw6ZFkPcmGGAGlfGexyQTxA98UQCm2
+MUrKWEfT7O3cKwcSkxTXiS9uGkkAuI8UZEp8V1rs2nVkrQmuPTT5FqDOFg3phDP7
+HFLLsfrEXt5zUU3uJ6F6jvzIg6W97qTbwxIHr7kPejrcJqXZ3CQD/8s6iNGjhkxa
+csP5GQR74hac23ftfitS
+=DyJl
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Apr_2012_11_59_05_+1000_LYv6o/9ZlFtAcREf--
