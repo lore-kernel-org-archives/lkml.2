@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab2DBR3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 13:29:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50300 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751553Ab2DBR3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 13:29:30 -0400
-Message-ID: <1333387768.20402.7.camel@joe2Laptop>
-Subject: Re: CONFIG_RTLWIFI_DEBUG default y
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 02 Apr 2012 10:29:28 -0700
-In-Reply-To: <20120402171733.GB13264@x1.osrc.amd.com>
-References: <20120402164920.GA13264@x1.osrc.amd.com>
-	 <1333385618.15422.17.camel@joe2Laptop>
-	 <20120402171733.GB13264@x1.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753383Ab2DBRat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 13:30:49 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44090 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab2DBRar (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 13:30:47 -0400
+Message-ID: <4F79E242.5090300@suse.cz>
+Date: Mon, 02 Apr 2012 19:30:42 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120331 Thunderbird/13.0a2
+MIME-Version: 1.0
+To: simon@mungewell.org
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, Michael Bauer <michael@m-bauer.org>,
+        Michal Maly <madcatxster@gmail.com>
+Subject: Re: [PATCH 1/2] HID: hid-lg4ff: Use Private Data
+References: <a4e40aa5c43be934d83240849aa25f3b.squirrel@mungewell.org>    <1333378444-3117-1-git-send-email-simon@mungewell.org>    <4F79D486.5090605@suse.cz> <44acbf3ff0b6aa62eab2831ee6ecea80.squirrel@mungewell.org>
+In-Reply-To: <44acbf3ff0b6aa62eab2831ee6ecea80.squirrel@mungewell.org>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 19:17 +0200, Borislav Petkov wrote:
-> On Mon, Apr 02, 2012 at 09:53:38AM -0700, Joe Perches wrote:
-> > To keep all the "printk(KERN_DEBUG" to "pr_debug(" conversion
-> > output the same as the it was prior to the patch.
-> > 
-> > Larry can default it to off if he wants.
+On 04/02/2012 07:01 PM, simon@mungewell.org wrote:
 > 
-> >From looking at one user of this -
-> drivers/net/wireless/rtlwifi/rtl8192ce/hw.c - some of the messages look
-> like important ones which you wanna have enabled always, f.e. error
-> handling in rtl92ce_hw_init().
+>>> +	struct lg4ff_device_entry *uninitialized_var(entry);
+>>> +	struct lg_drv_data *uninitialized_var(drv_data);
+>>
+>> You don't need uninitialized_var bloat anymroe, right?
 > 
-> It probably needs splitting into debugging messages which are default n
-> and always-on messages.
+> I guess I don't fully understand the 'unitialized_var()' macro, and was
+> just following the previous uses in the code.
+> 
+> Google'ing doesn't really help either. Is there a definitive guide as when
+> to use and not?
 
->From my perspective, anything KERN_DEBUG that should always be
-output should not be KERN_DEBUG but some other KERN_<LEVEL>.
+The simple answer is: never.
+
+It serves the purpose to shut up the compiler when it complains that the
+variable might be uninitialized, but the programmer is sure it cannot.
+In your case, the compiler should not even complain about that.
+
+Advantage of the macro is that it adds no assembly, but still silents
+the compiler.
+
+thanks,
+-- 
+js
+suse labs
+
 
