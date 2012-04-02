@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab2DBKTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 06:19:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34627 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab2DBKTQ convert rfc822-to-8bit (ORCPT
+	id S1752397Ab2DBKTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 06:19:37 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:15047 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab2DBKTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 06:19:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <7A0BFCFE3DA5CD47B0FB7984326F201A136BDCC35E@BGMAIL01.nvidia.com>
-References: <1333345982-16595-1-git-send-email-alokc@nvidia.com>
-	<7A0BFCFE3DA5CD47B0FB7984326F201A136BDCC35E@BGMAIL01.nvidia.com>
-Date: Mon, 2 Apr 2012 15:49:16 +0530
-Message-ID: <CAM=Q2cuN+qAjDsBNp5Sq_Xs9KGcOQJ+PwjSVW-F0QczxMpWZRQ@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c: tegra: Add delay before reset the controller
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Alok Chauhan <alokc@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "bones@secretlab.ca" <bones@secretlab.ca>,
-        "ccross@android.com" <ccross@android.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "dgreid@chromium.org" <dgreid@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Apr 2012 06:19:35 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=129.33.192.96;
+From: Milton Miller <miltonm@bga.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartmann <greg@kroah.com>,
+        lkml <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 08/18] PCI, powerpc: Register busn_res for root buses
+Message-Id: <powerpc-pci-domains-by-busnumber-resend@mdm.bga.com>
+In-Reply-To: <1330472496.11728.31.camel@pasglop>
+References: <1330472496.11728.31.camel@pasglop>
+ <1330395009-29260-1-git-send-email-yinghai@kernel.org>
+ <1330395009-29260-9-git-send-email-yinghai@kernel.org>
+ <CAErSpo4bw-V=SM+h5iP4nfv3HaAnHjwvNwu+4Oz8iyQcY_3gOQ@mail.gmail.com>
+ <CAErSpo72_JnUkWXrzbNdbX9wiWZtQdX2tuNjEpYrSd+sGzxfzA@mail.gmail.com>
+Date: Mon, 02 Apr 2012 05:19:31 -0500
+X-Originating-IP: 129.33.192.96
+X-HeloNotChecked: Helo response was not checked before commands sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alok,
-Few / doubts /questions.
 
+[Apollogies if I left anyone off cc.  I am not subscribed and the archives
+go to great pains to hide the to and cc lists, and then truncate it for size]
+{fix a comma in cc}
 
-On Mon, Apr 2, 2012 at 11:29 AM, Alok Chauhan <alokc@nvidia.com> wrote:
-> Stephen,
->
-> I've updated the commit message and comment in the code as per your suggestion. Tegra I2C controller doesn't have idle bit so delay is required before reset the controller in case of NACK error.  This delay is calculated purely based on clock period of that particular i2c bus and not passed as hardcoded value. I2C SCL clock-stretching won't affect this calculated delay.
+On Tue Feb 28 2012 about 18:42:03 EST, Benjamin Herrenschmidt wrote:
+> On Tue, 2012-02-28 at 16:31 -0700, Bjorn Helgaas wrote:
+> > We may need mechanism to say "don't trust this info from the
+> > firmware," but we should be able to figure out a way that doesn't
+> > penalize platforms that do everything correctly. The current patch
+> > breaks these scenarios even when the platform firmware is 100%
+> > correct.
+> 
+> On the other hand, our firmwares tend not to be and the vast majority of
+> our platforms have separate bus number domains (In fact I'm not sure
+> whether we have one that actually splits bus numbers or not, maybe some
+> ancient Apple gear, I need to double check).
+> 
 
-Why is it clock cycle dependent?
+In the POWER3 era we had several boxes that split the pci bus number
+space across domains and RTAS used the bus number to find the correct
+PHB.   This contineed to the first RS64 boxes.  By S80 and RS64-III
+it was obvious that we didn't have enough numbers to continue this
+ilusion and we added the presently used RTAS calls that take the pci
+domain as well as bus, device, and function numbers.
 
-Is it possible to poll if the stop is sent by controller ?
+The bus numbers split across pci domains started with the F50
+F50 chrp 32 bit platforms.
 
->
-> Thanks
-> Alok
->
->
-> -----Original Message-----
-> From: Alok Chauhan [mailto:alokc@nvidia.com]
-> Sent: Monday, April 02, 2012 11:23 AM
-> To: swarren@wwwdotorg.org; khali@linux-fr.org; ben-linux@fluff.org; w.sang@pengutronix.de; Stephen Warren; olof@lixom.net; bones@secretlab.ca; omaplinuxkernel@gmail.com; ccross@android.com; Laxman Dewangan; linux-tegra@vger.kernel.org; linux-i2c@vger.kernel.org; dgreid@chromium.org
-> Cc: Alok Chauhan; linux-kernel@vger.kernel.org
-> Subject: [PATCH v2] i2c: tegra: Add delay before reset the controller
->
-> NACK interrupt generated before I2C controller generates the STOP condition on bus. In Software, because of this reset of controller is happening before I2C controller could complete STOP condition. So wait for some time before resetting the controller so that STOP condition has delivered properly on bus.
->
-> Added delay of 2 clock period
-How did you calculate the 2 clock cycles?
+> We did use to force renumbering on macs to avoid bus number collisions
+> between domains because of ancient X servers that didn't do domains
+> properly but I think we dropped that.
+> 
+> Cheers,
+> Ben.
 
-
-before reset the controller in case of NACK error.
->
-> Signed-off-by: Alok Chauhan <alokc@nvidia.com>
-> ---
-> Added the more descriptive commit message about issue in case of NACK error condition. Changed the comment in code also
->
->  drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
->
+milton
