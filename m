@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab2DBP7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 11:59:19 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:60175 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab2DBP7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 11:59:17 -0400
-Message-ID: <4F79CCD4.4040606@tilera.com>
-Date: Mon, 2 Apr 2012 11:59:16 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1752898Ab2DBP7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 11:59:37 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752718Ab2DBP7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 11:59:35 -0400
+Message-ID: <4F79CCE1.4040709@nod.at>
+Date: Mon, 02 Apr 2012 17:59:29 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 10/11] tile: fix multiple build failures from system.h
- dismantle
-References: <1333312727-11428-11-git-send-email-paul.gortmaker@windriver.com> <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com> <30198.1333345969@redhat.com>
-In-Reply-To: <30198.1333345969@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Apr 2 (uml)
+References: <20120402135538.502e6c73f0cb3e6ae0b3436f@canb.auug.org.au> <4F79C68C.1070100@xenotime.net>
+In-Reply-To: <4F79C68C.1070100@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/2/2012 1:52 AM, David Howells wrote:
-> Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+On 02.04.2012 17:32, Randy Dunlap wrote:
+> On 04/01/2012 08:55 PM, Stephen Rothwell wrote:
 >
->> Commit bd119c69239322caafdb64517a806037d0d0c70a
+>> Hi all,
 >>
->>     "Disintegrate asm/system.h for Tile"
+>> The merge window has closed, so -next is open for busniess.
 >>
->> created the asm/switch_to.h file, but did not add an include
->> of it to all its users.
->>
->> Also, commit b4816afa3986704d1404fc48e931da5135820472
->>
->>         "Move the asm-generic/system.h xchg() implementation to asm-generic/cmpxchg.h"
->>
->> introduced the concept of asm/cmpxchg.h but the tile arch
->> never got one.  Fork the cmpxchg content out of the asm/atomic.h
->> file to create one.
->>
->> Cc: Chris Metcalf <cmetcalf@tilera.com>
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Acked-by: David Howells <dhowells@redhat.com>
+>> Changes since 20120330:
+>
+>
+>
+> uml defconfig on x86_64:
+>
+>    CC      arch/um/drivers/mconsole_kern.o
+> arch/um/drivers/mconsole_kern.c: In function 'stack_proc':
+> arch/um/drivers/mconsole_kern.c:707:2: error: implicit declaration of function 'switch_to'
+> make[2]: *** [arch/um/drivers/mconsole_kern.o] Error 1
+>
+>
 
-Thanks!  I can push this through the tile tree along with some other
-bug-fix changes for -rc2.
+Already fixed:
+http://comments.gmane.org/gmane.linux.kernel/1274493
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Thanks,
+//richard
 
