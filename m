@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2DBJp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 05:45:27 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:40627 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751075Ab2DBJpZ (ORCPT
+	id S1752100Ab2DBJqK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 05:46:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51229 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab2DBJqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 05:45:25 -0400
-Date: Mon, 2 Apr 2012 17:45:16 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.4
-Message-ID: <20120402094516.GA23763@gondor.apana.org.au>
-References: <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au> <20110328071322.GA6569@gondor.apana.org.au> <20110629235153.GA16559@gondor.apana.org.au> <20120126024342.GA12492@gondor.apana.org.au> <20120322012046.GA8854@gondor.apana.org.au>
+	Mon, 2 Apr 2012 05:46:08 -0400
+Message-ID: <4F79755B.3030703@openvz.org>
+Date: Mon, 02 Apr 2012 13:46:03 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322012046.GA8854@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Oleg Nesterov <oleg@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+References: <20120331091049.19373.28994.stgit@zurg> <20120331092929.19920.54540.stgit@zurg> <20120331201324.GA17565@redhat.com> <20120331203912.GB687@moon>
+In-Reply-To: <20120331203912.GB687@moon>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+Cyrill Gorcunov wrote:
+> On Sat, Mar 31, 2012 at 10:13:24PM +0200, Oleg Nesterov wrote:
+>>
+>> Add Cyrill. This conflicts with
+>> c-r-prctl-add-ability-to-set-new-mm_struct-exe_file.patch in -mm.
+>
+> Thanks for CC'ing, Oleg. I think if thise series go in it won't
+> be a problem to update my patch accordingly.
 
-This push fixes a number of issues:
+In this patch I leave mm->exe_file lockless.
+After exec/fork we can change it only for current task and only if mm->mm_users == 1.
 
-* Fix for CPU hotplug hang in padata.
-* Avoid using cpu_active inappropriately in pcrypt and padata.
-* Fix for user-space algorithm lookup hang with IV generators.
-* Fix for netlink dump of algorithms where stuff went missing due
-  to incorrect calculation of message size.
+something like this:
 
-Please pull from
+task_lock(current);
+if (atomic_read(&current->mm->mm_users) == 1)
+	set_mm_exe_file(current->mm, new_file);
+else
+	ret = -EBUSY;
+task_unlock(current);
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Steffen Klassert (6):
-      padata: Add a reference to the api documentation
-      padata: Use the online cpumask as the default
-      padata: Fix cpu hotplug
-      crypto: pcrypt - Use the online cpumask as the default
-      crypto: user - Fix lookup of algorithms with IV generator
-      crypto: user - Fix size of netlink dump message
-
- crypto/ablkcipher.c                |    4 +-
- crypto/aead.c                      |    4 +-
- crypto/crypto_user.c               |   80 +++++++++++++++++++++++++++++++++++-
- crypto/pcrypt.c                    |    8 ++--
- include/crypto/internal/aead.h     |    2 +
- include/crypto/internal/skcipher.h |    2 +
- include/linux/cryptouser.h         |    3 +
- kernel/padata.c                    |   13 ++++--
- 8 files changed, 103 insertions(+), 13 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+task_lock() protect this code against get_task_mm()
