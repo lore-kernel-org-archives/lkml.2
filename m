@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab2DBFah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 01:30:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12497 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab2DBFag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 01:30:36 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: [PATCH 00/11] Fix up more asm/system.h fallout
-Date: Mon, 02 Apr 2012 06:30:30 +0100
-Message-ID: <29666.1333344630@redhat.com>
+	id S1752323Ab2DBFg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 01:36:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46795 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab2DBFgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 01:36:55 -0400
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH] pch_uart: Fix MSI setting issue
+Date: Mon,  2 Apr 2012 14:36:22 +0900
+Message-Id: <1333344982-5130-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following patch (MSI setting) is not enough.
 
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-> Like others, I was surprised it didn't get a soak in linux-next
-> before being merged
+commit e463595fd9c752fa4bf06b47df93ef9ade3c7cf0
+Author: Alexander Stein <alexander.stein@systec-electronic.com>
+Date:   Mon Jul 4 08:58:31 2011 +0200
 
-I don't think that would've helped - unless Linus took all of linux-next into
-his tree.  The problem is that there were a substantial number of differences
-between Linus-vanilla and linux-next (obviously), even mid-window.
+    pch_uart: Add MSI support
+    
+    Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-To be fair, Linus had to fix up my patch set to apply to his vanilla tree, but
-I did ask him to to pull the patches later in the merge window and hopefully
-give me a chance to fix them up again before he did so.  But I suppose arch
-tree breakage was to be expected anyway in some arches.
+To enable MSI mode, PCI bus-mastering must be enabled.
+This patch enables the setting.
 
-However, I think the better way to have done this would've been to have the
-arch-specific patches go through the arch trees first (and, indeed, Blackfin
-did this and I was able to drop their patch from my set) - and then have the
-generic patches go at the end.
+cc: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/tty/serial/pch_uart.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Even better might've been to add a #warning into each asm/system.h in this
-merge window and defer the final deletion to the next merge window.
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 5928877..ae8f848 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1586,6 +1586,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	}
+ 
+ 	pci_enable_msi(pdev);
++	pci_set_master(pdev);
+ 
+ 	iobase = pci_resource_start(pdev, 0);
+ 	mapbase = pci_resource_start(pdev, 1);
+-- 
+1.7.7.6
 
-David
