@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2DBXA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 19:00:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13079 "EHLO mga14.intel.com"
+	id S1753885Ab2DBXFP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 19:05:15 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:47020 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753077Ab2DBXAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 19:00:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="126305265"
-Subject: Re: Don't apply 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 to stable
- please.
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu
-Date: Mon, 02 Apr 2012 16:02:07 -0700
-In-Reply-To: <20120402224701.GA6961@phenom.dumpdata.com>
-References: <20120402224701.GA6961@phenom.dumpdata.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1333407728.1270.87.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1751331Ab2DBXFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 19:05:12 -0400
+Date: Mon, 2 Apr 2012 16:04:23 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        linux-security-module@vger.kernel.org, oprofile-list@lists.sf.net,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120402230423.GB32299@count0.beaverton.ibm.com>
+References: <20120331091049.19373.28994.stgit@zurg>
+ <20120331092929.19920.54540.stgit@zurg>
+ <20120331201324.GA17565@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120331201324.GA17565@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040223-1976-0000-0000-00000C018637
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 18:47 -0400, Konrad Rzeszutek Wilk wrote:
-> Hey Greg,
+On Sat, Mar 31, 2012 at 10:13:24PM +0200, Oleg Nesterov wrote:
+> On 03/31, Konstantin Khlebnikov wrote:
+> >
+> > comment from v2.6.25-6245-g925d1c4 ("procfs task exe symlink"),
+> > where all this stuff was introduced:
+> >
+> > > ...
+> > > This avoids pinning the mounted filesystem.
+> >
+> > So, this logic is hooked into every file mmap/unmmap and vma split/merge just to
+> > fix some hypothetical pinning fs from umounting by mm which already unmapped all
+> > its executable files, but still alive. Does anyone know any real world example?
 > 
-> The git commit 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 has CC stable@kernel.org
-> but it breaks Xen - we are working to fix it in 3.4, but the fix for it
-> does some architectual changes (136d249ef7dbf0fefa292082cc40be1ea864cbd6) that
-> I don't know if you are comfortable putting in stable tree.
+> This is the question to Matt.
 
-I am Ok if the commit '9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655' is not
-applied to stable.
+This is where I got the scenario:
 
-thanks,
-suresh
+https://lkml.org/lkml/2007/7/12/398
+
+Cheers,
+	-Matt Helsley
+
+PS: I seem to keep coming back to this so I hope folks don't mind if I leave
+some more references to make (re)searching this topic easier:
+
+Thread with Cyrill Gorcunov discussing c/r of symlink:
+https://lkml.org/lkml/2012/3/16/448
+
+Thread with Oleg Nesterov re: cleanups:
+https://lkml.org/lkml/2012/3/5/240
+
+Thread with Alexey Dobriyan re: cleanups:
+https://lkml.org/lkml/2009/6/4/625
+
+mainline commit 925d1c401fa6cfd0df5d2e37da8981494ccdec07
+Date:   Tue Apr 29 01:01:36 2008 -0700
+
+	procfs task exe symlink
 
