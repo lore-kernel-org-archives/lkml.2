@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2DBSvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:51:12 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:53041 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab2DBSvK convert rfc822-to-8bit (ORCPT
+	id S1754081Ab2DBSxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:53:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59249 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab2DBSxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:51:10 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 95.21.41.4
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18TfNdzHRFbEa74Cthx0/Il
-Date: Mon, 2 Apr 2012 20:50:57 +0200
-From: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
-To: Shea Levy <shea@shealevy.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Hang opening a pipe written to by a child, with SIGCHLD
-Message-ID: <20120402185057.GB3029@vicerveza.homeunix.net>
-References: <20120402144611.GY3029@vicerveza.homeunix.net>
- <4F79BC66.3010902@shealevy.com>
+	Mon, 2 Apr 2012 14:53:17 -0400
+Date: Mon, 2 Apr 2012 11:52:59 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Ren Mingxin <renmx@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass
+ of disks naming
+Message-ID: <20120402185259.GA16226@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <4F7581D4.4040301@cn.fujitsu.com>
+ <4F7582B0.5010609@cn.fujitsu.com>
+ <20120330152606.GB28934@google.com>
+ <20120330152808.GC28934@google.com>
+ <4F78FE89.2070707@cn.fujitsu.com>
+ <20120402072009.GF30360@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F79BC66.3010902@shealevy.com>
-X-Accept-Language: ca, es, eo, ru, en, jbo, tokipona
+In-Reply-To: <20120402072009.GF30360@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 10:49:10AM -0400, Shea Levy wrote:
-> On 04/02/2012 10:46 AM, Lluís Batlle i Rossell wrote:
-> >Can anyone reproduce this?
+Hello,
+
+On Mon, Apr 02, 2012 at 10:20:09AM +0300, Michael S. Tsirkin wrote:
+> Pleae don't rename virtio disks, it is way too late for that:
+> virtio block driver was merged around 2007, it is not new by
+> any measure, and there are many systems out there using
+> the current naming scheme.
+
+There's no point in renaming device nodes of already deployed drivers.
+It'll cause a lot of pain.
+
+> > And how about the rssd in the patch 3 then?
 > 
-> I've reproduced this on my system as well (3.3). No idea about cause though.
-> 
+> Probably same. Renaming existing devices will break setups.
+> I think the idea is to avoid using the
+> legacy naming in new drivers *that will be added from now on*.
 
-Thank you Shea,
+Yeap.
 
-with a little change, adding "sleep 0.1" makes it hang early in all (few)
-linuces I tried: Let me know if this helps you reproduce the problem.
+Thanks.
 
-As before, hangs under strace, does not hang under 'strace -f'. Sorry if I'm
-misunderstanding something.
-
-New script:
-----------
-#!/bin/sh
-                                                                                                                   
-PIPE=/tmp/pipe
-                                                                                                                   
-rm -f $PIPE
-mkfifo $PIPE
-set -x
-                                                                                                                   
-spawn() {
-    sleep 0.1
-    echo DONE > $PIPE
-}
-
-spawn &
-
-while true; do
-    while read LINE < $PIPE; do
-        echo $LINE
-        spawn &
-    done
-done
------------
-
-Regards,
-Lluís.
+-- 
+tejun
