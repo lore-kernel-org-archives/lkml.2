@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab2DBIg4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 04:36:56 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48746 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751187Ab2DBIgz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 04:36:55 -0400
+	id S1751740Ab2DBIib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 04:38:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35297 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab2DBIi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 04:38:29 -0400
+Message-ID: <4F796581.1030302@openvz.org>
+Date: Mon, 02 Apr 2012 12:38:25 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-In-Reply-To: <20120402082539.GA10228@dhcp-172-17-9-228.mtv.corp.google.com>
-References: <CAFLxGvy+9eHbjsAm-FaV8ihXexGGLURbyDTd6X_pqE_mtOutcw@mail.gmail.com>
-	<20120402082539.GA10228@dhcp-172-17-9-228.mtv.corp.google.com>
-Date: Mon, 2 Apr 2012 10:36:53 +0200
-Message-ID: <CAFLxGvyjVnMX6jLvGWtyup1EddFn73MUq_FkFsYBBuUNpKXrYg@mail.gmail.com>
-Subject: Re: [Ocfs2-users] BUG at fs/ocfs2/extent_map.c:476
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        ocfs2-users@oss.oracle.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "drepper@gmail.com" <drepper@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] nextfd(2)
+References: <20120401125741.GA7484@p183.telecom.by> <4F785F1D.4020503@openvz.org> <20120402010937.38b33576@pyramind.ukuu.org.uk>
+In-Reply-To: <20120402010937.38b33576@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 10:25 AM, Joel Becker <jlbec@evilplan.org> wrote:
-> On Sat, Mar 24, 2012 at 09:50:49AM +0100, richard -rw- weinberger wrote:
->> Hi!
->>
->> Today one of my kvm hosts ran into this BUG.
->> The host is member of y small ocfs2-cluster (3 hosts).
->> CentOS 6.2, Kernel 3.1.1 (vanilla).
-> ...
->> Is this a known/fixed bug?
+Alan Cox wrote:
+>> Can we add "pid" argument to be able to search next fd in other task?
+>> Together with sys_kcmp() this will be very useful for checkpoint/restore.
 >
-> Not that I know of.  Have you seen it more than once?
->
+> That would raise all sorts of security questions unless protected, plus
+> its got races. If you want to do that and you have the rights you can do
+> it via procfs anyway.
 
-No. All three cluster members had an uptime of 70 days.
-Only one showed the BUG.
-I've rebooted it and it seems to work fine now.
-
-I'm not an ocfs2 expert, what could cause this kind of BUG?
-Internal logic error? Filesystem corruption?
-
--- 
-Thanks,
-//richard
+Don't worry, I just asked. =) Seems like crtools dumps fd in the target-task context,
+so the current version is suitable.
