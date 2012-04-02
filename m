@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2DBSxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 14:53:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59249 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab2DBSxR (ORCPT
+	id S1754055Ab2DBSz1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 14:55:27 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:57126 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2DBSz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 14:53:17 -0400
-Date: Mon, 2 Apr 2012 11:52:59 -0700
+	Mon, 2 Apr 2012 14:55:26 -0400
+Date: Mon, 2 Apr 2012 11:55:22 -0700
 From: Tejun Heo <tj@kernel.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Ren Mingxin <renmx@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        LKML <linux-kernel@vger.kernel.org>, SCSI <linux-scsi@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>,
-        VIRTUAL <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass
- of disks naming
-Message-ID: <20120402185259.GA16226@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <4F7581D4.4040301@cn.fujitsu.com>
- <4F7582B0.5010609@cn.fujitsu.com>
- <20120330152606.GB28934@google.com>
- <20120330152808.GC28934@google.com>
- <4F78FE89.2070707@cn.fujitsu.com>
- <20120402072009.GF30360@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [GIT PULL] block/for-3.5/core: pull in cgroup/for-3.5
+Message-ID: <20120402185522.GB16226@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120401200306.GB9230@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120402115905.cbca9c04113e543163bdb5f2@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120402072009.GF30360@redhat.com>
+In-Reply-To: <20120402115905.cbca9c04113e543163bdb5f2@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello, Stephen.
 
-On Mon, Apr 02, 2012 at 10:20:09AM +0300, Michael S. Tsirkin wrote:
-> Pleae don't rename virtio disks, it is way too late for that:
-> virtio block driver was merged around 2007, it is not new by
-> any measure, and there are many systems out there using
-> the current naming scheme.
+On Mon, Apr 02, 2012 at 11:59:05AM +1000, Stephen Rothwell wrote:
+> today.  The best way to proceed is for the parts of the cgroup tree that
+> the block tree will depend on (which may be the entire current cgroup
+> tree) should be in a separate, stable (i.e. non rebasing/rewriting)
+> branch that can be merged into both the cgroup and block trees.
 
-There's no point in renaming device nodes of already deployed drivers.
-It'll cause a lot of pain.
-
-> > And how about the rssd in the patch 3 then?
-> 
-> Probably same. Renaming existing devices will break setups.
-> I think the idea is to avoid using the
-> legacy naming in new drivers *that will be added from now on*.
-
-Yeap.
+Yeap, that's the intention of this pull request.  cgroup/for-3.5 is
+already stable.  We just need it to be pulled into block/for-3.5/core.
 
 Thanks.
 
