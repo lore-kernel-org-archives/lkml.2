@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab2DBLzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:55:03 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:47934 "EHLO
+	id S1753630Ab2DBMIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 08:08:45 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:47944 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab2DBLzA (ORCPT
+	with ESMTP id S1751562Ab2DBLzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:55:00 -0400
+	Mon, 2 Apr 2012 07:55:01 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: [PATCH 05/69] TTY: isdn, remove callout
-Date: Mon,  2 Apr 2012 13:53:49 +0200
-Message-Id: <1333367693-3244-6-git-send-email-jslaby@suse.cz>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: [PATCH 26/69] TTY: con3215, add tty_port
+Date: Mon,  2 Apr 2012 13:54:10 +0200
+Message-Id: <1333367693-3244-27-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,126 +23,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wonder how this survived there during the whole 2.6 series until now
-:D.
-
-Callouts are not used for a decade, so let us remove it also from
-isdn. This means removal of ISDN_ASYNC_CALLOUT_ACTIVE which is never
-raised in info->flags and callout_termios which are never used.
-
-This will help us to get rid of ISDN_ASYNC_* flags and use ASYNC ones
-from serial.h. And then we will switch to tty_port.
+And use flags from that. But first we have to get rid of duplicated
+flag names. From now on, for the standard ones that are stored in
+tty_port->flags, we use ASYNC_* ones.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
 ---
- drivers/isdn/i4l/isdn_tty.c |   32 ++++++--------------------------
- include/linux/isdn.h        |    3 ---
- 2 files changed, 6 insertions(+), 29 deletions(-)
+ drivers/s390/char/con3215.c |   30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
-index 1d701cd..27f7092 100644
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -1504,18 +1504,11 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
- 	 */
- 	if ((filp->f_flags & O_NONBLOCK) ||
- 	    (tty->flags & (1 << TTY_IO_ERROR))) {
--		if (info->flags & ISDN_ASYNC_CALLOUT_ACTIVE)
--			return -EBUSY;
- 		info->flags |= ISDN_ASYNC_NORMAL_ACTIVE;
+diff --git a/drivers/s390/char/con3215.c b/drivers/s390/char/con3215.c
+index fb195f3..9a76614 100644
+--- a/drivers/s390/char/con3215.c
++++ b/drivers/s390/char/con3215.c
+@@ -20,6 +20,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/err.h>
+ #include <linux/reboot.h>
++#include <linux/serial.h> /* ASYNC_* flags */
+ #include <linux/slab.h>
+ #include <asm/ccwdev.h>
+ #include <asm/cio.h>
+@@ -44,14 +45,11 @@
+ #define RAW3215_TIMEOUT	    HZ/10     /* time for delayed output */
+ 
+ #define RAW3215_FIXED	    1	      /* 3215 console device is not be freed */
+-#define RAW3215_ACTIVE	    2	      /* set if the device is in use */
+ #define RAW3215_WORKING	    4	      /* set if a request is being worked on */
+ #define RAW3215_THROTTLED   8	      /* set if reading is disabled */
+ #define RAW3215_STOPPED	    16	      /* set if writing is disabled */
+-#define RAW3215_CLOSING	    32	      /* set while in close process */
+ #define RAW3215_TIMER_RUNS  64	      /* set if the output delay timer is on */
+ #define RAW3215_FLUSHING    128	      /* set to flush buffer (no delay) */
+-#define RAW3215_FROZEN	    256	      /* set if 3215 is frozen for suspend */
+ 
+ #define TAB_STOP_SIZE	    8	      /* tab stop size */
+ 
+@@ -76,6 +74,7 @@ struct raw3215_req {
+ } __attribute__ ((aligned(8)));
+ 
+ struct raw3215_info {
++	struct tty_port port;
+ 	struct ccw_device *cdev;      /* device for tty driver */
+ 	spinlock_t *lock;	      /* pointer to irq lock */
+ 	int flags;		      /* state flags */
+@@ -292,7 +291,7 @@ static void raw3215_timeout(unsigned long __data)
+ 	if (raw->flags & RAW3215_TIMER_RUNS) {
+ 		del_timer(&raw->timer);
+ 		raw->flags &= ~RAW3215_TIMER_RUNS;
+-		if (!(raw->flags & RAW3215_FROZEN)) {
++		if (!(raw->port.flags & ASYNC_SUSPENDED)) {
+ 			raw3215_mk_write_req(raw);
+ 			raw3215_start_io(raw);
+ 		}
+@@ -308,7 +307,8 @@ static void raw3215_timeout(unsigned long __data)
+  */
+ static inline void raw3215_try_io(struct raw3215_info *raw)
+ {
+-	if (!(raw->flags & RAW3215_ACTIVE) || (raw->flags & RAW3215_FROZEN))
++	if (!(raw->port.flags & ASYNC_INITIALIZED) ||
++			(raw->port.flags & ASYNC_SUSPENDED))
+ 		return;
+ 	if (raw->queued_read != NULL)
+ 		raw3215_start_io(raw);
+@@ -474,7 +474,7 @@ static void raw3215_make_room(struct raw3215_info *raw, unsigned int length)
+ 		/* While console is frozen for suspend we have no other
+ 		 * choice but to drop message from the buffer to make
+ 		 * room for even more messages. */
+-		if (raw->flags & RAW3215_FROZEN) {
++		if (raw->port.flags & ASYNC_SUSPENDED) {
+ 			raw3215_drop_line(raw);
+ 			continue;
+ 		}
+@@ -596,10 +596,10 @@ static int raw3215_startup(struct raw3215_info *raw)
+ {
+ 	unsigned long flags;
+ 
+-	if (raw->flags & RAW3215_ACTIVE)
++	if (raw->port.flags & ASYNC_INITIALIZED)
  		return 0;
- 	}
--	if (info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) {
--		if (info->normal_termios.c_cflag & CLOCAL)
--			do_clocal = 1;
--	} else {
--		if (tty->termios->c_cflag & CLOCAL)
--			do_clocal = 1;
--	}
-+	if (tty->termios->c_cflag & CLOCAL)
-+		do_clocal = 1;
- 	/*
- 	 * Block waiting for the carrier detect and the line to become
- 	 * free (i.e., not in use by the callout).  While we are in
-@@ -1546,8 +1539,7 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
- #endif
- 			break;
- 		}
--		if (!(info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) &&
--		    !(info->flags & ISDN_ASYNC_CLOSING) &&
-+		if (!(info->flags & ISDN_ASYNC_CLOSING) &&
- 		    (do_clocal || (info->msr & UART_MSR_DCD))) {
- 			break;
- 		}
-@@ -1670,14 +1662,6 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
+ 	raw->line_pos = 0;
+-	raw->flags |= RAW3215_ACTIVE;
++	raw->port.flags |= ASYNC_INITIALIZED;
+ 	spin_lock_irqsave(get_ccwdev_lock(raw->cdev), flags);
+ 	raw3215_try_io(raw);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(raw->cdev), flags);
+@@ -615,14 +615,15 @@ static void raw3215_shutdown(struct raw3215_info *raw)
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	unsigned long flags;
+ 
+-	if (!(raw->flags & RAW3215_ACTIVE) || (raw->flags & RAW3215_FIXED))
++	if (!(raw->port.flags & ASYNC_INITIALIZED) ||
++			(raw->flags & RAW3215_FIXED))
  		return;
+ 	/* Wait for outstanding requests, then free irq */
+ 	spin_lock_irqsave(get_ccwdev_lock(raw->cdev), flags);
+ 	if ((raw->flags & RAW3215_WORKING) ||
+ 	    raw->queued_write != NULL ||
+ 	    raw->queued_read != NULL) {
+-		raw->flags |= RAW3215_CLOSING;
++		raw->port.flags |= ASYNC_CLOSING;
+ 		add_wait_queue(&raw->empty_wait, &wait);
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		spin_unlock_irqrestore(get_ccwdev_lock(raw->cdev), flags);
+@@ -630,7 +631,7 @@ static void raw3215_shutdown(struct raw3215_info *raw)
+ 		spin_lock_irqsave(get_ccwdev_lock(raw->cdev), flags);
+ 		remove_wait_queue(&raw->empty_wait, &wait);
+ 		set_current_state(TASK_RUNNING);
+-		raw->flags &= ~(RAW3215_ACTIVE | RAW3215_CLOSING);
++		raw->port.flags &= ~(ASYNC_INITIALIZED | ASYNC_CLOSING);
  	}
- 	info->flags |= ISDN_ASYNC_CLOSING;
--	/*
--	 * Save the termios structure, since this port may have
--	 * separate termios for callout and dialin.
--	 */
--	if (info->flags & ISDN_ASYNC_NORMAL_ACTIVE)
--		info->normal_termios = *tty->termios;
--	if (info->flags & ISDN_ASYNC_CALLOUT_ACTIVE)
--		info->callout_termios = *tty->termios;
- 
- 	tty->closing = 1;
- 	/*
-@@ -1731,7 +1715,7 @@ isdn_tty_hangup(struct tty_struct *tty)
- 		return;
- 	isdn_tty_shutdown(info);
- 	info->count = 0;
--	info->flags &= ~(ISDN_ASYNC_NORMAL_ACTIVE | ISDN_ASYNC_CALLOUT_ACTIVE);
-+	info->flags &= ~ISDN_ASYNC_NORMAL_ACTIVE;
- 	info->tty = NULL;
- 	wake_up_interruptible(&info->open_wait);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(raw->cdev), flags);
  }
-@@ -2116,8 +2100,7 @@ isdn_tty_find_icall(int di, int ch, setup_parm *setup)
- 	return (wret == 2) ? 3 : 0;
+@@ -652,6 +653,7 @@ static struct raw3215_info *raw3215_alloc_info(void)
+ 
+ 	setup_timer(&info->timer, raw3215_timeout, (unsigned long)info);
+ 	init_waitqueue_head(&info->empty_wait);
++	tty_port_init(&info->port);
+ 
+ 	return info;
  }
- 
--#define TTY_IS_ACTIVE(info)						\
--	(info->flags & (ISDN_ASYNC_NORMAL_ACTIVE | ISDN_ASYNC_CALLOUT_ACTIVE))
-+#define TTY_IS_ACTIVE(info)	(info->flags & ISDN_ASYNC_NORMAL_ACTIVE)
- 
- int
- isdn_tty_stat_callback(int i, isdn_ctrl *c)
-@@ -2628,11 +2611,8 @@ isdn_tty_modem_result(int code, modem_info *info)
- 		if ((info->flags & ISDN_ASYNC_CLOSING) || (!info->tty)) {
- 			return;
- 		}
--		if ((info->flags & ISDN_ASYNC_CHECK_CD) &&
--		    (!((info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) &&
--		       (info->flags & ISDN_ASYNC_CALLOUT_NOHUP)))) {
-+		if (info->flags & ISDN_ASYNC_CHECK_CD)
- 			tty_hangup(info->tty);
--		}
- 	}
+@@ -741,7 +743,7 @@ static int raw3215_pm_stop(struct ccw_device *cdev)
+ 	raw = dev_get_drvdata(&cdev->dev);
+ 	spin_lock_irqsave(get_ccwdev_lock(raw->cdev), flags);
+ 	raw3215_make_room(raw, RAW3215_BUFFER_SIZE);
+-	raw->flags |= RAW3215_FROZEN;
++	raw->port.flags |= ASYNC_SUSPENDED;
+ 	spin_unlock_irqrestore(get_ccwdev_lock(raw->cdev), flags);
+ 	return 0;
  }
+@@ -754,7 +756,7 @@ static int raw3215_pm_start(struct ccw_device *cdev)
+ 	/* Allow I/O again and flush output buffer. */
+ 	raw = dev_get_drvdata(&cdev->dev);
+ 	spin_lock_irqsave(get_ccwdev_lock(raw->cdev), flags);
+-	raw->flags &= ~RAW3215_FROZEN;
++	raw->port.flags &= ~ASYNC_SUSPENDED;
+ 	raw->flags |= RAW3215_FLUSHING;
+ 	raw3215_try_io(raw);
+ 	raw->flags &= ~RAW3215_FLUSHING;
+@@ -827,7 +829,7 @@ static void con3215_flush(void)
+ 	unsigned long flags;
  
-diff --git a/include/linux/isdn.h b/include/linux/isdn.h
-index 292f27a..d13b76d 100644
---- a/include/linux/isdn.h
-+++ b/include/linux/isdn.h
-@@ -393,7 +393,6 @@ typedef struct isdn_net_dev_s {
- 
- #define ISDN_ASYNC_MAGIC          0x49344C01 /* for paranoia-checking        */
- #define ISDN_ASYNC_INITIALIZED	  0x80000000 /* port was initialized         */
--#define ISDN_ASYNC_CALLOUT_ACTIVE 0x40000000 /* Call out device active       */
- #define ISDN_ASYNC_NORMAL_ACTIVE  0x20000000 /* Normal device active         */
- #define ISDN_ASYNC_CLOSING	  0x08000000 /* Serial port is closing       */
- #define ISDN_ASYNC_CTS_FLOW	  0x04000000 /* Do CTS flow control          */
-@@ -498,8 +497,6 @@ typedef struct modem_info {
- #endif
-   struct tty_struct 	*tty;            /* Pointer to corresponding tty   */
-   atemu                 emu;             /* AT-emulator data               */
--  struct ktermios	normal_termios;  /* For saving termios structs     */
--  struct ktermios	callout_termios;
-   wait_queue_head_t	open_wait, close_wait;
-   spinlock_t	        readlock;
- } modem_info;
+ 	raw = raw3215[0];  /* console 3215 is the first one */
+-	if (raw->flags & RAW3215_FROZEN)
++	if (raw->port.flags & ASYNC_SUSPENDED)
+ 		/* The console is still frozen for suspend. */
+ 		if (ccw_device_force_console())
+ 			/* Forcing didn't work, no panic message .. */
 -- 
 1.7.9.2
 
