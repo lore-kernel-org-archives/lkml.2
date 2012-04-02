@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab2DBLkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 07:40:23 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:38414 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078Ab2DBLkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 07:40:22 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: starvik@axis.com
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
-Subject: [PATCH 1/1] cris: posix_types.h, include asm-generic/posix_types.h
-Date: Mon,  2 Apr 2012 13:40:17 +0200
-Message-Id: <1333366817-26121-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.9.2
+	id S1752647Ab2DBLpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 07:45:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58478 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752012Ab2DBLpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 07:45:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="124444277"
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+To: Ted Tso <tytso@mit.edu>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH v2 0/4] do not use s_dirt in ext4
+Date: Mon,  2 Apr 2012 14:45:35 +0300
+Message-Id: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without that I cannot build anything:
-In file included from include/linux/page-flags.h:8:0,
-                 from kernel/bounds.c:9:
-include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
-include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
-...
+This patch-set makes ext4 independent of the VFS superblock management
+services. Namely, ext4 does not require to register the 'write_super()' VFS
+call-back.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com
----
- arch/cris/include/asm/posix_types.h |    2 ++
- 1 file changed, 2 insertions(+)
+The reason of this exercises is to get rid of the 'sync_supers()' kernel thread
+which wakes up every 5 seconds (by default) even if all superblocks are clean.
+This is wasteful from power management POW (unnecessary wake-ups).
 
-diff --git a/arch/cris/include/asm/posix_types.h b/arch/cris/include/asm/posix_types.h
-index 72b3cd6..234891c 100644
---- a/arch/cris/include/asm/posix_types.h
-+++ b/arch/cris/include/asm/posix_types.h
-@@ -33,4 +33,6 @@ typedef int		__kernel_ptrdiff_t;
- typedef unsigned short	__kernel_old_dev_t;
- #define __kernel_old_dev_t __kernel_old_dev_t
- 
-+#include <asm-generic/posix_types.h>
-+
- #endif /* __ARCH_CRIS_POSIX_TYPES_H */
--- 
-1.7.9.2
+Version 1 of this patch-set can be found here:
+https://lkml.org/lkml/2012/3/20/220
 
+Changes between v1 and v2.
+  * Rake different strategy - instead of pushing 's_dirt' down "as-is" and
+    emulating old behavior, we now just submit the superblock for writing
+    straight away, either via the journal or directly. Thank to Jan Kara
+    for helping with this.
+  * Ted picked some of the patches already, which made this series shorter
+    - thanks!
+  * This time I've tested the changes using xfstests.
+  * Rebased to 3.4-rc1.
 
+Note: Ted, you merged the "mm: export dirty_writeback_interval", but it looks
+like we won't need this for ext[23]. However, for other file-systems we will
+need this change.
+
+Thanks,
+Artem.
