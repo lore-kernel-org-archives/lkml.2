@@ -1,64 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab2DBWvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 18:51:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493Ab2DBWvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 18:51:36 -0400
-Date: Mon, 2 Apr 2012 18:51:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org
-Subject: Re: btrfs io errors on 3.4rc1
-Message-ID: <20120402225131.GB16907@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Chris Mason <chris.mason@oracle.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-btrfs@vger.kernel.org
-References: <20120402180214.GA1830@redhat.com>
- <20120402194814.GA10965@shiny.msi.event>
- <20120402211622.GA2487@redhat.com>
- <20120402212608.GA14958@shiny.msi.event>
- <20120402214051.GB2487@redhat.com>
- <20120402222802.GA18000@shiny.nikko.sjc.wayport.net>
- <20120402223350.GA16907@redhat.com>
- <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
+	id S1753971Ab2DBWvt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 18:51:49 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:46286 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab2DBWvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 18:51:46 -0400
+Date: Mon, 2 Apr 2012 18:47:02 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: suresh.b.siddha@intel.com, mingo@elte.hu
+Subject: Don't apply 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 to stable
+ please.
+Message-ID: <20120402224701.GA6961@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090203.4F7A2D7B.0065,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 06:39:19PM -0400, Chris Mason wrote:
- > On Mon, Apr 02, 2012 at 06:33:50PM -0400, Dave Jones wrote:
- > > On Mon, Apr 02, 2012 at 06:28:02PM -0400, Chris Mason wrote:
- > >  
- > >  > > x86-64.
- > >  > > 
- > >  > > dmesg below.  (ignore the rpc oops, reported elsewhere, it's unrelated)
- > >  > 
- > >  > Well, there really are no btrfs messages in there at all.  Do you have
- > >  > free space for a clean copy of the btrfs partition?  Trying to figure
- > >  > out if you have a stale corruption (on two boxes seems really unlikely).
- > >  > I definitely can't reproduce it here.
- > > 
- > > Don't really have any free space for it (It's the / partition on both)
- > > 
- > > Is there a wip btrfs.fsck yet ? One of the machines is just a scratch testbox,
- > > so I'm happy to run it even if it'll potentially make things worse.
- > 
- > The current btrfsck repair mode will fix problems in the extent
- > allocation tree, but that probably isn't what you're seeing.  I'd just
- > run it read only and see if it finds any problems.
- > 
- > (You'll need the FS completely unmounted though).
+Hey Greg,
 
-I'll start a bisect later to see if I can narrow it down at least.
+The git commit 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 has CC stable@kernel.org
+but it breaks Xen - we are working to fix it in 3.4, but the fix for it
+does some architectual changes (136d249ef7dbf0fefa292082cc40be1ea864cbd6) that
+I don't know if you are comfortable putting in stable tree.
 
-	Dave
 
