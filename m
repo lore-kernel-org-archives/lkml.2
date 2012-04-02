@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab2DBOHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 10:07:08 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:36004 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2DBOHF (ORCPT
+	id S1752243Ab2DBOOl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 10:14:41 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47709 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab2DBOOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 10:07:05 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] x86: Make mwait_usable() respect "idle=nomwait" kernel
- parameter
-To: lenb@kernel.org
-Cc: venki@google.com, suresh.b.siddha@intel.com, bp@amd64.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        ben@decadent.org.uk, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        deepthi@linux.vnet.ibm.com
-Date: Mon, 02 Apr 2012 19:36:45 +0530
-Message-ID: <20120402140645.6283.21190.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12040204-7014-0000-0000-000000D3D2F5
+	Mon, 2 Apr 2012 10:14:40 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] staging: zsmalloc: fix memory leak
+Date: Mon,  2 Apr 2012 09:13:56 -0500
+Message-Id: <1333376036-9841-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040214-5518-0000-0000-000003634440
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mwait_usable() returns 1 even if the "idle=nomwait" kernel parameter is passed.
-Fix it by adding a check for boot_option_idle_override == IDLE_NOMWAIT and
-returning 0 if it is set.
+From: Nitin Gupta <ngupta@vflare.org>
 
-Before applying the patch (dmesg snippet):
-[    0.000000] Command line: [...] idle=nomwait
-[    0.000000] Kernel command line: [...] idle=nomwait
-[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
-[    0.140606] using mwait in idle threads.         <======= mwait being used
-[    4.303986] cpuidle: using governor ladder
-[    4.308232] cpuidle: using governor menu
+This patch fixes a memory leak in zsmalloc where the first
+subpage of each zspage is leaked when the zspage is freed.
 
-After applying the patch:
-[    0.000000] Command line: [...] idle=nomwait
-[    0.000000] Kernel command line: [...] idle=nomwait
-[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
-[    4.264100] cpuidle: using governor ladder
-[    4.268342] cpuidle: using governor menu
+Based on 3.4-rc1.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
+ drivers/staging/zsmalloc/zsmalloc-main.c |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
- arch/x86/kernel/process.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index a33afaa..945fbf0 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -621,6 +621,9 @@ int mwait_usable(const struct cpuinfo_x86 *c)
- 	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
- 		return 1;
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index 09caa4f..917461c 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -267,33 +267,39 @@ static unsigned long obj_idx_to_offset(struct page *page,
+ 	return off + obj_idx * class_size;
+ }
  
-+	if (boot_option_idle_override == IDLE_NOMWAIT)
-+		return 0;
++static void reset_page(struct page *page)
++{
++	clear_bit(PG_private, &page->flags);
++	clear_bit(PG_private_2, &page->flags);
++	set_page_private(page, 0);
++	page->mapping = NULL;
++	page->freelist = NULL;
++	reset_page_mapcount(page);
++}
 +
- 	if (c->cpuid_level < MWAIT_INFO)
- 		return 0;
+ static void free_zspage(struct page *first_page)
+ {
+-	struct page *nextp, *tmp;
++	struct page *nextp, *tmp, *head_extra;
  
+ 	BUG_ON(!is_first_page(first_page));
+ 	BUG_ON(first_page->inuse);
+ 
+-	nextp = (struct page *)page_private(first_page);
++	head_extra = (struct page *)page_private(first_page);
+ 
+-	clear_bit(PG_private, &first_page->flags);
+-	clear_bit(PG_private_2, &first_page->flags);
+-	set_page_private(first_page, 0);
+-	first_page->mapping = NULL;
+-	first_page->freelist = NULL;
+-	reset_page_mapcount(first_page);
++	reset_page(first_page);
+ 	__free_page(first_page);
+ 
+ 	/* zspage with only 1 system page */
+-	if (!nextp)
++	if (!head_extra)
+ 		return;
+ 
+-	list_for_each_entry_safe(nextp, tmp, &nextp->lru, lru) {
++	list_for_each_entry_safe(nextp, tmp, &head_extra->lru, lru) {
+ 		list_del(&nextp->lru);
+-		clear_bit(PG_private_2, &nextp->flags);
+-		nextp->index = 0;
++		reset_page(nextp);
+ 		__free_page(nextp);
+ 	}
++	reset_page(head_extra);
++	__free_page(head_extra);
+ }
+ 
+ /* Initialize a newly allocated zspage */
+-- 
+1.7.5.4
 
