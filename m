@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab2DBMLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 08:11:00 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:47935 "EHLO
+	id S1753963Ab2DBMK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 08:10:59 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:47932 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab2DBLzA (ORCPT
+	with ESMTP id S1751403Ab2DBLzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Apr 2012 07:55:00 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Jan Dumon <j.dumon@option.com>
-Subject: [PATCH 23/69] TTY: hso, use tty from tty_port
-Date: Mon,  2 Apr 2012 13:54:07 +0200
-Message-Id: <1333367693-3244-24-git-send-email-jslaby@suse.cz>
+        Karsten Keil <isdn@linux-pingi.de>
+Subject: [PATCH 18/69] TTY: isdn, use tty_port_block_til_ready helper
+Date: Mon,  2 Apr 2012 13:54:02 +0200
+Message-Id: <1333367693-3244-19-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
 References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
@@ -21,155 +21,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We switched tty refcounting there to the one provided by tty_port
-helpers. So tty_port->tty is now protected by tty_port->lock, not by
-hso_serial->serial_lock.
-
-Side note: tty->driver_data does not need the lock, so it is needed
-neither in open, nor in close paths.
+This removes a bunch of duplicated code which does the same as
+tty_port_block_til_ready does.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Jan Dumon <j.dumon@option.com>
+Cc: Karsten Keil <isdn@linux-pingi.de>
 ---
- drivers/net/usb/hso.c |   40 +++++++++++++---------------------------
- 1 file changed, 13 insertions(+), 27 deletions(-)
+ drivers/isdn/i4l/isdn_tty.c |   97 +------------------------------------------
+ 1 file changed, 1 insertion(+), 96 deletions(-)
 
-diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index ec782c7..813d709 100644
---- a/drivers/net/usb/hso.c
-+++ b/drivers/net/usb/hso.c
-@@ -250,7 +250,6 @@ struct hso_serial {
+diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
+index b41a80a..7bc5067 100644
+--- a/drivers/isdn/i4l/isdn_tty.c
++++ b/drivers/isdn/i4l/isdn_tty.c
+@@ -1486,101 +1486,6 @@ isdn_tty_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+  * ------------------------------------------------------------
+  */
  
- 	struct tty_port port;
- 	/* from usb_serial_port */
--	struct tty_struct *tty;
- 	spinlock_t serial_lock;
- 
- 	int (*write_data) (struct hso_serial *serial);
-@@ -1297,11 +1296,8 @@ static int hso_serial_open(struct tty_struct *tty, struct file *filp)
- 	kref_get(&serial->parent->ref);
- 
- 	/* setup */
--	spin_lock_irq(&serial->serial_lock);
- 	tty->driver_data = serial;
--	tty_kref_put(serial->tty);
--	serial->tty = tty_kref_get(tty);
--	spin_unlock_irq(&serial->serial_lock);
-+	tty_port_tty_set(&serial->port, tty);
- 
- 	/* check for port already opened, if not set the termios */
- 	serial->port.count++;
-@@ -1358,13 +1354,7 @@ static void hso_serial_close(struct tty_struct *tty, struct file *filp)
- 
- 	if (serial->port.count <= 0) {
- 		serial->port.count = 0;
--		spin_lock_irq(&serial->serial_lock);
--		if (serial->tty == tty) {
--			serial->tty->driver_data = NULL;
--			serial->tty = NULL;
--			tty_kref_put(tty);
+-static int
+-isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *info)
+-{
+-	struct tty_port *port = &info->port;
+-	DECLARE_WAITQUEUE(wait, NULL);
+-	int do_clocal = 0;
+-	int retval;
+-
+-	/*
+-	 * If the device is in the middle of being closed, then block
+-	 * until it's done, and then try again.
+-	 */
+-	if (tty_hung_up_p(filp) ||
+-	    (port->flags & ASYNC_CLOSING)) {
+-		if (port->flags & ASYNC_CLOSING)
+-			interruptible_sleep_on(&port->close_wait);
+-#ifdef MODEM_DO_RESTART
+-		if (port->flags & ASYNC_HUP_NOTIFY)
+-			return -EAGAIN;
+-		else
+-			return -ERESTARTSYS;
+-#else
+-		return -EAGAIN;
+-#endif
+-	}
+-	/*
+-	 * If non-blocking mode is set, then make the check up front
+-	 * and then exit.
+-	 */
+-	if ((filp->f_flags & O_NONBLOCK) ||
+-	    (tty->flags & (1 << TTY_IO_ERROR))) {
+-		port->flags |= ASYNC_NORMAL_ACTIVE;
+-		return 0;
+-	}
+-	if (tty->termios->c_cflag & CLOCAL)
+-		do_clocal = 1;
+-	/*
+-	 * Block waiting for the carrier detect and the line to become
+-	 * free (i.e., not in use by the callout).  While we are in
+-	 * this loop, info->count is dropped by one, so that
+-	 * isdn_tty_close() knows when to free things.  We restore it upon
+-	 * exit, either normal or abnormal.
+-	 */
+-	retval = 0;
+-	add_wait_queue(&port->open_wait, &wait);
+-#ifdef ISDN_DEBUG_MODEM_OPEN
+-	printk(KERN_DEBUG "isdn_tty_block_til_ready before block: ttyi%d, count = %d\n",
+-	       info->line, info->count);
+-#endif
+-	if (!(tty_hung_up_p(filp)))
+-		port->count--;
+-	port->blocked_open++;
+-	while (1) {
+-		set_current_state(TASK_INTERRUPTIBLE);
+-		if (tty_hung_up_p(filp) ||
+-		    !(port->flags & ASYNC_INITIALIZED)) {
+-#ifdef MODEM_DO_RESTART
+-			if (port->flags & ASYNC_HUP_NOTIFY)
+-				retval = -EAGAIN;
+-			else
+-				retval = -ERESTARTSYS;
+-#else
+-			retval = -EAGAIN;
+-#endif
+-			break;
 -		}
--		spin_unlock_irq(&serial->serial_lock);
-+		tty_port_tty_set(&serial->port, NULL);
- 		if (!usb_gone)
- 			hso_stop_serial_device(serial->parent);
- 		tasklet_kill(&serial->unthrottle_tasklet);
-@@ -1947,14 +1937,13 @@ static void hso_std_serial_write_bulk_callback(struct urb *urb)
- 
- 	spin_lock(&serial->serial_lock);
- 	serial->tx_urb_used = 0;
--	tty = tty_kref_get(serial->tty);
- 	spin_unlock(&serial->serial_lock);
- 	if (status) {
- 		handle_usb_error(status, __func__, serial->parent);
--		tty_kref_put(tty);
- 		return;
+-		if (!(port->flags & ASYNC_CLOSING) &&
+-		    (do_clocal || tty_port_carrier_raised(port))) {
+-			break;
+-		}
+-		if (signal_pending(current)) {
+-			retval = -ERESTARTSYS;
+-			break;
+-		}
+-#ifdef ISDN_DEBUG_MODEM_OPEN
+-		printk(KERN_DEBUG "isdn_tty_block_til_ready blocking: ttyi%d, count = %d\n",
+-		       info->line, port->count);
+-#endif
+-		schedule();
+-	}
+-	current->state = TASK_RUNNING;
+-	remove_wait_queue(&port->open_wait, &wait);
+-	if (!tty_hung_up_p(filp))
+-		port->count++;
+-	port->blocked_open--;
+-#ifdef ISDN_DEBUG_MODEM_OPEN
+-	printk(KERN_DEBUG "isdn_tty_block_til_ready after blocking: ttyi%d, count = %d\n",
+-	       info->line, port->count);
+-#endif
+-	if (retval)
+-		return retval;
+-	port->flags |= ASYNC_NORMAL_ACTIVE;
+-	return 0;
+-}
+-
+ /*
+  * This routine is called whenever a serial port is opened.  It
+  * enables interrupts for a serial port, linking in its async structure into
+@@ -1616,7 +1521,7 @@ isdn_tty_open(struct tty_struct *tty, struct file *filp)
+ #endif
+ 		return retval;
  	}
- 	hso_put_activity(serial->parent);
-+	tty = tty_port_tty_get(&serial->port);
- 	if (tty) {
- 		tty_wakeup(tty);
- 		tty_kref_put(tty);
-@@ -1994,7 +1983,6 @@ static void ctrl_callback(struct urb *urb)
- 	struct hso_serial *serial = urb->context;
- 	struct usb_ctrlrequest *req;
- 	int status = urb->status;
--	struct tty_struct *tty;
- 
- 	/* sanity check */
- 	if (!serial)
-@@ -2002,11 +1990,9 @@ static void ctrl_callback(struct urb *urb)
- 
- 	spin_lock(&serial->serial_lock);
- 	serial->tx_urb_used = 0;
--	tty = tty_kref_get(serial->tty);
- 	spin_unlock(&serial->serial_lock);
- 	if (status) {
- 		handle_usb_error(status, __func__, serial->parent);
--		tty_kref_put(tty);
- 		return;
- 	}
- 
-@@ -2024,13 +2010,15 @@ static void ctrl_callback(struct urb *urb)
- 		put_rxbuf_data_and_resubmit_ctrl_urb(serial);
- 		spin_unlock(&serial->serial_lock);
- 	} else {
-+		struct tty_struct *tty = tty_port_tty_get(&serial->port);
- 		hso_put_activity(serial->parent);
--		if (tty)
-+		if (tty) {
- 			tty_wakeup(tty);
-+			tty_kref_put(tty);
-+		}
- 		/* response to a write command */
- 		hso_kick_transmit(serial);
- 	}
--	tty_kref_put(tty);
- }
- 
- /* handle RX data for serial port */
-@@ -2046,8 +2034,7 @@ static int put_rxbuf_data(struct urb *urb, struct hso_serial *serial)
- 		return -2;
- 	}
- 
--	/* All callers to put_rxbuf_data hold serial_lock */
--	tty = tty_kref_get(serial->tty);
-+	tty = tty_port_tty_get(&serial->port);
- 
- 	/* Push data to tty */
- 	if (tty) {
-@@ -2067,12 +2054,12 @@ static int put_rxbuf_data(struct urb *urb, struct hso_serial *serial)
- 			write_length_remaining -= curr_write_len;
- 			tty_flip_buffer_push(tty);
- 		}
-+		tty_kref_put(tty);
- 	}
- 	if (write_length_remaining == 0) {
- 		serial->curr_rx_urb_offset = 0;
- 		serial->rx_urb_filled[hso_urb_to_index(serial, urb)] = 0;
- 	}
--	tty_kref_put(tty);
- 	return write_length_remaining;
- }
- 
-@@ -3166,13 +3153,12 @@ static void hso_free_interface(struct usb_interface *interface)
- 		if (serial_table[i] &&
- 		    (serial_table[i]->interface == interface)) {
- 			hso_dev = dev2ser(serial_table[i]);
--			spin_lock_irq(&hso_dev->serial_lock);
--			tty = tty_kref_get(hso_dev->tty);
--			spin_unlock_irq(&hso_dev->serial_lock);
--			if (tty)
-+			tty = tty_port_tty_get(&hso_dev->port);
-+			if (tty) {
- 				tty_hangup(tty);
-+				tty_kref_put(tty);
-+			}
- 			mutex_lock(&hso_dev->parent->mutex);
--			tty_kref_put(tty);
- 			hso_dev->parent->usb_gone = 1;
- 			mutex_unlock(&hso_dev->parent->mutex);
- 			kref_put(&serial_table[i]->ref, hso_serial_ref_free);
+-	retval = isdn_tty_block_til_ready(tty, filp, info);
++	retval = tty_port_block_til_ready(port, tty, filp);
+ 	if (retval) {
+ #ifdef ISDN_DEBUG_MODEM_OPEN
+ 		printk(KERN_DEBUG "isdn_tty_open return after isdn_tty_block_til_ready \n");
 -- 
 1.7.9.2
 
