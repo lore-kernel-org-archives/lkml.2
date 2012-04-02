@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab2DBUwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 16:52:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51473 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab2DBUwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 16:52:40 -0400
-Date: Mon, 2 Apr 2012 22:52:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andreas Schwab <schwab@linux-m68k.org>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
- irq_alloc_desc() instead
-In-Reply-To: <m2hax2qeqs.fsf@igel.home>
-Message-ID: <alpine.LFD.2.02.1204022251420.2542@ionos>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca> <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752753Ab2DBUx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 16:53:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59703 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333Ab2DBUx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 16:53:26 -0400
+Date: Mon, 2 Apr 2012 22:53:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: CONFIG_RTLWIFI_DEBUG default y
+Message-ID: <20120402205322.GA31126@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Larry Finger <Larry.Finger@lwfinger.net>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+	Joe Perches <joe@perches.com>
+References: <20120402164920.GA13264@x1.osrc.amd.com>
+ <1333385618.15422.17.camel@joe2Laptop>
+ <20120402171733.GB13264@x1.osrc.amd.com>
+ <4F79E5A5.9000004@lwfinger.net>
+ <20120402203211.GA27889@liondog.tnic>
+ <4F7A103E.90007@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4F7A103E.90007@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Apr 2012, Andreas Schwab wrote:
-
-> Andreas Schwab <schwab@linux-m68k.org> writes:
+On Mon, Apr 02, 2012 at 03:46:54PM -0500, Larry Finger wrote:
+> Users will see nothing more than before!
 > 
-> > Grant Likely <grant.likely@secretlab.ca> writes:
-> >
-> >> This patch drops the powerpc-specific irq_map table and replaces it with
-> >> directly using the irq_alloc_desc()/irq_free_desc() interfaces for allocating
-> >> and freeing irq_desc structures.
-> >
-> > This breaks irqs on PowerMac G5.  I see lost irq errors from the sata
-> > driver.
+> Before CONFIG_RTLWIFI_DEBUG was allowed to be set, the driver always
+> compiled in the debug code, but only those messages with the
+> DBG_EMERG code were actually output. With the parameter set to Y,
+> nothing changed. If the module is loaded with the "debug=X" option,
+> where X is greater than 0, then other messages will be seen. That
+> dynamic setting of the level is enough.
 > 
-> When I revert a09b659cd68c10ec6a30cb91ebd2c327fcd5bfe5 ("genirq: Fix
-> long-term regression in genirq irq_set_irq_type() handling") on top of
-> 3.4-rc1 the sata irq errors disappear, but I see a lot of spurious
+> The only change when the configuration parameter is set to N is that
+> the entire debug setup compiles away. The driver is a lot smaller,
+> but there is no debugging.
 
-Hmm. Which irq chip is handling the interrupt for that sata irq ?
+Yes, yes, I knew there should be some sane default there,
+rtlpriv->dbg.global_debuglevel remains 0 which is DBG_EMERG. I stand
+corrected, thanks.
 
-Thanks,
-
-	tglx
+-- 
+Regards/Gruss,
+    Boris.
