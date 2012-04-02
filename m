@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab2DBAID (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Apr 2012 20:08:03 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38496 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab2DBAIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Apr 2012 20:08:01 -0400
-Date: Mon, 2 Apr 2012 01:09:37 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "drepper@gmail.com" <drepper@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] nextfd(2)
-Message-ID: <20120402010937.38b33576@pyramind.ukuu.org.uk>
-In-Reply-To: <4F785F1D.4020503@openvz.org>
-References: <20120401125741.GA7484@p183.telecom.by>
-	<4F785F1D.4020503@openvz.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753758Ab2DBAZI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Apr 2012 20:25:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753667Ab2DBAZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Apr 2012 20:25:06 -0400
+Date: Mon, 2 Apr 2012 02:24:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Extend core dump note section to contain file names of
+	mapped files
+Message-ID: <20120402002448.GA27179@redhat.com>
+References: <CAK1hOcPxVWDCTRLzH6X+88WXuw_Ywzbt+iAJ3QMEfxG22duk9g@mail.gmail.com> <20120401031329.GP17822@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120401031329.GP17822@one.firstfloor.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can we add "pid" argument to be able to search next fd in other task?
-> Together with sys_kcmp() this will be very useful for checkpoint/restore.
+On 04/01, Andi Kleen wrote:
+>
+> > I propose to save this information in core dump, as a new note
+> > in note segment.
+>
+> Seems like a good idea but rather than write complicated code
 
-That would raise all sorts of security questions unless protected, plus
-its got races. If you want to do that and you have the rights you can do
-it via procfs anyway.
+I agree, I feel it can be simplified...
 
-Alan
+> i would just reuse
+> the /proc/*/maps code and dump it in that format?
+
+I must have missed something. Do you really suggest to use
+show_pid_map/etc?
+
+If nothing else, this code depends on CONFIG_PROC_FS. But in any
+case I think this will only complicate fill_files_note().
+
+coredump is "simple", we are the last thread which can play with
+this ->mm. We do not need locks, we do not need the "restart after
+we dropped mmap_sem" logic. We know that the task_struct can't go
+away. The only problem is rename, that is why we can't allocate the
+whole buffer beforehand.
+
+OK, I must have missed something ;)
+
+Oleg.
+
