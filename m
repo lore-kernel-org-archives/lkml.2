@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab2DCFFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 01:05:36 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51238 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab2DCFFf (ORCPT
+	id S1751881Ab2DCFGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 01:06:19 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49935 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab2DCFGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 01:05:35 -0400
+	Tue, 3 Apr 2012 01:06:17 -0400
+Message-ID: <4F7A8544.2020603@openvz.org>
+Date: Tue, 03 Apr 2012 09:06:12 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-In-Reply-To: <CAAE6i0hHT7A+x7Q9zct0oxQv44Y8WchiKdeRbNrzRRp+fJNGuQ@mail.gmail.com>
-References: <CAAE6i0hHT7A+x7Q9zct0oxQv44Y8WchiKdeRbNrzRRp+fJNGuQ@mail.gmail.com>
-From: Chester <somethingsome2000@gmail.com>
-Date: Tue, 3 Apr 2012 00:05:14 -0500
-Message-ID: <CAAE6i0gVsYnpa82FrKCNV5sszr38But4Og6D20cv4r8BF3Tv=Q@mail.gmail.com>
-Subject: Re: brcmsmac driver is ghost in 3.3
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Eric Paris <eparis@redhat.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+References: <20120331091049.19373.28994.stgit@zurg> <20120331092929.19920.54540.stgit@zurg> <20120402231837.GC32299@count0.beaverton.ibm.com>
+In-Reply-To: <20120402231837.GC32299@count0.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And this is when I curse at all the google results that say "blacklist
-bcma" ... brcmsmac DEPENDS on bcma /facepalms and goes to sleep..
+Matt Helsley wrote:
+> On Sat, Mar 31, 2012 at 01:29:29PM +0400, Konstantin Khlebnikov wrote:
+>> Currently the kernel sets mm->exe_file during sys_execve() and then tracks
+>> number of vmas with VM_EXECUTABLE flag in mm->num_exe_file_vmas, as soon as
+>> this counter drops to zero kernel resets mm->exe_file to NULL. Plus it resets
+>> mm->exe_file at last mmput() when mm->mm_users drops to zero.
+>>
+>> Vma with VM_EXECUTABLE flag appears after mapping file with flag MAP_EXECUTABLE,
+>> such vmas can appears only at sys_execve() or after vma splitting, because
+>> sys_mmap ignores this flag. Usually binfmt module sets mm->exe_file and mmaps
+>> some executable vmas with this file, they hold mm->exe_file while task is running.
+>>
+>> comment from v2.6.25-6245-g925d1c4 ("procfs task exe symlink"),
+>> where all this stuff was introduced:
+>>
+>>> The kernel implements readlink of /proc/pid/exe by getting the file from
+>>> the first executable VMA.  Then the path to the file is reconstructed and
+>>> reported as the result.
+>>>
+>>> Because of the VMA walk the code is slightly different on nommu systems.
+>>> This patch avoids separate /proc/pid/exe code on nommu systems.  Instead of
+>>> walking the VMAs to find the first executable file-backed VMA we store a
+>>> reference to the exec'd file in the mm_struct.
+>>>
+>>> That reference would prevent the filesystem holding the executable file
+>>> from being unmounted even after unmapping the VMAs.  So we track the number
+>>> of VM_EXECUTABLE VMAs and drop the new reference when the last one is
+>>> unmapped.  This avoids pinning the mounted filesystem.
+>>
+>> So, this logic is hooked into every file mmap/unmmap and vma split/merge just to
+>> fix some hypothetical pinning fs from umounting by mm which already unmapped all
+>> its executable files, but still alive. Does anyone know any real world example?
+>> mm can be borrowed by swapoff or some get_task_mm() user, but it's not a big problem.
+>>
+>> Thus, we can remove all this stuff together with VM_EXECUTABLE flag and
+>> keep mm->exe_file alive till final mmput().
+>>
+>> After that we can access current->mm->exe_file without any locks
+>> (after checking current->mm and mm->exe_file for NULL)
+>>
+>> Some code around security and oprofile still uses VM_EXECUTABLE for retrieving
+>> task's executable file, after this patch they will use mm->exe_file directly.
+>> In tomoyo and audit mm is always current->mm, oprofile uses get_task_mm().
+>
+> Perhaps I'm missing something but it seems like you ought to split
+> this into two patches. The first could fix up the cell, tile, etc. arch
+> code to use the exe_file reference rather than walk the VMAs. Then the
+> second patch could remove the unusual logic used to allow userspace to unpin
+> the mount and we could continue to discuss that separately. It would
+> also make the git log somewhat cleaner I think...
 
-On Mon, Apr 2, 2012 at 11:50 PM, Chester
-> I spent the better part of my day trying to get my bcm4313 wlan card
-> to work with the new kernel to little success. I used to use brcmsmac
-> with the old 3.2 kernel, but it was somehow excluded when I did my
-> 'make silentoldconfig'.
->
-> I chose b43 because I couldn't find brcmsmac anywhere in nconfig
-> anymore. device drivers -> network devices -> wireless lan -> ???..
-> After fiddling around a while, I looked into my .config and searched
-> for the symbol, and sure enough, it was there! CONFIG_BRCMSMAC is not
-> set.
->
-> That's strange. I get back on nconfig and do a symbol search and find
-> that it should be in devices drivers -> network devices -> wireless
-> lan. I go check a 2nd time and it's right there! Broadcom SoftMac
-> driver! .. I tried enabling it and saving the config. I peaked at the
-> .config file again, and the symbol was _gone_ .. (??) I got back on
-> nconfig and the option was no longer there as well.
+Ok, I'll resend this patch as independent patch-set,
+anyway I need to return mm->mmap_sem locking back.
