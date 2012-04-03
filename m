@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab2DCIjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:39:03 -0400
-Received: from ar100.montanavision.com ([216.146.103.100]:43881 "EHLO
-	silka.with-linux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab2DCIjA (ORCPT
+	id S1753171Ab2DCIj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:39:29 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46183 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab2DCIj1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:39:00 -0400
-Message-ID: <4F7AB6FE.3080009@silka.with-linux.com>
-Date: Tue, 03 Apr 2012 02:38:22 -0600
-From: Kelly Anderson <kelly@silka.with-linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120317 Thunderbird/11.0
+	Tue, 3 Apr 2012 04:39:27 -0400
 MIME-Version: 1.0
-To: Mohammed Shafi <shafi.wireless@gmail.com>
-CC: Ben Greear <greearb@candelatech.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>
-Subject: Re: [ath9k-devel] 3.3.1 ath9k regression
-References: <4F7A8EB7.4060200@silka.with-linux.com> <4F7A923D.5000002@candelatech.com> <CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com> <4F7A9D5C.8040402@silka.with-linux.com> <CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com> <4F7AAAD9.2040307@silka.with-linux.com> <CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com> <CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
-In-Reply-To: <CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120403073145.GB26826@gmail.com>
+References: <20120401160229.4502.2541.stgit@shimauta> <4F7A21B6.8000700@zytor.com>
+ <20120403073145.GB26826@gmail.com>
+From: Masami Hiramatsu <masami.hiramatsu@gmail.com>
+Date: Tue, 3 Apr 2012 17:39:05 +0900
+Message-ID: <CADyE4xHy83j6P177zQ9nKk95mfBTS83Aqy=mOe4-RsQeH-VPUg@mail.gmail.com>
+Subject: Re: [RFC PATCH -tip 00/16] in-kernel x86 disassember
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Huang Ying <ying.huang@intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 02:04 AM, Mohammed Shafi wrote:
-> On Tue, Apr 3, 2012 at 1:22 PM, Mohammed Shafi<shafi.wireless@gmail.com>  wrote:
->>> I just tried the unpatched kernel with pcie_aspm=off.  The device shows up
->>> with ifconfig,
->>> but it will not connect to the access point.
->> oh, ok in addition does disabling power save helps ?
-
-Setting ath9k power management off makes no difference.
-
-> also please provide the logs sudo modprobe -v ath9k debug=0xe01 when
-> the STA is not able to connect
-
-I'm using systemd with kmod, so I'm not sure that the modprobe -v is 
-giving you anything useful.
-
-The output of the modprobe -v is nothing.
-
-
-The systemd journal has these entries (which are truncated due to the 
-way systemd-journal handles piped out)
-
-
-Apr 03 02:26:50 comer.internal kernel: Registered led device: ath9k-phy1
-Apr 03 02:26:50 comer.internal kernel: ieee80211 phy1: Atheros AR9280 
-Rev:2...16
-
-
->> --
->> thanks,
->> shafi
+2012/4/3 Ingo Molnar <mingo@kernel.org>:
 >
+> * H. Peter Anvin <hpa@zytor.com> wrote:
 >
+>> On 04/01/2012 09:02 AM, Masami Hiramatsu wrote:
+>> > Hi,
+>> >
+>> > Here is a series of patches of the in-kernel x86 disassembler
+>> > for the latest tip tree.
+>> > This will show you a pretty disassembled code instead of
+>> > just a digital code sequence when you gets a kernel panic etc.
+>> > (I know, we also have script/decodecode for the panic use)
+>> >
+>> > This feature is not for users, but mainly for kernel developers
+>> > who can understand disassembly code of x86 ;). This is just like
+>> > a joke feature in kernel. (yeah, I spend my spare time for this.
+>> > It's my fun :))
+>> >
+>>
+>> This is cool, but I have one major reservation about it: it
+>> will make kernel panics take a lot more screen real estate
+>> without containing more information, and we already have
+>> problems with things scrolling off way too easily.
+>
+> Yes, I'm not sure we want to do it by default.
 
+Agreed.
+
+>> For that reason I would like to request that this *only*
+>> enabled by an explicit command-line option or similar
+>> (disasm_oops, maybe?), so that the user has to opt-in.
+>
+> The existing oops setup knob is an early_param() in
+> kernel/panic.c, "oops=".
+>
+> I'd suggesting extending that in an obvious way. Currently the
+> only option that exists is "oops=panic", so a comma delimited
+> list of attributes would be the natural extension, allowing:
+>
+>        oops=panic
+>        oops=panic,disasm
+>        oops=disasm
+>
+> Detail: it should do a strncmp(5, str, "disas"), so that every
+> usual variant works: oops=disasm, oops=disassemble, etc.
+
+OK, I'll add that.
+
+>
+>> [...]  In other words, if *you* are debugging your own kernel,
+>> and don't expect to ship oopses off to someone else.
+>
+> Probably a DEBUG .config option as well, so that distros can
+> enable it. OTOH, CONFIG_CMDLINE allows the setting of such
+> parameters as well.
+
+This would be good for other parameters, so I think it
+should be separately done.
+
+Thank you,
+
+-- 
+Masami Hiramatsu
+mailto:masami.hiramatsu@gmail.com
