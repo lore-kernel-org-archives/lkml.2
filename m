@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab2DCRHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 13:07:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33542 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab2DCRHG (ORCPT
+	id S1755144Ab2DCRHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 13:07:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49589 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060Ab2DCRHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 13:07:06 -0400
-Date: Tue, 3 Apr 2012 10:06:59 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-input@vger.kernel.org, Alessandro Rubini <rubini@cvml.unipv.it>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: psmouse serio4: bad data from KBC - timeout
-Message-ID: <20120403170659.GF24832@core.coreip.homeip.net>
-References: <20120403094324.GA3346@gere.osrc.amd.com>
+	Tue, 3 Apr 2012 13:07:12 -0400
+Date: Tue, 3 Apr 2012 19:07:08 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: Ivo Sieben <meltedpianoman@gmail.com>, linux-kernel@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
+Message-ID: <20120403170708.GC2477@pengutronix.de>
+References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
+ <20120403165320.GG19952@sequoia.sous-sol.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7qSK/uQB79J36Y4o"
 Content-Disposition: inline
-In-Reply-To: <20120403094324.GA3346@gere.osrc.amd.com>
+In-Reply-To: <20120403165320.GG19952@sequoia.sous-sol.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
 
-On Tue, Apr 03, 2012 at 11:43:25AM +0200, Borislav Petkov wrote:
-> Hi guys,
-> 
-> I'm running 3.4-rc1 on a thinkpad x121e and it builds and boots just
-> fine. However, after resuming from disk I get (this is the tail of
-> dmesg):
-> 
-> [  905.857412] i8042: failed to resume active multiplexor, mouse won't work
-> [  905.965568] usb 3-2: reset low-speed USB device number 2 using ohci_hcd
-> [  907.626998] psmouse serio4: bad data from KBC - timeout
-> [  907.675385] PM: restore of devices complete after 2358.155 msecs
-> [  908.227481] Restarting tasks ... done.
-> [  908.266229] video LNXVIDEO:01: Restoring backlight state
-> [  917.628792] psmouse serio4: Failed to deactivate mouse on isa0060/serio4
-> [  917.880639] psmouse serio4: Failed to enable mouse on isa0060/serio4
-> [  919.867982] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input19
-> [  947.277011] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
-> [  996.231116] Bluetooth: Core ver 2.16
-> [  996.231262] NET: Registered protocol family 31
-> [  996.231273] Bluetooth: HCI device and connection manager initialized
-> [  996.231559] Bluetooth: HCI socket layer initialized
-> [  996.231575] Bluetooth: L2CAP socket layer initialized
-> [  996.231630] Bluetooth: SCO socket layer initialized
-> 
-> and after that the keyboard and the mouse touchpad don't work. The
-> connected USB mouse works fine though.
+--7qSK/uQB79J36Y4o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There weren't any changes to i8042 for a while so I'd look into recent
-ACPI/PM merges. You can also try booting with i8042.nomux to see if it
-will work better with i8042 in legacy multiplexing mode.
+On Tue, Apr 03, 2012 at 09:53:20AM -0700, Chris Wright wrote:
+> * Ivo Sieben (meltedpianoman@gmail.com) wrote:
+> > +	instr =3D AT25_READ;
+> > +	if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
+> > +		if (offset >=3D (1U << (at25->addrlen * 8)))
+> > +			instr |=3D AT25_INSTR_BIT3;
+> > +	*cp++ =3D instr;
+> <snip>
+> > +	/*
+> > +	 * Certain EEPROMS have a size that is larger than the number of addr=
+ess
+> > +	 * bytes would allow (e.g. like M95040 from ST that has 512 Byte size
+> > +	 * but uses only one address byte (A0 to A7) for addressing.) For
+> > +	 * the extra address bit (A8, A16 or A24) bit 3 of the instruction by=
+te
+> > +	 * is used. This instruction bit is normally defined as don't care for
+> > +	 * other AT25 like chips.
+> > +	 */
+> > +#define EE_INSTR_BIT3_IS_ADDR	0x0010
+>=20
+> Is there some guarantee that this chip flag will always have this
+> meaning?
 
-Thanks.
+? This is a driver flag.
 
--- 
-Dmitry
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--7qSK/uQB79J36Y4o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk97LjwACgkQD27XaX1/VRv5nQCfYaD/C91I3oLvSDAmb0t0Sg9p
+hfIAn12PQKe+qysQcPn34RU3N75LeXea
+=vQkH
+-----END PGP SIGNATURE-----
+
+--7qSK/uQB79J36Y4o--
