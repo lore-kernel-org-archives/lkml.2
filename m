@@ -1,96 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2DCIj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:39:29 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46183 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2DCIj1 convert rfc822-to-8bit (ORCPT
+	id S1752790Ab2DCIl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:41:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55837 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838Ab2DCIl4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:39:27 -0400
+	Tue, 3 Apr 2012 04:41:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120403073145.GB26826@gmail.com>
-References: <20120401160229.4502.2541.stgit@shimauta> <4F7A21B6.8000700@zytor.com>
- <20120403073145.GB26826@gmail.com>
-From: Masami Hiramatsu <masami.hiramatsu@gmail.com>
-Date: Tue, 3 Apr 2012 17:39:05 +0900
-Message-ID: <CADyE4xHy83j6P177zQ9nKk95mfBTS83Aqy=mOe4-RsQeH-VPUg@mail.gmail.com>
-Subject: Re: [RFC PATCH -tip 00/16] in-kernel x86 disassember
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Huang Ying <ying.huang@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <1333436730-13008-4-git-send-email-rydberg@euromail.se>
+References: <1333436730-13008-1-git-send-email-rydberg@euromail.se>
+	<1333436730-13008-4-git-send-email-rydberg@euromail.se>
+Date: Tue, 3 Apr 2012 10:41:56 +0200
+Message-ID: <CAN+gG=G9KSjSFmWpxpPLzMzz14ePAhQKTJZjQBsPeq2iztZ17A@mail.gmail.com>
+Subject: Re: [RFC 3/5] hid: Parse the device before adding it
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/3 Ingo Molnar <mingo@kernel.org>:
->
-> * H. Peter Anvin <hpa@zytor.com> wrote:
->
->> On 04/01/2012 09:02 AM, Masami Hiramatsu wrote:
->> > Hi,
->> >
->> > Here is a series of patches of the in-kernel x86 disassembler
->> > for the latest tip tree.
->> > This will show you a pretty disassembled code instead of
->> > just a digital code sequence when you gets a kernel panic etc.
->> > (I know, we also have script/decodecode for the panic use)
->> >
->> > This feature is not for users, but mainly for kernel developers
->> > who can understand disassembly code of x86 ;). This is just like
->> > a joke feature in kernel. (yeah, I spend my spare time for this.
->> > It's my fun :))
->> >
->>
->> This is cool, but I have one major reservation about it: it
->> will make kernel panics take a lot more screen real estate
->> without containing more information, and we already have
->> problems with things scrolling off way too easily.
->
-> Yes, I'm not sure we want to do it by default.
+Hi Henrik,
 
-Agreed.
+On Tue, Apr 3, 2012 at 09:05, Henrik Rydberg <rydberg@euromail.se> wrote:
+> The hid bus is populated by devices created by the usb and bluetooth
+> subsystems. The hid device is then broadcast to userland via uevents.
+> Currently, the parsing of the hid reports is done during probe of
+> the hid device, after the device has been broadcast. In order to
+> allow for the report descriptors to influence the device properties,
+> it is desirable to parse the device _before_ it is broadcast to
+> userland. In actuality, the parsing depends only accidentally on
+> the driver being present, so it can be trivially achieved.
+>
+> Something also needs to be done for the report_fixup handler, which
+> seems to be the only hard device-driver coupling in the code.
+>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hid/hid-core.c        |    2 +-
+>  drivers/hid/usbhid/hid-core.c |    5 +++++
+>  2 files changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 35ba9d9..8a7b59e 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -658,7 +658,7 @@ int hid_parse_report(struct hid_device *device, __u8 *start,
+>                hid_parser_reserved
+>        };
+>
+> -       if (device->driver->report_fixup)
+> +       if (device->driver && device->driver->report_fixup)
+>                start = device->driver->report_fixup(device, start, &size);
 
->> For that reason I would like to request that this *only*
->> enabled by an explicit command-line option or similar
->> (disasm_oops, maybe?), so that the user has to opt-in.
->
-> The existing oops setup knob is an early_param() in
-> kernel/panic.c, "oops=".
->
-> I'd suggesting extending that in an obvious way. Currently the
-> only option that exists is "oops=panic", so a comma delimited
-> list of attributes would be the natural extension, allowing:
->
->        oops=panic
->        oops=panic,disasm
->        oops=disasm
->
-> Detail: it should do a strncmp(5, str, "disas"), so that every
-> usual variant works: oops=disasm, oops=disassemble, etc.
+Well, this is not a good solution for the following drivers:
+hid-zydacron
+hid-prodikeys
+hid-uclogic
+hid-samsung
+hid-sony, etc...
 
-OK, I'll add that.
+they all use report_fixup and as the parse is made only once, they
+won't be able to work properly.
+
 
 >
->> [...]  In other words, if *you* are debugging your own kernel,
->> and don't expect to ship oopses off to someone else.
+>        device->rdesc = kmemdup(start, size, GFP_KERNEL);
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index 5bf91db..e63613b 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -1266,6 +1266,11 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
+>        if (usb_string(dev, dev->descriptor.iSerialNumber, hid->uniq, 64) <= 0)
+>                hid->uniq[0] = 0;
 >
-> Probably a DEBUG .config option as well, so that distros can
-> enable it. OTOH, CONFIG_CMDLINE allows the setting of such
-> parameters as well.
+> +       ret = hid_parse(hid);
+> +       if (ret)
+> +               goto err;
 
-This would be good for other parameters, so I think it
-should be separately done.
+shouldn't we do the same for hidp?
 
-Thank you,
+Thanks,
+Benjamin
 
--- 
-Masami Hiramatsu
-mailto:masami.hiramatsu@gmail.com
+> +
+> +
+>        usbhid = kzalloc(sizeof(*usbhid), GFP_KERNEL);
+>        if (usbhid == NULL) {
+>                ret = -ENOMEM;
+> --
+> 1.7.9.5
+>
