@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab2DCGbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 02:31:16 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41048 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab2DCGbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 02:31:15 -0400
-Date: Tue, 3 Apr 2012 08:31:10 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent crash on missing sysfs attribute group
-Message-ID: <20120403063110.GB27084@gmail.com>
-References: <20120402162716.4c93bfd3@pluto.restena.lu>
- <20120402165036.2bc987ad@pluto.restena.lu>
- <m17gxyklfm.fsf@fess.ebiederm.org>
- <20120402213440.49e9de74@neptune>
- <1333401898.2960.78.camel@laptop>
- <1333403193.2960.80.camel@laptop>
- <20120403060252.GA27084@gmail.com>
- <20120403081735.78ca3bb3@pluto.restena.lu>
+	id S1751694Ab2DCGg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 02:36:29 -0400
+Received: from oyp.chewa.net ([91.121.6.101]:59010 "EHLO oyp.chewa.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab2DCGg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 02:36:27 -0400
+To: David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] phonet: Check input from user before allocating
+X-PHP-Originating-Script: 0:func.inc
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120403081735.78ca3bb3@pluto.restena.lu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 03 Apr 2012 08:36:20 +0200
+From: =?UTF-8?Q?R=C3=A9mi_Denis-Courmont?= <remi@remlab.net>
+Cc: <levinsasha928@gmail.com>, <davej@redhat.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120402.174006.70116829696492189.davem@davemloft.net>
+References: <1333398660-11552-1-git-send-email-levinsasha928@gmail.com> <201204022201.41808.remi@remlab.net> <20120402.174006.70116829696492189.davem@davemloft.net>
+Message-ID: <dc6e3bc8b96d91bd7ce44639b60cfec2@chewa.net>
+User-Agent: RoundCube Webmail/0.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 02 Apr 2012 17:40:06 -0400 (EDT), David Miller
 
-* Bruno Prémont <bonbons@linux-vserver.org> wrote:
+<davem@davemloft.net> wrote:
 
-> Prevent kernel from crashing when a device is being registered with sysfs
-> but has no (aka NULL) group attributes, but warn about it so calling path
-> can get fixed.
+> UDP generates a fragment list of MTU sized SKBs.
+
 > 
-> This would warn instead of trying NULL pointer deref like:
->  BUG: unable to handle kernel NULL pointer dereference at           (null)
->  IP: [<ffffffff81152673>] internal_create_group+0x83/0x1a0
->  PGD 0 
->  Oops: 0000 [#1] SMP 
->  CPU 0 
->  Modules linked in:
-> 
->  Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant DL360 G4
->  RIP: 0010:[<ffffffff81152673>]  [<ffffffff81152673>] internal_create_group+0x83/0x1a0
->  RSP: 0018:ffff88019485fd70  EFLAGS: 00010202
->  RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000001
->  RDX: ffff880192e99908 RSI: ffff880192e99630 RDI: ffffffff81a26c60
->  RBP: ffff88019485fdc0 R08: 0000000000000000 R09: 0000000000000000
->  R10: ffff880192e99908 R11: 0000000000000000 R12: ffffffff81a16a00
->  R13: ffff880192e99908 R14: ffffffff81a16900 R15: 0000000000000000
->  FS:  0000000000000000(0000) GS:ffff88019bc00000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->  CR2: 0000000000000000 CR3: 0000000001a0c000 CR4: 00000000000007f0
->  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->  Process swapper/0 (pid: 1, threadinfo ffff88019485e000, task ffff880194878000)
->  Stack:
->   ffff88019485fdd0 ffff880192da9d60 0000000000000000 ffff880192e99908
->   ffff880192e995d8 0000000000000001 ffffffff81a16a00 ffff880192da9d60
->   0000000000000000 0000000000000000 ffff88019485fdd0 ffffffff811527be
->  Call Trace:
->   [<ffffffff811527be>] sysfs_create_group+0xe/0x10
->   [<ffffffff81376ca6>] device_add_groups+0x46/0x80
->   [<ffffffff81377d3d>] device_add+0x46d/0x6a0
->   ...
-> 
-> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> ---
-> On Tue, 3 Apr 2012 08:02:52 +0200 Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Mon, 2012-04-02 at 23:24 +0200, Peter Zijlstra wrote:
-> > > > On Mon, 2012-04-02 at 21:34 +0200, Bruno Prémont wrote:
-> > > > > > >> [    0.996198] Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant DL360 G4
-> > > > 
-> > > > Is this a netburst based space heater?
-> > > 
-> > > In particular, does: https://lkml.org/lkml/2012/3/27/182 , sort it?
-> > > 
-> > > Ingo, could you pick that one up and route it Linus wards?
-> > 
-> > Will do - but the underlying generic bug should be fixed as 
-> > well: we must not crash just because some attributes are missing 
-> > in a rarely used sub-driver ...
-> > 
-> > We should WARN_ON(), etc. - but not crash.
-> 
-> Greg, is this ok for you or should the check be moved out to calling
-> internal_create_group()?
-> 
-> ---
-> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-> index dd1701c..0040ff2 100644
-> --- a/fs/sysfs/group.c
-> +++ b/fs/sysfs/group.c
-> @@ -32,7 +32,8 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
->  	struct attribute *const* attr;
->  	int error = 0, i;
->  
-> -	for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
-> +	WARN_ON(!grp->attrs);
-> +	for (i = 0, attr = grp->attrs; attr && *attr && !error; i++, attr++) {
->  		umode_t mode = 0;
 
-yeah.
+> Phonet could avoid the large allocations by building page based
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+> SKBs.
 
-Thanks,
 
-	Ingo
+
+Oh right. And Phonet devices don't support scatter/gather, so that I guess
+
+that would merely delay the problem.
+
+
+
+Also sendmsg() code would need to be reectored to look up the output
+
+device and then the MTU before allocating the socket buffer. This will only
+
+work if the default MTU is reduced first :/
+
+
+
+-- 
+
+RÃ©mi Denis-Courmont
+
+Sent from my collocated server
