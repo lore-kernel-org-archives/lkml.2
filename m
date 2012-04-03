@@ -1,120 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab2DCOzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:55:54 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:57961 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab2DCOzw (ORCPT
+	id S1754715Ab2DCO4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:56:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56361 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab2DCO4X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:55:52 -0400
-Date: Tue, 3 Apr 2012 16:56:36 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [pull] drm-intel-fixes for 3.4
-Message-ID: <20120403145636.GB4415@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	Tue, 3 Apr 2012 10:56:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120403143114.GA27326@phenom.dumpdata.com>
+References: <20120402224701.GA6961@phenom.dumpdata.com>
+	<20120402232750.GB17821@kroah.com>
+	<1333410186.1270.92.camel@sbsiddha-desk.sc.intel.com>
+	<20120402234904.GA18316@kroah.com>
+	<20120403132850.GE12464@phenom.dumpdata.com>
+	<CAEwRVpNMZaQq0vaoS0aLk2rv3ysyhtOpXKub9HWR0bosgku6_Q@mail.gmail.com>
+	<20120403143114.GA27326@phenom.dumpdata.com>
+Date: Tue, 3 Apr 2012 22:56:15 +0800
+Message-ID: <CAEwRVpPXnX=T4fdwXROuchh5iyvJo8eBSBKN9fRHcXNR52f63g@mail.gmail.com>
+Subject: Re: Don't apply 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 to stable please.
+From: Teck Choon Giam <giamteckchoon@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: gregkh@linuxfoundation.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Tue, Apr 3, 2012 at 10:31 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Tue, Apr 03, 2012 at 10:26:42PM +0800, Teck Choon Giam wrote:
+>> On Tue, Apr 3, 2012 at 9:28 PM, Konrad Rzeszutek Wilk
+>> <konrad.wilk@oracle.com> wrote:
+>> >> > Author: Suresh Siddha <suresh.b.siddha@intel.com>
+>> >> > Date:   Mon Mar 12 11:36:33 2012 -0700
+>> >> >
+>> >> >     x86/ioapic: Add register level checks to detect bogus io-apic entries
+>> >> >
+>> >> > With out this commit, if the bios lists bogus io-apic's, then we will
+>> >> > see some error messages ("Unable to reset IRR for apic")during linux
+>> >> > boot which are benign. But as this patch breaks Xen, I am ok if these
+>> >> > don't get applied to 'stable'. Also I think it is Ingo who added the
+>> >> > 'stable' tag. Ingo, are you ok with this?
+>> >>
+>> >> What stable trees did this already go into in the releases today?
+>> >
+>> > I see it in v3.2.x as:
+>> > 273fb19 x86/ioapic: Add register level checks to detect bogus io-apic entries
+>> >
+>> > And in 3.0.x:
+>> > c2ec63e x86/ioapic: Add register level checks to detect bogus io-apic entries
+>>
+>> And does this also affect 3.3.x?  I haven't test but guess it will?
+>
+> Yup!
+>>
+>> # git log | grep -B 5 'x86/ioapic: Add register level checks to detect
+>> bogus io-apic entries'
+>>
+>> commit a998dc2fa76f496d2944f0602b920d1d10d7467d
+>> Author: Suresh Siddha <suresh.b.siddha@intel.com>
+>> Date:   Mon Mar 12 11:36:33 2012 -0700
+>>
+>>     x86/ioapic: Add register level checks to detect bogus io-apic entries
+>>
+>
+> Greg, please also revert this one.
 
-A few patches for 3.4, major part is 3 regression fixes:
-- ppgtt broke hibernate on snb/ivb. Somehow our QA claims that it still
-  works, which is why this has not been caught earlier.
-- ppgtt flails in combination with dmar. I kinda expected this one :(
-- fence handling bugfix for gen2/3. Iirc this one is about a year old, fix
-  curtesy Chris Wilson. I've created an shockingly simple i-g-t test to
-  catch this in the future.
+I will include the various tree commit id as below:
 
-Wrt regressions I've just got a report that gmbus (newly enabled again in
-3.4) is a bit noisy. I'm looking into this atm.
+linux-3.0.y:
+commit c2ec63edaf48c90c3495eeb0b75bb05102fbf71a
+Author: Suresh Siddha <suresh.b.siddha@intel.com>
+Date:   Mon Mar 12 11:36:33 2012 -0700
 
-Also included are the rc6 enable patches for snb from Eugeni. I wanted to
-include these in the main 3.4 pull but screwed it up. Please hit me. Imo
-these kind of patches really should go in before -rc1, but in thise case
-rc6 has brought us tons of press and guinea pigs^W^W testers and ubuntu is
-already running with it. So I estimate a pretty small chance for this to
-blow up.
+    x86/ioapic: Add register level checks to detect bogus io-apic entries
 
-And some smaller things:
-- two minor locking snafus
-- server gt2 ivb pciid
-- 2 patches to sanitize the register state left behind by the bios some
-  more
-- 2 new quirk entries
-- cs readback trick against missed IRQs from ivb also enabled on snb
-- sprite fix from Jesse
+linux-3.1.y: Don't have such commit and I guess it is due to EOL before Mar 12
 
-Yours, Daniel
+linux-3.2.y:
+commit 273fb194e86b795b08a724c7646d0f694949070b
+Author: Suresh Siddha <suresh.b.siddha@intel.com>
+Date:   Mon Mar 12 11:36:33 2012 -0700
 
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
+    x86/ioapic: Add register level checks to detect bogus io-apic entries
 
-  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
+linux-3.3.y:
+commit a998dc2fa76f496d2944f0602b920d1d10d7467d
+Author: Suresh Siddha <suresh.b.siddha@intel.com>
+Date:   Mon Mar 12 11:36:33 2012 -0700
 
-are available in the git repository at:
+    x86/ioapic: Add register level checks to detect bogus io-apic entries
 
-  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
 
-for you to fetch changes up to b4db1e35ac59c144965f517bc575a0d75b60b03f:
+Thanks.
 
-  drm/i915: treat src w & h as fixed point in sprite handling code (2012-04-03 11:33:33 +0200)
-
-----------------------------------------------------------------
-Anisse Astier (1):
-      drm/i915: no-lvds quirk on MSI DC500
-
-Chris Wilson (2):
-      drm/i915: Sanitize BIOS debugging bits from PIPECONF
-      drm/i915: Mark untiled BLT commands as fenced on gen2/3
-
-Daniel Vetter (6):
-      drm/i915: properly restore the ppgtt page directory on resume
-      drm/i915: quirk away broken OpRegion VBT
-      drm/i915: apply CS reg readback trick against missed IRQ on snb
-      drm/i915: properly clear SSC1 bit in the pch refclock init code
-      drm/i915: disable ppgtt on snb when dmar is enabled
-      drm/i915: don't leak struct_mutex lock on ppgtt init failures
-
-Eugeni Dodonov (3):
-      drm/i915: allow to select rc6 modes via kernel parameter
-      drm/i915: enable plain RC6 on Sandy Bridge by default
-      drm/i915: add Ivy Bridge GT2 Server entries
-
-Jesse Barnes (1):
-      drm/i915: treat src w & h as fixed point in sprite handling code
-
-Sean Paul (1):
-      drm/i915: Add lock on drm_helper_resume_force_mode
-
- drivers/char/agp/intel-agp.h               |    1 +
- drivers/char/agp/intel-gtt.c               |    3 +-
- drivers/gpu/drm/i915/i915_dma.c            |   21 ++++++++++++++-
- drivers/gpu/drm/i915/i915_drv.c            |   13 +++++++--
- drivers/gpu/drm/i915/i915_drv.h            |   23 ++++++++++++++++-
- drivers/gpu/drm/i915/i915_gem.c            |   37 ++++++++++++++++++++++-----
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
- drivers/gpu/drm/i915/i915_gem_gtt.c        |    9 -------
- drivers/gpu/drm/i915/i915_reg.h            |    1 +
- drivers/gpu/drm/i915/intel_bios.c          |   23 ++++++++++++++++-
- drivers/gpu/drm/i915/intel_display.c       |   37 +++++++++++++++++++++-------
- drivers/gpu/drm/i915/intel_lvds.c          |    8 ++++++
- drivers/gpu/drm/i915/intel_ringbuffer.c    |    2 +-
- drivers/gpu/drm/i915/intel_sprite.c        |    3 ++
- include/drm/intel-gtt.h                    |    4 +++
- 15 files changed, 152 insertions(+), 35 deletions(-)
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Kindest regards,
+Giam Teck Choon
