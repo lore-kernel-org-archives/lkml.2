@@ -1,105 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab2DCP6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 11:58:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43801 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753001Ab2DCP6h convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 11:58:37 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
-        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Topic: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Index: AQHNEZXW4WifiYIc20mGGxLe7+r04paIr8SAgABeuVD//7NVAIAAXJrw///AfgCAAF6eQA==
-Date: Tue, 3 Apr 2012 15:58:22 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC1317D88B7@DBDE01.ent.ti.com>
-References: <1333456339-9372-1-git-send-email-anilkumar@ti.com>
- <4F7AF0C7.7020506@grandegger.com>
- <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com>
- <4F7AFFEC.1010805@pengutronix.de>
- <331ABD5ECB02734CA317220B2BBEABC1317D86F7@DBDE01.ent.ti.com>
- <4F7B1854.90106@pengutronix.de>
-In-Reply-To: <4F7B1854.90106@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.132.227]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755129Ab2DCQFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 12:05:41 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37314 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751656Ab2DCQFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 12:05:40 -0400
+Message-ID: <1333469136.26079.33.camel@joe2Laptop>
+Subject: Re: [PATCH] printk(): add KERN_CONT where needed
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Len Brown <lenb@kernel.org>
+Date: Tue, 03 Apr 2012 09:05:36 -0700
+In-Reply-To: <CAPXgP133MQX2u3H6imOR4FFR4TsHYc=f_yrAJfdd2sG-8bFrmA@mail.gmail.com>
+References: <1333415903.860.0.camel@mop>
+	 <1333420612.26079.6.camel@joe2Laptop>
+	 <CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
+	 <1333424865.26079.9.camel@joe2Laptop>
+	 <CAPXgP13fDRZtAvV651NPqQ2TgUEtb+MX1EhKhwirAgoiNOg5tQ@mail.gmail.com>
+	 <1333463572.26079.31.camel@joe2Laptop>
+	 <CAPXgP133MQX2u3H6imOR4FFR4TsHYc=f_yrAJfdd2sG-8bFrmA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 21:03:40, Marc Kleine-Budde wrote:
-> On 04/03/2012 04:29 PM, AnilKumar, Chimata wrote:
-> >>>> Please explain why this CAN controller cannot be handled by the existing
-> >>>> C_CAN driver, eventually with some extensions. The register layout seems
-> >>>> almost identical, at least.
-> >>>>
-> >>>> Wolfgang.
-> >>>>
-> >>>
-> >>> These are the some of the pointers I can say, why I had gone for separate
-> >>> file instead of existing driver:
-> >>> * In case of D_CAN driver we can see all the registers are 32bit length
-> >>>   but in case of C_CAN registers are in 16bit length.
-> >>
-> >> How many bits in these 32 bit registers are used?
-> > 
-> > In some cases (D_CAN_TXRQ, D_CAN_INTPND, D_CAN_MSGVAL) I have used all the
-> > bits, in some cases used few bits.
-> > 
-> > Roughly I can say that its (higher 16bits) % of usages is similar as compare
-> > to 16bits 
-> > 
-> > While checking the status of TXRequest registers and INT pending register,
-> > which is a hot code path, we have to put if checks for register access.
-> 
-> The c_can already has a c_can_read_reg32() function. It's for example
-> used in the rx_poll function. You can make it a function pointer (i.e.
-> pric->read_reg32()) for easy abstraction.
+On Tue, 2012-04-03 at 17:50 +0200, Kay Sievers wrote:
+> I did not claim to address the problem of concurrent continuation line
+> writers, and this patch has absolutely nothing to do with that
+> problem. It _does_ fix encountered problems,
 
-This won't fit for D_CAN case because offsets are different in c_can compared
-to d_can. For example if I read CONTROL_REG register (0x0) in case of d_can,
-which will read only control register. In case of c_can it will read
-CONTROL_REG + STATUS register values in single read
+No it doesn't.  It fixes problems _you_ encounter
+with an unpublished modification of the printk
+subsystem.
 
-> 
-> >>> * Some of the registers, bit masks are different, so we have to add
-> >>>   checks on every API for differentiating the kind of device
-> >>
-> >> Which registers are this? Can you give us an example?
-> > 
-> > I am pointing out some of the resisters
-> > * Single registers in case of D_CAN but multiple register in case of C_CAN
-> >   So masks will change MASK, ARB, INTPND
-> > * D_CAN_IFCMD is the combination of COMM request and COMM mask registers
-> 
-> Maybe you can use the read_reg32 function on both c_can and d_can.
-
-Above comment applies here as well
-
-> 
-> regards, Marc
-> 
-> -- 
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-> 
-> 
 
