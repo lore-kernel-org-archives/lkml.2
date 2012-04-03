@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab2DCJNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 05:13:31 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52310 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2DCJN3 convert rfc822-to-8bit (ORCPT
+	id S1752875Ab2DCJUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 05:20:23 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:58047 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751572Ab2DCJTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 05:13:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120402235412.GD16303@tassilo.jf.intel.com>
-References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com>
-	<20120402235412.GD16303@tassilo.jf.intel.com>
-Date: Tue, 3 Apr 2012 11:13:28 +0200
-Message-ID: <CADDKRnAvJn8QKdRVVc_NpHD0jaiA_XzTOMeTm5DwrCJb-SR+kA@mail.gmail.com>
-Subject: Re: [v3.4-rc1] ACPI regression bisected
-From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Apr 2012 05:19:51 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+0spZv2FO0lq4ZB+FvxR8oE617e06tNeRYcvN8T/
+	aRiwpyW1gyRqEs
+Message-ID: <1333444788.9072.9.camel@marge.simpson.net>
+Subject: [patch] sched,rt: let the user see rt queues in /proc/sched_debug
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Apr 2012 11:19:48 +0200
+In-Reply-To: <1333444106.9072.4.camel@marge.simpson.net>
+References: <1333444106.9072.4.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes , its really that commit!
-My current top of source tree is:
+ec514c48 made rt queues invisible in sched_debug, restore visibility.
 
-jojo@eiche:/data/kernel/linux$ git log --pretty=oneline
-3a5307cb7c25047242cf01c7698f25600f60b32e Revert "ACPI: Make ACPI
-interrupt threaded"
-dd775ae2549217d3ae09363e3edb305d0fa19928 Linux 3.4-rc1
-b7ffff4bb3fef527a26144a95d9dfe8c11a6b927 Merge branch 's3-for-3.4' of
-git://git.kernel.org/pub/scm/linux/kernel/git/amit/virtio-console
-8bb1f229527dee95644e0f8496980bb767c6f620 Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs
-f22e08a79f3765fecf060b225a46931c94fb0a92 Merge branch
-'sched-urgent-for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-f187e9fd68577cdd5f914659b6f7f11124e40485 Merge branch
-'perf-urgent-for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-adb3b1f3fc1c6edb501808ebf80a81e81c52eb73 Merge tag 'parisc-misc' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6
-a75ee6ecd411a50bf4da927c2fdb2cb56246a2bd Merge tag 'scsi-misc' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+---
+ kernel/sched/rt.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -2079,11 +2079,10 @@ extern void print_rt_rq(struct seq_file
+ 
+ void print_rt_stats(struct seq_file *m, int cpu)
+ {
+-	rt_rq_iter_t iter;
+ 	struct rt_rq *rt_rq;
+ 
+ 	rcu_read_lock();
+-	for_each_rt_rq(rt_rq, iter, cpu_rq(cpu))
++	for_each_leaf_rt_rq(rt_rq, cpu_rq(cpu))
+ 		print_rt_rq(m, cpu, rt_rq);
+ 	rcu_read_unlock();
+ }
 
 
-Am 3. April 2012 01:54 schrieb Andi Kleen <ak@linux.intel.com>:
->>  ACPI: Added _OSI(Processor Aggregator Device)
->>  ACPI: EC: EC description table is found, configuring boot EC
->>
->> Comparing this with the displays of kernel v3.3 the next expected
->> outputs would be:
->>
->>  ACPI: Interpreter enabled
->>  ACPI: (supports S0 S5)
->>
->>
->> I bisected the problem to commit:
->> 6fe0d0628245fdcd6fad8b837c81e8f7ebc3364d  "ACPI: Make ACPI interrupt threaded"
->
-> Hmm, that's odd. It should not really change any semantics. I assume you double
-> checked you hit the right commit?
->
-> -Andi
->
-> --
-> ak@linux.intel.com -- Speaking for myself only
