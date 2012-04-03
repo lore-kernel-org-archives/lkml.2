@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab2DCRSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 13:18:55 -0400
-Received: from trent.utfs.org ([94.185.90.103]:33357 "EHLO trent.utfs.org"
+	id S1754925Ab2DCRZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 13:25:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44467 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753926Ab2DCRSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 13:18:54 -0400
-Date: Tue, 3 Apr 2012 10:18:46 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: 3.4.0-rc1: No init found
-In-Reply-To: <1333440522.3040.9.camel@pasglop>
-Message-ID: <alpine.DEB.2.01.1204030953320.4930@trent.utfs.org>
-References: <alpine.DEB.2.01.1204030008080.4930@trent.utfs.org> <1333440522.3040.9.camel@pasglop>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1753001Ab2DCRY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 13:24:58 -0400
+Date: Tue, 3 Apr 2012 19:24:56 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Dave Jones <davej@redhat.com>, David Sterba <dsterba@suse.cz>,
+        Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org, jeffm@suse.com
+Subject: Re: btrfs io errors on 3.4rc1
+Message-ID: <20120403172456.GE14083@ds.suse.cz>
+Reply-To: dsterba@suse.cz
+References: <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
+ <20120402225131.GB16907@redhat.com>
+ <20120402235021.GA20070@shiny.msi.event>
+ <20120403014722.GA618@redhat.com>
+ <20120403142607.GA14083@ds.suse.cz>
+ <20120403162023.GA7227@redhat.com>
+ <20120403163343.GD14083@ds.suse.cz>
+ <20120403165055.GA10975@redhat.com>
+ <20120403170750.GB10975@redhat.com>
+ <20120403171632.GA25334@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120403171632.GA25334@redhat.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Apr 2012 at 18:08, Benjamin Herrenschmidt wrote:
-> I have observed this randomly on the G5 ... sometimes, if I try again,
-> it works... it's very very odd. There is some kind of race maybe with
-> async startup ? Or a problem with the vfs path walking ? It's certainly
-> not easily reproducable for me, it goes away from one boot to the next.
+On Tue, Apr 03, 2012 at 01:16:33PM -0400, Dave Jones wrote:
+> Yep that fixes it.  Chris I'll mail it to you again with a proper sign-off.
 
-It's 100% reproducible for me. This PowerBook G4 (1.25Ghz) is not the 
-fastes though, maybe a race triggers more easily here...?
+Thanks! Tested here as well.
 
-> > PS: Unfortunately I cannot boot into the old (3.3-rc7) kernel 
-> >     right now (which is still installed via "yaboot" and present in
-> >     /boot), because of this: 
-> >     http://nerdbynature.de/bits/3.4.0-rc1/init/mac-invalid-memory.JPG
-> >     Booting into Debian's "squeeze" kernel (2.6.32) which resides in
-> >     the same /boot directory succeeds.
-> 
-> Hrm, did it used to boot ?
 
-I'm using the "backup" kernel only when the new one has an issue, so I 
-have not tested it for a while, but it used to work, for sure.
-
-> Can you do printenv in OF and tell me what
-> your load-base, real-base, virt-base etc... are ?
-
-load-base is 0x800000, real-base and virt-base is set to "-1", please see
-http://nerdbynature.de/bits/3.4.0-rc1/init/printenv-1.JPG
-
-Not sure if this is related, but at the end of each kernel compilation, 
-the following messages are printed:
-
-------------
-  SYSMAP  System.map
-  SYSMAP  .tmp_System.map
-  WRAP    arch/powerpc/boot/zImage.pmac
-INFO: Uncompressed kernel (size 0x6e52f8) overlaps the address of the wrapper(0x400000)
-INFO: Fixing the link_address of wrapper to (0x700000)
-  WRAP    arch/powerpc/boot/zImage.coff
-INFO: Uncompressed kernel (size 0x6e52f8) overlaps the address of the wrapper(0x500000)
-INFO: Fixing the link_address of wrapper to (0x700000)
-  WRAP    arch/powerpc/boot/zImage.miboot
-INFO: Uncompressed kernel (size 0x6d4b80) overlaps the address of the wrapper(0x400000)
-INFO: Fixing the link_address of wrapper to (0x700000)
-  Building modules, stage 2.
-  MODPOST 24 modules
-------------
-
-I started to see these messages in January (around Linux 3.2.0), but never 
-investigated what it was since the produced kernels continued to boot just 
-fine.
-
-> Might also be worth updating yaboot, debian should have 1.3.16 nowadays.
-
-Debian/stable still has 1.3.13a, I'll try to install 1.3.16 from 
-Debian/testing.
-
-Thanks for your help,
-Christian.
--- 
-BOFH excuse #217:
-
-The MGs ran out of gas.
+david
