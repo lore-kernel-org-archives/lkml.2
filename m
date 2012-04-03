@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab2DCOgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:36:06 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34117 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab2DCOgE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:36:04 -0400
-Date: Tue, 3 Apr 2012 10:31:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Teck Choon Giam <giamteckchoon@gmail.com>, gregkh@linuxfoundation.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, stable@vger.kernel.org
-Subject: Re: Don't apply 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 to stable
- please.
-Message-ID: <20120403143114.GA27326@phenom.dumpdata.com>
-References: <20120402224701.GA6961@phenom.dumpdata.com>
- <20120402232750.GB17821@kroah.com>
- <1333410186.1270.92.camel@sbsiddha-desk.sc.intel.com>
- <20120402234904.GA18316@kroah.com>
- <20120403132850.GE12464@phenom.dumpdata.com>
- <CAEwRVpNMZaQq0vaoS0aLk2rv3ysyhtOpXKub9HWR0bosgku6_Q@mail.gmail.com>
+	id S1754682Ab2DCOiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:38:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752894Ab2DCOiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 10:38:09 -0400
+Date: Tue, 3 Apr 2012 16:37:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH RFC] mm: account VMA before forced-COW via /proc/pid/mem
+Message-ID: <20120403143752.GA5150@redhat.com>
+References: <20120402153631.5101.44091.stgit@zurg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAEwRVpNMZaQq0vaoS0aLk2rv3ysyhtOpXKub9HWR0bosgku6_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090202.4F7B0AC8.0094,ss=1,re=0.000,fgs=0
+In-Reply-To: <20120402153631.5101.44091.stgit@zurg>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 10:26:42PM +0800, Teck Choon Giam wrote:
-> On Tue, Apr 3, 2012 at 9:28 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> >> > Author: Suresh Siddha <suresh.b.siddha@intel.com>
-> >> > Date:   Mon Mar 12 11:36:33 2012 -0700
-> >> >
-> >> >     x86/ioapic: Add register level checks to detect bogus io-apic entries
-> >> >
-> >> > With out this commit, if the bios lists bogus io-apic's, then we will
-> >> > see some error messages ("Unable to reset IRR for apic")during linux
-> >> > boot which are benign. But as this patch breaks Xen, I am ok if these
-> >> > don't get applied to 'stable'. Also I think it is Ingo who added the
-> >> > 'stable' tag. Ingo, are you ok with this?
-> >>
-> >> What stable trees did this already go into in the releases today?
-> >
-> > I see it in v3.2.x as:
-> > 273fb19 x86/ioapic: Add register level checks to detect bogus io-apic entries
-> >
-> > And in 3.0.x:
-> > c2ec63e x86/ioapic: Add register level checks to detect bogus io-apic entries
-> 
-> And does this also affect 3.3.x?  I haven't test but guess it will?
+On 04/02, Konstantin Khlebnikov wrote:
+>
+> Currently kernel does not account read-only private mappings into memory commitment.
+> But these mappings can be force-COW-ed in get_user_pages().
 
-Yup!
-> 
-> # git log | grep -B 5 'x86/ioapic: Add register level checks to detect
-> bogus io-apic entries'
-> 
-> commit a998dc2fa76f496d2944f0602b920d1d10d7467d
-> Author: Suresh Siddha <suresh.b.siddha@intel.com>
-> Date:   Mon Mar 12 11:36:33 2012 -0700
-> 
->     x86/ioapic: Add register level checks to detect bogus io-apic entries
-> 
+Heh. tail -n3 Documentation/vm/overcommit-accounting
+may be you should update it then.
 
-Greg, please also revert this one.
+Can't really comment the patch, this is not my area. Still,
+
+> +	down_write(&mm->mmap_sem);
+> +	*pvma = vma = find_vma(mm, addr);
+> +	if (vma && vma->vm_start <= addr) {
+> +		ret = vma->vm_end - addr;
+> +		if ((vma->vm_flags & (VM_ACCOUNT | VM_NORESERVE | VM_SHARED |
+> +				VM_HUGETLB | VM_MAYWRITE)) == VM_MAYWRITE) {
+> +			if (!security_vm_enough_memory_mm(mm, vma_pages(vma)))
+
+Oooooh, the whole vma. Say, gdb installs the single breakpoint into
+the huge .text mapping...
+
+I am not sure, but probably you want to check at least VM_IO/PFNMAP
+as well. We do not want to charge this memory and retry with FOLL_FORCE
+before vm_ops->access(). Say, /dev/mem.
+
+Hmm. OTOH, if I am right then mprotect_fixup() should be fixed??
+
+
+We drop ->mmap_sem... Say, the task does mremap() in between and
+len == 2 * PAGE_SIZE. Then, for example, copy_to_user_page() can
+write to the same page twice. Perhaps not a problem in practice,
+I dunno.
+
+Oleg.
+
