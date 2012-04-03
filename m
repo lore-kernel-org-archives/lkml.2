@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab2DCRRp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 13:17:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56704 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab2DCRRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 13:17:44 -0400
-Date: Tue, 3 Apr 2012 19:17:36 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Ivo Sieben <meltedpianoman@gmail.com>, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
-Message-ID: <20120403171736.GD2477@pengutronix.de>
-References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
- <20120403165320.GG19952@sequoia.sous-sol.org>
- <20120403170708.GC2477@pengutronix.de>
- <20120403171112.GH19952@sequoia.sous-sol.org>
+	id S1755142Ab2DCRSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 13:18:55 -0400
+Received: from trent.utfs.org ([94.185.90.103]:33357 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753926Ab2DCRSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 13:18:54 -0400
+Date: Tue, 3 Apr 2012 10:18:46 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: 3.4.0-rc1: No init found
+In-Reply-To: <1333440522.3040.9.camel@pasglop>
+Message-ID: <alpine.DEB.2.01.1204030953320.4930@trent.utfs.org>
+References: <alpine.DEB.2.01.1204030008080.4930@trent.utfs.org> <1333440522.3040.9.camel@pasglop>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6Nae48J/T25AfBN4"
-Content-Disposition: inline
-In-Reply-To: <20120403171112.GH19952@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 3 Apr 2012 at 18:08, Benjamin Herrenschmidt wrote:
+> I have observed this randomly on the G5 ... sometimes, if I try again,
+> it works... it's very very odd. There is some kind of race maybe with
+> async startup ? Or a problem with the vfs path walking ? It's certainly
+> not easily reproducable for me, it goes away from one boot to the next.
 
---6Nae48J/T25AfBN4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's 100% reproducible for me. This PowerBook G4 (1.25Ghz) is not the 
+fastes though, maybe a race triggers more easily here...?
 
+> > PS: Unfortunately I cannot boot into the old (3.3-rc7) kernel 
+> >     right now (which is still installed via "yaboot" and present in
+> >     /boot), because of this: 
+> >     http://nerdbynature.de/bits/3.4.0-rc1/init/mac-invalid-memory.JPG
+> >     Booting into Debian's "squeeze" kernel (2.6.32) which resides in
+> >     the same /boot directory succeeds.
+> 
+> Hrm, did it used to boot ?
 
-> > > > +	/*
-> > > > +	 * Certain EEPROMS have a size that is larger than the number of =
-address
-> > > > +	 * bytes would allow (e.g. like M95040 from ST that has 512 Byte =
-size
-> > > > +	 * but uses only one address byte (A0 to A7) for addressing.) For
-> > > > +	 * the extra address bit (A8, A16 or A24) bit 3 of the instructio=
-n byte
-> > > > +	 * is used. This instruction bit is normally defined as don't car=
-e for
-> > > > +	 * other AT25 like chips.
-> > > > +	 */
-> > > > +#define EE_INSTR_BIT3_IS_ADDR	0x0010
-> > >=20
-> > > Is there some guarantee that this chip flag will always have this
-> > > meaning?
-> >=20
-> > ? This is a driver flag.
->=20
-> Sorry, I don't see it set anywhere, so unclear on where it comes from.
-> I thought it was from a generic spi probe.
+I'm using the "backup" kernel only when the new one has an issue, so I 
+have not tested it for a while, but it used to work, for sure.
 
-Yeah, agreed, 'struct spi_eeprom' does not sound much like platform_data :/
-Thanks for checking.
+> Can you do printenv in OF and tell me what
+> your load-base, real-base, virt-base etc... are ?
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+load-base is 0x800000, real-base and virt-base is set to "-1", please see
+http://nerdbynature.de/bits/3.4.0-rc1/init/printenv-1.JPG
 
---6Nae48J/T25AfBN4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Not sure if this is related, but at the end of each kernel compilation, 
+the following messages are printed:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+------------
+  SYSMAP  System.map
+  SYSMAP  .tmp_System.map
+  WRAP    arch/powerpc/boot/zImage.pmac
+INFO: Uncompressed kernel (size 0x6e52f8) overlaps the address of the wrapper(0x400000)
+INFO: Fixing the link_address of wrapper to (0x700000)
+  WRAP    arch/powerpc/boot/zImage.coff
+INFO: Uncompressed kernel (size 0x6e52f8) overlaps the address of the wrapper(0x500000)
+INFO: Fixing the link_address of wrapper to (0x700000)
+  WRAP    arch/powerpc/boot/zImage.miboot
+INFO: Uncompressed kernel (size 0x6d4b80) overlaps the address of the wrapper(0x400000)
+INFO: Fixing the link_address of wrapper to (0x700000)
+  Building modules, stage 2.
+  MODPOST 24 modules
+------------
 
-iEYEARECAAYFAk97MLAACgkQD27XaX1/VRtw2QCggmIMO+ISn5+bzAo8K3kbj7B2
-sAUAoJNr1feEO4ED1QoRZqrHpcCrn71B
-=S0t5
------END PGP SIGNATURE-----
+I started to see these messages in January (around Linux 3.2.0), but never 
+investigated what it was since the produced kernels continued to boot just 
+fine.
 
---6Nae48J/T25AfBN4--
+> Might also be worth updating yaboot, debian should have 1.3.16 nowadays.
+
+Debian/stable still has 1.3.13a, I'll try to install 1.3.16 from 
+Debian/testing.
+
+Thanks for your help,
+Christian.
+-- 
+BOFH excuse #217:
+
+The MGs ran out of gas.
