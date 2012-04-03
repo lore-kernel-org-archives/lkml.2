@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab2DCOcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:32:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59290 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751872Ab2DCOcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:32:54 -0400
-Message-ID: <1333463572.26079.31.camel@joe2Laptop>
-Subject: Re: [PATCH] printk(): add KERN_CONT where needed
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Len Brown <lenb@kernel.org>
-Date: Tue, 03 Apr 2012 07:32:52 -0700
-In-Reply-To: <CAPXgP13fDRZtAvV651NPqQ2TgUEtb+MX1EhKhwirAgoiNOg5tQ@mail.gmail.com>
-References: <1333415903.860.0.camel@mop>
-	 <1333420612.26079.6.camel@joe2Laptop>
-	 <CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
-	 <1333424865.26079.9.camel@joe2Laptop>
-	 <CAPXgP13fDRZtAvV651NPqQ2TgUEtb+MX1EhKhwirAgoiNOg5tQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754765Ab2DCOgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:36:06 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34117 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab2DCOgE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 10:36:04 -0400
+Date: Tue, 3 Apr 2012 10:31:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Teck Choon Giam <giamteckchoon@gmail.com>, gregkh@linuxfoundation.org
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, stable@vger.kernel.org
+Subject: Re: Don't apply 9f022e54b8ea82d1ecdf3bd78d9ab9f44d6b0655 to stable
+ please.
+Message-ID: <20120403143114.GA27326@phenom.dumpdata.com>
+References: <20120402224701.GA6961@phenom.dumpdata.com>
+ <20120402232750.GB17821@kroah.com>
+ <1333410186.1270.92.camel@sbsiddha-desk.sc.intel.com>
+ <20120402234904.GA18316@kroah.com>
+ <20120403132850.GE12464@phenom.dumpdata.com>
+ <CAEwRVpNMZaQq0vaoS0aLk2rv3ysyhtOpXKub9HWR0bosgku6_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <CAEwRVpNMZaQq0vaoS0aLk2rv3ysyhtOpXKub9HWR0bosgku6_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090202.4F7B0AC8.0094,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 12:30 +0200, Kay Sievers wrote:
-> On Tue, Apr 3, 2012 at 05:47, Joe Perches <joe@perches.com> wrote:
-> > I think you should do it "right" rather than add
-> > trivial markers.
+On Tue, Apr 03, 2012 at 10:26:42PM +0800, Teck Choon Giam wrote:
+> On Tue, Apr 3, 2012 at 9:28 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> >> > Author: Suresh Siddha <suresh.b.siddha@intel.com>
+> >> > Date:   Mon Mar 12 11:36:33 2012 -0700
+> >> >
+> >> >     x86/ioapic: Add register level checks to detect bogus io-apic entries
+> >> >
+> >> > With out this commit, if the bios lists bogus io-apic's, then we will
+> >> > see some error messages ("Unable to reset IRR for apic")during linux
+> >> > boot which are benign. But as this patch breaks Xen, I am ok if these
+> >> > don't get applied to 'stable'. Also I think it is Ingo who added the
+> >> > 'stable' tag. Ingo, are you ok with this?
+> >>
+> >> What stable trees did this already go into in the releases today?
+> >
+> > I see it in v3.2.x as:
+> > 273fb19 x86/ioapic: Add register level checks to detect bogus io-apic entries
+> >
+> > And in 3.0.x:
+> > c2ec63e x86/ioapic: Add register level checks to detect bogus io-apic entries
 > 
-> The trivial markers _are_ correct. And they really fix things as soon
-> as we start storing machine-readable records with printk(), instead of
-> blindly glueing bytes together with each printk() call, for humans to
-> puzzle with them if things go wrong.
+> And does this also affect 3.3.x?  I haven't test but guess it will?
 
-These KERN_CONT changes don't _fix_ things,
-they just make it less likely to cause problems.
+Yup!
+> 
+> # git log | grep -B 5 'x86/ioapic: Add register level checks to detect
+> bogus io-apic entries'
+> 
+> commit a998dc2fa76f496d2944f0602b920d1d10d7467d
+> Author: Suresh Siddha <suresh.b.siddha@intel.com>
+> Date:   Mon Mar 12 11:36:33 2012 -0700
+> 
+>     x86/ioapic: Add register level checks to detect bogus io-apic entries
+> 
 
-Imagine two threads with printks extended with
-KERN_CONT
-
-Thread 1:                                 Thread 2:
-printk(KERN_INFO "info message: ");
-                                          printk(KERN_ERR "err message: ");
-printk(KERN_CONT "online\n");
-                                          printk(KERN_CONT "offline\n");
-
-Instead of a guarantee of "info message: online" and
-"err message: offline", buffering could still join
-the messages to "err message: online".
-
-I believe the only _guaranteed_ way to correctly
-assemble these messages is to use a initiator with
-a cookie and pass that cookie to assembling printks.
-
-Something like:
-
-	cookie = multi_printk_start()
-	multi_printk(cookie, level fmt, ...);
-	...
-	multi_printk_end(cookie);
-
-Though get_current() might be a reasonable cookie
-so perhaps the multi_ variants aren't needed.
-
-git.kernel.org isn't responding right now.  I
-can't read the link you sent me privately to
-check if you are using get_current() or some
-other current_thread_info() constuct.
-
+Greg, please also revert this one.
