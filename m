@@ -1,186 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2DCHuH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 03:50:07 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:49223 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab2DCHuE convert rfc822-to-8bit (ORCPT
+	id S1752209Ab2DCHwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 03:52:09 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63373 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab2DCHwH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 03:50:04 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [REGRESSION] NMI received for unknown reason 3c on CPU 0, strange powersaving mode?
-Date: Tue, 3 Apr 2012 09:50:02 +0200
-User-Agent: KMail/1.13.7 (Linux/3.3.0-trunk-amd64; KDE/4.7.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        a.p.zijlstra@chello.nl, stern@rowland.harvard.edu, rjw@sisk.pl,
-        pavel@ucw.cz
-References: <201203301304.49708.Martin@lichtvoll.de> <4F7987D0.3090106@linux.vnet.ibm.com> (sfid-20120402_143911_704229_5D7541F7)
-In-Reply-To: <4F7987D0.3090106@linux.vnet.ibm.com>
+	Tue, 3 Apr 2012 03:52:07 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+In-Reply-To: <4F7AAAD9.2040307@silka.with-linux.com>
+References: <4F7A8EB7.4060200@silka.with-linux.com>
+	<4F7A923D.5000002@candelatech.com>
+	<CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com>
+	<4F7A9D5C.8040402@silka.with-linux.com>
+	<CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com>
+	<4F7AAAD9.2040307@silka.with-linux.com>
+Date: Tue, 3 Apr 2012 13:22:06 +0530
+Message-ID: <CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com>
+Subject: Re: [ath9k-devel] 3.3.1 ath9k regression
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: Kelly Anderson <kelly@silka.with-linux.com>
+Cc: Ben Greear <greearb@candelatech.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201204030950.02778.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 2. April 2012 schrieb Srivatsa S. Bhat:
-> On 03/30/2012 04:34 PM, Martin Steigerwald wrote:
-> > Hi!
-> > 
-> > Since some time I am seeing things like
-> > 
-> > Message from syslogd@merkaba at Mar 30 00:29:30 ...
-> > 
-> >  kernel:[49074.294260] Uhhuh. NMI received for unknown reason 3c on
-> >  CPU 0.
-> > 
-> > Message from syslogd@merkaba at Mar 30 00:29:30 ...
-> > 
-> >  kernel:[49074.294263] Do you have a strange power saving mode
-> >  enabled?
-> > 
-> > Message from syslogd@merkaba at Mar 30 00:29:30 ...
-> > 
-> >  kernel:[49074.294264] Dazed and confused, but trying to continue
-> > 
-> > on resume after in-kernel hibernation.
-> 
-> Do you see this after suspend-to-ram too?
-> 
-> > I do not see any trace of it in syslog, kern.log or dmesg.
-> > 
-> > From the timestemp it seems that these messages are issued shortly
-> > before I send the laptop to hibernation last night.
-> > 
-> > 
-> > I am using a ThinkPad T520 with Intel(R) Core(TM) i5-2520M CPU @
-> > 2.50GHz and Sandybridge graphics.
-> > 
-> > I am not exactly sure since when it happens, cause I basically
-> > ignored it for quite some time. Might be some 3.2 kernel where it
-> > started, maybe even the first 3.2 kernel I had. Currently I am
-> > using:
-> > 
-> > martin@merkaba:~> cat /proc/version
-> > Linux version 3.3.0-trunk-amd64 (Debian 3.3-1~experimental.1)
-> > (debian- kernel@lists.debian.org) (gcc version 4.6.3 (Debian
-> > 4.6.3-1) ) #1 SMP Thu Mar 22 18:02:10 UTC 2012
-> > 
-> > Since I am quite sure I didn´t see this with the first kernel I used
-> > on this machine, which was a 2.6.39 if I remember correctly, I
-> > consider this to be a regression for now.
-> > 
-> > 
-> > I did not see any other strange effects, only this message.
-> > 
-> > 
-> > When searching for it I see quite some references¹. But what I looked
-> > at seemed to either quite old or different in that the machine was
-> > frozen then.
-> 
-> There was once such a bug report and commit 144060fee (perf: Add PM
-> notifiers to fix CPU hotplug races) tried to fix it, however it didn't
-> work out IIRC.
-> 
-> Can you please try out the pm-test framework and let us know in which
-> phase this message is encountered?
-> Documentation/power/basic-pm-debugging.txt
-> 
-> 1. Recompile the kernel with CONFIG_PM_DEBUG=y
-> 2. # cat /sys/power/pm_test
-> 3. # echo <value> > /sys/power/pm_test
->    Use the values from the list given in step 2.
->    From freezer to core, it is increasing depth of suspend phase.
-> 4. # echo mem > /sys/power/state  (for suspend-to-ram)
->    or echo disk > /sys/power/state  (for suspend-to-disk)
-> 
-> It would be great if you could tell which of the phases (freezer to
-> core) fails.
+> I just tried the unpatched kernel with pcie_aspm=off.  The device shows up
+> with ifconfig,
+> but it will not connect to the access point.
 
-Here I have the one from this morning. This time as resume time:
+oh, ok in addition does disabling power save helps ?
 
-martin@merkaba:~> 
-Message from syslogd@merkaba at Apr  3 09:10:15 ...
- kernel:[ 3755.145282] Uhhuh. NMI received for unknown reason 3c on CPU 0.
-
-Message from syslogd@merkaba at Apr  3 09:10:15 ...
- kernel:[ 3755.145285] Do you have a strange power saving mode enabled?
-
-Message from syslogd@merkaba at Apr  3 09:10:15 ...
- kernel:[ 3755.145286] Dazed and confused, but trying to continue
-
-
-And here are the tests - short summary I was not able to reproduce the 
-issue - nothing means that there was no furch NMI message on the Konsole 
-window where it usually appears:
-
-merkaba:~> cat /sys/power/pm_test 
-[none] core processors platform devices freezer
-merkaba:~> echo "core" > /sys/power/pm_test
-merkaba:~> echo "mem" > /sys/power/state  
-merkaba:~> echo nothing               
-nothing
-merkaba:~> echo "disk" > /sys/power/state
-merkaba:~> echo nothing
-nothing
-merkaba:~> echo "processors" > /sys/power/pm_test
-merkaba:~> echo "mem" > /sys/power/state         
-merkaba:~> echo nothing                          
-nothing
-merkaba:~> cat /sys/power/pm_test        
-none core [processors] platform devices freezer
-merkaba:~> echo "disk" > /sys/power/state
-merkaba:~> echo nothing                  
-nothing
-merkaba:~> echo "platform" > /sys/power/pm_test
-merkaba:~> echo "mem" > /sys/power/state         
-merkaba:~> echo nothing                 
-nothing
-merkaba:~> echo "disk" > /sys/power/state
-merkaba:~> echo nothing                        
-nothing
-merkaba:~> echo "devices" > /sys/power/pm_test
-merkaba:~> echo "mem" > /sys/power/state      
-merkaba:~> echo nothing                       
-nothing
-merkaba:~> echo "disk" > /sys/power/state  
-merkaba:~> echo nothing                  
-nothing
-merkaba:~> echo "freezer" > /sys/power/pm_test
-merkaba:~> echo "mem" > /sys/power/state      
-merkaba:~> echo nothing                       
-nothing
-merkaba:~> echo "disk" > /sys/power/state
-merkaba:~> echo nothing                  
-nothing
-
-
-Now trying a regular hibernation:
-
-merkaba:~> echo "none" > /sys/power/pm_test
-merkaba:~> cat /sys/power/pm_test
-[none] core processors platform devices freezer
-
-
-Nothing.
-
-
-Now trying a regular hibernation with some minutes downtime and
-unplugging the power from the laptop.
-
-
-Nothing as well.
-
-
-Now I am puzzled.
-
-
-Maybe its the switch from minidock to no dock and vice versa?
-
-Ciao,
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+thanks,
+shafi
