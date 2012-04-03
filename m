@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab2DCSH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 14:07:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52346 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754486Ab2DCSH5 convert rfc822-to-8bit (ORCPT
+	id S1755445Ab2DCSIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 14:08:16 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:44500 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133Ab2DCSIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 14:07:57 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-CC: "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Topic: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Index: AQHNEZXW4WifiYIc20mGGxLe7+r04paJCedg///azYCAAHzvcA==
-Date: Tue, 3 Apr 2012 18:07:22 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC1317D8A38@DBDE01.ent.ti.com>
-References: <1333456339-9372-1-git-send-email-anilkumar@ti.com>
- <331ABD5ECB02734CA317220B2BBEABC1317D84CC@DBDE01.ent.ti.com>
- <4F7B1D2F.40409@hartkopp.net>
-In-Reply-To: <4F7B1D2F.40409@hartkopp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Apr 2012 14:08:14 -0400
+Message-ID: <4F7B3C8B.9010609@tilera.com>
+Date: Tue, 3 Apr 2012 14:08:11 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Kautuk Consul <consul.kautuk@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: CodingStyle vs checkpatch for block comments
+References: <1333195539-5421-1-git-send-email-consul.kautuk@gmail.com>  <4F7B2114.4000806@tilera.com>  <CAFPAmTTfYKT39gdoKT3P4G2O0xkTSS8g62kKudeLcnpdipzJqg@mail.gmail.com>  <4F7B21FB.3040609@tilera.com>  <CAFPAmTS_2H7BzGndcceBxdnJroy82u++sduCPO2+qxG6-WA=nw@mail.gmail.com>  <4F7B2766.9080208@tilera.com> <1333471474.26079.43.camel@joe2Laptop>  <4F7B2AA7.5010906@tilera.com> <1333472391.26079.47.camel@joe2Laptop>  <4F7B32A0.1020009@tilera.com> <1333474907.26079.57.camel@joe2Laptop>
+In-Reply-To: <1333474907.26079.57.camel@joe2Laptop>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver,
+On 4/3/2012 1:41 PM, Joe Perches wrote:
+> On Tue, 2012-04-03 at 13:25 -0400, Chris Metcalf wrote:
+>> The relevant code in checkpatch.pl is:
+>>
+>>                 if ($rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
+>>                     $prevrawline =~ /^\+[ \t]*$/) {
+>>                         CHK("BLOCK_COMMENT_STYLE",
+>>                             "Don't begin block comments with only a /*
+>> line, use /* comment...\n" . $hereprev);
+>>                 }
+>>
+>> So, my questions -
+>>
+>> 1. I'm not sure what the regexps are really trying to avoid.  Presumably a
+>> blank line followed by a block comment is OK?  Certainly the kernel sources
+>> are full of this construct.
+> It emits a check message on
+> <blank line>
+> 	/*
+>
+> but not
+> <blank line>
+> 	/* some actual comment
 
-Thanks for the comments,
+Right, I understand what the regexps do, I'm just not clear on what the
+rationale is.  Is it trying to ensure that multi-line block comments are
+never preceded by a blank line?  Is it trying to change the format of block
+comments such that they either are preceded by a blank line, or a
+standalone "/*", but not both?  Confusing.
 
-On Tue, Apr 03, 2012 at 21:24:23, Oliver Hartkopp wrote:
-> On 03.04.2012 14:39, AnilKumar, Chimata wrote:
->
-> > Hi All,
-> >
-> > Subject line of this patch should be
-> > "ARM: CAN: d_can: Add support for Bosch D_CAN controller"
->
->
-> No, the d_can IP core is generally not limited to ARM.
->
->       "can: Add support for Bosch D_CAN controller"
->
-> would be perfectly fine.
+>> 2. The actual warning message emitted seems to directly contradict the
+>> CodingStyle document, so presumably we should either clarify the message,
+>> or update CodingStyle if we're really trying to change the style.
+> Or just remove it or add a test for the patched file
+> to be in net/... or drivers/net... or something.
 
-Agree, I will change the subject line in my next version of patch
+Obviously removing it would be an easy fix. :-)  I don't know if it makes
+sense to advocate for different kernel comment styles in different subtrees.
 
->
-> The correct way is:
->
-> 1. post your new CAN driver to linux-can ML
-> 2. When the major reviews & style fixes are done and the driver is fit for
-> mainline you can post it on ti-omap ML too
->
-> But an initial cross-posting of this CAN driver to netdev ML and linux-kernel
-> ML does not help anyone - it only increases traffic & confusion
->
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-It's true, I will take care from next time onwards
-
-Thanks
-AnilKumar
