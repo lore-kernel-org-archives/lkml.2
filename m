@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab2DCQQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 12:16:43 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45246 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751656Ab2DCQQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 12:16:42 -0400
-Message-ID: <1333469800.26079.35.camel@joe2Laptop>
-Subject: Re: [PATCH] printk(): add KERN_CONT where needed
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Len Brown <lenb@kernel.org>
-Date: Tue, 03 Apr 2012 09:16:40 -0700
-In-Reply-To: <CAPXgP11MBdqc3BiDLA1q5gW4BZy2q4PoLtD20oRXfKY+C-HOgw@mail.gmail.com>
-References: <1333415903.860.0.camel@mop>
-	 <1333420612.26079.6.camel@joe2Laptop>
-	 <CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
-	 <1333424865.26079.9.camel@joe2Laptop>
-	 <CAPXgP13fDRZtAvV651NPqQ2TgUEtb+MX1EhKhwirAgoiNOg5tQ@mail.gmail.com>
-	 <1333463572.26079.31.camel@joe2Laptop>
-	 <CAPXgP133MQX2u3H6imOR4FFR4TsHYc=f_yrAJfdd2sG-8bFrmA@mail.gmail.com>
-	 <1333469136.26079.33.camel@joe2Laptop>
-	 <CAPXgP11MBdqc3BiDLA1q5gW4BZy2q4PoLtD20oRXfKY+C-HOgw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1755241Ab2DCQSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 12:18:07 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:34981 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754641Ab2DCQSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 12:18:05 -0400
+Date: Tue, 3 Apr 2012 09:17:50 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] marvell sky2 driver: fix so it works without unaligned
+ accesses
+Message-ID: <20120403091750.11eff45b@s6510.linuxnetplumber.net>
+In-Reply-To: <201204031527.q33FR04i031747@farm-0027.internal.tilera.com>
+References: <201204031527.q33FR04i031747@farm-0027.internal.tilera.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 18:11 +0200, Kay Sievers wrote:
-> On Tue, Apr 3, 2012 at 18:05, Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2012-04-03 at 17:50 +0200, Kay Sievers wrote:
-> >> I did not claim to address the problem of concurrent continuation line
-> >> writers, and this patch has absolutely nothing to do with that
-> >> problem. It _does_ fix encountered problems,
-> >
-> > No it doesn't.  It fixes problems _you_ encounter
-> > with an unpublished modification of the printk
-> > subsystem.
+On Tue, 3 Apr 2012 11:13:56 -0400
+Chris Metcalf <cmetcalf@tilera.com> wrote:
+
+> The driver uses a receive_new() routine that ends up requiring unaligned
+> accesses in IP header processing.  If the architecture doesn't support
+> efficient unaligned accesses, just copy all ingress packets to the bounce
+> buffers instead.
 > 
-> Exactly. And that is what is written in the changelog of the patch.
-> But all that does not matter, the change results in more correct code
-> than the current one is; and that is all that matters.
+> This allows the driver to be used on the Tilera TILEmpower-Gx, since
+> the tile architecture doesn't currently handle kernel unaligned accesses,
+> just userspace.
 > 
-> Sure, I see your point, and support your effort, but I don't think
-> your arguments are related to this patch and you are hijacking
-> something unrelated, which should be discussed in a separate mail
-> thread, that's all.
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Conversations happen all over the place and making
-separate discussions isn't that valuable nor are
-they really controllable.
-
-Just write the change log to simply state "add KERN_CONT"
-without mentioning your unpublished stuff.
-
-cheers, Joe
-
+There are many other encapsulation cases where IP header won't be
+aligned. Why not just set copybreak module option to a very large value?
