@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2DCGBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 02:01:46 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:48794 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2DCGBp (ORCPT
+	id S1752676Ab2DCGC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 02:02:59 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38648 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab2DCGC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 02:01:45 -0400
-Message-ID: <4F7A923D.5000002@candelatech.com>
-Date: Mon, 02 Apr 2012 23:01:33 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Tue, 3 Apr 2012 02:02:58 -0400
+Date: Tue, 3 Apr 2012 08:02:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [3.4-rc1 crash]: NULL pointer deref in
+ fs/sysfs/group.c:create_files -- sysctl related?
+Message-ID: <20120403060252.GA27084@gmail.com>
+References: <20120402162716.4c93bfd3@pluto.restena.lu>
+ <20120402165036.2bc987ad@pluto.restena.lu>
+ <m17gxyklfm.fsf@fess.ebiederm.org>
+ <20120402213440.49e9de74@neptune>
+ <1333401898.2960.78.camel@laptop>
+ <1333403193.2960.80.camel@laptop>
 MIME-Version: 1.0
-To: Kelly Anderson <kelly@silka.with-linux.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>
-Subject: Re: 3.3.1 ath9k regression
-References: <4F7A8EB7.4060200@silka.with-linux.com>
-In-Reply-To: <4F7A8EB7.4060200@silka.with-linux.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1333403193.2960.80.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ath9k list should be interested in this...
 
-Ben
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-On 04/02/2012 10:46 PM, Kelly Anderson wrote:
-> This patch in 3.3.1 is causing ath9k device not to show/work on bootup.
-> ifconfig does not show the device unless I revert this patch. With the patch
-> reverted the device works as expected. This is verified on two different
-> machines that are both using ath9k mini-pcie wifi cards.
->
->>> ath9k: fix going to full-sleep on PS idle
->
->>> commit c1afdaff90538ef085b756454f12b29575411214 upstream.
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
+> On Mon, 2012-04-02 at 23:24 +0200, Peter Zijlstra wrote:
+> > On Mon, 2012-04-02 at 21:34 +0200, Bruno Prémont wrote:
+> > > > >> [    0.996198] Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant DL360 G4
+> > 
+> > Is this a netburst based space heater?
+> 
+> In particular, does: https://lkml.org/lkml/2012/3/27/182 , sort it?
+> 
+> Ingo, could you pick that one up and route it Linus wards?
 
+Will do - but the underlying generic bug should be fixed as 
+well: we must not crash just because some attributes are missing 
+in a rarely used sub-driver ...
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+We should WARN_ON(), etc. - but not crash.
+
+Thanks,
+
+	Ingo
