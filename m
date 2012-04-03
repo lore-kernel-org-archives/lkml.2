@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab2DCWb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:31:58 -0400
-Received: from uhura.skim.hs-owl.de ([193.174.118.81]:38327 "EHLO
-	uhura.skim.hs-owl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab2DCWb5 convert rfc822-to-8bit (ORCPT
+	id S1755530Ab2DCWel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:34:41 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55410 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab2DCWek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:31:57 -0400
-Message-ID: <4F7B7A59.2090904@googlemail.com>
-Date: Wed, 4 Apr 2012 00:31:53 +0200
-From: Jan Seiffert <kaffeemonster@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Firefox/11.0 SeaMonkey/2.8
+	Tue, 3 Apr 2012 18:34:40 -0400
+Date: Wed, 4 Apr 2012 00:34:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] Prevent crash on missing sysfs attribute group
+Message-ID: <20120403223435.GC10161@gmail.com>
+References: <1333403193.2960.80.camel@laptop>
+ <20120403060252.GA27084@gmail.com>
+ <20120403081735.78ca3bb3@pluto.restena.lu>
+ <m1d37pgugy.fsf@fess.ebiederm.org>
+ <20120403071543.GA17502@gmail.com>
+ <m1r4w5dzjq.fsf@fess.ebiederm.org>
+ <20120403080410.GF26826@gmail.com>
+ <m1sjgl9ozd.fsf@fess.ebiederm.org>
+ <20120403101623.GA16889@gmail.com>
+ <m18vid6qkb.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <eric.dumazet@gmail.com>
-Subject: Re: [REGRESSION][PATCH V4 3/3] bpf jit: Let the powerpc jit handle
- negative offsets
-References: <4F75CA89.4010709@googlemail.com> <4F75D2A5.7060407@googlemail.com> <20120403.180302.342779808900865443.davem@davemloft.net>
-In-Reply-To: <20120403.180302.342779808900865443.davem@davemloft.net>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Skim-SendBy: exchange.hs-owl.de on Wed, 04 Apr 2012 00:31:55 +0200
-X-Skim-SendBy: exchange.hs-owl.de on Wed, 04 Apr 2012 00:31:56 +0200
-X-SA-Exim-Connect-IP: 193.174.118.178
-X-SA-Exim-Mail-From: kaffeemonster@googlemail.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m18vid6qkb.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller schrieb:
-[snip - my patch description]
+
+* Eric W. Biederman <ebiederm@xmission.com> wrote:
+
+> > This has no relevance to the bug and crash pattern itself 
+> > whatsoever, so stop blathering about unrelated things.
 > 
-> I'm not applying this until a powerpc person tests it.
-> 
+> Crashing or BUG_ON or WARN_ON has no relevance to how hard it 
+> is to debug this. [...]
 
-As Benjamin already said, Matt is having a look, so i expected nothing else.
+Erm, so you think the difference between a nice WARN_ON() and a 
+machine that *DOES NOT BOOT* is irrelevant?
 
-> Also, we have an ARM JIT in the tree which probably needs to
-> be fixed similarly.
-> 
+In which universe? Smoking what kind of drugs?
 
-???
-Oh, in which tree is it?
-I was working against net-next.
+Seriously, you need a reality check. We settled the BUG_ON() 
+versus WARN_ON() debate about a decade ago, in favor of 
+WARN_ON().
 
-Greetings
-	Jan
+Thanks,
 
-
--- 
-˙qɐɥ ʇɟnɐʞǝƃ ʎɐqǝ ıǝq ɹnʇɐʇsɐʇ ǝuıǝ ɹıɯ ɥɔı sɐp lɐɯ ǝʇzʇǝl sɐp ʇsı sɐp 
-'ʇɯɯɐpɹǝʌ
+	Ingo
