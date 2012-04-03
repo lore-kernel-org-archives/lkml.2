@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab2DCSIQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 14:08:16 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:44500 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab2DCSIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 14:08:14 -0400
-Message-ID: <4F7B3C8B.9010609@tilera.com>
-Date: Tue, 3 Apr 2012 14:08:11 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1755386Ab2DCSMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 14:12:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:3404 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754558Ab2DCSMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 14:12:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="84877525"
+Message-ID: <4F7B3D93.4030405@linux.intel.com>
+Date: Tue, 03 Apr 2012 19:12:35 +0100
+From: "Bryan O'Donoghue" <bryan.odonoghue@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Kautuk Consul <consul.kautuk@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: CodingStyle vs checkpatch for block comments
-References: <1333195539-5421-1-git-send-email-consul.kautuk@gmail.com>  <4F7B2114.4000806@tilera.com>  <CAFPAmTTfYKT39gdoKT3P4G2O0xkTSS8g62kKudeLcnpdipzJqg@mail.gmail.com>  <4F7B21FB.3040609@tilera.com>  <CAFPAmTS_2H7BzGndcceBxdnJroy82u++sduCPO2+qxG6-WA=nw@mail.gmail.com>  <4F7B2766.9080208@tilera.com> <1333471474.26079.43.camel@joe2Laptop>  <4F7B2AA7.5010906@tilera.com> <1333472391.26079.47.camel@joe2Laptop>  <4F7B32A0.1020009@tilera.com> <1333474907.26079.57.camel@joe2Laptop>
-In-Reply-To: <1333474907.26079.57.camel@joe2Laptop>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
+To: linux-kernel@vger.kernel.org
+Subject: APIC logic bug in kernel
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/3/2012 1:41 PM, Joe Perches wrote:
-> On Tue, 2012-04-03 at 13:25 -0400, Chris Metcalf wrote:
->> The relevant code in checkpatch.pl is:
->>
->>                 if ($rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
->>                     $prevrawline =~ /^\+[ \t]*$/) {
->>                         CHK("BLOCK_COMMENT_STYLE",
->>                             "Don't begin block comments with only a /*
->> line, use /* comment...\n" . $hereprev);
->>                 }
->>
->> So, my questions -
->>
->> 1. I'm not sure what the regexps are really trying to avoid.  Presumably a
->> blank line followed by a block comment is OK?  Certainly the kernel sources
->> are full of this construct.
-> It emits a check message on
-> <blank line>
-> 	/*
->
-> but not
-> <blank line>
-> 	/* some actual comment
+Greetings list.
 
-Right, I understand what the regexps do, I'm just not clear on what the
-rationale is.  Is it trying to ensure that multi-line block comments are
-never preceded by a blank line?  Is it trying to change the format of block
-comments such that they either are preceded by a blank line, or a
-standalone "/*", but not both?  Confusing.
+I'm looking at the code in arch/x86/kernel/apic/apic.c specifically the 
+code path that checks for x86_vendor == X86_VENDOR_INTEL with 
+boot_cpu_data.x86 = 5.
 
->> 2. The actual warning message emitted seems to directly contradict the
->> CodingStyle document, so presumably we should either clarify the message,
->> or update CodingStyle if we're really trying to change the style.
-> Or just remove it or add a test for the patched file
-> to be in net/... or drivers/net... or something.
+As I understand the code, BIOS will have informed kernel that it has an 
+APIC based on mps tables. If the CPU family == 5, the function 
+apic_verify() will be called.
 
-Obviously removing it would be an easy fix. :-)  I don't know if it makes
-sense to advocate for different kernel comment styles in different subtrees.
+Problem is apic_verify() does an rdmsr for an MSR that was not included 
+in IA until P6.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Specifically rdmsr/wrmsr instructions in apic.c are not P5 compatible - 
+since the MSR IA32_APIC_BASE was not introduced until P6_01 - as listed 
+in the system programming guide volume 3.
 
+Are all of these rdmsr/wrmsr calls made with an awareness of P5 ?
+
+Example:
+
+We check in apic_verify() if cpuid(1).edx has bit 9 (local APIC) set.
+If so we set CPU capability FEATURE_APIC and rdmsr/wrmsr to 0x1B
+
+arch/x86/include/asm/msr-index.h:#define MSR_IA32_APICBASE		0x0000001b
+
+As I read this code it is perfectly valid for a P5, to have an APIC, 
+report it has APIC capability via BIOS and CPUID and then subsequently 
+to go ahead and touch the IA32_APIC_BASE MSR.
+
+Basically this code doesn't seem to match the spec, am I missing a trick ?
+
+
+Bryan
