@@ -1,80 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab2DCXcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 19:32:24 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:39207 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142Ab2DCXcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 19:32:23 -0400
-Message-ID: <4F7B8884.7070901@tilera.com>
-Date: Tue, 3 Apr 2012 19:32:20 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1755375Ab2DCXhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 19:37:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47998 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519Ab2DCXhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 19:37:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="137301202"
+Date: Tue, 3 Apr 2012 16:32:31 -0700
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        Suresh Jayaraman <sjayaraman@suse.com>,
+        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
+Message-ID: <20120403233231.GA24333@localhost>
+References: <20120328121308.568545879@intel.com>
+ <20120401205647.GD6116@redhat.com>
+ <20120403080014.GA15546@localhost>
+ <20120403145301.GG5913@redhat.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: David Miller <davem@davemloft.net>, <sfr@canb.auug.org.au>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tilepro ethernet driver: fix a few minor issues
-References: <201203302325.q2UNPm8j012403@farm-0012.internal.tilera.com>  <20120403.182335.782073108961783777.davem@davemloft.net>  <20120404083738.0b0f09ffc1f8c5a105c240eb@canb.auug.org.au>  <20120403.184004.2056266545823149252.davem@davemloft.net> <1333494088.2695.29.camel@joe2Laptop>
-In-Reply-To: <1333494088.2695.29.camel@joe2Laptop>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120403145301.GG5913@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/3/2012 7:01 PM, Joe Perches wrote:
-> On Tue, 2012-04-03 at 18:40 -0400, David Miller wrote:
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Wed, 4 Apr 2012 08:37:38 +1000
->>> On Tue, 03 Apr 2012 18:23:35 -0400 (EDT) David Miller <davem@davemloft.net> wrote:
->>>> Format the comment:
->>>> 	/* Like
->>>> 	 * this.
->>>> 	 */
->>>> not:
->>>> 	/*
->>>> 	 * Like
->>>> 	 * this.
->>>> 	 */
->>> People may be confused because Documentation/CodingStyle says to use the
->>> latter ...
->> I refuse to be dragged into this conversation, I'm completely aware
->> of the exact situation and I've stated my peace on this time and time
->> again.
-> I think you'd have less overall upset in yourself and in
-> other people if you would do more than repeat yourself
-> on patch submissions via mailing lists.
->
-> To my knowledge when the comment block style was added to
-> CodingStyle in 2006, you didn't mention anything about it.
->
-> https://lkml.org/lkml/2006/12/7/41
->
-> and I don't see any other mentions from you.
->
-> When I suggested adding something specifically for net
-> and drivers/net, you were at least dispraising.
->
-> http://lists.openwall.net/netdev/2012/02/04/59
->
-> I think it'd be useful to have this preference you have
-> for block comment style written out somewhere other than
-> the email archives.
+On Tue, Apr 03, 2012 at 10:53:01AM -0400, Vivek Goyal wrote:
+> On Tue, Apr 03, 2012 at 01:00:14AM -0700, Fengguang Wu wrote:
+> 
+> [CC Jens]
+> 
+> [..]
+> > > I think blkio.weight can be thought of a system wide weight of a cgroup
+> > > and more than one entity/subsystem should be able to make use of it and
+> > > differentiate between IO in its own way. CFQ can decide to do proportional
+> > > time division, and buffered write controller should be able to use the
+> > > same weight and do write bandwidth differentiation. I think it is better
+> > > than introducing another buffered write controller tunable for weight.
+> > > 
+> > > Personally, I am not too worried about this point. We can document and
+> > > explain it well.
+> > 
+> > Agreed. The throttling may work in *either* bps, IOPS or disk time
+> > modes. In each mode blkio.weight is naturally tied to the
+> > corresponding IO metrics.
+> 
+> Well, Tejun does not like the idea of sharing config variables among
+> different policies. So I guess you shall have to come up with your
+> own configurations variables as desired. As each policy will have its
+> own configuration and stats, prefixing the vairable/stat name with
+> policy name will help identify it. Not sure what's a good name for
+> buffered write policy.
+> 
+> May be
+> 
+> blkio.dirty.weight
+> blkio.dirty.bps
+> blkio.buffered_write.* or
+> blkio.buf_write* or
+> blkio.dirty_rate.* or
 
-Interesting back-story.  Obviously it's the various sub-maintainers'
-perquisite to request specific comment style, and if Linus doesn't push
-back on the sub-maintainers, that's how it is.
+OK. dirty.* or buffered_write.*, whatever looks more user friendly will be fine.
 
-David, I concur that it would be useful to make this canonical somewhere,
-since folks who are not aware of your preferences will obviously follow the
-CodingStyle document until corrected by you, which seems like a pain for
-you.  I suspect a modified version of Joe's original CodingStyle change,
-along with a comparable change in checkpatch, is the most "scalable" solution.
+> [..]
+> > 
+> > Patch 6/6 shows simple test results for bps based throttling.
+> > 
+> > Since then I've improved the patches to work in a more "contained" way
+> > when blkio.throttle.buffered_write_bps is not set.
+> > 
+> > The old behavior is, if blkcg A contains 1 dd and blkcg B contains 10
+> > dd tasks and they have equal weight, B will get 10 times bandwidth
+> > than A.
+> > 
+> > With the below updated core bits, A and B will get equal share of
+> > write bandwidth. The basic idea is to use
+> 
+> Yes, this new behavior makes more sense. Two equal weight groups get
+> equal bandwidth irrpesctive of number of tasks in cgroup.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Yeah, Andrew Morton reminded me of this during the writeback talk in
+google :) Fortunately the current dirty throttling algorithm can
+handle it easily. What's more, hierarchical cgroups can be supported
+by simply using the parent's blkcg->dirty_ratelimit as the throttling
+bps for the child.
 
+> [..]
+> > Test results are "pretty good looking" :-) The attached graphs
+> > illustrates nice attributes of accuracy, fairness and smoothness
+> > for the following tests.
+> 
+> Indeed. These results are pretty cool. It is hard to belive that lines
+> are so smooth and lines for two tasks are overlapping each other such 
+> that it is not obivious initially that they are overlapping and dirtying
+> equal amount of memory. I had to take a second look to figure that out.
+
+Thanks for noticing this! :)
+
+> Just that results for third graph (weight 500 and 1000 respectively) are
+> not perfect. I think Ideally all the 3 tasks should have dirtied same
+> amount of memory.
+
+Yeah, but note that it's not the fault of the throttling algorithm.
+
+The unfairness is created at the very beginning ~0.1s, where dirty
+pages are far under the dirty limits and the dd tasks are not
+throttled at all. Since the first task manages to start 0.1s earlier
+than the other two tasks, it manages to dirty at full (memory write)
+speed which makes the gap.
+
+Once the dirty throttling mechanism comes into play, you can see that
+the lines for the three tasks grow fairly at the same speed/slope.
+
+> But I think achieving perfection here might not be easy and may be
+> not many people will care.
+
+The formula itself looks simple, however it does ask for some
+debugging/tuning efforts to make it behave well under various
+situations.
+
+> Given the fact that you are doing a reasonable job of providing service
+> differentiation between buffered writers, I am wondering if you should
+> look at the ioprio of writers with-in cgroup and provide service
+> differentiation among those too. CFQ has separate queues but it loses
+> the context information by the time IO is submitted. So you might be
+> able to do a much better job. Anyway, this is a possible future
+> enhancement and not necessarily related to this patchset.
+
+Good point. It seems applicable to the general dirty throttling
+(not relying on cgroups). It would mainly be a problem of how to map
+the priority classes/values to each tasks' throttling weight (or bps).
+
+> Also, we are controlling the rate of dirtying the memory. I am again 
+> wondering whether these configuration knobs should be part of memory
+> controller and not block controller. Think of NFS case. There is no
+> block device or block layer involved but we will control the rate of
+> dirtying memory. So some control in memory controller might make
+> sense. And following kind of knobs might make sense there.
+> 
+> memcg.dirty_weight or memcg.dirty.weight
+> memcg.dirty_bps or memcg.dirty.write_bps
+> 
+> Just that we control not the *absolute amount* of memory but *rate* of
+> writing to memory and I think that makes it somewhat confusing and
+> gives the impression that it should be part of block IO controller.
+
+There is the future prospective of "buffered+direct write bps" interface.
+Considering this, I'm a little inclined towards the blkio.* interfaces,
+in despite of the fact that it's currently tightly tied to the block layer :)
+
+> I am kind of split on this (rather little inclined towards memory
+> controller), so I am raising the question and others can weigh in with
+> their thoughts on what makes more sense here.
+
+Yeah, we definitely need more inputs on the "interface" stuff.
+
+Thanks,
+Fengguang
