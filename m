@@ -1,104 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab2DCKsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 06:48:37 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:13968 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751993Ab2DCKsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 06:48:36 -0400
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1WGOQ-02-8ZM-02
-X-M-MSG: 
-Date: Tue, 3 Apr 2012 12:48:24 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/12] perf/x86-ibs: Precise event sampling with IBS for
- AMD CPUs
-Message-ID: <20120403104824.GI16322@erda.amd.com>
-References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
- <20120402191123.GA17124@gmail.com>
+	id S1753562Ab2DCKwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 06:52:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752288Ab2DCKws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 06:52:48 -0400
+Date: Tue, 3 Apr 2012 13:52:26 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: kvm: RCU warning in async pf
+Message-ID: <20120403105226.GF14939@redhat.com>
+References: <1333414472.11455.7.camel@lappy>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120402191123.GA17124@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1333414472.11455.7.camel@lappy>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.04.12 21:11:23, Ingo Molnar wrote:
-> Mind posting some perf annotate output of any well-known kernel 
-> function showing skiddy '-e cpu-cycles' output versus skid-less 
-> '-e cpu-cycles:p' output?
+On Mon, Apr 02, 2012 at 08:54:32PM -0400, Sasha Levin wrote:
+> Hi all,
+> 
+> I got the spew at the bottom of the mail in a KVM guest using the KVM tools and running trinity.
+> 
+> I'm not quite sure how default_idle managed to trigger a pagefault, so that part looks odd to me.
+> 
+This is not regular page fault. This is async page fault that tells the
+guest that a page, previously swapped out by hypervisor, is now swapped
+back in and it can happen while vcpu is idle. The code does not leave
+idle state properly though. We probably need to call rcu_irq_enter()
+there. Will look into it.
 
-This is what I got for _raw_spin_lock_irqsave (first perfctr, second
-ibs).
+> [12140.220507] ===============================
+> [12140.220507] [ INFO: suspicious RCU usage. ]
+> [12140.220507] 3.4.0-rc1-next-20120402-sasha #46 Tainted: G        W   
+> [12140.220507] -------------------------------
+> [12140.220507] include/linux/rcupdate.h:729 rcu_read_lock() used illegally while idle!
+> [12140.220507] 
+> [12140.220507] other info that might help us debug this:
+> [12140.220507] 
+> [12140.220507] 
+> [12140.220507] RCU used illegally from idle CPU!
+> [12140.220507] rcu_scheduler_active = 1, debug_locks = 1
+> [12140.220507] RCU used illegally from extended quiescent state!
+> [12140.220507] 4 locks held by swapper/1/0:
+> [12140.253991]  #0:  (&(&async_pf_sleepers[i].lock)->rlock){..-...}, at: [<ffffffff8107cdc8>] kvm_async_pf_task_wake+0x48/0x130
+> [12140.253991]  #1:  (&n.wq){......}, at: [<ffffffff810e200d>] __wake_up+0x2d/0x70
+> [12140.253991]  #2:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810ec404>] try_to_wake_up+0x34/0x290
+> [12140.253991]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff810f3c80>] select_task_rq_fair+0xb0/0x5c0
+> [12140.253991] 
+> [12140.253991] stack backtrace:
+> [12140.253991] Pid: 0, comm: swapper/1 Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
+> [12140.253991] Call Trace:
+> [12140.253991]  [<ffffffff81114173>] lockdep_rcu_suspicious+0x113/0x130
+> [12140.253991]  [<ffffffff810f3ce5>] select_task_rq_fair+0x115/0x5c0
+> [12140.253991]  [<ffffffff810f3c80>] ? select_task_rq_fair+0xb0/0x5c0
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec561>] try_to_wake_up+0x191/0x290
+> [12140.253991]  [<ffffffff81114850>] ? __lock_acquired+0x1c0/0x210
+> [12140.253991]  [<ffffffff810ec66d>] default_wake_function+0xd/0x10
+> [12140.253991]  [<ffffffff810d7208>] autoremove_wake_function+0x18/0x40
+> [12140.253991]  [<ffffffff810e11e2>] __wake_up_common+0x52/0x90
+> [12140.253991]  [<ffffffff810e200d>] ? __wake_up+0x2d/0x70
+> [12140.253991]  [<ffffffff810e2023>] __wake_up+0x43/0x70
+> [12140.253991]  [<ffffffff8107cb07>] apf_task_wake_one+0x87/0x90
+> [12140.253991]  [<ffffffff8107cdf5>] kvm_async_pf_task_wake+0x75/0x130
+> [12140.253991]  [<ffffffff8107d1e6>] do_async_page_fault+0x86/0xa0
+> [12140.253991]  [<ffffffff82657a55>] async_page_fault+0x25/0x30
+> [12140.253991]  [<ffffffff8107d626>] ? native_safe_halt+0x6/0x10
+> [12140.253991]  [<ffffffff81116fed>] ? trace_hardirqs_on+0xd/0x10
+> [12140.253991]  [<ffffffff8105857d>] default_idle+0x4d/0xa0
+> [12140.253991]  [<ffffffff810582af>] cpu_idle+0x11f/0x180
+> [12140.253991]  [<ffffffff8264b9e0>] ? setup_APIC_timer+0x88/0x8c
+> [12140.253991]  [<ffffffff8264b004>] start_secondary+0xe1/0xe8
+> [12140.253991] 
+> [12140.253991] ===============================
+> [12140.253991] [ INFO: suspicious RCU usage. ]
+> [12140.253991] 3.4.0-rc1-next-20120402-sasha #46 Tainted: G        W   
+> [12140.253991] -------------------------------
+> [12140.253991] kernel/sched/fair.c:2716 suspicious rcu_dereference_check() usage!
+> [12140.253991] 
+> [12140.253991] other info that might help us debug this:
+> [12140.253991] 
+> [12140.253991] 
+> [12140.253991] RCU used illegally from idle CPU!
+> [12140.253991] rcu_scheduler_active = 1, debug_locks = 1
+> [12140.253991] RCU used illegally from extended quiescent state!
+> [12140.253991] 4 locks held by swapper/1/0:
+> [12140.253991]  #0:  (&(&async_pf_sleepers[i].lock)->rlock){..-...}, at: [<ffffffff8107cdc8>] kvm_async_pf_task_wake+0x48/0x130
+> [12140.253991]  #1:  (&n.wq){......}, at: [<ffffffff810e200d>] __wake_up+0x2d/0x70
+> [12140.253991]  #2:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810ec404>] try_to_wake_up+0x34/0x290
+> [12140.253991]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff810f3c80>] select_task_rq_fair+0xb0/0x5c0
+> [12140.253991] 
+> [12140.253991] stack backtrace:
+> [12140.253991] Pid: 0, comm: swapper/1 Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
+> [12140.253991] Call Trace:
+> [12140.253991]  [<ffffffff81114173>] lockdep_rcu_suspicious+0x113/0x130
+> [12140.253991]  [<ffffffff810f3d4c>] select_task_rq_fair+0x17c/0x5c0
+> [12140.253991]  [<ffffffff810f3c80>] ? select_task_rq_fair+0xb0/0x5c0
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec561>] try_to_wake_up+0x191/0x290
+> [12140.253991]  [<ffffffff81114850>] ? __lock_acquired+0x1c0/0x210
+> [12140.253991]  [<ffffffff810ec66d>] default_wake_function+0xd/0x10
+> [12140.253991]  [<ffffffff810d7208>] autoremove_wake_function+0x18/0x40
+> [12140.253991]  [<ffffffff810e11e2>] __wake_up_common+0x52/0x90
+> [12140.253991]  [<ffffffff810e200d>] ? __wake_up+0x2d/0x70
+> [12140.253991]  [<ffffffff810e2023>] __wake_up+0x43/0x70
+> [12140.253991]  [<ffffffff8107cb07>] apf_task_wake_one+0x87/0x90
+> [12140.253991]  [<ffffffff8107cdf5>] kvm_async_pf_task_wake+0x75/0x130
+> [12140.253991]  [<ffffffff8107d1e6>] do_async_page_fault+0x86/0xa0
+> [12140.253991]  [<ffffffff82657a55>] async_page_fault+0x25/0x30
+> [12140.253991]  [<ffffffff8107d626>] ? native_safe_halt+0x6/0x10
+> [12140.253991]  [<ffffffff81116fed>] ? trace_hardirqs_on+0xd/0x10
+> [12140.253991]  [<ffffffff8105857d>] default_idle+0x4d/0xa0
+> [12140.253991]  [<ffffffff810582af>] cpu_idle+0x11f/0x180
+> [12140.253991]  [<ffffffff8264b9e0>] ? setup_APIC_timer+0x88/0x8c
+> [12140.253991]  [<ffffffff8264b004>] start_secondary+0xe1/0xe8
+> [12140.253991] 
+> [12140.253991] ===============================
+> [12140.253991] [ INFO: suspicious RCU usage. ]
+> [12140.253991] 3.4.0-rc1-next-20120402-sasha #46 Tainted: G        W   
+> [12140.253991] -------------------------------
+> [12140.253991] kernel/sched/fair.c:2660 suspicious rcu_dereference_check() usage!
+> [12140.253991] 
+> [12140.253991] other info that might help us debug this:
+> [12140.253991] 
+> [12140.253991] 
+> [12140.253991] RCU used illegally from idle CPU!
+> [12140.253991] rcu_scheduler_active = 1, debug_locks = 1
+> [12140.253991] RCU used illegally from extended quiescent state!
+> [12140.253991] 4 locks held by swapper/1/0:
+> [12140.253991]  #0:  (&(&async_pf_sleepers[i].lock)->rlock){..-...}, at: [<ffffffff8107cdc8>] kvm_async_pf_task_wake+0x48/0x130
+> [12140.253991]  #1:  (&n.wq){......}, at: [<ffffffff810e200d>] __wake_up+0x2d/0x70
+> [12140.253991]  #2:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810ec404>] try_to_wake_up+0x34/0x290
+> [12140.253991]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff810f3c80>] select_task_rq_fair+0xb0/0x5c0
+> [12140.253991] 
+> [12140.253991] stack backtrace:
+> [12140.253991] Pid: 0, comm: swapper/1 Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
+> [12140.253991] Call Trace:
+> [12140.253991]  [<ffffffff81114173>] lockdep_rcu_suspicious+0x113/0x130
+> [12140.253991]  [<ffffffff810f062f>] select_idle_sibling+0xaf/0x1c0
+> [12140.253991]  [<ffffffff810f3f51>] select_task_rq_fair+0x381/0x5c0
+> [12140.253991]  [<ffffffff810f3c80>] ? select_task_rq_fair+0xb0/0x5c0
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec561>] try_to_wake_up+0x191/0x290
+> [12140.253991]  [<ffffffff81114850>] ? __lock_acquired+0x1c0/0x210
+> [12140.253991]  [<ffffffff810ec66d>] default_wake_function+0xd/0x10
+> [12140.253991]  [<ffffffff810d7208>] autoremove_wake_function+0x18/0x40
+> [12140.253991]  [<ffffffff810e11e2>] __wake_up_common+0x52/0x90
+> [12140.253991]  [<ffffffff810e200d>] ? __wake_up+0x2d/0x70
+> [12140.253991]  [<ffffffff810e2023>] __wake_up+0x43/0x70
+> [12140.253991]  [<ffffffff8107cb07>] apf_task_wake_one+0x87/0x90
+> [12140.253991]  [<ffffffff8107cdf5>] kvm_async_pf_task_wake+0x75/0x130
+> [12140.253991]  [<ffffffff8107d1e6>] do_async_page_fault+0x86/0xa0
+> [12140.253991]  [<ffffffff82657a55>] async_page_fault+0x25/0x30
+> [12140.253991]  [<ffffffff8107d626>] ? native_safe_halt+0x6/0x10
+> [12140.253991]  [<ffffffff81116fed>] ? trace_hardirqs_on+0xd/0x10
+> [12140.253991]  [<ffffffff8105857d>] default_idle+0x4d/0xa0
+> [12140.253991]  [<ffffffff810582af>] cpu_idle+0x11f/0x180
+> [12140.253991]  [<ffffffff8264b9e0>] ? setup_APIC_timer+0x88/0x8c
+> [12140.253991]  [<ffffffff8264b004>] start_secondary+0xe1/0xe8
+> [12140.253991] 
+> [12140.253991] ===============================
+> [12140.253991] [ INFO: suspicious RCU usage. ]
+> [12140.253991] 3.4.0-rc1-next-20120402-sasha #46 Tainted: G        W   
+> [12140.253991] -------------------------------
+> [12140.253991] include/linux/rcupdate.h:750 rcu_read_unlock() used illegally while idle!
+> [12140.253991] 
+> [12140.253991] other info that might help us debug this:
+> [12140.253991] 
+> [12140.253991] 
+> [12140.253991] RCU used illegally from idle CPU!
+> [12140.253991] rcu_scheduler_active = 1, debug_locks = 1
+> [12140.253991] RCU used illegally from extended quiescent state!
+> [12140.253991] 4 locks held by swapper/1/0:
+> [12140.253991]  #0:  (&(&async_pf_sleepers[i].lock)->rlock){..-...}, at: [<ffffffff8107cdc8>] kvm_async_pf_task_wake+0x48/0x130
+> [12140.253991]  #1:  (&n.wq){......}, at: [<ffffffff810e200d>] __wake_up+0x2d/0x70
+> [12140.253991]  #2:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810ec404>] try_to_wake_up+0x34/0x290
+> [12140.253991]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff810f3c80>] select_task_rq_fair+0xb0/0x5c0
+> [12140.253991] 
+> [12140.253991] stack backtrace:
+> [12140.253991] Pid: 0, comm: swapper/1 Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
+> [12140.253991] Call Trace:
+> [12140.253991]  [<ffffffff81114173>] lockdep_rcu_suspicious+0x113/0x130
+> [12140.253991]  [<ffffffff810f412a>] select_task_rq_fair+0x55a/0x5c0
+> [12140.253991]  [<ffffffff810f3c80>] ? select_task_rq_fair+0xb0/0x5c0
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.253991]  [<ffffffff810ec561>] try_to_wake_up+0x191/0x290
+> [12140.253991]  [<ffffffff81114850>] ? __lock_acquired+0x1c0/0x210
+> [12140.253991]  [<ffffffff810ec66d>] default_wake_function+0xd/0x10
+> [12140.253991]  [<ffffffff810d7208>] autoremove_wake_function+0x18/0x40
+> [12140.253991]  [<ffffffff810e11e2>] __wake_up_common+0x52/0x90
+> [12140.253991]  [<ffffffff810e200d>] ? __wake_up+0x2d/0x70
+> [12140.253991]  [<ffffffff810e2023>] __wake_up+0x43/0x70
+> [12140.253991]  [<ffffffff8107cb07>] apf_task_wake_one+0x87/0x90
+> [12140.253991]  [<ffffffff8107cdf5>] kvm_async_pf_task_wake+0x75/0x130
+> [12140.253991]  [<ffffffff8107d1e6>] do_async_page_fault+0x86/0xa0
+> [12140.253991]  [<ffffffff82657a55>] async_page_fault+0x25/0x30
+> [12140.253991]  [<ffffffff8107d626>] ? native_safe_halt+0x6/0x10
+> [12140.253991]  [<ffffffff81116fed>] ? trace_hardirqs_on+0xd/0x10
+> [12140.253991]  [<ffffffff8105857d>] default_idle+0x4d/0xa0
+> [12140.253991]  [<ffffffff810582af>] cpu_idle+0x11f/0x180
+> [12140.253991]  [<ffffffff8264b9e0>] ? setup_APIC_timer+0x88/0x8c
+> [12140.253991]  [<ffffffff8264b004>] start_secondary+0xe1/0xe8
+> [12140.623131] 
+> [12140.623131] ===============================
+> [12140.623131] [ INFO: suspicious RCU usage. ]
+> [12140.623131] 3.4.0-rc1-next-20120402-sasha #46 Tainted: G        W   
+> [12140.623131] -------------------------------
+> [12140.623131] include/linux/rcupdate.h:729 rcu_read_lock() used illegally while idle!
+> [12140.623131] 
+> [12140.623131] other info that might help us debug this:
+> [12140.623131] 
+> [12140.623131] 
+> [12140.623131] RCU used illegally from idle CPU!
+> [12140.623131] rcu_scheduler_active = 1, debug_locks = 1
+> [12140.623131] RCU used illegally from extended quiescent state!
+> [12140.623131] 4 locks held by swapper/1/0:
+> [12140.623131]  #0:  (&(&async_pf_sleepers[i].lock)->rlock){..-...}, at: [<ffffffff8107cdc8>] kvm_async_pf_task_wake+0x48/0x130
+> [12140.623131]  #1:  (&n.wq){......}, at: [<ffffffff810e200d>] __wake_up+0x2d/0x70
+> [12140.623131]  #2:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810ec404>] try_to_wake_up+0x34/0x290
+> [12140.623131]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff810ea4c0>] ttwu_stat+0x50/0x230
+> [12140.623131] 
+> [12140.623131] stack backtrace:
+> [12140.623131] Pid: 0, comm: swapper/1 Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
+> [12140.623131] Call Trace:
+> [12140.623131]  [<ffffffff81114173>] lockdep_rcu_suspicious+0x113/0x130
+> [12140.623131]  [<ffffffff810ea537>] ttwu_stat+0xc7/0x230
+> [12140.623131]  [<ffffffff810ea4c0>] ? ttwu_stat+0x50/0x230
+> [12140.623131]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.623131]  [<ffffffff810ec62a>] try_to_wake_up+0x25a/0x290
+> [12140.623131]  [<ffffffff81114850>] ? __lock_acquired+0x1c0/0x210
+> [12140.623131]  [<ffffffff810ec66d>] default_wake_function+0xd/0x10
+> [12140.623131]  [<ffffffff810d7208>] autoremove_wake_function+0x18/0x40
+> [12140.623131]  [<ffffffff810e11e2>] __wake_up_common+0x52/0x90
+> [12140.623131]  [<ffffffff810e200d>] ? __wake_up+0x2d/0x70
+> [12140.623131]  [<ffffffff810e2023>] __wake_up+0x43/0x70
+> [12140.623131]  [<ffffffff8107cb07>] apf_task_wake_one+0x87/0x90
+> [12140.623131]  [<ffffffff8107cdf5>] kvm_async_pf_task_wake+0x75/0x130
+> [12140.623131]  [<ffffffff8107d1e6>] do_async_page_fault+0x86/0xa0
+> [12140.623131]  [<ffffffff82657a55>] async_page_fault+0x25/0x30
+> [12140.623131]  [<ffffffff8107d626>] ? native_safe_halt+0x6/0x10
+> [12140.623131]  [<ffffffff81116fed>] ? trace_hardirqs_on+0xd/0x10
+> [12140.623131]  [<ffffffff8105857d>] default_idle+0x4d/0xa0
+> [12140.623131]  [<ffffffff810582af>] cpu_idle+0x11f/0x180
+> [12140.623131]  [<ffffffff8264b9e0>] ? setup_APIC_timer+0x88/0x8c
+> [12140.623131]  [<ffffffff8264b004>] start_secondary+0xe1/0xe8
+> [12140.623131] 
+> [12140.623131] ===============================
+> [12140.623131] [ INFO: suspicious RCU usage. ]
+> [12140.623131] 3.4.0-rc1-next-20120402-sasha #46 Tainted: G        W   
+> [12140.623131] -------------------------------
+> [12140.623131] kernel/sched/core.c:1375 suspicious rcu_dereference_check() usage!
+> [12140.623131] 
+> [12140.623131] other info that might help us debug this:
+> [12140.623131] 
+> [12140.623131] 
+> [12140.623131] RCU used illegally from idle CPU!
+> [12140.623131] rcu_scheduler_active = 1, debug_locks = 1
+> [12140.623131] RCU used illegally from extended quiescent state!
+> [12140.623131] 4 locks held by swapper/1/0:
+> [12140.623131]  #0:  (&(&async_pf_sleepers[i].lock)->rlock){..-...}, at: [<ffffffff8107cdc8>] kvm_async_pf_task_wake+0x48/0x130
+> [12140.623131]  #1:  (&n.wq){......}, at: [<ffffffff810e200d>] __wake_up+0x2d/0x70
+> [12140.623131]  #2:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810ec404>] try_to_wake_up+0x34/0x290
+> [12140.623131]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff810ea4c0>] ttwu_stat+0x50/0x230
+> [12140.623131] 
+> [12140.623131] stack backtrace:
+> [12140.623131] Pid: 0, comm: swapper/1 Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
+> [12140.623131] Call Trace:
+> [12140.623131]  [<ffffffff81114173>] lockdep_rcu_suspicious+0x113/0x130
+> [12140.623131]  [<ffffffff810ea5a8>] ttwu_stat+0x138/0x230
+> [12140.623131]  [<ffffffff810ea4c0>] ? ttwu_stat+0x50/0x230
+> [12140.623131]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.623131]  [<ffffffff810ec62a>] try_to_wake_up+0x25a/0x290
+> [12140.623131]  [<ffffffff81114850>] ? __lock_acquired+0x1c0/0x210
+> [12140.623131]  [<ffffffff810ec66d>] default_wake_function+0xd/0x10
+> [12140.623131]  [<ffffffff810d7208>] autoremove_wake_function+0x18/0x40
+> [12140.623131]  [<ffffffff810e11e2>] __wake_up_common+0x52/0x90
+> [12140.623131]  [<ffffffff810e200d>] ? __wake_up+0x2d/0x70
+> [12140.623131]  [<ffffffff810e2023>] __wake_up+0x43/0x70
+> [12140.623131]  [<ffffffff8107cb07>] apf_task_wake_one+0x87/0x90
+> [12140.623131]  [<ffffffff8107cdf5>] kvm_async_pf_task_wake+0x75/0x130
+> [12140.623131]  [<ffffffff8107d1e6>] do_async_page_fault+0x86/0xa0
+> [12140.623131]  [<ffffffff82657a55>] async_page_fault+0x25/0x30
+> [12140.623131]  [<ffffffff8107d626>] ? native_safe_halt+0x6/0x10
+> [12140.623131]  [<ffffffff81116fed>] ? trace_hardirqs_on+0xd/0x10
+> [12140.623131]  [<ffffffff8105857d>] default_idle+0x4d/0xa0
+> [12140.623131]  [<ffffffff810582af>] cpu_idle+0x11f/0x180
+> [12140.623131]  [<ffffffff8264b9e0>] ? setup_APIC_timer+0x88/0x8c
+> [12140.623131]  [<ffffffff8264b004>] start_secondary+0xe1/0xe8
+> [12140.623131] 
+> [12140.623131] ===============================
+> [12140.623131] [ INFO: suspicious RCU usage. ]
+> [12140.623131] 3.4.0-rc1-next-20120402-sasha #46 Tainted: G        W   
+> [12140.623131] -------------------------------
+> [12140.623131] include/linux/rcupdate.h:750 rcu_read_unlock() used illegally while idle!
+> [12140.623131] 
+> [12140.623131] other info that might help us debug this:
+> [12140.623131] 
+> [12140.623131] 
+> [12140.623131] RCU used illegally from idle CPU!
+> [12140.623131] rcu_scheduler_active = 1, debug_locks = 1
+> [12140.623131] RCU used illegally from extended quiescent state!
+> [12140.623131] 4 locks held by swapper/1/0:
+> [12140.623131]  #0:  (&(&async_pf_sleepers[i].lock)->rlock){..-...}, at: [<ffffffff8107cdc8>] kvm_async_pf_task_wake+0x48/0x130
+> [12140.623131]  #1:  (&n.wq){......}, at: [<ffffffff810e200d>] __wake_up+0x2d/0x70
+> [12140.623131]  #2:  (&p->pi_lock){-.-.-.}, at: [<ffffffff810ec404>] try_to_wake_up+0x34/0x290
+> [12140.623131]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff810ea4c0>] ttwu_stat+0x50/0x230
+> [12140.623131] 
+> [12140.623131] stack backtrace:
+> [12140.623131] Pid: 0, comm: swapper/1 Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
+> [12140.623131] Call Trace:
+> [12140.623131]  [<ffffffff81114173>] lockdep_rcu_suspicious+0x113/0x130
+> [12140.623131]  [<ffffffff810ea643>] ttwu_stat+0x1d3/0x230
+> [12140.623131]  [<ffffffff810ea4c0>] ? ttwu_stat+0x50/0x230
+> [12140.623131]  [<ffffffff810ec404>] ? try_to_wake_up+0x34/0x290
+> [12140.623131]  [<ffffffff810ec62a>] try_to_wake_up+0x25a/0x290
+> [12140.623131]  [<ffffffff81114850>] ? __lock_acquired+0x1c0/0x210
+> [12140.623131]  [<ffffffff810ec66d>] default_wake_function+0xd/0x10
+> [12140.623131]  [<ffffffff810d7208>] autoremove_wake_function+0x18/0x40
+> [12140.623131]  [<ffffffff810e11e2>] __wake_up_common+0x52/0x90
+> [12140.623131]  [<ffffffff810e200d>] ? __wake_up+0x2d/0x70
+> [12140.623131]  [<ffffffff810e2023>] __wake_up+0x43/0x70
+> [12140.623131]  [<ffffffff8107cb07>] apf_task_wake_one+0x87/0x90
+> [12140.623131]  [<ffffffff8107cdf5>] kvm_async_pf_task_wake+0x75/0x130
+> [12140.623131]  [<ffffffff8107d1e6>] do_async_page_fault+0x86/0xa0
+> [12140.623131]  [<ffffffff82657a55>] async_page_fault+0x25/0x30
+> [12140.623131]  [<ffffffff8107d626>] ? native_safe_halt+0x6/0x10
+> [12140.623131]  [<ffffffff81116fed>] ? trace_hardirqs_on+0xd/0x10
+> [12140.623131]  [<ffffffff8105857d>] default_idle+0x4d/0xa0
+> [12140.623131]  [<ffffffff810582af>] cpu_idle+0x11f/0x180
+> [12140.623131]  [<ffffffff8264b9e0>] ? setup_APIC_timer+0x88/0x8c
+> [12140.623131]  [<ffffffff8264b004>] start_secondary+0xe1/0xe8
+> 
+> -- 
+> 
+> Sasha.
 
--Robert
-
-
- # perf annotate -k vmlinux -s _raw_spin_lock_irqsave -i perf-r076.data | cat
-  Percent |	Source code & Disassembly of vmlinux
- ------------------------------------------------
-          :
-          :
-          :
-          :	Disassembly of section .text:
-          :
-          :	ffffffff8145036a <_raw_spin_lock_irqsave>:
-     0.00 :	ffffffff8145036a:       push   %rbp
-     0.00 :	ffffffff8145036b:       mov    %rsp,%rbp
-     0.00 :	ffffffff8145036e:       callq  ffffffff81456c40 <mcount>
-     0.00 :	ffffffff81450373:       pushfq 
-     0.00 :	ffffffff81450374:       pop    %rax
-     0.00 :	ffffffff81450375:       cli    
-     0.00 :	ffffffff81450376:       mov    $0x100,%edx
-     0.00 :	ffffffff8145037b:       lock xadd %dx,(%rdi)
-     0.00 :	ffffffff81450380:       mov    %dl,%cl
-     0.00 :	ffffffff81450382:       shr    $0x8,%dx
-    10.34 :	ffffffff81450386:       cmp    %dl,%cl
-     0.00 :	ffffffff81450388:       je     ffffffff81450390 <_raw_spin_lock_irqsave+0x26>
-    10.34 :	ffffffff8145038a:       pause  
-    65.52 :	ffffffff8145038c:       mov    (%rdi),%cl
-    13.79 :	ffffffff8145038e:       jmp    ffffffff81450386 <_raw_spin_lock_irqsave+0x1c>
-     0.00 :	ffffffff81450390:       leaveq 
-     0.00 :	ffffffff81450391:       retq   
- # perf annotate -k vmlinux -s _raw_spin_lock_irqsave -i perf-r076pp.data | cat
-  Percent | Source code & Disassembly of vmlinux
- ------------------------------------------------
-          :
-          :
-          :
-          :	Disassembly of section .text:
-          :
-          :	ffffffff8145036a <_raw_spin_lock_irqsave>:
-     0.00 :	ffffffff8145036a:       push   %rbp
-     0.00 :	ffffffff8145036b:       mov    %rsp,%rbp
-     0.00 :	ffffffff8145036e:       callq  ffffffff81456c40 <mcount>
-     0.00 :	ffffffff81450373:       pushfq 
-     0.00 :	ffffffff81450374:       pop    %rax
-     0.00 :	ffffffff81450375:       cli    
-     0.00 :	ffffffff81450376:       mov    $0x100,%edx
-     0.00 :	ffffffff8145037b:       lock xadd %dx,(%rdi)
-     2.78 :	ffffffff81450380:       mov    %dl,%cl
-     0.00 :	ffffffff81450382:       shr    $0x8,%dx
-     2.78 :	ffffffff81450386:       cmp    %dl,%cl
-    11.11 :	ffffffff81450388:       je     ffffffff81450390 <_raw_spin_lock_irqsave+0x26>
-    72.22 :	ffffffff8145038a:       pause  
-     2.78 :	ffffffff8145038c:       mov    (%rdi),%cl
-     8.33 :	ffffffff8145038e:       jmp    ffffffff81450386 <_raw_spin_lock_irqsave+0x1c>
-     0.00 :	ffffffff81450390:       leaveq 
-     0.00 :	ffffffff81450391:       retq   
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+--
+			Gleb.
