@@ -1,194 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab2DCGV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 02:21:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36846 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab2DCGV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 02:21:26 -0400
-From: "Shankarmurthy, Akshay" <akshay.s@ti.com>
-To: <linux-serial@vger.kernel.org>
-CC: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <paul.gortmaker@windriver.com>, <jamie@jamieiles.com>,
-        <swarren@nvidia.com>, <dianders@chromium.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>, <akshay.s@ti.com>,
-        Chaithrika U S <chaithrika@ti.com>
-Subject: [PATCH] serial: 8250: Add cpufreq support
-Date: Tue, 3 Apr 2012 11:33:42 +0530
-Message-ID: <1333433022-5455-1-git-send-email-akshay.s@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752329Ab2DCGZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 02:25:10 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:45492
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751695Ab2DCGZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 02:25:08 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h668h839hd24h)
+X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03b.oce.net;RD:smtp02.oce.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: <linux-kernel@vger.kernel.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Chris Wright <chrisw@sous-sol.org>
+CC: Ivo Sieben <meltedpianoman@gmail.com>
+Subject: [PATCH-v3] Support M95040 SPI EEPROM
+Date: Tue, 3 Apr 2012 08:25:02 +0200
+Message-ID: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 03 Apr 2012 06:25:04.0875 (UTC) FILETIME=[81FA63B0:01CD1162]
 MIME-Version: 1.0
 Content-Type: text/plain
+X-OriginatorOrg: oce.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chaithrika U S <chaithrika@ti.com>
+Updated the generic SPI EEPROM driver AT25 for support of an additional address
+bit in the instruction byte. Certain EEPROMS have a size that is larger than the
+number of address bytes would allow (e.g. like M95040 from ST that has 512 Byte
+size but uses only one address byte (A0 to A7) for addressing.) For the extra
+address bit (A8, A16 or A24) bit 3 of the instruction byte is used. This
+instruction bit is normally defined as don't care for other AT25 like chips.
 
-On DA850/OMAP-L138 SoC, the PLL which supplies the clock to CPU also
-feeds the UART and the UART input frequency can change when the CPU
-frequency is scaled.
-
-This patch adds cpufreq support for 8250 serial driver. A clk structure
-member has been added to the platform and port data structures.This
-member is used by the cpufreq notifier callback to get the updated
-clock rate. The implementation is based on the cpufreq implementation
-for Samsung serial driver.
-
-Tested on TI DA850/OMAP-L138 EVM.
-
-Signed-off-by: Chaithrika U S <chaithrika@ti.com>
-Signed-off-by: Shankarmurthy, Akshay <akshay.s@ti.com>
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
 ---
-This patch was submitted 2 years ago but didn't make it to the mainline. Now i am reposting it.
+v3: Processed review comments from Wolfram Sang: no additional address_offset
+is calculated during the probe, but during the read/write the flag is checked
+and the extra address bit offset is calculated runtime.
 
- drivers/tty/serial/8250/8250.c |   74 ++++++++++++++++++++++++++++++++++++++++
- drivers/tty/serial/8250/8250.h |    5 +++
- include/linux/serial_8250.h    |    1 +
- 3 files changed, 80 insertions(+), 0 deletions(-)
+ drivers/misc/eeprom/at25.c |   19 ++++++++++++++++---
+ include/linux/spi/eeprom.h |   10 ++++++++++
+ 2 files changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-index 9b7336f..b7cfe6c 100644
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -38,6 +38,8 @@
- #include <linux/nmi.h>
- #include <linux/mutex.h>
- #include <linux/slab.h>
-+#include <linux/cpufreq.h>
-+#include <linux/clk.h>
+diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
+index c627e41..0d272c6 100644
+--- a/drivers/misc/eeprom/at25.c
++++ b/drivers/misc/eeprom/at25.c
+@@ -50,6 +50,7 @@ struct at25_data {
+ #define	AT25_SR_BP1	0x08
+ #define	AT25_SR_WPEN	0x80		/* writeprotect enable */
  
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -3015,6 +3017,70 @@ void serial8250_resume_port(int line)
- 	uart_resume_port(&serial8250_reg, &up->port);
- }
++#define	AT25_INSTR_BIT3	0x08		/* Additional address bit in instr */
  
-+#ifdef CONFIG_CPU_FREQ
-+static int serial8250_cpufreq_transition(struct notifier_block *nb,
-+					     unsigned long val, void *data)
-+{
-+	struct uart_8250_port *p;
-+	struct uart_port *uport;
-+
-+	p = container_of(nb, struct uart_8250_port, freq_transition);
-+	uport = &p->port;
-+
-+	if (IS_ERR(p->clk))
-+		goto cpu_freq_exit;
-+
-+	if (p->port.uartclk == clk_get_rate(p->clk))
-+		goto cpu_freq_exit;
-+
-+	p->port.uartclk = clk_get_rate(p->clk);
-+	if (val == CPUFREQ_POSTCHANGE) {
-+		struct ktermios *termios;
-+		struct tty_struct *tty;
-+		if (uport->state == NULL)
-+			goto cpu_freq_exit;
-+
-+		tty = uport->state->port.tty;
-+		if (tty == NULL)
-+			goto cpu_freq_exit;
-+
-+		termios = tty->termios;
-+		if (termios == NULL) {
-+			printk(KERN_WARNING "%s: no termios?\n", __func__);
-+			goto cpu_freq_exit;
-+		}
-+
-+		serial8250_set_termios(uport, termios, NULL);
-+	}
-+
-+cpu_freq_exit:
-+	return 0;
-+}
-+
-+static inline int serial8250_cpufreq_register(struct uart_8250_port *p)
-+{
-+	p->freq_transition.notifier_call = serial8250_cpufreq_transition;
-+
-+	return cpufreq_register_notifier(&p->freq_transition,
-+					 CPUFREQ_TRANSITION_NOTIFIER);
-+}
-+
-+static inline void serial8250_cpufreq_deregister(struct uart_8250_port *p)
-+{
-+	cpufreq_unregister_notifier(&p->freq_transition,
-+				    CPUFREQ_TRANSITION_NOTIFIER);
-+}
-+#else
-+static inline int serial8250_cpufreq_register(struct uart_8250_port *p)
-+{
-+	return 0;
-+}
-+
-+static inline void serial8250_cpufreq_deregister(struct uart_8250_port *p)
-+{
-+}
-+#endif
-+
- /*
-  * Register a set of serial devices attached to a platform device.  The
-  * list is terminated with a zero flags entry, which means we expect
-@@ -3051,6 +3117,9 @@ static int __devinit serial8250_probe(struct platform_device *dev)
- 		port.pm			= p->pm;
- 		port.dev		= &dev->dev;
- 		port.irqflags		|= irqflag;
-+		if (p->clk)
-+			serial8250_ports[i].clk = p->clk;
-+
- 		ret = serial8250_register_port(&port);
- 		if (ret < 0) {
- 			dev_err(&dev->dev, "unable to register port at index %d "
-@@ -3227,6 +3296,10 @@ int serial8250_register_port(struct uart_port *port)
- 		ret = uart_add_one_port(&serial8250_reg, &uart->port);
- 		if (ret == 0)
- 			ret = uart->port.line;
-+
-+		ret = serial8250_cpufreq_register(uart);
-+		if (ret < 0)
-+			printk(KERN_ERR "Failed to add cpufreq notifier\n");
- 	}
- 	mutex_unlock(&serial_mutex);
+ #define EE_MAXADDRLEN	3		/* 24 bit addresses, up to 2 MBytes */
  
-@@ -3246,6 +3319,7 @@ void serial8250_unregister_port(int line)
- 	struct uart_8250_port *uart = &serial8250_ports[line];
+@@ -75,6 +76,7 @@ at25_ee_read(
+ 	ssize_t			status;
+ 	struct spi_transfer	t[2];
+ 	struct spi_message	m;
++	u8			instr;
  
- 	mutex_lock(&serial_mutex);
-+	serial8250_cpufreq_deregister(uart);
- 	uart_remove_one_port(&serial8250_reg, &uart->port);
- 	if (serial8250_isa_devs) {
- 		uart->port.flags &= ~UPF_BOOT_AUTOCONF;
-diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-index ae027be..be05a03 100644
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -37,6 +37,11 @@ struct uart_8250_port {
- 	unsigned char		lsr_saved_flags;
- #define MSR_SAVE_FLAGS UART_MSR_ANY_DELTA
- 	unsigned char		msr_saved_flags;
-+	struct clk		*clk;
-+#ifdef CONFIG_CPU_FREQ
-+	struct notifier_block	freq_transition;
-+#endif
+ 	if (unlikely(offset >= at25->bin.size))
+ 		return 0;
+@@ -84,7 +86,12 @@ at25_ee_read(
+ 		return count;
+ 
+ 	cp = command;
+-	*cp++ = AT25_READ;
 +
- };
++	instr = AT25_READ;
++	if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
++		if (offset >= (1U << (at25->addrlen * 8)))
++			instr |= AT25_INSTR_BIT3;
++	*cp++ = instr;
  
- struct old_serial_port {
-diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-index 8f012f8..c2e1ce5 100644
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -23,6 +23,7 @@ struct plat_serial8250_port {
- 	resource_size_t	mapbase;	/* resource base */
- 	unsigned int	irq;		/* interrupt number */
- 	unsigned long	irqflags;	/* request_irq flags */
-+	struct clk	*clk;
- 	unsigned int	uartclk;	/* UART clock rate */
- 	void            *private_data;
- 	unsigned char	regshift;	/* register shift */
+ 	/* 8/16/24-bit address is written MSB first */
+ 	switch (at25->addrlen) {
+@@ -167,14 +174,14 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
+ 	/* For write, rollover is within the page ... so we write at
+ 	 * most one page, then manually roll over to the next page.
+ 	 */
+-	bounce[0] = AT25_WRITE;
+ 	mutex_lock(&at25->lock);
+ 	do {
+ 		unsigned long	timeout, retries;
+ 		unsigned	segment;
+ 		unsigned	offset = (unsigned) off;
+-		u8		*cp = bounce + 1;
++		u8		*cp = bounce;
+ 		int		sr;
++		u8		instr;
+ 
+ 		*cp = AT25_WREN;
+ 		status = spi_write(at25->spi, cp, 1);
+@@ -184,6 +191,12 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
+ 			break;
+ 		}
+ 
++		instr = AT25_WRITE;
++		if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
++			if (offset >= (1U << (at25->addrlen * 8)))
++				instr |= AT25_INSTR_BIT3;
++		*cp++ = instr;
++
+ 		/* 8/16/24-bit address is written MSB first */
+ 		switch (at25->addrlen) {
+ 		default:	/* case 3 */
+diff --git a/include/linux/spi/eeprom.h b/include/linux/spi/eeprom.h
+index 306e7b1..403e007 100644
+--- a/include/linux/spi/eeprom.h
++++ b/include/linux/spi/eeprom.h
+@@ -20,6 +20,16 @@ struct spi_eeprom {
+ #define	EE_ADDR3	0x0004			/* 24 bit addrs */
+ #define	EE_READONLY	0x0008			/* disallow writes */
+ 
++	/*
++	 * Certain EEPROMS have a size that is larger than the number of address
++	 * bytes would allow (e.g. like M95040 from ST that has 512 Byte size
++	 * but uses only one address byte (A0 to A7) for addressing.) For
++	 * the extra address bit (A8, A16 or A24) bit 3 of the instruction byte
++	 * is used. This instruction bit is normally defined as don't care for
++	 * other AT25 like chips.
++	 */
++#define EE_INSTR_BIT3_IS_ADDR	0x0010
++
+ 	/* for exporting this chip's data to other kernel code */
+ 	void (*setup)(struct memory_accessor *mem, void *context);
+ 	void *context;
 -- 
-1.7.1
+1.7.0.4
+
 
