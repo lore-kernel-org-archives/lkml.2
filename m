@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2DCK4D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 06:56:03 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:49188 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab2DCK4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 06:56:00 -0400
-X-SENDER-IP: [85.230.169.225]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuOsAATWek9V5qnhPGdsb2JhbABFig2sTQOBDxkBAQEBNzSCCgEFJwsBIyMQCANGFCUKGi6HcrshE4s2hDpjBJVihgCNGg
-X-IronPort-AV: E=Sophos;i="4.75,362,1330902000"; 
-   d="scan'208";a="7051921"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 3 Apr 2012 12:57:31 +0200
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 4/5] hid: Add idtags to modalias
-Message-ID: <20120403105731.GB14201@polaris.bitmath.org>
-References: <1333436730-13008-1-git-send-email-rydberg@euromail.se>
- <1333436730-13008-5-git-send-email-rydberg@euromail.se>
- <CAN+gG=F0v1NnBd5G_Z77m3Qf8FuSs5Nj2-W97k=GhFdWmZDiKg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAN+gG=F0v1NnBd5G_Z77m3Qf8FuSs5Nj2-W97k=GhFdWmZDiKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753951Ab2DCK7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 06:59:31 -0400
+Received: from mail4.ccl.ru ([195.222.140.73]:62608 "EHLO mail4.ccl.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751705Ab2DCK73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 06:59:29 -0400
+From: Mike Sinkovsky <msink@permonline.ru>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mike Sinkovsky <msink@permonline.ru>
+Subject: [PATCH v6 0/2] Ethernet drivers for WIZnet chips
+Date: Tue,  3 Apr 2012 16:58:44 +0600
+Message-Id: <1333450726-24455-1-git-send-email-msink@permonline.ru>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1332752876-1650-1-git-send-email-msink@permonline.ru>
+References: <1332752876-1650-1-git-send-email-msink@permonline.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +       /* Generic MT device */
-> > +       { .driver_data = MT_CLS_DEFAULT,
-> > +               HID_USB_MT_DEVICE(HID_ANY_ID,
-> > +                       HID_ANY_ID) },
-> 
-> This breaks the mechanism used to detect serial protocol.
-> A better solution would be to keep .driver_data = 0 -> this would tell
-> us that the device is unknown and that we can override the given
-> settings.
+Based on original driver from chip manufacturer, but nearly full rewite.
+Tested and used in production with Blackfin BF531 embedded processor.
 
-Good point, will do.
+Signed-off-by: Mike Sinkovsky <msink@permonline.ru>
+---
+v6:
+ - remove (S0_TX_FSR < skb->len) check in TX handler, it doesn't work
+   anyway. Chip can transmit only one frame with MTU 1500 at a time,
+   and tx buffer size is bigger.
+ - remove dependency (ARM || BLACKFIN) - should work on any arch
+ - interrupt handler returns IRQ_NONE if status register is zero
+ - use devm_request_threaded_irq for request detect_link handler
+ - remove dev_info if probe failed
+v5:
+ - added driver for WIZnet W5100
+ - disabled VLAN (NETIF_F_VLAN_CHALLENGED)
+v4:
+ - netif_stop_queue if tx fifo is full, netif_wake_queue in interrupt
+ - use netif_info macro
+v3:
+ - reading macaddr from platform_data
+ - ethtool: get_link, get_msglevel, set_msglevel
+ - more cleanups
+v2:
+ - corrected handling of NET_ADDR_RANDOM flag
+ - support for WIZNET_BUS_ANY mode
+ - link detection using gpio
+ - registers read using ethtool
+ - more cleanups
 
-Thanks,
-Henrik
