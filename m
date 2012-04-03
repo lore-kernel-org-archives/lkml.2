@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2DCV3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:29:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63307 "EHLO
+	id S1755375Ab2DCVdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:33:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59798 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2DCV3f (ORCPT
+	with ESMTP id S1754989Ab2DCVdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:29:35 -0400
+	Tue, 3 Apr 2012 17:33:50 -0400
+Message-ID: <4F7B6C81.3050205@landley.net>
+Date: Tue, 03 Apr 2012 16:32:49 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-In-Reply-To: <1333382148-14137-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1333382148-14137-1-git-send-email-daniel.lezcano@linaro.org>
-Date: Tue, 3 Apr 2012 23:29:34 +0200
-Message-ID: <CACRpkdagADj4YacxA5DqdQHKO2fkdCmwjK3pY_TAwCYU_C67GQ@mail.gmail.com>
-Subject: Re: [PATCH] mfd : dbx500 : fix compilation error
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>, sameo@linux.intel.com
-Cc: srinidhi.kasagar@stericsson.com, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] MAINTAINERS: change in Documentation/ maintainer
+References: <4F7B5CFB.1@xenotime.net>
+In-Reply-To: <4F7B5CFB.1@xenotime.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 5:55 PM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
+On 04/03/2012 03:26 PM, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> I'm dropping off as Documentation/ maintainer.
+> Rob Landley has agreed to take it over.  Thanks, Rob.
+> 
+> I'll still be around reviewing patches and testing.
+> Stephen, please drop my quilt tree from linux-next.
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-> The ux500 default config enables the db5500 and the db8500.
-> The incoming cpuidle driver uses the 'prcmu_enable_wakeups'
-> and the 'prcmu_set_power_state' functions but these ones
-> are defined but not implemented for the db5500, leading to
-> an unresolved symbol error at link time. In order to compile,
-> we have to disable the db5500 support which is not acceptable
-> for the default config.
->
-> I noticed there are also some other functions which are
-> defined but not implemented.
->
-> This patch fix this by removing the functions definitions
-> and move out of the config section the empty functions which
-> are normally used when the DB550 config is disabled.
-> Only the functions which are not implemented are concerned
-> by this modification.
->
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Rob Landley <rob@landley.net>
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Sam, please push this to the -rc series if you can.
-
-Yours,
-Linus Walleij
+> ---
+>  MAINTAINERS |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- lnx-34-rc1.orig/MAINTAINERS
+> +++ lnx-34-rc1/MAINTAINERS
+> @@ -2322,9 +2322,9 @@ S:	Supported
+>  F:	drivers/acpi/dock.c
+>  
+>  DOCUMENTATION
+> -M:	Randy Dunlap <rdunlap@xenotime.net>
+> +M:	Rob Landley <rob@landley.net>
+>  L:	linux-doc@vger.kernel.org
+> -T:	quilt http://xenotime.net/kernel-doc-patches/current/
+> +T:	TBD
+>  S:	Maintained
+>  F:	Documentation/
+>  
+> 
