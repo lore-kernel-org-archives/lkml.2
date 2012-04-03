@@ -1,153 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab2DCODR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:03:17 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:46044 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab2DCODQ (ORCPT
+	id S1753999Ab2DCOFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:05:14 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:33739 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab2DCOFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:03:16 -0400
-Message-ID: <4F7B030B.4080900@criticallink.com>
-Date: Tue, 03 Apr 2012 10:02:51 -0400
-From: Michael Williamson <michael.williamson@criticallink.com>
-Organization: Critical Link, LLC
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+	Tue, 3 Apr 2012 10:05:12 -0400
+Message-ID: <4F7B0387.6050804@linux.vnet.ibm.com>
+Date: Tue, 03 Apr 2012 19:34:55 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-CC: davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: da850: change ASYNC/PLL0_SYSCLK3 clock rate with
- DVFS
-References: <1333458083-29753-1-git-send-email-prakash.pm@ti.com>
-In-Reply-To: <1333458083-29753-1-git-send-email-prakash.pm@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: lenb@kernel.org, khilman@ti.com, deepthi@linux.vnet.ibm.com,
+        g.trinabh@gmail.com, arjan@infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH] cpuidle: Avoid possible NULL pointer dereference in __cpuidle_register_device()
+References: <20120402144422.11574.83174.stgit@srivatsabhat.in.ibm.com> <4F79FE8F.1040708@linaro.org> <4F7AE42F.9080800@linux.vnet.ibm.com> <4F7AE831.507@linaro.org> <4F7AF7FE.5070307@linux.vnet.ibm.com> <4F7B007C.50201@linaro.org>
+In-Reply-To: <4F7B007C.50201@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12040303-0260-0000-0000-000000CC18C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/3/2012 9:01 AM, Manjunathappa, Prakash wrote:
+On 04/03/2012 07:21 PM, Daniel Lezcano wrote:
 
-> Clock for EMIF is derived from ASYNC clock domain(PLL0_SYSCLK3) and was
-> configured with fixed divider as there was no significant performance
-> degradation with existing NAND/NOR EMIF devices if it is not
-> reconfigured accordingly at different OPPs.
->
-> On systems where devices other than NAND/NOR are interfaced through
-> EMIF, such performance degradation may not be desirable. So change the
-> PLL0_SYSCLK3 output frequency for different OPPs by re-configuring
-> the divider value.
->
-> Configured values are as per rates specified in OMAP-L138 Data sheet
-> (http://www.ti.com/lit/ds/symlink/omap-l138.pdf, Table 5-5).
->
-> Patch addresses concerns raised in below thread of Linux-DaVinci-community:
-> http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg22535.html
->
-> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> ---
->  arch/arm/mach-davinci/da850.c |   37 +++++++++++++++++++++++++++++++++++--
->  1 files changed, 35 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-> index b44dc84..7e98ed7 100644
-> --- a/arch/arm/mach-davinci/da850.c
-> +++ b/arch/arm/mach-davinci/da850.c
-> @@ -49,6 +49,7 @@
->  static int da850_set_armrate(struct clk *clk, unsigned long rate);
->  static int da850_round_armrate(struct clk *clk, unsigned long rate);
->  static int da850_set_pll0rate(struct clk *clk, unsigned long armrate);
-> +static int da850_set_sysclk3_rate(struct clk *clk, unsigned long rate);
->  
->  static struct pll_data pll0_data = {
->  	.num		= 1,
-> @@ -88,8 +89,8 @@ static struct clk pll0_sysclk3 = {
->  	.parent		= &pll0_clk,
->  	.flags		= CLK_PLL,
->  	.div_reg	= PLLDIV3,
-> -	.set_rate	= davinci_set_sysclk_rate,
-> -	.maxrate	= 100000000,
-> +	.set_rate	= da850_set_sysclk3_rate,
-
-
-
-da850_set_pll0_sysclk3_rate ?
-(there is a pll1_sysclk3 as well)
-
-> +	.maxrate	= 148000000,
->  };
->  
->  static struct clk pll0_sysclk4 = {
-> @@ -1004,6 +1005,33 @@ static int da850_set_pll0rate(struct clk *clk, unsigned long index)
->  
->  	return 0;
->  }
-> +
-> +static int da850_set_sysclk3_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	struct clk *arm_clk;
-> +	unsigned long sys_clk3_rate = 148000000;
-
-
-
-why not sys_clk3_rate = rate? or just use rate?
-
-> +	int ret;
-> +
-> +	arm_clk = clk_get(NULL, "arm");
-> +	if (WARN(IS_ERR(arm_clk), "Unable to get ARM clock\n"))
-> +		return PTR_ERR(arm_clk);
-> +
-> +	/* Set EMIF clock based on OPPs */
-> +	switch (clk_get_rate(arm_clk)) {
-> +	case 200000000:
-> +		sys_clk3_rate = 75000000;
-
-
-what if the requested rate is lower than 75 MHz?
-
-> +		break;
-> +	case 96000000:
-> +		sys_clk3_rate = 50000000;
-> +		break;
-> +	}
-> +
-> +	ret = davinci_set_sysclk_rate(clk, sys_clk3_rate);
-> +	if (WARN_ON(ret))
-> +		return ret;
-> +
-> +	return 0;
-> +}
+> On 04/03/2012 03:15 PM, Srivatsa S. Bhat wrote:
+>> On 04/03/2012 05:38 PM, Daniel Lezcano wrote:
+>>
+>>> On 04/03/2012 01:51 PM, Srivatsa S. Bhat wrote:
+>>>> On 04/03/2012 01:01 AM, Daniel Lezcano wrote:
+>>>>
+>>>>> On 04/02/2012 04:44 PM, Srivatsa S. Bhat wrote:
+>>>>>> In __cpuidle_register_device(), "dev->cpu" is used before checking if
+>>>>>> dev is
+>>>>>> non-NULL. Fix it.
+>>>>>>
+>>>>>> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+>>>>>> ---
+>>>>>
+>>>>> That should be fixed at the caller level. Usually, static function
+>>>>> does
+>>>>> not check the function parameters, it is up to the exported
+>>>>> function to
+>>>>> do that. It is supposed the static functions are called with valid
+>>>>> parameters.
+>>>>>
+>>>>
+>>>>
+>>>> Ok, good point! I hadn't thought about that.. I just happened to notice
+>>>> that in __cpuidle_register_device(), the dev == NULL check is performed
+>>>> _after_ dereferencing it, which made the check useless. So I tried to
+>>>> fix that within that function. But thanks for pointing out the
+>>>> semantics..
+>>>>
+>>>>> There are two callers for __cpuidle_register_device:
+>>>>>    * cpuidle_register_device
+>>>>>    * cpuidle_enable_device
+>>>>>
+>>>>> Both of them do not check 'dev' is a valid parameter. They should as
+>>>>> they are exported and could be used by an external module. IMHO,
+>>>>> BUG_ON
+>>>>> could be used here if dev == NULL.
+>>>>>
+>>>>
+>>>>
+>>>> BUG_ON? That would crash the system.. which might be unnecessary..
+>>>
+>>> Mmh, yes, I agree. never mind.
+>>>
+>>>> How about checking if dev == NULL in the 2 callers like you suggested
+>>>> and returning -EINVAL if dev is indeed NULL?
+>>>> (And of course no checks for dev == NULL in __cpuidle_register_device).
+>>>
+>>> Ok for me.
+>>>
+>>
+>>
+>> Great! Here is the updated patch:
+>>
+>> ---
+>>
+>> From: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+>> Subject: [PATCH v2] cpuidle: Add checks to avoid NULL pointer dereference
+>>
+>> The existing check for dev == NULL in __cpuidle_register_device() is
+>> rendered
+>> useless because dev is dereferenced before the check itself. Moreover,
+>> correctly speaking, it is the job of the callers of this function, i.e.,
+>> cpuidle_register_device()&  cpuidle_enable_device() (which also happen
+>> to be
+>> exported functions) to ensure that __cpuidle_register_device() is
+>> called with
+>> a non-NULL dev.
+>>
+>> So add the necessary dev == NULL checks in the two callers and remove the
+>> (useless) check from __cpuidle_register_device().
+>>
+>> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+> 
+> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
 
+Thanks a lot!
 
-This routine is ignoring the requested rate passed in.  At 300 MHz OPP,
-you are going to configure it for 148 MHz instead of 100 MHz (the
-current implementation).  I would think that this rate should
-be controllable by platform initialization code unless it needs limiting
-based on specification.  What if someone wants to run the EMIFA
-slower than 148 MHz?
-
-There are platforms that would like to keep the EMIFA rate at a relatively
-fixed / stable value of, e.g., 100 MHz or as close to that value as possible
-at any OPP above 300 MHz.  This patch does not appear support that.
-
->  #else
->  int __init da850_register_cpufreq(char *async_clk)
->  {
-> @@ -1024,6 +1052,11 @@ static int da850_round_armrate(struct clk *clk, unsigned long rate)
->  {
->  	return clk->rate;
->  }
-> +
-> +static int da850_set_sysclk3_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	return -EINVAL;
-> +}
->  #endif
->  
->  int __init da850_register_pm(struct platform_device *pdev)
+> ps : shouldn't this patch be sent in a separate email ?
+> 
 
 
+A separate email (a separate thread rather) is preferred when the old thread
+is dead or when the revised patch is fundamentally/drastically different
+from the older version.
 
+Otherwise, if the discussion around the patch is active in the thread, it is
+best to mail the patch to that thread itself. It makes it easier for developers
+to track what is going on in a single thread of discussion (such as who commented
+on what, and how did that materialize as a patch and so on).
+
+Another advantage of posting new versions of the patch to the same thread is that
+many times we need not explicitly summarize the changes between the new and the
+old patch, since the thread itself has enough discussion/history around it.
+(However, for significantly complex patches, summary of revision/change in the
+patch is always good to have).
+
+Yet another advantage of mailing revisions of the patch to the same thread is
+that it makes it easy for the maintainer to pick up the latest patch along with
+all the reviewed-by's, acked-by's and tested-by's that came in that thread.
+
+Of course, if the thread is too dense with too much of discussion and there is
+a chance that the patch will get lost/missed out, then its a good idea to post
+it in a new separate thread, with a link to the old thread so as to provide
+some context to new readers.
+
+Regards,
+Srivatsa S. Bhat
+
+>> ---
+>>
+>>   drivers/cpuidle/cpuidle.c |    8 ++++++--
+>>   1 files changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>> index 87411ce..eae2f11 100644
+>> --- a/drivers/cpuidle/cpuidle.c
+>> +++ b/drivers/cpuidle/cpuidle.c
+>> @@ -291,6 +291,9 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+>>       int ret, i;
+>>       struct cpuidle_driver *drv = cpuidle_get_driver();
+>>
+>> +    if (!dev)
+>> +        return -EINVAL;
+>> +
+>>       if (dev->enabled)
+>>           return 0;
+>>       if (!drv || !cpuidle_curr_governor)
+>> @@ -375,8 +378,6 @@ static int __cpuidle_register_device(struct
+>> cpuidle_device *dev)
+>>       struct device *cpu_dev = get_cpu_device((unsigned long)dev->cpu);
+>>       struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+>>
+>> -    if (!dev)
+>> -        return -EINVAL;
+>>       if (!try_module_get(cpuidle_driver->owner))
+>>           return -EINVAL;
+>>
+>> @@ -401,6 +402,9 @@ int cpuidle_register_device(struct cpuidle_device
+>> *dev)
+>>   {
+>>       int ret;
+>>
+>> +    if (!dev)
+>> +        return -EINVAL;
+>> +
+>>       mutex_lock(&cpuidle_lock);
+>>
+>>       if ((ret = __cpuidle_register_device(dev))) {
+>>
+>>
+> 
+> 
 
