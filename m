@@ -1,68 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab2DCBxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 21:53:36 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:40347 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab2DCBxe (ORCPT
+	id S1752658Ab2DCB7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 21:59:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64584 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2DCB7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 21:53:34 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6668"; a="175974099"
-Message-ID: <4F7A581D.2020303@codeaurora.org>
-Date: Mon, 02 Apr 2012 18:53:33 -0700
-From: Michael Bohan <mbohan@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: rnayak@ti.com, lrg@ti.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: Regulator supplies when using Device Tree
-References: <20120326130005.GQ3098@opensource.wolfsonmicro.com> <4F726B96.8070508@codeaurora.org> <20120328100957.GD3232@opensource.wolfsonmicro.com> <4F736451.8020900@codeaurora.org> <20120328193341.GD3232@opensource.wolfsonmicro.com> <4F73A798.6030607@codeaurora.org> <20120329111159.GJ3668@opensource.wolfsonmicro.com> <4F7509F4.6010303@codeaurora.org> <20120330103602.GE21950@opensource.wolfsonmicro.com> <4F79E35A.5040908@codeaurora.org> <20120402212232.GA3160@opensource.wolfsonmicro.com>
-In-Reply-To: <20120402212232.GA3160@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 2 Apr 2012 21:59:50 -0400
+Message-ID: <1333418384.18133.6.camel@phoenix>
+Subject: [PATCH] mtd: use module_pci_driver
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Lowe <alowe@mvista.com>, Russell King <rmk@arm.linux.org.uk>,
+        Tim Hockin <thockin@sun.com>, Maxim Levitsky <maximlevitsky@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org
+Date: Tue, 03 Apr 2012 09:59:44 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/2/2012 2:22 PM, Mark Brown wrote:
-> On Mon, Apr 02, 2012 at 10:35:22AM -0700, Michael Bohan wrote:
->> Some of our regulators take inputs from other regulators. Some
->> regulators take their input from the battery. We support both types
->
-> Oh, if that's all it is that's totally normal and unsurprising.  Just
-> tell the regulator API about the battery supply, typically people use
-> a fixed regulator for this.  You don't have to specify a voltage when
-> you use them.
+This patch converts the drivers in drivers/mtd/* to use module_pci_driver()
+macro which makes the code smaller and a bit simpler.
 
-One problem here is the added run-time overhead. This includes the 
-callbacks for the battery device which serve no functional purpose. And 
-then there's the contention for a single mutex on the battery regulator, 
-which all regulators using it as a supply would have to contend for. 
-That is actually a sizable number of devices in our configuration; And 
-these operations are frequent and time sensitive.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Andy Lowe <alowe@mvista.com>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Tim Hockin <thockin@sun.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+---
+ drivers/mtd/maps/intel_vr_nor.c |   13 +------------
+ drivers/mtd/maps/pci.c          |   13 +------------
+ drivers/mtd/maps/scb2_flash.c   |   15 +--------------
+ drivers/mtd/nand/cafe_nand.c    |   12 +-----------
+ drivers/mtd/nand/denali.c       |   15 +--------------
+ drivers/mtd/nand/r852.c         |   13 +------------
+ 6 files changed, 6 insertions(+), 75 deletions(-)
 
-Plus, then there's other complexities that arise here by introducing yet 
-another regulator driver into the configuration. The 'fixed' regulator 
-driver initializes at subsys_initcall, but our other regulator drivers 
-are registered at arch_initcall. This is because with Device Tree 
-configurations we are forced to explicitly register drivers in a precise 
-sequence in order to satisfy device dependencies and early probe times. 
-But using 'fixed' would complicate this process, since we don't have 
-control over it.
-
-And generally speaking, why incur a larger memory footprint by linking 
-another driver when there's no technical need to?
-
-Thus it seems like there are use cases to have a single driver that can 
-support regulators with or without supplies specified. I see adding a 
-few lines of ugly code in the driver more ideal than accepting the 
-problems above. But it would be nice if the regulator Device Tree 
-support could handle it natively.
-
-Thanks,
-Mike
-
+diff --git a/drivers/mtd/maps/intel_vr_nor.c b/drivers/mtd/maps/intel_vr_nor.c
+index 92e1f41..93f0317 100644
+--- a/drivers/mtd/maps/intel_vr_nor.c
++++ b/drivers/mtd/maps/intel_vr_nor.c
+@@ -260,18 +260,7 @@ static struct pci_driver vr_nor_pci_driver = {
+ 	.id_table = vr_nor_pci_ids,
+ };
+ 
+-static int __init vr_nor_mtd_init(void)
+-{
+-	return pci_register_driver(&vr_nor_pci_driver);
+-}
+-
+-static void __exit vr_nor_mtd_exit(void)
+-{
+-	pci_unregister_driver(&vr_nor_pci_driver);
+-}
+-
+-module_init(vr_nor_mtd_init);
+-module_exit(vr_nor_mtd_exit);
++module_pci_driver(vr_nor_pci_driver);
+ 
+ MODULE_AUTHOR("Andy Lowe");
+ MODULE_DESCRIPTION("MTD map driver for NOR flash on Intel Vermilion Range");
+diff --git a/drivers/mtd/maps/pci.c b/drivers/mtd/maps/pci.c
+index 1d005a3..f14ce0a 100644
+--- a/drivers/mtd/maps/pci.c
++++ b/drivers/mtd/maps/pci.c
+@@ -352,18 +352,7 @@ static struct pci_driver mtd_pci_driver = {
+ 	.id_table =	mtd_pci_ids,
+ };
+ 
+-static int __init mtd_pci_maps_init(void)
+-{
+-	return pci_register_driver(&mtd_pci_driver);
+-}
+-
+-static void __exit mtd_pci_maps_exit(void)
+-{
+-	pci_unregister_driver(&mtd_pci_driver);
+-}
+-
+-module_init(mtd_pci_maps_init);
+-module_exit(mtd_pci_maps_exit);
++module_pci_driver(mtd_pci_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Russell King <rmk@arm.linux.org.uk>");
+diff --git a/drivers/mtd/maps/scb2_flash.c b/drivers/mtd/maps/scb2_flash.c
+index 934a72c..9dcbc68 100644
+--- a/drivers/mtd/maps/scb2_flash.c
++++ b/drivers/mtd/maps/scb2_flash.c
+@@ -234,20 +234,7 @@ static struct pci_driver scb2_flash_driver = {
+ 	.remove =   __devexit_p(scb2_flash_remove),
+ };
+ 
+-static int __init
+-scb2_flash_init(void)
+-{
+-	return pci_register_driver(&scb2_flash_driver);
+-}
+-
+-static void __exit
+-scb2_flash_exit(void)
+-{
+-	pci_unregister_driver(&scb2_flash_driver);
+-}
+-
+-module_init(scb2_flash_init);
+-module_exit(scb2_flash_exit);
++module_pci_driver(scb2_flash_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Tim Hockin <thockin@sun.com>");
+diff --git a/drivers/mtd/nand/cafe_nand.c b/drivers/mtd/nand/cafe_nand.c
+index 2a96e1a..2973d97 100644
+--- a/drivers/mtd/nand/cafe_nand.c
++++ b/drivers/mtd/nand/cafe_nand.c
+@@ -888,17 +888,7 @@ static struct pci_driver cafe_nand_pci_driver = {
+ 	.resume = cafe_nand_resume,
+ };
+ 
+-static int __init cafe_nand_init(void)
+-{
+-	return pci_register_driver(&cafe_nand_pci_driver);
+-}
+-
+-static void __exit cafe_nand_exit(void)
+-{
+-	pci_unregister_driver(&cafe_nand_pci_driver);
+-}
+-module_init(cafe_nand_init);
+-module_exit(cafe_nand_exit);
++module_pci_driver(cafe_nand_pci_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("David Woodhouse <dwmw2@infradead.org>");
+diff --git a/drivers/mtd/nand/denali.c b/drivers/mtd/nand/denali.c
+index a9e57d6..a1048c7 100644
+--- a/drivers/mtd/nand/denali.c
++++ b/drivers/mtd/nand/denali.c
+@@ -1702,17 +1702,4 @@ static struct pci_driver denali_pci_driver = {
+ 	.remove = denali_pci_remove,
+ };
+ 
+-static int __devinit denali_init(void)
+-{
+-	printk(KERN_INFO "Spectra MTD driver\n");
+-	return pci_register_driver(&denali_pci_driver);
+-}
+-
+-/* Free memory */
+-static void __devexit denali_exit(void)
+-{
+-	pci_unregister_driver(&denali_pci_driver);
+-}
+-
+-module_init(denali_init);
+-module_exit(denali_exit);
++module_pci_driver(denali_pci_driver);
+diff --git a/drivers/mtd/nand/r852.c b/drivers/mtd/nand/r852.c
+index c204018..859ef31 100644
+--- a/drivers/mtd/nand/r852.c
++++ b/drivers/mtd/nand/r852.c
+@@ -1104,18 +1104,7 @@ static struct pci_driver r852_pci_driver = {
+ 	.driver.pm	= &r852_pm_ops,
+ };
+ 
+-static __init int r852_module_init(void)
+-{
+-	return pci_register_driver(&r852_pci_driver);
+-}
+-
+-static void __exit r852_module_exit(void)
+-{
+-	pci_unregister_driver(&r852_pci_driver);
+-}
+-
+-module_init(r852_module_init);
+-module_exit(r852_module_exit);
++module_pci_driver(r852_pci_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Maxim Levitsky <maximlevitsky@gmail.com>");
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.5.4
+
+
+
