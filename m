@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab2DCOLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:11:14 -0400
+	id S1754778Ab2DCOKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:10:31 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:49906 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab2DCOKe (ORCPT
+	with ESMTP id S1753653Ab2DCOK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:10:34 -0400
-Date: Tue, 03 Apr 2012 16:10:21 +0200
+	Tue, 3 Apr 2012 10:10:28 -0400
+Date: Tue, 03 Apr 2012 16:10:16 +0200
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv24 16/16] ARM: Samsung: use CMA for 2 memory banks for s5p-mfc
- device
+Subject: [PATCHv24 11/16] mm: extract reclaim code from
+ __alloc_pages_direct_reclaim()
 In-reply-to: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -29,7 +29,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
         Sandeep Patil <psandeep.s@gmail.com>
-Message-id: <1333462221-3987-17-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1333462221-3987-12-git-send-email-m.szyprowski@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.9.1
 Content-type: TEXT/PLAIN
@@ -39,87 +39,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace custom memory bank initialization using memblock_reserve and
-dma_declare_coherent with a single call to CMA's dma_declare_contiguous.
+This patch extracts common reclaim code from __alloc_pages_direct_reclaim()
+function to separate function: __perform_reclaim() which can be later used
+by alloc_contig_range().
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Tested-by: Rob Clark <rob.clark@linaro.org>
+Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
+Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Tested-by: Robert Nelson <robertcnelson@gmail.com>
+Tested-by: Barry Song <Baohua.Song@csr.com>
 ---
- arch/arm/plat-s5p/dev-mfc.c |   51 ++++++-------------------------------------
- 1 files changed, 7 insertions(+), 44 deletions(-)
+ mm/page_alloc.c |   30 +++++++++++++++++++++---------
+ 1 files changed, 21 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/plat-s5p/dev-mfc.c b/arch/arm/plat-s5p/dev-mfc.c
-index a30d36b..fcb8400 100644
---- a/arch/arm/plat-s5p/dev-mfc.c
-+++ b/arch/arm/plat-s5p/dev-mfc.c
-@@ -14,6 +14,7 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
-+#include <linux/dma-contiguous.h>
- #include <linux/memblock.h>
- #include <linux/ioport.h>
- 
-@@ -22,52 +23,14 @@
- #include <plat/irqs.h>
- #include <plat/mfc.h>
- 
--struct s5p_mfc_reserved_mem {
--	phys_addr_t	base;
--	unsigned long	size;
--	struct device	*dev;
--};
--
--static struct s5p_mfc_reserved_mem s5p_mfc_mem[2] __initdata;
--
- void __init s5p_mfc_reserve_mem(phys_addr_t rbase, unsigned int rsize,
- 				phys_addr_t lbase, unsigned int lsize)
- {
--	int i;
--
--	s5p_mfc_mem[0].dev = &s5p_device_mfc_r.dev;
--	s5p_mfc_mem[0].base = rbase;
--	s5p_mfc_mem[0].size = rsize;
--
--	s5p_mfc_mem[1].dev = &s5p_device_mfc_l.dev;
--	s5p_mfc_mem[1].base = lbase;
--	s5p_mfc_mem[1].size = lsize;
--
--	for (i = 0; i < ARRAY_SIZE(s5p_mfc_mem); i++) {
--		struct s5p_mfc_reserved_mem *area = &s5p_mfc_mem[i];
--		if (memblock_remove(area->base, area->size)) {
--			printk(KERN_ERR "Failed to reserve memory for MFC device (%ld bytes at 0x%08lx)\n",
--			       area->size, (unsigned long) area->base);
--			area->base = 0;
--		}
--	}
--}
--
--static int __init s5p_mfc_memory_init(void)
--{
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(s5p_mfc_mem); i++) {
--		struct s5p_mfc_reserved_mem *area = &s5p_mfc_mem[i];
--		if (!area->base)
--			continue;
-+	if (dma_declare_contiguous(&s5p_device_mfc_r.dev, rsize, rbase, 0))
-+		printk(KERN_ERR "Failed to reserve memory for MFC device (%u bytes at 0x%08lx)\n",
-+		       rsize, (unsigned long) rbase);
- 
--		if (dma_declare_coherent_memory(area->dev, area->base,
--				area->base, area->size,
--				DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE) == 0)
--			printk(KERN_ERR "Failed to declare coherent memory for MFC device (%ld bytes at 0x%08lx)\n",
--			       area->size, (unsigned long) area->base);
--	}
--	return 0;
-+	if (dma_declare_contiguous(&s5p_device_mfc_l.dev, lsize, lbase, 0))
-+		printk(KERN_ERR "Failed to reserve memory for MFC device (%u bytes at 0x%08lx)\n",
-+		       rsize, (unsigned long) rbase);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8b19caa..5a90ada 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2130,16 +2130,13 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
  }
--device_initcall(s5p_mfc_memory_init);
+ #endif /* CONFIG_COMPACTION */
+ 
+-/* The really slow allocator path where we enter direct reclaim */
+-static inline struct page *
+-__alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+-	struct zonelist *zonelist, enum zone_type high_zoneidx,
+-	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, unsigned long *did_some_progress)
++/* Perform direct synchronous page reclaim */
++static int
++__perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
++		  nodemask_t *nodemask)
+ {
+-	struct page *page = NULL;
+ 	struct reclaim_state reclaim_state;
+-	bool drained = false;
++	int progress;
+ 
+ 	cond_resched();
+ 
+@@ -2150,7 +2147,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 	reclaim_state.reclaimed_slab = 0;
+ 	current->reclaim_state = &reclaim_state;
+ 
+-	*did_some_progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
++	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
+ 
+ 	current->reclaim_state = NULL;
+ 	lockdep_clear_current_reclaim_state();
+@@ -2158,6 +2155,21 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 
+ 	cond_resched();
+ 
++	return progress;
++}
++
++/* The really slow allocator path where we enter direct reclaim */
++static inline struct page *
++__alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
++	struct zonelist *zonelist, enum zone_type high_zoneidx,
++	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
++	int migratetype, unsigned long *did_some_progress)
++{
++	struct page *page = NULL;
++	bool drained = false;
++
++	*did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
++					       nodemask);
+ 	if (unlikely(!(*did_some_progress)))
+ 		return NULL;
+ 
 -- 
 1.7.1.569.g6f426
 
