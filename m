@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab2DCQLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 12:11:07 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:18321 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641Ab2DCQLF (ORCPT
+	id S1755216Ab2DCQMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 12:12:08 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:59978 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2DCQMG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 12:11:05 -0400
-Message-ID: <4F7B2114.4000806@tilera.com>
-Date: Tue, 3 Apr 2012 12:11:00 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 3 Apr 2012 12:12:06 -0400
 MIME-Version: 1.0
-To: Kautuk Consul <consul.kautuk@gmail.com>
-CC: <paul.mckenney@linaro.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Josh Triplett <josh@joshtriplett.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 15/19 v2] tile/mm/fault.c: Port OOM changes to handle_page_fault
-References: <1333195539-5421-1-git-send-email-consul.kautuk@gmail.com>
-In-Reply-To: <1333195539-5421-1-git-send-email-consul.kautuk@gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1333469136.26079.33.camel@joe2Laptop>
+References: <1333415903.860.0.camel@mop> <1333420612.26079.6.camel@joe2Laptop>
+ <CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
+ <1333424865.26079.9.camel@joe2Laptop> <CAPXgP13fDRZtAvV651NPqQ2TgUEtb+MX1EhKhwirAgoiNOg5tQ@mail.gmail.com>
+ <1333463572.26079.31.camel@joe2Laptop> <CAPXgP133MQX2u3H6imOR4FFR4TsHYc=f_yrAJfdd2sG-8bFrmA@mail.gmail.com>
+ <1333469136.26079.33.camel@joe2Laptop>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 3 Apr 2012 18:11:44 +0200
+Message-ID: <CAPXgP11MBdqc3BiDLA1q5gW4BZy2q4PoLtD20oRXfKY+C-HOgw@mail.gmail.com>
+Subject: Re: [PATCH] printk(): add KERN_CONT where needed
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/31/2012 8:05 AM, Kautuk Consul wrote:
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
+On Tue, Apr 3, 2012 at 18:05, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2012-04-03 at 17:50 +0200, Kay Sievers wrote:
+>> I did not claim to address the problem of concurrent continuation line
+>> writers, and this patch has absolutely nothing to do with that
+>> problem. It _does_ fix encountered problems,
 >
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
->
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
->
-> Port these changes to tile.
->
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-> [...]
-> +			 /* No need to up_read(&mm->mmap_sem) as we would
-> +			 * have already released it in __lock_page_or_retry
-> +			 * in mm/filemap.c.
-> +			 */
->
+> No it doesn't.  It fixes problems _you_ encounter
+> with an unpublished modification of the printk
+> subsystem.
 
-Taken into the tile tree.  I adjusted the block comment whitespacing to
-normal Linux standard.  Thanks!
+Exactly. And that is what is written in the changelog of the patch.
+But all that does not matter, the change results in more correct code
+than the current one is; and that is all that matters.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Sure, I see your point, and support your effort, but I don't think
+your arguments are related to this patch and you are hijacking
+something unrelated, which should be discussed in a separate mail
+thread, that's all.
 
+Thanks,
+Kay
