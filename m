@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab2DCNET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 09:04:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20021 "EHLO mx1.redhat.com"
+	id S1754657Ab2DCNGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 09:06:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48016 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab2DCNES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 09:04:18 -0400
-Message-ID: <4F7AF548.9000500@redhat.com>
-Date: Tue, 03 Apr 2012 16:04:08 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1754177Ab2DCNGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 09:06:41 -0400
+Date: Tue, 3 Apr 2012 06:06:36 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 3/5] hid: Parse the device before adding it
+In-Reply-To: <CAN+gG=G9KSjSFmWpxpPLzMzz14ePAhQKTJZjQBsPeq2iztZ17A@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1204030603550.9041@pobox.suse.cz>
+References: <1333436730-13008-1-git-send-email-rydberg@euromail.se> <1333436730-13008-4-git-send-email-rydberg@euromail.se> <CAN+gG=G9KSjSFmWpxpPLzMzz14ePAhQKTJZjQBsPeq2iztZ17A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 11/13] KVM: MMU: fast path of handling guest page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F742AE8.9020201@linux.vnet.ibm.com> <4F788119.6090401@redhat.com>
-In-Reply-To: <4F788119.6090401@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2012 07:23 PM, Avi Kivity wrote:
-> On 03/29/2012 11:27 AM, Xiao Guangrong wrote:
-> > If the the present bit of page fault error code is set, it indicates
-> > the shadow page is populated on all levels, it means what we do is only
-> > modify the access bit which can be done out of mmu-lock
-> >
-> > The tricks in this patch is avoiding the race between fast page fault
-> > path and write-protect path, write-protect path is a read-check-modify
-> > path:
-> > read spte, check W bit, then clear W bit. What we do is populating a
-> > identification in spte, if write-protect meets it, it modify the spte
-> > even if the spte is readonly. See the comment in the code to get more
-> > information
-> >
-> > +
-> > +static bool page_fault_can_be_fast(struct kvm_vcpu *vcpu, gfn_t gfn,
-> > +				   u32 error_code)
-> > +{
-> > +	unsigned long *rmap;
-> > +	bool write = error_code & PFERR_WRITE_MASK;
-> > +
-> > +	/*
-> > +	 * #PF can be fast only if the shadow page table is present, that
-> > +	 * means we just need change the access bits (e.g: R/W, U/S...)
-> > +	 * which can be done out of mmu-lock.
-> > +	 */
-> > +	if (!(error_code & PFERR_PRESENT_MASK))
-> > +		return false;
-> > +
-> > +	if (unlikely(vcpu->vcpu_id > max_vcpu_spte()))
-> > +		return false;
-> > +
-> > +	rmap = gfn_to_rmap(vcpu->kvm, gfn, PT_PAGE_TABLE_LEVEL);
->
-> What prevents sp->gfns from being freed while this is going on?  Did I
-> miss the patch that makes mmu pages freed by rcu?  Also need barriers in
-> kvm_mmu_get_page() to make sure sp->gfns is made visible before the page
-> is hashed in.
->
+On Tue, 3 Apr 2012, Benjamin Tissoires wrote:
 
-Ah, it's call_rcu in kvm_mmu_commit_zap_page().
+> > The hid bus is populated by devices created by the usb and bluetooth
+> > subsystems. The hid device is then broadcast to userland via uevents.
+> > Currently, the parsing of the hid reports is done during probe of
+> > the hid device, after the device has been broadcast. In order to
+> > allow for the report descriptors to influence the device properties,
+> > it is desirable to parse the device _before_ it is broadcast to
+> > userland. In actuality, the parsing depends only accidentally on
+> > the driver being present, so it can be trivially achieved.
+> >
+> > Something also needs to be done for the report_fixup handler, which
+> > seems to be the only hard device-driver coupling in the code.
+> >
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> >  drivers/hid/hid-core.c        |    2 +-
+> >  drivers/hid/usbhid/hid-core.c |    5 +++++
+> >  2 files changed, 6 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> > index 35ba9d9..8a7b59e 100644
+> > --- a/drivers/hid/hid-core.c
+> > +++ b/drivers/hid/hid-core.c
+> > @@ -658,7 +658,7 @@ int hid_parse_report(struct hid_device *device, __u8 *start,
+> >                hid_parser_reserved
+> >        };
+> >
+> > -       if (device->driver->report_fixup)
+> > +       if (device->driver && device->driver->report_fixup)
+> >                start = device->driver->report_fixup(device, start, &size);
+> 
+> Well, this is not a good solution for the following drivers:
+> hid-zydacron
+> hid-prodikeys
+> hid-uclogic
+> hid-samsung
+> hid-sony, etc...
+> 
+> they all use report_fixup and as the parse is made only once, they
+> won't be able to work properly.
+
+For completness -- please see a discussion that's a little bit related to 
+this (and namely the patch I have proposed yesterday) here:
+
+	http://www.spinics.net/lists/linux-input/msg20061.html
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jiri Kosina
+SUSE Labs
