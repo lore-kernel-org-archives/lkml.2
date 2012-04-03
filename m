@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab2DCWOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:14:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41618 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754953Ab2DCWOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:14:33 -0400
-Message-ID: <1333491271.2695.20.camel@joe2Laptop>
-Subject: [PATCH net-next] vxge: Convert macro to inline function
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
+	id S1755640Ab2DCWSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:18:37 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38887 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755546Ab2DCWSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 18:18:36 -0400
+Date: Tue, 03 Apr 2012 18:18:30 -0400 (EDT)
+Message-Id: <20120403.181830.799733266830291210.davem@davemloft.net>
+To: joe@perches.com
 Cc: jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 03 Apr 2012 15:14:31 -0700
-In-Reply-To: <20120403.175837.1897033408784057713.davem@davemloft.net>
+Subject: Re: [PATCH net-next] vxge: Convert macro to inline function
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1333491271.2695.20.camel@joe2Laptop>
 References: <1333489992.2695.17.camel@joe2Laptop>
-	 <20120403.175837.1897033408784057713.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	<20120403.175837.1897033408784057713.davem@davemloft.net>
+	<1333491271.2695.20.camel@joe2Laptop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 15:18:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the macro to inline function to check the arguments.
+From: Joe Perches <joe@perches.com>
+Date: Tue, 03 Apr 2012 15:14:31 -0700
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-> Longer term I'd much rather see this turned into an inline
-> function with proper type checking etc.
+> Convert the macro to inline function to check the arguments.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>> Longer term I'd much rather see this turned into an inline
+>> function with proper type checking etc.
+> 
+> Something like this?
 
-Something like this?
-
- drivers/net/ethernet/neterion/vxge/vxge-main.c |    6 +++---
- drivers/net/ethernet/neterion/vxge/vxge-main.h |   15 +++++++++------
- 2 files changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-index ef76725..95fb611 100644
---- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
-+++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-@@ -2860,12 +2860,12 @@ static int vxge_open(struct net_device *dev)
- 		vdev->config.rx_pause_enable);
- 
- 	if (vdev->vp_reset_timer.function == NULL)
--		vxge_os_timer(vdev->vp_reset_timer,
--			vxge_poll_vp_reset, vdev, (HZ/2));
-+		vxge_os_timer(&vdev->vp_reset_timer, vxge_poll_vp_reset, vdev,
-+			      HZ / 2);
- 
- 	/* There is no need to check for RxD leak and RxD lookup on Titan1A */
- 	if (vdev->titan1 && vdev->vp_lockup_timer.function == NULL)
--		vxge_os_timer(vdev->vp_lockup_timer, vxge_poll_vp_lockup, vdev,
-+		vxge_os_timer(&vdev->vp_lockup_timer, vxge_poll_vp_lockup, vdev,
- 			      HZ / 2);
- 
- 	set_bit(__VXGE_STATE_CARD_UP, &vdev->state);
-diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.h b/drivers/net/ethernet/neterion/vxge/vxge-main.h
-index f52a42d..35f3e75 100644
---- a/drivers/net/ethernet/neterion/vxge/vxge-main.h
-+++ b/drivers/net/ethernet/neterion/vxge/vxge-main.h
-@@ -416,12 +416,15 @@ struct vxge_tx_priv {
- 	static int p = val; \
- 	module_param(p, int, 0)
- 
--#define vxge_os_timer(timer, handle, arg, exp) do { \
--		init_timer(&timer); \
--		timer.function = handle; \
--		timer.data = (unsigned long) arg; \
--		mod_timer(&timer, (jiffies + exp)); \
--	} while (0)
-+static inline
-+void vxge_os_timer(struct timer_list *timer, void (*func)(unsigned long data),
-+		   struct vxgedev *vdev, unsigned long timeout)
-+{
-+	init_timer(timer);
-+	timer->function = func;
-+	timer->data = (unsigned long)vdev;
-+	mod_timer(timer, jiffies + timeout);
-+}
- 
- void vxge_initialize_ethtool_ops(struct net_device *ndev);
- enum vxge_hw_status vxge_reset_all_vpaths(struct vxgedev *vdev);
-
-
+Yep.
