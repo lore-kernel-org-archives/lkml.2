@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab2DCSSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 14:18:43 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:44642 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab2DCSSl (ORCPT
+	id S1754989Ab2DCS1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 14:27:24 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:39388 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516Ab2DCS1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 14:18:41 -0400
-Message-ID: <4F7B3EFF.1030706@hp.com>
-Date: Tue, 03 Apr 2012 11:18:39 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	Tue, 3 Apr 2012 14:27:23 -0400
+Message-ID: <4F7B4109.9030008@tilera.com>
+Date: Tue, 3 Apr 2012 14:27:21 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, remi@remlab.net,
-        levinsasha928@gmail.com, remi.denis-courmont@nokia.com,
-        davej@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] phonet: Check input from user before allocating
-References: <1333417997.18626.1.camel@edumazet-glaptop> <20120402.215911.1929019308299701014.davem@davemloft.net> <1333419304.18626.5.camel@edumazet-glaptop> <20120402.222300.1137842205135530387.davem@davemloft.net> <4F7A60A4.5040600@hp.com> <1333420452.18626.11.camel@edumazet-glaptop> <4F7A62FE.2050103@hp.com> <1333422844.18626.26.camel@edumazet-glaptop>
-In-Reply-To: <1333422844.18626.26.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Joe Perches <joe@perches.com>
+CC: Kautuk Consul <consul.kautuk@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: CodingStyle vs checkpatch for block comments
+References: <1333195539-5421-1-git-send-email-consul.kautuk@gmail.com>  <4F7B2114.4000806@tilera.com>  <CAFPAmTTfYKT39gdoKT3P4G2O0xkTSS8g62kKudeLcnpdipzJqg@mail.gmail.com>  <4F7B21FB.3040609@tilera.com>  <CAFPAmTS_2H7BzGndcceBxdnJroy82u++sduCPO2+qxG6-WA=nw@mail.gmail.com>  <4F7B2766.9080208@tilera.com> <1333471474.26079.43.camel@joe2Laptop>  <4F7B2AA7.5010906@tilera.com> <1333472391.26079.47.camel@joe2Laptop>  <4F7B32A0.1020009@tilera.com> <1333474907.26079.57.camel@joe2Laptop>  <4F7B3C8B.9010609@tilera.com> <1333477010.26079.65.camel@joe2Laptop>
+In-Reply-To: <1333477010.26079.65.camel@joe2Laptop>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2012 08:14 PM, Eric Dumazet wrote:
-> It seems netperf has some problems zith AF_UNIX dgram :
+
+
+On 4/3/2012 2:16 PM, Joe Perches wrote:
+> On Tue, 2012-04-03 at 14:08 -0400, Chris Metcalf wrote:
+>> On 4/3/2012 1:41 PM, Joe Perches wrote:
+>>> On Tue, 2012-04-03 at 13:25 -0400, Chris Metcalf wrote:
+>>>> The relevant code in checkpatch.pl is:
+>>>>
+>>>>                 if ($rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
+>>>>                     $prevrawline =~ /^\+[ \t]*$/) {
+>>>>                         CHK("BLOCK_COMMENT_STYLE",
+>>>>                             "Don't begin block comments with only a /*
+>>>> line, use /* comment...\n" . $hereprev);
+>>>>                 }
+>>>>
+>>>> So, my questions -
+>>>>
+>>>> 1. I'm not sure what the regexps are really trying to avoid.  Presumably a
+>>>> blank line followed by a block comment is OK?  Certainly the kernel sources
+>>>> are full of this construct.
+>>> It emits a check message on
+>>> <blank line>
+>>> 	/*
+>>>
+>>> but not
+>>> <blank line>
+>>> 	/* some actual comment
+>> Right, I understand what the regexps do, I'm just not clear on what the
+>> rationale is.
+> Fewer vertical lines for block comments.
 >
-> socket(PF_FILE, SOCK_DGRAM, 0)          = 4
-> setsockopt(4, SOL_SOCKET, SO_SNDBUF, [0], 4) = 0
-> getsockopt(4, SOL_SOCKET, SO_SNDBUF, [2048], [4]) = 0
-> setsockopt(4, SOL_SOCKET, SO_RCVBUF, [0], 4) = 0
-> getsockopt(4, SOL_SOCKET, SO_RCVBUF, [2288], [4]) = 0
-> sendto(3, "\0\0\0+\377\377\377\377\0\0\0\0\0\0\10\0\0\0\0\10\0\0\0\0\0\0\0\0\0\0\0\0"..., 256, 0, NULL, 0) = 256
-> select(1024, [3], NULL, NULL, {120, 0}) = 1 (in [3], left {119, 979635})
-> recvfrom(3, "\0\0\0,\0\0\0\0\0\0\10\360\0\0\10\0\0\0\0\0\0\0\0\n\0\0\0\0\0\0\0\0"..., 256, 0, NULL, NULL) = 256
-> connect(4, {sa_family=AF_FILE, path="/tmp/netpe62HGNM"}, 110) = 0
-> rt_sigaction(SIGALRM, {0x403171, [ALRM], SA_RESTORER|SA_INTERRUPT, 0x7f691f026af0}, NULL, 8) = 0
-> alarm(10)                               = 0
-> sendto(4, "netperf\0netperf\0netperf\0netperf\0"..., 2048, 0, NULL, 0) = -1 EMSGSIZE (Message too long)
-> dup(2)                                  = 5
-> fcntl(5, F_GETFL)                       = 0x8002 (flags O_RDWR|O_LARGEFILE)
-> fstat(5, {st_mode=S_IFCHR|0600, st_rdev=makedev(136, 3), ...}) = 0
-> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f691fa18000
-> lseek(5, 0, SEEK_CUR)                   = -1 ESPIPE (Illegal seek)
-> write(5, "dg_send: data send error: Messag"..., 43dg_send: data send error: Message too long
-> ) = 43
-> close(5)                                = 0
-> munmap(0x7f691fa18000, 4096)            = 0
-> exit_group(1)                           = ?
+> This block comment uses a lot of lines:
 >
-> I guess the SO_SNDBUF/SO_RCVBUF limits are a bit too low ?
+> 		some_code();
+> 	}
+>
+> 	/*
+> 	 * Some multiline
+> 	 * block comment
+> 	 */
+>
+> 	some_more_code();
+>
+> This is 1 fewer line
+>
+> 		some_code();
+> 	}
+>
+> 	/* Some multline
+> 	 * block comment
+> 	 */
+>
+> 	some_more_code();
+>
+> [....]
+> It's suggesting that a multi line comment block
+> starting with only a /* wastes space on vertically
+> challenged terminals.
 
-The AF_UNIX support in netperf is from a time when the code was very 
-simplistic - if no socket buffer size specified on the command line, 
-take the system default.  If no send size specified, use the SO_SNDBUF 
-size, though some limits were applied.
+So I suggest we drop the check from checkpatch, then, since it appears to
+conflict with Documentation/CodingStyle.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-Of course, along the way, there was a change in the value for socket 
-buffer size that meant "take the default" - it used to be 0 but then 
-became -1.  Something to do with when Windows would decide to do copy 
-avoidance - tell Windows the socket buffer size is 0 and it will do copy 
-avoidance. The code in src/nettest_unix.c was still initializing to 0 
-rather than -1.
-
-I've fixed that in the top-of-trunk:
-
-raj@tardy:~/netperf2_trunk$ src/netperf -t DG_STREAM
-DG UNIDIRECTIONAL SEND TEST
-Socket  Message  Elapsed      Messages
-Size    Size     Time         Okay Errors   Throughput
-bytes   bytes    secs            #      #   10^6bits/sec
-
-126976   65507    10.00     1195647      0     811.07
-  2288            10.00     1195647            811.07
-
-BTW, the local CPU utilization seems sane, but "remote" (which is 
-redundant anyway) seems to be fubar somehow.  More bitrot I suspect.
-
-happy benchmarking,
-
-rick jones
