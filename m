@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab2DCVoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:44:20 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55673 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab2DCVoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:44:18 -0400
-Message-ID: <1333489422.3040.11.camel@pasglop>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
- irq_alloc_desc() instead
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 04 Apr 2012 07:43:42 +1000
-In-Reply-To: <m2y5qdow0v.fsf@igel.home>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
-	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-	 <20120402202848.1EB833E02A7@localhost> <m2y5qdow0v.fsf@igel.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1755447Ab2DCVqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:46:16 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38589 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642Ab2DCVqP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 17:46:15 -0400
+Date: Tue, 03 Apr 2012 17:46:10 -0400 (EDT)
+Message-Id: <20120403.174610.2089715131687430500.davem@davemloft.net>
+To: cmetcalf@tilera.com
+Cc: shemminger@vyatta.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] marvell sky2 driver: fix so it works without unaligned
+ accesses
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201204031527.q33FR04i031747@farm-0027.internal.tilera.com>
+References: <201204031527.q33FR04i031747@farm-0027.internal.tilera.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 14:46:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 14:11 +0200, Andreas Schwab wrote:
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 3 Apr 2012 11:13:56 -0400
+
+> The driver uses a receive_new() routine that ends up requiring unaligned
+> accesses in IP header processing.  If the architecture doesn't support
+> efficient unaligned accesses, just copy all ingress packets to the bounce
+> buffers instead.
 > 
-> When reconfiguring with NR_IRQS=128 interrupts are working again, but I
-> still see a lot of spurious interrupts, and the X server is still broken
-> (no input works, but I still don't know whether that is an unrelated
-> bug). 
+> This allows the driver to be used on the Tilera TILEmpower-Gx, since
+> the tile architecture doesn't currently handle kernel unaligned accesses,
+> just userspace.
+> 
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-I have an idea or two about the spurrious interrupt business, I'll have
-a look later today hopefully. As for the X server, I don't think it's
-related, but of course it's hard to tell. Do you see a relevant
-difference in the X log ?
+As Stephen Hemminger alluded to, adjust the copybreak as needed.
 
-Cheers,
-Ben.
+If you look at how other device drivers use this CONFIG variable,
+you'll get a better idea of what to do here if you want to adjust
+the default copybreak.
 
+Also keep in mind the issue brought up by Eric Dumazet in that
+not all kinds of sky2 chips would need this copybreak adjustment,
+only ones that have the SKY2_HW_RAM_BUFFER bit cleared.
 
