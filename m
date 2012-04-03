@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab2DCIIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:08:47 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46271 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab2DCIIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:08:45 -0400
-Message-ID: <1333440522.3040.9.camel@pasglop>
-Subject: Re: 3.4.0-rc1: No init found
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Tue, 03 Apr 2012 18:08:42 +1000
-In-Reply-To: <alpine.DEB.2.01.1204030008080.4930@trent.utfs.org>
-References: <alpine.DEB.2.01.1204030008080.4930@trent.utfs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753254Ab2DCILs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:11:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53120 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab2DCILl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 04:11:41 -0400
+Date: Tue, 3 Apr 2012 10:11:36 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <ak@linux.intel.com>
+cc: =?ISO-8859-15?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+Subject: Re: [v3.4-rc1] ACPI regression bisected
+In-Reply-To: <20120402235412.GD16303@tassilo.jf.intel.com>
+Message-ID: <alpine.LFD.2.02.1204031001510.2542@ionos>
+References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com> <20120402235412.GD16303@tassilo.jf.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 00:20 -0700, Christian Kujau wrote:
-> Going from 3.3-rc7 to 3.4-rc1 (with "make oldconfig" inbetween) did not 
-> go well on this PowerBook G4 machine:
+On Mon, 2 Apr 2012, Andi Kleen wrote:
+
+> >  ACPI: Added _OSI(Processor Aggregator Device)
+> >  ACPI: EC: EC description table is found, configuring boot EC
+> > 
+> > Comparing this with the displays of kernel v3.3 the next expected
+> > outputs would be:
+> > 
+> >  ACPI: Interpreter enabled
+> >  ACPI: (supports S0 S5)
+> > 
+> > 
+> > I bisected the problem to commit:
+> > 6fe0d0628245fdcd6fad8b837c81e8f7ebc3364d  "ACPI: Make ACPI interrupt threaded"
 > 
-> Apr  2 15:18:23 [   8.318816] EXT4-fs (hda6): mounted filesystem with ordered data mode. Opts: (null)
-> Apr  2 15:18:23 [   8.320286] VFS: Mounted root (ext4 filesystem) readonly on device 3:6.
-> Apr  2 15:18:23 [   8.341555] devtmpfs: mounted
-> Apr  2 15:18:23 [   8.343384] Freeing unused kernel memory: 204k freed
-> Apr  2 15:18:23 [   8.457056] Kernel panic - not syncing: No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
-> Apr  2 15:18:23 [   8.459936] Rebooting in 180 seconds..
+> Hmm, that's odd. It should not really change any semantics. I assume you double
+> checked you hit the right commit?
 
-I have observed this randomly on the G5 ... sometimes, if I try again,
-it works... it's very very odd. There is some kind of race maybe with
-async startup ? Or a problem with the vfs path walking ? It's certainly
-not easily reproducable for me, it goes away from one boot to the next.
+Well it does change the semantics depending on the type of the
+interrupt. The above commit does:
 
-It also happens sometimes with an initramfs (cpio), it's not specific to
-ext{2,3,4}.
+-       if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
++       if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
++                                acpi_irq)) {
 
-Cheers,
-Ben.
+which creates a threaded handler and the primary handler is the
+default core one which merily returns IRQ_WAKE_THREAD. Though that
+leaves the interrupt line unmasked and for level type interrupts this
+is not working. So you either need a primary handler which masks the
+irq at the device level or you can add IRQF_ONESHOT to let the core
+code deal with the mask/unmask business. See patch below.
 
-> No bootoptions were changed, no disks swapped, no partitions altered 
-> whatsoever. Full .config & dmesg:
-> 
->  http://nerdbynature.de/bits/3.4.0-rc1/init/
-> 
-> Thanks,
-> Christian.
-> 
-> PS: Unfortunately I cannot boot into the old (3.3-rc7) kernel 
->     right now (which is still installed via "yaboot" and present in
->     /boot), because of this: 
->     http://nerdbynature.de/bits/3.4.0-rc1/init/mac-invalid-memory.JPG
->     Booting into Debian's "squeeze" kernel (2.6.32) which resides in
->     the same /boot directory succeeds.
+Now the problem with this approach is that if this is really a shared
+interrupt the core code will either reject this request or the one of
+the other device which shares that interrupt line, depending which one
+request first. The reason is that we require all devices to agree on
+that flag - otherwise a long running/waiting/sleeping threaded handler
+might block out the other device for a long time.
 
-Hrm, did it used to boot ? Can you do printenv in OF and tell me what
-your load-base, real-base, virt-base etc... are ?
+If it's never shared, nothing to worry about. Otherwise you need to
+provide a primary handler which silences the interrupt at the device
+level and unmask it when your threaded handler is done.
 
-Might also be worth updating yaboot, debian should have 1.3.16 nowadays.
+Thanks,
 
-Cheers,
-Ben.
+	tglx
 
-
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index ba14fb9..1b81bc9 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -607,7 +607,8 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
+ 
+ 	acpi_irq_handler = handler;
+ 	acpi_irq_context = context;
+-	if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
++	if (request_threaded_irq(irq, NULL, acpi_irq,
++				 IRQF_SHARED | IRQF_ONESHOT, "acpi",
+ 				 acpi_irq)) {
+ 		printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
+ 		acpi_irq_handler = NULL;
