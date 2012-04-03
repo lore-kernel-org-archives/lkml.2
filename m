@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab2DCH7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 03:59:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62534 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab2DCH7X (ORCPT
+	id S1752947Ab2DCH7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 03:59:51 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:50279 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab2DCH7u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 03:59:23 -0400
-Message-ID: <4F7AADD7.5070802@suse.cz>
-Date: Tue, 03 Apr 2012 09:59:19 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120331 Thunderbird/13.0a2
-MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH 25/69] TTY: con3215, remove tasklet for tty_wakeup
-References: <1333367693-3244-1-git-send-email-jslaby@suse.cz> <1333367693-3244-26-git-send-email-jslaby@suse.cz> <20120403054241.GA2700@osiris.boeblingen.de.ibm.com>
-In-Reply-To: <20120403054241.GA2700@osiris.boeblingen.de.ibm.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Apr 2012 03:59:50 -0400
+Date: Tue, 3 Apr 2012 09:59:48 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH v2a] sysfs: Prevent crash on unset sysfs group attributes
+Message-ID: <20120403095948.47e523bc@pluto.restena.lu>
+In-Reply-To: <20120403094107.4f641ed8@pluto.restena.lu>
+References: <20120402162716.4c93bfd3@pluto.restena.lu>
+	<20120402165036.2bc987ad@pluto.restena.lu>
+	<m17gxyklfm.fsf@fess.ebiederm.org>
+	<20120402213440.49e9de74@neptune>
+	<1333401898.2960.78.camel@laptop>
+	<1333403193.2960.80.camel@laptop>
+	<20120403060252.GA27084@gmail.com>
+	<20120403081735.78ca3bb3@pluto.restena.lu>
+	<m1d37pgugy.fsf@fess.ebiederm.org>
+	<20120403071543.GA17502@gmail.com>
+	<20120403094107.4f641ed8@pluto.restena.lu>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 07:42 AM, Heiko Carstens wrote:
-> On Mon, Apr 02, 2012 at 01:54:09PM +0200, Jiri Slaby wrote:
->> tty_wakeup is safe to be called from all contexts. No need to schedule
->> a tasklet for that. Let us call it directly like in other drivers.
->>
->> And delete the tasklet completely.
-> 
-> Your patch actually reverts Martin's recent commit 656d912537
-> "[S390] 3215 deadlock with tty_wakeup".
-> I'm quite sure the reason for the deadlock still exists.
-> Unfortunately the commit doesn't contain the call chain that
-> led to fix.
+Do not let the kernel crash when a device is registered with
+sysfs while group attributes are not set (aka NULL).
 
-Ok, I would really appreciate the trace.
+Warn about the offender with some information about the offending
+device.
 
-If this is really an issue, we should provide a helper in the TTY layer
-like tty_schedule_wakeup.
+This would warn instead of trying NULL pointer deref like:
+ BUG: unable to handle kernel NULL pointer dereference at (null)
+ IP: [<ffffffff81152673>] internal_create_group+0x83/0x1a0
+ PGD 0
+ Oops: 0000 [#1] SMP
+ CPU 0
+ Modules linked in:
 
-thanks,
--- 
-js
-suse labs
+ Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant DL360 G4
+ RIP: 0010:[<ffffffff81152673>]  [<ffffffff81152673>] internal_create_group+0x83/0x1a0
+ RSP: 0018:ffff88019485fd70  EFLAGS: 00010202
+ RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000001
+ RDX: ffff880192e99908 RSI: ffff880192e99630 RDI: ffffffff81a26c60
+ RBP: ffff88019485fdc0 R08: 0000000000000000 R09: 0000000000000000
+ R10: ffff880192e99908 R11: 0000000000000000 R12: ffffffff81a16a00
+ R13: ffff880192e99908 R14: ffffffff81a16900 R15: 0000000000000000
+ FS:  0000000000000000(0000) GS:ffff88019bc00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000000 CR3: 0000000001a0c000 CR4: 00000000000007f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process swapper/0 (pid: 1, threadinfo ffff88019485e000, task ffff880194878000)
+ Stack:
+  ffff88019485fdd0 ffff880192da9d60 0000000000000000 ffff880192e99908
+  ffff880192e995d8 0000000000000001 ffffffff81a16a00 ffff880192da9d60
+  0000000000000000 0000000000000000 ffff88019485fdd0 ffffffff811527be
+ Call Trace:
+  [<ffffffff811527be>] sysfs_create_group+0xe/0x10
+  [<ffffffff81376ca6>] device_add_groups+0x46/0x80
+  [<ffffffff81377d3d>] device_add+0x46d/0x6a0
+  ...
+    
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+---
+
+Resending with fixed commit description message formatting!
+Stupid MUA thinks it knows how to wrap lines and that it must reformat
+whole mail on paste...
 
 
+
+
+ fs/sysfs/group.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index dd1701c..2df555c 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -67,7 +67,11 @@ static int internal_create_group(struct kobject *kobj, int update,
+ 	/* Updates may happen before the object has been instantiated */
+ 	if (unlikely(update && !kobj->sd))
+ 		return -EINVAL;
+-
++	if (!grp->attrs) {
++		WARN(1, "sysfs: attrs not set by subsystem for group: %s/%s\n",
++			kobj->name, grp->name ? "" : grp->name);
++		return -EINVAL;
++	}
+ 	if (grp->name) {
+ 		error = sysfs_create_subdir(kobj, grp->name, &sd);
+ 		if (error)
