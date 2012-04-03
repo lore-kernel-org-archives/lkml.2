@@ -1,80 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab2DCWhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:37:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37030 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab2DCWhs (ORCPT
+	id S1755675Ab2DCWlB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:41:01 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57283 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684Ab2DCWlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:37:48 -0400
-Date: Wed, 4 Apr 2012 08:37:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: cmetcalf@tilera.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tilepro ethernet driver: fix a few minor issues
-Message-Id: <20120404083738.0b0f09ffc1f8c5a105c240eb@canb.auug.org.au>
-In-Reply-To: <20120403.182335.782073108961783777.davem@davemloft.net>
-References: <201203302325.q2UNPm8j012403@farm-0012.internal.tilera.com>
-	<20120403.182335.782073108961783777.davem@davemloft.net>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__4_Apr_2012_08_37_38_+1000_c_PMc6Vmw+gayM8Z"
+	Tue, 3 Apr 2012 18:41:00 -0400
+Date: Wed, 4 Apr 2012 00:40:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20120403224055.GA5338@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Apr_2012_08_37_38_+1000_c_PMc6Vmw+gayM8Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Linus,
 
-Hi Dave,
+Please pull the latest perf-urgent-for-linus git tree from:
 
-On Tue, 03 Apr 2012 18:23:35 -0400 (EDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> Format the comment:
->=20
-> 	/* Like
-> 	 * this.
-> 	 */
->=20
-> not:
->=20
-> 	/*
-> 	 * Like
-> 	 * this.
-> 	 */
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
-People may be confused because Documentation/CodingStyle says to use the
-latter ...
+   HEAD: 7b8e6da46b921d30ac1553cac56d8fb74f0b431d perf/x86/p4: Add format attributes
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ Thanks,
 
---Signature=_Wed__4_Apr_2012_08_37_38_+1000_c_PMc6Vmw+gayM8Z
-Content-Type: application/pgp-signature
+	Ingo
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+------------------>
+Oleg Nesterov (1):
+      tracing, sched, vfs: Fix 'old_pid' usage in trace_sched_process_exec()
 
-iQIcBAEBCAAGBQJPe3uyAAoJEECxmPOUX5FEQMAP/iu3VXzOK9OlAv0GnGjaoRin
-M2x8PMlqVVdLVa2W/stXMowmFu7ItvD0EAKhH1vmaGVSGJd6IN/TKoxINqudp//u
-xf1kpQOT2GHhV0riJtv5yy/gBLXvR+NPtTSP2uEzst1zNo5jlwqfWVBNMo9epkyw
-2CCktmpoaYTyuG4cu0W5y1z+rTmPuhGQo3nNQoWzpoV4u9PM2ESU/xuN5GScUbit
-dYD+udLo0O3wzU2DUUgRT6zOsZfoHq1ueeWVoyVDb4TGTI2pda25JlgTz9VQybM2
-2RHgOHzl3QhGUpukF7b8HG7Jft5qMYrvZbCfgBQO/6QJA+aGHd7bOPXOsxTGuLsd
-gfnZIhyuscqzWGjz3MJwAeSFruplWsUuo2s8ocvRz204gaaSXJeRgrSN5fCQnoGD
-XTmq5tMtxF9SoDZxhPTTdtKcAFU65dIsjSkzrZA9n9J4i7LPQgP0btzpz9Po5Qh+
-pnwTN83B2PGq1gdf4NzF7oUOmj3m0lahDf6YfU56s8i3HFRqnBWXqfULeYNZoh+N
-vKBeu+wU7f9anSv3He8gfQXR7Goz86lQEB2WbP5pnXXAP/kDKtenzT1uOGbjdGrZ
-fgI6tkncdWRh+lW6kF6jjh3WtCW3M+Ls5ZNAbDgiUP2Yshh/E97FCuAsjIZ7dphH
-VmzBEinNWP6lBe1lYUCf
-=WFi7
------END PGP SIGNATURE-----
+Peter Zijlstra (1):
+      perf/x86/p4: Add format attributes
 
---Signature=_Wed__4_Apr_2012_08_37_38_+1000_c_PMc6Vmw+gayM8Z--
+
+ arch/x86/kernel/cpu/perf_event_p4.c |   13 +++++++++++++
+ fs/exec.c                           |    7 ++++---
+ include/trace/events/sched.h        |    2 +-
+ 3 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index ef484d9..a2dfacf 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -1271,6 +1271,17 @@ done:
+ 	return num ? -EINVAL : 0;
+ }
+ 
++PMU_FORMAT_ATTR(cccr, "config:0-31" );
++PMU_FORMAT_ATTR(escr, "config:32-62");
++PMU_FORMAT_ATTR(ht,   "config:63"   );
++
++static struct attribute *intel_p4_formats_attr[] = {
++	&format_attr_cccr.attr,
++	&format_attr_escr.attr,
++	&format_attr_ht.attr,
++	NULL,
++};
++
+ static __initconst const struct x86_pmu p4_pmu = {
+ 	.name			= "Netburst P4/Xeon",
+ 	.handle_irq		= p4_pmu_handle_irq,
+@@ -1305,6 +1316,8 @@ static __initconst const struct x86_pmu p4_pmu = {
+ 	 * the former idea is taken from OProfile code
+ 	 */
+ 	.perfctr_second_write	= 1,
++
++	.format_attrs		= intel_p4_formats_attr,
+ };
+ 
+ __init int p4_pmu_init(void)
+diff --git a/fs/exec.c b/fs/exec.c
+index 23559c2..644f6c4 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1370,7 +1370,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	unsigned int depth = bprm->recursion_depth;
+ 	int try,retval;
+ 	struct linux_binfmt *fmt;
+-	pid_t old_pid;
++	pid_t old_pid, old_vpid;
+ 
+ 	retval = security_bprm_check(bprm);
+ 	if (retval)
+@@ -1381,8 +1381,9 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 		return retval;
+ 
+ 	/* Need to fetch pid before load_binary changes it */
++	old_pid = current->pid;
+ 	rcu_read_lock();
+-	old_pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
++	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
+ 	rcu_read_unlock();
+ 
+ 	retval = -ENOENT;
+@@ -1405,7 +1406,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			if (retval >= 0) {
+ 				if (depth == 0) {
+ 					trace_sched_process_exec(current, old_pid, bprm);
+-					ptrace_event(PTRACE_EVENT_EXEC, old_pid);
++					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+ 				}
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index fbc7b1a..ea7a203 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -295,7 +295,7 @@ TRACE_EVENT(sched_process_exec,
+ 	TP_fast_assign(
+ 		__assign_str(filename, bprm->filename);
+ 		__entry->pid		= p->pid;
+-		__entry->old_pid	= p->pid;
++		__entry->old_pid	= old_pid;
+ 	),
+ 
+ 	TP_printk("filename=%s pid=%d old_pid=%d", __get_str(filename),
