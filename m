@@ -1,39 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab2DCOMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:12:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39230 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754847Ab2DCOLy (ORCPT
+	id S1754646Ab2DCOK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:10:27 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:12494 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753653Ab2DCOKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:11:54 -0400
-Date: Tue, 3 Apr 2012 10:11:52 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-cc: linux-arm-kernel@lists.infradead.org, <linux-usb@vger.kernel.org>,
-        <plagnioj@jcrosoft.com>, <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <arnd@arndb.de>, <olof@lixom.net>
-Subject: Re: [PATCH v2 06/13] USB: ohci-at91: change maximum number of ports
-In-Reply-To: <80824c8cde04604acd313b93205260b2ad082a4b.1333437885.git.nicolas.ferre@atmel.com>
-Message-ID: <Pine.LNX.4.44L0.1204030954590.1537-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 Apr 2012 10:10:25 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Tue, 03 Apr 2012 16:10:08 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCHv24 03/16] mm: compaction: introduce map_pages()
+In-reply-to: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Sandeep Patil <psandeep.s@gmail.com>
+Message-id: <1333462221-3987-4-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.1
+References: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Apr 2012, Nicolas Ferre wrote:
+From: Michal Nazarewicz <mina86@mina86.com>
 
-> Change number of ports to 3 for newer SoCs. Modify pdata structure
-> and ohci-at91 code that was dealing with ports information and check
-> of port indexes.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+This commit creates a map_pages() function which map pages freed
+using split_free_pages().  This merely moves some code from
+isolate_freepages() so that it can be reused in other places.
 
-Did you run this patch through scripts/checkpatch.pl?  I have the 
-feeling that it might complain about some of the changes.
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Tested-by: Robert Nelson <robertcnelson@gmail.com>
+Tested-by: Barry Song <Baohua.Song@csr.com>
+---
+ mm/compaction.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-Alan Stern
+diff --git a/mm/compaction.c b/mm/compaction.c
+index ee20fc0..d9d7b35 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -127,6 +127,16 @@ static bool suitable_migration_target(struct page *page)
+ 	return false;
+ }
+ 
++static void map_pages(struct list_head *list)
++{
++	struct page *page;
++
++	list_for_each_entry(page, list, lru) {
++		arch_alloc_page(page, 0);
++		kernel_map_pages(page, 1, 1);
++	}
++}
++
+ /*
+  * Based on information in the current compact_control, find blocks
+  * suitable for isolating free pages from and then isolate them.
+@@ -206,10 +216,7 @@ static void isolate_freepages(struct zone *zone,
+ 	}
+ 
+ 	/* split_free_page does not map the pages */
+-	list_for_each_entry(page, freelist, lru) {
+-		arch_alloc_page(page, 0);
+-		kernel_map_pages(page, 1, 1);
+-	}
++	map_pages(freelist);
+ 
+ 	cc->free_pfn = high_pfn;
+ 	cc->nr_freepages = nr_freepages;
+-- 
+1.7.1.569.g6f426
 
