@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab2DCD5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 23:57:49 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57855 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2DCD5s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 23:57:48 -0400
+	id S1750950Ab2DCEAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 00:00:14 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:43933 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704Ab2DCEAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 00:00:12 -0400
+Date: Mon, 2 Apr 2012 20:57:16 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Rudolf Marek <r.marek@assembler.cz>, Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH] hwmon: use module_pci_driver
+Message-ID: <20120403035716.GA8682@ericsson.com>
+References: <1333416346.18133.4.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <CAH9JG2Wha0+6BwGW0APtEX2KACyR1+9fdKpJkM+iOU1m8N6d4w@mail.gmail.com>
-References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
- <CAH9JG2Wha0+6BwGW0APtEX2KACyR1+9fdKpJkM+iOU1m8N6d4w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 2 Apr 2012 20:57:26 -0700
-X-Google-Sender-Auth: Llk7v6g1ovrt2pEF7ua0dgtoPLU
-Message-ID: <CA+55aFw1ZG9R2MzgXmi0YE64t+xH95QnVuJB55sQ6xgDbnzkyQ@mail.gmail.com>
-Subject: Re: Linux 3.4-rc1
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        vdumpa@nvidia.com, hdoyu@nvidia.com, konrad.wilk@oracle.com,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1333416346.18133.4.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 7:57 PM, Kyungmin Park <kmpark@infradead.org> wrote:
-> On Sun, Apr 1, 2012 at 8:58 AM, Linus Torvalds
->>
->>  - DMA-mapping framework. The tree now has a few more acks from
->> people, and it's largely in the same situation as HSI is: I'll
->> probably pull, but I really wanted the users who are impacted to
->> actually talk to me about it.
->
-> Now Marek and Nvidia persons are used it for DMA mapping based IOMMU.
->
-> Are there other person who help to merge it?
-> (+CC related persons).
+On Mon, Apr 02, 2012 at 09:25:46PM -0400, Axel Lin wrote:
+> This patch converts the drivers in drivers/hwmon/* to use module_pci_driver()
+> macro which makes the code smaller and a bit simpler.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+> Cc: Clemens Ladisch <clemens@ladisch.de>
+> Cc: Rudolf Marek <r.marek@assembler.cz>
+> ---
+>  drivers/hwmon/fam15h_power.c |   13 +------------
+>  drivers/hwmon/k10temp.c      |   13 +------------
+>  drivers/hwmon/k8temp.c       |   13 +------------
+>  3 files changed, 3 insertions(+), 36 deletions(-)
+> 
+Applied.
 
-I want the people who want it to contact me and talk about what they
-do with it. So far, I haven't seen anything.
-
-                        Linus
+Thanks,
+Guenter
