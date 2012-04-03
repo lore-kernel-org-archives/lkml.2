@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab2DCVih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:38:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49906 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab2DCVig (ORCPT
+	id S1755391Ab2DCVlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:41:46 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38568 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab2DCVlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:38:36 -0400
-Date: Tue, 3 Apr 2012 23:38:31 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Landley <rob@landley.net>, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] MAINTAINERS: change in Documentation/ maintainer
-Message-ID: <20120403213831.GF2201@pengutronix.de>
-References: <4F7B5CFB.1@xenotime.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sDKAb4OeUBrWWL6P"
-Content-Disposition: inline
-In-Reply-To: <4F7B5CFB.1@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 3 Apr 2012 17:41:44 -0400
+Date: Tue, 03 Apr 2012 17:41:39 -0400 (EDT)
+Message-Id: <20120403.174139.1088270699067881012.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: cmetcalf@tilera.com, shemminger@vyatta.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] marvell sky2 driver: fix irq number assignment bug
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1333468024.2577.21.camel@bwh-desktop.uk.solarflarecom.com>
+References: <201204031526.q33FQvFO031746@farm-0027.internal.tilera.com>
+	<1333468024.2577.21.camel@bwh-desktop.uk.solarflarecom.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 14:41:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Tue, 3 Apr 2012 16:47:04 +0100
 
---sDKAb4OeUBrWWL6P
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Tue, 2012-04-03 at 11:10 -0400, Chris Metcalf wrote:
+>> Fix a minor bug that will display wrong IRQ number in ifconfig output.
+>> 
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>>  drivers/net/ethernet/marvell/sky2.c |    7 +++++++
+>>  1 files changed, 7 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+>> index 423a1a2..879b0a4 100644
+>> --- a/drivers/net/ethernet/marvell/sky2.c
+>> +++ b/drivers/net/ethernet/marvell/sky2.c
+>> @@ -4978,6 +4978,13 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
+>>  			goto err_out_free_netdev;
+>>   	}
+>>  
+>> +	/*
+>> +	 * Need to set the IRQ # for the net_device here again after
+>> +	 * setting it in sky2_init_netdev() initially, because MSI
+>> +	 * will assign a new IRQ # to this PCI device.
+>> +	 */
+>> +	dev->irq = hw->pdev->irq;
+>> +
+>>  	err = register_netdev(dev);
+>>  	if (err) {
+>>  		dev_err(&pdev->dev, "cannot register net device\n");
+> 
+> I think the consensus now is that net_device::irq should be left at 0
+> for devices that don't support manual configuration (ISA and the like).
 
-On Tue, Apr 03, 2012 at 01:26:35PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
->=20
-> I'm dropping off as Documentation/ maintainer.
-> Rob Landley has agreed to take it over.  Thanks, Rob.
->=20
-> I'll still be around reviewing patches and testing.
-> Stephen, please drop my quilt tree from linux-next.
->=20
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks-for-all-this-work-by: Wolfram Sang <w.sang@pengutronix.de>
-
-:)
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---sDKAb4OeUBrWWL6P
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk97bdcACgkQD27XaX1/VRu5MACeP4rfnFZYs0AEfOey/uYNZFOk
-f9sAn0UbTXgkC2Ca4T+QYiEzAhbu+HRP
-=NkhC
------END PGP SIGNATURE-----
-
---sDKAb4OeUBrWWL6P--
+Agreed.
