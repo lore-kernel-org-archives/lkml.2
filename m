@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2DCFih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 01:38:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59525 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab2DCFie (ORCPT
+	id S1752509Ab2DCFjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 01:39:16 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:41410 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab2DCFiY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 01:38:34 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mike Miller <mike.miller@hp.com>,
-        iss_storagedev@hp.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH] hpsa: use check_signature
-Date: Tue,  3 Apr 2012 14:38:54 +0900
-Message-Id: <1333431534-4595-4-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1333431534-4595-1-git-send-email-akinobu.mita@gmail.com>
-References: <1333431534-4595-1-git-send-email-akinobu.mita@gmail.com>
+	Tue, 3 Apr 2012 01:38:24 -0400
+Date: Tue, 3 Apr 2012 07:38:21 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [3.4-rc1 crash]: NULL pointer deref in
+ fs/sysfs/group.c:create_files -- sysctl related?
+Message-ID: <20120403073821.3cde20e7@pluto.restena.lu>
+In-Reply-To: <1333403193.2960.80.camel@laptop>
+References: <20120402162716.4c93bfd3@pluto.restena.lu>
+	<20120402165036.2bc987ad@pluto.restena.lu>
+	<m17gxyklfm.fsf@fess.ebiederm.org>
+	<20120402213440.49e9de74@neptune>
+	<1333401898.2960.78.camel@laptop>
+	<1333403193.2960.80.camel@laptop>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use check_signature to find a signature in the mmio address.
+On Mon, 02 Apr 2012 23:46:33 Peter Zijlstra wrote:
+> On Mon, 2012-04-02 at 23:24 +0200, Peter Zijlstra wrote:
+> > On Mon, 2012-04-02 at 21:34 +0200, Bruno Prémont wrote:
+> > > > >> [    0.996198] Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant DL360 G4
+> > 
+> > Is this a netburst based space heater?
+> 
+> In particular, does: https://lkml.org/lkml/2012/3/27/182 , sort it?
+> 
+> Ingo, could you pick that one up and route it Linus wards?
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Mike Miller <mike.miller@hp.com>
-Cc: iss_storagedev@hp.com
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
----
- drivers/scsi/hpsa.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+It does sort it!
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index ddbf5fe..c867eeb 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3839,10 +3839,7 @@ static void __devinit hpsa_find_board_params(struct ctlr_info *h)
- 
- static inline bool hpsa_CISS_signature_present(struct ctlr_info *h)
- {
--	if ((readb(&h->cfgtable->Signature[0]) != 'C') ||
--	    (readb(&h->cfgtable->Signature[1]) != 'I') ||
--	    (readb(&h->cfgtable->Signature[2]) != 'S') ||
--	    (readb(&h->cfgtable->Signature[3]) != 'S')) {
-+	if (!check_signature(h->cfgtable->Signature, "CISS", 4)) {
- 		dev_warn(&h->pdev->dev, "not a valid CISS config table\n");
- 		return false;
- 	}
--- 
-1.7.4.4
-
+Tested-By: Bruno Prémont <bonbons@linux-vserver.org>
