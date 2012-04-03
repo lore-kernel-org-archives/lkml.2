@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab2DCSSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 14:18:09 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50949 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab2DCSSE (ORCPT
+	id S1755497Ab2DCSSn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 14:18:43 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:44642 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab2DCSSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 14:18:04 -0400
-Date: Tue, 3 Apr 2012 11:16:31 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
-Message-ID: <20120403181631.GD32299@count0.beaverton.ibm.com>
-References: <20120331091049.19373.28994.stgit@zurg>
- <20120331092929.19920.54540.stgit@zurg>
- <20120331201324.GA17565@redhat.com>
- <20120402230423.GB32299@count0.beaverton.ibm.com>
- <4F7A863C.5020407@openvz.org>
+	Tue, 3 Apr 2012 14:18:41 -0400
+Message-ID: <4F7B3EFF.1030706@hp.com>
+Date: Tue, 03 Apr 2012 11:18:39 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7A863C.5020407@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040318-7408-0000-0000-000003F17F54
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, remi@remlab.net,
+        levinsasha928@gmail.com, remi.denis-courmont@nokia.com,
+        davej@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] phonet: Check input from user before allocating
+References: <1333417997.18626.1.camel@edumazet-glaptop> <20120402.215911.1929019308299701014.davem@davemloft.net> <1333419304.18626.5.camel@edumazet-glaptop> <20120402.222300.1137842205135530387.davem@davemloft.net> <4F7A60A4.5040600@hp.com> <1333420452.18626.11.camel@edumazet-glaptop> <4F7A62FE.2050103@hp.com> <1333422844.18626.26.camel@edumazet-glaptop>
+In-Reply-To: <1333422844.18626.26.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 09:10:20AM +0400, Konstantin Khlebnikov wrote:
-> Matt Helsley wrote:
-> >On Sat, Mar 31, 2012 at 10:13:24PM +0200, Oleg Nesterov wrote:
-> >>On 03/31, Konstantin Khlebnikov wrote:
-> >>>
-> >>>comment from v2.6.25-6245-g925d1c4 ("procfs task exe symlink"),
-> >>>where all this stuff was introduced:
-> >>>
-> >>>>...
-> >>>>This avoids pinning the mounted filesystem.
-> >>>
-> >>>So, this logic is hooked into every file mmap/unmmap and vma split/merge just to
-> >>>fix some hypothetical pinning fs from umounting by mm which already unmapped all
-> >>>its executable files, but still alive. Does anyone know any real world example?
-> >>
-> >>This is the question to Matt.
-> >
-> >This is where I got the scenario:
-> >
-> >https://lkml.org/lkml/2007/7/12/398
-> 
-> Cyrill Gogcunov's patch "c/r: prctl: add ability to set new mm_struct::exe_file"
-> gives userspace ability to unpin vfsmount explicitly.
+On 04/02/2012 08:14 PM, Eric Dumazet wrote:
+> It seems netperf has some problems zith AF_UNIX dgram :
+>
+> socket(PF_FILE, SOCK_DGRAM, 0)          = 4
+> setsockopt(4, SOL_SOCKET, SO_SNDBUF, [0], 4) = 0
+> getsockopt(4, SOL_SOCKET, SO_SNDBUF, [2048], [4]) = 0
+> setsockopt(4, SOL_SOCKET, SO_RCVBUF, [0], 4) = 0
+> getsockopt(4, SOL_SOCKET, SO_RCVBUF, [2288], [4]) = 0
+> sendto(3, "\0\0\0+\377\377\377\377\0\0\0\0\0\0\10\0\0\0\0\10\0\0\0\0\0\0\0\0\0\0\0\0"..., 256, 0, NULL, 0) = 256
+> select(1024, [3], NULL, NULL, {120, 0}) = 1 (in [3], left {119, 979635})
+> recvfrom(3, "\0\0\0,\0\0\0\0\0\0\10\360\0\0\10\0\0\0\0\0\0\0\0\n\0\0\0\0\0\0\0\0"..., 256, 0, NULL, NULL) = 256
+> connect(4, {sa_family=AF_FILE, path="/tmp/netpe62HGNM"}, 110) = 0
+> rt_sigaction(SIGALRM, {0x403171, [ALRM], SA_RESTORER|SA_INTERRUPT, 0x7f691f026af0}, NULL, 8) = 0
+> alarm(10)                               = 0
+> sendto(4, "netperf\0netperf\0netperf\0netperf\0"..., 2048, 0, NULL, 0) = -1 EMSGSIZE (Message too long)
+> dup(2)                                  = 5
+> fcntl(5, F_GETFL)                       = 0x8002 (flags O_RDWR|O_LARGEFILE)
+> fstat(5, {st_mode=S_IFCHR|0600, st_rdev=makedev(136, 3), ...}) = 0
+> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f691fa18000
+> lseek(5, 0, SEEK_CUR)                   = -1 ESPIPE (Illegal seek)
+> write(5, "dg_send: data send error: Messag"..., 43dg_send: data send error: Message too long
+> ) = 43
+> close(5)                                = 0
+> munmap(0x7f691fa18000, 4096)            = 0
+> exit_group(1)                           = ?
+>
+> I guess the SO_SNDBUF/SO_RCVBUF limits are a bit too low ?
 
-Doesn't that break the semantics of the kernel ABI?
+The AF_UNIX support in netperf is from a time when the code was very 
+simplistic - if no socket buffer size specified on the command line, 
+take the system default.  If no send size specified, use the SO_SNDBUF 
+size, though some limits were applied.
 
-Cheers,
-	-Matt Helsley
+Of course, along the way, there was a change in the value for socket 
+buffer size that meant "take the default" - it used to be 0 but then 
+became -1.  Something to do with when Windows would decide to do copy 
+avoidance - tell Windows the socket buffer size is 0 and it will do copy 
+avoidance. The code in src/nettest_unix.c was still initializing to 0 
+rather than -1.
 
+I've fixed that in the top-of-trunk:
+
+raj@tardy:~/netperf2_trunk$ src/netperf -t DG_STREAM
+DG UNIDIRECTIONAL SEND TEST
+Socket  Message  Elapsed      Messages
+Size    Size     Time         Okay Errors   Throughput
+bytes   bytes    secs            #      #   10^6bits/sec
+
+126976   65507    10.00     1195647      0     811.07
+  2288            10.00     1195647            811.07
+
+BTW, the local CPU utilization seems sane, but "remote" (which is 
+redundant anyway) seems to be fubar somehow.  More bitrot I suspect.
+
+happy benchmarking,
+
+rick jones
