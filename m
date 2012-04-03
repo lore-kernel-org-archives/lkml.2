@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab2DCILs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:11:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53120 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab2DCILl (ORCPT
+	id S1753554Ab2DCIMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:12:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36544 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2DCILn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:11:41 -0400
-Date: Tue, 3 Apr 2012 10:11:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <ak@linux.intel.com>
-cc: =?ISO-8859-15?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: Re: [v3.4-rc1] ACPI regression bisected
-In-Reply-To: <20120402235412.GD16303@tassilo.jf.intel.com>
-Message-ID: <alpine.LFD.2.02.1204031001510.2542@ionos>
-References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com> <20120402235412.GD16303@tassilo.jf.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 3 Apr 2012 04:11:43 -0400
+Date: Tue, 3 Apr 2012 01:11:11 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-7b8e6da46b921d30ac1553cac56d8fb74f0b431d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com,
+        bonbons@linux-vserver.org, hpa@zytor.com, mingo@kernel.org,
+        gorcunov@openvz.org, a.p.zijlstra@chello.nl, jolsa@redhat.com,
+        rostedt@goodmis.org, ming.m.lin@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, bonbons@linux-vserver.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, gorcunov@openvz.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, rostedt@goodmis.org,
+        ming.m.lin@intel.com, tglx@linutronix.de
+In-Reply-To: <1332859842.16159.227.camel@twins>
+References: <1332859842.16159.227.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86/p4: Add format attributes
+Git-Commit-ID: 7b8e6da46b921d30ac1553cac56d8fb74f0b431d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 03 Apr 2012 01:11:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Apr 2012, Andi Kleen wrote:
+Commit-ID:  7b8e6da46b921d30ac1553cac56d8fb74f0b431d
+Gitweb:     http://git.kernel.org/tip/7b8e6da46b921d30ac1553cac56d8fb74f0b431d
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 27 Mar 2012 16:50:42 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 3 Apr 2012 08:33:38 +0200
 
-> >  ACPI: Added _OSI(Processor Aggregator Device)
-> >  ACPI: EC: EC description table is found, configuring boot EC
-> > 
-> > Comparing this with the displays of kernel v3.3 the next expected
-> > outputs would be:
-> > 
-> >  ACPI: Interpreter enabled
-> >  ACPI: (supports S0 S5)
-> > 
-> > 
-> > I bisected the problem to commit:
-> > 6fe0d0628245fdcd6fad8b837c81e8f7ebc3364d  "ACPI: Make ACPI interrupt threaded"
-> 
-> Hmm, that's odd. It should not really change any semantics. I assume you double
-> checked you hit the right commit?
+perf/x86/p4: Add format attributes
 
-Well it does change the semantics depending on the type of the
-interrupt. The above commit does:
+Steven reported his P4 not booting properly, the missing format
+attributes cause a NULL ptr deref. Cure this by adding the
+missing format specification.
 
--       if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
-+       if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
-+                                acpi_irq)) {
+I took the format description out of the comment near
+p4_config_pack*() and hope that comment is still relatively
+accurate.
 
-which creates a threaded handler and the primary handler is the
-default core one which merily returns IRQ_WAKE_THREAD. Though that
-leaves the interrupt line unmasked and for level type interrupts this
-is not working. So you either need a primary handler which masks the
-irq at the device level or you can add IRQF_ONESHOT to let the core
-code deal with the mask/unmask business. See patch below.
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Lin Ming <ming.m.lin@intel.com>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1332859842.16159.227.camel@twins
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_p4.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-Now the problem with this approach is that if this is really a shared
-interrupt the core code will either reject this request or the one of
-the other device which shares that interrupt line, depending which one
-request first. The reason is that we require all devices to agree on
-that flag - otherwise a long running/waiting/sleeping threaded handler
-might block out the other device for a long time.
-
-If it's never shared, nothing to worry about. Otherwise you need to
-provide a primary handler which silences the interrupt at the device
-level and unmask it when your threaded handler is done.
-
-Thanks,
-
-	tglx
-
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index ba14fb9..1b81bc9 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -607,7 +607,8 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index ef484d9..a2dfacf 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -1271,6 +1271,17 @@ done:
+ 	return num ? -EINVAL : 0;
+ }
  
- 	acpi_irq_handler = handler;
- 	acpi_irq_context = context;
--	if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
-+	if (request_threaded_irq(irq, NULL, acpi_irq,
-+				 IRQF_SHARED | IRQF_ONESHOT, "acpi",
- 				 acpi_irq)) {
- 		printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
- 		acpi_irq_handler = NULL;
++PMU_FORMAT_ATTR(cccr, "config:0-31" );
++PMU_FORMAT_ATTR(escr, "config:32-62");
++PMU_FORMAT_ATTR(ht,   "config:63"   );
++
++static struct attribute *intel_p4_formats_attr[] = {
++	&format_attr_cccr.attr,
++	&format_attr_escr.attr,
++	&format_attr_ht.attr,
++	NULL,
++};
++
+ static __initconst const struct x86_pmu p4_pmu = {
+ 	.name			= "Netburst P4/Xeon",
+ 	.handle_irq		= p4_pmu_handle_irq,
+@@ -1305,6 +1316,8 @@ static __initconst const struct x86_pmu p4_pmu = {
+ 	 * the former idea is taken from OProfile code
+ 	 */
+ 	.perfctr_second_write	= 1,
++
++	.format_attrs		= intel_p4_formats_attr,
+ };
+ 
+ __init int p4_pmu_init(void)
