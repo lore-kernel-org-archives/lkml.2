@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab2DCRHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 13:07:14 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49589 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755060Ab2DCRHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 13:07:12 -0400
-Date: Tue, 3 Apr 2012 19:07:08 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Ivo Sieben <meltedpianoman@gmail.com>, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
-Message-ID: <20120403170708.GC2477@pengutronix.de>
-References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
- <20120403165320.GG19952@sequoia.sous-sol.org>
+	id S1755155Ab2DCRI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 13:08:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35746 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765Ab2DCRIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 13:08:25 -0400
+Date: Tue, 3 Apr 2012 13:07:50 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Sterba <dsterba@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org, jeffm@suse.com
+Subject: Re: btrfs io errors on 3.4rc1
+Message-ID: <20120403170750.GB10975@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Sterba <dsterba@suse.cz>,
+	Chris Mason <chris.mason@oracle.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org, jeffm@suse.com
+References: <20120402222802.GA18000@shiny.nikko.sjc.wayport.net>
+ <20120402223350.GA16907@redhat.com>
+ <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
+ <20120402225131.GB16907@redhat.com>
+ <20120402235021.GA20070@shiny.msi.event>
+ <20120403014722.GA618@redhat.com>
+ <20120403142607.GA14083@ds.suse.cz>
+ <20120403162023.GA7227@redhat.com>
+ <20120403163343.GD14083@ds.suse.cz>
+ <20120403165055.GA10975@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7qSK/uQB79J36Y4o"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120403165320.GG19952@sequoia.sous-sol.org>
+In-Reply-To: <20120403165055.GA10975@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 03, 2012 at 12:50:55PM -0400, Dave Jones wrote:
+ > On Tue, Apr 03, 2012 at 06:33:43PM +0200, David Sterba wrote:
+ >  > On Tue, Apr 03, 2012 at 12:20:23PM -0400, Dave Jones wrote:
+ >  > > I see a lot of these ..
+ >  > > 
+ >  > > btrfs: __btrfs_end_transaction -EIO abored=1802201963 (no super error)
+ >  > 
+ >  > 1802201963 == 0x6b6b6b6b
+ >  > 
+ >  > #define POISON_FREE     0x6b    /* for use-after-free poisoning */
+ >  > 
+ >  > hmm
+ > 
+ > wait, what...
+ > 
+ >  535         memset(trans, 0, sizeof(*trans));
+ >  536         kmem_cache_free(btrfs_trans_handle_cachep, trans);
+ >  537 
+ >  538         if (throttle)
+ >  539                 btrfs_run_delayed_iputs(root);
+ >  540 
+ >  541         if (trans->aborted ||
+ >  542             root->fs_info->fs_state & BTRFS_SUPER_FLAG_ERROR) {
+ >  543                 return -EIO;
+ >  544         }
+ > 
+ > that looks like a pretty clear use-after-free.
 
---7qSK/uQB79J36Y4o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, trying this..
 
-On Tue, Apr 03, 2012 at 09:53:20AM -0700, Chris Wright wrote:
-> * Ivo Sieben (meltedpianoman@gmail.com) wrote:
-> > +	instr =3D AT25_READ;
-> > +	if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
-> > +		if (offset >=3D (1U << (at25->addrlen * 8)))
-> > +			instr |=3D AT25_INSTR_BIT3;
-> > +	*cp++ =3D instr;
-> <snip>
-> > +	/*
-> > +	 * Certain EEPROMS have a size that is larger than the number of addr=
-ess
-> > +	 * bytes would allow (e.g. like M95040 from ST that has 512 Byte size
-> > +	 * but uses only one address byte (A0 to A7) for addressing.) For
-> > +	 * the extra address bit (A8, A16 or A24) bit 3 of the instruction by=
-te
-> > +	 * is used. This instruction bit is normally defined as don't care for
-> > +	 * other AT25 like chips.
-> > +	 */
-> > +#define EE_INSTR_BIT3_IS_ADDR	0x0010
->=20
-> Is there some guarantee that this chip flag will always have this
-> meaning?
 
-? This is a driver flag.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---7qSK/uQB79J36Y4o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk97LjwACgkQD27XaX1/VRv5nQCfYaD/C91I3oLvSDAmb0t0Sg9p
-hfIAn12PQKe+qysQcPn34RU3N75LeXea
-=vQkH
------END PGP SIGNATURE-----
-
---7qSK/uQB79J36Y4o--
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index 8da29e8..11b77a5 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -480,6 +480,7 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 	struct btrfs_transaction *cur_trans = trans->transaction;
+ 	struct btrfs_fs_info *info = root->fs_info;
+ 	int count = 0;
++	int err = 0;
+ 
+ 	if (--trans->use_count) {
+ 		trans->block_rsv = trans->orig_rsv;
+@@ -532,18 +533,18 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 
+ 	if (current->journal_info == trans)
+ 		current->journal_info = NULL;
+-	memset(trans, 0, sizeof(*trans));
+-	kmem_cache_free(btrfs_trans_handle_cachep, trans);
+ 
+ 	if (throttle)
+ 		btrfs_run_delayed_iputs(root);
+ 
+ 	if (trans->aborted ||
+ 	    root->fs_info->fs_state & BTRFS_SUPER_FLAG_ERROR) {
+-		return -EIO;
++		err = -EIO;
+ 	}
+ 
+-	return 0;
++	memset(trans, 0, sizeof(*trans));
++	kmem_cache_free(btrfs_trans_handle_cachep, trans);
++	return err;
+ }
+ 
+ int btrfs_end_transaction(struct btrfs_trans_handle *trans,
