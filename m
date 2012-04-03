@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab2DCVGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:06:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41039 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755001Ab2DCVGB (ORCPT
+	id S1755345Ab2DCVIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:08:47 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38269 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab2DCVIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:06:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F79C6F7.4070701@wwwdotorg.org>
-References: <1332265479-1260-1-git-send-email-swarren@wwwdotorg.org>
-	<1332265479-1260-6-git-send-email-swarren@wwwdotorg.org>
-	<CACRpkdav8x-Td-fH1Ree83GhNR8r7aA1dBsTQo2eU3nwwam21Q@mail.gmail.com>
-	<4F79C6F7.4070701@wwwdotorg.org>
-Date: Tue, 3 Apr 2012 23:06:01 +0200
-Message-ID: <CACRpkdbfNPAay=FP_Wj-AmYJBbhcjND9Z-b+mahRM5uQoL-coA@mail.gmail.com>
-Subject: Re: [PATCH V2 6/6] pinctrl: tegra: Add complete device tree support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linus.walleij@stericsson.com, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com, sjg@chromium.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Apr 2012 17:08:46 -0400
+Date: Tue, 03 Apr 2012 17:08:41 -0400 (EDT)
+Message-Id: <20120403.170841.1992774969352219317.davem@davemloft.net>
+To: shemminger@vyatta.com
+Cc: LinoSanfilippo@gmx.de, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] sky2: fix missing register reset on error path in
+ sky2_test_msi()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120403135954.2131ab08@s6510.linuxnetplumber.net>
+References: <20120403115547.799fcc1f@s6510.linuxnetplumber.net>
+	<20120403.163008.1865240185992444794.davem@davemloft.net>
+	<20120403135954.2131ab08@s6510.linuxnetplumber.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 14:08:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 5:34 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 04/01/2012 11:29 AM, Linus Walleij wrote:
->> On Tue, Mar 20, 2012 at 6:44 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>
->>> Implement pinctrl_ops dt_node_to_map() and dt_free_map(). These allow
->>> complete specification of the desired pinmux configuration using device
->>> tree.
->>>
->>> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
->>> ---
->>> v2: Rebase on of_property_for_each_string() API changes.
->>
->> Stephen is this eligible for merge? Or does it need changes on top
->> of the v4 core patch?
->
-> I believe if you take everything from v3, except replace the one patch
-> that I posted a v4 for, and you'll be set. I don't believe the v4
-> changes in the intermediate patch required and changes to any later
-> patches. Let me know if you want me to repost the series, thanks!
+From: Stephen Hemminger <shemminger@vyatta.com>
+Date: Tue, 3 Apr 2012 13:59:54 -0700
 
-Hm. I went in and applied Viresh's group enumeration refactoring
-patch so I suspect tehy need some rebasing. Care to rebase to
-the branch in -next tomorrow or so and I'll apply?
+> On Tue, 03 Apr 2012 16:30:08 -0400 (EDT)
+> David Miller <davem@davemloft.net> wrote:
+> 
+>> From: Stephen Hemminger <shemminger@vyatta.com>
+>> Date: Tue, 3 Apr 2012 11:55:47 -0700
+>> 
+>> > On Fri, 30 Mar 2012 19:36:16 +0200
+>> > Lino Sanfilippo <LinoSanfilippo@gmx.de> wrote:
+>> > 
+>> >> In sky2_test_msi() the temporarily set SW IRQ in B0 register is not reset in case
+>> >> that request_irq() fails.
+>> >> With this patch we only set the interrupt mask if request_irq() was successful.
+>> >> 
+>> >> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+>> > 
+>> > Ok, but this is a non-serious error case. If request_irq() fails here,
+>> > the driver is going to fail to load and on the failure path of
+>> > sky2_probe will reset the chip on the way out.
+>> 
+>> So, ACK for net-next?  Toss it?  What?
+> 
+> Put it in net-next, no need for net or stable.
 
-Yours,
-Linus Walleij
+Done, thanks.
