@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab2DCU77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 16:59:59 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:52722 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753684Ab2DCU75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 16:59:57 -0400
-Date: Tue, 3 Apr 2012 13:59:54 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: David Miller <davem@davemloft.net>
-Cc: LinoSanfilippo@gmx.de, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] sky2: fix missing register reset on error path in
- sky2_test_msi()
-Message-ID: <20120403135954.2131ab08@s6510.linuxnetplumber.net>
-In-Reply-To: <20120403.163008.1865240185992444794.davem@davemloft.net>
-References: <20120330173616.GC2703@Neptun>
-	<20120403115547.799fcc1f@s6510.linuxnetplumber.net>
-	<20120403.163008.1865240185992444794.davem@davemloft.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755270Ab2DCVDB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:03:01 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:32111 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab2DCVDA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 17:03:00 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6669"; a="178590765"
+Date: Tue, 3 Apr 2012 16:02:41 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/12] arch/hexagon: remove references to cpu_*_map.
+Message-ID: <20120403210241.GA20924@codeaurora.org>
+References: <1329281884.32535.rusty@rustcorp.com.au>
+ <20120403184608.GA23183@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120403184608.GA23183@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Apr 2012 16:30:08 -0400 (EDT)
-David Miller <davem@davemloft.net> wrote:
-
-> From: Stephen Hemminger <shemminger@vyatta.com>
-> Date: Tue, 3 Apr 2012 11:55:47 -0700
-> 
-> > On Fri, 30 Mar 2012 19:36:16 +0200
-> > Lino Sanfilippo <LinoSanfilippo@gmx.de> wrote:
+On Tue, Apr 03, 2012 at 01:46:08PM -0500, Richard Kuo wrote:
+> On Wed, Feb 15, 2012 at 03:28:04PM +1030, Rusty Russell wrote:
+> > From: Rusty Russell <rusty@rustcorp.com.au>
 > > 
-> >> In sky2_test_msi() the temporarily set SW IRQ in B0 register is not reset in case
-> >> that request_irq() fails.
-> >> With this patch we only set the interrupt mask if request_irq() was successful.
-> >> 
-> >> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> > This has been obsolescent for a while; time for the final push.
 > > 
-> > Ok, but this is a non-serious error case. If request_irq() fails here,
-> > the driver is going to fail to load and on the failure path of
-> > sky2_probe will reset the chip on the way out.
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: Richard Kuo <rkuo@codeaurora.org>
+> > Cc: linux-hexagon@vger.kernel.org
+> > ---
+> >  arch/hexagon/kernel/smp.c |    8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
 > 
-> So, ACK for net-next?  Toss it?  What?
+> Did I ever send a Signed-off-by for this?  I thought I did but I can't
+> find evidence of it.  Just in case...
+> 
+> 
+> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
-Put it in net-next, no need for net or stable.
+
+And, sorry about that, I really meant...
+
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
+
+
+
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
