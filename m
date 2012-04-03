@@ -1,140 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab2DCNtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 09:49:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57968 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab2DCNtv (ORCPT
+	id S1754309Ab2DCNwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 09:52:03 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49267 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab2DCNwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 09:49:51 -0400
-Message-ID: <4F7AFFEC.1010805@pengutronix.de>
-Date: Tue, 03 Apr 2012 15:49:32 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Tue, 3 Apr 2012 09:52:00 -0400
+Message-ID: <4F7B007C.50201@linaro.org>
+Date: Tue, 03 Apr 2012 15:51:56 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: "AnilKumar, Chimata" <anilkumar@ti.com>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
-        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: Re: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-References: <1333456339-9372-1-git-send-email-anilkumar@ti.com> <4F7AF0C7.7020506@grandegger.com> <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com>
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com>
-X-Enigmail-Version: 1.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigEB9F6E298CEEF679EBD51F14"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: lenb@kernel.org, khilman@ti.com, deepthi@linux.vnet.ibm.com,
+        g.trinabh@gmail.com, arjan@infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH] cpuidle: Avoid possible NULL pointer dereference in __cpuidle_register_device()
+References: <20120402144422.11574.83174.stgit@srivatsabhat.in.ibm.com> <4F79FE8F.1040708@linaro.org> <4F7AE42F.9080800@linux.vnet.ibm.com> <4F7AE831.507@linaro.org> <4F7AF7FE.5070307@linux.vnet.ibm.com>
+In-Reply-To: <4F7AF7FE.5070307@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigEB9F6E298CEEF679EBD51F14
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 04/03/2012 03:41 PM, AnilKumar, Chimata wrote:
-> Hi Wolfgang,
->=20
-> Thanks for reviewing the patch
->=20
-> On Tue, Apr 03, 2012 at 18:14:55, Wolfgang Grandegger wrote:
->> On 04/03/2012 02:32 PM, AnilKumar Ch wrote:
->>> This patch adds the support for Bosch D_CAN controller.
+On 04/03/2012 03:15 PM, Srivatsa S. Bhat wrote:
+> On 04/03/2012 05:38 PM, Daniel Lezcano wrote:
+>
+>> On 04/03/2012 01:51 PM, Srivatsa S. Bhat wrote:
+>>> On 04/03/2012 01:01 AM, Daniel Lezcano wrote:
 >>>
->>> Bosch D_CAN controller is a full-CAN implementation compliant to
->>> CAN protocol version 2.0 part A and B. Bosch D_CAN user manual
->>> can be obtained from: http://www.semiconductors.bosch.de/media/
->>> en/pdf/ipmodules_1/can/d_can_users_manual_111.pdf
+>>>> On 04/02/2012 04:44 PM, Srivatsa S. Bhat wrote:
+>>>>> In __cpuidle_register_device(), "dev->cpu" is used before checking if
+>>>>> dev is
+>>>>> non-NULL. Fix it.
+>>>>>
+>>>>> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+>>>>> ---
+>>>>
+>>>> That should be fixed at the caller level. Usually, static function does
+>>>> not check the function parameters, it is up to the exported function to
+>>>> do that. It is supposed the static functions are called with valid
+>>>> parameters.
+>>>>
 >>>
->>> D_CAN device is used on many SoCs like AM335x, DM8148 and DM813x
->>> EVMs from TI, D_CAN details on AM335x can be accessed from:
->>> http://www.ti.com/lit/ug/spruh73c/spruh73c.pdf
 >>>
->>> D_CAN can be configurable for 16, 32, 64 and 128 message objects.
->>> The driver implementation is based on 64 message objects.
+>>> Ok, good point! I hadn't thought about that.. I just happened to notice
+>>> that in __cpuidle_register_device(), the dev == NULL check is performed
+>>> _after_ dereferencing it, which made the check useless. So I tried to
+>>> fix that within that function. But thanks for pointing out the
+>>> semantics..
 >>>
->>> Following are the design choices made while writing the controller
->>> driver:
->>> 1. Interface Register set IF0 has be used for receive and IF1 is
->>>    used for transmit message objects.
->>> 2. Out of the total Message objects available, half of it are kept
->>>    aside for RX purposes and the rest for TX purposes.
->>> 3. NAPI implementation is such that both the TX and RX paths
->>>    functions in polling mode.
+>>>> There are two callers for __cpuidle_register_device:
+>>>>    * cpuidle_register_device
+>>>>    * cpuidle_enable_device
+>>>>
+>>>> Both of them do not check 'dev' is a valid parameter. They should as
+>>>> they are exported and could be used by an external module. IMHO, BUG_ON
+>>>> could be used here if dev == NULL.
+>>>>
 >>>
->>> Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+>>>
+>>> BUG_ON? That would crash the system.. which might be unnecessary..
 >>
->> Please explain why this CAN controller cannot be handled by the existi=
-ng
->> C_CAN driver, eventually with some extensions. The register layout see=
-ms
->> almost identical, at least.
+>> Mmh, yes, I agree. never mind.
 >>
->> Wolfgang.
+>>> How about checking if dev == NULL in the 2 callers like you suggested
+>>> and returning -EINVAL if dev is indeed NULL?
+>>> (And of course no checks for dev == NULL in __cpuidle_register_device).
 >>
->=20
-> These are the some of the pointers I can say, why I had gone for separa=
-te
-> file instead of existing driver:
-> * In case of D_CAN driver we can see all the registers are 32bit length=
+>> Ok for me.
+>>
+>
+>
+> Great! Here is the updated patch:
+>
+> ---
+>
+> From: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH v2] cpuidle: Add checks to avoid NULL pointer dereference
+>
+> The existing check for dev == NULL in __cpuidle_register_device() is rendered
+> useless because dev is dereferenced before the check itself. Moreover,
+> correctly speaking, it is the job of the callers of this function, i.e.,
+> cpuidle_register_device()&  cpuidle_enable_device() (which also happen to be
+> exported functions) to ensure that __cpuidle_register_device() is called with
+> a non-NULL dev.
+>
+> So add the necessary dev == NULL checks in the two callers and remove the
+> (useless) check from __cpuidle_register_device().
+>
+> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
 
->   but in case of C_CAN registers are in 16bit length.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-How many bits in these 32 bit registers are used?
+Thanks
+   -- Daniel
 
-> * Some of the registers, bit masks are different, so we have to add
->   checks on every API for differentiating the kind of device
+ps : shouldn't this patch be sent in a separate email ?
 
-Which registers are this? Can you give us an example?
+> ---
+>
+>   drivers/cpuidle/cpuidle.c |    8 ++++++--
+>   1 files changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 87411ce..eae2f11 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -291,6 +291,9 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+>   	int ret, i;
+>   	struct cpuidle_driver *drv = cpuidle_get_driver();
+>
+> +	if (!dev)
+> +		return -EINVAL;
+> +
+>   	if (dev->enabled)
+>   		return 0;
+>   	if (!drv || !cpuidle_curr_governor)
+> @@ -375,8 +378,6 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+>   	struct device *cpu_dev = get_cpu_device((unsigned long)dev->cpu);
+>   	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+>
+> -	if (!dev)
+> -		return -EINVAL;
+>   	if (!try_module_get(cpuidle_driver->owner))
+>   		return -EINVAL;
+>
+> @@ -401,6 +402,9 @@ int cpuidle_register_device(struct cpuidle_device *dev)
+>   {
+>   	int ret;
+>
+> +	if (!dev)
+> +		return -EINVAL;
+> +
+>   	mutex_lock(&cpuidle_lock);
+>
+>   	if ((ret = __cpuidle_register_device(dev))) {
+>
+>
 
-> * In case of D_CAN we have some extra features like direct message RAM
->   access, DMA support, TX/RX pins can be used as GPIO lines (if applica=
-ble),
->   more interrupt lines and three sets of interface registers.
 
-Which of these features are used in you driver?
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-> * Wait timings while init bit set/reset during bit-timing initializatio=
-n
->   are different in both the cases
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-That's not the hot code path, so some ifs shouldn't hurt.
-
-> * bittiming configurations are different.
-
-see above.
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigEB9F6E298CEEF679EBD51F14
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk96/+8ACgkQjTAFq1RaXHO53gCgkq0jzVt8i5QfSsBaEy/uRQEf
-jgkAni5e8HdmpnfJfQX6LqV6Rf9lSBxU
-=D1CR
------END PGP SIGNATURE-----
-
---------------enigEB9F6E298CEEF679EBD51F14--
