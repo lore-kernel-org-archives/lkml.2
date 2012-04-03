@@ -1,149 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab2DCMBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 08:01:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39888 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab2DCMBx (ORCPT
+	id S1753873Ab2DCMIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 08:08:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51992 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325Ab2DCMIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 08:01:53 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-mips@linux-mips.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Masanari Iida <standby24x7@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH] [trivial] mips: Fix typo in mips
-Date: Tue,  3 Apr 2012 21:01:45 +0900
-Message-Id: <1333454506-7625-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.10.rc3.11.gd8282
+	Tue, 3 Apr 2012 08:08:22 -0400
+Message-ID: <4F7AE831.507@linaro.org>
+Date: Tue, 03 Apr 2012 14:08:17 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: lenb@kernel.org, khilman@ti.com, deepthi@linux.vnet.ibm.com,
+        g.trinabh@gmail.com, arjan@infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH] cpuidle: Avoid possible NULL pointer dereference in __cpuidle_register_device()
+References: <20120402144422.11574.83174.stgit@srivatsabhat.in.ibm.com> <4F79FE8F.1040708@linaro.org> <4F7AE42F.9080800@linux.vnet.ibm.com>
+In-Reply-To: <4F7AE42F.9080800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in printk messages, comments and macro.
+On 04/03/2012 01:51 PM, Srivatsa S. Bhat wrote:
+> On 04/03/2012 01:01 AM, Daniel Lezcano wrote:
+>
+>> On 04/02/2012 04:44 PM, Srivatsa S. Bhat wrote:
+>>> In __cpuidle_register_device(), "dev->cpu" is used before checking if
+>>> dev is
+>>> non-NULL. Fix it.
+>>>
+>>> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+>>> ---
+>>
+>> That should be fixed at the caller level. Usually, static function does
+>> not check the function parameters, it is up to the exported function to
+>> do that. It is supposed the static functions are called with valid
+>> parameters.
+>>
+>
+>
+> Ok, good point! I hadn't thought about that.. I just happened to notice
+> that in __cpuidle_register_device(), the dev == NULL check is performed
+> _after_ dereferencing it, which made the check useless. So I tried to
+> fix that within that function. But thanks for pointing out the semantics..
+>
+>> There are two callers for __cpuidle_register_device:
+>>   * cpuidle_register_device
+>>   * cpuidle_enable_device
+>>
+>> Both of them do not check 'dev' is a valid parameter. They should as
+>> they are exported and could be used by an external module. IMHO, BUG_ON
+>> could be used here if dev == NULL.
+>>
+>
+>
+> BUG_ON? That would crash the system.. which might be unnecessary..
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
----
- arch/mips/Kconfig                |    4 ++--
- arch/mips/Kconfig.debug          |    2 +-
- arch/mips/lantiq/xway/dma.c      |    6 +++---
- arch/mips/lantiq/xway/gpio.c     |    2 +-
- arch/mips/lantiq/xway/gpio_ebu.c |    2 +-
- arch/mips/lantiq/xway/gpio_stp.c |    2 +-
- arch/mips/pci/pci-lantiq.c       |    2 +-
- 7 files changed, 10 insertions(+), 10 deletions(-)
+Mmh, yes, I agree. never mind.
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index ce30e2f..923a6c3 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -1001,12 +1001,12 @@ config HOLES_IN_ZONE
- 	bool
- 
- #
--# Endianess selection.  Sufficiently obscure so many users don't know what to
-+# Endianness selection.  Sufficiently obscure so many users don't know what to
- # answer,so we try hard to limit the available choices.  Also the use of a
- # choice statement should be more obvious to the user.
- #
- choice
--	prompt "Endianess selection"
-+	prompt "Endianness selection"
- 	help
- 	  Some MIPS machines can be configured for either little or big endian
- 	  byte order. These modes require different kernels and a different
-diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
-index 83ed00a..5a43aa0 100644
---- a/arch/mips/Kconfig.debug
-+++ b/arch/mips/Kconfig.debug
-@@ -57,7 +57,7 @@ config CMDLINE
- 	  options.
- 
- config CMDLINE_OVERRIDE
--	bool "Built-in command line overrides firware arguments"
-+	bool "Built-in command line overrides firmware arguments"
- 	default n
- 	depends on CMDLINE_BOOL
- 	help
-diff --git a/arch/mips/lantiq/xway/dma.c b/arch/mips/lantiq/xway/dma.c
-index b210e93..d1eafb0 100644
---- a/arch/mips/lantiq/xway/dma.c
-+++ b/arch/mips/lantiq/xway/dma.c
-@@ -47,7 +47,7 @@
- #define DMA_CLK_DIV4		BIT(6)		/* polling clock divider */
- #define DMA_2W_BURST		BIT(1)		/* 2 word burst length */
- #define DMA_MAX_CHANNEL		20		/* the soc has 20 channels */
--#define DMA_ETOP_ENDIANESS	(0xf << 8) /* endianess swap etop channels */
-+#define DMA_ETOP_ENDIANNESS	(0xf << 8) /* endianness swap etop channels */
- #define DMA_WEIGHT	(BIT(17) | BIT(16))	/* default channel wheight */
- 
- #define ltq_dma_r32(x)			ltq_r32(ltq_dma_membase + (x))
-@@ -197,10 +197,10 @@ ltq_dma_init_port(int p)
- 	switch (p) {
- 	case DMA_PORT_ETOP:
- 		/*
--		 * Tell the DMA engine to swap the endianess of data frames and
-+		 * Tell the DMA engine to swap the endianness of data frames and
- 		 * drop packets if the channel arbitration fails.
- 		 */
--		ltq_dma_w32_mask(0, DMA_ETOP_ENDIANESS | DMA_PDEN,
-+		ltq_dma_w32_mask(0, DMA_ETOP_ENDIANNESS | DMA_PDEN,
- 			LTQ_DMA_PCTRL);
- 		break;
- 
-diff --git a/arch/mips/lantiq/xway/gpio.c b/arch/mips/lantiq/xway/gpio.c
-index d2fa98f..c429a5b 100644
---- a/arch/mips/lantiq/xway/gpio.c
-+++ b/arch/mips/lantiq/xway/gpio.c
-@@ -188,7 +188,7 @@ int __init ltq_gpio_init(void)
- 	int ret = platform_driver_register(&ltq_gpio_driver);
- 
- 	if (ret)
--		pr_info("ltq_gpio : Error registering platfom driver!");
-+		pr_info("ltq_gpio : Error registering platform driver!");
- 	return ret;
- }
- 
-diff --git a/arch/mips/lantiq/xway/gpio_ebu.c b/arch/mips/lantiq/xway/gpio_ebu.c
-index b91c7f1..aae1717 100644
---- a/arch/mips/lantiq/xway/gpio_ebu.c
-+++ b/arch/mips/lantiq/xway/gpio_ebu.c
-@@ -119,7 +119,7 @@ static int __init ltq_ebu_init(void)
- 	int ret = platform_driver_register(&ltq_ebu_driver);
- 
- 	if (ret)
--		pr_info("ltq_ebu : Error registering platfom driver!");
-+		pr_info("ltq_ebu : Error registering platform driver!");
- 	return ret;
- }
- 
-diff --git a/arch/mips/lantiq/xway/gpio_stp.c b/arch/mips/lantiq/xway/gpio_stp.c
-index ff9991c..fd07d87 100644
---- a/arch/mips/lantiq/xway/gpio_stp.c
-+++ b/arch/mips/lantiq/xway/gpio_stp.c
-@@ -150,7 +150,7 @@ int __init ltq_stp_init(void)
- 	int ret = platform_driver_register(&ltq_stp_driver);
- 
- 	if (ret)
--		pr_info("ltq_stp: error registering platfom driver");
-+		pr_info("ltq_stp: error registering platform driver");
- 	return ret;
- }
- 
-diff --git a/arch/mips/pci/pci-lantiq.c b/arch/mips/pci/pci-lantiq.c
-index 030c77e..70fdf2c 100644
---- a/arch/mips/pci/pci-lantiq.c
-+++ b/arch/mips/pci/pci-lantiq.c
-@@ -297,7 +297,7 @@ int __init pcibios_init(void)
- {
- 	int ret = platform_driver_register(&ltq_pci_driver);
- 	if (ret)
--		printk(KERN_INFO "ltq_pci: Error registering platfom driver!");
-+		printk(KERN_INFO "ltq_pci: Error registering platform driver!");
- 	return ret;
- }
- 
+> How about checking if dev == NULL in the 2 callers like you suggested
+> and returning -EINVAL if dev is indeed NULL?
+> (And of course no checks for dev == NULL in __cpuidle_register_device).
+
+Ok for me.
+
+> Thank you for the review!
+
+You are welcome :)
+
+Thanks
+   -- Daniel
+
 -- 
-1.7.10.rc3.11.gd8282
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
