@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2DCOK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:10:29 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:49882 "EHLO
+	id S1755103Ab2DCONn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:13:43 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:49906 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab2DCOK0 (ORCPT
+	with ESMTP id S1754672Ab2DCOK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:10:26 -0400
-Date: Tue, 03 Apr 2012 16:10:09 +0200
+	Tue, 3 Apr 2012 10:10:28 -0400
+Date: Tue, 03 Apr 2012 16:10:14 +0200
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv24 04/16] mm: compaction: introduce isolate_freepages_range()
+Subject: [PATCHv24 09/16] mm: page_isolation: MIGRATE_CMA isolation functions
+ added
 In-reply-to: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -28,7 +29,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
         Sandeep Patil <psandeep.s@gmail.com>
-Message-id: <1333462221-3987-5-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1333462221-3987-10-git-send-email-m.szyprowski@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.9.1
 Content-type: TEXT/PLAIN
@@ -40,15 +41,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-This commit introduces isolate_freepages_range() function which
-generalises isolate_freepages_block() so that it can be used on
-arbitrary PFN ranges.
-
-isolate_freepages_block() is left with only minor changes.
+This commit changes various functions that change pages and
+pageblocks migrate type between MIGRATE_ISOLATE and
+MIGRATE_MOVABLE in such a way as to allow to work with
+MIGRATE_CMA migrate type.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Tested-by: Rob Clark <rob.clark@linaro.org>
 Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
@@ -56,177 +55,245 @@ Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 Tested-by: Robert Nelson <robertcnelson@gmail.com>
 Tested-by: Barry Song <Baohua.Song@csr.com>
 ---
- mm/compaction.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 93 insertions(+), 18 deletions(-)
+ include/linux/gfp.h            |    3 ++-
+ include/linux/page-isolation.h |   18 +++++++++---------
+ mm/memory-failure.c            |    2 +-
+ mm/memory_hotplug.c            |    6 +++---
+ mm/page_alloc.c                |   17 +++++++++++------
+ mm/page_isolation.c            |   15 ++++++++-------
+ 6 files changed, 34 insertions(+), 27 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index d9d7b35..06b198f 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -54,24 +54,20 @@ static unsigned long release_freepages(struct list_head *freelist)
- 	return count;
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 78d32a7..1e49be4 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -394,7 +394,8 @@ static inline bool pm_suspended_storage(void)
+ #ifdef CONFIG_CMA
+ 
+ /* The below functions must be run on a range from a single zone. */
+-extern int alloc_contig_range(unsigned long start, unsigned long end);
++extern int alloc_contig_range(unsigned long start, unsigned long end,
++			      unsigned migratetype);
+ extern void free_contig_range(unsigned long pfn, unsigned nr_pages);
+ 
+ /* CMA stuff */
+diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+index 051c1b1..3bdcab3 100644
+--- a/include/linux/page-isolation.h
++++ b/include/linux/page-isolation.h
+@@ -3,7 +3,7 @@
+ 
+ /*
+  * Changes migrate type in [start_pfn, end_pfn) to be MIGRATE_ISOLATE.
+- * If specified range includes migrate types other than MOVABLE,
++ * If specified range includes migrate types other than MOVABLE or CMA,
+  * this will fail with -EBUSY.
+  *
+  * For isolating all pages in the range finally, the caller have to
+@@ -11,27 +11,27 @@
+  * test it.
+  */
+ extern int
+-start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn);
++start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
++			 unsigned migratetype);
+ 
+ /*
+  * Changes MIGRATE_ISOLATE to MIGRATE_MOVABLE.
+  * target range is [start_pfn, end_pfn)
+  */
+ extern int
+-undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn);
++undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
++			unsigned migratetype);
+ 
+ /*
+- * test all pages in [start_pfn, end_pfn)are isolated or not.
++ * Test all pages in [start_pfn, end_pfn) are isolated or not.
+  */
+-extern int
+-test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
++int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
+ 
+ /*
+- * Internal funcs.Changes pageblock's migrate type.
+- * Please use make_pagetype_isolated()/make_pagetype_movable().
++ * Internal functions. Changes pageblock's migrate type.
+  */
+ extern int set_migratetype_isolate(struct page *page);
+-extern void unset_migratetype_isolate(struct page *page);
++extern void unset_migratetype_isolate(struct page *page, unsigned migratetype);
+ 
+ 
+ #endif
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 97cc2733..c99ad4e 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1404,7 +1404,7 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
+ 		/* Not a free page */
+ 		ret = 1;
+ 	}
+-	unset_migratetype_isolate(p);
++	unset_migratetype_isolate(p, MIGRATE_MOVABLE);
+ 	unlock_memory_hotplug();
+ 	return ret;
+ }
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 6629faf..fc898cb 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -891,7 +891,7 @@ static int __ref offline_pages(unsigned long start_pfn,
+ 	nr_pages = end_pfn - start_pfn;
+ 
+ 	/* set above range as isolated */
+-	ret = start_isolate_page_range(start_pfn, end_pfn);
++	ret = start_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -956,7 +956,7 @@ repeat:
+ 	   We cannot do rollback at this point. */
+ 	offline_isolated_pages(start_pfn, end_pfn);
+ 	/* reset pagetype flags and makes migrate type to be MOVABLE */
+-	undo_isolate_page_range(start_pfn, end_pfn);
++	undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
+ 	/* removal success */
+ 	zone->present_pages -= offlined_pages;
+ 	zone->zone_pgdat->node_present_pages -= offlined_pages;
+@@ -981,7 +981,7 @@ failed_removal:
+ 		start_pfn, end_pfn);
+ 	memory_notify(MEM_CANCEL_OFFLINE, &arg);
+ 	/* pushback to free area */
+-	undo_isolate_page_range(start_pfn, end_pfn);
++	undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
+ 
+ out:
+ 	unlock_memory_hotplug();
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 26d8b9f..216e575 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5582,7 +5582,7 @@ out:
+ 	return ret;
  }
  
--/* Isolate free pages onto a private freelist. Must hold zone->lock */
--static unsigned long isolate_freepages_block(struct zone *zone,
--				unsigned long blockpfn,
--				struct list_head *freelist)
-+/*
-+ * Isolate free pages onto a private freelist. Caller must hold zone->lock.
-+ * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-+ * pages inside of the pageblock (even though it may still end up isolating
-+ * some pages).
-+ */
-+static unsigned long isolate_freepages_block(unsigned long blockpfn,
-+				unsigned long end_pfn,
-+				struct list_head *freelist,
-+				bool strict)
+-void unset_migratetype_isolate(struct page *page)
++void unset_migratetype_isolate(struct page *page, unsigned migratetype)
  {
--	unsigned long zone_end_pfn, end_pfn;
- 	int nr_scanned = 0, total_isolated = 0;
- 	struct page *cursor;
- 
--	/* Get the last PFN we should scan for free pages at */
--	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
--	end_pfn = min(blockpfn + pageblock_nr_pages, zone_end_pfn);
--
--	/* Find the first usable PFN in the block to initialse page cursor */
--	for (; blockpfn < end_pfn; blockpfn++) {
--		if (pfn_valid_within(blockpfn))
--			break;
--	}
- 	cursor = pfn_to_page(blockpfn);
- 
- 	/* Isolate free pages. This assumes the block is valid */
-@@ -79,15 +75,23 @@ static unsigned long isolate_freepages_block(struct zone *zone,
- 		int isolated, i;
- 		struct page *page = cursor;
- 
--		if (!pfn_valid_within(blockpfn))
-+		if (!pfn_valid_within(blockpfn)) {
-+			if (strict)
-+				return 0;
- 			continue;
-+		}
- 		nr_scanned++;
- 
--		if (!PageBuddy(page))
-+		if (!PageBuddy(page)) {
-+			if (strict)
-+				return 0;
- 			continue;
-+		}
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
-+		if (!isolated && strict)
-+			return 0;
- 		total_isolated += isolated;
- 		for (i = 0; i < isolated; i++) {
- 			list_add(&page->lru, freelist);
-@@ -105,6 +109,73 @@ static unsigned long isolate_freepages_block(struct zone *zone,
- 	return total_isolated;
- }
- 
-+/**
-+ * isolate_freepages_range() - isolate free pages.
-+ * @start_pfn: The first PFN to start isolating.
-+ * @end_pfn:   The one-past-last PFN.
-+ *
-+ * Non-free pages, invalid PFNs, or zone boundaries within the
-+ * [start_pfn, end_pfn) range are considered errors, cause function to
-+ * undo its actions and return zero.
-+ *
-+ * Otherwise, function returns one-past-the-last PFN of isolated page
-+ * (which may be greater then end_pfn if end fell in a middle of
-+ * a free page).
-+ */
-+static unsigned long
-+isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	unsigned long isolated, pfn, block_end_pfn, flags;
-+	struct zone *zone = NULL;
-+	LIST_HEAD(freelist);
-+
-+	if (pfn_valid(start_pfn))
-+		zone = page_zone(pfn_to_page(start_pfn));
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-+		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
-+			break;
-+
-+		/*
-+		 * On subsequent iterations ALIGN() is actually not needed,
-+		 * but we keep it that we not to complicate the code.
-+		 */
-+		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
-+		block_end_pfn = min(block_end_pfn, end_pfn);
-+
-+		spin_lock_irqsave(&zone->lock, flags);
-+		isolated = isolate_freepages_block(pfn, block_end_pfn,
-+						   &freelist, true);
-+		spin_unlock_irqrestore(&zone->lock, flags);
-+
-+		/*
-+		 * In strict mode, isolate_freepages_block() returns 0 if
-+		 * there are any holes in the block (ie. invalid PFNs or
-+		 * non-free pages).
-+		 */
-+		if (!isolated)
-+			break;
-+
-+		/*
-+		 * If we managed to isolate pages, it is always (1 << n) *
-+		 * pageblock_nr_pages for some non-negative n.  (Max order
-+		 * page may span two pageblocks).
-+		 */
-+	}
-+
-+	/* split_free_page does not map the pages */
-+	map_pages(&freelist);
-+
-+	if (pfn < end_pfn) {
-+		/* Loop terminated early, cleanup. */
-+		release_freepages(&freelist);
-+		return 0;
-+	}
-+
-+	/* We don't use freelists for anything. */
-+	return pfn;
-+}
-+
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
-@@ -145,7 +216,7 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn;
-+	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
+ 	struct zone *zone;
  	unsigned long flags;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
-@@ -165,6 +236,8 @@ static void isolate_freepages(struct zone *zone,
+@@ -5590,8 +5590,8 @@ void unset_migratetype_isolate(struct page *page)
+ 	spin_lock_irqsave(&zone->lock, flags);
+ 	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+ 		goto out;
+-	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+-	move_freepages_block(zone, page, MIGRATE_MOVABLE);
++	set_pageblock_migratetype(page, migratetype);
++	move_freepages_block(zone, page, migratetype);
+ out:
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ }
+@@ -5669,6 +5669,10 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+  * alloc_contig_range() -- tries to allocate given range of pages
+  * @start:	start PFN to allocate
+  * @end:	one-past-the-last PFN to allocate
++ * @migratetype:	migratetype of the underlaying pageblocks (either
++ *			#MIGRATE_MOVABLE or #MIGRATE_CMA).  All pageblocks
++ *			in range must have the same migratetype and it must
++ *			be either of the two.
+  *
+  * The PFN range does not have to be pageblock or MAX_ORDER_NR_PAGES
+  * aligned, however it's the caller's responsibility to guarantee that
+@@ -5681,7 +5685,8 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+  * pages which PFN is in [start, end) are allocated for the caller and
+  * need to be freed with free_contig_range().
+  */
+-int alloc_contig_range(unsigned long start, unsigned long end)
++int alloc_contig_range(unsigned long start, unsigned long end,
++		       unsigned migratetype)
+ {
+ 	struct zone *zone = page_zone(pfn_to_page(start));
+ 	unsigned long outer_start, outer_end;
+@@ -5712,7 +5717,7 @@ int alloc_contig_range(unsigned long start, unsigned long end)
  	 */
- 	high_pfn = min(low_pfn, pfn);
  
-+	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+
- 	/*
- 	 * Isolate free pages until enough are available to migrate the
- 	 * pages on cc->migratepages. We stop searching if the migrate
-@@ -201,7 +274,9 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
- 		spin_lock_irqsave(&zone->lock, flags);
- 		if (suitable_migration_target(page)) {
--			isolated = isolate_freepages_block(zone, pfn, freelist);
-+			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
-+			isolated = isolate_freepages_block(pfn, end_pfn,
-+							   freelist, false);
- 			nr_freepages += isolated;
- 		}
- 		spin_unlock_irqrestore(&zone->lock, flags);
+ 	ret = start_isolate_page_range(pfn_max_align_down(start),
+-				       pfn_max_align_up(end));
++				       pfn_max_align_up(end), migratetype);
+ 	if (ret)
+ 		goto done;
+ 
+@@ -5772,7 +5777,7 @@ int alloc_contig_range(unsigned long start, unsigned long end)
+ 
+ done:
+ 	undo_isolate_page_range(pfn_max_align_down(start),
+-				pfn_max_align_up(end));
++				pfn_max_align_up(end), migratetype);
+ 	return ret;
+ }
+ 
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index 4ae42bb..c9f0477 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -24,6 +24,7 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
+  * to be MIGRATE_ISOLATE.
+  * @start_pfn: The lower PFN of the range to be isolated.
+  * @end_pfn: The upper PFN of the range to be isolated.
++ * @migratetype: migrate type to set in error recovery.
+  *
+  * Making page-allocation-type to be MIGRATE_ISOLATE means free pages in
+  * the range will never be allocated. Any free pages and pages freed in the
+@@ -32,8 +33,8 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
+  * start_pfn/end_pfn must be aligned to pageblock_order.
+  * Returns 0 on success and -EBUSY if any part of range cannot be isolated.
+  */
+-int
+-start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
++int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
++			     unsigned migratetype)
+ {
+ 	unsigned long pfn;
+ 	unsigned long undo_pfn;
+@@ -56,7 +57,7 @@ undo:
+ 	for (pfn = start_pfn;
+ 	     pfn < undo_pfn;
+ 	     pfn += pageblock_nr_pages)
+-		unset_migratetype_isolate(pfn_to_page(pfn));
++		unset_migratetype_isolate(pfn_to_page(pfn), migratetype);
+ 
+ 	return -EBUSY;
+ }
+@@ -64,8 +65,8 @@ undo:
+ /*
+  * Make isolated pages available again.
+  */
+-int
+-undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
++int undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
++			    unsigned migratetype)
+ {
+ 	unsigned long pfn;
+ 	struct page *page;
+@@ -77,7 +78,7 @@ undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
+ 		page = __first_valid_page(pfn, pageblock_nr_pages);
+ 		if (!page || get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+ 			continue;
+-		unset_migratetype_isolate(page);
++		unset_migratetype_isolate(page, migratetype);
+ 	}
+ 	return 0;
+ }
+@@ -86,7 +87,7 @@ undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
+  * all pages in [start_pfn...end_pfn) must be in the same zone.
+  * zone->lock must be held before call this.
+  *
+- * Returns 1 if all pages in the range is isolated.
++ * Returns 1 if all pages in the range are isolated.
+  */
+ static int
+ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
 -- 
 1.7.1.569.g6f426
 
