@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab2DCWlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:41:32 -0400
-Received: from uhura.skim.hs-owl.de ([193.174.118.81]:48991 "EHLO
-	uhura.skim.hs-owl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab2DCWla (ORCPT
+	id S1755763Ab2DCWmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:42:15 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39143 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab2DCWmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:41:30 -0400
-Message-ID: <4F7B7C95.6050406@googlemail.com>
-Date: Wed, 4 Apr 2012 00:41:25 +0200
-From: Jan Seiffert <kaffeemonster@googlemail.com>
-Reply-To: <kaffeemonster@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Firefox/11.0 SeaMonkey/2.8
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION][PATCH V4 1/3] bpf jit: Make the filter.c::__load_pointer
- helper non-static for the jits
-References: <4F75CC63.10405@googlemail.com> <20120403.180212.1644422418766062447.davem@davemloft.net> <4F7B7911.5090307@googlemail.com> <20120403.182822.530336438141782843.davem@davemloft.net>
-In-Reply-To: <20120403.182822.530336438141782843.davem@davemloft.net>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 3 Apr 2012 18:42:14 -0400
+Date: Tue, 03 Apr 2012 18:40:04 -0400 (EDT)
+Message-Id: <20120403.184004.2056266545823149252.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: cmetcalf@tilera.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tilepro ethernet driver: fix a few minor issues
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120404083738.0b0f09ffc1f8c5a105c240eb@canb.auug.org.au>
+References: <201203302325.q2UNPm8j012403@farm-0012.internal.tilera.com>
+	<20120403.182335.782073108961783777.davem@davemloft.net>
+	<20120404083738.0b0f09ffc1f8c5a105c240eb@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Skim-SendBy: exchange.hs-owl.de on Wed, 04 Apr 2012 00:41:28 +0200
-X-SA-Exim-Connect-IP: 193.174.118.178
-X-SA-Exim-Mail-From: kaffeemonster@googlemail.com
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 15:40:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller schrieb:
-> From: Jan Seiffert <kaffeemonster@googlemail.com>
-> Date: Wed, 4 Apr 2012 00:26:25 +0200
-> 
->> Is that the preferred comment style in net/ ? Coding style says
->> first line empty. Or just to match the rest of the file?
-> 
-> I'm not getting into this discussion right now, sorry.
-> 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 4 Apr 2012 08:37:38 +1000
 
-Oh, sorry, i guess you misunderstood me.
-I didn't want to discuss anything, I'm fine either way,
-i just wanted to know what's the rule, so i can take notes and
-prevent the same error in the future.
+> Hi Dave,
+> 
+> On Tue, 03 Apr 2012 18:23:35 -0400 (EDT) David Miller <davem@davemloft.net> wrote:
+>>
+>> Format the comment:
+>> 
+>> 	/* Like
+>> 	 * this.
+>> 	 */
+>> 
+>> not:
+>> 
+>> 	/*
+>> 	 * Like
+>> 	 * this.
+>> 	 */
+> 
+> People may be confused because Documentation/CodingStyle says to use the
+> latter ...
 
-Greetings
-	Jan
+I refuse to be dragged into this conversation, I'm completely aware
+of the exact situation and I've stated my peace on this time and time
+again.
+
