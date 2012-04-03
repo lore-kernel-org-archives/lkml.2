@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab2DCMjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 08:39:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56855 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab2DCMji convert rfc822-to-8bit (ORCPT
+	id S1754530Ab2DCMk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 08:40:29 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:33281
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753774Ab2DCMk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 08:39:38 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
-        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Topic: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Index: AQHNEZXW4WifiYIc20mGGxLe7+r04paJCedg
-Date: Tue, 3 Apr 2012 12:39:23 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC1317D84CC@DBDE01.ent.ti.com>
-References: <1333456339-9372-1-git-send-email-anilkumar@ti.com>
-In-Reply-To: <1333456339-9372-1-git-send-email-anilkumar@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.132.227]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Apr 2012 08:40:27 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2dh2a8h668h839h93fhd24hd2bh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: Regmap group read and write issue for special case of PMIC
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <broonie@opensource.wolfsonmicro.com>, <Anthony.Olech@diasemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 3 Apr 2012 18:05:39 +0530
+Message-ID: <1333456539.24292.24.camel@dhruva>
 MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hi,
 
-Subject line of this patch should be
-"ARM: CAN: d_can: Add support for Bosch D_CAN controller"
+DA9052/53 PMIC in SPI mode does not support group read and write but in
+I2C mode group read and write are supported.
 
-Regards
-AnilKumar
+This special case of DA9052/53 like PMIC needs to be handled in the
+regmap. For this can we, in regmap introduce a new flag and its value
+determines whether to translate internally, the regmap group read and
+write call into a series of single read and write calls Or not?
+
+Regards,
+Ashish
+
+
