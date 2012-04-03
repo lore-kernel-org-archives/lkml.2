@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab2DCXMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 19:12:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31874 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab2DCXMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 19:12:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="126766955"
-Subject: Re: [x86 PAT PATCH 0/2] x86 PAT vm_flag code refactoring
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Pallipadi Venkatesh <venki@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Date: Tue, 03 Apr 2012 16:14:28 -0700
-In-Reply-To: <4F7A92AB.5010809@openvz.org>
-References: <20120331170947.7773.46399.stgit@zurg>
-	 <1333413969-30761-1-git-send-email-suresh.b.siddha@intel.com>
-	 <4F7A92AB.5010809@openvz.org>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1333494871.12400.10.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1755731Ab2DCXO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 19:14:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63275 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107Ab2DCXO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 19:14:26 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: dhowells@redhat.com
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [PATCH v2] avr32: fix nop compile fails from system.h split up
+Date: Tue,  3 Apr 2012 19:14:04 -0400
+Message-Id: <1333494844-3802-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 10:03 +0400, Konstantin Khlebnikov wrote:
-> Suresh Siddha wrote:
-> > Konstantin,
-> >
-> > On Sat, 2012-03-31 at 21:09 +0400, Konstantin Khlebnikov wrote:
-> >> v2: Do not use batched pfn reserving for single-page VMA. This is not optimal
-> >> and breaks something, because I see glitches on the screen with i915/drm driver.
-> >> With this version glitches are gone, and I see the same regions in
-> >> /sys/kernel/debug/x86/pat_memtype_list as before patch. So, please review this
-> >> carefully, probably I'm wrong somewhere, or I have triggered some hidden bug.
-> >
-> > Actually it is not a hidden bug. In the original code, we were setting
-> > VM_PFN_AT_MMAP only for remap_pfn_range() but not for the vm_insert_pfn().
-> > Also the value of 'vm_pgoff' depends on the driver/mmap_region() in the case of
-> > vm_insert_pfn(). But with your proposed code, you were setting
-> > the VM_PAT for the single-page VMA also and end-up using wrong vm_pgoff in
-> > untrack_pfn_vma().
-> 
-> But I set correct vma->vm_pgoff together with VM_PAT. But, it shouldn't work if vma is expandable...
-> 
+To fix:
 
-Also, I am not sure if we can override vm_pgoff in the fault handling
-path. For example, looking at unmap_mapping_range_tree() it does depend
-on the vm_pgoff value and it might break if we change the vm_pgoff in
-track_pfn_vma_new() (which gets called from vm_insert_pfn() as part of
-the i915_gem_fault()).
+  In file included from kernel/exit.c:61:
+  arch/avr32/include/asm/mmu_context.h: In function 'enable_mmu':
+  arch/avr32/include/asm/mmu_context.h:135: error: implicit
+  declaration of function 'nop'
 
-thanks,
-suresh
+It needs an include of the new file created in:
 
+commit ae473946586680b01c13975a3b674de23ad7c93e
 
+    "Disintegrate asm/system.h for AVR32"
+
+But since that file only contains "nop", and since other
+arch already have precedent of putting nop in asm/barrier.h
+we should just delete the new file and put nop in barrier.h
+
+Suggested-by: David Howells <dhowells@redhat.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+
+[v2: adopt dh's suggestion and assume new special_insns.h needs rm'ing]
+
+diff --git a/arch/avr32/include/asm/barrier.h b/arch/avr32/include/asm/barrier.h
+index 808001c..0961275 100644
+--- a/arch/avr32/include/asm/barrier.h
++++ b/arch/avr32/include/asm/barrier.h
+@@ -8,6 +8,8 @@
+ #ifndef __ASM_AVR32_BARRIER_H
+ #define __ASM_AVR32_BARRIER_H
+ 
++#define nop()			asm volatile("nop")
++
+ #define mb()			asm volatile("" : : : "memory")
+ #define rmb()			mb()
+ #define wmb()			asm volatile("sync 0" : : : "memory")
+diff --git a/arch/avr32/include/asm/special_insns.h b/arch/avr32/include/asm/special_insns.h
+deleted file mode 100644
+index f922218..0000000
+--- a/arch/avr32/include/asm/special_insns.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/*
+- * Copyright (C) 2004-2006 Atmel Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#ifndef __ASM_AVR32_SPECIAL_INSNS_H
+-#define __ASM_AVR32_SPECIAL_INSNS_H
+-
+-#define nop() asm volatile("nop")
+-
+-#endif /* __ASM_AVR32_SPECIAL_INSNS_H */
+-- 
+1.7.9.1
 
