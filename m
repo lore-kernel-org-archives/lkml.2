@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab2DCWMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:12:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59093 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754133Ab2DCWMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:12:22 -0400
-Date: Tue, 3 Apr 2012 15:12:21 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Haggett <simon.haggett@realvnc.com>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] usbhid: Check HID report descriptor contents after
- USB device reset
-In-Reply-To: <1333465455-17089-1-git-send-email-simon.haggett@realvnc.com>
-Message-ID: <alpine.LNX.2.00.1204031510040.9041@pobox.suse.cz>
-References: <1333465455-17089-1-git-send-email-simon.haggett@realvnc.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755458Ab2DCWOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:14:34 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41618 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754953Ab2DCWOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 18:14:33 -0400
+Message-ID: <1333491271.2695.20.camel@joe2Laptop>
+Subject: [PATCH net-next] vxge: Convert macro to inline function
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 03 Apr 2012 15:14:31 -0700
+In-Reply-To: <20120403.175837.1897033408784057713.davem@davemloft.net>
+References: <1333489992.2695.17.camel@joe2Laptop>
+	 <20120403.175837.1897033408784057713.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Apr 2012, Simon Haggett wrote:
+Convert the macro to inline function to check the arguments.
 
-> When a USB device reset occurs, usbcore will refetch the device and configuration
-> descriptors and compare them with those retrieved before the reset to ensure
-> that they have not changed. For USB HID devices, this implicitly includes the
-> HID class descriptor (as this is fetched with the configuration descriptor).
-> However, the HID report descriptor is not checked again.
-> 
-> Whilst a change in the size of the HID report descriptor will be detected (as
-> this is held in the class descriptor), content changes to the report descriptor
-> which do not result in a change in its size will be missed. If a firmware update
-> were applied to a USB HID device which resulted in such a change to the report
-> descriptor after device reset, then this would not be picked up by usbhid.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+> Longer term I'd much rather see this turned into an inline
+> function with proper type checking etc.
 
-Simon,
+Something like this?
 
-thanks for the patch. Actually the firmware update is not the only option 
-how this could happen -- there are HID bus drivers which actually patch 
-the report descriptor of the device before it is fed to the parser.
+ drivers/net/ethernet/neterion/vxge/vxge-main.c |    6 +++---
+ drivers/net/ethernet/neterion/vxge/vxge-main.h |   15 +++++++++------
+ 2 files changed, 12 insertions(+), 9 deletions(-)
 
-Your patch fixes the issue for those as well.
+diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+index ef76725..95fb611 100644
+--- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
++++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+@@ -2860,12 +2860,12 @@ static int vxge_open(struct net_device *dev)
+ 		vdev->config.rx_pause_enable);
+ 
+ 	if (vdev->vp_reset_timer.function == NULL)
+-		vxge_os_timer(vdev->vp_reset_timer,
+-			vxge_poll_vp_reset, vdev, (HZ/2));
++		vxge_os_timer(&vdev->vp_reset_timer, vxge_poll_vp_reset, vdev,
++			      HZ / 2);
+ 
+ 	/* There is no need to check for RxD leak and RxD lookup on Titan1A */
+ 	if (vdev->titan1 && vdev->vp_lockup_timer.function == NULL)
+-		vxge_os_timer(vdev->vp_lockup_timer, vxge_poll_vp_lockup, vdev,
++		vxge_os_timer(&vdev->vp_lockup_timer, vxge_poll_vp_lockup, vdev,
+ 			      HZ / 2);
+ 
+ 	set_bit(__VXGE_STATE_CARD_UP, &vdev->state);
+diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.h b/drivers/net/ethernet/neterion/vxge/vxge-main.h
+index f52a42d..35f3e75 100644
+--- a/drivers/net/ethernet/neterion/vxge/vxge-main.h
++++ b/drivers/net/ethernet/neterion/vxge/vxge-main.h
+@@ -416,12 +416,15 @@ struct vxge_tx_priv {
+ 	static int p = val; \
+ 	module_param(p, int, 0)
+ 
+-#define vxge_os_timer(timer, handle, arg, exp) do { \
+-		init_timer(&timer); \
+-		timer.function = handle; \
+-		timer.data = (unsigned long) arg; \
+-		mod_timer(&timer, (jiffies + exp)); \
+-	} while (0)
++static inline
++void vxge_os_timer(struct timer_list *timer, void (*func)(unsigned long data),
++		   struct vxgedev *vdev, unsigned long timeout)
++{
++	init_timer(timer);
++	timer->function = func;
++	timer->data = (unsigned long)vdev;
++	mod_timer(timer, jiffies + timeout);
++}
+ 
+ void vxge_initialize_ethtool_ops(struct net_device *ndev);
+ enum vxge_hw_status vxge_reset_all_vpaths(struct vxgedev *vdev);
 
-Applied, thanks.
 
--- 
-Jiri Kosina
-SUSE Labs
