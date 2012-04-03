@@ -1,157 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab2DCMLX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 08:11:23 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:47785 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab2DCMLW (ORCPT
+	id S1754412Ab2DCMOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 08:14:30 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64697 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab2DCMO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 08:11:22 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-	<1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
-	<m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-	<20120402202848.1EB833E02A7@localhost>
-X-Yow: Yow!  Now we can become alcoholics!
-Date: Tue, 03 Apr 2012 14:11:12 +0200
-In-Reply-To: <20120402202848.1EB833E02A7@localhost> (Grant Likely's message of
-	"Mon, 02 Apr 2012 14:28:48 -0600")
-Message-ID: <m2y5qdow0v.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Tue, 3 Apr 2012 08:14:29 -0400
+Message-ID: <4F7AE99E.5000804@monstr.eu>
+Date: Tue, 03 Apr 2012 14:14:22 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.3) Gecko/20120314 Thunderbird/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze fixes for 3.4-rc2
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> writes:
+Hi Linus,
 
-> Can you dump out /debug/powerpc/virq_mapping from both before and
-> after the irq_map patch is applied?
+please pull the following fixes.
 
-before:
-virq   hwirq    chip name        chip data           host name
-   16  0x00000   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   21  0x00001   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   24  0x00002   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   25  0x00019   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   26  0x0001a   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   27  0x0001b   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   28  0x0001c   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   29  0x0003d   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   30  0x0001e   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   31  0x0003c   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   39  0x00027   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   40  0x00028   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   41  0x00029   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   42  0x0002a   MPIC 2          0xc00000017a011000  /u3@0,f8000000/mpic@f8040000
-   47  0x0002f   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   59  0x000fb   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   60  0x000fc   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   61  0x000fd   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   62  0x000fe   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   63  0x0003f   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
+Thanks,
+Michal
 
-after:
-virq   hwirq    chip name        chip data           host name
-   16  0x00000   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   21  0x00001   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   24  0x00002   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   25  0x00019   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   26  0x0001a   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   27  0x0001b   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   28  0x0001c   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   30  0x0001e   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   39  0x00027   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   40  0x00028   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   41  0x00029   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   42  0x0002a   MPIC 2          0xc00000017a011000  /u3@0,f8000000/mpic@f8040000
-   47  0x0002f   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   59  0x000fb   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   60  0x000fc   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   61  0x000fd   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   62  0x000fe   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   63  0x0003f   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   64  0x0003d   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
-   65  0x0003c   MPIC 1          0xc00000017a010000  /ht@0,f2000000/pci@1/mac-io@7/mpic@40000
 
-But I have NR_IRQS=64.  Bounds checking missing?  Irqs 64/65 are related
-to the sound chip (headphone-detect and line-out-detect).
+The following changes since commit f52b69f86e27903d6896ed5fa7cd280fec8de532:
 
-When reconfiguring with NR_IRQS=128 interrupts are working again, but I
-still see a lot of spurious interrupts, and the X server is still broken
-(no input works, but I still don't know whether that is an unrelated
-bug).
+   Merge tag 'sh-for-linus' of git://github.com/pmundt/linux-sh (2012-03-30 00:09:17 -0700)
 
-This is a sample of /proc/interrupts from 3.3 (with NR_IRQS=64):
-           CPU0       CPU1       
- 16:       2039       6070   MPIC 1    Level     sata_svw
- 21:          0          0   MPIC 1    Edge      i2sbus: i2s-a (tx)
- 22:         12         20   MPIC 1    Level   
- 23:         14         18   MPIC 1    Level   
- 24:          0          0   MPIC 1    Edge      i2sbus: i2s-a (rx)
- 25:          3          0   MPIC 1    Level     VIA-PMU
- 26:         16         62   MPIC 1    Level     keywest i2c
- 27:          0          1   MPIC 1    Level     ohci_hcd:usb2
- 28:          0          1   MPIC 1    Level     ohci_hcd:usb3
- 29:          0          0   MPIC 1    Edge      headphone-detect
- 30:          0          0   MPIC 1    Level     i2sbus: i2s-a (control)
- 31:          0          0   MPIC 1    Edge      line-output-detect
- 39:         22         64   MPIC 1    Level     pata-pci-macio
- 40:          0          2   MPIC 1    Level     firewire_ohci
- 41:         52        147   MPIC 1    Level     eth0
- 42:       1732       5053   MPIC 2    Level     keywest i2c
- 47:          0          0   MPIC 1    Level     GPIO1 ADB
- 59:          0          0   MPIC 1    Edge      ipi call function
- 60:       2064       1940   MPIC 1    Edge      ipi reschedule
- 61:       3406        945   MPIC 1    Edge      ipi call function single
- 62:          0          0   MPIC 1    Edge      ipi debugger
- 63:         39         91   MPIC 1    Level     ehci_hcd:usb1, ohci_hcd:usb4, ohci_hcd:usb5
-LOC:       3503       3719   Local timer interrupts
-SPU:          2          0   Spurious interrupts
-CNT:          0          0   Performance monitoring interrupts
-MCE:          0          0   Machine check exceptions
+are available in the git repository at:
 
-This is a sample of /proc/interrupts from 3.4-rc1 (with NR_IRQS=128):
-           CPU0       CPU1       
- 16:       2603       7596   MPIC 1    Level     sata_svw
- 21:          1          0   MPIC 1    Edge      i2sbus: i2s-a (tx)
- 22:         13         19   MPIC 1    Level   
- 23:          8         24   MPIC 1    Level   
- 24:          0          1   MPIC 1    Edge      i2sbus: i2s-a (rx)
- 25:          2          1   MPIC 1    Level     VIA-PMU
- 26:         21         57   MPIC 1    Level     keywest i2c
- 27:          0          1   MPIC 1    Level     ohci_hcd:usb2
- 28:          0          1   MPIC 1    Level     ohci_hcd:usb3
- 30:          0          0   MPIC 1    Level     i2sbus: i2s-a (control)
- 39:         39        131   MPIC 1    Level     pata-pci-macio
- 40:          2          2   MPIC 1    Level     firewire_ohci
- 41:         93        268   MPIC 1    Level     eth0
- 42:       8569      24140   MPIC 2    Level     keywest i2c
- 47:          0          0   MPIC 1    Level     GPIO1 ADB
- 60:          1          0   MPIC 1    Edge      line-output-detect
- 61:          1          0   MPIC 1    Edge      headphone-detect
- 63:        153        502   MPIC 1    Level     ehci_hcd:usb1, ohci_hcd:usb4, ohci_hcd:usb5
-123:          0          0   MPIC 1    Edge      ipi call function
-124:       1978       2349   MPIC 1    Edge      ipi reschedule
-125:       2356       1816   MPIC 1    Edge      ipi call function single
-126:          0          0   MPIC 1    Edge      ipi debugger
-LOC:       4417       7985   Local timer interrupts
-SPU:       9586      25811   Spurious interrupts
-CNT:          0          0   Performance monitoring interrupts
-MCE:          0          0   Machine check exceptions
 
-Andreas.
+   git://git.monstr.eu/linux-2.6-microblaze.git next
+
+for you to fetch changes up to 0dd90aa9d6222e12201f05c0058e8741b7f66474:
+
+   microblaze: Fix ret_from_fork declaration (2012-04-02 13:00:26 +0200)
+
+----------------------------------------------------------------
+Michal Simek (7):
+       microblaze: Fix __futex_atomic_op macro register usage
+       microblaze: Fix tlb_skip variable on noMMU system
+       microblaze: Fix stack usage in PAGE_SIZE copy_tofrom_user
+       Merge git://git.kernel.org/.../torvalds/linux-2.6 into next
+       microblaze: Add missing headers caused by disintegration asm/system.h
+       microblaze: Do not use tlb_skip in early_printk
+       microblaze: Fix ret_from_fork declaration
+
+  arch/microblaze/include/asm/cmpxchg.h   |    2 ++
+  arch/microblaze/include/asm/futex.h     |    2 +-
+  arch/microblaze/include/asm/processor.h |    4 ++--
+  arch/microblaze/kernel/early_printk.c   |    2 ++
+  arch/microblaze/kernel/setup.c          |    2 ++
+  arch/microblaze/kernel/unwind.c         |    1 +
+  arch/microblaze/lib/uaccess_old.S       |   98 +++++++++++++++++++++++++++++++++++++++++++++++----------------------------
+  7 files changed, 72 insertions(+), 39 deletions(-)
+
+
+
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
