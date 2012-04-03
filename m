@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab2DCBoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 21:44:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40205 "EHLO mx2.suse.de"
+	id S1752914Ab2DCBrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 21:47:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12881 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab2DCBo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 21:44:29 -0400
-Date: Tue, 3 Apr 2012 03:44:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: NeilBrown <neilb@suse.de>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Subject: [PATCH] APM: fix deadlock in APM_IOC_SUSPEND ioctl
-In-Reply-To: <20120401201930.01202cd2@notabene.brown>
-Message-ID: <alpine.LNX.2.00.1204030342540.16928@pobox.suse.cz>
-References: <20120401201930.01202cd2@notabene.brown>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752097Ab2DCBrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 21:47:31 -0400
+Date: Mon, 2 Apr 2012 21:47:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org, jeffm@suse.com
+Subject: Re: btrfs io errors on 3.4rc1
+Message-ID: <20120403014722.GA618@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org, jeffm@suse.com
+References: <20120402180214.GA1830@redhat.com>
+ <20120402194814.GA10965@shiny.msi.event>
+ <20120402211622.GA2487@redhat.com>
+ <20120402212608.GA14958@shiny.msi.event>
+ <20120402214051.GB2487@redhat.com>
+ <20120402222802.GA18000@shiny.nikko.sjc.wayport.net>
+ <20120402223350.GA16907@redhat.com>
+ <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
+ <20120402225131.GB16907@redhat.com>
+ <20120402235021.GA20070@shiny.msi.event>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120402235021.GA20070@shiny.msi.event>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Apr 2012, NeilBrown wrote:
+On Mon, Apr 02, 2012 at 07:50:50PM -0400, Chris Mason wrote:
 
-> 
-> 
-> I found the Xorg server on my ARM device stuck in the 'msleep()' loop
-> in apm_ioctl.
-> 
-> I suspect it had attempted suspend immediately after resuming and lost
-> a race.
-> During that msleep(10);, a new suspend cycle must have started and
-> changed ->suspend_state to SUSPEND_PENDING, so it was never seen to
-> be SUSPEND_DONE and the loop could never exited.  It would have moved on
-> to SUSPEND_ACKTO but never been able to reach SUSPEND_DONE.
-> 
-> So change the loop to only run while SUSPEND_ACKED rather than until
-> SUSPEND_DONE.  This is much safer.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> 
-> diff --git a/drivers/char/apm-emulation.c b/drivers/char/apm-emulation.c
-> index f4837a8..6005c5c 100644
-> --- a/drivers/char/apm-emulation.c
-> +++ b/drivers/char/apm-emulation.c
-> @@ -302,7 +302,7 @@ apm_ioctl(struct file *filp, u_int cmd, u_long arg)
->  			 * anything critical, chill a bit on each iteration.
->  			 */
->  			while (wait_event_freezable(apm_suspend_waitqueue,
-> -					as->suspend_state == SUSPEND_DONE))
-> +					as->suspend_state != SUSPEND_ACKED))
->  				msleep(10);
->  			break;
->  		case SUSPEND_ACKTO:
+ > > I'll start a bisect later to see if I can narrow it down at least.
+ > 
+ > Ok, a directed bisect of the major suspects.  Josef changed the extent
+ > buffer eio code in this commit (jump to the commit before it):
 
-Good catch Neil! I have missed this race when we were moving away from 
-freezer_*_count() to wait_event_freezable() here.
+I had already started before I read your mail, so I just did the whole bisect..
+It ended on this...
 
-Applied, thanks.
+49b25e0540904be0bf558b84475c69d72e4de66e is the first bad commit
+commit 49b25e0540904be0bf558b84475c69d72e4de66e
+Author: Jeff Mahoney <jeffm@suse.com>
+Date:   Thu Mar 1 17:24:58 2012 +0100
 
--- 
-Jiri Kosina
-SUSE Labs
+    btrfs: enhance transaction abort infrastructure
+    
+    Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+
+:040000 040000 f4b5cdd26617e049962e08b94643dd2134014b00 1455feb78b615f13d3c60acf5f0fad44ad133ded M	fs
+
+
+
+bisect log:
+git bisect start 'fs/'
+# bad: [bc3f116fec194f1d7329b160c266fe16b9266a1e] Btrfs: update the checks for mixed block groups with big metadata blocks
+git bisect bad bc3f116fec194f1d7329b160c266fe16b9266a1e
+# good: [c16fa4f2ad19908a47c63d8fa436a1178438c7e7] Linux 3.3
+git bisect good c16fa4f2ad19908a47c63d8fa436a1178438c7e7
+# bad: [65139ed99234d8505948cdb7a835452eb5c191f9] btrfs: disallow unequal data/metadata blocksize for mixed block groups
+git bisect bad 65139ed99234d8505948cdb7a835452eb5c191f9
+# good: [3fbe5c02ae5a59053d779392b9a12aa8f6d6198e] btrfs: split extent_state ops
+git bisect good 3fbe5c02ae5a59053d779392b9a12aa8f6d6198e
+# good: [305a26af5b2561a66859ef05ed7eb73d3c9f0913] btrfs: Go readonly on tree errors in balance_level
+git bisect good 305a26af5b2561a66859ef05ed7eb73d3c9f0913
+# good: [4da35113426d16673aa1fb0613c14ca2e419e7fd] btrfs: add varargs to btrfs_error
+git bisect good 4da35113426d16673aa1fb0613c14ca2e419e7fd
+# bad: [79787eaab46121d4713ed03c8fc63b9ec3eaec76] btrfs: replace many BUG_ONs with proper error handling
+git bisect bad 79787eaab46121d4713ed03c8fc63b9ec3eaec76
+# bad: [49b25e0540904be0bf558b84475c69d72e4de66e] btrfs: enhance transaction abort infrastructure
+git bisect bad 49b25e0540904be0bf558b84475c69d72e4de66e
+
