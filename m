@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab2DCSRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 14:17:34 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:32991 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754461Ab2DCSRc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 14:17:32 -0400
+	id S1755444Ab2DCSSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 14:18:09 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50949 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab2DCSSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 14:18:04 -0400
+Date: Tue, 3 Apr 2012 11:16:31 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120403181631.GD32299@count0.beaverton.ibm.com>
+References: <20120331091049.19373.28994.stgit@zurg>
+ <20120331092929.19920.54540.stgit@zurg>
+ <20120331201324.GA17565@redhat.com>
+ <20120402230423.GB32299@count0.beaverton.ibm.com>
+ <4F7A863C.5020407@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <201203310924.19708.arnd@arndb.de>
-References: <201203301744.16762.arnd@arndb.de>
-	<201203301850.22784.arnd@arndb.de>
-	<CAJN=5gDBQJc_KXUadqtzmxPqPF71PDcToGo_T-agNey9eN2MQA@mail.gmail.com>
-	<201203310924.19708.arnd@arndb.de>
-Date: Tue, 3 Apr 2012 13:17:30 -0500
-Message-ID: <CAJN=5gD-_Us6XpZWBWm72c5byytLLYmwW-FeA+a48YxZeWeMtw@mail.gmail.com>
-Subject: Re: swap on eMMC and other flash
-From: Zach Pfeffer <zach.pfeffer@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-kernel@lists.linaro.org, linux-mm@kvack.org,
-        Alex Lemberg <alex.lemberg@sandisk.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Hyojin Jeong <syr.jeong@samsung.com>,
-        "Luca Porzio (lporzio)" <lporzio@micron.com>, kernel-team@android.com,
-        Yejin Moon <yejin.moon@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F7A863C.5020407@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040318-7408-0000-0000-000003F17F54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 March 2012 04:24, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 30 March 2012, Zach Pfeffer wrote:
->> Last I read Transparent Huge Pages are still paged in and out a page
->> at a time, is this or was this ever the case? If it is the case should
->> the paging system be extended to support THP which would take care of
->> the big block issues with flash media?
->>
->
-> I don't think we ever want to get /that/ big. As I mentioned, going
-> beyond 64kb does not improve throughput on most flash media. However,
-> paging out 16MB causes a very noticeable delay of up to a few seconds
-> on slow drives, which would be inacceptable to users.
->
-> Also, that would only deal with the rare case where the data you
-> want to page out is actually in huge pages, not the common case.
+On Tue, Apr 03, 2012 at 09:10:20AM +0400, Konstantin Khlebnikov wrote:
+> Matt Helsley wrote:
+> >On Sat, Mar 31, 2012 at 10:13:24PM +0200, Oleg Nesterov wrote:
+> >>On 03/31, Konstantin Khlebnikov wrote:
+> >>>
+> >>>comment from v2.6.25-6245-g925d1c4 ("procfs task exe symlink"),
+> >>>where all this stuff was introduced:
+> >>>
+> >>>>...
+> >>>>This avoids pinning the mounted filesystem.
+> >>>
+> >>>So, this logic is hooked into every file mmap/unmmap and vma split/merge just to
+> >>>fix some hypothetical pinning fs from umounting by mm which already unmapped all
+> >>>its executable files, but still alive. Does anyone know any real world example?
+> >>
+> >>This is the question to Matt.
+> >
+> >This is where I got the scenario:
+> >
+> >https://lkml.org/lkml/2007/7/12/398
+> 
+> Cyrill Gogcunov's patch "c/r: prctl: add ability to set new mm_struct::exe_file"
+> gives userspace ability to unpin vfsmount explicitly.
 
-What I had in mind was being able to swap out big contiguous buffers
-used by media and graphics engines in one go. This would allow devices
-to support multiple engines without needing to reserve contiguous
-memory for each device. They would instead share the contiguous
-memory. Only one multimedia engine could run at a time, but that would
-be an okay limitation given certain application domains (low end smart
-phones).
+Doesn't that break the semantics of the kernel ABI?
 
->
->        Arnd
+Cheers,
+	-Matt Helsley
 
-
-
--- 
-Zach Pfeffer
-Android Platform Team Lead, Linaro Platform Teams
-Linaro.org | Open source software for ARM SoCs
-Follow Linaro: http://www.facebook.com/pages/Linaro
-http://twitter.com/#!/linaroorg - http://www.linaro.org/linaro-blog
