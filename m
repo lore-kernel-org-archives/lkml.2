@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab2DCH7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 03:59:51 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:50279 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab2DCH7u convert rfc822-to-8bit (ORCPT
+	id S1752910Ab2DCIDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:03:13 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60126 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab2DCIDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 03:59:50 -0400
-Date: Tue, 3 Apr 2012 09:59:48 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH v2a] sysfs: Prevent crash on unset sysfs group attributes
-Message-ID: <20120403095948.47e523bc@pluto.restena.lu>
-In-Reply-To: <20120403094107.4f641ed8@pluto.restena.lu>
-References: <20120402162716.4c93bfd3@pluto.restena.lu>
-	<20120402165036.2bc987ad@pluto.restena.lu>
-	<m17gxyklfm.fsf@fess.ebiederm.org>
-	<20120402213440.49e9de74@neptune>
-	<1333401898.2960.78.camel@laptop>
-	<1333403193.2960.80.camel@laptop>
-	<20120403060252.GA27084@gmail.com>
-	<20120403081735.78ca3bb3@pluto.restena.lu>
-	<m1d37pgugy.fsf@fess.ebiederm.org>
-	<20120403071543.GA17502@gmail.com>
-	<20120403094107.4f641ed8@pluto.restena.lu>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Apr 2012 04:03:04 -0400
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Simon Wood <simon@mungewell.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Bauer <michael@m-bauer.org>
+Subject: Re: [PATCH 1/2] HID: hid-lg4ff: Use Private Data
+Date: Tue, 03 Apr 2012 10:02:46 +0200
+Message-ID: <1594934.O1AHdBE0Y7@qosmio-x300>
+User-Agent: KMail/4.8.0 (Linux/3.3.0-1-ck1-ARCHMOD; KDE/4.8.1; x86_64; ; )
+In-Reply-To: <alpine.LNX.2.00.1204030413030.16928@pobox.suse.cz>
+References: <a4e40aa5c43be934d83240849aa25f3b.squirrel@mungewell.org> <1333378444-3117-1-git-send-email-simon@mungewell.org> <alpine.LNX.2.00.1204030413030.16928@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart3368184.RPl2r7lJPh"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: quoted-printable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not let the kernel crash when a device is registered with
-sysfs while group attributes are not set (aka NULL).
 
-Warn about the offender with some information about the offending
-device.
+--nextPart3368184.RPl2r7lJPh
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="iso-8859-1"
 
-This would warn instead of trying NULL pointer deref like:
- BUG: unable to handle kernel NULL pointer dereference at (null)
- IP: [<ffffffff81152673>] internal_create_group+0x83/0x1a0
- PGD 0
- Oops: 0000 [#1] SMP
- CPU 0
- Modules linked in:
+On Tuesday 03. of April 2012 4:13:37 you wrote:
+> On Mon, 2 Apr 2012, Simon Wood wrote:
+> > Use private data in hid-lg4ff to store device properties.
+>=20
+> I'd like to have a more verbose changelog -- namely what advantage th=
+is
+> brings compared to the previous state.
+>=20
+> Thanks.
+Hi,
 
- Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant DL360 G4
- RIP: 0010:[<ffffffff81152673>]  [<ffffffff81152673>] internal_create_group+0x83/0x1a0
- RSP: 0018:ffff88019485fd70  EFLAGS: 00010202
- RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000001
- RDX: ffff880192e99908 RSI: ffff880192e99630 RDI: ffffffff81a26c60
- RBP: ffff88019485fdc0 R08: 0000000000000000 R09: 0000000000000000
- R10: ffff880192e99908 R11: 0000000000000000 R12: ffffffff81a16a00
- R13: ffff880192e99908 R14: ffffffff81a16900 R15: 0000000000000000
- FS:  0000000000000000(0000) GS:ffff88019bc00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000000000000000 CR3: 0000000001a0c000 CR4: 00000000000007f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process swapper/0 (pid: 1, threadinfo ffff88019485e000, task ffff880194878000)
- Stack:
-  ffff88019485fdd0 ffff880192da9d60 0000000000000000 ffff880192e99908
-  ffff880192e995d8 0000000000000001 ffffffff81a16a00 ffff880192da9d60
-  0000000000000000 0000000000000000 ffff88019485fdd0 ffffffff811527be
- Call Trace:
-  [<ffffffff811527be>] sysfs_create_group+0xe/0x10
-  [<ffffffff81376ca6>] device_add_groups+0x46/0x80
-  [<ffffffff81377d3d>] device_add+0x46d/0x6a0
-  ...
-    
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
----
+the previous implementation used a linked list to store the device=20
+configuration (at this point it was just the operating range, but I hav=
+e plans=20
+for further expansion, I guess Simon's LEDs patch could use that too).=20=
 
-Resending with fixed commit description message formatting!
-Stupid MUA thinks it knows how to wrap lines and that it must reformat
-whole mail on paste...
+Searching through the list every time the user adjusted the range wasn'=
+t=20
+exactly fast, particularly because the list used kobj name as the ID. I=
+=20
+originally opted for that solution because I didn't want to mess with t=
+he code=20
+of the whole hid-lg driver.
+This patch takes advantage of the changes introduced in my patches from=
+=20
+2011/04/02. lg4ff now calls hid_get/set_drvdata() to read or store devi=
+ce=20
+configuration. The way I understand it, this is how all HID drivers sto=
+re their=20
+private data.
 
+Since J. Slab=FD complained about unnecessary uninitialized_var() macro=
+s, I'll=20
+update the patch to remove them.
 
+Michal M.
+--nextPart3368184.RPl2r7lJPh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
- fs/sysfs/group.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+iQEcBAABAgAGBQJPeq6uAAoJEERrVaOJCK16H60IAJkoy5J1d+ZJU2OhUg/iPIHP
+MYRpqlKhVlAvHONN2OgXFnNITV+tEoolsE5LVUiiX+T3YinR+3f6YpD0CexnbHjH
+VNQUiK+OnmBD82dDTIt3UnfPO6FN5CMJTms9dgu+wPydM9Dd4ckNkyMo2VTj76VC
+w/yyW5+2mX6yhhL5NiKHPrzs+CHNc1alHp3QInaEwfRW4IfpLTDwfmvt4mxqFHTn
+6ePINwhEZjZJ5/fV1fXsa2QA6XPrgGZF5u7l7VfDm72rCD3jkOzr3aX8z+l1isIk
+h0er91AlDf8hFoKN/img3rIkrNQBHFnMHznJWRn21sihWhRxZAIrpHq+oaxMoSA=
+=S19U
+-----END PGP SIGNATURE-----
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index dd1701c..2df555c 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -67,7 +67,11 @@ static int internal_create_group(struct kobject *kobj, int update,
- 	/* Updates may happen before the object has been instantiated */
- 	if (unlikely(update && !kobj->sd))
- 		return -EINVAL;
--
-+	if (!grp->attrs) {
-+		WARN(1, "sysfs: attrs not set by subsystem for group: %s/%s\n",
-+			kobj->name, grp->name ? "" : grp->name);
-+		return -EINVAL;
-+	}
- 	if (grp->name) {
- 		error = sysfs_create_subdir(kobj, grp->name, &sd);
- 		if (error)
+--nextPart3368184.RPl2r7lJPh--
+
