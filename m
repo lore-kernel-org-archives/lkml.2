@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab2DCJUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 05:20:23 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:58047 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751572Ab2DCJTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 05:19:51 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+0spZv2FO0lq4ZB+FvxR8oE617e06tNeRYcvN8T/
-	aRiwpyW1gyRqEs
-Message-ID: <1333444788.9072.9.camel@marge.simpson.net>
-Subject: [patch] sched,rt: let the user see rt queues in /proc/sched_debug
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 03 Apr 2012 11:19:48 +0200
-In-Reply-To: <1333444106.9072.4.camel@marge.simpson.net>
-References: <1333444106.9072.4.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1752778Ab2DCJna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 05:43:30 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54188 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab2DCJn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 05:43:29 -0400
+Date: Tue, 3 Apr 2012 11:43:25 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: linux-input@vger.kernel.org
+Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: psmouse serio4: bad data from KBC - timeout
+Message-ID: <20120403094324.GA3346@gere.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ec514c48 made rt queues invisible in sched_debug, restore visibility.
+Hi guys,
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
----
- kernel/sched/rt.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I'm running 3.4-rc1 on a thinkpad x121e and it builds and boots just
+fine. However, after resuming from disk I get (this is the tail of
+dmesg):
 
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -2079,11 +2079,10 @@ extern void print_rt_rq(struct seq_file
- 
- void print_rt_stats(struct seq_file *m, int cpu)
- {
--	rt_rq_iter_t iter;
- 	struct rt_rq *rt_rq;
- 
- 	rcu_read_lock();
--	for_each_rt_rq(rt_rq, iter, cpu_rq(cpu))
-+	for_each_leaf_rt_rq(rt_rq, cpu_rq(cpu))
- 		print_rt_rq(m, cpu, rt_rq);
- 	rcu_read_unlock();
- }
+[  905.857412] i8042: failed to resume active multiplexor, mouse won't work
+[  905.965568] usb 3-2: reset low-speed USB device number 2 using ohci_hcd
+[  907.626998] psmouse serio4: bad data from KBC - timeout
+[  907.675385] PM: restore of devices complete after 2358.155 msecs
+[  908.227481] Restarting tasks ... done.
+[  908.266229] video LNXVIDEO:01: Restoring backlight state
+[  917.628792] psmouse serio4: Failed to deactivate mouse on isa0060/serio4
+[  917.880639] psmouse serio4: Failed to enable mouse on isa0060/serio4
+[  919.867982] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input19
+[  947.277011] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
+[  996.231116] Bluetooth: Core ver 2.16
+[  996.231262] NET: Registered protocol family 31
+[  996.231273] Bluetooth: HCI device and connection manager initialized
+[  996.231559] Bluetooth: HCI socket layer initialized
+[  996.231575] Bluetooth: L2CAP socket layer initialized
+[  996.231630] Bluetooth: SCO socket layer initialized
 
+and after that the keyboard and the mouse touchpad don't work. The
+connected USB mouse works fine though.
 
+Any help is appreciated,
+thanks.
+
+-- 
+Regards/Gruss,
+Boris.
