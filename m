@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab2DCOiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:38:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15843 "EHLO mx1.redhat.com"
+	id S1753653Ab2DCOuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:50:13 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:47301 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752894Ab2DCOiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:38:09 -0400
-Date: Tue, 3 Apr 2012 16:37:52 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC] mm: account VMA before forced-COW via /proc/pid/mem
-Message-ID: <20120403143752.GA5150@redhat.com>
-References: <20120402153631.5101.44091.stgit@zurg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120402153631.5101.44091.stgit@zurg>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751872Ab2DCOuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 10:50:12 -0400
+Message-ID: <1333464575.26774.130.camel@groo>
+Subject: Re: HSI: hsi: Introducing HSI framework
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Greg KH <greg@kroah.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Apr 2012 17:49:35 +0300
+In-Reply-To: <20120402234134.GA18183@kroah.com>
+References: <20120402165607.2B2D47C0069@ra.kernel.org>
+	 <20120402234134.GA18183@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02, Konstantin Khlebnikov wrote:
->
-> Currently kernel does not account read-only private mappings into memory commitment.
-> But these mappings can be force-COW-ed in get_user_pages().
+Hi Greg,
 
-Heh. tail -n3 Documentation/vm/overcommit-accounting
-may be you should update it then.
+Thanks for the review.
 
-Can't really comment the patch, this is not my area. Still,
+On Mon, 2012-04-02 at 16:41 -0700, ext Greg KH wrote:
+> On Mon, Apr 02, 2012 at 04:56:07PM +0000, Linux Kernel Mailing List wrote:
+> > +static void hsi_controller_release(struct device *dev __maybe_unused)
+> > +{
+> > +}
+> > +
+> > +static void hsi_port_release(struct device *dev __maybe_unused)
+> > +{
+> > +}
+> 
+> As per the documentation in the kernel tree, I get to mock you
+> mercilessly for doing something as foolish as this.  You are not smarter
+> than the kernel and don't think that you got rid of the kernel warning
+> properly by doing this.  Do you think that I wrote that code for no good
+> reason?  The kernel was being nice and telling you what you did wrong,
+> don't try to fake it out, it's smarter than you are here.
+> 
+> I also get to tell you that you need to fix this up right now, BEFORE
+> 3.4 comes out.
+> 
+> And no, just because you created static struct devices, this is not ok,
+> DO NOT create static struct devices, that's foolish, and even worse, not
+> something you should be doing in the first place, create a real
+> structure, and put a struct device within it please.
 
-> +	down_write(&mm->mmap_sem);
-> +	*pvma = vma = find_vma(mm, addr);
-> +	if (vma && vma->vm_start <= addr) {
-> +		ret = vma->vm_end - addr;
-> +		if ((vma->vm_flags & (VM_ACCOUNT | VM_NORESERVE | VM_SHARED |
-> +				VM_HUGETLB | VM_MAYWRITE)) == VM_MAYWRITE) {
-> +			if (!security_vm_enough_memory_mm(mm, vma_pages(vma)))
+That was not really  my intention here.
+But it is my fault for not keeping up with the documentation. For what
+is worth, back on the days that the framework was initially written,
+there was no such documentation and I went for a simple API approach
+(alloc -> register -> unregister -> free). It also made quite trivial
+the hsi_port allocation/freeing and device registration.
 
-Oooooh, the whole vma. Say, gdb installs the single breakpoint into
-the huge .text mapping...
+I'll do the changes asap.
 
-I am not sure, but probably you want to check at least VM_IO/PFNMAP
-as well. We do not want to charge this memory and retry with FOLL_FORCE
-before vm_ops->access(). Say, /dev/mem.
+> 
+> And people wonder why kernel maintainers are grumpy.
+> 
+> > +/**
+> > + * struct hsi_client - HSI client attached to an HSI port
+> > + * @device: Driver model representation of the device
+> > + * @tx_cfg: HSI TX configuration
+> > + * @rx_cfg: HSI RX configuration
+> > + * @hsi_start_rx: Called after incoming wake line goes high
+> > + * @hsi_stop_rx: Called after incoming wake line goes low
+> > + */
+> > +struct hsi_client {
+> > +	struct device		device;
+> > +	struct hsi_config	tx_cfg;
+> > +	struct hsi_config	rx_cfg;
+> > +	void			(*hsi_start_rx)(struct hsi_client *cl);
+> > +	void			(*hsi_stop_rx)(struct hsi_client *cl);
+> > +	/* private: */
+> > +	unsigned int		pclaimed:1;
+> > +	struct list_head	link;
+> > +};
+> 
+> Why do you need another list_head in here?  What's wrong with using the
+> device iteration functions that are written for you to use?  Don't put
+> the structure on yet-another-list, use what is given to you please, as
+> odds are, you will traverse this list incorrectly (trust me...)
+> 
 
-Hmm. OTOH, if I am right then mprotect_fixup() should be fixed??
+Well I do agree about using the device iteration functions, and way back
+in the old times of this framework that was the case:
 
+https://lkml.org/lkml/2010/5/7/240
 
-We drop ->mmap_sem... Say, the task does mremap() in between and
-len == 2 * PAGE_SIZE. Then, for example, copy_to_user_page() can
-write to the same page twice. Perhaps not a problem in practice,
-I dunno.
+The issue here was that I wanted to allow the hsi_controllers drivers to
+call hsi_event() in their BHs and ISR to minimize the latency in the
+communication . And that's not possible if I use the
+device_for_each_child() in hsi_event(), cause the locking does not
+protect against interrupt handlers. 
 
-Oleg.
+But I guess I can go back to the old code and push the issue down to the
+the hsi controller drivers and force them to use threaded interrupts...
+
+> ugh,
+> 
+> greg k-h
+
+Br,
+Carlos Chinea
 
