@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab2DCQSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 12:18:44 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:43673 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207Ab2DCQSm (ORCPT
+	id S1755277Ab2DCQUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 12:20:38 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:46556 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab2DCQUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 12:18:42 -0400
-Subject: Re: [PATCH] marvell sky2 driver: fix so it works without unaligned
- accesses
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <201204031527.q33FR04i031747@farm-0027.internal.tilera.com>
-References: <201204031527.q33FR04i031747@farm-0027.internal.tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 Apr 2012 18:18:36 +0200
-Message-ID: <1333469916.18626.284.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Apr 2012 12:20:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1333469800.26079.35.camel@joe2Laptop>
+References: <1333415903.860.0.camel@mop> <1333420612.26079.6.camel@joe2Laptop>
+ <CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
+ <1333424865.26079.9.camel@joe2Laptop> <CAPXgP13fDRZtAvV651NPqQ2TgUEtb+MX1EhKhwirAgoiNOg5tQ@mail.gmail.com>
+ <1333463572.26079.31.camel@joe2Laptop> <CAPXgP133MQX2u3H6imOR4FFR4TsHYc=f_yrAJfdd2sG-8bFrmA@mail.gmail.com>
+ <1333469136.26079.33.camel@joe2Laptop> <CAPXgP11MBdqc3BiDLA1q5gW4BZy2q4PoLtD20oRXfKY+C-HOgw@mail.gmail.com>
+ <1333469800.26079.35.camel@joe2Laptop>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 3 Apr 2012 18:20:16 +0200
+Message-ID: <CAPXgP13--R6M3FAJ8QCB50eVTo7M9A30OW3rwwV3gv1QEtpBaQ@mail.gmail.com>
+Subject: Re: [PATCH] printk(): add KERN_CONT where needed
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 11:13 -0400, Chris Metcalf wrote:
-> The driver uses a receive_new() routine that ends up requiring unaligned
-> accesses in IP header processing.  If the architecture doesn't support
-> efficient unaligned accesses, just copy all ingress packets to the bounce
-> buffers instead.
-> 
-> This allows the driver to be used on the Tilera TILEmpower-Gx, since
-> the tile architecture doesn't currently handle kernel unaligned accesses,
-> just userspace.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  drivers/net/ethernet/marvell/sky2.c |   10 +++++++---
->  1 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-> index 879b0a4..7a15482 100644
-> --- a/drivers/net/ethernet/marvell/sky2.c
-> +++ b/drivers/net/ethernet/marvell/sky2.c
-> @@ -2490,6 +2490,7 @@ static struct sk_buff *receive_copy(struct sky2_port *sky2,
->  	return skb;
->  }
->  
-> +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
->  /* Adjust length of skb with fragments to match received data */
->  static void skb_put_frags(struct sk_buff *skb, unsigned int hdr_space,
->  			  unsigned int length)
-> @@ -2555,6 +2556,7 @@ nomap:
->  nobuf:
->  	return NULL;
->  }
-> +#endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
->  
->  /*
->   * Receive one packet.
-> @@ -2598,10 +2600,12 @@ static struct sk_buff *sky2_receive(struct net_device *dev,
->  		goto error;
->  
->  okay:
-> -	if (length < copybreak)
-> -		skb = receive_copy(sky2, re, length);
-> -	else
-> +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> +	if (length >= copybreak)
->  		skb = receive_new(sky2, re, length);
-> +	else
-> +#endif
-> +		skb = receive_copy(sky2, re, length);
->  
->  	dev->stats.rx_dropped += (skb == NULL);
->  
+On Tue, Apr 3, 2012 at 18:16, Joe Perches <joe@perches.com> wrote:
+> Conversations happen all over the place and making
+> separate discussions isn't that valuable nor are
+> they really controllable.
 
-The (expensive ?) copy should be done only if (sky2->hw->flags &
-SKY2_HW_RAM_BUFFER)
+Sure, but this is not a conversation in that sense, you reply to a
+patch that something is not correct, but what's not correct is not a
+subject of the patch. And that I need to correct.
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index b806d9b..3da3cdc 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -2599,7 +2599,11 @@ static struct sk_buff *sky2_receive(struct net_device *dev,
- 		goto error;
- 
- okay:
--	if (length < copybreak)
-+	if ((length < copybreak) 
-+#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+		|| (sky2->hw->flags & SKY2_HW_RAM_BUFFER)
-+#endif
-+		)
- 		skb = receive_copy(sky2, re, length);
- 	else
- 		skb = receive_new(sky2, re, length);
+> Just write the change log to simply state "add KERN_CONT"
+> without mentioning your unpublished stuff.
 
+The changelog says:
 
+"A prototype for kmsg records instead of a byte-stream buffer revealed
+a couple of missing printk(KERN_CONT ...) uses. Subsequent calls produce
+one record per printk() call, while all should have ended up in a single
+record."
+
+What else do you need?
+
+Kay
