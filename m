@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab2DCPd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 11:33:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51344 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab2DCPd6 (ORCPT
+	id S1754847Ab2DCPfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 11:35:24 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53394 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab2DCPfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 11:33:58 -0400
-Message-ID: <4F7B1854.90106@pengutronix.de>
-Date: Tue, 03 Apr 2012 17:33:40 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Tue, 3 Apr 2012 11:35:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jerome Glisse <j.glisse@gmail.com>
+Subject: Re: Linux 3.4-rc1
+Date: Tue, 3 Apr 2012 15:35:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        vdumpa@nvidia.com, hdoyu@nvidia.com, konrad.wilk@oracle.com
+References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com> <201204030907.29306.arnd@arndb.de> <CAH3drwaGz0m_hnZqj41yAFXVLc++ZFBYR4G-ydUa6=NrkS78kQ@mail.gmail.com>
+In-Reply-To: <CAH3drwaGz0m_hnZqj41yAFXVLc++ZFBYR4G-ydUa6=NrkS78kQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "AnilKumar, Chimata" <anilkumar@ti.com>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
-        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: Re: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-References: <1333456339-9372-1-git-send-email-anilkumar@ti.com> <4F7AF0C7.7020506@grandegger.com> <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com> <4F7AFFEC.1010805@pengutronix.de> <331ABD5ECB02734CA317220B2BBEABC1317D86F7@DBDE01.ent.ti.com>
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC1317D86F7@DBDE01.ent.ti.com>
-X-Enigmail-Version: 1.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig39D5EC57251C2350EAE5D01F"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204031535.15867.arnd@arndb.de>
+X-Provags-ID: V02:K0:7sOLlquDt+a91VzKf/jzEhQIOTaiVRQM2uh4S/faKdO
+ Dak+tXjViVxnf6tFlNruSWYFOMDrXiyzr3VkNxo172bwJl9aXc
+ Lls/kvQn9URaUvIxBFiRRdbHHEIR8jrVRIuMgGLYG1Z34jGa5T
+ jjzLg5xdhh4DTssoLprTHJPrRf520Ytpv+ANDJbx+4mA95xD+v
+ rTk4HQXeSeMO5fX4ItJhZtUlbhdWkJVo7CICtmg9WIbC5htjqo
+ 2F/lc8uBKAkM5j108fO+oqejiw3MEtWfJoejNiVS0GG3+I0X1e
+ 7uCIekUscBDwi5uJWA7sfy9m0JPlW6m8j8emhOwmCydTgDCw0f
+ etVZy8UtNFsfRlQnejpM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig39D5EC57251C2350EAE5D01F
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 03 April 2012, Jerome Glisse wrote:
+> Out of curiosity where is the IOMMU abstraction work being discussed ?
+> Worked on ? I would like similar things on x86 platform and i spend
+> sometimes thinking on it in the past. Would like to make sure this
+> could also fit our need.
 
-On 04/03/2012 04:29 PM, AnilKumar, Chimata wrote:
->>>> Please explain why this CAN controller cannot be handled by the exis=
-ting
->>>> C_CAN driver, eventually with some extensions. The register layout s=
-eems
->>>> almost identical, at least.
->>>>
->>>> Wolfgang.
->>>>
->>>
->>> These are the some of the pointers I can say, why I had gone for sepa=
-rate
->>> file instead of existing driver:
->>> * In case of D_CAN driver we can see all the registers are 32bit leng=
-th
->>>   but in case of C_CAN registers are in 16bit length.
->>
->> How many bits in these 32 bit registers are used?
->=20
-> In some cases (D_CAN_TXRQ, D_CAN_INTPND, D_CAN_MSGVAL) I have used all =
-the
-> bits, in some cases used few bits.
->=20
-> Roughly I can say that its (higher 16bits) % of usages is similar as co=
-mpare
-> to 16bits=20
->=20
-> While checking the status of TXRequest registers and INT pending regist=
-er,
-> which is a hot code path, we have to put if checks for register access.=
+I think the more recent versions of that are just ARM based, not
+sure about the reasons. I found an archived version here:
 
+http://www.digipedia.pl/usenet/thread/18820/9752/
 
-The c_can already has a c_can_read_reg32() function. It's for example
-used in the rx_poll function. You can make it a function pointer (i.e.
-pric->read_reg32()) for easy abstraction.
+There is not much about it that is ARM specific and I'm sure it
+can be lifted back into common code if there is interest.
 
->>> * Some of the registers, bit masks are different, so we have to add
->>>   checks on every API for differentiating the kind of device
->>
->> Which registers are this? Can you give us an example?
->=20
-> I am pointing out some of the resisters
-> * Single registers in case of D_CAN but multiple register in case of C_=
-CAN
->   So masks will change MASK, ARB, INTPND
-> * D_CAN_IFCMD is the combination of COMM request and COMM mask register=
-s
-
-Maybe you can use the read_reg32 function on both c_can and d_can.
-
-regards, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig39D5EC57251C2350EAE5D01F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk97GFgACgkQjTAFq1RaXHOV6QCeMM8f8o6v9akR5R3pAYshVXiZ
-fjoAn1ipJ/AAbCzgB60NVQ8AbOqcoc40
-=oOjd
------END PGP SIGNATURE-----
-
---------------enig39D5EC57251C2350EAE5D01F--
+	Arnd
