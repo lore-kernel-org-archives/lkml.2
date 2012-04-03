@@ -1,18 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab2DCOO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:14:29 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41467 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab2DCOK1 (ORCPT
+	id S1755151Ab2DCOOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:14:43 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:46976 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516Ab2DCOK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Apr 2012 10:10:27 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Tue, 03 Apr 2012 16:10:12 +0200
+Date: Tue, 03 Apr 2012 16:10:15 +0200
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv24 07/16] mm: page_alloc: change fallbacks array handling
+Subject: [PATCHv24 10/16] mm: Serialize access to min_free_kbytes
 In-reply-to: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -31,68 +28,73 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
         Sandeep Patil <psandeep.s@gmail.com>
-Message-id: <1333462221-3987-8-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1333462221-3987-11-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.9.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 References: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+From: Mel Gorman <mgorman@suse.de>
 
-This commit adds a row for MIGRATE_ISOLATE type to the fallbacks array
-which was missing from it.  It also, changes the array traversal logic
-a little making MIGRATE_RESERVE an end marker.  The letter change,
-removes the implicit MIGRATE_UNMOVABLE from the end of each row which
-was read by __rmqueue_fallback() function.
+There is a race between the min_free_kbytes sysctl, memory hotplug
+and transparent hugepage support enablement.  Memory hotplug uses a
+zonelists_mutex to avoid a race when building zonelists. Reuse it to
+serialise watermark updates.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+[a.p.zijlstra@chello.nl: Older patch fixed the race with spinlock]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Tested-by: Rob Clark <rob.clark@linaro.org>
-Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
-Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Tested-by: Robert Nelson <robertcnelson@gmail.com>
 Tested-by: Barry Song <Baohua.Song@csr.com>
 ---
- mm/page_alloc.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ mm/page_alloc.c |   23 +++++++++++++++--------
+ 1 files changed, 15 insertions(+), 8 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2c0f68a..8e8cd7e 100644
+index 216e575..8b19caa 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -875,11 +875,12 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
-  * This array describes the order lists are fallen back to when
-  * the free lists for the desirable migrate type are depleted
-  */
--static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
-+static int fallbacks[MIGRATE_TYPES][3] = {
- 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
- 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
- 	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
--	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
-+	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
-+	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
- };
+@@ -5020,14 +5020,7 @@ static void setup_per_zone_lowmem_reserve(void)
+ 	calculate_totalreserve_pages();
+ }
  
+-/**
+- * setup_per_zone_wmarks - called when min_free_kbytes changes
+- * or when memory is hot-{added|removed}
+- *
+- * Ensures that the watermark[min,low,high] values for each zone are set
+- * correctly with respect to min_free_kbytes.
+- */
+-void setup_per_zone_wmarks(void)
++static void __setup_per_zone_wmarks(void)
+ {
+ 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
+ 	unsigned long lowmem_pages = 0;
+@@ -5082,6 +5075,20 @@ void setup_per_zone_wmarks(void)
+ 	calculate_totalreserve_pages();
+ }
+ 
++/**
++ * setup_per_zone_wmarks - called when min_free_kbytes changes
++ * or when memory is hot-{added|removed}
++ *
++ * Ensures that the watermark[min,low,high] values for each zone are set
++ * correctly with respect to min_free_kbytes.
++ */
++void setup_per_zone_wmarks(void)
++{
++	mutex_lock(&zonelists_mutex);
++	__setup_per_zone_wmarks();
++	mutex_unlock(&zonelists_mutex);
++}
++
  /*
-@@ -974,12 +975,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 	/* Find the largest possible block of pages in the other list */
- 	for (current_order = MAX_ORDER-1; current_order >= order;
- 						--current_order) {
--		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
-+		for (i = 0;; i++) {
- 			migratetype = fallbacks[start_migratetype][i];
- 
- 			/* MIGRATE_RESERVE handled later if necessary */
- 			if (migratetype == MIGRATE_RESERVE)
--				continue;
-+				break;
- 
- 			area = &(zone->free_area[current_order]);
- 			if (list_empty(&area->free_list[migratetype]))
+  * The inactive anon list should be small enough that the VM never has to
+  * do too much work, but large enough that each inactive page has a chance
 -- 
 1.7.1.569.g6f426
 
