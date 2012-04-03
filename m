@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab2DCHbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 03:31:52 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54838 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab2DCHbu (ORCPT
+	id S1752875Ab2DCHdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 03:33:23 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:27984 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab2DCHdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 03:31:50 -0400
-Date: Tue, 3 Apr 2012 09:31:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Masami Hiramatsu <masami.hiramatsu@gmail.com>,
-        linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC PATCH -tip 00/16] in-kernel x86 disassember
-Message-ID: <20120403073145.GB26826@gmail.com>
-References: <20120401160229.4502.2541.stgit@shimauta>
- <4F7A21B6.8000700@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7A21B6.8000700@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Apr 2012 03:33:21 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Cc: plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, olof@lixom.net,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 10/13] ARM: at91/NAND DT bindings: add comments
+Date: Tue,  3 Apr 2012 09:32:54 +0200
+Message-Id: <f7a94438cf1e21b2eec044419d9dca214999a9a6.1333437885.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9.4
+In-Reply-To: <cover.1333437885.git.nicolas.ferre@atmel.com>
+References: <cover.1333437885.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1333437885.git.nicolas.ferre@atmel.com>
+References: <cover.1333437885.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add comments to NAND "gpios" property to make it clearer.
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+---
+ .../devicetree/bindings/mtd/atmel-nand.txt         |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-> On 04/01/2012 09:02 AM, Masami Hiramatsu wrote:
-> > Hi,
-> > 
-> > Here is a series of patches of the in-kernel x86 disassembler
-> > for the latest tip tree.
-> > This will show you a pretty disassembled code instead of
-> > just a digital code sequence when you gets a kernel panic etc.
-> > (I know, we also have script/decodecode for the panic use)
-> > 
-> > This feature is not for users, but mainly for kernel developers
-> > who can understand disassembly code of x86 ;). This is just like
-> > a joke feature in kernel. (yeah, I spend my spare time for this.
-> > It's my fun :))
-> > 
-> 
-> This is cool, but I have one major reservation about it: it 
-> will make kernel panics take a lot more screen real estate 
-> without containing more information, and we already have 
-> problems with things scrolling off way too easily.
+diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
+index 5903ecf..a200695 100644
+--- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
++++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
+@@ -27,13 +27,13 @@ nand0: nand@40000000,0 {
+ 	reg = <0x40000000 0x10000000
+ 	       0xffffe800 0x200
+ 	      >;
+-	atmel,nand-addr-offset = <21>;
+-	atmel,nand-cmd-offset = <22>;
++	atmel,nand-addr-offset = <21>;	/* ale */
++	atmel,nand-cmd-offset = <22>;	/* cle */
+ 	nand-on-flash-bbt;
+ 	nand-ecc-mode = "soft";
+-	gpios = <&pioC 13 0
+-		 &pioC 14 0
+-		 0
++	gpios = <&pioC 13 0	/* rdy */
++		 &pioC 14 0 	/* nce */
++		 0		/* cd */
+ 		>;
+ 	partition@0 {
+ 		...
+-- 
+1.7.9.4
 
-Yes, I'm not sure we want to do it by default.
-
-> For that reason I would like to request that this *only* 
-> enabled by an explicit command-line option or similar 
-> (disasm_oops, maybe?), so that the user has to opt-in.
-
-The existing oops setup knob is an early_param() in 
-kernel/panic.c, "oops=".
-
-I'd suggesting extending that in an obvious way. Currently the 
-only option that exists is "oops=panic", so a comma delimited 
-list of attributes would be the natural extension, allowing:
-
-	oops=panic
-	oops=panic,disasm
-	oops=disasm
-
-Detail: it should do a strncmp(5, str, "disas"), so that every 
-usual variant works: oops=disasm, oops=disassemble, etc.
-
-> [...]  In other words, if *you* are debugging your own kernel, 
-> and don't expect to ship oopses off to someone else.
-
-Probably a DEBUG .config option as well, so that distros can 
-enable it. OTOH, CONFIG_CMDLINE allows the setting of such 
-parameters as well.
-
-Thanks,
-
-	Ingo
