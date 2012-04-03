@@ -1,135 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab2DCNQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 09:16:01 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46398 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab2DCNQA (ORCPT
+	id S1754695Ab2DCNS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 09:18:29 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:46926 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab2DCNS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 09:16:00 -0400
-Message-ID: <4F7AF7FE.5070307@linux.vnet.ibm.com>
-Date: Tue, 03 Apr 2012 18:45:42 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Tue, 3 Apr 2012 09:18:28 -0400
+Date: Tue, 3 Apr 2012 09:13:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 5/7] xen/setup: Transfer MFNs from non-RAM
+ E820	entries and gaps to E820 RAM
+Message-ID: <20120403131344.GB12464@phenom.dumpdata.com>
+References: <1333139850-28456-1-git-send-email-konrad.wilk@oracle.com>
+ <1333139850-28456-6-git-send-email-konrad.wilk@oracle.com>
+ <4F7AB96B.5030900@citrix.com>
 MIME-Version: 1.0
-To: lenb@kernel.org
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>, khilman@ti.com,
-        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com, arjan@infradead.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        amit.kucheria@linaro.org
-Subject: Re: [PATCH] cpuidle: Avoid possible NULL pointer dereference in __cpuidle_register_device()
-References: <20120402144422.11574.83174.stgit@srivatsabhat.in.ibm.com> <4F79FE8F.1040708@linaro.org> <4F7AE42F.9080800@linux.vnet.ibm.com> <4F7AE831.507@linaro.org>
-In-Reply-To: <4F7AE831.507@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12040303-1396-0000-0000-000000E8F5A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F7AB96B.5030900@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090206.4F7AF89F.0115,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 05:38 PM, Daniel Lezcano wrote:
-
-> On 04/03/2012 01:51 PM, Srivatsa S. Bhat wrote:
->> On 04/03/2012 01:01 AM, Daniel Lezcano wrote:
->>
->>> On 04/02/2012 04:44 PM, Srivatsa S. Bhat wrote:
->>>> In __cpuidle_register_device(), "dev->cpu" is used before checking if
->>>> dev is
->>>> non-NULL. Fix it.
->>>>
->>>> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
->>>> ---
->>>
->>> That should be fixed at the caller level. Usually, static function does
->>> not check the function parameters, it is up to the exported function to
->>> do that. It is supposed the static functions are called with valid
->>> parameters.
->>>
->>
->>
->> Ok, good point! I hadn't thought about that.. I just happened to notice
->> that in __cpuidle_register_device(), the dev == NULL check is performed
->> _after_ dereferencing it, which made the check useless. So I tried to
->> fix that within that function. But thanks for pointing out the
->> semantics..
->>
->>> There are two callers for __cpuidle_register_device:
->>>   * cpuidle_register_device
->>>   * cpuidle_enable_device
->>>
->>> Both of them do not check 'dev' is a valid parameter. They should as
->>> they are exported and could be used by an external module. IMHO, BUG_ON
->>> could be used here if dev == NULL.
->>>
->>
->>
->> BUG_ON? That would crash the system.. which might be unnecessary..
+On Tue, Apr 03, 2012 at 09:48:43AM +0100, David Vrabel wrote:
+> On 30/03/12 21:37, Konrad Rzeszutek Wilk wrote:
+> > We will now get:
+> > 
+> > -Released 283999 pages of unused memory
+> > +Exchanged 283999 pages
+> > .. snip..
+> > -Memory: 6487732k/9208688k available (5817k kernel code, 1136060k absent, 1584896k reserved, 2900k data, 692k init)
+> > +Memory: 6503888k/8072692k available (5817k kernel code, 1136060k absent, 432744k reserved, 2900k data, 692k init)
 > 
-> Mmh, yes, I agree. never mind.
+> This isn't correct.  You've have lost ~1 GB of memory which are the
+> pages that were supposed to be moved.  The additional 1GB of reserved
+> memory in the old case is the balloon.
+
+Whoops.
 > 
->> How about checking if dev == NULL in the 2 callers like you suggested
->> and returning -EINVAL if dev is indeed NULL?
->> (And of course no checks for dev == NULL in __cpuidle_register_device).
+> In xen_memory_setup() where it loops through the e820 to clip the RAM
+> regions you need to factor in the additional memory you've moved.  In
+> this loop you may need to count the pages in the RAM region instead of
+> the simple (addr < mem_end) test.  Take care with RAM regions with
+> partial pages and the like.
+
+<nods> I did some more exhaustive testing and hit some issues
 > 
-> Ok for me.
+> > which is more in line with classic XenOLinux.
+> > 
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/xen/setup.c |   85 ++++++++++++++++++++++++++++++++++++++++++++++++--
+> >  1 files changed, 82 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> > index 1ba8dff..2a12143 100644
+> > --- a/arch/x86/xen/setup.c
+> > +++ b/arch/x86/xen/setup.c
+> > @@ -120,12 +120,89 @@ static unsigned long __init xen_release_chunk(unsigned long start,
+> >  	return len;
+> >  }
+> >  
+> > +static unsigned long __init xen_exchange_chunk(unsigned long start_pfn,
+> > +	unsigned long end_pfn, unsigned long nr_pages, unsigned long exchanged,
+> > +	unsigned long *pages_left, const struct e820entry *list,
+> > +	size_t map_size)
+> > +{
+> [...]
+> > +
+> > +		for (pfn = start_pfn; pfn < start_pfn + nr; pfn++) {
+> > +			unsigned long mfn = pfn_to_mfn(pfn);
+> > +
+> > +			if (mfn == INVALID_P2M_ENTRY || mfn_to_pfn(mfn) != pfn)
+> > +				break;
+> > +
+> > +			if (!early_set_phys_to_machine(dest_pfn, mfn))
+> > +				break;
+> > +
+> > +			/* You would think we should do HYPERVISOR_update_va_mapping
+> > +			 * but we don't need to as the hypervisor only sets up the
+> > +			 * initial pagetables up to nr_pages, and we stick the MFNs
+> > +			 * past that.
+> > +			 */
 > 
+> Hmmm. Are you sure this is safe?  What happens if Linux tries to use
+> these pages before creating new page tables?  e.g., via some early boot
+> allocator before the final page tables are setup? (This might not be a
+> problem, I haven't checked).
 
+I think this is what I am hitting actually, but not entirely sure.
+> 
+> You've may have gotten away with it for now because the moved MFNs are
+> marked as unusable.
 
-Great! Here is the updated patch:
+Right, and they should be marked 'usuable'. There is a forthcoming patch
+that does that but it isn't ready yet.
 
----
-
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2] cpuidle: Add checks to avoid NULL pointer dereference
-
-The existing check for dev == NULL in __cpuidle_register_device() is rendered
-useless because dev is dereferenced before the check itself. Moreover,
-correctly speaking, it is the job of the callers of this function, i.e.,
-cpuidle_register_device() & cpuidle_enable_device() (which also happen to be
-exported functions) to ensure that __cpuidle_register_device() is called with
-a non-NULL dev.
-
-So add the necessary dev == NULL checks in the two callers and remove the
-(useless) check from __cpuidle_register_device().
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- drivers/cpuidle/cpuidle.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 87411ce..eae2f11 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -291,6 +291,9 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
- 	int ret, i;
- 	struct cpuidle_driver *drv = cpuidle_get_driver();
- 
-+	if (!dev)
-+		return -EINVAL;
-+
- 	if (dev->enabled)
- 		return 0;
- 	if (!drv || !cpuidle_curr_governor)
-@@ -375,8 +378,6 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
- 	struct device *cpu_dev = get_cpu_device((unsigned long)dev->cpu);
- 	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
- 
--	if (!dev)
--		return -EINVAL;
- 	if (!try_module_get(cpuidle_driver->owner))
- 		return -EINVAL;
- 
-@@ -401,6 +402,9 @@ int cpuidle_register_device(struct cpuidle_device *dev)
- {
- 	int ret;
- 
-+	if (!dev)
-+		return -EINVAL;
-+
- 	mutex_lock(&cpuidle_lock);
- 
- 	if ((ret = __cpuidle_register_device(dev))) {
-
-
+> 
+> David
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
