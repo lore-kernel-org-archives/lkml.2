@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab2DCWJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:09:54 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:54647 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab2DCWJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:09:53 -0400
-Date: Tue, 3 Apr 2012 15:09:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Geon Si Jeong <gshark.jeong@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] leds: Add LED driver for lm3556 chip
-Message-ID: <20120403220946.GA6022@kroah.com>
-References: <1333089508-8501-1-git-send-email-gshark.jeong@gmail.com>
- <1333089508-8501-2-git-send-email-gshark.jeong@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333089508-8501-2-git-send-email-gshark.jeong@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755616Ab2DCWL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:11:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58957 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754548Ab2DCWLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 18:11:55 -0400
+Message-ID: <1333491102.3040.12.camel@pasglop>
+Subject: Re: [REGRESSION][PATCH V4 3/3] bpf jit: Let the powerpc jit handle
+ negative offsets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: kaffeemonster@googlemail.com, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, matt@ozlabs.org
+Date: Wed, 04 Apr 2012 08:11:42 +1000
+In-Reply-To: <20120403.180302.342779808900865443.davem@davemloft.net>
+References: <4F75CA89.4010709@googlemail.com>
+	 <4F75D2A5.7060407@googlemail.com>
+	 <20120403.180302.342779808900865443.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 03:38:28PM +0900, Geon Si Jeong wrote:
-> It is a simple driver for LM3556 Chip(Texas Instruments)
-> LM3556 :
-> The LM3556 is a 4 MHz fixed-frequency synchronous boost
-> converter plus 1.5A constant current driver for a high-current white LED.
-> Datasheet: www.national.com/ds/LM/LM3556.pdf
+On Tue, 2012-04-03 at 18:03 -0400, David Miller wrote:
+
+> > Signed-off-by: Jan Seiffert <kaffeemonster@googlemail.com>
+> > 
+> > I have only compile tested this, -ENOHARDWARE.
+> > Can someone with more powerpc kung-fu review and maybe test this?
+> > Esp. powerpc asm is not my strong point. I think i botched the
+> > stack frame in the call setup. Help?
 > 
-> Tested on OMAP4430
+> I'm not applying this until a powerpc person tests it.
 > 
-> Signed-off-by: Geon Si Jeong <gshark.jeong@gmail.com>
-> ---
->  drivers/leds/Kconfig        |    9 +
->  drivers/leds/Makefile       |    2 +-
->  drivers/leds/leds-lm3556.c  |  462 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/leds-lm3556.h |  242 ++++++++++++++++++++++
+> Also, we have an ARM JIT in the tree which probably needs to
+> be fixed similarly.
 
-Why does this .h file have to be in include/linux/ ?
+Matt's having a look at powerpc
 
-Why does it need to be a .h file at all?  Why can't it be part of the .c
-file?
+Cheers,
+Ben.
 
-Only put files in include/linux/ that other files outside of your local
-directory, need to access, and only put stuff in those files that other
-files need to have.
 
-thanks,
-
-greg k-h
