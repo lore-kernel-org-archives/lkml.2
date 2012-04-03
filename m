@@ -1,39 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab2DCDYd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 23:24:33 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:43351 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab2DCDYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 23:24:32 -0400
-Message-ID: <4F7A6D13.4060704@parallels.com>
-Date: Tue, 3 Apr 2012 07:22:59 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <fweisbec@gmail.com>, <rni@google.com>, <ctalbott@google.com>
-Subject: Re: [PATCHSET] cgroup: cftype based file interface, take #2
-References: <1332368265-21586-1-git-send-email-tj@kernel.org> <20120330222936.GI28934@google.com>
-In-Reply-To: <20120330222936.GI28934@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [12.208.8.6]
+	id S1752653Ab2DCD2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 23:28:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42378 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751394Ab2DCD2Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 23:28:16 -0400
+Message-ID: <1333423686.443.37.camel@deadeye>
+Subject: Re: [ 117/175] iommu/amd: Make sure IOMMU interrupts are re-enabled
+ on resume
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>, Joerg Roedel <joerg.roedel@amd.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Date: Tue, 03 Apr 2012 04:28:06 +0100
+In-Reply-To: <20120330194849.232840068@linuxfoundation.org>
+References: <20120330194849.232840068@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-AXEaK1bRQCm5WnPKedhv"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2012 02:29 AM, Tejun Heo wrote:
-> On Wed, Mar 21, 2012 at 03:17:33PM -0700, Tejun Heo wrote:
->> and is also available in the following git branch.
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup-cftype
->
-> Branch has been refreshed on top of the current mainline and with the
-> updated patch.
->
-> Thanks.
->
-Do I need to send you a patch to remove memcg's populate on top of this ?
+
+--=-AXEaK1bRQCm5WnPKedhv
+Content-Type: multipart/mixed; boundary="=-28f4CSzHealFlVkDicc8"
+
+
+--=-28f4CSzHealFlVkDicc8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 2012-03-30 at 12:50 -0700, Greg KH wrote:
+> 3.3-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Joerg Roedel <joerg.roedel@amd.com>
+>=20
+> commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream.
+>=20
+> Unfortunatly the interrupts for the event log and the
+> peripheral page-faults are only enabled at boot but not
+> re-enabled at resume. Fix that.
+[...]
+
+It looks like this should be applicable to 3.0 and 3.2 as well, but only
+for the event log.  I'm attaching my (untested) backports for
+consideration.
+
+Ben.
+
+--=20
+Ben Hutchings
+Reality is just a crutch for people who can't handle science fiction.
+
+--=-28f4CSzHealFlVkDicc8
+Content-Disposition: attachment;
+	filename*0=0001-iommu-amd-Make-sure-IOMMU-interrupts-are-re-enabled-v3.0;
+	filename*1=.patch
+Content-Type: text/x-patch;
+	name*0=0001-iommu-amd-Make-sure-IOMMU-interrupts-are-re-enabled-v3.0.pat;
+	name*1=ch; charset="UTF-8"
+Content-Transfer-Encoding: base64
+
+RnJvbSBlZDM4NDViYTg0ZTVkYmUzNTkzZGRkZjA2YjYzNzc5NjBmOTU3MTJkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogSm9lcmcgUm9lZGVsIDxqb2VyZy5yb2VkZWxAYW1kLmNvbT4N
+CkRhdGU6IFRodSwgMTUgTWFyIDIwMTIgMTY6Mjk6NDcgKzAxMDANClN1YmplY3Q6IFtQQVRDSF0g
+aW9tbXUvYW1kOiBNYWtlIHN1cmUgSU9NTVUgaW50ZXJydXB0cyBhcmUgcmUtZW5hYmxlZCBvbg0K
+IHJlc3VtZQ0KDQpjb21taXQgOWRkZDU5MmExOTFiMzJmMmVlNmM0YjZlZDJiZDUyNjY1YzNhNDlm
+NSB1cHN0cmVhbS4NCg0KVW5mb3J0dW5hdGx5IHRoZSBpbnRlcnJ1cHRzIGZvciB0aGUgZXZlbnQg
+bG9nIGFuZCB0aGUNCnBlcmlwaGVyYWwgcGFnZS1mYXVsdHMgYXJlIG9ubHkgZW5hYmxlZCBhdCBi
+b290IGJ1dCBub3QNCnJlLWVuYWJsZWQgYXQgcmVzdW1lLiBGaXggdGhhdC4NCg0KU2lnbmVkLW9m
+Zi1ieTogSm9lcmcgUm9lZGVsIDxqb2VyZy5yb2VkZWxAYW1kLmNvbT4NCltid2g6IEJhY2twb3J0
+IHRvIDMuMDoNCiAtIERyb3AgY2hhbmdlIHRvIFBQUiBsb2cgd2hpY2ggd2FzIGFkZGVkIGluIDMu
+Mw0KIC0gU291cmNlIGlzIHVuZGVyIGFyY2gveDg2L2tlcm5lbF0NClNpZ25lZC1vZmYtYnk6IEJl
+biBIdXRjaGluZ3MgPGJlbkBkZWNhZGVudC5vcmcudWs+DQotLS0NCiBhcmNoL3g4Ni9rZXJuZWwv
+YW1kX2lvbW11X2luaXQuYyB8ICAgMjQgKysrKysrKysrKysrKysrKystLS0tLS0tDQogMSBmaWxl
+IGNoYW5nZWQsIDE3IGluc2VydGlvbnMoKyksIDcgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQg
+YS9hcmNoL3g4Ni9rZXJuZWwvYW1kX2lvbW11X2luaXQuYyBiL2FyY2gveDg2L2tlcm5lbC9hbWRf
+aW9tbXVfaW5pdC5jDQppbmRleCBiZmM4NDUzLi4zM2RmNmU4IDEwMDY0NA0KLS0tIGEvYXJjaC94
+ODYva2VybmVsL2FtZF9pb21tdV9pbml0LmMNCisrKyBiL2FyY2gveDg2L2tlcm5lbC9hbWRfaW9t
+bXVfaW5pdC5jDQpAQCAtMTAzMSw4ICsxMDMxLDkgQEAgc3RhdGljIGludCBpb21tdV9zZXR1cF9t
+c2koc3RydWN0IGFtZF9pb21tdSAqaW9tbXUpDQogew0KIAlpbnQgcjsNCiANCi0JaWYgKHBjaV9l
+bmFibGVfbXNpKGlvbW11LT5kZXYpKQ0KLQkJcmV0dXJuIDE7DQorCXIgPSBwY2lfZW5hYmxlX21z
+aShpb21tdS0+ZGV2KTsNCisJaWYgKHIpDQorCQlyZXR1cm4gcjsNCiANCiAJciA9IHJlcXVlc3Rf
+dGhyZWFkZWRfaXJxKGlvbW11LT5kZXYtPmlycSwNCiAJCQkJIGFtZF9pb21tdV9pbnRfaGFuZGxl
+ciwNCkBAIC0xMDQyLDI0ICsxMDQzLDMzIEBAIHN0YXRpYyBpbnQgaW9tbXVfc2V0dXBfbXNpKHN0
+cnVjdCBhbWRfaW9tbXUgKmlvbW11KQ0KIA0KIAlpZiAocikgew0KIAkJcGNpX2Rpc2FibGVfbXNp
+KGlvbW11LT5kZXYpOw0KLQkJcmV0dXJuIDE7DQorCQlyZXR1cm4gcjsNCiAJfQ0KIA0KIAlpb21t
+dS0+aW50X2VuYWJsZWQgPSB0cnVlOw0KLQlpb21tdV9mZWF0dXJlX2VuYWJsZShpb21tdSwgQ09O
+VFJPTF9FVlRfSU5UX0VOKTsNCiANCiAJcmV0dXJuIDA7DQogfQ0KIA0KIHN0YXRpYyBpbnQgaW9t
+bXVfaW5pdF9tc2koc3RydWN0IGFtZF9pb21tdSAqaW9tbXUpDQogew0KKwlpbnQgcmV0Ow0KKw0K
+IAlpZiAoaW9tbXUtPmludF9lbmFibGVkKQ0KLQkJcmV0dXJuIDA7DQorCQlnb3RvIGVuYWJsZV9m
+YXVsdHM7DQogDQogCWlmIChwY2lfZmluZF9jYXBhYmlsaXR5KGlvbW11LT5kZXYsIFBDSV9DQVBf
+SURfTVNJKSkNCi0JCXJldHVybiBpb21tdV9zZXR1cF9tc2koaW9tbXUpOw0KKwkJcmV0ID0gaW9t
+bXVfc2V0dXBfbXNpKGlvbW11KTsNCisJZWxzZQ0KKwkJcmV0ID0gLUVOT0RFVjsNCiANCi0JcmV0
+dXJuIDE7DQorCWlmIChyZXQpDQorCQlyZXR1cm4gcmV0Ow0KKw0KK2VuYWJsZV9mYXVsdHM6DQor
+CWlvbW11X2ZlYXR1cmVfZW5hYmxlKGlvbW11LCBDT05UUk9MX0VWVF9JTlRfRU4pOw0KKw0KKwly
+ZXR1cm4gMDsNCiB9DQogDQogLyoqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioq
+KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioNCi0tIA0KMS43LjkuNQ0KDQo=
+
+
+--=-28f4CSzHealFlVkDicc8
+Content-Disposition: attachment;
+	filename*0=0001-iommu-amd-Make-sure-IOMMU-interrupts-are-re-enabled-v3.2;
+	filename*1=.patch
+Content-Type: text/x-patch;
+	name*0=0001-iommu-amd-Make-sure-IOMMU-interrupts-are-re-enabled-v3.2.pat;
+	name*1=ch; charset="UTF-8"
+Content-Transfer-Encoding: base64
+
+RnJvbSBjZTFhZTRhNDZlYWQ0ODk5OTM5MDAyZDQ4ZTIzNjc4NjAxZWM2OTY5IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogSm9lcmcgUm9lZGVsIDxqb2VyZy5yb2VkZWxAYW1kLmNvbT4N
+CkRhdGU6IFRodSwgMTUgTWFyIDIwMTIgMTY6Mjk6NDcgKzAxMDANClN1YmplY3Q6IFtQQVRDSF0g
+aW9tbXUvYW1kOiBNYWtlIHN1cmUgSU9NTVUgaW50ZXJydXB0cyBhcmUgcmUtZW5hYmxlZCBvbg0K
+IHJlc3VtZQ0KDQpjb21taXQgOWRkZDU5MmExOTFiMzJmMmVlNmM0YjZlZDJiZDUyNjY1YzNhNDlm
+NSB1cHN0cmVhbS4NCg0KVW5mb3J0dW5hdGx5IHRoZSBpbnRlcnJ1cHRzIGZvciB0aGUgZXZlbnQg
+bG9nIGFuZCB0aGUNCnBlcmlwaGVyYWwgcGFnZS1mYXVsdHMgYXJlIG9ubHkgZW5hYmxlZCBhdCBi
+b290IGJ1dCBub3QNCnJlLWVuYWJsZWQgYXQgcmVzdW1lLiBGaXggdGhhdC4NCg0KU2lnbmVkLW9m
+Zi1ieTogSm9lcmcgUm9lZGVsIDxqb2VyZy5yb2VkZWxAYW1kLmNvbT4NCltid2g6IEJhY2twb3J0
+IHRvIDMuMjogZHJvcCBjaGFuZ2UgdG8gUFBSIGxvZyB3aGljaCB3YXMgYWRkZWQgaW4gMy4zXQ0K
+U2lnbmVkLW9mZi1ieTogQmVuIEh1dGNoaW5ncyA8YmVuQGRlY2FkZW50Lm9yZy51az4NCi0tLQ0K
+IGRyaXZlcnMvaW9tbXUvYW1kX2lvbW11X2luaXQuYyB8ICAgMjQgKysrKysrKysrKysrKysrKyst
+LS0tLS0tDQogMSBmaWxlIGNoYW5nZWQsIDE3IGluc2VydGlvbnMoKyksIDcgZGVsZXRpb25zKC0p
+DQoNCmRpZmYgLS1naXQgYS9kcml2ZXJzL2lvbW11L2FtZF9pb21tdV9pbml0LmMgYi9kcml2ZXJz
+L2lvbW11L2FtZF9pb21tdV9pbml0LmMNCmluZGV4IDVjNzQxNzkuLjIwZDU4NTIgMTAwNjQ0DQot
+LS0gYS9kcml2ZXJzL2lvbW11L2FtZF9pb21tdV9pbml0LmMNCisrKyBiL2RyaXZlcnMvaW9tbXUv
+YW1kX2lvbW11X2luaXQuYw0KQEAgLTEwMzMsOCArMTAzMyw5IEBAIHN0YXRpYyBpbnQgaW9tbXVf
+c2V0dXBfbXNpKHN0cnVjdCBhbWRfaW9tbXUgKmlvbW11KQ0KIHsNCiAJaW50IHI7DQogDQotCWlm
+IChwY2lfZW5hYmxlX21zaShpb21tdS0+ZGV2KSkNCi0JCXJldHVybiAxOw0KKwlyID0gcGNpX2Vu
+YWJsZV9tc2koaW9tbXUtPmRldik7DQorCWlmIChyKQ0KKwkJcmV0dXJuIHI7DQogDQogCXIgPSBy
+ZXF1ZXN0X3RocmVhZGVkX2lycShpb21tdS0+ZGV2LT5pcnEsDQogCQkJCSBhbWRfaW9tbXVfaW50
+X2hhbmRsZXIsDQpAQCAtMTA0NCwyNCArMTA0NSwzMyBAQCBzdGF0aWMgaW50IGlvbW11X3NldHVw
+X21zaShzdHJ1Y3QgYW1kX2lvbW11ICppb21tdSkNCiANCiAJaWYgKHIpIHsNCiAJCXBjaV9kaXNh
+YmxlX21zaShpb21tdS0+ZGV2KTsNCi0JCXJldHVybiAxOw0KKwkJcmV0dXJuIHI7DQogCX0NCiAN
+CiAJaW9tbXUtPmludF9lbmFibGVkID0gdHJ1ZTsNCi0JaW9tbXVfZmVhdHVyZV9lbmFibGUoaW9t
+bXUsIENPTlRST0xfRVZUX0lOVF9FTik7DQogDQogCXJldHVybiAwOw0KIH0NCiANCiBzdGF0aWMg
+aW50IGlvbW11X2luaXRfbXNpKHN0cnVjdCBhbWRfaW9tbXUgKmlvbW11KQ0KIHsNCisJaW50IHJl
+dDsNCisNCiAJaWYgKGlvbW11LT5pbnRfZW5hYmxlZCkNCi0JCXJldHVybiAwOw0KKwkJZ290byBl
+bmFibGVfZmF1bHRzOw0KIA0KIAlpZiAocGNpX2ZpbmRfY2FwYWJpbGl0eShpb21tdS0+ZGV2LCBQ
+Q0lfQ0FQX0lEX01TSSkpDQotCQlyZXR1cm4gaW9tbXVfc2V0dXBfbXNpKGlvbW11KTsNCisJCXJl
+dCA9IGlvbW11X3NldHVwX21zaShpb21tdSk7DQorCWVsc2UNCisJCXJldCA9IC1FTk9ERVY7DQog
+DQotCXJldHVybiAxOw0KKwlpZiAocmV0KQ0KKwkJcmV0dXJuIHJldDsNCisNCitlbmFibGVfZmF1
+bHRzOg0KKwlpb21tdV9mZWF0dXJlX2VuYWJsZShpb21tdSwgQ09OVFJPTF9FVlRfSU5UX0VOKTsN
+CisNCisJcmV0dXJuIDA7DQogfQ0KIA0KIC8qKioqKioqKioqKioqKioqKioqKioqKioqKioqKioq
+KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqDQotLSANCjEuNy45
+LjUNCg0K
+
+
+--=-28f4CSzHealFlVkDicc8--
+
+--=-AXEaK1bRQCm5WnPKedhv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT3puRue/yOyVhhEJAQp/Ow//UeA8/pDqX/2VYJz7KRv7q6gc/DeK6Nsv
+OgvPJ+mFG2gowzjVtfHMIuNj+GEjX7Og+CR/XbAAXWgGTRsKQEZoXRbbBXtHkYez
+SG2Lhu9xc9zo0HKX1kFRpDGfx/9ovpluSjaZHK9Z5/vYC/MU/7cHSX5ARVMqFMmP
++Uyw0hz/B1JoutTx3oNsNFT6dmT4dF0OhsXP5CZxVStrF5DZ07cpskExQUqWfI0L
+62K3wTi5MKoFwZ0oWpY8d+DaI1SScDagj1qGDfiyc8yjRQy3JLG0m8wZUNN66G8J
+RwAyujqPA87jJPw8z95gYYR0UJkiF34CBnN6gsn1cplLud5iDau1N2Y5vStn7bpZ
+87qCcLSVeV4pXEh19fmEHUWijR7X4XKHFPItvOyx2IEd3i8lfkaIwkaCaHAnG5Cx
+5BId9Eew+h4yFNHJMEo7FXiB1wT1vRoz3wJe6+JmkEq6pP2agVu0EGFX0DrFJbS6
+IrMVvi2lefXp+lfrSLk/ml6QJp8rXcp6VKTdZlNRgnC4AB5S5nxsAW6pVCxQmVkr
+0u3Kw4ChDP2G8b9WGMY0yzKJf7DZR/VFQ743mtT9X5Z+zHzIB3VrywrDEMVV9Y82
+ZKD2lIPHzKl2vufAmtPd4t4PCrDATyBCALDnuK9DjCgwiJRbvLWtqQtM9W5vrfAT
+GQwX1WSGp2k=
+=H1Z5
+-----END PGP SIGNATURE-----
+
+--=-AXEaK1bRQCm5WnPKedhv--
