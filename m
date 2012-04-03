@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab2DCVtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:49:21 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38626 "EHLO
+	id S1755543Ab2DCVuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:50:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38636 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab2DCVtU (ORCPT
+	with ESMTP id S1754866Ab2DCVuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:49:20 -0400
-Date: Tue, 03 Apr 2012 17:49:05 -0400 (EDT)
-Message-Id: <20120403.174905.769295608759578804.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org
-Subject: Re: [V6 PATCH] virtio-net: send gratuitous packets when needed
+	Tue, 3 Apr 2012 17:50:23 -0400
+Date: Tue, 03 Apr 2012 17:48:14 -0400 (EDT)
+Message-Id: <20120403.174814.1643372599291158711.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: Re: [PATCH v3,1/1] net/hyperv: Add flow control based on hi/low
+ watermark
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120328054428.34415.75432.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120328054428.34415.75432.stgit@amd-6168-8-1.englab.nay.redhat.com>
+In-Reply-To: <1332890445-12562-2-git-send-email-haiyangz@microsoft.com>
+References: <1332890445-12562-1-git-send-email-haiyangz@microsoft.com>
+	<1332890445-12562-2-git-send-email-haiyangz@microsoft.com>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 14:49:09 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 14:48:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 28 Mar 2012 13:44:28 +0800
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Tue, 27 Mar 2012 16:20:45 -0700
 
-> As hypervior does not have the knowledge of guest network configuration, it's
-> better to ask guest to send gratuitous packets when needed.
+> In the existing code, we only stop queue when the ringbuffer is full,
+> so the current packet has to be dropped or retried from upper layer.
 > 
-> Guest tests VIRTIO_NET_S_ANNOUNCE bit during config change interrupt and when it
-> is set, a workqueue is scheduled to send gratuitous packet through
-> NETDEV_NOTIFY_PEERS. This feature is negotiated through bit
-> VIRTIO_NET_F_GUEST_ANNOUNCE.
- ...
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> This patch stops the tx queue when available ringbuffer is below
+> the low watermark. So the ringbuffer still has small amount of space
+> available for the current packet. This will reduce the overhead of
+> retries on sending.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Michael and others, what's the story with this patch?
+Applied to net-next
