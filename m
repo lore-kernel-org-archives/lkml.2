@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab2DCIig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:38:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47400 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2DCIid convert rfc822-to-8bit (ORCPT
+	id S1752961Ab2DCIjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:39:03 -0400
+Received: from ar100.montanavision.com ([216.146.103.100]:43881 "EHLO
+	silka.with-linux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab2DCIjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:38:33 -0400
+	Tue, 3 Apr 2012 04:39:00 -0400
+Message-ID: <4F7AB6FE.3080009@silka.with-linux.com>
+Date: Tue, 03 Apr 2012 02:38:22 -0600
+From: Kelly Anderson <kelly@silka.with-linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120317 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <1333436730-13008-1-git-send-email-rydberg@euromail.se>
-References: <1333436730-13008-1-git-send-email-rydberg@euromail.se>
-Date: Tue, 3 Apr 2012 10:38:32 +0200
-Message-ID: <CAN+gG=EvmTFKmKGaC6T-RKYhUy8U0NqWxqz-k_Gr_w5_rm57Bg@mail.gmail.com>
-Subject: Re: [RFC 0/5] hid: Extending the device-driver matching mechanism
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mohammed Shafi <shafi.wireless@gmail.com>
+CC: Ben Greear <greearb@candelatech.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>
+Subject: Re: [ath9k-devel] 3.3.1 ath9k regression
+References: <4F7A8EB7.4060200@silka.with-linux.com> <4F7A923D.5000002@candelatech.com> <CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com> <4F7A9D5C.8040402@silka.with-linux.com> <CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com> <4F7AAAD9.2040307@silka.with-linux.com> <CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com> <CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
+In-Reply-To: <CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+On 04/03/2012 02:04 AM, Mohammed Shafi wrote:
+> On Tue, Apr 3, 2012 at 1:22 PM, Mohammed Shafi<shafi.wireless@gmail.com>  wrote:
+>>> I just tried the unpatched kernel with pcie_aspm=off.  The device shows up
+>>> with ifconfig,
+>>> but it will not connect to the access point.
+>> oh, ok in addition does disabling power save helps ?
 
-well, I'm giving you my answer here as it will be more convenient than
-in the previous thread.
+Setting ath9k power management off makes no difference.
 
-So, I made a few tests yesterday, and I have now a clearer idea about
-this solution:
+> also please provide the logs sudo modprobe -v ath9k debug=0xe01 when
+> the STA is not able to connect
 
-generally, I like it. Furthermore, it should help us build new classes
-of devices without involving hid-core, which is great.
-However, I have a few minors concerns, and a major one.
+I'm using systemd with kmod, so I'm not sure that the modprobe -v is 
+giving you anything useful.
 
-The major one comes with patch 3: introducing the hid_parse function
-in usbhid is great but it interferes with report_fixup mechanism. That
-means that several drivers won't work with this solution.
+The output of the modprobe -v is nothing.
 
-Now the minors:
-- as mentioned, the patches do not apply on Jiri's tree, which means
-that we are missing the detection of the serial protocol (see comment
-in patch 4).
-- shouldn't we introduce the same behavior for bluetooth (hidp)
-devices -> to be able to separate the handling of the magicmouse for
-instance)?
-- as the hid_parse function is already called, shouldn't we remove the
-calls in the other drivers?
 
-Cheers,
-Benjamin
+The systemd journal has these entries (which are truncated due to the 
+way systemd-journal handles piped out)
 
-On Tue, Apr 3, 2012 at 09:05, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Jiri,
+
+Apr 03 02:26:50 comer.internal kernel: Registered led device: ath9k-phy1
+Apr 03 02:26:50 comer.internal kernel: ieee80211 phy1: Atheros AR9280 
+Rev:2...16
+
+
+>> --
+>> thanks,
+>> shafi
 >
-> These patches were first sent out as a reply to Benjamin's autoloading
-> patch (http://www.spinics.net/lists/linux-input/msg20001.html), but it
-> seems more appropriate as an RFC.
 >
-> The idea is to parse the hid descriptors before adding the device,
-> such that the device identifier, in particular the device/modalias,
-> can be augmented by the report information. This approach solves the
-> generic auto-loading problem we face today, here exemplified by a
-> solution for hid-multitouch.
->
-> The patches apply cleanly to 3.3 for easy testing.
->
-> Thanks,
-> Henrik
->
-> Henrik Rydberg (5):
->  hid: Remove multitouch quirk
->  hid-multitouch: Prepare driver for new device ids
->  hid: Parse the device before adding it
->  hid: Add idtags to modalias
->  hid: Remove multitouch devices from blacklist
->
->  drivers/hid/hid-core.c          |   88 ++++++++-------------------
->  drivers/hid/hid-input.c         |   11 ----
->  drivers/hid/hid-multitouch.c    |  124 +++++++++++++++++++++------------------
->  drivers/hid/usbhid/hid-core.c   |    5 ++
->  include/linux/hid.h             |    8 ++-
->  include/linux/mod_devicetable.h |    2 +-
->  scripts/mod/file2alias.c        |    2 +
->  7 files changed, 107 insertions(+), 133 deletions(-)
->
-> --
-> 1.7.9.5
->
+
