@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab2DCU0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 16:26:44 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:48770 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753286Ab2DCU0m (ORCPT
+	id S1754860Ab2DCU2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 16:28:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48673 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab2DCU2x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 16:26:42 -0400
-Message-ID: <4F7B5CFB.1@xenotime.net>
-Date: Tue, 03 Apr 2012 13:26:35 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 3 Apr 2012 16:28:53 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Rob Landley <rob@landley.net>, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] MAINTAINERS: change in Documentation/ maintainer
+In-Reply-To: <1333055554-31300-2-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <20120329211131.GA31250@pengutronix.de>
+	<1333055554-31300-2-git-send-email-u.kleine-koenig@pengutronix.de>
+Date: Tue, 3 Apr 2012 22:28:52 +0200
+Message-ID: <CACRpkdbVWnZHzgDuqMdvELjjwte1aJXnghpd_qtqcz3cf6fuXQ@mail.gmail.com>
+Subject: Re: [PATCH 02/17] pinctrl: mark const init data with __initconst
+ instead of __initdata
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        kernel@pengutronix.de, Randy Dunlap <rdunlap@xenotime.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+2012/3/29 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
 
-I'm dropping off as Documentation/ maintainer.
-Rob Landley has agreed to take it over.  Thanks, Rob.
+> As long as there is no other non-const variable marked __initdata in the
+> same compilation unit it doesn't hurt. If there were one however
+> compilation would fail with
+>
+>        error: $variablename causes a section type conflict
+>
+> because a section containing const variables is marked read only and so
+> cannot contain non-const variables.
 
-I'll still be around reviewing patches and testing.
-Stephen, please drop my quilt tree from linux-next.
+Thanks. applied, U300 compiles fine so I trust you on this
+advice!
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- MAINTAINERS |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- lnx-34-rc1.orig/MAINTAINERS
-+++ lnx-34-rc1/MAINTAINERS
-@@ -2322,9 +2322,9 @@ S:	Supported
- F:	drivers/acpi/dock.c
- 
- DOCUMENTATION
--M:	Randy Dunlap <rdunlap@xenotime.net>
-+M:	Rob Landley <rob@landley.net>
- L:	linux-doc@vger.kernel.org
--T:	quilt http://xenotime.net/kernel-doc-patches/current/
-+T:	TBD
- S:	Maintained
- F:	Documentation/
- 
+Linus Walleij
