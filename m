@@ -1,81 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab2DBX6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 19:58:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37896 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2DBX6J (ORCPT
+	id S1753096Ab2DCABG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 20:01:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38392 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab2DCABF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 19:58:09 -0400
-Date: Tue, 3 Apr 2012 09:57:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Paul Mundt <lethal@linux-sh.org>, <dhowells@redhat.com>,
-        <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 07/11] sh: fix several build failures from system.h
- fallout
-Message-Id: <20120403095754.a70f38eb70766580843debc7@canb.auug.org.au>
-In-Reply-To: <4F79ECD9.6000108@windriver.com>
-References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-	<1333312727-11428-8-git-send-email-paul.gortmaker@windriver.com>
-	<20120402010048.GA21647@linux-sh.org>
-	<4F79ECD9.6000108@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Apr_2012_09_57_54_+1000_7YwivoXNtPZ2HaJV"
+	Mon, 2 Apr 2012 20:01:05 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <019601cd1126$971508e0$c53f1aa0$@com>
+References: <1332130930.26765.2.camel@phoenix> <1332131021.26765.4.camel@phoenix>
+ <019601cd1126$971508e0$c53f1aa0$@com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 3 Apr 2012 08:00:42 +0800
+Message-ID: <CAF+7xWnqL1RCTt5cuaVY+MYzjJSZM-=+3nhPdekCurcOV9yOpw@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/4] regulator: Rework s5m8767_set_voltage to support
+ both LDOs and BUCKs
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Apr_2012_09_57_54_+1000_7YwivoXNtPZ2HaJV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi, Axel
+> Basically, Your optimization code looks good.
+> But, S5M8767A support 9 Bucks.
+> Please Add #9 Buck handling too.
+Current code does hand #9 buck in s5m8767_set_voltage().
 
-On Mon, 2 Apr 2012 14:15:53 -0400 Paul Gortmaker <paul.gortmaker@windriver.=
-com> wrote:
->
-> On 12-04-01 09:00 PM, Paul Mundt wrote:
->
-> > There's still more, but they've alreadly all been fixed up in my tree.
->=20
-> OK, I can drop this one.  Is that tree part of linux-next?
+> As you know, 3.4-rc1 is released.
+> Please rebase your patch on 3.4-rc1.
+> Some feature is added on 3.4-rc1.
+I just try to apply the patch to Mark's for-next tree and linux-next tree.
+It looks ok. So I think no need to re-generate the patch.
 
-I used to have sh-current and sh trees (and rmobile-current and rmobile)
-trees in linux-next, but they have not been resurrected since the
-kernel.org problems last year ...
-
-They were all branches of
-git://git.kernel.org/pub/scm/linux/kernel/git/lethal/sh-2.6.git which is
-still listed in MAINTAINERS but does not exist :-(
-
-Paul M, to you have an alternate place I can fetch from?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__3_Apr_2012_09_57_54_+1000_7YwivoXNtPZ2HaJV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPej0CAAoJEECxmPOUX5FEN1YP/j/nNDBlh9ocYsMXC/KSTGQv
-xbsKzFEuiEFOlFUND6hZeOpPpd+74fdBkD/hodEta9NMjmzdwJiL93k6Ptyz5D6x
-aykQ/PW/WEtUuECV6V4Q/b/W73BrYZMSJHBFWuofONK2a1/0zlIZ9eRnG9rvCvvN
-QHvwdGgX2I85jdU4FVLYc8aBS+uVRCoD7asa2/EJWo5NnhwPw1Sm1iSX4iJrJUJ8
-++LqUXEYepzvneGP0ET8JxeZd/eH+F1AVwSjp2eZu2PekVIL+lcA2pxqPaCCpKnS
-LyE4fddh64iHa34CXwwaFLA0YSXM1aE+VSa2irq1Cbl5WlOXhPzPZ7N6Mavd2Mi5
-4Y0oQM6PwS2Mxr52V5VhnfUwNCMksZvq3x0S5i1ch7n09RNneocHSK8zF2i1PQ5y
-Y5K9kv6G6J7FK8+vReBipr9B5JjmNn/WI1pe0X7ypBk6F8QAXGFhUH3RRpxETNCw
-xDTYngGjeaqKAen8ZScaQ3yeo9+YrBiDWMr6w/5N9LKIeawAo2dZv7wu59KnaZLA
-7RBIyd01Ih2a+QMl+bf2Of1RF5/YydLWngpabSRmT448XClGYSQHMRjVb/7ERJg7
-t68882KaGfTUMAmpQefSV5I6AVSBblL2hpyxI752BEoj6RPItrdDKduA2d3AWGc/
-1peos+tYZGcAgqHVinQ9
-=bDA1
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Apr_2012_09_57_54_+1000_7YwivoXNtPZ2HaJV--
+Regards,
+Axel
