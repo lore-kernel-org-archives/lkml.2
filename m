@@ -1,110 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2DCLri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 07:47:38 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:34648 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081Ab2DCLra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 07:47:30 -0400
-Date: Tue, 3 Apr 2012 13:47:28 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jirislaby@gmail.com" <jirislaby@gmail.com>,
-        Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH 01/69] TTY: crisv10, remove unused tmp_buf
-Message-ID: <20120403114728.GS21889@axis.com>
-References: <1333367693-3244-1-git-send-email-jslaby@suse.cz> <1333367693-3244-2-git-send-email-jslaby@suse.cz>
+	id S1754170Ab2DCLuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 07:50:08 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:48720 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab2DCLuG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 07:50:06 -0400
+Message-ID: <4F7AE3CA.7080201@linux.vnet.ibm.com>
+Date: Tue, 03 Apr 2012 17:19:30 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333367693-3244-2-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: lenb@kernel.org
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, venki@google.com,
+        suresh.b.siddha@intel.com, bp@amd64.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, ben@decadent.org.uk,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        deepthi@linux.vnet.ibm.com, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        amit.kucheria@linaro.org
+Subject: Re: [PATCH] x86: Make mwait_usable() respect "idle=nomwait" kernel
+ parameter
+References: <20120402140645.6283.21190.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120402140645.6283.21190.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12040301-5490-0000-0000-000001116131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 01:53:45PM +0200, Jiri Slaby wrote:
-> This used to be a helper buffer for generic_serial. generic_serial is
-> gone, tmp_buf shall be removed.
+On 04/02/2012 07:36 PM, Srivatsa S. Bhat wrote:
+
+> mwait_usable() returns 1 even if the "idle=nomwait" kernel parameter is passed.
+> Fix it by adding a check for boot_option_idle_override == IDLE_NOMWAIT and
+> returning 0 if it is set.
 > 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Mikael Starvik <starvik@axis.com>
-
-Looks good!
-
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
-
-> Cc: linux-cris-kernel@axis.com
+> Before applying the patch (dmesg snippet):
+> [    0.000000] Command line: [...] idle=nomwait
+> [    0.000000] Kernel command line: [...] idle=nomwait
+> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+> [    0.140606] using mwait in idle threads.         <======= mwait being used
+> [    4.303986] cpuidle: using governor ladder
+> [    4.308232] cpuidle: using governor menu
+> 
+> After applying the patch:
+> [    0.000000] Command line: [...] idle=nomwait
+> [    0.000000] Kernel command line: [...] idle=nomwait
+> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+> [    4.264100] cpuidle: using governor ladder
+> [    4.268342] cpuidle: using governor menu
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > ---
->  drivers/tty/serial/crisv10.c |   27 +--------------------------
->  1 file changed, 1 insertion(+), 26 deletions(-)
 > 
-> diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
-> index 5b07c0c..004ee2e 100644
-> --- a/drivers/tty/serial/crisv10.c
-> +++ b/drivers/tty/serial/crisv10.c
-> @@ -952,19 +952,6 @@ static const struct control_pins e100_modem_pins[NR_PORTS] =
->  /* Input */
->  #define E100_DSR_GET(info) ((*e100_modem_pins[(info)->line].dsr_port) & e100_modem_pins[(info)->line].dsr_mask)
->  
-> -
-> -/*
-> - * tmp_buf is used as a temporary buffer by serial_write.  We need to
-> - * lock it in case the memcpy_fromfs blocks while swapping in a page,
-> - * and some other program tries to do a serial write at the same time.
-> - * Since the lock will only come under contention when the system is
-> - * swapping and available memory is low, it makes sense to share one
-> - * buffer across all the serial ports, since it significantly saves
-> - * memory if large numbers of serial ports are open.
-> - */
-> -static unsigned char *tmp_buf;
-> -static DEFINE_MUTEX(tmp_buf_mutex);
-> -
->  /* Calculate the chartime depending on baudrate, numbor of bits etc. */
->  static void update_char_time(struct e100_serial * info)
->  {
-> @@ -3150,7 +3137,7 @@ static int rs_raw_write(struct tty_struct *tty,
->  
->  	/* first some sanity checks */
->  
-> -	if (!tty || !info->xmit.buf || !tmp_buf)
-> +	if (!tty || !info->xmit.buf)
+>  arch/x86/kernel/process.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index a33afaa..945fbf0 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -621,6 +621,9 @@ int mwait_usable(const struct cpuinfo_x86 *c)
+>  	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
+>  		return 1;
+> 
+> +	if (boot_option_idle_override == IDLE_NOMWAIT)
+> +		return 0;
+> +
+>  	if (c->cpuid_level < MWAIT_INFO)
 >  		return 0;
->  
->  #ifdef SERIAL_DEBUG_DATA
-> @@ -4106,7 +4093,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
->  {
->  	struct e100_serial	*info;
->  	int 			retval;
-> -	unsigned long           page;
->  	int                     allocated_resources = 0;
->  
->  	info = rs_table + tty->index;
-> @@ -4124,17 +4110,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
->  
->  	tty->low_latency = !!(info->flags & ASYNC_LOW_LATENCY);
->  
-> -	if (!tmp_buf) {
-> -		page = get_zeroed_page(GFP_KERNEL);
-> -		if (!page) {
-> -			return -ENOMEM;
-> -		}
-> -		if (tmp_buf)
-> -			free_page(page);
-> -		else
-> -			tmp_buf = (unsigned char *) page;
-> -	}
-> -
->  	/*
->  	 * If the port is in the middle of closing, bail out now
->  	 */
-> -- 
-> 1.7.9.2
 > 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+> 
+
+
+I realized that actually more stuff is broken than what the above patch fixes.
+
+So here is the updated patch:
+
+---
+
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [v2] x86: Make mwait_usable() heed to "idle=" kernel parameters properly
+
+The checks that exist in mwait_usable() for "idle=" kernel parameters
+are insufficient. As a result, mwait_usable() can return 1 even if
+"idle=nomwait" or "idle=poll" or "idle=halt" parameters are passed.
+
+Of these cases, incorrect handling of idle=nomwait is a universal problem
+since mwait can get used for usual CPU idling. However the rest of the
+cases are problematic only during CPU Hotplug (offline) because, in the
+CPU offline path, the function mwait_play_dead() is called, which might
+result in mwait being used in the offline CPUs, if mwait_usable() happens
+to return 1.
+
+Fix these issues by checking for the boot time "idle=" kernel parameter
+properly in mwait_usable().
+
+The first issue (usual cpu idling) is demonstrated below:
+
+Before applying the patch (dmesg snippet):
+[    0.000000] Command line: [...] idle=nomwait
+[    0.000000] Kernel command line: [...] idle=nomwait
+[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+[    0.140606] using mwait in idle threads.         <======= mwait being used
+[    4.303986] cpuidle: using governor ladder
+[    4.308232] cpuidle: using governor menu
+
+After applying the patch:
+[    0.000000] Command line: [...] idle=nomwait
+[    0.000000] Kernel command line: [...] idle=nomwait
+[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+[    4.264100] cpuidle: using governor ladder
+[    4.268342] cpuidle: using governor menu
+
+Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ arch/x86/kernel/process.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index a33afaa..b526c4e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -618,9 +618,17 @@ int mwait_usable(const struct cpuinfo_x86 *c)
+ {
+ 	u32 eax, ebx, ecx, edx;
+ 
++	/* Use mwait if idle=mwait boot option is given */
+ 	if (boot_option_idle_override == IDLE_FORCE_MWAIT)
+ 		return 1;
+ 
++	/*
++	 * Any idle= boot option other than idle=mwait means that we must not
++	 * use mwait. Eg: idle=halt or idle=poll or idle=nomwait
++	 */
++	if (boot_option_idle_override != IDLE_NO_OVERRIDE)
++		return 0;
++
+ 	if (c->cpuid_level < MWAIT_INFO)
+ 		return 0;
+ 
+
+
