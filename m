@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab2DCBxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 21:53:24 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:65381 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab2DCBxX (ORCPT
+	id S1752961Ab2DCBxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 21:53:36 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40347 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab2DCBxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 21:53:23 -0400
-Subject: Re: [PATCH] phonet: Check input from user before allocating
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: remi@remlab.net, levinsasha928@gmail.com, remi.denis-courmont@nokia.com,
-        davej@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20120402.174006.70116829696492189.davem@davemloft.net>
-References: <1333398660-11552-1-git-send-email-levinsasha928@gmail.com>
-	 <201204022201.41808.remi@remlab.net>
-	 <20120402.174006.70116829696492189.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 Apr 2012 03:53:17 +0200
-Message-ID: <1333417997.18626.1.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 2 Apr 2012 21:53:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6668"; a="175974099"
+Message-ID: <4F7A581D.2020303@codeaurora.org>
+Date: Mon, 02 Apr 2012 18:53:33 -0700
+From: Michael Bohan <mbohan@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: rnayak@ti.com, lrg@ti.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: Regulator supplies when using Device Tree
+References: <20120326130005.GQ3098@opensource.wolfsonmicro.com> <4F726B96.8070508@codeaurora.org> <20120328100957.GD3232@opensource.wolfsonmicro.com> <4F736451.8020900@codeaurora.org> <20120328193341.GD3232@opensource.wolfsonmicro.com> <4F73A798.6030607@codeaurora.org> <20120329111159.GJ3668@opensource.wolfsonmicro.com> <4F7509F4.6010303@codeaurora.org> <20120330103602.GE21950@opensource.wolfsonmicro.com> <4F79E35A.5040908@codeaurora.org> <20120402212232.GA3160@opensource.wolfsonmicro.com>
+In-Reply-To: <20120402212232.GA3160@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 17:40 -0400, David Miller wrote:
-> From: "Rémi Denis-Courmont" <remi@remlab.net>
-> Date: Mon, 2 Apr 2012 22:01:40 +0300
-> 
-> > Le lundi 2 avril 2012 23:31:00 Sasha Levin, vous avez écrit :
-> >> A phonet packet is limited to USHRT_MAX bytes, this is never checked during
-> >> tx which means that the user can specify any size he wishes, and the kernel
-> >> will attempt to allocate that size.
-> > 
-> > Does this really solve the problem?  I guess 128kb is still possible with 
-> > USHRT_MAX plus skbuff overhead, which might still trigger OOM relatively 
-> > easily once the memory gets sufficiently fragmented.
-> > 
-> > How does UDP deal with this?
-> 
-> UDP generates a fragment list of MTU sized SKBs.
-> 
-> Phonet could avoid the large allocations by building page based
-> SKBs.
+On 4/2/2012 2:22 PM, Mark Brown wrote:
+> On Mon, Apr 02, 2012 at 10:35:22AM -0700, Michael Bohan wrote:
+>> Some of our regulators take inputs from other regulators. Some
+>> regulators take their input from the battery. We support both types
+>
+> Oh, if that's all it is that's totally normal and unsurprising.  Just
+> tell the regulator API about the battery supply, typically people use
+> a fixed regulator for this.  You don't have to specify a voltage when
+> you use them.
 
-Not that AF_UNIX does nothing in this respect, it can use order-XX pages
-for large datagrams.
+One problem here is the added run-time overhead. This includes the 
+callbacks for the battery device which serve no functional purpose. And 
+then there's the contention for a single mutex on the battery regulator, 
+which all regulators using it as a supply would have to contend for. 
+That is actually a sizable number of devices in our configuration; And 
+these operations are frequent and time sensitive.
 
-(I beleve I sent a patch some time ago to address this point)
+Plus, then there's other complexities that arise here by introducing yet 
+another regulator driver into the configuration. The 'fixed' regulator 
+driver initializes at subsys_initcall, but our other regulator drivers 
+are registered at arch_initcall. This is because with Device Tree 
+configurations we are forced to explicitly register drivers in a precise 
+sequence in order to satisfy device dependencies and early probe times. 
+But using 'fixed' would complicate this process, since we don't have 
+control over it.
 
+And generally speaking, why incur a larger memory footprint by linking 
+another driver when there's no technical need to?
 
+Thus it seems like there are use cases to have a single driver that can 
+support regulators with or without supplies specified. I see adding a 
+few lines of ugly code in the driver more ideal than accepting the 
+problems above. But it would be nice if the regulator Device Tree 
+support could handle it natively.
 
+Thanks,
+Mike
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
