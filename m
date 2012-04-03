@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab2DCU3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 16:29:36 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61079 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab2DCU3f convert rfc822-to-8bit (ORCPT
+	id S1755107Ab2DCUaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 16:30:21 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38035 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286Ab2DCUaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 16:29:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1333055554-31300-12-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <20120329211131.GA31250@pengutronix.de>
-	<1333055554-31300-12-git-send-email-u.kleine-koenig@pengutronix.de>
-Date: Tue, 3 Apr 2012 22:29:35 +0200
-Message-ID: <CACRpkdZ7WPeT+rO-GLJvQ--fgdCG1ytwNAtvEq1g=b=5QxPvjQ@mail.gmail.com>
-Subject: Re: [PATCH 12/17] gpio/samsung: mark const init data with __initconst
- instead of __initdata
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        kernel@pengutronix.de, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Apr 2012 16:30:20 -0400
+Date: Tue, 03 Apr 2012 16:30:08 -0400 (EDT)
+Message-Id: <20120403.163008.1865240185992444794.davem@davemloft.net>
+To: shemminger@vyatta.com
+Cc: LinoSanfilippo@gmx.de, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] sky2: fix missing register reset on error path in
+ sky2_test_msi()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120403115547.799fcc1f@s6510.linuxnetplumber.net>
+References: <20120330173616.GC2703@Neptun>
+	<20120403115547.799fcc1f@s6510.linuxnetplumber.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 13:30:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/29 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+From: Stephen Hemminger <shemminger@vyatta.com>
+Date: Tue, 3 Apr 2012 11:55:47 -0700
 
-> As long as there is no other non-const variable marked __initdata in the
-> same compilation unit it doesn't hurt. If there were one however
-> compilation would fail with
->
->        error: $variablename causes a section type conflict
->
-> because a section containing const variables is marked read only and so
-> cannot contain non-const variables.
->
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> On Fri, 30 Mar 2012 19:36:16 +0200
+> Lino Sanfilippo <LinoSanfilippo@gmx.de> wrote:
+> 
+>> In sky2_test_msi() the temporarily set SW IRQ in B0 register is not reset in case
+>> that request_irq() fails.
+>> With this patch we only set the interrupt mask if request_irq() was successful.
+>> 
+>> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> 
+> Ok, but this is a non-serious error case. If request_irq() fails here,
+> the driver is going to fail to load and on the failure path of
+> sky2_probe will reset the chip on the way out.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Thanks,
-Linus Walleij
+So, ACK for net-next?  Toss it?  What?
