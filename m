@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab2DCVdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:33:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59798 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab2DCVdu (ORCPT
+	id S1755386Ab2DCVih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:38:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49906 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab2DCVig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:33:50 -0400
-Message-ID: <4F7B6C81.3050205@landley.net>
-Date: Tue, 03 Apr 2012 16:32:49 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
-MIME-Version: 1.0
+	Tue, 3 Apr 2012 17:38:36 -0400
+Date: Tue, 3 Apr 2012 23:38:31 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
 To: Randy Dunlap <rdunlap@xenotime.net>
-CC: LKML <linux-kernel@vger.kernel.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+        Rob Landley <rob@landley.net>, Stephen Rothwell <sfr@canb.auug.org.au>
 Subject: Re: [PATCH] MAINTAINERS: change in Documentation/ maintainer
+Message-ID: <20120403213831.GF2201@pengutronix.de>
 References: <4F7B5CFB.1@xenotime.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sDKAb4OeUBrWWL6P"
+Content-Disposition: inline
 In-Reply-To: <4F7B5CFB.1@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 03:26 PM, Randy Dunlap wrote:
+
+--sDKAb4OeUBrWWL6P
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Apr 03, 2012 at 01:26:35PM -0700, Randy Dunlap wrote:
 > From: Randy Dunlap <rdunlap@xenotime.net>
-> 
+>=20
 > I'm dropping off as Documentation/ maintainer.
 > Rob Landley has agreed to take it over.  Thanks, Rob.
-> 
+>=20
 > I'll still be around reviewing patches and testing.
 > Stephen, please drop my quilt tree from linux-next.
-> 
+>=20
 > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Acked-by: Rob Landley <rob@landley.net>
+Thanks-for-all-this-work-by: Wolfram Sang <w.sang@pengutronix.de>
 
-> ---
->  MAINTAINERS |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- lnx-34-rc1.orig/MAINTAINERS
-> +++ lnx-34-rc1/MAINTAINERS
-> @@ -2322,9 +2322,9 @@ S:	Supported
->  F:	drivers/acpi/dock.c
->  
->  DOCUMENTATION
-> -M:	Randy Dunlap <rdunlap@xenotime.net>
-> +M:	Rob Landley <rob@landley.net>
->  L:	linux-doc@vger.kernel.org
-> -T:	quilt http://xenotime.net/kernel-doc-patches/current/
-> +T:	TBD
->  S:	Maintained
->  F:	Documentation/
->  
-> 
+:)
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--sDKAb4OeUBrWWL6P
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk97bdcACgkQD27XaX1/VRu5MACeP4rfnFZYs0AEfOey/uYNZFOk
+f9sAn0UbTXgkC2Ca4T+QYiEzAhbu+HRP
+=NkhC
+-----END PGP SIGNATURE-----
+
+--sDKAb4OeUBrWWL6P--
