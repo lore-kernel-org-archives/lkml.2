@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab2DCXBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 19:01:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56817 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679Ab2DCXBj (ORCPT
+	id S1755778Ab2DCXBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 19:01:43 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:54680 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646Ab2DCXBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Apr 2012 19:01:39 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
@@ -13,8 +13,8 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Subject: [PATCH] irq: Kill pointless irqd_to_hw export
-Date: Tue,  3 Apr 2012 08:55:28 -0600
-Message-Id: <1333464928-21973-1-git-send-email-grant.likely@secretlab.ca>
+Date: Tue,  3 Apr 2012 08:53:16 -0600
+Message-Id: <1333464796-21861-1-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,9 +22,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 It makes no sense to export this trivial function.  Make it a static inline
 instead.
-
-This patch also drops virq_to_hw from arch/c6x since it is unused by that
-architecture.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Cc: Thomas Gleixner <tglx@linutronix.de>
