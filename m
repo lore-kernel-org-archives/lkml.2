@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab2DCI6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:58:47 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:40425 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab2DCI6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:58:46 -0400
-X-IronPort-AV: E=Sophos;i="4.75,362,1330923600"; 
-   d="scan'208";a="23811382"
-Message-ID: <4F7ABBC4.4050106@citrix.com>
-Date: Tue, 3 Apr 2012 09:58:44 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	id S1753077Ab2DCJHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 05:07:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62592 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2DCJHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 05:07:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kyungmin Park <kmpark@infradead.org>
+Subject: Re: Linux 3.4-rc1
+Date: Tue, 3 Apr 2012 09:07:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        vdumpa@nvidia.com, hdoyu@nvidia.com, konrad.wilk@oracle.com
+References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com> <CAH9JG2Wha0+6BwGW0APtEX2KACyR1+9fdKpJkM+iOU1m8N6d4w@mail.gmail.com>
+In-Reply-To: <CAH9JG2Wha0+6BwGW0APtEX2KACyR1+9fdKpJkM+iOU1m8N6d4w@mail.gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH 6/7] xen/setup: Make dom0_mem=XGB behavior
- be similar to classic Xen kernels.
-References: <1333139850-28456-1-git-send-email-konrad.wilk@oracle.com> <1333139850-28456-7-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1333139850-28456-7-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201204030907.29306.arnd@arndb.de>
+X-Provags-ID: V02:K0:mxQwxbAk7YwcxurVc5+fWpG22iIjFDtKXj4z4LV1bd5
+ NzfZB/KeMHfHrTT2HtaWsFtRhPXpNh7Zo+E3++L4BvjgEJIS1q
+ ZoRbMLRHjRG0n7vTlFHRRS3UfWzNhpYuucN0LU4ygHYmcn+vyl
+ v4+YPO103n8yKiSOvqU4Dhxo8rHdOaVM1H2QU88VRrfg6NI3IV
+ FRMfgGSFeObGu/DzrXa4bD+OzYf1pT9PPpCkiy+QSm7oNDfxPB
+ +ifwPN4L32ph9RCeDXcTEb/U8yJ0FJjgPUvw7NkYt8WD+tJfi0
+ LcOSGOV0DUCQlLcA3UrMuZz84ylqcnF2CwV++7qXoFEZU2Gdwz
+ lsJChnsktfW+c5+FHxAc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/03/12 21:37, Konrad Rzeszutek Wilk wrote:
-> Meaning that we will allocate up to XGB and not consider the
-> rest of the memory as a possible balloon goal.
-
-I agree with Jan when he commented on the equivalent Xen patch for this
-behaviour.  The current behaviour is better than the classic one.
-
-With your new behaviour it will no longer possible to specify an
-unlimited balloon but a limited number of initial pages.  This is
-behaviour that Jan said he used.
-
-This problem is better solved by improving the documentation.  A review
-of the xen.org wiki where dom0_mem is mentioned would be a good start,
-and an update to the recently added section for distro developers.
-
-David
-
-> This results in /proc/meminfo reporting:
+On Tuesday 03 April 2012, Kyungmin Park wrote:
+> >
+> >  - DMA-mapping framework. The tree now has a few more acks from
+> > people, and it's largely in the same situation as HSI is: I'll
+> > probably pull, but I really wanted the users who are impacted to
+> > actually talk to me about it.
+> >
+> Hi,
 > 
-> -MemTotal:        2845024 kB
-> -MemFree:         2497716 kB
-> +MemTotal:        2927192 kB
-> +MemFree:         2458952 kB
->  ...
-> -DirectMap4k:     8304640 kB
-> +DirectMap4k:     3063808 kB
->  DirectMap2M:           0 kB
+> Now Marek and Nvidia persons are used it for DMA mapping based IOMMU.
 > 
-> on a 8GB machine with 'dom0_mem=3GB' on the Xen hypervisor line.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/setup.c |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index 2a12143..4e4aa8e 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -261,11 +261,27 @@ static unsigned long __init xen_get_max_pages(void)
->  	 * the current maximum rather than the static maximum. In this
->  	 * case the e820 map provided to us will cover the static
->  	 * maximum region.
-> +	 *
-> +	 * The dom0_mem=min:X,max:Y tweaks options differently depending
-> +	 * on the version, but in general this is what we get:
-> +	 *                | XENMEM_maximum_reser  | nr_pages
-> +	 * --------------++-----------------------+-------------------
-> +	 *  no dom0_mem   | INT_MAX               | the max_phys_pfn
-> +	 *  =3G           | INT_MAX               | 786432
-> +	 *  =max:3G       | 786432                | 786432
-> +	 *  =min:1G,max:3G| 262144                | 786432
-> +	 *
-> +	 * The =3G is often used and it lead to us initially setting
-> +	 * 786432 and allowing dom0 to balloon up to the max_physical_pfn.
-> +	 * This is at odd with the classic XenOClassic so lets emulate
-> +	 * the classic behavior.
->  	 */
->  	if (xen_initial_domain()) {
->  		ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
->  		if (ret > 0)
->  			max_pages = ret;
-> +		if (ret == -1UL)
-> +			max_pages = xen_start_info->nr_pages;
->  	}
->  
->  	return min(max_pages, MAX_DOMAIN_PAGES);
+> Are there other person who help to merge it?
+> (+CC related persons).
 
+I can give a little more background information.
+
+We used to have separate implementations of dma_map_ops for each
+architecture that had the need to abstract dma_alloc_coherent
+and dma_map_* across both IOMMU and linear (virt_to_bus style)
+mappings and/or swiotlb. Those dma_map_ops imlpementations were
+already merged before the start of the git history and subsequently
+got used on powerpc, ia64, x86_64, sparc, alpha, mips, unicore32
+and hexagon, roughly in that order.
+
+We are seeing lots of IOMMUs come up on ARM now, but unfortunately
+the existing dma_map_ops do not cover the need on ARM to have
+two different kind of coherent memory (write-combine and not
+write-combine) that we have traditionally abstracted using
+the dma_alloc_coherent and dma_alloc_writecombine functions on both
+arm and avr32. In order to support IOMMUs on ARM using the same
+API as everyone else, I've asked Marek to use dma_map_ops on
+ARM, which requires slightly extending the include/linux/dma-mapping.h
+interfaces so they cover this variation.
+
+The actually interesting work to implement a better abstraction for
+IOMMUs, building the dma-mapping.h API on top of the iommu.h API
+in an architecture independent way has also been implemented but
+requires these changes as a prerequisite.
+
+	Arnd
