@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab2DCVlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:41:46 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38568 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab2DCVlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:41:44 -0400
-Date: Tue, 03 Apr 2012 17:41:39 -0400 (EDT)
-Message-Id: <20120403.174139.1088270699067881012.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: cmetcalf@tilera.com, shemminger@vyatta.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] marvell sky2 driver: fix irq number assignment bug
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1333468024.2577.21.camel@bwh-desktop.uk.solarflarecom.com>
-References: <201204031526.q33FQvFO031746@farm-0027.internal.tilera.com>
-	<1333468024.2577.21.camel@bwh-desktop.uk.solarflarecom.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755418Ab2DCVoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:44:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55673 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755155Ab2DCVoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 17:44:18 -0400
+Message-ID: <1333489422.3040.11.camel@pasglop>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 04 Apr 2012 07:43:42 +1000
+In-Reply-To: <m2y5qdow0v.fsf@igel.home>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
+	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+	 <20120402202848.1EB833E02A7@localhost> <m2y5qdow0v.fsf@igel.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 14:41:41 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Tue, 3 Apr 2012 16:47:04 +0100
-
-> On Tue, 2012-04-03 at 11:10 -0400, Chris Metcalf wrote:
->> Fix a minor bug that will display wrong IRQ number in ifconfig output.
->> 
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
->> ---
->>  drivers/net/ethernet/marvell/sky2.c |    7 +++++++
->>  1 files changed, 7 insertions(+), 0 deletions(-)
->> 
->> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
->> index 423a1a2..879b0a4 100644
->> --- a/drivers/net/ethernet/marvell/sky2.c
->> +++ b/drivers/net/ethernet/marvell/sky2.c
->> @@ -4978,6 +4978,13 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
->>  			goto err_out_free_netdev;
->>   	}
->>  
->> +	/*
->> +	 * Need to set the IRQ # for the net_device here again after
->> +	 * setting it in sky2_init_netdev() initially, because MSI
->> +	 * will assign a new IRQ # to this PCI device.
->> +	 */
->> +	dev->irq = hw->pdev->irq;
->> +
->>  	err = register_netdev(dev);
->>  	if (err) {
->>  		dev_err(&pdev->dev, "cannot register net device\n");
+On Tue, 2012-04-03 at 14:11 +0200, Andreas Schwab wrote:
 > 
-> I think the consensus now is that net_device::irq should be left at 0
-> for devices that don't support manual configuration (ISA and the like).
+> When reconfiguring with NR_IRQS=128 interrupts are working again, but I
+> still see a lot of spurious interrupts, and the X server is still broken
+> (no input works, but I still don't know whether that is an unrelated
+> bug). 
 
-Agreed.
+I have an idea or two about the spurrious interrupt business, I'll have
+a look later today hopefully. As for the X server, I don't think it's
+related, but of course it's hard to tell. Do you see a relevant
+difference in the X log ?
+
+Cheers,
+Ben.
+
+
