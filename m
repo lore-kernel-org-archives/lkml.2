@@ -1,98 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab2DCRiw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 13:38:52 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57392 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239Ab2DCRiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 13:38:51 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: pe1dnn@amsat.org, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] staging: Fix typo in wlags49_h2
-Date: Wed,  4 Apr 2012 02:38:44 +0900
-Message-Id: <1333474724-11717-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.10.rc3.11.gd8282
+	id S1754239Ab2DCRlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 13:41:51 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33458 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752210Ab2DCRlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 13:41:49 -0400
+Message-ID: <1333474907.26079.57.camel@joe2Laptop>
+Subject: Re: CodingStyle vs checkpatch for block comments
+From: Joe Perches <joe@perches.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Kautuk Consul <consul.kautuk@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Apr 2012 10:41:47 -0700
+In-Reply-To: <4F7B32A0.1020009@tilera.com>
+References: <1333195539-5421-1-git-send-email-consul.kautuk@gmail.com>
+	 <4F7B2114.4000806@tilera.com>
+	 <CAFPAmTTfYKT39gdoKT3P4G2O0xkTSS8g62kKudeLcnpdipzJqg@mail.gmail.com>
+	 <4F7B21FB.3040609@tilera.com>
+	 <CAFPAmTS_2H7BzGndcceBxdnJroy82u++sduCPO2+qxG6-WA=nw@mail.gmail.com>
+	 <4F7B2766.9080208@tilera.com> <1333471474.26079.43.camel@joe2Laptop>
+	 <4F7B2AA7.5010906@tilera.com> <1333472391.26079.47.camel@joe2Laptop>
+	 <4F7B32A0.1020009@tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spellings within wlags49_h2
+On Tue, 2012-04-03 at 13:25 -0400, Chris Metcalf wrote:
+> (Adding linux-kernel to the cc's and restating the question...)
+> 
+> I accepted a patch from Kautuk Consul and adjusted his comment style, but
+> he pointed out that he had changed his comment style based on a warning
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/staging/wlags49_h2/README.ubuntu |    2 +-
- drivers/staging/wlags49_h2/wl_netdev.c   |    2 +-
- drivers/staging/wlags49_h2/wl_profile.c  |    8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
+It's a check not a warning.
 
-diff --git a/drivers/staging/wlags49_h2/README.ubuntu b/drivers/staging/wlags49_h2/README.ubuntu
-index edee8b9..5f1cfb8 100644
---- a/drivers/staging/wlags49_h2/README.ubuntu
-+++ b/drivers/staging/wlags49_h2/README.ubuntu
-@@ -87,7 +87,7 @@ The linux driver files (wl_xxxx.c) are changed in the following ways:
- -- Recovery actions added
- 
- The major problem was the order in which calls can be made. The original
--looks like a traditonal UNIX driver. To call an "ioctl" function you
-+looks like a traditional UNIX driver. To call an "ioctl" function you
- have to "open" the device first to get a handle and after "close" no
- "ioctl" function can be called anymore. With the 2.6 driver this all
- changed; the former ioctl functions are now called before "open" and
-diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/wlags49_h2/wl_netdev.c
-index 90820ff..1e26f08 100644
---- a/drivers/staging/wlags49_h2/wl_netdev.c
-+++ b/drivers/staging/wlags49_h2/wl_netdev.c
-@@ -1063,7 +1063,7 @@ void wl_multicast( struct net_device *dev )
- #if DBG
-     if( DBG_FLAGS( DbgInfo ) & DBG_PARAM_ON ) {
-         DBG_PRINT("  flags: %s%s%s\n",
--            ( dev->flags & IFF_PROMISC ) ? "Promiscous " : "",
-+            ( dev->flags & IFF_PROMISC ) ? "Promiscuous " : "",
-             ( dev->flags & IFF_MULTICAST ) ? "Multicast " : "",
-             ( dev->flags & IFF_ALLMULTI ) ? "All-Multicast" : "" );
- 
-diff --git a/drivers/staging/wlags49_h2/wl_profile.c b/drivers/staging/wlags49_h2/wl_profile.c
-index b8c96cf..0e49272 100644
---- a/drivers/staging/wlags49_h2/wl_profile.c
-+++ b/drivers/staging/wlags49_h2/wl_profile.c
-@@ -401,7 +401,7 @@ void translate_option(char *buffer, struct wl_private *lp)
- 		if ((value_convert >= PARM_MIN_BRSC) || (value_convert <= PARM_MAX_BRSC))
- 			lp->brsc[0] = value_convert;
- 		else
--			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_BRSC_2GHZ);
-+			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_BRSC_2GHZ);
- 	} else if (strcmp(key, PARM_NAME_BRSC_5GHZ) == 0) {
- 		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_BRSC_5GHZ, value);
- 
-@@ -409,7 +409,7 @@ void translate_option(char *buffer, struct wl_private *lp)
- 		if ((value_convert >= PARM_MIN_BRSC) || (value_convert <= PARM_MAX_BRSC))
- 			lp->brsc[1] = value_convert;
- 		else
--			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_BRSC_5GHZ);
-+			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_BRSC_5GHZ);
- 	} else if ((strcmp(key, PARM_NAME_DESIRED_SSID) == 0) || (strcmp(key, PARM_NAME_OWN_SSID) == 0)) {
- 		DBG_TRACE(DbgInfo, "SSID, value: %s\n", value);
- 
-@@ -556,7 +556,7 @@ void translate_option(char *buffer, struct wl_private *lp)
- 		if ((value_convert >= PARM_MIN_SRSC) || (value_convert <= PARM_MAX_SRSC))
- 			lp->srsc[0] = value_convert;
- 		else
--			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_SRSC_2GHZ);
-+			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_SRSC_2GHZ);
- 	} else if (strcmp(key, PARM_NAME_SRSC_5GHZ) == 0) {
- 		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_SRSC_5GHZ, value);
- 
-@@ -564,7 +564,7 @@ void translate_option(char *buffer, struct wl_private *lp)
- 		if ((value_convert >= PARM_MIN_SRSC) || (value_convert <= PARM_MAX_SRSC))
- 			lp->srsc[1] = value_convert;
- 		else
--			DBG_WARNING(DbgInfo, "%s invaid; will be ignored\n", PARM_NAME_SRSC_5GHZ);
-+			DBG_WARNING(DbgInfo, "%s invalid; will be ignored\n", PARM_NAME_SRSC_5GHZ);
- 	} else if (strcmp(key, PARM_NAME_SYSTEM_SCALE) == 0) {
- 		DBG_TRACE(DbgInfo, "%s, value: %s\n", PARM_NAME_SYSTEM_SCALE, value);
- 
--- 
-1.7.10.rc3.11.gd8282
+> from checkpatch.
+> 
+> The Documentation/CodingStyle file says:
+> 
+>     The preferred style for long (multi-line) comments is:
+> 
+>        /*
+>         * This is the preferred style for multi-line
+>         * comments in the Linux kernel source code.
+>         * Please use it consistently.
+>         *
+>         * Description:  A column of asterisks on the left side,
+>         * with beginning and ending almost-blank lines.
+>         */
+> 
+> However, a new change to "checkpatch --strict" by Joe Perches, commit
+> aad4f61498, causes this construct to be flagged as a warning
+
+checkpatch flags it with a "check" only when --strict
+is on the checkpatch command line.
+
+>  if (and only
+> if) it is preceded by a blank line.  Joe said the change was to support
+> David Miller's preferred style, but that he didn't much care one way or
+> another.
+
+I think the block comment style is less important than
+the actual content of the block comment.  The actual
+comment content is rather difficult for checkpatch to
+parse though.
+
+> The relevant code in checkpatch.pl is:
+> 
+>                 if ($rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
+>                     $prevrawline =~ /^\+[ \t]*$/) {
+>                         CHK("BLOCK_COMMENT_STYLE",
+>                             "Don't begin block comments with only a /*
+> line, use /* comment...\n" . $hereprev);
+>                 }
+> 
+> So, my questions -
+> 
+> 1. I'm not sure what the regexps are really trying to avoid.  Presumably a
+> blank line followed by a block comment is OK?  Certainly the kernel sources
+> are full of this construct.
+
+It emits a check message on
+<blank line>
+	/*
+
+but not
+<blank line>
+	/* some actual comment
+
+> 2. The actual warning message emitted seems to directly contradict the
+> CodingStyle document, so presumably we should either clarify the message,
+> or update CodingStyle if we're really trying to change the style.
+
+Or just remove it or add a test for the patched file
+to be in net/... or drivers/net... or something.
 
