@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab2DCWel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:34:41 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55410 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab2DCWek (ORCPT
+	id S1755693Ab2DCWfQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:35:16 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39039 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754548Ab2DCWfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:34:40 -0400
-Date: Wed, 4 Apr 2012 00:34:35 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent crash on missing sysfs attribute group
-Message-ID: <20120403223435.GC10161@gmail.com>
-References: <1333403193.2960.80.camel@laptop>
- <20120403060252.GA27084@gmail.com>
- <20120403081735.78ca3bb3@pluto.restena.lu>
- <m1d37pgugy.fsf@fess.ebiederm.org>
- <20120403071543.GA17502@gmail.com>
- <m1r4w5dzjq.fsf@fess.ebiederm.org>
- <20120403080410.GF26826@gmail.com>
- <m1sjgl9ozd.fsf@fess.ebiederm.org>
- <20120403101623.GA16889@gmail.com>
- <m18vid6qkb.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m18vid6qkb.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Apr 2012 18:35:14 -0400
+Date: Tue, 03 Apr 2012 18:35:10 -0400 (EDT)
+Message-Id: <20120403.183510.1401597538063331122.davem@davemloft.net>
+To: kaffeemonster@googlemail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com
+Subject: Re: [REGRESSION][PATCH V4 3/3] bpf jit: Let the powerpc jit handle
+ negative offsets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F7B7A59.2090904@googlemail.com>
+References: <4F75D2A5.7060407@googlemail.com>
+	<20120403.180302.342779808900865443.davem@davemloft.net>
+	<4F7B7A59.2090904@googlemail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 15:35:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jan Seiffert <kaffeemonster@googlemail.com>
+Date: Wed, 4 Apr 2012 00:31:53 +0200
 
-* Eric W. Biederman <ebiederm@xmission.com> wrote:
-
-> > This has no relevance to the bug and crash pattern itself 
-> > whatsoever, so stop blathering about unrelated things.
+> David Miller schrieb:
+> [snip - my patch description]
+>> 
+>> I'm not applying this until a powerpc person tests it.
+>> 
 > 
-> Crashing or BUG_ON or WARN_ON has no relevance to how hard it 
-> is to debug this. [...]
+> As Benjamin already said, Matt is having a look, so i expected nothing else.
+> 
+>> Also, we have an ARM JIT in the tree which probably needs to
+>> be fixed similarly.
+>> 
+> 
+> ???
+> Oh, in which tree is it?
+> I was working against net-next.
 
-Erm, so you think the difference between a nice WARN_ON() and a 
-machine that *DOES NOT BOOT* is irrelevant?
+It's been in Linus's tree for several days now.
 
-In which universe? Smoking what kind of drugs?
-
-Seriously, you need a reality check. We settled the BUG_ON() 
-versus WARN_ON() debate about a decade ago, in favor of 
-WARN_ON().
-
-Thanks,
-
-	Ingo
+net-next is stale during the merge window and doesn't get updated
+until the merge window closes.
