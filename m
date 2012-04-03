@@ -1,169 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab2DCXhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 19:37:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47998 "EHLO mga01.intel.com"
+	id S1755861Ab2DCXjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 19:39:41 -0400
+Received: from antcom.de ([188.40.178.216]:55262 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab2DCXhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 19:37:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="137301202"
-Date: Tue, 3 Apr 2012 16:32:31 -0700
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        Suresh Jayaraman <sjayaraman@suse.com>,
-        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
-Message-ID: <20120403233231.GA24333@localhost>
-References: <20120328121308.568545879@intel.com>
- <20120401205647.GD6116@redhat.com>
- <20120403080014.GA15546@localhost>
- <20120403145301.GG5913@redhat.com>
+	id S1755107Ab2DCXjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 19:39:40 -0400
+Message-ID: <4F7B8A39.5000701@antcom.de>
+Date: Wed, 04 Apr 2012 01:39:37 +0200
+From: Roland Stigge <stigge@antcom.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120403145301.GG5913@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
+Subject: Re: [PATCH] gpio: Device tree support for LPC32xx
+References: <1333407513-18231-1-git-send-email-stigge@antcom.de> <20120403150430.EBA423E0436@localhost>
+In-Reply-To: <20120403150430.EBA423E0436@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 10:53:01AM -0400, Vivek Goyal wrote:
-> On Tue, Apr 03, 2012 at 01:00:14AM -0700, Fengguang Wu wrote:
+Hi Grant,
+
+thanks for your notes!
+
+On 03/04/12 17:04, Grant Likely wrote:
+>> +postcore_initcall(lpc32xx_gpio_init);
 > 
-> [CC Jens]
-> 
-> [..]
-> > > I think blkio.weight can be thought of a system wide weight of a cgroup
-> > > and more than one entity/subsystem should be able to make use of it and
-> > > differentiate between IO in its own way. CFQ can decide to do proportional
-> > > time division, and buffered write controller should be able to use the
-> > > same weight and do write bandwidth differentiation. I think it is better
-> > > than introducing another buffered write controller tunable for weight.
-> > > 
-> > > Personally, I am not too worried about this point. We can document and
-> > > explain it well.
-> > 
-> > Agreed. The throttling may work in *either* bps, IOPS or disk time
-> > modes. In each mode blkio.weight is naturally tied to the
-> > corresponding IO metrics.
-> 
-> Well, Tejun does not like the idea of sharing config variables among
-> different policies. So I guess you shall have to come up with your
-> own configurations variables as desired. As each policy will have its
-> own configuration and stats, prefixing the vairable/stat name with
-> policy name will help identify it. Not sure what's a good name for
-> buffered write policy.
-> 
-> May be
-> 
-> blkio.dirty.weight
-> blkio.dirty.bps
-> blkio.buffered_write.* or
-> blkio.buf_write* or
-> blkio.dirty_rate.* or
+> module_platform_driver() please.  Also, now that deferred probe is
+> merged, there should no longer be any need to mess around with
+> initcall levels to get gpio drivers probed early.
 
-OK. dirty.* or buffered_write.*, whatever looks more user friendly will be fine.
+With module_platform_driver(), I get a new error reported after this
+change, coming much earlier before the GPIO registration (which is
+deferred now, of course):
 
-> [..]
-> > 
-> > Patch 6/6 shows simple test results for bps based throttling.
-> > 
-> > Since then I've improved the patches to work in a more "contained" way
-> > when blkio.throttle.buffered_write_bps is not set.
-> > 
-> > The old behavior is, if blkcg A contains 1 dd and blkcg B contains 10
-> > dd tasks and they have equal weight, B will get 10 times bandwidth
-> > than A.
-> > 
-> > With the below updated core bits, A and B will get equal share of
-> > write bandwidth. The basic idea is to use
-> 
-> Yes, this new behavior makes more sense. Two equal weight groups get
-> equal bandwidth irrpesctive of number of tasks in cgroup.
+===============================================================
+Error requesting gpio 50
+...
+gpiochip_add: registered GPIOs 0 to 7 on device: gpio_p0
+gpiochip_add: registered GPIOs 8 to 31 on device: gpio_p1
+gpiochip_add: registered GPIOs 32 to 44 on device: gpio_p2
+gpiochip_add: registered GPIOs 45 to 50 on device: gpio_p3
+gpiochip_add: registered GPIOs 51 to 78 on device: gpi_p3
+gpiochip_add: registered GPIOs 79 to 102 on device: gpo_p3
+===============================================================
 
-Yeah, Andrew Morton reminded me of this during the writeback talk in
-google :) Fortunately the current dirty throttling algorithm can
-handle it easily. What's more, hierarchical cgroups can be supported
-by simply using the parent's blkcg->dirty_ratelimit as the throttling
-bps for the child.
+Seems to be caused by this device tree:
 
-> [..]
-> > Test results are "pretty good looking" :-) The attached graphs
-> > illustrates nice attributes of accuracy, fairness and smoothness
-> > for the following tests.
-> 
-> Indeed. These results are pretty cool. It is hard to belive that lines
-> are so smooth and lines for two tasks are overlapping each other such 
-> that it is not obivious initially that they are overlapping and dirtying
-> equal amount of memory. I had to take a second look to figure that out.
+        leds {
+                compatible = "gpio-leds";
+                led0 {  
+                        gpios = <&gpo_p3 1 1>; /* GPO_P3 1, GPIO 80, active low */
+                        linux,default-trigger = "heartbeat";
+                        default-state = "keep";
+                };
+        };
 
-Thanks for noticing this! :)
+Are you sure that module_platform_driver() can already handle
+this in v3.4-rc1?
 
-> Just that results for third graph (weight 500 and 1000 respectively) are
-> not perfect. I think Ideally all the 3 tasks should have dirtied same
-> amount of memory.
+Thanks in advance,
 
-Yeah, but note that it's not the fault of the throttling algorithm.
-
-The unfairness is created at the very beginning ~0.1s, where dirty
-pages are far under the dirty limits and the dd tasks are not
-throttled at all. Since the first task manages to start 0.1s earlier
-than the other two tasks, it manages to dirty at full (memory write)
-speed which makes the gap.
-
-Once the dirty throttling mechanism comes into play, you can see that
-the lines for the three tasks grow fairly at the same speed/slope.
-
-> But I think achieving perfection here might not be easy and may be
-> not many people will care.
-
-The formula itself looks simple, however it does ask for some
-debugging/tuning efforts to make it behave well under various
-situations.
-
-> Given the fact that you are doing a reasonable job of providing service
-> differentiation between buffered writers, I am wondering if you should
-> look at the ioprio of writers with-in cgroup and provide service
-> differentiation among those too. CFQ has separate queues but it loses
-> the context information by the time IO is submitted. So you might be
-> able to do a much better job. Anyway, this is a possible future
-> enhancement and not necessarily related to this patchset.
-
-Good point. It seems applicable to the general dirty throttling
-(not relying on cgroups). It would mainly be a problem of how to map
-the priority classes/values to each tasks' throttling weight (or bps).
-
-> Also, we are controlling the rate of dirtying the memory. I am again 
-> wondering whether these configuration knobs should be part of memory
-> controller and not block controller. Think of NFS case. There is no
-> block device or block layer involved but we will control the rate of
-> dirtying memory. So some control in memory controller might make
-> sense. And following kind of knobs might make sense there.
-> 
-> memcg.dirty_weight or memcg.dirty.weight
-> memcg.dirty_bps or memcg.dirty.write_bps
-> 
-> Just that we control not the *absolute amount* of memory but *rate* of
-> writing to memory and I think that makes it somewhat confusing and
-> gives the impression that it should be part of block IO controller.
-
-There is the future prospective of "buffered+direct write bps" interface.
-Considering this, I'm a little inclined towards the blkio.* interfaces,
-in despite of the fact that it's currently tightly tied to the block layer :)
-
-> I am kind of split on this (rather little inclined towards memory
-> controller), so I am raising the question and others can weigh in with
-> their thoughts on what makes more sense here.
-
-Yeah, we definitely need more inputs on the "interface" stuff.
-
-Thanks,
-Fengguang
+Roland
