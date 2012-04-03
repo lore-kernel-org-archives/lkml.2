@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab2DCFmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 01:42:18 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:9159 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab2DCFmR (ORCPT
+	id S1752177Ab2DCFmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 01:42:50 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:60381 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab2DCFms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 01:42:17 -0400
-X-AuditID: cbfee61a-b7c49ae0000061d4-f9-4f7a8db87b5e
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: "'Liam Girdwood'" <lrg@ti.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-References: <1332130930.26765.2.camel@phoenix>
- <1332131078.26765.5.camel@phoenix>
-In-reply-to: <1332131078.26765.5.camel@phoenix>
-Subject: RE: [PATCH RFC 3/4] regulator: Use one s5m8767_ops for both LDOs and
- BUCKs
-Date: Tue, 03 Apr 2012 14:42:16 +0900
-Message-id: <01b001cd115c$86e60f60$94b22e20$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0FiEtDOsaCTYiRQyKGYw+tZnb15gL1BZuw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Tue, 3 Apr 2012 01:42:48 -0400
+Date: Tue, 3 Apr 2012 07:42:42 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH 25/69] TTY: con3215, remove tasklet for tty_wakeup
+Message-ID: <20120403054241.GA2700@osiris.boeblingen.de.ibm.com>
+References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
+ <1333367693-3244-26-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333367693-3244-26-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12040305-5024-0000-0000-00000228727C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 1:25 PM, Axel Lin wrote:
-> All the callback function implementation are the same for both LDOs and BUCKs.
-> Merge them to one s5m8767_ops.
+On Mon, Apr 02, 2012 at 01:54:09PM +0200, Jiri Slaby wrote:
+> tty_wakeup is safe to be called from all contexts. No need to schedule
+> a tasklet for that. Let us call it directly like in other drivers.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> And delete the tasklet completely.
 
-Acked-by: Sangbeom Kim <sbkim73@samsung.com>
-
-Thanks,
-Sangbeom.
+Your patch actually reverts Martin's recent commit 656d912537
+"[S390] 3215 deadlock with tty_wakeup".
+I'm quite sure the reason for the deadlock still exists.
+Unfortunately the commit doesn't contain the call chain that
+led to fix.
 
