@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2DCIMF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:12:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36544 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab2DCILn (ORCPT
+	id S1753602Ab2DCIMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:12:55 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55834 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab2DCIMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:11:43 -0400
-Date: Tue, 3 Apr 2012 01:11:11 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-7b8e6da46b921d30ac1553cac56d8fb74f0b431d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com,
-        bonbons@linux-vserver.org, hpa@zytor.com, mingo@kernel.org,
-        gorcunov@openvz.org, a.p.zijlstra@chello.nl, jolsa@redhat.com,
-        rostedt@goodmis.org, ming.m.lin@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, bonbons@linux-vserver.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, gorcunov@openvz.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, rostedt@goodmis.org,
-        ming.m.lin@intel.com, tglx@linutronix.de
-In-Reply-To: <1332859842.16159.227.camel@twins>
-References: <1332859842.16159.227.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86/p4: Add format attributes
-Git-Commit-ID: 7b8e6da46b921d30ac1553cac56d8fb74f0b431d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 3 Apr 2012 04:12:52 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org
+Subject: Re: [PATCH 5/6] vfs: reorganize do_lookup
+References: <1332759264-23533-1-git-send-email-miklos@szeredi.hu>
+	<1332759264-23533-6-git-send-email-miklos@szeredi.hu>
+	<20120330190526.GA29050@ZenIV.linux.org.uk>
+Date: Tue, 03 Apr 2012 10:13:18 +0200
+In-Reply-To: <20120330190526.GA29050@ZenIV.linux.org.uk> (Al Viro's message of
+	"Fri, 30 Mar 2012 20:05:26 +0100")
+Message-ID: <87hax1s069.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 03 Apr 2012 01:11:18 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7b8e6da46b921d30ac1553cac56d8fb74f0b431d
-Gitweb:     http://git.kernel.org/tip/7b8e6da46b921d30ac1553cac56d8fb74f0b431d
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 27 Mar 2012 16:50:42 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 3 Apr 2012 08:33:38 +0200
+Al Viro <viro@ZenIV.linux.org.uk> writes:
 
-perf/x86/p4: Add format attributes
+> On Mon, Mar 26, 2012 at 12:54:23PM +0200, Miklos Szeredi wrote:
+>> This also eliminates the weird retry loop, that could, in theory, retry the
+>> cached lookup any number of times (very unlikely scenario: needs two parallel
+>> do_lookups and d_revalidate always returning zero).
+>
+> That really needs to be carved into much smaller pieces - the sucker is
+> convoluted as hell and there's a lot of codepaths in there with nearly
+> zero test coverage.  I've split it up into provably equivalent
+> transformations, leading more or less to the state where yours ends up.
+> I _think_ I've reconstructed the sequence of changes more or less
+> close to what you were doing there, but the next time you have to do
+> something of that kind, do not collapse that into a single patch.  It's
+> really easier to review step by step...
 
-Steven reported his P4 not booting properly, the missing format
-attributes cause a NULL ptr deref. Cure this by adding the
-missing format specification.
+Okay, but actually what I was doing there is looking at what the code
+actually does and realizing that it's equivalent to __lookup_hash(), so
+for me it was a single (albeit complex) single step.
 
-I took the format description out of the comment near
-p4_config_pack*() and hope that comment is still relatively
-accurate.
+But I'll try to keep reviewability in mind.
 
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Lin Ming <ming.m.lin@intel.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1332859842.16159.227.camel@twins
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_p4.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+The do_last() reorganization in the atomic-open series needs to be split
+up, I realize.  Do you have any other high level comments about that
+series?
 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index ef484d9..a2dfacf 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -1271,6 +1271,17 @@ done:
- 	return num ? -EINVAL : 0;
- }
- 
-+PMU_FORMAT_ATTR(cccr, "config:0-31" );
-+PMU_FORMAT_ATTR(escr, "config:32-62");
-+PMU_FORMAT_ATTR(ht,   "config:63"   );
-+
-+static struct attribute *intel_p4_formats_attr[] = {
-+	&format_attr_cccr.attr,
-+	&format_attr_escr.attr,
-+	&format_attr_ht.attr,
-+	NULL,
-+};
-+
- static __initconst const struct x86_pmu p4_pmu = {
- 	.name			= "Netburst P4/Xeon",
- 	.handle_irq		= p4_pmu_handle_irq,
-@@ -1305,6 +1316,8 @@ static __initconst const struct x86_pmu p4_pmu = {
- 	 * the former idea is taken from OProfile code
- 	 */
- 	.perfctr_second_write	= 1,
-+
-+	.format_attrs		= intel_p4_formats_attr,
- };
- 
- __init int p4_pmu_init(void)
+Thanks,
+Miklos
