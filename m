@@ -1,46 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab2DCPdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 11:33:06 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:52830 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab2DCPdD (ORCPT
+	id S1754876Ab2DCPd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 11:33:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51344 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab2DCPd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 11:33:03 -0400
-From: Sasikantha babu <sasikanth.v19@gmail.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Sasikantha babu <sasikanth.v19@gmail.com>
-Subject: [PATCH] Kprobes : Recursively remove the directory on failure
-Date: Tue,  3 Apr 2012 21:05:03 +0530
-Message-Id: <1333467303-20130-1-git-send-email-sasikanth.v19@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	Tue, 3 Apr 2012 11:33:58 -0400
+Message-ID: <4F7B1854.90106@pengutronix.de>
+Date: Tue, 03 Apr 2012 17:33:40 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+CC: Wolfgang Grandegger <wg@grandegger.com>,
+        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
+        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
+ D_CAN controller
+References: <1333456339-9372-1-git-send-email-anilkumar@ti.com> <4F7AF0C7.7020506@grandegger.com> <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com> <4F7AFFEC.1010805@pengutronix.de> <331ABD5ECB02734CA317220B2BBEABC1317D86F7@DBDE01.ent.ti.com>
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC1317D86F7@DBDE01.ent.ti.com>
+X-Enigmail-Version: 1.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig39D5EC57251C2350EAE5D01F"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the "kprobes" directory recursivly if "enabled" file creation fails
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig39D5EC57251C2350EAE5D01F
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
----
- kernel/kprobes.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On 04/03/2012 04:29 PM, AnilKumar, Chimata wrote:
+>>>> Please explain why this CAN controller cannot be handled by the exis=
+ting
+>>>> C_CAN driver, eventually with some extensions. The register layout s=
+eems
+>>>> almost identical, at least.
+>>>>
+>>>> Wolfgang.
+>>>>
+>>>
+>>> These are the some of the pointers I can say, why I had gone for sepa=
+rate
+>>> file instead of existing driver:
+>>> * In case of D_CAN driver we can see all the registers are 32bit leng=
+th
+>>>   but in case of C_CAN registers are in 16bit length.
+>>
+>> How many bits in these 32 bit registers are used?
+>=20
+> In some cases (D_CAN_TXRQ, D_CAN_INTPND, D_CAN_MSGVAL) I have used all =
+the
+> bits, in some cases used few bits.
+>=20
+> Roughly I can say that its (higher 16bits) % of usages is similar as co=
+mpare
+> to 16bits=20
+>=20
+> While checking the status of TXRequest registers and INT pending regist=
+er,
+> which is a hot code path, we have to put if checks for register access.=
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index c62b854..9b45515 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -2251,7 +2251,7 @@ static int __kprobes debugfs_kprobe_init(void)
- 	file = debugfs_create_file("enabled", 0600, dir,
- 					&value, &fops_kp);
- 	if (!file) {
--		debugfs_remove(dir);
-+		debugfs_remove_recursive(dir);
- 		return -ENOMEM;
- 	}
- 
--- 
-1.7.3.4
 
+The c_can already has a c_can_read_reg32() function. It's for example
+used in the rx_poll function. You can make it a function pointer (i.e.
+pric->read_reg32()) for easy abstraction.
+
+>>> * Some of the registers, bit masks are different, so we have to add
+>>>   checks on every API for differentiating the kind of device
+>>
+>> Which registers are this? Can you give us an example?
+>=20
+> I am pointing out some of the resisters
+> * Single registers in case of D_CAN but multiple register in case of C_=
+CAN
+>   So masks will change MASK, ARB, INTPND
+> * D_CAN_IFCMD is the combination of COMM request and COMM mask register=
+s
+
+Maybe you can use the read_reg32 function on both c_can and d_can.
+
+regards, Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig39D5EC57251C2350EAE5D01F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk97GFgACgkQjTAFq1RaXHOV6QCeMM8f8o6v9akR5R3pAYshVXiZ
+fjoAn1ipJ/AAbCzgB60NVQ8AbOqcoc40
+=oOjd
+-----END PGP SIGNATURE-----
+
+--------------enig39D5EC57251C2350EAE5D01F--
