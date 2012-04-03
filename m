@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab2DCP1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 11:27:00 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:21243 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab2DCP07 (ORCPT
+	id S1754904Ab2DCP2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 11:28:21 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:48217 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752879Ab2DCP2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 11:26:59 -0400
-Message-Id: <201204031526.q33FQvFO031746@farm-0027.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 3 Apr 2012 11:10:14 -0400
-Subject: [PATCH] marvell sky2 driver: fix irq number assignment bug
-To: Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 03 Apr 2012 15:26:58.0222 (UTC) FILETIME=[35716CE0:01CD11AE]
+	Tue, 3 Apr 2012 11:28:20 -0400
+Message-ID: <4F7B170D.7070800@xenotime.net>
+Date: Tue, 03 Apr 2012 08:28:13 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Apr 2 (uml)
+References: <20120402135538.502e6c73f0cb3e6ae0b3436f@canb.auug.org.au> <4F79C68C.1070100@xenotime.net> <4F79CCE1.4040709@nod.at>
+In-Reply-To: <4F79CCE1.4040709@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a minor bug that will display wrong IRQ number in ifconfig output.
+On 04/02/2012 08:59 AM, Richard Weinberger wrote:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/ethernet/marvell/sky2.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+> On 02.04.2012 17:32, Randy Dunlap wrote:
+>> On 04/01/2012 08:55 PM, Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> The merge window has closed, so -next is open for busniess.
+>>>
+>>> Changes since 20120330:
+>>
+>>
+>>
+>> uml defconfig on x86_64:
+>>
+>>    CC      arch/um/drivers/mconsole_kern.o
+>> arch/um/drivers/mconsole_kern.c: In function 'stack_proc':
+>> arch/um/drivers/mconsole_kern.c:707:2: error: implicit declaration of function 'switch_to'
+>> make[2]: *** [arch/um/drivers/mconsole_kern.o] Error 1
+>>
+>>
+> 
+> Already fixed:
+> http://comments.gmane.org/gmane.linux.kernel/1274493
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index 423a1a2..879b0a4 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -4978,6 +4978,13 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
- 			goto err_out_free_netdev;
-  	}
- 
-+	/*
-+	 * Need to set the IRQ # for the net_device here again after
-+	 * setting it in sky2_init_netdev() initially, because MSI
-+	 * will assign a new IRQ # to this PCI device.
-+	 */
-+	dev->irq = hw->pdev->irq;
-+
- 	err = register_netdev(dev);
- 	if (err) {
- 		dev_err(&pdev->dev, "cannot register net device\n");
+
+and linux-next still has this build error.
+
+Can that patch show up in linux-next, please?
+
 -- 
-1.6.5.2
-
+~Randy
