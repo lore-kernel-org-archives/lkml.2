@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab2DCNlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 09:41:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60820 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab2DCNln convert rfc822-to-8bit (ORCPT
+	id S1754195Ab2DCNp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 09:45:57 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:32582 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab2DCNp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 09:41:43 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Wolfgang Grandegger <wg@grandegger.com>
-CC: "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
-        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Topic: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
- D_CAN controller
-Thread-Index: AQHNEZXW4WifiYIc20mGGxLe7+r04paIr8SAgABeuVA=
-Date: Tue, 3 Apr 2012 13:41:28 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com>
-References: <1333456339-9372-1-git-send-email-anilkumar@ti.com>
- <4F7AF0C7.7020506@grandegger.com>
-In-Reply-To: <4F7AF0C7.7020506@grandegger.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: BBTN CLON HEvN OwTC Xd08 enbr kJiW oRNG qir+ sdzJ u553
- 0lI5 2GLQ ACFWLw== ADQ8QQ==
- AECc4g==;7;bABpAG4AdQB4AC0AYwBhAG4AQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBvAG0AYQBwAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBtAC4AawBsAGUAaQBuAGUALQBiAHUAZABkAGUAQABwAGUAbgBnAHUAdAByAG8AbgBpAHgALgBkAGUAOwBuAGUAdABkAGUAdgBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcwBvAGMAawBlAHQAYwBhAG4AQABoAGEAcgB0AGsAbwBwAHAALgBuAGUAdAA7AHcAZwBAAGcAcgBhAG4AZABlAGcAZwBlAHIALgBjAG8AbQA=;Sosha1_v1;7;{78BEB024-26CA-4E95-A704-01B6FFAD8EAD};YQBuAGkAbABrAHUAbQBhAHIAQAB0AGkALgBjAG8AbQA=;Tue,
- 03 Apr 2012 13:41:13
- GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAQQBSAE0AOgAgAE8ATQBBAFAAOgAgAEEATQAzADMAWABYADoAIABDAEEATgA6ACAAZABfAGMAYQBuADoAIABBAGQAZAAgAHMAdQBwAHAAbwByAHQAIABmAG8AcgAgAEIAbwBzAGMAaAAgAEQAXwBDAEEATgAgAGMAbwBuAHQAcgBvAGwAbABlAHIA
-x-cr-puzzleid: {78BEB024-26CA-4E95-A704-01B6FFAD8EAD}
-x-originating-ip: [172.24.132.227]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 3 Apr 2012 09:45:56 -0400
+Date: Tue, 3 Apr 2012 08:45:54 -0500
+From: scameron@beardog.cce.hp.com
+To: akinobu.mita@gmail.com
+Cc: linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com,
+        mike.miller@beardog.cce.hp.com, mike.miller@hp.com,
+        iss_storagedev@hp.com
+Subject: Re: [PATCH] cciss: use check_signature 
+Message-ID: <20120403134554.GO32669@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang,
-
-Thanks for reviewing the patch
-
-On Tue, Apr 03, 2012 at 18:14:55, Wolfgang Grandegger wrote:
-> On 04/03/2012 02:32 PM, AnilKumar Ch wrote:
-> > This patch adds the support for Bosch D_CAN controller.
-> > 
-> > Bosch D_CAN controller is a full-CAN implementation compliant to
-> > CAN protocol version 2.0 part A and B. Bosch D_CAN user manual
-> > can be obtained from: http://www.semiconductors.bosch.de/media/
-> > en/pdf/ipmodules_1/can/d_can_users_manual_111.pdf
-> > 
-> > D_CAN device is used on many SoCs like AM335x, DM8148 and DM813x
-> > EVMs from TI, D_CAN details on AM335x can be accessed from:
-> > http://www.ti.com/lit/ug/spruh73c/spruh73c.pdf
-> > 
-> > D_CAN can be configurable for 16, 32, 64 and 128 message objects.
-> > The driver implementation is based on 64 message objects.
-> > 
-> > Following are the design choices made while writing the controller
-> > driver:
-> > 1. Interface Register set IF0 has be used for receive and IF1 is
-> >    used for transmit message objects.
-> > 2. Out of the total Message objects available, half of it are kept
-> >    aside for RX purposes and the rest for TX purposes.
-> > 3. NAPI implementation is such that both the TX and RX paths
-> >    functions in polling mode.
-> > 
-> > Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+> Use check_signature to find a signature in the mmio address.
 > 
-> Please explain why this CAN controller cannot be handled by the existing
-> C_CAN driver, eventually with some extensions. The register layout seems
-> almost identical, at least.
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Mike Miller <mike.miller@hp.com>
+> Cc: iss_storagedev@hp.com
+> ---
+>  drivers/block/cciss.c |    7 ++-----
+>  1 files changed, 2 insertions(+), 5 deletions(-)
 > 
-> Wolfgang.
-> 
+> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> index bda6d12..e04c63e 100644
+> --- a/drivers/block/cciss.c
+> +++ b/drivers/block/cciss.c
+> @@ -42,8 +42,8 @@
+>  #include <linux/compat.h>
+>  #include <linux/mutex.h>
+>  #include <linux/bitmap.h>
+> +#include <linux/io.h>
+>  #include <asm/uaccess.h>
+> -#include <asm/io.h>
+>  
+>  #include <linux/dma-mapping.h>
+>  #include <linux/blkdev.h>
+> @@ -4267,10 +4267,7 @@ static void __devinit cciss_find_board_params(ctlr_info_t *h)
+>  
+>  static inline bool CISS_signature_present(ctlr_info_t *h)
+>  {
+> -       if ((readb(&h->cfgtable->Signature[0]) != 'C') ||
+> -           (readb(&h->cfgtable->Signature[1]) != 'I') ||
+> -           (readb(&h->cfgtable->Signature[2]) != 'S') ||
+> -           (readb(&h->cfgtable->Signature[3]) != 'S')) {
+> +       if (!check_signature(h->cfgtable->Signature, "CISS", 4)) {
 
-These are the some of the pointers I can say, why I had gone for separate
-file instead of existing driver:
-* In case of D_CAN driver we can see all the registers are 32bit length
-  but in case of C_CAN registers are in 16bit length.
-* Some of the registers, bit masks are different, so we have to add
-  checks on every API for differentiating the kind of device
-* In case of D_CAN we have some extra features like direct message RAM
-  access, DMA support, TX/RX pins can be used as GPIO lines (if applicable),
-  more interrupt lines and three sets of interface registers.
-* Wait timings while init bit set/reset during bit-timing initialization
-  are different in both the cases
-* bittiming configurations are different.
+I noticed that in lib/Makefile, there's this:
 
-Thanks
-AnilKumar
+[scameron@localhost linux-3.4-rc1]$ grep CHECK_SIG lib/Makefile
+obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
+[scameron@localhost linux-3.4-rc1]$
+
+although I don't see an '#if CONFIG_CHECK_SIGNATURE' in include/linux/io.h
+
+Does there need to be a "select CHECK_SIGNATURE" added into
+in drivers/block/Kconfig in this area?
+
+config BLK_CPQ_CISS_DA
+        tristate "Compaq Smart Array 5xxx support"
+        depends on PCI
+        help
+
+Or is this dependency handled in some way I'm just not seeing?
+
+-- steve
+
+>                  dev_warn(&h->pdev->dev, "not a valid CISS config table\n");
+>                  return false;
+>          }
+> -- 
+> 1.7.4.4
