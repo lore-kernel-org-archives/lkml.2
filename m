@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2DCFzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 01:55:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62735 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab2DCFz2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 01:55:28 -0400
+	id S1752778Ab2DCF43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 01:56:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50849 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab2DCF42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 01:56:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: venom00 <venom00@setsun.org>
+Subject: Re: [s2disk] Inappropriate ioctl on /dev/snapshot
+Date: Tue, 3 Apr 2012 08:00:49 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <EV0ByeH8JeDWvk23_hS3M1XIjq7ZqojHm-IJJdI6CcZXMuZdq2gOAlqCGWMX1UCTpf9qG5vgeUMtaBztXYzLkQ@localhost.localdomain> <20120402100625.GA1216@elf.ucw.cz> <9Jr6_fKFH8Umxxs-dQGSOyRp3KqouVJ5VXrBfs1lJmHEgv6ITSoG7dqJWPT6sPGR8h5aOXDJHpJMUxXb0X1vvw@localhost.localdomain>
+In-Reply-To: <9Jr6_fKFH8Umxxs-dQGSOyRp3KqouVJ5VXrBfs1lJmHEgv6ITSoG7dqJWPT6sPGR8h5aOXDJHpJMUxXb0X1vvw@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20120402194049.06B613E314E@localhost>
-References: <1333193818-3984-1-git-send-email-shubhrajyoti@ti.com>
-	<20120402194049.06B613E314E@localhost>
-Date: Tue, 3 Apr 2012 11:25:26 +0530
-Message-ID: <CAM=Q2cse5_mZtfNchE+uYpNPLd+_TSTFswxhfk0feaoMqmT7eA@mail.gmail.com>
-Subject: Re: [PATCHv3 0/3] spi: omap2-mcspi: driver updates
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Shubhrajyoti D <shubhrajyoti@ti.com>,
-        spi-devel-general@lists.sourceforge.net,
-        Shubhrajyoti@ponder.secretlab.ca, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204030800.49585.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant
+On Monday, April 02, 2012, venom00 wrote:
+> On Mon, 2012-04-02 at 12:06 +0200, Pavel Machek wrote:
+> > 
+> > Hi! If it worked on previous kernels, it is an  regression and
+> > something for rjw to track.
+> 
+> It's my first try with Xen.
+> 
+> > By chance, are you using 32bit userland on 64bit kernel?
+> 
+> No.
+> 
+> > (Rafael: Did we remove some compatibility code, recently?) 
+> 
+> Sorry, I've updated suspend-1.0 and works fine ;)
 
-On Tue, Apr 3, 2012 at 1:10 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Sat, 31 Mar 2012 17:06:55 +0530, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
->> The patch series does the following cleanups
->> - Makes the driver use autosuspend
->> - Folds Benoit's bus_num removal patch in the series
->> - The tmp variable is used to write this can be optimised
->>  as it is not needed if the value is directly written.
->>  Acknowledge  Tarun for the suggestion.
->>
->> This is also available through
->> git     : git://gitorious.org/linus-tree/linus-tree.git
->> branch  : spi_next
->>
->> Rebased to Grant's spi/next branch.
->
-> Merged, thanks.
-Thanks ,
+OK, cool.
 
->
-> BTW, it's easier to pull if you put the branch after the git URL (I
-> can cut and paste all at once):
->
->        git://gitorious.org/linus-tree/linus-tree.git spi_next
->
-> "git request-pull" can be your friend here.
->
-OK good idea will do that.
+Thanks,
+Rafael
