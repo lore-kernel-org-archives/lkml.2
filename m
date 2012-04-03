@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab2DCVJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 17:09:44 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1464 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2DCVJn (ORCPT
+	id S1755251Ab2DCV3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 17:29:36 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63307 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab2DCV3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 17:09:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6669"; a="176309982"
-Date: Tue, 3 Apr 2012 16:09:38 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, linas@codeaurora.org, mingo@elte.hu,
-        a.p.zijlstra@chello.nl, dhowells@redhat.com,
-        yasutake.koichi@jp.panasonic.com, akpm@linux-foundation.org,
-        benh@kernel.crashing.org, jesper.nilsson@axis.com, cmetcalf@tilera.com,
-        linux@arm.linux.org.uk, jejb@parisc-linux.org, deller@gmx.de,
-        vapier@gentoo.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-am33-list@redhat.com,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH 1/4] hexagon/CPU hotplug: Add missing call to
- notify_cpu_starting()
-Message-ID: <20120403210938.GA20952@codeaurora.org>
-References: <20120322112735.17063.21791.stgit@srivatsabhat.in.ibm.com>
- <20120322112805.17063.19393.stgit@srivatsabhat.in.ibm.com>
+	Tue, 3 Apr 2012 17:29:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120322112805.17063.19393.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1333382148-14137-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1333382148-14137-1-git-send-email-daniel.lezcano@linaro.org>
+Date: Tue, 3 Apr 2012 23:29:34 +0200
+Message-ID: <CACRpkdagADj4YacxA5DqdQHKO2fkdCmwjK3pY_TAwCYU_C67GQ@mail.gmail.com>
+Subject: Re: [PATCH] mfd : dbx500 : fix compilation error
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, sameo@linux.intel.com
+Cc: srinidhi.kasagar@stericsson.com, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 22, 2012 at 04:58:25PM +0530, Srivatsa S. Bhat wrote:
-> The scheduler depends on receiving the CPU_STARTING notification, without
-> which we end up into a lot of trouble. So add the missing call to
-> notify_cpu_starting() in the bringup code.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  arch/hexagon/kernel/smp.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
+On Mon, Apr 2, 2012 at 5:55 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
 
-Tested in my tree; thanks!
+> The ux500 default config enables the db5500 and the db8500.
+> The incoming cpuidle driver uses the 'prcmu_enable_wakeups'
+> and the 'prcmu_set_power_state' functions but these ones
+> are defined but not implemented for the db5500, leading to
+> an unresolved symbol error at link time. In order to compile,
+> we have to disable the db5500 support which is not acceptable
+> for the default config.
+>
+> I noticed there are also some other functions which are
+> defined but not implemented.
+>
+> This patch fix this by removing the functions definitions
+> and move out of the config section the empty functions which
+> are normally used when the DB550 config is disabled.
+> Only the functions which are not implemented are concerned
+> by this modification.
+>
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Sam, please push this to the -rc series if you can.
 
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
-
-
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Yours,
+Linus Walleij
