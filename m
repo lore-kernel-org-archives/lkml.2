@@ -1,197 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab2DCHsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 03:48:08 -0400
-Received: from out08.mta.xmission.com ([166.70.13.238]:34037 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751458Ab2DCHsG convert rfc822-to-8bit (ORCPT
+	id S1752778Ab2DCHuH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 03:50:07 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:49223 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab2DCHuE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 03:48:06 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Bruno =?utf-8?Q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <20120402162716.4c93bfd3@pluto.restena.lu>
-	<20120402165036.2bc987ad@pluto.restena.lu>
-	<m17gxyklfm.fsf@fess.ebiederm.org> <20120402213440.49e9de74@neptune>
-	<1333401898.2960.78.camel@laptop> <1333403193.2960.80.camel@laptop>
-	<20120403060252.GA27084@gmail.com>
-	<20120403081735.78ca3bb3@pluto.restena.lu>
-	<m1d37pgugy.fsf@fess.ebiederm.org> <20120403071543.GA17502@gmail.com>
-	<20120403094107.4f641ed8@pluto.restena.lu>
-Date: Tue, 03 Apr 2012 00:51:48 -0700
-In-Reply-To: <20120403094107.4f641ed8@pluto.restena.lu> ("Bruno
- =?utf-8?Q?Pr=C3=A9mont=22's?=
-	message of "Tue, 3 Apr 2012 09:41:07 +0200")
-Message-ID: <m1limddzhn.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 3 Apr 2012 03:50:04 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [REGRESSION] NMI received for unknown reason 3c on CPU 0, strange powersaving mode?
+Date: Tue, 3 Apr 2012 09:50:02 +0200
+User-Agent: KMail/1.13.7 (Linux/3.3.0-trunk-amd64; KDE/4.7.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        a.p.zijlstra@chello.nl, stern@rowland.harvard.edu, rjw@sisk.pl,
+        pavel@ucw.cz
+References: <201203301304.49708.Martin@lichtvoll.de> <4F7987D0.3090106@linux.vnet.ibm.com> (sfid-20120402_143911_704229_5D7541F7)
+In-Reply-To: <4F7987D0.3090106@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19gfsq9oYXJeT/qm9DO2yOnYDlGXSiogqA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: =?ISO-8859-1?Q?;Bruno Pr=c3=a9mont <bonbons@linux-vserver.org>?=
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH v2] Prevent crash on unset sysfs group attributes
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Message-Id: <201204030950.02778.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruno Pr√©mont <bonbons@linux-vserver.org> writes:
+Am Montag, 2. April 2012 schrieb Srivatsa S. Bhat:
+> On 03/30/2012 04:34 PM, Martin Steigerwald wrote:
+> > Hi!
+> > 
+> > Since some time I am seeing things like
+> > 
+> > Message from syslogd@merkaba at Mar 30 00:29:30 ...
+> > 
+> >  kernel:[49074.294260] Uhhuh. NMI received for unknown reason 3c on
+> >  CPU 0.
+> > 
+> > Message from syslogd@merkaba at Mar 30 00:29:30 ...
+> > 
+> >  kernel:[49074.294263] Do you have a strange power saving mode
+> >  enabled?
+> > 
+> > Message from syslogd@merkaba at Mar 30 00:29:30 ...
+> > 
+> >  kernel:[49074.294264] Dazed and confused, but trying to continue
+> > 
+> > on resume after in-kernel hibernation.
+> 
+> Do you see this after suspend-to-ram too?
+> 
+> > I do not see any trace of it in syslog, kern.log or dmesg.
+> > 
+> > From the timestemp it seems that these messages are issued shortly
+> > before I send the laptop to hibernation last night.
+> > 
+> > 
+> > I am using a ThinkPad T520 with Intel(R) Core(TM) i5-2520M CPU @
+> > 2.50GHz and Sandybridge graphics.
+> > 
+> > I am not exactly sure since when it happens, cause I basically
+> > ignored it for quite some time. Might be some 3.2 kernel where it
+> > started, maybe even the first 3.2 kernel I had. Currently I am
+> > using:
+> > 
+> > martin@merkaba:~> cat /proc/version
+> > Linux version 3.3.0-trunk-amd64 (Debian 3.3-1~experimental.1)
+> > (debian- kernel@lists.debian.org) (gcc version 4.6.3 (Debian
+> > 4.6.3-1) ) #1 SMP Thu Mar 22 18:02:10 UTC 2012
+> > 
+> > Since I am quite sure I didn¥t see this with the first kernel I used
+> > on this machine, which was a 2.6.39 if I remember correctly, I
+> > consider this to be a regression for now.
+> > 
+> > 
+> > I did not see any other strange effects, only this message.
+> > 
+> > 
+> > When searching for it I see quite some referencesπ. But what I looked
+> > at seemed to either quite old or different in that the machine was
+> > frozen then.
+> 
+> There was once such a bug report and commit 144060fee (perf: Add PM
+> notifiers to fix CPU hotplug races) tried to fix it, however it didn't
+> work out IIRC.
+> 
+> Can you please try out the pm-test framework and let us know in which
+> phase this message is encountered?
+> Documentation/power/basic-pm-debugging.txt
+> 
+> 1. Recompile the kernel with CONFIG_PM_DEBUG=y
+> 2. # cat /sys/power/pm_test
+> 3. # echo <value> > /sys/power/pm_test
+>    Use the values from the list given in step 2.
+>    From freezer to core, it is increasing depth of suspend phase.
+> 4. # echo mem > /sys/power/state  (for suspend-to-ram)
+>    or echo disk > /sys/power/state  (for suspend-to-disk)
+> 
+> It would be great if you could tell which of the phases (freezer to
+> core) fails.
 
-> Do not let the kernel crash when a device is registered with
-> sysfs while group attributes are not set (aka NULL).
->
-> Warn about the offender with some information about the offending
-> device.
->
-> This would warn instead of trying NULL pointer deref like:
->  BUG: unable to handle kernel NULL pointer dereference at
-> (null) IP: [<ffffffff81152673>] internal_create_group+0x83/0x1a0
->  PGD 0 
->  Oops: 0000 [#1] SMP 
->  CPU 0 
->  Modules linked in:
->
->  Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #3 HP ProLiant
->  DL360 G4 RIP: 0010:[<ffffffff81152673>]  [<ffffffff81152673>]
->  internal_create_group+0x83/0x1a0 RSP: 0018:ffff88019485fd70  EFLAGS:
->  00010202 RAX: 0000000000000001 RBX: 0000000000000000 RCX:
->  0000000000000001 RDX: ffff880192e99908 RSI: ffff880192e99630 RDI:
->  ffffffff81a26c60 RBP: ffff88019485fdc0 R08: 0000000000000000 R09:
->  0000000000000000 R10: ffff880192e99908 R11: 0000000000000000 R12:
->  ffffffff81a16a00 R13: ffff880192e99908 R14: ffffffff81a16900 R15:
->  0000000000000000 FS:  0000000000000000(0000) GS:ffff88019bc00000(0000)
->  knlGS:0000000000000000 CS:  0010 DS: 0000 ES: 0000 CR0:
->  000000008005003b CR2: 0000000000000000 CR3: 0000000001a0c000 CR4:
->  00000000000007f0 DR0: 0000000000000000 DR1: 0000000000000000 DR2:
->  0000000000000000 DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
->  0000000000000400 Process swapper/0 (pid: 1, threadinfo
->  ffff88019485e000, task ffff880194878000) Stack:
->   ffff88019485fdd0 ffff880192da9d60 0000000000000000 ffff880192e99908
->   ffff880192e995d8 0000000000000001 ffffffff81a16a00 ffff880192da9d60
->   0000000000000000 0000000000000000 ffff88019485fdd0 ffffffff811527be
->  Call Trace:
->   [<ffffffff811527be>] sysfs_create_group+0xe/0x10
->   [<ffffffff81376ca6>] device_add_groups+0x46/0x80
->   [<ffffffff81377d3d>] device_add+0x46d/0x6a0
->   ...
->
-> Signed-off-by: Bruno Pr√©mont <bonbons@linux-vserver.org>
-> ---
->
-> On Tue, 3 Apr 2012 09:15:43 Ingo Molnar wrote:
->> > > Greg, is this ok for you or should the check be moved out to 
->> > > calling internal_create_group()?
->> > 
->> > Please put changes in internal_create_group where all of the 
->> > rest of the checks are.
->> 
->> So you *do* agree that a check in a generic place is useful 
->> after all? ;-)
->> 
->> > We should do something like:
->> > if (!grp->attrs) {
->> > 	WARN(1, "sysfs: idiot subsystem did not include attrs for group: %s/%s\n"
->> >         	kobj->name, grp->name?"":grp->name);
->> > 	return -EINVAL;
->> > }
->> >
->> > As it stands your patch is horrible it leaves sysfs in an 
->> > inconsistent state.  Creating the directory and leaving it 
->> > there.  Not returning an error code.  It looks like there are 
->> > all kinds of weird problems that removing the group or 
->> > updating the group could get into if we go with your patch.
->> 
->> This is actually a sensible suggestion. Bruno, mind updating 
->> your patch to do something like this? Assuming Greg agrees with 
->> putting the check/warning there.
->
-> Here come a respin with Eric's suggestion.
->
-> In my case it would show the following result:
->
-> [    0.975025] ------------[ cut here ]------------
-> [    0.977507] WARNING: at /data/kernel/linux-2.6-git/fs/sysfs/group.c:72 internal_create_group+0x18c/0x1f0()
-> [    0.981932] Hardware name: ProLiant DL360 G4
-> [    0.983916] sysfs: attrs not set by subsystem for group: cpu/
-> [    0.987030] Modules linked in:
-> [    0.988664] Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc1-x86_64 #6
-> [    0.991639] Call Trace:
-> [    0.992911]  [<ffffffff8104d11a>] warn_slowpath_common+0x7a/0xb0
-> [    0.995903]  [<ffffffff8104d1f1>] warn_slowpath_fmt+0x41/0x50
-> [    0.998593]  [<ffffffff8115277c>] internal_create_group+0x18c/0x1f0
-> [    1.001366]  [<ffffffff8115280e>] sysfs_create_group+0xe/0x10
-> [    1.003898]  [<ffffffff81376cf6>] device_add_groups+0x46/0x80
-> [    1.006955]  [<ffffffff81377d8d>] device_add+0x46d/0x6a0
-> [    1.009565]  [<ffffffff813778e1>] ? device_private_init+0x51/0x90
-> [    1.012806]  [<ffffffff81a98975>] ? utsname_sysctl_init+0x14/0x14
-> [    1.015866]  [<ffffffff810a7228>] pmu_dev_alloc+0x98/0xe0
-> [    1.018234]  [<ffffffff81a98975>] ? utsname_sysctl_init+0x14/0x14
-> [    1.021408]  [<ffffffff81a989c0>] perf_event_sysfs_init+0x4b/0x9a
-> [    1.025517]  [<ffffffff810002ad>] do_one_initcall+0x3d/0x170
-> [    1.029102]  [<ffffffff81a85cbd>] kernel_init+0x12d/0x1be
-> [    1.031844]  [<ffffffff81a85505>] ? rdinit_setup+0x28/0x28
-> [    1.034571]  [<ffffffff815f3794>] kernel_thread_helper+0x4/0x10
-> [    1.037734]  [<ffffffff81a85b90>] ? start_kernel+0x373/0x373
-> [    1.040790]  [<ffffffff815f3790>] ? gs_change+0xb/0xb
-> [    1.043354] ---[ end trace 319c95c486d7d9cd ]---
-> [    1.045536] ------------[ cut here ]------------
-> [    1.047640] WARNING: at /data/kernel/linux-2.6-git/kernel/events/core.c:7144 perf_event_sysfs_init+0x70/0x9a()
-> [    1.052595] Hardware name: ProLiant DL360 G4
-> [    1.055027] Failed to register pmu: cpu, reason -22
-> [    1.057720] Modules linked in:
-> [    1.059284] Pid: 1, comm: swapper/0 Tainted: G        W    3.4.0-rc1-x86_64 #6
-> [    1.062785] Call Trace:
-> [    1.064094]  [<ffffffff8104d11a>] warn_slowpath_common+0x7a/0xb0
-> [    1.067192]  [<ffffffff81a98975>] ? utsname_sysctl_init+0x14/0x14
-> [    1.070305]  [<ffffffff8104d1f1>] warn_slowpath_fmt+0x41/0x50
-> [    1.073129]  [<ffffffff810a7244>] ? pmu_dev_alloc+0xb4/0xe0
-> [    1.075771]  [<ffffffff81a989e5>] perf_event_sysfs_init+0x70/0x9a
-> [    1.078878]  [<ffffffff810002ad>] do_one_initcall+0x3d/0x170
-> [    1.081879]  [<ffffffff81a85cbd>] kernel_init+0x12d/0x1be
-> [    1.084714]  [<ffffffff81a85505>] ? rdinit_setup+0x28/0x28
-> [    1.087754]  [<ffffffff815f3794>] kernel_thread_helper+0x4/0x10
-> [    1.090639]  [<ffffffff81a85b90>] ? start_kernel+0x373/0x373
-> [    1.093372]  [<ffffffff815f3790>] ? gs_change+0xb/0xb
-> [    1.096312] ---[ end trace 319c95c486d7d9ce ]---
+Here I have the one from this morning. This time as resume time:
 
-That looks reasonable to me.
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+martin@merkaba:~> 
+Message from syslogd@merkaba at Apr  3 09:10:15 ...
+ kernel:[ 3755.145282] Uhhuh. NMI received for unknown reason 3c on CPU 0.
 
->  fs/sysfs/group.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-> index dd1701c..2df555c 100644
-> --- a/fs/sysfs/group.c
-> +++ b/fs/sysfs/group.c
-> @@ -67,7 +67,11 @@ static int internal_create_group(struct kobject *kobj, int update,
->  	/* Updates may happen before the object has been instantiated */
->  	if (unlikely(update && !kobj->sd))
->  		return -EINVAL;
-> -
-> +	if (!grp->attrs) {
-> +		WARN(1, "sysfs: attrs not set by subsystem for group: %s/%s\n",
-> +			kobj->name, grp->name ? "" : grp->name);
-> +		return -EINVAL;
-> +	}
->  	if (grp->name) {
->  		error = sysfs_create_subdir(kobj, grp->name, &sd);
->  		if (error)
+Message from syslogd@merkaba at Apr  3 09:10:15 ...
+ kernel:[ 3755.145285] Do you have a strange power saving mode enabled?
+
+Message from syslogd@merkaba at Apr  3 09:10:15 ...
+ kernel:[ 3755.145286] Dazed and confused, but trying to continue
+
+
+And here are the tests - short summary I was not able to reproduce the 
+issue - nothing means that there was no furch NMI message on the Konsole 
+window where it usually appears:
+
+merkaba:~> cat /sys/power/pm_test 
+[none] core processors platform devices freezer
+merkaba:~> echo "core" > /sys/power/pm_test
+merkaba:~> echo "mem" > /sys/power/state  
+merkaba:~> echo nothing               
+nothing
+merkaba:~> echo "disk" > /sys/power/state
+merkaba:~> echo nothing
+nothing
+merkaba:~> echo "processors" > /sys/power/pm_test
+merkaba:~> echo "mem" > /sys/power/state         
+merkaba:~> echo nothing                          
+nothing
+merkaba:~> cat /sys/power/pm_test        
+none core [processors] platform devices freezer
+merkaba:~> echo "disk" > /sys/power/state
+merkaba:~> echo nothing                  
+nothing
+merkaba:~> echo "platform" > /sys/power/pm_test
+merkaba:~> echo "mem" > /sys/power/state         
+merkaba:~> echo nothing                 
+nothing
+merkaba:~> echo "disk" > /sys/power/state
+merkaba:~> echo nothing                        
+nothing
+merkaba:~> echo "devices" > /sys/power/pm_test
+merkaba:~> echo "mem" > /sys/power/state      
+merkaba:~> echo nothing                       
+nothing
+merkaba:~> echo "disk" > /sys/power/state  
+merkaba:~> echo nothing                  
+nothing
+merkaba:~> echo "freezer" > /sys/power/pm_test
+merkaba:~> echo "mem" > /sys/power/state      
+merkaba:~> echo nothing                       
+nothing
+merkaba:~> echo "disk" > /sys/power/state
+merkaba:~> echo nothing                  
+nothing
+
+
+Now trying a regular hibernation:
+
+merkaba:~> echo "none" > /sys/power/pm_test
+merkaba:~> cat /sys/power/pm_test
+[none] core processors platform devices freezer
+
+
+Nothing.
+
+
+Now trying a regular hibernation with some minutes downtime and
+unplugging the power from the laptop.
+
+
+Nothing as well.
+
+
+Now I am puzzled.
+
+
+Maybe its the switch from minidock to no dock and vice versa?
+
+Ciao,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
