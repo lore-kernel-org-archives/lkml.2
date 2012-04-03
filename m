@@ -1,114 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab2DCOuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:50:13 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:47301 "EHLO mgw-da02.nokia.com"
+	id S1754053Ab2DCOxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:53:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28820 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872Ab2DCOuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:50:12 -0400
-Message-ID: <1333464575.26774.130.camel@groo>
-Subject: Re: HSI: hsi: Introducing HSI framework
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: ext Greg KH <greg@kroah.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 03 Apr 2012 17:49:35 +0300
-In-Reply-To: <20120402234134.GA18183@kroah.com>
-References: <20120402165607.2B2D47C0069@ra.kernel.org>
-	 <20120402234134.GA18183@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Nokia-AV: Clean
+	id S1753206Ab2DCOxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 10:53:45 -0400
+Date: Tue, 3 Apr 2012 10:53:01 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        Suresh Jayaraman <sjayaraman@suse.com>,
+        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
+Message-ID: <20120403145301.GG5913@redhat.com>
+References: <20120328121308.568545879@intel.com>
+ <20120401205647.GD6116@redhat.com>
+ <20120403080014.GA15546@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120403080014.GA15546@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Tue, Apr 03, 2012 at 01:00:14AM -0700, Fengguang Wu wrote:
 
-Thanks for the review.
+[CC Jens]
 
-On Mon, 2012-04-02 at 16:41 -0700, ext Greg KH wrote:
-> On Mon, Apr 02, 2012 at 04:56:07PM +0000, Linux Kernel Mailing List wrote:
-> > +static void hsi_controller_release(struct device *dev __maybe_unused)
-> > +{
-> > +}
-> > +
-> > +static void hsi_port_release(struct device *dev __maybe_unused)
-> > +{
-> > +}
+[..]
+> > I think blkio.weight can be thought of a system wide weight of a cgroup
+> > and more than one entity/subsystem should be able to make use of it and
+> > differentiate between IO in its own way. CFQ can decide to do proportional
+> > time division, and buffered write controller should be able to use the
+> > same weight and do write bandwidth differentiation. I think it is better
+> > than introducing another buffered write controller tunable for weight.
+> > 
+> > Personally, I am not too worried about this point. We can document and
+> > explain it well.
 > 
-> As per the documentation in the kernel tree, I get to mock you
-> mercilessly for doing something as foolish as this.  You are not smarter
-> than the kernel and don't think that you got rid of the kernel warning
-> properly by doing this.  Do you think that I wrote that code for no good
-> reason?  The kernel was being nice and telling you what you did wrong,
-> don't try to fake it out, it's smarter than you are here.
+> Agreed. The throttling may work in *either* bps, IOPS or disk time
+> modes. In each mode blkio.weight is naturally tied to the
+> corresponding IO metrics.
+
+Well, Tejun does not like the idea of sharing config variables among
+different policies. So I guess you shall have to come up with your
+own configurations variables as desired. As each policy will have its
+own configuration and stats, prefixing the vairable/stat name with
+policy name will help identify it. Not sure what's a good name for
+buffered write policy.
+
+May be
+
+blkio.dirty.weight
+blkio.dirty.bps
+blkio.buffered_write.* or
+blkio.buf_write* or
+blkio.dirty_rate.* or
+
+[..]
 > 
-> I also get to tell you that you need to fix this up right now, BEFORE
-> 3.4 comes out.
+> Patch 6/6 shows simple test results for bps based throttling.
 > 
-> And no, just because you created static struct devices, this is not ok,
-> DO NOT create static struct devices, that's foolish, and even worse, not
-> something you should be doing in the first place, create a real
-> structure, and put a struct device within it please.
-
-That was not really  my intention here.
-But it is my fault for not keeping up with the documentation. For what
-is worth, back on the days that the framework was initially written,
-there was no such documentation and I went for a simple API approach
-(alloc -> register -> unregister -> free). It also made quite trivial
-the hsi_port allocation/freeing and device registration.
-
-I'll do the changes asap.
-
+> Since then I've improved the patches to work in a more "contained" way
+> when blkio.throttle.buffered_write_bps is not set.
 > 
-> And people wonder why kernel maintainers are grumpy.
+> The old behavior is, if blkcg A contains 1 dd and blkcg B contains 10
+> dd tasks and they have equal weight, B will get 10 times bandwidth
+> than A.
 > 
-> > +/**
-> > + * struct hsi_client - HSI client attached to an HSI port
-> > + * @device: Driver model representation of the device
-> > + * @tx_cfg: HSI TX configuration
-> > + * @rx_cfg: HSI RX configuration
-> > + * @hsi_start_rx: Called after incoming wake line goes high
-> > + * @hsi_stop_rx: Called after incoming wake line goes low
-> > + */
-> > +struct hsi_client {
-> > +	struct device		device;
-> > +	struct hsi_config	tx_cfg;
-> > +	struct hsi_config	rx_cfg;
-> > +	void			(*hsi_start_rx)(struct hsi_client *cl);
-> > +	void			(*hsi_stop_rx)(struct hsi_client *cl);
-> > +	/* private: */
-> > +	unsigned int		pclaimed:1;
-> > +	struct list_head	link;
-> > +};
-> 
-> Why do you need another list_head in here?  What's wrong with using the
-> device iteration functions that are written for you to use?  Don't put
-> the structure on yet-another-list, use what is given to you please, as
-> odds are, you will traverse this list incorrectly (trust me...)
-> 
+> With the below updated core bits, A and B will get equal share of
+> write bandwidth. The basic idea is to use
 
-Well I do agree about using the device iteration functions, and way back
-in the old times of this framework that was the case:
+Yes, this new behavior makes more sense. Two equal weight groups get
+equal bandwidth irrpesctive of number of tasks in cgroup.
 
-https://lkml.org/lkml/2010/5/7/240
+[..]
+> Test results are "pretty good looking" :-) The attached graphs
+> illustrates nice attributes of accuracy, fairness and smoothness
+> for the following tests.
 
-The issue here was that I wanted to allow the hsi_controllers drivers to
-call hsi_event() in their BHs and ISR to minimize the latency in the
-communication . And that's not possible if I use the
-device_for_each_child() in hsi_event(), cause the locking does not
-protect against interrupt handlers. 
+Indeed. These results are pretty cool. It is hard to belive that lines
+are so smooth and lines for two tasks are overlapping each other such 
+that it is not obivious initially that they are overlapping and dirtying
+equal amount of memory. I had to take a second look to figure that out.
 
-But I guess I can go back to the old code and push the issue down to the
-the hsi controller drivers and force them to use threaded interrupts...
+Just that results for third graph (weight 500 and 1000 respectively) are
+not perfect. I think Ideally all the 3 tasks should have dirtied same
+amount of memory. But I think achieving perfection here might not be
+easy and may be not many people will care.
 
-> ugh,
-> 
-> greg k-h
+Given the fact that you are doing a reasonable job of providing service
+differentiation between buffered writers, I am wondering if you should
+look at the ioprio of writers with-in cgroup and provide service
+differentiation among those too. CFQ has separate queues but it loses
+the context information by the time IO is submitted. So you might be
+able to do a much better job. Anyway, this is a possible future
+enhancement and not necessarily related to this patchset.
 
-Br,
-Carlos Chinea
+Also, we are controlling the rate of dirtying the memory. I am again 
+wondering whether these configuration knobs should be part of memory
+controller and not block controller. Think of NFS case. There is no
+block device or block layer involved but we will control the rate of
+dirtying memory. So some control in memory controller might make
+sense. And following kind of knobs might make sense there.
 
+memcg.dirty_weight or memcg.dirty.weight
+memcg.dirty_bps or memcg.dirty.write_bps
+
+Just that we control not the *absolute amount* of memory but *rate* of
+writing to memory and I think that makes it somewhat confusing and
+gives the impression that it should be part of block IO controller.
+
+I am kind of split on this (rather little inclined towards memory
+controller), so I am raising the question and others can weigh in with
+their thoughts on what makes more sense here.
+
+Thanks
+Vivek
