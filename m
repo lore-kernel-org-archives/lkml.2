@@ -1,127 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2DCOxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 10:53:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28820 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab2DCOxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 10:53:45 -0400
-Date: Tue, 3 Apr 2012 10:53:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        Suresh Jayaraman <sjayaraman@suse.com>,
-        Andrea Righi <andrea@betterlinux.com>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 0/6] buffered write IO controller in balance_dirty_pages()
-Message-ID: <20120403145301.GG5913@redhat.com>
-References: <20120328121308.568545879@intel.com>
- <20120401205647.GD6116@redhat.com>
- <20120403080014.GA15546@localhost>
+	id S1754481Ab2DCOzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 10:55:54 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57961 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab2DCOzw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 10:55:52 -0400
+Date: Tue, 3 Apr 2012 16:56:36 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [pull] drm-intel-fixes for 3.4
+Message-ID: <20120403145636.GB4415@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120403080014.GA15546@localhost>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 01:00:14AM -0700, Fengguang Wu wrote:
+Hi Dave,
 
-[CC Jens]
+A few patches for 3.4, major part is 3 regression fixes:
+- ppgtt broke hibernate on snb/ivb. Somehow our QA claims that it still
+  works, which is why this has not been caught earlier.
+- ppgtt flails in combination with dmar. I kinda expected this one :(
+- fence handling bugfix for gen2/3. Iirc this one is about a year old, fix
+  curtesy Chris Wilson. I've created an shockingly simple i-g-t test to
+  catch this in the future.
 
-[..]
-> > I think blkio.weight can be thought of a system wide weight of a cgroup
-> > and more than one entity/subsystem should be able to make use of it and
-> > differentiate between IO in its own way. CFQ can decide to do proportional
-> > time division, and buffered write controller should be able to use the
-> > same weight and do write bandwidth differentiation. I think it is better
-> > than introducing another buffered write controller tunable for weight.
-> > 
-> > Personally, I am not too worried about this point. We can document and
-> > explain it well.
-> 
-> Agreed. The throttling may work in *either* bps, IOPS or disk time
-> modes. In each mode blkio.weight is naturally tied to the
-> corresponding IO metrics.
+Wrt regressions I've just got a report that gmbus (newly enabled again in
+3.4) is a bit noisy. I'm looking into this atm.
 
-Well, Tejun does not like the idea of sharing config variables among
-different policies. So I guess you shall have to come up with your
-own configurations variables as desired. As each policy will have its
-own configuration and stats, prefixing the vairable/stat name with
-policy name will help identify it. Not sure what's a good name for
-buffered write policy.
+Also included are the rc6 enable patches for snb from Eugeni. I wanted to
+include these in the main 3.4 pull but screwed it up. Please hit me. Imo
+these kind of patches really should go in before -rc1, but in thise case
+rc6 has brought us tons of press and guinea pigs^W^W testers and ubuntu is
+already running with it. So I estimate a pretty small chance for this to
+blow up.
 
-May be
+And some smaller things:
+- two minor locking snafus
+- server gt2 ivb pciid
+- 2 patches to sanitize the register state left behind by the bios some
+  more
+- 2 new quirk entries
+- cs readback trick against missed IRQs from ivb also enabled on snb
+- sprite fix from Jesse
 
-blkio.dirty.weight
-blkio.dirty.bps
-blkio.buffered_write.* or
-blkio.buf_write* or
-blkio.dirty_rate.* or
+Yours, Daniel
 
-[..]
-> 
-> Patch 6/6 shows simple test results for bps based throttling.
-> 
-> Since then I've improved the patches to work in a more "contained" way
-> when blkio.throttle.buffered_write_bps is not set.
-> 
-> The old behavior is, if blkcg A contains 1 dd and blkcg B contains 10
-> dd tasks and they have equal weight, B will get 10 times bandwidth
-> than A.
-> 
-> With the below updated core bits, A and B will get equal share of
-> write bandwidth. The basic idea is to use
+The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
 
-Yes, this new behavior makes more sense. Two equal weight groups get
-equal bandwidth irrpesctive of number of tasks in cgroup.
+  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
 
-[..]
-> Test results are "pretty good looking" :-) The attached graphs
-> illustrates nice attributes of accuracy, fairness and smoothness
-> for the following tests.
+are available in the git repository at:
 
-Indeed. These results are pretty cool. It is hard to belive that lines
-are so smooth and lines for two tasks are overlapping each other such 
-that it is not obivious initially that they are overlapping and dirtying
-equal amount of memory. I had to take a second look to figure that out.
+  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
 
-Just that results for third graph (weight 500 and 1000 respectively) are
-not perfect. I think Ideally all the 3 tasks should have dirtied same
-amount of memory. But I think achieving perfection here might not be
-easy and may be not many people will care.
+for you to fetch changes up to b4db1e35ac59c144965f517bc575a0d75b60b03f:
 
-Given the fact that you are doing a reasonable job of providing service
-differentiation between buffered writers, I am wondering if you should
-look at the ioprio of writers with-in cgroup and provide service
-differentiation among those too. CFQ has separate queues but it loses
-the context information by the time IO is submitted. So you might be
-able to do a much better job. Anyway, this is a possible future
-enhancement and not necessarily related to this patchset.
+  drm/i915: treat src w & h as fixed point in sprite handling code (2012-04-03 11:33:33 +0200)
 
-Also, we are controlling the rate of dirtying the memory. I am again 
-wondering whether these configuration knobs should be part of memory
-controller and not block controller. Think of NFS case. There is no
-block device or block layer involved but we will control the rate of
-dirtying memory. So some control in memory controller might make
-sense. And following kind of knobs might make sense there.
+----------------------------------------------------------------
+Anisse Astier (1):
+      drm/i915: no-lvds quirk on MSI DC500
 
-memcg.dirty_weight or memcg.dirty.weight
-memcg.dirty_bps or memcg.dirty.write_bps
+Chris Wilson (2):
+      drm/i915: Sanitize BIOS debugging bits from PIPECONF
+      drm/i915: Mark untiled BLT commands as fenced on gen2/3
 
-Just that we control not the *absolute amount* of memory but *rate* of
-writing to memory and I think that makes it somewhat confusing and
-gives the impression that it should be part of block IO controller.
+Daniel Vetter (6):
+      drm/i915: properly restore the ppgtt page directory on resume
+      drm/i915: quirk away broken OpRegion VBT
+      drm/i915: apply CS reg readback trick against missed IRQ on snb
+      drm/i915: properly clear SSC1 bit in the pch refclock init code
+      drm/i915: disable ppgtt on snb when dmar is enabled
+      drm/i915: don't leak struct_mutex lock on ppgtt init failures
 
-I am kind of split on this (rather little inclined towards memory
-controller), so I am raising the question and others can weigh in with
-their thoughts on what makes more sense here.
+Eugeni Dodonov (3):
+      drm/i915: allow to select rc6 modes via kernel parameter
+      drm/i915: enable plain RC6 on Sandy Bridge by default
+      drm/i915: add Ivy Bridge GT2 Server entries
 
-Thanks
-Vivek
+Jesse Barnes (1):
+      drm/i915: treat src w & h as fixed point in sprite handling code
+
+Sean Paul (1):
+      drm/i915: Add lock on drm_helper_resume_force_mode
+
+ drivers/char/agp/intel-agp.h               |    1 +
+ drivers/char/agp/intel-gtt.c               |    3 +-
+ drivers/gpu/drm/i915/i915_dma.c            |   21 ++++++++++++++-
+ drivers/gpu/drm/i915/i915_drv.c            |   13 +++++++--
+ drivers/gpu/drm/i915/i915_drv.h            |   23 ++++++++++++++++-
+ drivers/gpu/drm/i915/i915_gem.c            |   37 ++++++++++++++++++++++-----
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
+ drivers/gpu/drm/i915/i915_gem_gtt.c        |    9 -------
+ drivers/gpu/drm/i915/i915_reg.h            |    1 +
+ drivers/gpu/drm/i915/intel_bios.c          |   23 ++++++++++++++++-
+ drivers/gpu/drm/i915/intel_display.c       |   37 +++++++++++++++++++++-------
+ drivers/gpu/drm/i915/intel_lvds.c          |    8 ++++++
+ drivers/gpu/drm/i915/intel_ringbuffer.c    |    2 +-
+ drivers/gpu/drm/i915/intel_sprite.c        |    3 ++
+ include/drm/intel-gtt.h                    |    4 +++
+ 15 files changed, 152 insertions(+), 35 deletions(-)
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
