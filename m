@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab2DCIYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:24:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53196 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2DCIYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:24:00 -0400
-Date: Tue, 3 Apr 2012 10:23:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
- irq_alloc_desc() instead
-In-Reply-To: <20120402225223.GN24211@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1204031022030.2542@ionos>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca> <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home> <20120402202848.1EB833E02A7@localhost> <20120402215524.GM24211@n2100.arm.linux.org.uk>
- <1333406005.30734.61.camel@pasglop> <20120402225223.GN24211@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752027Ab2DCI2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:28:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53204 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751084Ab2DCI2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 04:28:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="136981246"
+Message-ID: <4F7AB4AC.1060108@intel.com>
+Date: Tue, 03 Apr 2012 16:28:28 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@elte.hu, andi@firstfloor.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, ming.m.lin@intel.com
+Subject: Re: [PATCH 2/5] perf: generic intel uncore support
+References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>  <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>  <1333163902.2960.63.camel@laptop>  <4F77C75B.4060105@intel.com> <1333404693.2960.82.camel@laptop>
+In-Reply-To: <1333404693.2960.82.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Apr 2012, Russell King - ARM Linux wrote:
-> If we want to fix it a better way, then sure, that'll be good.  But what
-> we shouldn't do is re-introduce one regression to fix a different
-> regression.
+On 04/03/2012 06:11 AM, Peter Zijlstra wrote:
+> On Sun, 2012-04-01 at 11:11 +0800, Yan, Zheng wrote:
+>>
+>> Because using per-cpu allocation is inconvenience for PCI uncore device.
 > 
-> So, Thomas, what do you think about providing a way that a disabled
-> interrupt could have its pending status cleared such that when it's
-> enabled, any queued events are ignored?  Maybe an enable_and_clear_irq() ?
- 
-We can make it a flag, which you can either add to the irq itself or
-hand it in on request_irq().
+> What are those, where does one read about them and why?
+> 
+PCI uncore device support was added by patch 4. If using per-cpu pointer,
+we have to setup the per-cpu pointer after the PCI driver's probe function
+recognizes the uncore device. It means we have to first add the PCI uncore
+device to a list, then call a function on all cpus to scan the list, find
+the right uncore device and setup the per-cpu pointer.
 
-Does that require a special chip->callback() function as well ?
-
-Thanks,
-
-	tglx
+Regards
+Yan, Zheng
