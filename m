@@ -1,228 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab2DCWmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:42:42 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61521 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab2DCWmj (ORCPT
+	id S1755290Ab2DCWpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:45:35 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37802 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab2DCWpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:42:39 -0400
-Message-ID: <4F7B7CD5.107@lwfinger.net>
-Date: Tue, 03 Apr 2012 17:42:29 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Tue, 3 Apr 2012 18:45:34 -0400
+Date: Wed, 4 Apr 2012 00:45:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20120403224529.GA5593@gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Brett Rudley <brudley@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Kan Yan <kanyan@broadcom.com>, Bing Zhao <bzhao@marvell.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH wireless-next] wireless: Remove unnecessary ; from while
- (0) macros
-References: <1333489609.2695.14.camel@joe2Laptop>
-In-Reply-To: <1333489609.2695.14.camel@joe2Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 04:46 PM, Joe Perches wrote:
-> Semicolons are not necessary after macros that end in while (0).
-> Remove them.
->
-> Simplify the macros with tests of
-> do { if (foo>size) memset1; else memset2;} while (0);
-> to a single line memset(,,min_t(size_t, foo, size))
->
-> Signed-off-by: Joe Perches<joe@perches.com>
+Linus,
 
-ACKed-by: Larry Finger <Larry.Finger@lwfinger.net> (rtlwifi part)
+Please pull the latest x86-urgent-for-linus git tree from:
 
-> ---
->   drivers/net/wireless/ath/carl9170/cmd.h       |    6 +++---
->   drivers/net/wireless/brcm80211/brcmsmac/d11.h |    2 +-
->   drivers/net/wireless/mwifiex/sdio.h           |    8 ++++----
->   drivers/net/wireless/rtlwifi/rtl8192ce/trx.h  |    7 +------
->   drivers/net/wireless/rtlwifi/rtl8192de/trx.h  |    8 ++------
->   drivers/net/wireless/rtlwifi/rtl8192se/def.h  |    7 +------
->   drivers/net/wireless/rtlwifi/rtl8192se/fw.h   |    6 +++---
->   7 files changed, 15 insertions(+), 29 deletions(-)
->
-> diff --git a/drivers/net/wireless/ath/carl9170/cmd.h b/drivers/net/wireless/ath/carl9170/cmd.h
-> index 885c427..65919c9 100644
-> --- a/drivers/net/wireless/ath/carl9170/cmd.h
-> +++ b/drivers/net/wireless/ath/carl9170/cmd.h
-> @@ -114,7 +114,7 @@ __regwrite_out :							\
->
->   #define carl9170_regwrite_result()					\
->   	__err;								\
-> -} while (0);
-> +} while (0)
->
->
->   #define carl9170_async_regwrite_get_buf()				\
-> @@ -126,7 +126,7 @@ do {									\
->   		__err = -ENOMEM;					\
->   		goto __async_regwrite_out;				\
->   	}								\
-> -} while (0);
-> +} while (0)
->
->   #define carl9170_async_regwrite_begin(carl)				\
->   do {									\
-> @@ -169,6 +169,6 @@ __async_regwrite_out:							\
->
->   #define carl9170_async_regwrite_result()				\
->   	__err;								\
-> -} while (0);
-> +} while (0)
->
->   #endif /* __CMD_H */
-> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/d11.h b/drivers/net/wireless/brcm80211/brcmsmac/d11.h
-> index 1948cb2..3f659e0 100644
-> --- a/drivers/net/wireless/brcm80211/brcmsmac/d11.h
-> +++ b/drivers/net/wireless/brcm80211/brcmsmac/d11.h
-> @@ -733,7 +733,7 @@ struct cck_phy_hdr {
->   	do { \
->   		plcp[1] = len&  0xff; \
->   		plcp[2] = ((len>>  8)&  0xff); \
-> -	} while (0);
-> +	} while (0)
->
->   #define BRCMS_SET_MIMO_PLCP_AMPDU(plcp) (plcp[3] |= MIMO_PLCP_AMPDU)
->   #define BRCMS_CLR_MIMO_PLCP_AMPDU(plcp) (plcp[3]&= ~MIMO_PLCP_AMPDU)
-> diff --git a/drivers/net/wireless/mwifiex/sdio.h b/drivers/net/wireless/mwifiex/sdio.h
-> index a3fb322..0ead152 100644
-> --- a/drivers/net/wireless/mwifiex/sdio.h
-> +++ b/drivers/net/wireless/mwifiex/sdio.h
-> @@ -193,7 +193,7 @@
->   		a->mpa_tx.ports |= (1<<(a->mpa_tx.pkt_cnt+1+(MAX_PORT -	\
->   						a->mp_end_port)));	\
->   	a->mpa_tx.pkt_cnt++;						\
-> -} while (0);
-> +} while (0)
->
->   /* SDIO Tx aggregation limit ? */
->   #define MP_TX_AGGR_PKT_LIMIT_REACHED(a)					\
-> @@ -211,7 +211,7 @@
->   	a->mpa_tx.buf_len = 0;						\
->   	a->mpa_tx.ports = 0;						\
->   	a->mpa_tx.start_port = 0;					\
-> -} while (0);
-> +} while (0)
->
->   /* SDIO Rx aggregation limit ? */
->   #define MP_RX_AGGR_PKT_LIMIT_REACHED(a)					\
-> @@ -242,7 +242,7 @@
->   	a->mpa_rx.skb_arr[a->mpa_rx.pkt_cnt] = skb;			\
->   	a->mpa_rx.len_arr[a->mpa_rx.pkt_cnt] = skb->len;		\
->   	a->mpa_rx.pkt_cnt++;						\
-> -} while (0);
-> +} while (0)
->
->   /* Reset SDIO Rx aggregation buffer parameters */
->   #define MP_RX_AGGR_BUF_RESET(a) do {					\
-> @@ -250,7 +250,7 @@
->   	a->mpa_rx.buf_len = 0;						\
->   	a->mpa_rx.ports = 0;						\
->   	a->mpa_rx.start_port = 0;					\
-> -} while (0);
-> +} while (0)
->
->
->   /* data structure for SDIO MPA TX */
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.h b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.h
-> index efb9ab2..c4adb97 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.h
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.h
-> @@ -530,12 +530,7 @@
->   	SET_BITS_OFFSET_LE(__pdesc+28, 0, 32, __val)
->
->   #define CLEAR_PCI_TX_DESC_CONTENT(__pdesc, _size)	\
-> -do {							\
-> -	if (_size>  TX_DESC_NEXT_DESC_OFFSET)		\
-> -		memset(__pdesc, 0, TX_DESC_NEXT_DESC_OFFSET);	\
-> -	else						\
-> -		memset(__pdesc, 0, _size);	\
-> -} while (0);
-> +	memset(__pdesc, 0, min_t(size_t, _size, TX_DESC_NEXT_DESC_OFFSET))
->
->   struct rx_fwinfo_92c {
->   	u8 gain_trsw[4];
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/trx.h b/drivers/net/wireless/rtlwifi/rtl8192de/trx.h
-> index 0dc736c..057a524 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192de/trx.h
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/trx.h
-> @@ -530,12 +530,8 @@
->   	SET_BITS_OFFSET_LE(__pdesc+28, 0, 32, __val)
->
->   #define CLEAR_PCI_TX_DESC_CONTENT(__pdesc, _size)	\
-> -do {							\
-> -	if (_size>  TX_DESC_NEXT_DESC_OFFSET)		\
-> -		memset((void *)__pdesc, 0, TX_DESC_NEXT_DESC_OFFSET);	\
-> -	else						\
-> -		memset((void *)__pdesc, 0, _size);	\
-> -} while (0);
-> +	memset((void *)__pdesc, 0,			\
-> +	       min_t(size_t, _size, TX_DESC_NEXT_DESC_OFFSET))
->
->   /* For 92D early mode */
->   #define SET_EARLYMODE_PKTNUM(__paddr, __value)		\
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/def.h b/drivers/net/wireless/rtlwifi/rtl8192se/def.h
-> index d1b0a1e..20afec6 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192se/def.h
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/def.h
-> @@ -252,12 +252,7 @@
->    * the desc is cleared. */
->   #define	TX_DESC_NEXT_DESC_OFFSET			36
->   #define CLEAR_PCI_TX_DESC_CONTENT(__pdesc, _size)		\
-> -do {								\
-> -	if (_size>  TX_DESC_NEXT_DESC_OFFSET)			\
-> -		memset(__pdesc, 0, TX_DESC_NEXT_DESC_OFFSET);	\
-> -	else							\
-> -		memset(__pdesc, 0, _size);			\
-> -} while (0);
-> +	memset(__pdesc, 0, min_t(size_t, _size, TX_DESC_NEXT_DESC_OFFSET))
->
->   /* Rx Desc */
->   #define RX_STATUS_DESC_SIZE				24
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-> index b4afff6..d53f433 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-> @@ -345,7 +345,7 @@ enum fw_h2c_cmd {
->   	do {							\
->   		udelay(1000);					\
->   		rtlpriv->rtlhal.fwcmd_iomap&= (~_Bit);		\
-> -	} while (0);
-> +	} while (0)
->
->   #define FW_CMD_IO_UPDATE(rtlpriv, _val)				\
->   	rtlpriv->rtlhal.fwcmd_iomap = _val;
-> @@ -354,13 +354,13 @@ enum fw_h2c_cmd {
->   	do {							\
->   		rtl_write_word(rtlpriv, LBUS_MON_ADDR, (u16)_val);	\
->   		FW_CMD_IO_UPDATE(rtlpriv, _val);		\
-> -	} while (0);
-> +	} while (0)
->
->   #define FW_CMD_PARA_SET(rtlpriv, _val)				\
->   	do {							\
->   		rtl_write_dword(rtlpriv, LBUS_ADDR_MASK, _val);	\
->   		rtlpriv->rtlhal.fwcmd_ioparam = _val;		\
-> -	} while (0);
-> +	} while (0)
->
->   #define FW_CMD_IO_QUERY(rtlpriv)				\
->   	(u16)(rtlpriv->rtlhal.fwcmd_iomap)
->
->
->
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
+   HEAD: dba69d1092e291e257fb5673a3ad0e4c87878ebc x86, kvm: Call restore_sched_clock_state() only after %gs is initialized
+
+
+out-of-topic modifications in x86-urgent-for-linus:
+---------------------------------------------------
+drivers/block/floppy.c             # f636520: x86: Remove the ancient and depre
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Andi Kleen (1):
+      x86: Use -mno-avx when available
+
+Len Brown (1):
+      x86: Remove the ancient and deprecated disable_hlt() and enable_hlt() facility
+
+Liu, Chuansheng (1):
+      x86: Preserve lazy irq disable semantics in fixup_irqs()
+
+Marcelo Tosatti (1):
+      x86, kvm: Call restore_sched_clock_state() only after %gs is initialized
+
+
+ Documentation/feature-removal-schedule.txt |    8 ------
+ arch/x86/Makefile                          |    1 +
+ arch/x86/include/asm/processor.h           |   10 -------
+ arch/x86/kernel/irq.c                      |    7 ++++-
+ arch/x86/kernel/process.c                  |   24 ------------------
+ arch/x86/power/cpu.c                       |    2 +-
+ drivers/block/floppy.c                     |   36 ----------------------------
+ 7 files changed, 8 insertions(+), 80 deletions(-)
+
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 0cad480..7c950d4 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -6,14 +6,6 @@ be removed from this file.
+ 
+ ---------------------------
+ 
+-What:	x86 floppy disable_hlt
+-When:	2012
+-Why:	ancient workaround of dubious utility clutters the
+-	code used by everybody else.
+-Who:	Len Brown <len.brown@intel.com>
+-
+----------------------------
+-
+ What:	CONFIG_APM_CPU_IDLE, and its ability to call APM BIOS in idle
+ When:	2012
+ Why:	This optional sub-feature of APM is of dubious reliability,
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 968dbe2..41a7237 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -129,6 +129,7 @@ KBUILD_CFLAGS += -Wno-sign-compare
+ KBUILD_CFLAGS += -fno-asynchronous-unwind-tables
+ # prevent gcc from generating any FP code by mistake
+ KBUILD_CFLAGS += $(call cc-option,-mno-sse -mno-mmx -mno-sse2 -mno-3dnow,)
++KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
+ 
+ KBUILD_CFLAGS += $(mflags-y)
+ KBUILD_AFLAGS += $(mflags-y)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 7284c9a..4fa7dcc 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -974,16 +974,6 @@ extern bool cpu_has_amd_erratum(const int *);
+ #define cpu_has_amd_erratum(x)	(false)
+ #endif /* CONFIG_CPU_SUP_AMD */
+ 
+-#ifdef CONFIG_X86_32
+-/*
+- * disable hlt during certain critical i/o operations
+- */
+-#define HAVE_DISABLE_HLT
+-#endif
+-
+-void disable_hlt(void);
+-void enable_hlt(void);
+-
+ void cpu_idle_wait(void);
+ 
+ extern unsigned long arch_align_stack(unsigned long sp);
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 7943e0c..3dafc60 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -282,8 +282,13 @@ void fixup_irqs(void)
+ 		else if (!(warned++))
+ 			set_affinity = 0;
+ 
++		/*
++		 * We unmask if the irq was not marked masked by the
++		 * core code. That respects the lazy irq disable
++		 * behaviour.
++		 */
+ 		if (!irqd_can_move_in_process_context(data) &&
+-		    !irqd_irq_disabled(data) && chip->irq_unmask)
++		    !irqd_irq_masked(data) && chip->irq_unmask)
+ 			chip->irq_unmask(data);
+ 
+ 		raw_spin_unlock(&desc->lock);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index a33afaa..1d92a5a 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -362,34 +362,10 @@ void (*pm_idle)(void);
+ EXPORT_SYMBOL(pm_idle);
+ #endif
+ 
+-#ifdef CONFIG_X86_32
+-/*
+- * This halt magic was a workaround for ancient floppy DMA
+- * wreckage. It should be safe to remove.
+- */
+-static int hlt_counter;
+-void disable_hlt(void)
+-{
+-	hlt_counter++;
+-}
+-EXPORT_SYMBOL(disable_hlt);
+-
+-void enable_hlt(void)
+-{
+-	hlt_counter--;
+-}
+-EXPORT_SYMBOL(enable_hlt);
+-
+-static inline int hlt_use_halt(void)
+-{
+-	return (!hlt_counter && boot_cpu_data.hlt_works_ok);
+-}
+-#else
+ static inline int hlt_use_halt(void)
+ {
+ 	return 1;
+ }
+-#endif
+ 
+ #ifndef CONFIG_SMP
+ static inline void play_dead(void)
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 4793683..218cdb1 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -225,13 +225,13 @@ static void __restore_processor_state(struct saved_context *ctxt)
+ 	fix_processor_context();
+ 
+ 	do_fpu_end();
++	x86_platform.restore_sched_clock_state();
+ 	mtrr_bp_restore();
+ }
+ 
+ /* Needed by apm.c */
+ void restore_processor_state(void)
+ {
+-	x86_platform.restore_sched_clock_state();
+ 	__restore_processor_state(&saved_context);
+ }
+ #ifdef CONFIG_X86_32
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 76a0823..b0b00d7 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -1030,37 +1030,6 @@ static int fd_wait_for_completion(unsigned long delay, timeout_fn function)
+ 	return 0;
+ }
+ 
+-static DEFINE_SPINLOCK(floppy_hlt_lock);
+-static int hlt_disabled;
+-static void floppy_disable_hlt(void)
+-{
+-	unsigned long flags;
+-
+-	WARN_ONCE(1, "floppy_disable_hlt() scheduled for removal in 2012");
+-	spin_lock_irqsave(&floppy_hlt_lock, flags);
+-	if (!hlt_disabled) {
+-		hlt_disabled = 1;
+-#ifdef HAVE_DISABLE_HLT
+-		disable_hlt();
+-#endif
+-	}
+-	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
+-}
+-
+-static void floppy_enable_hlt(void)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&floppy_hlt_lock, flags);
+-	if (hlt_disabled) {
+-		hlt_disabled = 0;
+-#ifdef HAVE_DISABLE_HLT
+-		enable_hlt();
+-#endif
+-	}
+-	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
+-}
+-
+ static void setup_DMA(void)
+ {
+ 	unsigned long f;
+@@ -1105,7 +1074,6 @@ static void setup_DMA(void)
+ 	fd_enable_dma();
+ 	release_dma_lock(f);
+ #endif
+-	floppy_disable_hlt();
+ }
+ 
+ static void show_floppy(void);
+@@ -1707,7 +1675,6 @@ irqreturn_t floppy_interrupt(int irq, void *dev_id)
+ 	fd_disable_dma();
+ 	release_dma_lock(f);
+ 
+-	floppy_enable_hlt();
+ 	do_floppy = NULL;
+ 	if (fdc >= N_FDC || FDCS->address == -1) {
+ 		/* we don't even know which FDC is the culprit */
+@@ -1856,8 +1823,6 @@ static void floppy_shutdown(unsigned long data)
+ 		show_floppy();
+ 	cancel_activity();
+ 
+-	floppy_enable_hlt();
+-
+ 	flags = claim_dma_lock();
+ 	fd_disable_dma();
+ 	release_dma_lock(flags);
+@@ -4508,7 +4473,6 @@ static void floppy_release_irq_and_dma(void)
+ #if N_FDC > 1
+ 	set_dor(1, ~8, 0);
+ #endif
+-	floppy_enable_hlt();
+ 
+ 	if (floppy_track_buffer && max_buffer_sectors) {
+ 		tmpsize = max_buffer_sectors * 1024;
