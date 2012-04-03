@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab2DCBrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 21:47:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12881 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab2DCBrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 21:47:31 -0400
-Date: Mon, 2 Apr 2012 21:47:22 -0400
-From: Dave Jones <davej@redhat.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org, jeffm@suse.com
-Subject: Re: btrfs io errors on 3.4rc1
-Message-ID: <20120403014722.GA618@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Chris Mason <chris.mason@oracle.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-btrfs@vger.kernel.org, jeffm@suse.com
-References: <20120402180214.GA1830@redhat.com>
- <20120402194814.GA10965@shiny.msi.event>
- <20120402211622.GA2487@redhat.com>
- <20120402212608.GA14958@shiny.msi.event>
- <20120402214051.GB2487@redhat.com>
- <20120402222802.GA18000@shiny.nikko.sjc.wayport.net>
- <20120402223350.GA16907@redhat.com>
- <20120402223919.GB18000@shiny.nikko.sjc.wayport.net>
- <20120402225131.GB16907@redhat.com>
- <20120402235021.GA20070@shiny.msi.event>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120402235021.GA20070@shiny.msi.event>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752740Ab2DCBxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 21:53:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:65381 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab2DCBxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 21:53:23 -0400
+Subject: Re: [PATCH] phonet: Check input from user before allocating
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: remi@remlab.net, levinsasha928@gmail.com, remi.denis-courmont@nokia.com,
+        davej@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120402.174006.70116829696492189.davem@davemloft.net>
+References: <1333398660-11552-1-git-send-email-levinsasha928@gmail.com>
+	 <201204022201.41808.remi@remlab.net>
+	 <20120402.174006.70116829696492189.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Apr 2012 03:53:17 +0200
+Message-ID: <1333417997.18626.1.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 07:50:50PM -0400, Chris Mason wrote:
+On Mon, 2012-04-02 at 17:40 -0400, David Miller wrote:
+> From: "Rémi Denis-Courmont" <remi@remlab.net>
+> Date: Mon, 2 Apr 2012 22:01:40 +0300
+> 
+> > Le lundi 2 avril 2012 23:31:00 Sasha Levin, vous avez écrit :
+> >> A phonet packet is limited to USHRT_MAX bytes, this is never checked during
+> >> tx which means that the user can specify any size he wishes, and the kernel
+> >> will attempt to allocate that size.
+> > 
+> > Does this really solve the problem?  I guess 128kb is still possible with 
+> > USHRT_MAX plus skbuff overhead, which might still trigger OOM relatively 
+> > easily once the memory gets sufficiently fragmented.
+> > 
+> > How does UDP deal with this?
+> 
+> UDP generates a fragment list of MTU sized SKBs.
+> 
+> Phonet could avoid the large allocations by building page based
+> SKBs.
 
- > > I'll start a bisect later to see if I can narrow it down at least.
- > 
- > Ok, a directed bisect of the major suspects.  Josef changed the extent
- > buffer eio code in this commit (jump to the commit before it):
+Not that AF_UNIX does nothing in this respect, it can use order-XX pages
+for large datagrams.
 
-I had already started before I read your mail, so I just did the whole bisect..
-It ended on this...
-
-49b25e0540904be0bf558b84475c69d72e4de66e is the first bad commit
-commit 49b25e0540904be0bf558b84475c69d72e4de66e
-Author: Jeff Mahoney <jeffm@suse.com>
-Date:   Thu Mar 1 17:24:58 2012 +0100
-
-    btrfs: enhance transaction abort infrastructure
-    
-    Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-
-:040000 040000 f4b5cdd26617e049962e08b94643dd2134014b00 1455feb78b615f13d3c60acf5f0fad44ad133ded M	fs
+(I beleve I sent a patch some time ago to address this point)
 
 
-
-bisect log:
-git bisect start 'fs/'
-# bad: [bc3f116fec194f1d7329b160c266fe16b9266a1e] Btrfs: update the checks for mixed block groups with big metadata blocks
-git bisect bad bc3f116fec194f1d7329b160c266fe16b9266a1e
-# good: [c16fa4f2ad19908a47c63d8fa436a1178438c7e7] Linux 3.3
-git bisect good c16fa4f2ad19908a47c63d8fa436a1178438c7e7
-# bad: [65139ed99234d8505948cdb7a835452eb5c191f9] btrfs: disallow unequal data/metadata blocksize for mixed block groups
-git bisect bad 65139ed99234d8505948cdb7a835452eb5c191f9
-# good: [3fbe5c02ae5a59053d779392b9a12aa8f6d6198e] btrfs: split extent_state ops
-git bisect good 3fbe5c02ae5a59053d779392b9a12aa8f6d6198e
-# good: [305a26af5b2561a66859ef05ed7eb73d3c9f0913] btrfs: Go readonly on tree errors in balance_level
-git bisect good 305a26af5b2561a66859ef05ed7eb73d3c9f0913
-# good: [4da35113426d16673aa1fb0613c14ca2e419e7fd] btrfs: add varargs to btrfs_error
-git bisect good 4da35113426d16673aa1fb0613c14ca2e419e7fd
-# bad: [79787eaab46121d4713ed03c8fc63b9ec3eaec76] btrfs: replace many BUG_ONs with proper error handling
-git bisect bad 79787eaab46121d4713ed03c8fc63b9ec3eaec76
-# bad: [49b25e0540904be0bf558b84475c69d72e4de66e] btrfs: enhance transaction abort infrastructure
-git bisect bad 49b25e0540904be0bf558b84475c69d72e4de66e
 
