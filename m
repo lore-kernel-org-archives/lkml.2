@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab2DCBZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 21:25:53 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50529 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2DCBZw (ORCPT
+	id S1752190Ab2DCB02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 21:26:28 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58671 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab2DCB00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 21:25:52 -0400
-Message-ID: <1333416346.18133.4.camel@phoenix>
-Subject: [PATCH] hwmon: use module_pci_driver
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Rudolf Marek <r.marek@assembler.cz>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
-Date: Tue, 03 Apr 2012 09:25:46 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Apr 2012 21:26:26 -0400
+Date: Tue, 3 Apr 2012 11:26:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20120403112616.9078a733b60bbdada036167f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__3_Apr_2012_11_26_16_+1000_s7pk8On5aGcWVwze"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the drivers in drivers/hwmon/* to use module_pci_driver()
-macro which makes the code smaller and a bit simpler.
+--Signature=_Tue__3_Apr_2012_11_26_16_+1000_s7pk8On5aGcWVwze
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Cc: Rudolf Marek <r.marek@assembler.cz>
----
- drivers/hwmon/fam15h_power.c |   13 +------------
- drivers/hwmon/k10temp.c      |   13 +------------
- drivers/hwmon/k8temp.c       |   13 +------------
- 3 files changed, 3 insertions(+), 36 deletions(-)
+Hi all,
 
-diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
-index b7494af..2f44988 100644
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -215,15 +215,4 @@ static struct pci_driver fam15h_power_driver = {
- 	.remove = __devexit_p(fam15h_power_remove),
- };
- 
--static int __init fam15h_power_init(void)
--{
--	return pci_register_driver(&fam15h_power_driver);
--}
--
--static void __exit fam15h_power_exit(void)
--{
--	pci_unregister_driver(&fam15h_power_driver);
--}
--
--module_init(fam15h_power_init)
--module_exit(fam15h_power_exit)
-+module_pci_driver(fam15h_power_driver);
-diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
-index 307bb32..7356b5e 100644
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -225,15 +225,4 @@ static struct pci_driver k10temp_driver = {
- 	.remove = __devexit_p(k10temp_remove),
- };
- 
--static int __init k10temp_init(void)
--{
--	return pci_register_driver(&k10temp_driver);
--}
--
--static void __exit k10temp_exit(void)
--{
--	pci_unregister_driver(&k10temp_driver);
--}
--
--module_init(k10temp_init)
--module_exit(k10temp_exit)
-+module_pci_driver(k10temp_driver);
-diff --git a/drivers/hwmon/k8temp.c b/drivers/hwmon/k8temp.c
-index 5751019..35aac82 100644
---- a/drivers/hwmon/k8temp.c
-+++ b/drivers/hwmon/k8temp.c
-@@ -339,19 +339,8 @@ static struct pci_driver k8temp_driver = {
- 	.remove = __devexit_p(k8temp_remove),
- };
- 
--static int __init k8temp_init(void)
--{
--	return pci_register_driver(&k8temp_driver);
--}
--
--static void __exit k8temp_exit(void)
--{
--	pci_unregister_driver(&k8temp_driver);
--}
-+module_pci_driver(k8temp_driver);
- 
- MODULE_AUTHOR("Rudolf Marek <r.marek@assembler.cz>");
- MODULE_DESCRIPTION("AMD K8 core temperature monitor");
- MODULE_LICENSE("GPL");
--
--module_init(k8temp_init)
--module_exit(k8temp_exit)
--- 
-1.7.5.4
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+ERROR: "regcache_sync_region" [sound/soc/codecs/snd-soc-wm8962.ko] undefine=
+d!
 
+Caused by commit 26b427a701f8 ("ASoC: wm8962: Implement DSP2
+configuration initialisation").  regcache_sync_region() is not exported
+to modules.
 
+I have used the sound-asoc tree from next-20120330 again for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__3_Apr_2012_11_26_16_+1000_s7pk8On5aGcWVwze
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPelG4AAoJEECxmPOUX5FE7FgQAKGH+DaI2Ts9oOtHX+OHYwjK
+47HT0o04g0B1gRusblhCSLJcSiGuQY4amtDcI6yQw6Nrh46qVkVbO3ySr+9cKG30
+TqqFJM/ejjAlCphdkswfFgDhmEoiZ6uKCxuzfuvVVBLQk48ECGaa7P3be12PukD0
+NrI02BtdxpgDVVOZ3pq75aRrLBEk3A7tmpWLi7N+OTcQM1LdIAJ8PVOqBVMwO9ZZ
+J4UeUb9wlOaHlxUHhhFVB5JAloQYhW+EQbp4j2STy57HtMTM6gulr3rr82B/A6tz
+/V7wGSSCAVBcqiE0l8JUfoxDpkBR/y8l0dWA/JT3pOu3eVLhRgbuvpheXiQZyHMq
+EEpVwyVZ2qJW1oF+k0IbtyLv44wHE/hILZlPXYFvlVcsxEEukOuMNwBUGdlh6Tzg
+8WZEtHzizeNlvj/lyumdTN7xX60CTfzexlsq4K9Gd0mn5BFVerOgPEV6W5Hp6hJH
+1Fo2nKIX9EFiq7BZ0LuRpYE3CZrHEuOGYbe0c+uSD6PDjXZy9T+wnP7ObLAPoLSA
+xM8vFWWLzXqMVUv9+PS7o7MQka2eW+Vb3Eppg3SGmPuibRMtpMH0N9rvn7EVA1JT
+UNTc+sAZB2RkowNtPpIfy++Bm+o5AVYZmf7/B9xMC6rKxZNzpun7XOki7qShHu8a
+XnDtINJk1i/FzXRoD5t5
+=Hbyq
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__3_Apr_2012_11_26_16_+1000_s7pk8On5aGcWVwze--
