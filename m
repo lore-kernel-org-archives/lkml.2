@@ -1,190 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab2DCLf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 07:35:58 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:35712
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752507Ab2DCLfE (ORCPT
+	id S1754445Ab2DCLjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 07:39:39 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48051 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab2DCLjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 07:35:04 -0400
-Date: Tue, 3 Apr 2012 13:35:02 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Guillaume LECERF <glecerf@gmail.com>
-cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] UBIFS: Add cryptographic functionality when a key is
- passed to the compress / decompress functions
-In-Reply-To: <CAJpamw7rXn_tLcFSE07AK4nrh9QXLBNzuehzLhB+rUbMv9UePA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1204031334460.4560@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net> <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net> <1330531826.3545.128.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1203191635030.22256@eristoteles.iwoars.net>
- <1332511796.18717.72.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1203231739330.22944@eristoteles.iwoars.net> <1332521515.22278.2.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1203252302310.5527@eristoteles.iwoars.net> <alpine.DEB.2.00.1203252325100.5527@eristoteles.iwoars.net>
- <1332837188.31549.14.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1203291639200.912@eristoteles.iwoars.net> <1333377383.22146.14.camel@sauron.fi.intel.com> <alpine.DEB.2.00.1204021645070.29393@eristoteles.iwoars.net> <1333378674.22146.18.camel@sauron.fi.intel.com>
- <alpine.DEB.2.00.1204031228470.4560@eristoteles.iwoars.net> <CAJpamw7rXn_tLcFSE07AK4nrh9QXLBNzuehzLhB+rUbMv9UePA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 Apr 2012 07:39:35 -0400
+Subject: Re: [PATCH v6 0/2] Ethernet drivers for WIZnet chips
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Mike Sinkovsky <msink@permonline.ru>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1333450726-24455-1-git-send-email-msink@permonline.ru>
+References: <1332752876-1650-1-git-send-email-msink@permonline.ru>
+	 <1333450726-24455-1-git-send-email-msink@permonline.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Apr 2012 13:39:30 +0200
+Message-ID: <1333453170.18626.65.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without the goto:
+On Tue, 2012-04-03 at 16:58 +0600, Mike Sinkovsky wrote:
+> Based on original driver from chip manufacturer, but nearly full rewite.
+> Tested and used in production with Blackfin BF531 embedded processor.
+> 
+> Signed-off-by: Mike Sinkovsky <msink@permonline.ru>
+> ---
+> v6:
+>  - remove (S0_TX_FSR < skb->len) check in TX handler, it doesn't work
+>    anyway. Chip can transmit only one frame with MTU 1500 at a time,
+>    and tx buffer size is bigger.
 
-Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
----
- fs/ubifs/compress.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++---
- fs/ubifs/ubifs.h    |    8 +++++-
- 2 files changed, 77 insertions(+), 5 deletions(-)
+So what happens if XXX frames are given to start_xmit() in a flood ?
 
-diff --git a/fs/ubifs/compress.c b/fs/ubifs/compress.c
-index b796b8d..61fe584 100644
---- a/fs/ubifs/compress.c
-+++ b/fs/ubifs/compress.c
-@@ -27,9 +27,12 @@
-  * decompression.
-  */
+You removed any flow control, how can this work ?
 
--#include <linux/crypto.h>
- #include "ubifs.h"
+Device has an infinite queue ?
 
-+#include <linux/crypto.h>
-+#include <linux/scatterlist.h>
-+
-+
- /* Fake description object for the "none" compressor */
- static struct ubifs_compressor none_compr = {
- 	.compr_type = UBIFS_COMPR_NONE,
-@@ -75,6 +78,53 @@ static struct ubifs_compressor zlib_compr = {
- struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
-
- /**
-+ * ubifs_aes_crypt - encrypt / decrypt data.
-+ * @str: data to crypt
-+ * @len: length of the data
-+ * @crypto_key: the cryptographic key to use to crypt the data
-+ * @iv: the initialization vector to use
-+ *
-+ * This function applies aes encryption to the data. It is done in counter
-+ * mode, which means that encryption and decryption are the same operation,
-+ * i.e., it XORs the same generated bitstream, so it can be used both for
-+ * encryption / decryption. The operation is done in-place, so str mutates.
-+ * Both crypto_key and iv are valid pointers to a buffer of length
-+ * UBIFS_CRYPTO_KEYSIZE.
-+ */
-+int ubifs_aes_crypt(void *str, int len, u8 *crypto_key, u8 *iv)
-+{
-+	struct crypto_blkcipher *tfm;
-+	struct blkcipher_desc desc;
-+	struct scatterlist sg;
-+	int err = 0;
-+
-+	tfm = crypto_alloc_blkcipher(UBIFS_CRYPTO_ALGORITHM, 0, 0);
-+	if (IS_ERR(tfm)) {
-+		ubifs_err("failed to load transform for aes: %ld",
-+			  PTR_ERR(tfm));
-+		return err;
-+	}
-+
-+	err = crypto_blkcipher_setkey(tfm, crypto_key, UBIFS_CRYPTO_KEYSIZE);
-+	desc.tfm = tfm;
-+	desc.flags = 0;
-+	if (err) {
-+		ubifs_err("crypto_blkcipher_setkey() failed  flags=%#x",
-+			  crypto_blkcipher_get_flags(tfm));
-+		return err;
-+	}
-+
-+	memset(&sg, 0, sizeof(struct scatterlist));
-+	sg_set_buf(&sg, str, len);
-+	desc.info = iv;
-+	err = crypto_blkcipher_encrypt(&desc, &sg, &sg, len);
-+	crypto_free_blkcipher(tfm);
-+	if (err)
-+		return err;
-+	return 0;
-+}
-+
-+/**
-  * ubifs_compress - compress data.
-  * @in_buf: data to compress
-  * @in_len: length of the data to compress
-@@ -126,13 +176,20 @@ void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
- 	 */
- 	if (in_len - *out_len < UBIFS_MIN_COMPRESS_DIFF)
- 		goto no_compr;
--
--	return;
-+	goto encrypt;
-
- no_compr:
- 	memcpy(out_buf, in_buf, in_len);
- 	*out_len = in_len;
- 	*compr_type = UBIFS_COMPR_NONE;
-+
-+encrypt:
-+	if (crypto_key) {
-+		u8 iv[UBIFS_CRYPTO_KEYSIZE];
-+
-+		memset(iv, 0, UBIFS_CRYPTO_KEYSIZE);
-+		ubifs_aes_crypt(out_buf, *out_len, crypto_key, iv);
-+	}
- }
-
- /**
-@@ -148,8 +205,10 @@ no_compr:
-  * This function decompresses data from buffer @in_buf into buffer @out_buf.
-  * The length of the uncompressed data is returned in @out_len. This functions
-  * returns %0 on success or a negative error code on failure.
-+ *
-+ * WARNING: this function may modify the contents of in_buf when executing.
-  */
--int ubifs_decompress(const void *in_buf, int in_len, void *out_buf,
-+int ubifs_decompress(void *in_buf, int in_len, void *out_buf,
- 		     int *out_len, int compr_type, u8 *crypto_key)
- {
- 	int err;
-@@ -167,6 +226,13 @@ int ubifs_decompress(const void *in_buf, int in_len, void *out_buf,
- 		return -EINVAL;
- 	}
-
-+	if (crypto_key) {
-+		u8 iv[UBIFS_CRYPTO_KEYSIZE];
-+
-+		memset(iv, 0, UBIFS_CRYPTO_KEYSIZE);
-+		ubifs_aes_crypt(in_buf, in_len, crypto_key, iv);
-+	}
-+
- 	if (compr_type == UBIFS_COMPR_NONE) {
- 		memcpy(out_buf, in_buf, in_len);
- 		*out_len = in_len;
-diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
-index 3ed12be..84d2c49 100644
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -160,6 +160,11 @@
- /* Maximum number of data nodes to bulk-read */
- #define UBIFS_MAX_BULK_READ 32
-
-+/* 128 bit key size in bytes for UBIFS */
-+#define UBIFS_CRYPTO_KEYSIZE 16
-+/* AES in counter mode is the encryption algorithm. */
-+#define UBIFS_CRYPTO_ALGORITHM "ctr(aes)"
-+
- /*
-  * Lockdep classes for UBIFS inode @ui_mutex.
-  */
-@@ -1771,9 +1776,10 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
- /* compressor.c */
- int __init ubifs_compressors_init(void);
- void ubifs_compressors_exit(void);
-+int ubifs_aes_crypt(void *str, int len, u8 *crypto_key, u8 *iv);
- void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
- 		    int *compr_type, u8 *crypto_key);
--int ubifs_decompress(const void *buf, int len, void *out, int *out_len,
-+int ubifs_decompress(void *buf, int len, void *out, int *out_len,
- 		     int compr_type, u8 *crypto_key);
-
- #include "debug.h"
--- 
-1.7.5.4
 
