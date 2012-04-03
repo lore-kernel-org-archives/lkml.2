@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab2DCWXn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 18:23:43 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38927 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab2DCWXl (ORCPT
+	id S1755406Ab2DCW0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 18:26:36 -0400
+Received: from uhura.skim.hs-owl.de ([193.174.118.81]:35254 "EHLO
+	uhura.skim.hs-owl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab2DCW0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 18:23:41 -0400
-Date: Tue, 03 Apr 2012 18:23:35 -0400 (EDT)
-Message-Id: <20120403.182335.782073108961783777.davem@davemloft.net>
-To: cmetcalf@tilera.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tilepro ethernet driver: fix a few minor issues
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201203302325.q2UNPm8j012403@farm-0012.internal.tilera.com>
-References: <201203302325.q2UNPm8j012403@farm-0012.internal.tilera.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 3 Apr 2012 18:26:34 -0400
+Message-ID: <4F7B7911.5090307@googlemail.com>
+Date: Wed, 4 Apr 2012 00:26:25 +0200
+From: Jan Seiffert <kaffeemonster@googlemail.com>
+Reply-To: <kaffeemonster@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Firefox/11.0 SeaMonkey/2.8
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [REGRESSION][PATCH V4 1/3] bpf jit: Make the filter.c::__load_pointer
+ helper non-static for the jits
+References: <4F75CA89.4010709@googlemail.com> <4F75CC63.10405@googlemail.com> <20120403.180212.1644422418766062447.davem@davemloft.net>
+In-Reply-To: <20120403.180212.1644422418766062447.davem@davemloft.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Apr 2012 15:23:37 -0700 (PDT)
+X-Skim-SendBy: exchange.hs-owl.de on Wed, 04 Apr 2012 00:26:30 +0200
+X-Skim-SendBy: exchange.hs-owl.de on Wed, 04 Apr 2012 00:26:31 +0200
+X-SA-Exim-Connect-IP: 193.174.118.178
+X-SA-Exim-Mail-From: kaffeemonster@googlemail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 30 Mar 2012 19:23:35 -0400
-
-> This commit fixes a number of issues seen with the driver:
+David Miller schrieb:
+> From: Jan Seiffert <kaffeemonster@googlemail.com>
+> Date: Fri, 30 Mar 2012 17:08:19 +0200
 > 
-> - Improve handling of return credits to the hardware shim
-> - Use skb_frag_size() appropriately
-> - Add netpoll support to run console over UDP
+>> The function is renamed to make it a little more clear what it does.
+>> It is not added to any .h because it is not for general consumption, only for
+>> bpf internal use (and so by the jits).
+>>
+>> Signed-of-by: Jan Seiffert <kaffeemonster@googlemail.com>
 > 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Applied but with comment formatting fixed up:
+> 
+>> +/*
+>> + * No hurry in this branch
+>> + *
+>> + * Exported for the bpf jit load helper.
+>> + */
+> 
+> Like this:
+> 
+>> +/* No hurry in this branch
+>> + *
+>> + * Exported for the bpf jit load helper.
+>> + */
+> 
 
-Please do not mix pure bug fixes and new features.
+Thanks David!
 
-Submit the pure bug fixes separately for 'net' tree submission
-and then submit feature additions like netpoll support in
-a patch targetting the 'net-next' tree.
+I was planning on a V5 for the little things i did wrong (wrong patch
+separator, etc.) but wanted to wait a little more for more feedback.
 
-> +	/* Handle completions if needed to make room. */
-> +	/* NOTE: Return NETDEV_TX_BUSY if there is still no room. */
+Is that the preferred comment style in net/ ? Coding style says
+first line empty. Or just to match the rest of the file?
 
-Do not format comments like this, use something like this instead:
-
-	/* Handle completions if needed to make room.
-	 * NOTE: Return NETDEV_TX_BUSY if there is still no room.
-	 */
-
->  	/* Prepare to advance, detecting full queue. */
-> +	/* NOTE: Return NETDEV_TX_BUSY if the queue is full. */
-
-Similarly, combine them up into a single comment.
-
-> +	/* Handle completions if needed to make room. */
-> +	/* NOTE: Return NETDEV_TX_BUSY if there is still no room. */
-
-Same here.
-
->  	/* Copy the commands, or fail. */
-> +	/* NOTE: Return NETDEV_TX_BUSY if the queue is full. */
-
-Again.
-
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +/*
-> + * Polling 'interrupt' - used by things like netconsole to send skbs
-
-Format the comment:
-
-	/* Like
-	 * this.
-	 */
-
-not:
-
-	/*
-	 * Like
-	 * this.
-	 */
+Greetings
+	Jan
