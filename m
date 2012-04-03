@@ -1,193 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab2DCIqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:46:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64680 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab2DCIqU convert rfc822-to-8bit (ORCPT
+	id S1753376Ab2DCIqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:46:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44907 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab2DCIqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:46:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1333436730-13008-6-git-send-email-rydberg@euromail.se>
-References: <1333436730-13008-1-git-send-email-rydberg@euromail.se>
-	<1333436730-13008-6-git-send-email-rydberg@euromail.se>
-Date: Tue, 3 Apr 2012 10:46:19 +0200
-Message-ID: <CAN+gG=FtiJWcmHZpQmt+FSdgp_tPWMx3Gt7nLZEO0eG=Do1_=Q@mail.gmail.com>
-Subject: Re: [RFC 5/5] hid: Remove multitouch devices from blacklist
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Apr 2012 04:46:44 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Mike Marciniszyn <infinipath@qlogic.com>, linux-rdma@vger.kernel.org
+Subject: [PATCH 1/4] IB/ipath: use for_each_set_bit and for_each_set_bit_from
+Date: Tue,  3 Apr 2012 17:47:13 +0900
+Message-Id: <1333442836-9947-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I made a few tests with devices that were problematic before, and they
-passed the tests. So if this solution is kept, then, this would work.
+Use for_each_set_bit() and for_each_set_bit_from() to iterate over all
+the set bit in a memory region.
 
-Cheers,
-Benjamin
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Roland Dreier <roland@kernel.org>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: Mike Marciniszyn <infinipath@qlogic.com>
+Cc: linux-rdma@vger.kernel.org
+---
+ drivers/infiniband/hw/ipath/ipath_file_ops.c |   17 +++--------------
+ drivers/infiniband/hw/ipath/ipath_intr.c     |    5 ++---
+ 2 files changed, 5 insertions(+), 17 deletions(-)
 
-On Tue, Apr 3, 2012 at 09:05, Henrik Rydberg <rydberg@euromail.se> wrote:
-> With idtags in place, generic hid will no longer process multitouch
-> devices, and the ignore list can be trimmed accordingly.
->
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/hid/hid-core.c |   53 ------------------------------------------------
->  1 file changed, 53 deletions(-)
->
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 1cf6cb5..bf600af 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1310,13 +1310,10 @@ EXPORT_SYMBOL_GPL(hid_disconnect);
->
->  /* a list of devices for which there is a specialized driver on HID bus */
->  static const struct hid_device_id hid_have_special_driver[] = {
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_3M, USB_DEVICE_ID_3M1968) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_3M, USB_DEVICE_ID_3M2256) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_WCP32PU) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_RP_649) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR, USB_DEVICE_ID_ACTIONSTAR_1011) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ATV_IRCONTROL) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL4) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MIGHTYMOUSE) },
-> @@ -1381,62 +1378,36 @@ static const struct hid_device_id hid_have_special_driver[] = {
->        { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_ASUS, USB_DEVICE_ID_ASUS_T91MT) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_ASUS, USB_DEVICE_ID_ASUSTEK_MULTITOUCH_YFO) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_BELKIN, USB_DEVICE_ID_FLIP_KVM) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE_2) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH_10_1) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH_11_6) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH_15_6) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CHERRY, USB_DEVICE_ID_CHERRY_CYMOTION) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CHERRY, USB_DEVICE_ID_CHERRY_CYMOTION_SOLAR) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT, USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CVTOUCH, USB_DEVICE_ID_CVTOUCH_SCREEN) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_1) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_2) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_3) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_MOUSE) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0006) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0011) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
->        { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2515) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PCS_ADAPTOR) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_GOODTOUCH, USB_DEVICE_ID_GOODTOUCH_000f) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0003) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0012) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_HANVON, USB_DEVICE_ID_HANVON_MULTITOUCH) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_HANVON_ALT, USB_DEVICE_ID_HANVON_ALT_MULTITOUCH) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_IDEACOM, USB_DEVICE_ID_IDEACOM_IDC6650) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_ILITEK, USB_DEVICE_ID_ILITEK_MULTITOUCH) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS, USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_LG, USB_DEVICE_ID_LG_MULTITOUCH) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2) },
-> @@ -1467,8 +1438,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_RUMBLEPAD2) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_SPACETRAVELLER) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_SPACENAVIGATOR) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_LUMIO, USB_DEVICE_ID_CRYSTALTOUCH) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_LUMIO, USB_DEVICE_ID_CRYSTALTOUCH_DUAL) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICOLCD) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICOLCD_BOOTLOADER) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500) },
-> @@ -1500,13 +1469,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
->        { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_PCI) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ARVO) },
-> @@ -1522,9 +1486,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
->        { HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_NAVIGATION_CONTROLLER) },
->        { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_STANTUM, USB_DEVICE_ID_MTP) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_STANTUM_STM, USB_DEVICE_ID_MTP_STM) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_STANTUM_SITRONIX, USB_DEVICE_ID_MTP_SITRONIX) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb300) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb304) },
-> @@ -1536,16 +1497,12 @@ static const struct hid_device_id hid_have_special_driver[] = {
->        { HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb65a) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_TOPSEED, USB_DEVICE_ID_TOPSEED_CYBERLINK) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_TOPSEED2, USB_DEVICE_ID_TOPSEED2_RF_COMBO) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_TOUCH_INTL, USB_DEVICE_ID_TOUCH_INTL_MULTI_TOUCH) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_TWINHAN, USB_DEVICE_ID_TWINHAN_IR_REMOTE) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_TURBOX, USB_DEVICE_ID_TURBOX_TOUCHSCREEN_MOSART) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_PF1209) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP4030U) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP5540U) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP8060U) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP1062) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_UNITEC, USB_DEVICE_ID_UNITEC_USB_TOUCH_0709) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_UNITEC, USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_WISEGROUP, USB_DEVICE_ID_SMARTJOY_PLUS) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_WISEGROUP, USB_DEVICE_ID_DUAL_USB_JOYPAD) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_WISEGROUP_LTD, USB_DEVICE_ID_SUPER_JOY_BOX_3_PRO) },
-> @@ -1557,16 +1514,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
->        { HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_SLIM_TABLET_12_1_INCH) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_MEDIA_TABLET_10_6_INCH) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_MEDIA_TABLET_14_1_INCH) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XAT, USB_DEVICE_ID_XAT_CSR) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_SPX) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_MPX) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_CSR) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_SPX1) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_MPX1) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_CSR1) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_SPX2) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_MPX2) },
-> -       { HID_USB_DEVICE(USB_VENDOR_ID_XIROKU, USB_DEVICE_ID_XIROKU_CSR2) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_X_TENSIONS, USB_DEVICE_ID_SPEEDLINK_VAD_CEZANNE) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
-> --
-> 1.7.9.5
->
+diff --git a/drivers/infiniband/hw/ipath/ipath_file_ops.c b/drivers/infiniband/hw/ipath/ipath_file_ops.c
+index 736d9ed..f74079e 100644
+--- a/drivers/infiniband/hw/ipath/ipath_file_ops.c
++++ b/drivers/infiniband/hw/ipath/ipath_file_ops.c
+@@ -438,10 +438,7 @@ static int ipath_tid_update(struct ipath_portdata *pd, struct file *fp,
+ 		if (limit > tidcnt)
+ 			/* just in case size changes in future */
+ 			limit = tidcnt;
+-		tid = find_first_bit((const unsigned long *)tidmap, limit);
+-		for (; tid < limit; tid++) {
+-			if (!test_bit(tid, tidmap))
+-				continue;
++		for_each_set_bit(tid, tidmap, limit) {
+ 			if (dd->ipath_pageshadow[porttid + tid]) {
+ 				ipath_cdbg(VERBOSE, "Freeing TID %u\n",
+ 					   tid);
+@@ -548,16 +545,8 @@ static int ipath_tid_free(struct ipath_portdata *pd, unsigned subport,
+ 	ipath_cdbg(VERBOSE, "Port%u free %u tids; first bit (max=%d) "
+ 		   "set is %d, porttid %u\n", pd->port_port, ti->tidcnt,
+ 		   limit, tid, porttid);
+-	for (cnt = 0; tid < limit; tid++) {
+-		/*
+-		 * small optimization; if we detect a run of 3 or so without
+-		 * any set, use find_first_bit again.  That's mainly to
+-		 * accelerate the case where we wrapped, so we have some at
+-		 * the beginning, and some at the end, and a big gap
+-		 * in the middle.
+-		 */
+-		if (!test_bit(tid, tidmap))
+-			continue;
++	cnt = 0;
++	for_each_set_bit_from(tid, tidmap, limit) {
+ 		cnt++;
+ 		if (dd->ipath_pageshadow[porttid + tid]) {
+ 			struct page *p;
+diff --git a/drivers/infiniband/hw/ipath/ipath_intr.c b/drivers/infiniband/hw/ipath/ipath_intr.c
+index c0a03ac..ee8d0d7 100644
+--- a/drivers/infiniband/hw/ipath/ipath_intr.c
++++ b/drivers/infiniband/hw/ipath/ipath_intr.c
+@@ -79,9 +79,8 @@ void ipath_disarm_senderrbufs(struct ipath_devdata *dd)
+ 			printk("\n");
+ 		}
+ 
+-		for (i = 0; i < piobcnt; i++)
+-			if (test_bit(i, sbuf))
+-				ipath_disarm_piobufs(dd, i, 1);
++		for_each_set_bit(i, sbuf, piobcnt)
++			ipath_disarm_piobufs(dd, i, 1);
+ 		/* ignore armlaunch errs for a bit */
+ 		dd->ipath_lastcancel = jiffies+3;
+ 	}
+-- 
+1.7.4.4
+
