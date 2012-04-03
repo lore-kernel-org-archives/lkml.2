@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab2DCAiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Apr 2012 20:38:07 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52851 "EHLO gate.crashing.org"
+	id S1753916Ab2DCAou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Apr 2012 20:44:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33891 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab2DCAiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Apr 2012 20:38:05 -0400
-Message-ID: <1333413457.30734.69.camel@pasglop>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
- irq_alloc_desc() instead
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Tue, 03 Apr 2012 10:37:37 +1000
-In-Reply-To: <m2hax2qeqs.fsf@igel.home>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
-	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752605Ab2DCAok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Apr 2012 20:44:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="148910146"
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Pallipadi Venkatesh <venki@google.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [x86 PAT PATCH 1/2] x86, pat: remove the dependency on 'vm_pgoff' in track/untrack pfn vma routines
+Date: Mon,  2 Apr 2012 17:46:08 -0700
+Message-Id: <1333413969-30761-2-git-send-email-suresh.b.siddha@intel.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1333413969-30761-1-git-send-email-suresh.b.siddha@intel.com>
+References: <20120331170947.7773.46399.stgit@zurg>
+ <1333413969-30761-1-git-send-email-suresh.b.siddha@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 18:29 +0200, Andreas Schwab wrote:
-> > This breaks irqs on PowerMac G5.  I see lost irq errors from the sata
-> > driver.
-> 
-> When I revert a09b659cd68c10ec6a30cb91ebd2c327fcd5bfe5 ("genirq: Fix
-> long-term regression in genirq irq_set_irq_type() handling") on top of
-> 3.4-rc1 the sata irq errors disappear, but I see a lot of spurious
-> interrupts.  Also the X server is broken somehow, though I don't know
-> whether that is related or a different bug.
+'pfn' argument for track_pfn_vma_new() can be used for reserving the attribute
+for the pfn range. No need to depend on 'vm_pgoff'
 
-I can't explain why but it works for me with your config on a similar
-dual G5.
+Similarly, untrack_pfn_vma() can depend on the 'pfn' argument if it
+is non-zero or can use follow_phys() to get the starting value of the pfn
+range.
 
-It would be interesting to figure out what causes the call to
-set_irq_type(NONE)...
+Also the non zero 'size' argument can be used instead of recomputing
+it from vma.
 
-The SATA driver isn't doing anything. What should be happening
-is that:
+This cleanup also prepares the ground for the track/untrack pfn vma routines
+to take over the ownership of setting PAT specific vm_flag in the 'vma'.
 
- - pci_read_irq_line() in arch/powerpc/kernel/pci-common.c
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ arch/x86/mm/pat.c |   30 +++++++++++++++++-------------
+ 1 files changed, 17 insertions(+), 13 deletions(-)
 
-This will call of_irq_map_pci() and then call irq_of_create_mapping()
-with the result if it's successful (it should be).
-
- - irq_of_create_mapping in kernel/irq/irqdomain.c
-
-That should then call domain->ops->xlate() where domain is the domain
-of the first MPIC (the one in K2), which should return your IRQ number
-for the SATA controller (btw, it's 0, in case that matters, ie, HW irq 0
-on MPIC 1 iirc) and the interrupt type. This is where you should
-get IRQ_TYPE_LEVEL_LOW (i verified and that's what my device-tree
-contains).
-
-You can add printk's in there to see what's happening in your case ?
-
-Cheers,
-Ben.
-
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index f6ff57b..617f42b 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -693,14 +693,10 @@ int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
+ 			unsigned long pfn, unsigned long size)
+ {
+ 	unsigned long flags;
+-	resource_size_t paddr;
+-	unsigned long vma_size = vma->vm_end - vma->vm_start;
+ 
+-	if (is_linear_pfn_mapping(vma)) {
+-		/* reserve the whole chunk starting from vm_pgoff */
+-		paddr = (resource_size_t)vma->vm_pgoff << PAGE_SHIFT;
+-		return reserve_pfn_range(paddr, vma_size, prot, 0);
+-	}
++	/* reserve the whole chunk starting from pfn */
++	if (is_linear_pfn_mapping(vma))
++		return reserve_pfn_range(pfn, size, prot, 0);
+ 
+ 	if (!pat_enabled)
+ 		return 0;
+@@ -716,20 +712,28 @@ int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
+ /*
+  * untrack_pfn_vma is called while unmapping a pfnmap for a region.
+  * untrack can be called for a specific region indicated by pfn and size or
+- * can be for the entire vma (in which case size can be zero).
++ * can be for the entire vma (in which case pfn, size are zero).
+  */
+ void untrack_pfn_vma(struct vm_area_struct *vma, unsigned long pfn,
+ 			unsigned long size)
+ {
+ 	resource_size_t paddr;
+-	unsigned long vma_size = vma->vm_end - vma->vm_start;
++	unsigned long prot;
+ 
+-	if (is_linear_pfn_mapping(vma)) {
+-		/* free the whole chunk starting from vm_pgoff */
+-		paddr = (resource_size_t)vma->vm_pgoff << PAGE_SHIFT;
+-		free_pfn_range(paddr, vma_size);
++	if (!is_linear_pfn_mapping(vma))
+ 		return;
++
++	/* free the chunk starting from pfn or the whole chunk */
++	paddr = (resource_size_t)pfn;
++	if (!paddr && !size) {
++		if (follow_phys(vma, vma->vm_start, 0, &prot, &paddr)) {
++			WARN_ON_ONCE(1);
++			return;
++		}
++
++		size = vma->vm_end - vma->vm_start;
+ 	}
++	free_pfn_range(paddr, size);
+ }
+ 
+ pgprot_t pgprot_writecombine(pgprot_t prot)
+-- 
+1.7.6.5
 
