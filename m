@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2DCEvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 00:51:05 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59546 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab2DCEur (ORCPT
+	id S1751781Ab2DCEys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 00:54:48 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:41004
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751515Ab2DCEyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 00:50:47 -0400
+	Tue, 3 Apr 2012 00:54:47 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Liu Ying <Ying.Liu@freescale.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: <g.liakhovetski@gmx.de>, <hechtb@gmail.com>, <sfr@canb.auug.org.au>,
+        <clalancette@gmail.com>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Liu Ying <Ying.Liu@freescale.com>
+Subject: [PATCH 1/1] V4L: OV5642:remove redundant code to set cropping w/h
+Date: Tue, 3 Apr 2012 11:58:01 +0800
+Message-ID: <1333425481-14472-1-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-From: Chester <somethingsome2000@gmail.com>
-Date: Mon, 2 Apr 2012 23:50:26 -0500
-Message-ID: <CAAE6i0hHT7A+x7Q9zct0oxQv44Y8WchiKdeRbNrzRRp+fJNGuQ@mail.gmail.com>
-Subject: brcmsmac driver is ghost in 3.3
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I spent the better part of my day trying to get my bcm4313 wlan card
-to work with the new kernel to little success. I used to use brcmsmac
-with the old 3.2 kernel, but it was somehow excluded when I did my
-'make silentoldconfig'.
+This patch contains code change only to remove redundant
+code to set priv->crop_rect.width/height in probe function.
 
-I chose b43 because I couldn't find brcmsmac anywhere in nconfig
-anymore. device drivers -> network devices -> wireless lan -> ???..
-After fiddling around a while, I looked into my .config and searched
-for the symbol, and sure enough, it was there! CONFIG_BRCMSMAC is not
-set.
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+Acked-by: Chris Lalancette <clalancette@gmail.com>
+---
+ drivers/media/video/ov5642.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-That's strange. I get back on nconfig and do a symbol search and find
-that it should be in devices drivers -> network devices -> wireless
-lan. I go check a 2nd time and it's right there! Broadcom SoftMac
-driver! .. I tried enabling it and saving the config. I peaked at the
-.config file again, and the symbol was _gone_ .. (??) I got back on
-nconfig and the option was no longer there as well.
+diff --git a/drivers/media/video/ov5642.c b/drivers/media/video/ov5642.c
+index bb37ec8..efdd6be 100644
+--- a/drivers/media/video/ov5642.c
++++ b/drivers/media/video/ov5642.c
+@@ -1025,8 +1025,6 @@ static int ov5642_probe(struct i2c_client *client,
+ 	priv->crop_rect.height	= OV5642_DEFAULT_HEIGHT;
+ 	priv->crop_rect.left	= (OV5642_MAX_WIDTH - OV5642_DEFAULT_WIDTH) / 2;
+ 	priv->crop_rect.top	= (OV5642_MAX_HEIGHT - OV5642_DEFAULT_HEIGHT) / 2;
+-	priv->crop_rect.width	= OV5642_DEFAULT_WIDTH;
+-	priv->crop_rect.height	= OV5642_DEFAULT_HEIGHT;
+ 	priv->total_width = OV5642_DEFAULT_WIDTH + BLANKING_EXTRA_WIDTH;
+ 	priv->total_height = BLANKING_MIN_HEIGHT;
+ 
+-- 
+1.7.1
+
+
