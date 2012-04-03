@@ -1,105 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab2DCUYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 16:24:41 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:34756 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab2DCUYk (ORCPT
+	id S1754863Ab2DCU0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 16:26:44 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:48770 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753286Ab2DCU0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 16:24:40 -0400
-Date: Tue, 3 Apr 2012 13:24:33 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Che-Liang Chiou <clchiou@chromium.org>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: serio_raw - ensure we don't block in non-blocking read
-Message-ID: <20120403202432.GA18564@core.coreip.homeip.net>
+	Tue, 3 Apr 2012 16:26:42 -0400
+Message-ID: <4F7B5CFB.1@xenotime.net>
+Date: Tue, 03 Apr 2012 13:26:35 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Rob Landley <rob@landley.net>, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH] MAINTAINERS: change in Documentation/ maintainer
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid calling wait_event_interruptible() if client requested non-blocking
-read, since it is not guaranteed that another thread will not consume
-event after we checked if serio_raw->head != serio_raw->tail.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Also ensure we do not return 0 but keep waiting instead in blocking case,
-when another thread steals "our" byte.
+I'm dropping off as Documentation/ maintainer.
+Rob Landley has agreed to take it over.  Thanks, Rob.
 
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+I'll still be around reviewing patches and testing.
+Stephen, please drop my quilt tree from linux-next.
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- drivers/input/serio/serio_raw.c |   43 ++++++++++++++++++++++----------------
- 1 files changed, 25 insertions(+), 18 deletions(-)
+ MAINTAINERS |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
-index 4494233..094d6fb 100644
---- a/drivers/input/serio/serio_raw.c
-+++ b/drivers/input/serio/serio_raw.c
-@@ -165,31 +165,38 @@ static ssize_t serio_raw_read(struct file *file, char __user *buffer,
- 	struct serio_raw *serio_raw = client->serio_raw;
- 	char uninitialized_var(c);
- 	ssize_t read = 0;
--	int retval;
-+	int error = 0;
+--- lnx-34-rc1.orig/MAINTAINERS
++++ lnx-34-rc1/MAINTAINERS
+@@ -2322,9 +2322,9 @@ S:	Supported
+ F:	drivers/acpi/dock.c
  
--	if (serio_raw->dead)
--		return -ENODEV;
-+	do {
-+		if (serio_raw->dead)
-+			return -ENODEV;
+ DOCUMENTATION
+-M:	Randy Dunlap <rdunlap@xenotime.net>
++M:	Rob Landley <rob@landley.net>
+ L:	linux-doc@vger.kernel.org
+-T:	quilt http://xenotime.net/kernel-doc-patches/current/
++T:	TBD
+ S:	Maintained
+ F:	Documentation/
  
--	if (serio_raw->head == serio_raw->tail && (file->f_flags & O_NONBLOCK))
--		return -EAGAIN;
-+		if (serio_raw->head == serio_raw->tail &&
-+		    (file->f_flags & O_NONBLOCK))
-+			return -EAGAIN;
- 
--	retval = wait_event_interruptible(serio_raw->wait,
--			serio_raw->head != serio_raw->tail || serio_raw->dead);
--	if (retval)
--		return retval;
-+		if (count == 0)
-+			break;
- 
--	if (serio_raw->dead)
--		return -ENODEV;
-+		while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
-+			if (put_user(c, buffer++)) {
-+				error = -EFAULT;
-+				goto out;
-+			}
-+			read++;
-+		}
- 
--	while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
--		if (put_user(c, buffer++)) {
--			retval = -EFAULT;
-+		if (read)
- 			break;
--		}
--		read++;
--	}
- 
--	return read ?: retval;
-+		if (!(file->f_flags & O_NONBLOCK))
-+			error = wait_event_interruptible(serio_raw->wait,
-+					serio_raw->head != serio_raw->tail ||
-+					serio_raw->dead);
-+	} while (!error);
-+
-+out:
-+	return read ?: error;
- }
- 
- static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
--- 
-1.7.7.6
-
-
--- 
-Dmitry
