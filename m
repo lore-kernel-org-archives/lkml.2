@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab2DCIMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 04:12:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55834 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab2DCIMw (ORCPT
+	id S1752606Ab2DCIVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 04:21:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53161 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2DCIVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 04:12:52 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org
-Subject: Re: [PATCH 5/6] vfs: reorganize do_lookup
-References: <1332759264-23533-1-git-send-email-miklos@szeredi.hu>
-	<1332759264-23533-6-git-send-email-miklos@szeredi.hu>
-	<20120330190526.GA29050@ZenIV.linux.org.uk>
-Date: Tue, 03 Apr 2012 10:13:18 +0200
-In-Reply-To: <20120330190526.GA29050@ZenIV.linux.org.uk> (Al Viro's message of
-	"Fri, 30 Mar 2012 20:05:26 +0100")
-Message-ID: <87hax1s069.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 3 Apr 2012 04:21:04 -0400
+Date: Tue, 3 Apr 2012 10:20:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+In-Reply-To: <1333406005.30734.61.camel@pasglop>
+Message-ID: <alpine.LFD.2.02.1204031019320.2542@ionos>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>  <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>  <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>  <20120402202848.1EB833E02A7@localhost> 
+ <20120402215524.GM24211@n2100.arm.linux.org.uk> <1333406005.30734.61.camel@pasglop>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
+On Tue, 3 Apr 2012, Benjamin Herrenschmidt wrote:
 
-> On Mon, Mar 26, 2012 at 12:54:23PM +0200, Miklos Szeredi wrote:
->> This also eliminates the weird retry loop, that could, in theory, retry the
->> cached lookup any number of times (very unlikely scenario: needs two parallel
->> do_lookups and d_revalidate always returning zero).
->
-> That really needs to be carved into much smaller pieces - the sucker is
-> convoluted as hell and there's a lot of codepaths in there with nearly
-> zero test coverage.  I've split it up into provably equivalent
-> transformations, leading more or less to the state where yours ends up.
-> I _think_ I've reconstructed the sequence of changes more or less
-> close to what you were doing there, but the next time you have to do
-> something of that kind, do not collapse that into a single patch.  It's
-> really easier to review step by step...
+> On Mon, 2012-04-02 at 22:55 +0100, Russell King - ARM Linux wrote:
+> > Well, presumably someone is calling irq_set_irq_type() asking explicitly
+> > for IRQ_TYPE_NONE.  The code will now (as it always used to before David's
+> > change) do exactly what you ask this to: it will ask the type to be set
+> > to none.
+> > 
+> > If you don't want to set the type to none, don't call the interface asking
+> > for that to happen. 
+> 
+> I think part of the idea with NONE is to use it as "reset that interrupt
+> to the "default" setting, whatever that means ...
 
-Okay, but actually what I was doing there is looking at what the code
-actually does and realizing that it's equivalent to __lookup_hash(), so
-for me it was a single (albeit complex) single step.
-
-But I'll try to keep reviewability in mind.
-
-The do_last() reorganization in the atomic-open series needs to be split
-up, I realize.  Do you have any other high level comments about that
-series?
+Well, the ship side set_type function could simply leave it alone and
+not touch the thing at all. That's how the core code did until we
+discovered that we broke Russells toys that way.
 
 Thanks,
-Miklos
+
+	tglx
