@@ -1,104 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab2DCLva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 07:51:30 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:56389 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab2DCLv2 (ORCPT
+	id S1754199Ab2DCL4B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 07:56:01 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:59835 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab2DCLz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 07:51:28 -0400
-Message-ID: <4F7AE42F.9080800@linux.vnet.ibm.com>
-Date: Tue, 03 Apr 2012 17:21:11 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Tue, 3 Apr 2012 07:55:59 -0400
+Message-ID: <4F7AE530.1040201@atmel.com>
+Date: Tue, 03 Apr 2012 13:55:28 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: lenb@kernel.org, khilman@ti.com, deepthi@linux.vnet.ibm.com,
-        g.trinabh@gmail.com, arjan@infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, amit.kucheria@linaro.org
-Subject: Re: [PATCH] cpuidle: Avoid possible NULL pointer dereference in __cpuidle_register_device()
-References: <20120402144422.11574.83174.stgit@srivatsabhat.in.ibm.com> <4F79FE8F.1040708@linaro.org>
-In-Reply-To: <4F79FE8F.1040708@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, olof@lixom.net
+Subject: Re: [PATCH v2 00/13] at91: 3.4-rc1 fixes
+References: <cover.1333437885.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1333437885.git.nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12040301-6102-0000-0000-000001299F60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 01:01 AM, Daniel Lezcano wrote:
-
-> On 04/02/2012 04:44 PM, Srivatsa S. Bhat wrote:
->> In __cpuidle_register_device(), "dev->cpu" is used before checking if
->> dev is
->> non-NULL. Fix it.
->>
->> Signed-off-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
->> ---
+On 04/03/2012 09:32 AM, Nicolas Ferre :
+> Here is a bunch of fixes for AT91 that will go on top of 3.4-rc1.
+> Some modifications are related to certain drivers (USB ohci-at91 for instance)
+> but are touching the core AT91 devices/board files and Device Tree files.
+> The modification of "vbus_pin_active_low" in particular cannot be separated
+> from the modification of .dts[i] and devices/board files.
 > 
-> That should be fixed at the caller level. Usually, static function does
-> not check the function parameters, it is up to the exported function to
-> do that. It is supposed the static functions are called with valid
-> parameters.
+> I will have to collect "Acked-by" from USB people on the ohci-at91
+> modifications (Greg?). I will try to find them just after having posted
+> this v2 today...
+
+Hi Greg,
+
+I would like to send this "fixes" patch series via arm-soc. Is it
+possible for you to have a look at patches that will modify ohci-at91
+(and the tiny ehci-atmel one) and give me your "Acked-by" so that I can
+ask Arnd and Olof to queue this material for 3.4-rc?
+
+Here is the thread in linux-usb mainling-list:
+http://www.spinics.net/lists/linux-usb/msg60798.html
+
+Thanks for your help, best regards,
+
+> Ludovic Desroches (1):
+>   ARM: at91: dt: remove unit-address part for memory nodes
 > 
-
-
-Ok, good point! I hadn't thought about that.. I just happened to notice
-that in __cpuidle_register_device(), the dev == NULL check is performed
-_after_ dereferencing it, which made the check useless. So I tried to
-fix that within that function. But thanks for pointing out the semantics..
-
-> There are two callers for __cpuidle_register_device:
->  * cpuidle_register_device
->  * cpuidle_enable_device
+> Nicolas Ferre (12):
+>   ARM: at91/at91sam9x5: add clkdev entries for DMA controllers
+>   USB: ohci-at91: fix vbus_pin_active_low handling
+>   ARM: at91/USB host: specify and handle properly vbus_pin_active_low
+>   ARM: at91/dts: USB host vbus is active low
+>   USB: ohci-at91: rework and fix initialization
+>   USB: ohci-at91: change maximum number of ports
+>   USB: ohci-at91: coding style modifications with one-line ifs
+>   USB: ohci-at91: trivial return code name change
+>   ARM: at91/at91sam9x5.dtsi: fix NAND ale/cle in DT file
+>   ARM: at91/NAND DT bindings: add comments
+>   USB: ehci-atmel: add needed of.h header file
+>   ARM: at91: fix check of valid GPIO for SPI and USB
 > 
-> Both of them do not check 'dev' is a valid parameter. They should as
-> they are exported and could be used by an external module. IMHO, BUG_ON
-> could be used here if dev == NULL.
->
-
-
-BUG_ON? That would crash the system.. which might be unnecessary..
-
-How about checking if dev == NULL in the 2 callers like you suggested 
-and returning -EINVAL if dev is indeed NULL?
-
-(And of course no checks for dev == NULL in __cpuidle_register_device).
-
- 
+>  .../devicetree/bindings/mtd/atmel-nand.txt         |   10 +-
+>  arch/arm/boot/dts/at91sam9g20.dtsi                 |    2 +-
+>  arch/arm/boot/dts/at91sam9g25ek.dts                |    4 +-
+>  arch/arm/boot/dts/at91sam9g45.dtsi                 |    2 +-
+>  arch/arm/boot/dts/at91sam9m10g45ek.dts             |    6 +-
+>  arch/arm/boot/dts/at91sam9x5.dtsi                  |    6 +-
+>  arch/arm/boot/dts/at91sam9x5cm.dtsi                |    2 +-
+>  arch/arm/boot/dts/usb_a9g20.dts                    |    2 +-
+>  arch/arm/mach-at91/at91sam9260_devices.c           |    3 +
+>  arch/arm/mach-at91/at91sam9261_devices.c           |    3 +
+>  arch/arm/mach-at91/at91sam9263_devices.c           |    6 +-
+>  arch/arm/mach-at91/at91sam9g45_devices.c           |   11 +-
+>  arch/arm/mach-at91/at91sam9rl_devices.c            |    3 +
+>  arch/arm/mach-at91/at91sam9x5.c                    |    2 +
+>  arch/arm/mach-at91/board-sam9263ek.c               |    1 +
+>  arch/arm/mach-at91/board-sam9m10g45ek.c            |    1 +
+>  arch/arm/mach-at91/include/mach/board.h            |   13 +-
+>  drivers/usb/host/ehci-atmel.c                      |    1 +
+>  drivers/usb/host/ohci-at91.c                       |  159 +++++++++++---------
+>  19 files changed, 135 insertions(+), 102 deletions(-)
 > 
->>   drivers/cpuidle/cpuidle.c |    3 ++-
->>   1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
->> index 87411ce..75b381e 100644
->> --- a/drivers/cpuidle/cpuidle.c
->> +++ b/drivers/cpuidle/cpuidle.c
->> @@ -372,7 +372,7 @@ EXPORT_SYMBOL_GPL(cpuidle_disable_device);
->>   static int __cpuidle_register_device(struct cpuidle_device *dev)
->>   {
->>       int ret;
->> -    struct device *cpu_dev = get_cpu_device((unsigned long)dev->cpu);
->> +    struct device *cpu_dev;
->>       struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
->>
->>       if (!dev)
->> @@ -380,6 +380,7 @@ static int __cpuidle_register_device(struct
->> cpuidle_device *dev)
->>       if (!try_module_get(cpuidle_driver->owner))
->>           return -EINVAL;
->>
->> +    cpu_dev = get_cpu_device((unsigned long)dev->cpu);
->>       init_completion(&dev->kobj_unregister);
->>
->>       per_cpu(cpuidle_devices, dev->cpu) = dev;
->>
-> 
-> 
+> Thanks, best regards,
 
 
-Thank you for the review!
-
-Regards,
-Srivatsa S. Bhat
-
+-- 
+Nicolas Ferre
