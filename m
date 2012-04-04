@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab2DDXvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 19:51:22 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40369 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753899Ab2DDXvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 19:51:21 -0400
-Message-ID: <1333583480.23520.37.camel@joe2Laptop>
-Subject: Re: [PATCH] printk: support structured and multi-facility log
- messages
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>
-Date: Wed, 04 Apr 2012 16:51:20 -0700
-In-Reply-To: <1333569554.864.3.camel@mop>
-References: <1333569554.864.3.camel@mop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757384Ab2DDX7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 19:59:00 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:61137 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab2DDX67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 19:58:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F7CD6C9.4060509@kernel.dk>
+References: <1325254651-15379-1-git-send-email-glorioustao@gmail.com>
+ <20120404144656.7b2a06ec.akpm@linux-foundation.org> <CAAV8rn+T7FM7bG+Q6fyoUrVtzOkYOx94Nh87Rg12UqCdk9HhWQ@mail.gmail.com>
+ <4F7CD6C9.4060509@kernel.dk>
+From: Tao Guo <glorioustao@gmail.com>
+Date: Wed, 4 Apr 2012 16:58:37 -0700
+Message-ID: <CAAV8rn+s__Uap1_nx8w4USGtAsg0Y=cbo_mUyCWnX2EFNzH3Eg@mail.gmail.com>
+Subject: Re: [PATCH] umem: fix up unplugging.
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        neilb@suse.de, axboe@fusionio.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-04 at 21:59 +0200, Kay Sievers wrote:
-> From: Kay Sievers <kay@vrfy.org>
-> Subject: printk: support structured and multi-facility log messages
-[]
-> This patch extends printk() to be able to attach arbitrary key/value
-> pairs to logged messages,
+On Wed, Apr 4, 2012 at 4:18 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2012-04-04 16:20, Tao Guo wrote:
+>> Hi Andrew,
+>>
+>> Thanks for your reply.
+>>
+>> Yes, without this patch the umem driver just doesn't work.
+>> It is a bug introduced by commit 7eaceaccab5f40bbfda044629a6298616aeaed50.
+>> In that patch, Jens removed the whole mm_unplug_device() function,
+>> which used to be
+>> the trigger to make umem start to work.
+>
+> Hmm indeed, that's isn't terribly useful. Why aren't we just calling
+> activate_card() on addition of a bio?
+>
+It is the original design idea, the umem driver also wants to do batch
+IO the same as
+hard disk drive to fully utilize the IO bandwidth.
 
-How does it do that?
-
-[]
-
-> - Records consume almost the same amount, sometimes less memory than
->   the traditional byte stream buffer (if printk_time is enabled). The record
->   header is 16 bytes long, plus some padding bytes at the end if needed.
->   The byte-stream buffer needed 3 chars for the syslog prefix, 15 char for
->   the timestamp and a newline.
-
-I suggest using lzo on the string portion.
-
-
+Thanks,
+-Tao
+> But your patch looks fine too, if it's tested it beats what we have.
+>
+> --
+> Jens Axboe
+>
