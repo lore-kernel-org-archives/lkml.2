@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab2DDREV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 13:04:21 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:1888 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab2DDRET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 13:04:19 -0400
-Message-ID: <4F7C7EDF.4000702@atmel.com>
-Date: Wed, 04 Apr 2012 19:03:27 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+	id S1757073Ab2DDRHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 13:07:24 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:58246 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756979Ab2DDRHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 13:07:22 -0400
+Message-ID: <4F7C7FCE.3090105@gmail.com>
+Date: Wed, 04 Apr 2012 10:07:26 -0700
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Subject: [GIT PULL] at91: 3.4-rc1 fixes
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ulrich Drepper <drepper@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+References: <20120401125741.GA7484@p183.telecom.by> <CAHGf_=pgpRrQA3-YVtS=h-Bjq2LyTFmYtKGxxWgwP0XWexnh2g@mail.gmail.com> <4F7A3CC2.1040200@zytor.com> <CAOPLpQebqKED5G1nti6i=JLZ+A6df2UdA86RVEv1Er7hw7KFpQ@mail.gmail.com> <4F7C7907.3090808@gmail.com> <CAOPLpQfowVbAfY5utOa4pYDkA+AtLGU0zMLC5Eq5oH=zVrVC6Q@mail.gmail.com>
+In-Reply-To: <CAOPLpQfowVbAfY5utOa4pYDkA+AtLGU0zMLC5Eq5oH=zVrVC6Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+(4/4/12 9:43 AM), Ulrich Drepper wrote:
+> On Wed, Apr 4, 2012 at 12:38, KOSAKI Motohiro<kosaki.motohiro@gmail.com>  wrote:
+>> As far as I understand, any major open source project don't use
+>> posix_spawn().
+>> Please remind, I'm talking about real world issue.
+>
+> This doesn't mean they shouldn't.  If you require code to be changed
+> anyway let them change to something which doesn't require more cruft
+> in the kernel.  The limitations you cited are irrelevant for
+> posix_spawn.  And perhaps there will be actually spawn support in the
+> kernel which would make dealing with OOM situations and non-overcommit
+> much easier.
 
-I would like you to integrate this fist batch of AT91 related fixes. They
-are covering DT and USB related issues that we have seen on top of 3.4-rc1.
+Umm... I'm sorry. I haven't catch why OOM is related topic. Could you please
+elaborate more?
 
-I have also included modifications of the OHCI USB driver because they
-are also touching the core AT91 devices/board files and Device Tree files.
-The modification of "vbus_pin_active_low" in particular cannot be separated
-from the modification of .dts[i] and devices/board files.
 
-Alan Stern for USB OHCI/EHCI and Grant Likely for DT gave me their "Acked-by"
-on concerned patches (thanks a lot guys!).
-
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
-
-  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git at91-fixes
-
-for you to fetch changes up to dcce6ce802c271cd7c21f4730f301150577b2826:
-
-  ARM: at91: dt: remove unit-address part for memory nodes (2012-04-04 18:35:52 +0200)
-
-----------------------------------------------------------------
-Ludovic Desroches (1):
-      ARM: at91: dt: remove unit-address part for memory nodes
-
-Nicolas Ferre (11):
-      ARM: at91/at91sam9x5: add clkdev entries for DMA controllers
-      USB: ohci-at91: fix vbus_pin_active_low handling
-      ARM: at91/USB host: specify and handle properly vbus_pin_active_low
-      ARM: at91/dts: USB host vbus is active low
-      USB: ohci-at91: rework and fix initialization
-      USB: ohci-at91: change maximum number of ports
-      USB: ohci-at91: trivial return code name change
-      ARM: at91/at91sam9x5.dtsi: fix NAND ale/cle in DT file
-      ARM: at91/NAND DT bindings: add comments
-      USB: ehci-atmel: add needed of.h header file
-      ARM: at91: fix check of valid GPIO for SPI and USB
-
- .../devicetree/bindings/mtd/atmel-nand.txt         |   10 +-
- arch/arm/boot/dts/at91sam9g20.dtsi                 |    2 +-
- arch/arm/boot/dts/at91sam9g25ek.dts                |    4 +-
- arch/arm/boot/dts/at91sam9g45.dtsi                 |    2 +-
- arch/arm/boot/dts/at91sam9m10g45ek.dts             |    6 +-
- arch/arm/boot/dts/at91sam9x5.dtsi                  |    6 +-
- arch/arm/boot/dts/at91sam9x5cm.dtsi                |    2 +-
- arch/arm/boot/dts/usb_a9g20.dts                    |    2 +-
- arch/arm/mach-at91/at91sam9260_devices.c           |    3 +
- arch/arm/mach-at91/at91sam9261_devices.c           |    3 +
- arch/arm/mach-at91/at91sam9263_devices.c           |    6 +-
- arch/arm/mach-at91/at91sam9g45_devices.c           |   11 +-
- arch/arm/mach-at91/at91sam9rl_devices.c            |    3 +
- arch/arm/mach-at91/at91sam9x5.c                    |    2 +
- arch/arm/mach-at91/board-sam9263ek.c               |    1 +
- arch/arm/mach-at91/board-sam9m10g45ek.c            |    1 +
- arch/arm/mach-at91/include/mach/board.h            |   13 +-
- drivers/usb/host/ehci-atmel.c                      |    1 +
- drivers/usb/host/ohci-at91.c                       |  163 +++++++++++---------
- 19 files changed, 137 insertions(+), 104 deletions(-)
-
-Thanks, best regards,
--- 
-Nicolas Ferre
