@@ -1,161 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2DDCmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 22:42:08 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:40663 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab2DDCmE (ORCPT
+	id S1755963Ab2DDCpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 22:45:01 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57610 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab2DDCo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 22:42:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Patrick McHardy <kaber@trash.net>, Andrew Morgan <morgan@kernel.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        David Howells <dhowells@redhat.com>, Neil Brown <neilb@suse.de>,
-        Michal Januszewski <spock@gentoo.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-raid@vger.kernel.org
-References: <m1mx6sz2f2.fsf@fess.ebiederm.org>
-	<20120404022652.GA18730@mail.hallyn.com>
-Date: Tue, 03 Apr 2012 19:45:47 -0700
-In-Reply-To: <20120404022652.GA18730@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Wed, 4 Apr 2012 02:26:52 +0000")
-Message-ID: <m1sjgkxlic.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19FGhmzTgIWWLW4qs22hPmrJheZV5NFSSI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH] userns: Replace netlink uses of cap_raised with capable.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Tue, 3 Apr 2012 22:44:59 -0400
+Date: Wed, 4 Apr 2012 12:44:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: linux-next: build failure after merge of the pinctrl tree
+Message-Id: <20120404124437.ff05ebcc4db98109d5fcee22@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__4_Apr_2012_12_44_37_+1000_w6N=Ai0_oFhAYyQX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+--Signature=_Wed__4_Apr_2012_12_44_37_+1000_w6N=Ai0_oFhAYyQX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> 
->> In 2009 Philip Reiser notied that a few users of netlink connector
->> interface needed a capability check and added the idiom
->> cap_raised(nsp->eff_cap, CAP_SYS_ADMIN) to a few of them, on the premise
->> that netlink was asynchronous.
->> 
->> In 2011 Patrick McHardy noticed we were being silly because netlink is
->> synchronous and removed eff_cap from the netlink_skb_params and changed
->> the idiom to cap_raised(current_cap(), CAP_SYS_ADMIN).
->> 
->> Looking at those spots with a fresh eye we should be calling
->> capable(CAP_SYS_ADMIN).  The only reason I can see for not calling
->> capable is that it once appeared we were not in the same task as the
->> caller which would have made calling capable() impossible.
->
-> And (just to make sure) that is now absolutely not the case?
+Hi Linus,
 
-Absolutely.  Netlink is synchronous.
+After merging the pinctrl tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-I reread netlink_unicast_kernel() in net/netlink/af_netlink.c while
-researching this patch.
+drivers/pinctrl/devicetree.c: In function 'dt_free_map':
+drivers/pinctrl/devicetree.c:44:42: error: dereferencing pointer to incompl=
+ete type
+drivers/pinctrl/devicetree.c:45:6: error: dereferencing pointer to incomple=
+te type
+drivers/pinctrl/devicetree.c: In function 'dt_to_map_one_config':
+drivers/pinctrl/devicetree.c:140:21: error: dereferencing pointer to incomp=
+lete type
+drivers/pinctrl/devicetree.c:141:10: error: dereferencing pointer to incomp=
+lete type
+drivers/pinctrl/devicetree.c:146:11: error: dereferencing pointer to incomp=
+lete type
 
-Netlink has been synchronous since 2007.  In a world of perfect
-knowledge transmission these calls could have been calls to capable
-from the very beginning.
+Caused by commit 23289e6ecc6d ("pinctrl: core device tree mapping table
+parsing support").  Missing includes?
 
->> In the initial user_namespace the only difference between  between
->> cap_raised(current_cap(), CAP_SYS_ADMIN) and capable(CAP_SYS_ADMIN)
->> are a few sanity checks and the fact that capable(CAP_SYS_ADMIN)
->> sets PF_SUPERPRIV if we use the capability.
->> 
->> Since we are going to be using root privilege setting PF_SUPERPRIV
->> seems the right thing to do.
->> 
->> The motivation for this that patch is that in a child user namespace
->> cap_raised(current_cap(),...) tests your capabilities with respect to
->> that child user namespace not capabilities in the initial user namespace
->> and thus will allow processes that should be unprivielged to use the
->> kernel services that are only protected with
->> cap_raised(current_cap(),..).
->> 
->> To fix possible user_namespace issues and to just clean up the code
->> replace cap_raised(current_cap(), CAP_SYS_ADMIN) with
->> capable(CAP_SYS_ADMIN).
->> 
->> Cc: Patrick McHardy <kaber@trash.net>
->> Cc: Philipp Reisner <philipp.reisner@linbit.com>
->> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
->
-> Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
->
-> thanks,
-> -serge
->
->> Cc: Andrew Morgan <morgan@kernel.org>
->> Cc: Vasiliy Kulikov <segoon@openwall.com>
->> Cc: David Howells <dhowells@redhat.com>
->> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->> ---
->>  drivers/block/drbd/drbd_nl.c           |    2 +-
->>  drivers/md/dm-log-userspace-transfer.c |    2 +-
->>  drivers/video/uvesafb.c                |    2 +-
->>  3 files changed, 3 insertions(+), 3 deletions(-)
->> 
->> diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
->> index abfaaca..946166e 100644
->> --- a/drivers/block/drbd/drbd_nl.c
->> +++ b/drivers/block/drbd/drbd_nl.c
->> @@ -2297,7 +2297,7 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
->>  		return;
->>  	}
->>  
->> -	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
->> +	if (!capable(CAP_SYS_ADMIN)) {
->>  		retcode = ERR_PERM;
->>  		goto fail;
->>  	}
->> diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
->> index 1f23e04..08d9a20 100644
->> --- a/drivers/md/dm-log-userspace-transfer.c
->> +++ b/drivers/md/dm-log-userspace-transfer.c
->> @@ -134,7 +134,7 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
->>  {
->>  	struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
->>  
->> -	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
->> +	if (!capable(CAP_SYS_ADMIN))
->>  		return;
->>  
->>  	spin_lock(&receiving_list_lock);
->> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
->> index 260cca7..9f7d27a 100644
->> --- a/drivers/video/uvesafb.c
->> +++ b/drivers/video/uvesafb.c
->> @@ -73,7 +73,7 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
->>  	struct uvesafb_task *utask;
->>  	struct uvesafb_ktask *task;
->>  
->> -	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
->> +	if (!capable(CAP_SYS_ADMIN))
->>  		return;
->>  
->>  	if (msg->seq >= UVESAFB_TASKS_MAX)
->> -- 
->> 1.7.2.5
+I have used the version of the pinctrl tree from next-20120403 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__4_Apr_2012_12_44_37_+1000_w6N=Ai0_oFhAYyQX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPe7WVAAoJEECxmPOUX5FEt1EP/2EK0x04zqioCK/nT5u3x70h
+mOgXNiu8vY372sKZs3WuspSTNvdHD7vASKrAhJAc15ZmA67aDa8c1rHpGnICOwNT
+haG51oq2C+u6FVii1cVgRCYfLBpLbmlat+7ZoJz41BM3svxYGcW86WMo53KtdztT
+W4xxCZAvsNDE46Z+usBPhEFVbLbY7x6tv6ULVyf74ovNsEuuKz/7BNuMiMpj2IKv
+5p4F0uVUNWL2wMQPWck3SpbCggyWKkNitHtXZtsV/DY2iM08VXVLqmPqTi30ZU1p
+X1OpbahpoDG+k9wZJI+u93Y/6W43BWd5UdPXpsBOdcIc2oiAfqrtSo8sit9IM0OU
+iFZL5ZdoMgIWW00ONPCZsIs7x2Mvgdso10H6aLaSdHduy2y39sT0ORPTVco5PD/F
+2lwW78xkY8yorZplDXh14QijCct3zQnRo+pdi//KA6Htvbyp8hjgDoiqlsHGsrLs
+yZwmbD/Stf6AmEFD/WSS8YTPqYdIzAVhA99ds3N0WRFcn7xUK6/ipF0h+4rCfzLZ
+r9XY6wsj6PBtwvndo4w2XXhZIUA9fkm0UEjeXJyEBGXHbrSsqNOvHTuXIcQA6LmV
+1rEIMwI/SjnM+Sx6PolQYtprMU2UZESWPGSvKYIEhAoWfObFUG6RsfkCtCNl5im+
+eFEtFjMGs9SsRdSVwrER
+=mQjp
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__4_Apr_2012_12_44_37_+1000_w6N=Ai0_oFhAYyQX--
