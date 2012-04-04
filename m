@@ -1,71 +1,64 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757679Ab2EAD4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Apr 2012 23:56:09 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57872 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757437Ab2EAD4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Apr 2012 23:56:08 -0400
-Date: Tue, 1 May 2012 13:55:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: linux-next: build failure after merge of the kvm-ppc tree
-Message-Id: <20120501135549.5c865717b33650002f083d4a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml"
+        id S1756237Ab2DDL22 (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Wed, 4 Apr 2012 07:28:28 -0400
+Received: from mail3-166.sinamail.sina.com.cn ([202.108.3.166]:54319 "EHLO
+        smtp.sina.com.cn" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+        with ESMTP id S1755251Ab2DDL21 (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Wed, 4 Apr 2012 07:28:27 -0400
+Message-Id: <354b3c$t7s895@irja2-172.sinamail.sina.com.cn>
+X-Originating-IP: [219.134.80.56]
+Date: Wed, 4 Apr 2012 19:20:06 +0800
+From: "Knswa" <zhaoinbf@sina.cn>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: /
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+        charset="GB2312"
+Content-Transfer-Encoding: base64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 
---Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Alex,
-
-After merging the kvm-ppc tree, today's linux-next build
-(powerpc_ppc64_defconfig) failed like this:
-
-arch/powerpc/kvm/built-in.o: In function `.kvm_spapr_tce_release':
-book3s_64_vio.c:(.text+0x374c): undefined reference to `.kvm_put_kvm'
-arch/powerpc/kvm/built-in.o: In function `.kvm_vm_ioctl_create_spapr_tce':
-(.text+0x3ae8): undefined reference to `.kvm_get_kvm'
-
-Presumably caused by commit 969f70395d6d ("kvm/book3s: Make kernel
-emulated H_PUT_TCE available for "PR" KVM").
-
-I have used the kvm-ppc tree from next-20120430 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPn17FAAoJEECxmPOUX5FEMyEP/j3QNxzJ3flki5J0DOOf3zE1
-gtbyGnFe8YK7v/vE1blNr0Wtx/DjP11FKUtrsuhvRIc4IrXpiiSdrPCspnJef4Y8
-32OEAZkkBBldTXR/CQqcqP0ktuo5/OAvX2IMGU9iPPT/gB2teJdTkaiO8CdFu39S
-tdpfqFuZcPXWZNxR+lDzWEfoAY99anN1AQ7nisYKNONJAm5OxrVO2zgIWYcLJl0T
-u/np+Lv1fnCSxE+z2wLeQYA2kOkTw7Yf2ua8azPwE8NRFGfM8aK+EZEsopqXwG4h
-+Dy1jjetug1CSrIf+1HJh6abEo3ErNACPIDrrhtfl69DDhXX049RxpVYl9Js0zNL
-bs+7yoI0QNv5AXJbqsI671eT9pB+HO/xPajmoNVtc0Xf3r7JR2iBSW0Dl1FXfPOD
-yUOvCG+FlEC+a5mzQOMwHZes2iVijv1kWmg9hB5Pft121IAnyFPctCRuy/7EIXR+
-fSnbKmzlZI/tfaJ7NdG2hfVTsog6m8mkYyHZbuacfWCj3EopvX76Xh3++gTVgnZ6
-6tk2duR2+Hoaali+80qb2RJA8x/6Rhp9xi5FxebcUCBuiU9TBlu8dsLj+QngCWNr
-Cz+iFNvVubfORf/87n6565ahb/OtY+hbuvjX8fEJsLfWfcaev+czoL6dG9BG69eY
-6abRku7nLqZw2yAP6UgZ
-=xeLY
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_May_2012_13_55_49_+1000_9YZ=ToKnZSbujoml--
+MzU3OTEyNDY4MDE3OTAyNDY3OTEyNDY4MzU3OTEyNDY4OTE0NTc5MTI0Njg5MTAyMzU3ODAxMzU3
+ODAyNDEyNDU3OTAyNDY4OTEzNTkwMjQ1NzkwMjQ1NzkwMzU2ODAxMzQ2ODA4OTEyNDY3OTEyNDU3
+OTU2ODkxMzQ2ODAyMzY3OTEzNDY4MDIzNTY4MDEzNTY4MDI0Njc5MTAyMzU3ODAxMzU2ODAxMzY3
+OTAyNDU3OTEyNDQ2NzkxMjQ2ODkxMjY3OTAyNDU3OTEzNDQ2NzkxMjQ1NzkxMTM0Njg5MTM1Njg5
+MTI0Njg5MTM1NzgwMDEzNTY4MDEzNTc5MTI0MDIzNTc4MDEzNTc4MDI0ODkxMjQ2NzkxMjQ2ODkz
+NTc4MDIzNTc4MDEyNDU3OTEyNDY4MDEzNTM0Njc5MTI0Njg5NDY3OTEyNDU3OTEzNTc4MDIzNTc5
+MDI0MTI0Njg5MTI0NjgwMjM1MzU2ODAxMzU3OTA3ODAxMzU2ODAyNDU3ODAxMzU2ODkxMzU2ODA4
+MDEzNTY4MDI0NTc5MTU2ODAxMzU2ODAyMzU2ODkxMzQ2ODkxMjM0Njc5MTI0Njc5Njc5MTM0Njc5
+MTI0OTAyNDY3OTAyNDY3OTE0NTc4MDIzNTc5MTEzNDY4OTEyNDYwMTM0Njg5MTM1NzgwMjM2Nzkw
+MjQ2ODkxMzQ2NzkwMjQ1NzkxMjQzNTY4MDEzNDY4MDM0NjgwMjM1NzgwMjQ1NzkxMjQ2OCANCg0K
+DQovLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8v
+Ly8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8v
+Ly8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8v
+Ly8vLy8vLy8vLy8vLy8vLy8vLyANCg0KDQqhog0KxPq6w6OhDQogICAgICAgIM7SICAgICAgICAg
+ICAgICAgIL+qIA0KICAgICAgICAgICAgIMu+ICAgICC/ySAgICAgICAgICDuqQ0KINPQo7q547jm
+o6yyzdL7o6zXocveo6zX4sHeo6zUy7fRo6zJzMa3o6y7+tC1o6y41sz6o6y9qLLEo6zDusy/o6zK
+r9PNLi4utcijoSANCiDK17v5o7qjsTMgNqGhMzIgOTUgo7UwOSCjuCDQocH1ICAgv9y/3KO6MaO2
+IKGhNaOzoaGjszWjszcgIKO2o7kNCg0KDQovLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8v
+Ly8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8v
+Ly8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8v
+Ly8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLy8vLyANCg0KDQo0Njc5MTI0
+NjgwMjQ2NzkwMjQ1NzkxMzQwMTM0Njg5MTM1NjgwMTMzNDY3OTEyNDY4MDQ2NzkxMjQ2NzkwMzQ2
+ODkxMzU3OTA5MTI0Njc5MTI0Njg5MTMxMjQ1NzkxMzU3OTAyNDY0Njc5MTI0NTc5MTAyMzU3ODAy
+NDU3OTAyNDU3ODAyMzU2ODAyNDkxMjQ2NzkwMjQ1NzgwNDY4OTEzNDY4MDEzMjQ1NzkwMjQ1NzY3
+OTAyNDU3OTEzNDAxMzU2ODAxMzU2ODAyMzkwMjM1NzgwMjM1NzgwMDIzNTc4MDEzNTY4MDI0MDIz
+NTc4MDI0NTc5MDI0NTY4OTEzNTc5MDIzMDI0NTc5MDI0NTc5MTM0NDY3OTEyNDU3OTEyMDI0NTc5
+MDI0NTc5MTI0MDIzNTc4MDEzNTY4MDEzODAyMzU3OTAyNDY3OTEyMzU2ODAxMzU3NTY4OTEzNDY4
+OTEyODAxMzU2ODkxMzU2ODA0Njc5MTI0NTc5MTIxMjQ2ODkxMjQ2NDU3OTEyNDY3OTE0Njg5MTM0
+Njg5MTM2ODAxMzU2ODAyMzU3NTY4OTEzNDY4MDEzMTI0NTc5MDI0Njc5MTM0NzgwMTM1NjgwMjQ1
+NzgwMTM1Njg5MTM1NzgwODkxMzQ2ODkxMzU3ODA0NTc5MTI0NTc5MTQ2NzkxMjQ2ODkxOTEyNDY3
+OTAyNDU3OTE3ODAyNDU3OTAyNDY3MDI0NTc5MDI0NTc5MTI0Njc5MTI0Njc5MTM1NjQ1NzgwMjQ1
+NzgwNzgwMTM1NjgwMjM1NzkxMzQ2ODAyNDU3OTAyMzQ2NzkxMjQ2ODk4OTEzNDY4OTEzNDY3OTM0
+Njg5MTM0NjgwMjM1NzgwMjM1NzY4OTEzNDY3OTEzNTczNTY4MDEzNTc5MTU3ODAyMzU3OTAyNDY3
+OTAyNDU3OTAyNDM0Njg5MTM0Njg5NzgwMTM1NzgwMjQ1NzI0NTc5MDI0NTc4MDI0Njc5MTI0NTc5
+MDg5MTI0Njc5MTI0Njc5NzkwMjQ1NzkwMjQ1NzAxMzQ2ODkxMzU3ODAyMzU2ODAxMzU2ODAxMzgw
+MTM1NzgwMTM0Njg5ODAxMzU2ODAxMzU3ODAyMzU3ODAyMzU3ODkxMjQ2NzkxMjQ1Nzk1NzgwMjM1
+NzgwMjQ4MDIzNTc4MDI0Njg5MTEzNDY4OTEyNDY1NjgwMTM1NjgwMTM3ODAxMzU2ODAyMzU2MjM1
+NjgwMjM1NjkwMjQ2ODkxMzU2ODAxOTAyMzU3ODAyNDY4OTE3ODAxMzU2ODAyMzU3MDI0NTc5MDI0
+NTc5MTI0MzU2ODAxMzU2ODA2ODkxMzQ2ODAxMzU2ODAxMzU2ODAyMzU3OTA3OTAyNDU3ODAyMzU3
+NTY4MDIzNTc5MTM0
