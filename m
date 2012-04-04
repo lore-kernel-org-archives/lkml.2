@@ -1,142 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab2DDXKP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 19:10:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29446 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757450Ab2DDXJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 19:09:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="137772245"
-From: Dave Jiang <dave.jiang@intel.com>
-Subject: [PATCH 3/3] netdma: adding alignment check for NETDMA ops
-To: dan.j.williams@intel.com, linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, davem@davemloft.net,
-        Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 04 Apr 2012 16:10:46 -0700
-Message-ID: <20120404231046.20605.13918.stgit@djiang5-linux.ch.intel.com>
-In-Reply-To: <20120404230749.20605.7000.stgit@djiang5-linux.ch.intel.com>
-References: <20120404230749.20605.7000.stgit@djiang5-linux.ch.intel.com>
-User-Agent: StGIT/0.14.3
+	id S932621Ab2DDXKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 19:10:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43786 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab2DDXKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 19:10:30 -0400
+Date: Wed, 4 Apr 2012 16:10:25 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Li Zefan <lizefan@huawei.com>,
+        David Rientjes <rientjes@google.com>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+Message-ID: <20120404231025.GD2173@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net>
+ <20120403184901.GC27794@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1333506878.7433.2.camel@marge.simpson.net>
+ <20120404230648.GB2173@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404230648.GB2173@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the fallout from adding memcpy alignment workaround for certain
-IOATDMA hardware. NetDMA will only use DMA engine that can handle byte align
-ops.
+On Wed, Apr 04, 2012 at 04:06:48PM -0700, Tejun Heo wrote:
+> On Wed, Apr 04, 2012 at 04:34:38AM +0200, Mike Galbraith wrote:
+> > It looked to me like yes, because cgroup_attach_task() can be called
+> > directly.  For the problem at hand, user script doing bad things, no,
+> > it's not needed.
+> 
+> Then that's a kernel bug.  We're just trying to protect userland from
+> shotting itself, so please just keep the one in the user-facing
+> interface.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
+Ooh, and please use Li's new address - lizefan@huawei.com.
 
- drivers/dma/dmaengine.c   |   14 ++++++++++++++
- include/linux/dmaengine.h |    1 +
- net/ipv4/tcp.c            |    4 ++--
- net/ipv4/tcp_input.c      |    2 +-
- net/ipv4/tcp_ipv4.c       |    2 +-
- net/ipv6/tcp_ipv6.c       |    2 +-
- 6 files changed, 20 insertions(+), 5 deletions(-)
+Thanks.
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index a6c6051..0f1ca74 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -332,6 +332,20 @@ struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type)
- }
- EXPORT_SYMBOL(dma_find_channel);
- 
-+/*
-+ * net_dma_find_channel - find a channel for net_dma
-+ * net_dma has alignment requirements
-+ */
-+struct dma_chan *net_dma_find_channel(void)
-+{
-+	struct dma_chan *chan = dma_find_channel(DMA_MEMCPY);
-+	if (chan && !is_dma_copy_aligned(chan->device, 1, 1, 1))
-+		return NULL;
-+
-+	return chan;
-+}
-+EXPORT_SYMBOL(net_dma_find_channel);
-+
- /**
-  * dma_issue_pending_all - flush all pending operations across all channels
-  */
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 679b349..a5bb3ad 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -948,6 +948,7 @@ int dma_async_device_register(struct dma_device *device);
- void dma_async_device_unregister(struct dma_device *device);
- void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
- struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
-+struct dma_chan *net_dma_find_channel(void);
- #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
- 
- /* --- Helper iov-locking functions --- */
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 22ef5f9..8712c5d 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1450,7 +1450,7 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		if ((available < target) &&
- 		    (len > sysctl_tcp_dma_copybreak) && !(flags & MSG_PEEK) &&
- 		    !sysctl_tcp_low_latency &&
--		    dma_find_channel(DMA_MEMCPY)) {
-+		    net_dma_find_channel()) {
- 			preempt_enable_no_resched();
- 			tp->ucopy.pinned_list =
- 					dma_pin_iovec_pages(msg->msg_iov, len);
-@@ -1665,7 +1665,7 @@ do_prequeue:
- 		if (!(flags & MSG_TRUNC)) {
- #ifdef CONFIG_NET_DMA
- 			if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--				tp->ucopy.dma_chan = dma_find_channel(DMA_MEMCPY);
-+				tp->ucopy.dma_chan = net_dma_find_channel();
- 
- 			if (tp->ucopy.dma_chan) {
- 				tp->ucopy.dma_cookie = dma_skb_copy_datagram_iovec(
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index b5e315f..27c676d 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5190,7 +5190,7 @@ static int tcp_dma_try_early_copy(struct sock *sk, struct sk_buff *skb,
- 		return 0;
- 
- 	if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--		tp->ucopy.dma_chan = dma_find_channel(DMA_MEMCPY);
-+		tp->ucopy.dma_chan = net_dma_find_channel();
- 
- 	if (tp->ucopy.dma_chan && skb_csum_unnecessary(skb)) {
- 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index fd54c5f..3810b6f 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1727,7 +1727,7 @@ process:
- #ifdef CONFIG_NET_DMA
- 		struct tcp_sock *tp = tcp_sk(sk);
- 		if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--			tp->ucopy.dma_chan = dma_find_channel(DMA_MEMCPY);
-+			tp->ucopy.dma_chan = net_dma_find_channel();
- 		if (tp->ucopy.dma_chan)
- 			ret = tcp_v4_do_rcv(sk, skb);
- 		else
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 3edd05a..fcb3e4f 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1755,7 +1755,7 @@ process:
- #ifdef CONFIG_NET_DMA
- 		struct tcp_sock *tp = tcp_sk(sk);
- 		if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--			tp->ucopy.dma_chan = dma_find_channel(DMA_MEMCPY);
-+			tp->ucopy.dma_chan = net_dma_find_channel();
- 		if (tp->ucopy.dma_chan)
- 			ret = tcp_v6_do_rcv(sk, skb);
- 		else
-
+-- 
+tejun
