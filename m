@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab2DDUV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 16:21:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25980 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787Ab2DDUV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 16:21:57 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/8] perf tool: event parsing enhancements/fixes
-Date: Wed,  4 Apr 2012 22:21:30 +0200
-Message-Id: <1333570898-10505-1-git-send-email-jolsa@redhat.com>
+	id S1753780Ab2DDU1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 16:27:25 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53683 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752193Ab2DDU1X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 16:27:23 -0400
+MIME-Version: 1.0
+Date: Wed, 4 Apr 2012 16:27:17 -0400
+Message-ID: <CAEZcMZkRLrY8NhJof+qeANb3Oo7vdKV_AhTpFeKWuwRYd66jaw@mail.gmail.com>
+Subject: FileNet Developer with DataCap FOR Monterey Park, CA!
+From: Vincent Smith <vincent.smith198@gmail.com>
+To: Vincent Smith <vincent.smith198@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-adding some enhancements/fixies for perf event parsing.
+Position:                        FileNet Developer with DataCap
 
-- patch 1 is simple fix
+Location:                        Monterey Park, CA
 
-- patches 2, 3, 4 and 5 are event config terms enhancements
+Position Type:               6+ Months (Contract)
 
-- patches 6, 7 and 8 are maintanance patches either helping
-  with developement (6, 7) or making the code more clear (8).
 
-Attached patches:
- 1/8 perf, tool: Fix NULL deref in hists browsing code
- 2/8 perf, tool: Split term type into value type and term type
- 3/8 perf, tool: Add list type for event term parsing
- 4/8 perf, tool: Add hardcoded name term for pmu events
- 5/8 perf, tool: Add pmu event parse support for branch_sample_type values
- 6/8 perf, tool: Move parse event automated tests to separated object
- 7/8 perf, tool: Add support for displaying event parser debug info
- 8/8 perf, tool: Use allocated list for each parsed event
 
-thanks,
-jirka
----
- tools/perf/Makefile                 |   13 +-
- tools/perf/builtin-record.c         |   31 +--
- tools/perf/builtin-test.c           |  522 +-------------------------------
- tools/perf/util/parse-events-test.c |  588 +++++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.c      |  240 +++++++++++++--
- tools/perf/util/parse-events.h      |   59 +++-
- tools/perf/util/parse-events.l      |    2 +
- tools/perf/util/parse-events.y      |  147 ++++++++--
- tools/perf/util/pmu.c               |   85 ++++--
- tools/perf/util/pmu.h               |    2 +
- tools/perf/util/ui/browsers/hists.c |    3 +
- 11 files changed, 1037 insertions(+), 655 deletions(-)
+
+
+Job Description:
+
+FileNet IS, IDM Desktop, FileNet Capture, Datacap, ICM, FileNet P8 CE
+and PE APIs, FileNet System Administrator for IS & P8, and other ECM
+Technologies;
+
+Java J2EE, Java API's, Servlets, Java Server Pages, Java Script, Web
+sphere, Adobe Java scripting for PDF forms and IIS Web Servers, Active
+Server pages,
+
+Perl Scripts, Perl Modules, SQL Loader, TOAD, Oracle .9.x/8.x, SQL
+Server 6.5, MS Access, Unix, Linux & Windows OS.
+
+
+
+Responsibilities:
+
+Designs, develops and implements software for the Bank's
+computer-oriented systems and networks;
+
+Responsible for the analysis, development, system integration testing,
+user acceptance testing, implementation (pre and post), maintenance
+and support of bank's enterprise document and content management
+technology;
+
+Performs all duties required to gather, document, code, test and
+deliver automated document solutions for internal clients;
+
+Provides on-site and off-site support of production systems;
+
+Provides troubleshooting support to ensure client operations are
+operating and performing correctly.
+
+
+
+Education/experience:
+
+Bachelor's degree or foreign equivalent in Computer Science,
+Management Information Systems, Engineering or related field and five
+(5) years post-baccalaureate, progressive experience in job offered or
+as a software engineer/developer/architect, systems/programmer analyst
+or programmer or related field.
+
+Any suitable combination of education, training or experience is acceptable.
+
+
+Thanks & Regards
+Vincent
