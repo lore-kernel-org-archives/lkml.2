@@ -1,894 +1,576 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab2DDHYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 03:24:41 -0400
-Received: from mail4.ccl.ru ([195.222.140.73]:54692 "EHLO mail4.ccl.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab2DDHYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 03:24:08 -0400
-From: Mike Sinkovsky <msink@permonline.ru>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com
-Cc: Mike Sinkovsky <msink@permonline.ru>
-Subject: [PATCH v7 1/2] Ethernet driver for the WIZnet W5300 chip
-Date: Wed,  4 Apr 2012 13:23:35 +0600
-Message-Id: <1333524216-23488-2-git-send-email-msink@permonline.ru>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1333450726-24455-1-git-send-email-msink@permonline.ru>
-References: <1333450726-24455-1-git-send-email-msink@permonline.ru>
+	id S1755040Ab2DDHY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 03:24:58 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53082 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab2DDHY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 03:24:56 -0400
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        <virtualization@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] virtio-spec: add an rpmsg appendix
+Date: Wed,  4 Apr 2012 10:24:24 +0300
+Message-Id: <1333524264-14811-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on original driver from chip manufacturer, but nearly full rewite.
-Tested and used in production with Blackfin BF531 embedded processor.
+Add an rpmsg appendix to the virtio spec and tag it as Appendix H.
 
-Signed-off-by: Mike Sinkovsky <msink@permonline.ru>
+Push the SCSI host appendix to 'I' so the appendices order stays
+according to the virtio device ids.
+
+Patch is against:
+http://ozlabs.org/~rusty/virtio-spec/virtio-0.9.4.lyx
+
+Tested with LyX 2.0.0.
+
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: <virtualization@lists.linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>
 ---
- drivers/net/ethernet/Kconfig         |    1 +
- drivers/net/ethernet/Makefile        |    1 +
- drivers/net/ethernet/wiznet/Kconfig  |   64 +++
- drivers/net/ethernet/wiznet/Makefile |    1 +
- drivers/net/ethernet/wiznet/w5300.c  |  715 ++++++++++++++++++++++++++++++++++
- include/linux/platform_data/wiznet.h |   24 ++
- 6 files changed, 806 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/ethernet/wiznet/Kconfig
- create mode 100644 drivers/net/ethernet/wiznet/Makefile
- create mode 100644 drivers/net/ethernet/wiznet/w5300.c
- create mode 100644 include/linux/platform_data/wiznet.h
+These changes were produced using lyx: they look reasonable when viewing as a PDF,
+but I didn't reviewed the actual .lyx code, so I hope they make sense.
 
-diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
-index c63a64c..a11af5c 100644
---- a/drivers/net/ethernet/Kconfig
-+++ b/drivers/net/ethernet/Kconfig
-@@ -174,6 +174,7 @@ source "drivers/net/ethernet/tile/Kconfig"
- source "drivers/net/ethernet/toshiba/Kconfig"
- source "drivers/net/ethernet/tundra/Kconfig"
- source "drivers/net/ethernet/via/Kconfig"
-+source "drivers/net/ethernet/wiznet/Kconfig"
- source "drivers/net/ethernet/xilinx/Kconfig"
- source "drivers/net/ethernet/xircom/Kconfig"
+PS. Congrats, Rusty!
+
+ virtio-0.9.4.lyx |  489 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 486 insertions(+), 3 deletions(-)
+
+diff --git a/virtio-0.9.4.lyx b/virtio-0.9.4.lyx
+index 6c7bab1..f377294 100644
+--- a/virtio-0.9.4.lyx
++++ b/virtio-0.9.4.lyx
+@@ -56,6 +56,7 @@
+ \html_math_output 0
+ \html_css_as_file 0
+ \html_be_strict false
++\author -1096565211 "Ohad,,," 
+ \author -608949062 "Rusty Russell,,," 
+ \author 1531152142 "pbonzini" 
+ \end_header
+@@ -573,8 +574,12 @@ rpmsg
  
-diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index 9676a51..878ad32 100644
---- a/drivers/net/ethernet/Makefile
-+++ b/drivers/net/ethernet/Makefile
-@@ -73,5 +73,6 @@ obj-$(CONFIG_TILE_NET) += tile/
- obj-$(CONFIG_NET_VENDOR_TOSHIBA) += toshiba/
- obj-$(CONFIG_NET_VENDOR_TUNDRA) += tundra/
- obj-$(CONFIG_NET_VENDOR_VIA) += via/
-+obj-$(CONFIG_NET_VENDOR_WIZNET) += wiznet/
- obj-$(CONFIG_NET_VENDOR_XILINX) += xilinx/
- obj-$(CONFIG_NET_VENDOR_XIRCOM) += xircom/
-diff --git a/drivers/net/ethernet/wiznet/Kconfig b/drivers/net/ethernet/wiznet/Kconfig
-new file mode 100644
-index 0000000..364292b
---- /dev/null
-+++ b/drivers/net/ethernet/wiznet/Kconfig
-@@ -0,0 +1,64 @@
-+#
-+# WIZnet devices configuration
-+#
+ \begin_layout Plain Layout
+ 
+-\change_inserted -608949062 1323409055
++\change_inserted -1096565211 1333519287
++Appendix H
++\change_deleted -1096565211 1333521034
+ -
++\change_inserted -608949062 1323409055
 +
-+config NET_VENDOR_WIZNET
-+	bool "WIZnet devices"
-+	default y
-+	---help---
-+	  If you have a network (Ethernet) card belonging to this class, say Y
-+	  and read the Ethernet-HOWTO, available from
-+	  <http://www.tldp.org/docs.html#howto>.
+ \end_layout
+ 
+ \end_inset
+@@ -609,7 +614,13 @@ SCSI host
+ \begin_layout Plain Layout
+ 
+ \change_inserted 1531152142 1322650861
+-Appendix H
++Appendix 
++\change_deleted -1096565211 1333519291
++H
++\change_inserted -1096565211 1333519291
++I
++\change_inserted 1531152142 1322650861
 +
-+	  Note that the answer to this question doesn't directly affect the
-+	  kernel: saying N will just cause the configurator to skip all
-+	  the questions about WIZnet devices. If you say Y, you will be asked
-+	  for your specific card in the following questions.
+ \end_layout
+ 
+ \end_inset
+@@ -6332,12 +6343,484 @@ VIRTIO_BALLOON_S_MEMFREE The amount of memory not being used for any purpose
+ 
+ \begin_layout Description
+ VIRTIO_BALLOON_S_MEMTOT The total amount of memory available (in bytes).
++\change_inserted -1096565211 1333519339
 +
-+if NET_VENDOR_WIZNET
++\end_layout
 +
-+config WIZNET_W5300
-+	tristate "WIZnet W5300 Ethernet support"
-+	---help---
-+	  Support for WIZnet W5300 chips.
++\begin_layout Chapter*
 +
-+	  W5300 is a single chip with integrated 10/100 Ethernet MAC,
-+	  PHY and hardware TCP/IP stack, but this driver is limited to
-+	  the MAC and PHY functions only, onchip TCP/IP is unused.
++\change_inserted -1096565211 1333519459
++Appendix H: Rpmsg: Remote Processor Messaging
++\end_layout
 +
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called w5300.
++\begin_layout Standard
 +
-+choice
-+	prompt "WIZnet interface mode"
-+	default WIZNET_BUS_ANY
++\change_inserted -1096565211 1333519548
++Virtio rpmsg devices represent remote processors on the system which run
++ in asymmetric multi-processing (AMP) configuration, and which are usually
++ used to offload cpu-intensive tasks from the main application processor
++ (a typical SoC methodology).
++\end_layout
 +
-+config WIZNET_BUS_DIRECT
-+	bool "Direct address bus mode"
-+	---help---
-+	  In direct address mode host system can directly access all registers
-+	  after mapping to Memory-Mapped I/O space.
++\begin_layout Standard
 +
-+config WIZNET_BUS_INDIRECT
-+	bool "Indirect address bus mode"
-+	---help---
-+	  In indirect address mode host system indirectly accesses registers
-+	  using Indirect Mode Address Register and Indirect Mode Data Register,
-+	  which are directly mapped to Memory-Mapped I/O space.
++\change_inserted -1096565211 1333519483
++Virtio is being used to communicate with those remote processors; empty
++ buffers are placed in one virtqueue for receiving messages, and non-empty
++ buffers, containing outbound messages, are enqueued in a second virtqueue
++ for transmission.
++\end_layout
 +
-+config WIZNET_BUS_ANY
-+	bool "Select interface mode in runtime"
-+	---help---
-+	  If interface mode is unknown in compile time, it can be selected
-+	  in runtime from board/platform resources configuration.
++\begin_layout Standard
 +
-+	  Performance may decrease compared to explicitly selected bus mode.
-+endchoice
++\change_inserted -1096565211 1333519614
++Numerous communication channels can be multiplexed over those two virtqueues,
++ so different entities, running on the application and remote processor,
++ can directly communicate in a point-to-point fashion.
++\end_layout
 +
-+config WIZNET_TX_FLOW
-+	bool "Use transmit flow control"
-+	help
-+	  This enables transmit flow control for WIZnet chips.
-+	  If unsure, say Y.
++\begin_layout Section*
 +
-+endif # NET_VENDOR_WIZNET
-diff --git a/drivers/net/ethernet/wiznet/Makefile b/drivers/net/ethernet/wiznet/Makefile
-new file mode 100644
-index 0000000..88e0a3e
---- /dev/null
-+++ b/drivers/net/ethernet/wiznet/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_WIZNET_W5300) += w5300.o
-diff --git a/drivers/net/ethernet/wiznet/w5300.c b/drivers/net/ethernet/wiznet/w5300.c
-new file mode 100644
-index 0000000..5653ce8
---- /dev/null
-+++ b/drivers/net/ethernet/wiznet/w5300.c
-@@ -0,0 +1,715 @@
-+/*
-+ * Ethernet driver for the WIZnet W5300 chip.
++\change_inserted -1096565211 1333519460
++Configuration
++\end_layout
++
++\begin_layout Description
++
++\change_inserted -1096565211 1333519622
++Subsystem
++\begin_inset space ~
++\end_inset
++
++Device
++\begin_inset space ~
++\end_inset
++
++ID 7
++\end_layout
++
++\begin_layout Description
++
++\change_inserted -1096565211 1333519647
++Virtqueues 0:receiveq.
++ 1:transmitq.
++\end_layout
++
++\begin_layout Description
++
++\change_inserted -1096565211 1333519460
++Feature
++\begin_inset space ~
++\end_inset
++
++bits
++\end_layout
++
++\begin_deeper
++\begin_layout Description
++
++\change_inserted -1096565211 1333520994
++VIRTIO_RPMSG_F_NS
++\begin_inset space ~
++\end_inset
++
++(0) Device sends (and capable of receiving) name service messages announcing
++ the creation (or destruction) of a channel:
++\begin_inset listings
++inline false
++status open
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++/**
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * struct rpmsg_ns_msg - dynamic name service announcement message
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * @name: name of remote service that is published
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * @addr: address of remote service that is published
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * @flags: indicates whether service is created or destroyed
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
 + *
-+ * Copyright (C) 2008-2009 WIZnet Co.,Ltd.
-+ * Copyright (C) 2011 Taehun Kim <kth3321 <at> gmail.com>
-+ * Copyright (C) 2012 Mike Sinkovsky <msink@permonline.ru>
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * This message is sent across to publish a new service (or announce
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * about its removal).
++ When we receives these messages, an appropriate
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * rpmsg channel (i.e device) is created/destroyed.
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ */
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++struct rpmsg_ns_msgoon_config {
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++	char name[RPMSG_NAME_SIZE];
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++	u32 addr;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++	u32 flags;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++} __packed;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++/**
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * enum rpmsg_ns_flags - dynamic name service announcement flags
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
 + *
-+ * Licensed under the GPL-2 or later.
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * @RPMSG_NS_CREATE: a new remote service was just created
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++ * @RPMSG_NS_DESTROY: a remote service was just destroyed
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
 + */
++\end_layout
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/kconfig.h>
-+#include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
-+#include <linux/platform_device.h>
-+#include <linux/platform_data/wiznet.h>
-+#include <linux/ethtool.h>
-+#include <linux/skbuff.h>
-+#include <linux/types.h>
-+#include <linux/errno.h>
-+#include <linux/delay.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/interrupt.h>
-+#include <linux/gpio.h>
++\begin_layout Plain Layout
 +
-+#define DRV_NAME	"w5300"
-+#define DRV_VERSION	"2012-04-04"
++\change_inserted -1096565211 1333520994
 +
-+MODULE_DESCRIPTION("WIZnet W5300 Ethernet driver v"DRV_VERSION);
-+MODULE_AUTHOR("Mike Sinkovsky <msink@permonline.ru>");
-+MODULE_ALIAS("platform:"DRV_NAME);
-+MODULE_LICENSE("GPL");
++enum rpmsg_ns_flags {
++\end_layout
 +
-+/*
-+ * Registers
-+ */
-+#define W5300_MR		0x0000	/* Mode Register */
-+#define   MR_DBW		  (1 << 15) /* Data bus width */
-+#define   MR_MPF		  (1 << 14) /* Mac layer pause frame */
-+#define   MR_WDF(n)		  (((n)&7)<<11) /* Write data fetch time */
-+#define   MR_RDH		  (1 << 10) /* Read data hold time */
-+#define   MR_FS			  (1 << 8)  /* FIFO swap */
-+#define   MR_RST		  (1 << 7)  /* S/W reset */
-+#define   MR_PB			  (1 << 4)  /* Ping block */
-+#define   MR_DBS		  (1 << 2)  /* Data bus swap */
-+#define   MR_IND		  (1 << 0)  /* Indirect mode */
-+#define W5300_IR		0x0002	/* Interrupt Register */
-+#define W5300_IMR		0x0004	/* Interrupt Mask Register */
-+#define   IR_S0			  0x0001  /* S0 interrupt */
-+#define W5300_SHARL		0x0008	/* Source MAC address (0123) */
-+#define W5300_SHARH		0x000c	/* Source MAC address (45) */
-+#define W5300_TMSRL		0x0020	/* Transmit Memory Size (0123) */
-+#define W5300_TMSRH		0x0024	/* Transmit Memory Size (4567) */
-+#define W5300_RMSRL		0x0028	/* Receive Memory Size (0123) */
-+#define W5300_RMSRH		0x002c	/* Receive Memory Size (4567) */
-+#define W5300_MTYPE		0x0030	/* Memory Type */
-+#define W5300_IDR		0x00fe	/* Chip ID register */
-+#define   IDR_W5300		  0x5300  /* =0x5300 for WIZnet W5300 */
-+#define W5300_S0_MR		0x0200	/* S0 Mode Register */
-+#define   S0_MR_CLOSED		  0x0000  /* Close mode */
-+#define   S0_MR_MACRAW		  0x0004  /* MAC RAW mode (promiscous) */
-+#define   S0_MR_MACRAW_MF	  0x0044  /* MAC RAW mode (filtered) */
-+#define W5300_S0_CR		0x0202	/* S0 Command Register */
-+#define   S0_CR_OPEN		  0x0001  /* OPEN command */
-+#define   S0_CR_CLOSE		  0x0010  /* CLOSE command */
-+#define   S0_CR_SEND		  0x0020  /* SEND command */
-+#define   S0_CR_RECV		  0x0040  /* RECV command */
-+#define W5300_S0_IMR		0x0204	/* S0 Interrupt Mask Register */
-+#define W5300_S0_IR		0x0206	/* S0 Interrupt Register */
-+#define   S0_IR_RECV		  0x0004  /* Receive interrupt */
-+#define   S0_IR_SENDOK		  0x0010  /* Send OK interrupt */
-+#define W5300_S0_SSR		0x0208	/* S0 Socket Status Register */
-+#define W5300_S0_TX_WRSR	0x0220	/* S0 TX Write Size Register */
-+#define W5300_S0_TX_FSR		0x0224	/* S0 TX Free Size Register */
-+#define W5300_S0_RX_RSR		0x0228	/* S0 Received data Size */
-+#define W5300_S0_TX_FIFO	0x022e	/* S0 Transmit FIFO */
-+#define W5300_S0_RX_FIFO	0x0230	/* S0 Receive FIFO */
-+#define W5300_REGS_LEN		0x0400
++\begin_layout Plain Layout
 +
-+/*
-+ * Device driver private data structure
-+ */
-+struct w5300_priv {
-+	void __iomem *base;
-+	spinlock_t reg_lock;
-+	bool indirect;
-+	u16  (*read) (struct w5300_priv *priv, u16 addr);
-+	void (*write)(struct w5300_priv *priv, u16 addr, u16 data);
-+	int irq;
-+	int link_irq;
-+	int link_gpio;
++\change_inserted -1096565211 1333520994
 +
-+	struct napi_struct napi;
-+	struct net_device *ndev;
-+	bool promisc;
-+	u32 msg_enable;
++	RPMSG_NS_CREATE = 0,
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
++	RPMSG_NS_DESTROY = 1,
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520994
++
 +};
++\end_layout
 +
-+/************************************************************************
-+ *
-+ *  Lowlevel I/O functions
-+ *
-+ ***********************************************************************/
++\end_inset
 +
-+/*
-+ * In direct address mode host system can directly access W5300 registers
-+ * after mapping to Memory-Mapped I/O space.
++
++\end_layout
++
++\end_deeper
++\begin_layout Description
++
++\change_inserted -1096565211 1333520275
++Device
++\begin_inset space ~
++\end_inset
++
++configuration
++\begin_inset space ~
++\end_inset
++
++layout
++\end_layout
++
++\begin_layout Standard
++
++\change_inserted -1096565211 1333521209
++At his point none currently defined.
++\end_layout
++
++\begin_layout Section*
++
++\change_inserted -1096565211 1333519460
++Device Initialization
++\end_layout
++
++\begin_layout Enumerate
++
++\change_inserted -1096565211 1333520334
++The initialization routine should identify the receive and transmission
++ virtqueues.
++\end_layout
++
++\begin_layout Enumerate
++
++\change_inserted -1096565211 1333520335
++The receive virtqueue should be filled with receive buffers.
++\end_layout
++
++\begin_layout Section*
++
++\change_inserted -1096565211 1333520381
++Device Operation
++\end_layout
++
++\begin_layout Standard
++
++\change_inserted -1096565211 1333520426
++Messages are transmitted by placing them in the transmitq, and buffers for
++ inbound messages are placed in the receiveq.
++ In any case, messages are always preceded by the following header: 
++\begin_inset listings
++inline false
++status open
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520439
++
++/**
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520443
++
++ * struct rpmsg_hdr - common header for all rpmsg messages
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520447
++
++ * @src: source address
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520450
++
++ * @dst: destination address
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520453
++
++ * @reserved: reserved for future use
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520456
++
++ * @len: length of payload (in bytes)
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520459
++
++ * @flags: message flags
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520462
++
++ * @data: @len bytes of message payload data
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520464
++
 + *
-+ * 0x400 bytes are required for memory space.
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520467
++
++ * Every message sent(/received) on the rpmsg bus begins with this header.
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted -1096565211 1333520471
++
 + */
-+static inline u16 w5300_read_direct(struct w5300_priv *priv, u16 addr)
-+{
-+	return ioread16(priv->base + (addr << CONFIG_WIZNET_BUS_SHIFT));
-+}
++\end_layout
 +
-+static inline void w5300_write_direct(struct w5300_priv *priv,
-+				      u16 addr, u16 data)
-+{
-+	iowrite16(data, priv->base + (addr << CONFIG_WIZNET_BUS_SHIFT));
-+}
++\begin_layout Plain Layout
 +
-+/*
-+ * In indirect address mode host system indirectly accesses registers by
-+ * using Indirect Mode Address Register (IDM_AR) and Indirect Mode Data
-+ * Register (IDM_DR), which are directly mapped to Memory-Mapped I/O space.
-+ * Mode Register (MR) is directly accessible.
-+ *
-+ * Only 0x06 bytes are required for memory space.
-+ */
-+#define W5300_IDM_AR		0x0002	 /* Indirect Mode Address */
-+#define W5300_IDM_DR		0x0004	 /* Indirect Mode Data */
++\change_inserted -1096565211 1333520475
 +
-+static u16 w5300_read_indirect(struct w5300_priv *priv, u16 addr)
-+{
-+	unsigned long flags;
-+	u16 data;
++struct rpmsg_hdr {
++\end_layout
 +
-+	spin_lock_irqsave(&priv->reg_lock, flags);
-+	w5300_write_direct(priv, W5300_IDM_AR, addr);
-+	mmiowb();
-+	data = w5300_read_direct(priv, W5300_IDM_DR);
-+	spin_unlock_irqrestore(&priv->reg_lock, flags);
++\begin_layout Plain Layout
 +
-+	return data;
-+}
++\change_inserted -1096565211 1333520477
 +
-+static void w5300_write_indirect(struct w5300_priv *priv, u16 addr, u16 data)
-+{
-+	unsigned long flags;
++	u32 src;
++\end_layout
 +
-+	spin_lock_irqsave(&priv->reg_lock, flags);
-+	w5300_write_direct(priv, W5300_IDM_AR, addr);
-+	mmiowb();
-+	w5300_write_direct(priv, W5300_IDM_DR, data);
-+	mmiowb();
-+	spin_unlock_irqrestore(&priv->reg_lock, flags);
-+}
++\begin_layout Plain Layout
 +
-+#if defined(CONFIG_WIZNET_BUS_DIRECT)
-+#define w5300_read	w5300_read_direct
-+#define w5300_write	w5300_write_direct
++\change_inserted -1096565211 1333520480
 +
-+#elif defined(CONFIG_WIZNET_BUS_INDIRECT)
-+#define w5300_read	w5300_read_indirect
-+#define w5300_write	w5300_write_indirect
++	u32 dst;
++\end_layout
 +
-+#else /* CONFIG_WIZNET_BUS_ANY */
-+#define w5300_read	priv->read
-+#define w5300_write	priv->write
-+#endif
++\begin_layout Plain Layout
 +
-+static u32 w5300_read32(struct w5300_priv *priv, u16 addr)
-+{
-+	u32 data;
-+	data  = w5300_read(priv, addr) << 16;
-+	data |= w5300_read(priv, addr + 2);
-+	return data;
-+}
++\change_inserted -1096565211 1333520481
 +
-+static void w5300_write32(struct w5300_priv *priv, u16 addr, u32 data)
-+{
-+	w5300_write(priv, addr, data >> 16);
-+	w5300_write(priv, addr + 2, data);
-+}
++	u32 reserved;
++\end_layout
 +
-+static int w5300_command(struct w5300_priv *priv, u16 cmd)
-+{
-+	unsigned long timeout = jiffies + msecs_to_jiffies(100);
++\begin_layout Plain Layout
 +
-+	w5300_write(priv, W5300_S0_CR, cmd);
-+	mmiowb();
++\change_inserted -1096565211 1333520484
 +
-+	while (w5300_read(priv, W5300_S0_CR) != 0) {
-+		if (time_after(jiffies, timeout))
-+			return -EIO;
-+		cpu_relax();
-+	}
++	u16 len;
++\end_layout
 +
-+	return 0;
-+}
++\begin_layout Plain Layout
 +
-+static void w5300_read_frame(struct w5300_priv *priv, u8 *buf, int len)
-+{
-+	u16 fifo;
-+	int i;
++\change_inserted -1096565211 1333520486
 +
-+	for (i = 0; i < len; i += 2) {
-+		fifo = w5300_read(priv, W5300_S0_RX_FIFO);
-+		*buf++ = fifo >> 8;
-+		*buf++ = fifo;
-+	}
-+	fifo = w5300_read(priv, W5300_S0_RX_FIFO);
-+	fifo = w5300_read(priv, W5300_S0_RX_FIFO);
-+}
++	u16 flags;
++\end_layout
 +
-+static void w5300_write_frame(struct w5300_priv *priv, u8 *buf, int len)
-+{
-+	u16 fifo;
-+	int i;
++\begin_layout Plain Layout
 +
-+	for (i = 0; i < len; i += 2) {
-+		fifo  = *buf++ << 8;
-+		fifo |= *buf++;
-+		w5300_write(priv, W5300_S0_TX_FIFO, fifo);
-+	}
-+	w5300_write32(priv, W5300_S0_TX_WRSR, len);
-+}
++\change_inserted -1096565211 1333520489
 +
-+static void w5300_write_macaddr(struct w5300_priv *priv)
-+{
-+	struct net_device *ndev = priv->ndev;
-+	w5300_write32(priv, W5300_SHARL,
-+		      ndev->dev_addr[0] << 24 |
-+		      ndev->dev_addr[1] << 16 |
-+		      ndev->dev_addr[2] << 8 |
-+		      ndev->dev_addr[3]);
-+	w5300_write(priv, W5300_SHARH,
-+		      ndev->dev_addr[4] << 8 |
-+		      ndev->dev_addr[5]);
-+	mmiowb();
-+}
++	u8 data[0];
++\end_layout
 +
-+static void w5300_hw_reset(struct w5300_priv *priv)
-+{
-+	w5300_write_direct(priv, W5300_MR, MR_RST);
-+	mmiowb();
-+	mdelay(5);
-+	w5300_write_direct(priv, W5300_MR, priv->indirect ?
-+				 MR_WDF(7) | MR_PB | MR_IND :
-+				 MR_WDF(7) | MR_PB);
-+	mmiowb();
-+	w5300_write(priv, W5300_IMR, 0);
-+	w5300_write_macaddr(priv);
++\begin_layout Plain Layout
 +
-+	/* Configure 128K of internal memory
-+	 * as 64K RX fifo and 64K TX fifo
-+	 */
-+	w5300_write32(priv, W5300_RMSRL, 64 << 24);
-+	w5300_write32(priv, W5300_RMSRH, 0);
-+	w5300_write32(priv, W5300_TMSRL, 64 << 24);
-+	w5300_write32(priv, W5300_TMSRH, 0);
-+	w5300_write(priv, W5300_MTYPE, 0x00ff);
-+	mmiowb();
-+}
++\change_inserted -1096565211 1333520487
 +
-+static void w5300_hw_start(struct w5300_priv *priv)
-+{
-+	w5300_write(priv, W5300_S0_MR, priv->promisc ?
-+			  S0_MR_MACRAW : S0_MR_MACRAW_MF);
-+	mmiowb();
-+	w5300_command(priv, S0_CR_OPEN);
-+	w5300_write(priv, W5300_S0_IMR, IS_ENABLED(CONFIG_WIZNET_TX_FLOW) ?
-+					S0_IR_RECV | S0_IR_SENDOK:
-+					S0_IR_RECV);
-+	w5300_write(priv, W5300_IMR, IR_S0);
-+	mmiowb();
-+}
++} __packed;
++\end_layout
 +
-+static void w5300_hw_close(struct w5300_priv *priv)
-+{
-+	w5300_write(priv, W5300_IMR, 0);
-+	mmiowb();
-+	w5300_command(priv, S0_CR_CLOSE);
-+}
++\end_inset
 +
-+/***********************************************************************
-+ *
-+ *   Device driver functions / callbacks
-+ *
-+ ***********************************************************************/
 +
-+static void w5300_get_drvinfo(struct net_device *ndev,
-+			      struct ethtool_drvinfo *info)
-+{
-+	strlcpy(info->driver, DRV_NAME, sizeof(info->driver));
-+	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
-+	strlcpy(info->bus_info, dev_name(ndev->dev.parent),
-+		sizeof(info->bus_info));
-+}
-+
-+static u32 w5300_get_link(struct net_device *ndev)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	if (gpio_is_valid(priv->link_gpio))
-+		return !!gpio_get_value(priv->link_gpio);
-+
-+	return 1;
-+}
-+
-+static u32 w5300_get_msglevel(struct net_device *ndev)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	return priv->msg_enable;
-+}
-+
-+static void w5300_set_msglevel(struct net_device *ndev, u32 value)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	priv->msg_enable = value;
-+}
-+
-+static int w5300_get_regs_len(struct net_device *ndev)
-+{
-+	return W5300_REGS_LEN;
-+}
-+
-+static void w5300_get_regs(struct net_device *ndev,
-+			   struct ethtool_regs *regs, void *_buf)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+	u8 *buf = _buf;
-+	u16 addr;
-+	u16 data;
-+
-+	regs->version = 1;
-+	for (addr = 0; addr < W5300_REGS_LEN; addr += 2) {
-+		switch (addr & 0x23f) {
-+		case W5300_S0_TX_FIFO: /* cannot read TX_FIFO */
-+		case W5300_S0_RX_FIFO: /* cannot read RX_FIFO */
-+			data = 0xffff;
-+			break;
-+		default:
-+			data = w5300_read(priv, addr);
-+			break;
-+		}
-+		*buf++ = data >> 8;
-+		*buf++ = data;
-+	}
-+}
-+
-+static void w5300_tx_timeout(struct net_device *ndev)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	netif_stop_queue(ndev);
-+	w5300_hw_reset(priv);
-+	w5300_hw_start(priv);
-+	ndev->stats.tx_errors++;
-+	ndev->trans_start = jiffies;
-+	netif_wake_queue(ndev);
-+}
-+
-+static int w5300_start_tx(struct sk_buff *skb, struct net_device *ndev)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	if (IS_ENABLED(CONFIG_WIZNET_TX_FLOW))
-+		netif_stop_queue(ndev);
-+
-+	w5300_write_frame(priv, skb->data, skb->len);
-+	mmiowb();
-+	ndev->stats.tx_packets++;
-+	ndev->stats.tx_bytes += skb->len;
-+	dev_kfree_skb(skb);
-+	netif_dbg(priv, tx_queued, ndev, "tx queued\n");
-+
-+	w5300_command(priv, S0_CR_SEND);
-+
-+	return NETDEV_TX_OK;
-+}
-+
-+static int w5300_napi_poll(struct napi_struct *napi, int budget)
-+{
-+	struct w5300_priv *priv = container_of(napi, struct w5300_priv, napi);
-+	struct net_device *ndev = priv->ndev;
-+	struct sk_buff *skb;
-+	int rx_count;
-+	u16 rx_len;
-+
-+	for (rx_count = 0; rx_count < budget; rx_count++) {
-+		u32 rx_fifo_len = w5300_read32(priv, W5300_S0_RX_RSR);
-+		if (rx_fifo_len == 0)
-+			break;
-+
-+		rx_len = w5300_read(priv, W5300_S0_RX_FIFO);
-+
-+		skb = netdev_alloc_skb_ip_align(ndev, roundup(rx_len, 2));
-+		if (unlikely(!skb)) {
-+			u32 i;
-+			for (i = 0; i < rx_fifo_len; i += 2)
-+				w5300_read(priv, W5300_S0_RX_FIFO);
-+			ndev->stats.rx_dropped++;
-+			return -ENOMEM;
-+		}
-+
-+		skb_put(skb, rx_len);
-+		w5300_read_frame(priv, skb->data, rx_len);
-+		skb->protocol = eth_type_trans(skb, ndev);
-+
-+		netif_receive_skb(skb);
-+		ndev->stats.rx_packets++;
-+		ndev->stats.rx_bytes += rx_len;
-+	}
-+
-+	if (rx_count < budget) {
-+		w5300_write(priv, W5300_IMR, IR_S0);
-+		mmiowb();
-+		napi_complete(napi);
-+	}
-+
-+	return rx_count;
-+}
-+
-+static irqreturn_t w5300_interrupt(int irq, void *ndev_instance)
-+{
-+	struct net_device *ndev = ndev_instance;
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	int ir = w5300_read(priv, W5300_S0_IR);
-+	if (!ir)
-+		return IRQ_NONE;
-+	w5300_write(priv, W5300_S0_IR, ir);
-+	mmiowb();
-+
-+	if (IS_ENABLED(CONFIG_WIZNET_TX_FLOW) && (ir & S0_IR_SENDOK)) {
-+		netif_dbg(priv, tx_done, ndev, "tx done\n");
-+		netif_wake_queue(ndev);
-+	}
-+
-+	if (ir & S0_IR_RECV) {
-+		if (napi_schedule_prep(&priv->napi)) {
-+			w5300_write(priv, W5300_IMR, 0);
-+			mmiowb();
-+			__napi_schedule(&priv->napi);
-+		}
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t w5300_detect_link(int irq, void *ndev_instance)
-+{
-+	struct net_device *ndev = ndev_instance;
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	if (netif_running(ndev)) {
-+		if (gpio_get_value(priv->link_gpio) != 0) {
-+			netif_info(priv, link, ndev, "link is up\n");
-+			netif_carrier_on(ndev);
-+		} else {
-+			netif_info(priv, link, ndev, "link is down\n");
-+			netif_carrier_off(ndev);
-+		}
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void w5300_set_rx_mode(struct net_device *ndev)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+	bool set_promisc = (ndev->flags & IFF_PROMISC) != 0;
-+
-+	if (priv->promisc != set_promisc) {
-+		priv->promisc = set_promisc;
-+		w5300_hw_start(priv);
-+	}
-+}
-+
-+static int w5300_set_macaddr(struct net_device *ndev, void *addr)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+	struct sockaddr *sock_addr = addr;
-+
-+	if (!is_valid_ether_addr(sock_addr->sa_data))
-+		return -EADDRNOTAVAIL;
-+	memcpy(ndev->dev_addr, sock_addr->sa_data, ETH_ALEN);
-+	ndev->addr_assign_type &= ~NET_ADDR_RANDOM;
-+	w5300_write_macaddr(priv);
-+	return 0;
-+}
-+
-+static int w5300_open(struct net_device *ndev)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	netif_info(priv, ifup, ndev, "enabling\n");
-+	if (!is_valid_ether_addr(ndev->dev_addr))
-+		return -EINVAL;
-+	w5300_hw_start(priv);
-+	napi_enable(&priv->napi);
-+	netif_start_queue(ndev);
-+	if (!gpio_is_valid(priv->link_gpio) ||
-+	    gpio_get_value(priv->link_gpio) != 0)
-+		netif_carrier_on(ndev);
-+	return 0;
-+}
-+
-+static int w5300_stop(struct net_device *ndev)
-+{
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	netif_info(priv, ifdown, ndev, "shutting down\n");
-+	w5300_hw_close(priv);
-+	netif_carrier_off(ndev);
-+	netif_stop_queue(ndev);
-+	napi_disable(&priv->napi);
-+	return 0;
-+}
-+
-+static const struct ethtool_ops w5300_ethtool_ops = {
-+	.get_drvinfo		= w5300_get_drvinfo,
-+	.get_msglevel		= w5300_get_msglevel,
-+	.set_msglevel		= w5300_set_msglevel,
-+	.get_link		= w5300_get_link,
-+	.get_regs_len		= w5300_get_regs_len,
-+	.get_regs		= w5300_get_regs,
-+};
-+
-+static const struct net_device_ops w5300_netdev_ops = {
-+	.ndo_open		= w5300_open,
-+	.ndo_stop		= w5300_stop,
-+	.ndo_start_xmit		= w5300_start_tx,
-+	.ndo_tx_timeout		= w5300_tx_timeout,
-+	.ndo_set_rx_mode	= w5300_set_rx_mode,
-+	.ndo_set_mac_address	= w5300_set_macaddr,
-+	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_change_mtu		= eth_change_mtu,
-+};
-+
-+static int __devinit w5300_hw_probe(struct platform_device *pdev)
-+{
-+	struct wiznet_platform_data *data = pdev->dev.platform_data;
-+	struct net_device *ndev = platform_get_drvdata(pdev);
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+	const char *name = netdev_name(ndev);
-+	struct resource *mem;
-+	int mem_size;
-+	int irq;
-+	int ret;
-+
-+	if (data && is_valid_ether_addr(data->mac_addr)) {
-+		memcpy(ndev->dev_addr, data->mac_addr, ETH_ALEN);
-+	} else {
-+		random_ether_addr(ndev->dev_addr);
-+		ndev->addr_assign_type |= NET_ADDR_RANDOM;
-+	}
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem)
-+		return -ENXIO;
-+	mem_size = resource_size(mem);
-+	if (!devm_request_mem_region(&pdev->dev, mem->start, mem_size, name))
-+		return -EBUSY;
-+	priv->base = devm_ioremap(&pdev->dev, mem->start, mem_size);
-+	if (!priv->base)
-+		return -EBUSY;
-+
-+	spin_lock_init(&priv->reg_lock);
-+	priv->indirect = mem_size < W5300_BUS_DIRECT_SIZE;
-+	if (priv->indirect) {
-+		priv->read  = w5300_read_indirect;
-+		priv->write = w5300_write_indirect;
-+	} else {
-+		priv->read  = w5300_read_direct;
-+		priv->write = w5300_write_direct;
-+	}
-+
-+	w5300_hw_reset(priv);
-+	if (w5300_read(priv, W5300_IDR) != IDR_W5300)
-+		return -ENODEV;
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0)
-+		return irq;
-+	ret = devm_request_irq(&pdev->dev, irq, w5300_interrupt,
-+			       IRQ_TYPE_LEVEL_LOW, name, ndev);
-+	if (ret < 0)
-+		return ret;
-+	priv->irq = irq;
-+
-+	priv->link_gpio = data->link_gpio;
-+	if (gpio_is_valid(priv->link_gpio)) {
-+		char *link_name = devm_kzalloc(&pdev->dev, 16, GFP_KERNEL);
-+		if (!link_name)
-+			return -ENOMEM;
-+		snprintf(link_name, 16, "%s-link", name);
-+		priv->link_irq = gpio_to_irq(priv->link_gpio);
-+		if (devm_request_threaded_irq(&pdev->dev,
-+				priv->link_irq, NULL, w5300_detect_link,
-+				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-+				link_name, priv->ndev) < 0)
-+			priv->link_gpio = -EINVAL;
-+	}
-+
-+	netdev_info(ndev, "at 0x%llx irq %d\n", (u64)mem->start, irq);
-+	return 0;
-+}
-+
-+static int __devinit w5300_probe(struct platform_device *pdev)
-+{
-+	struct w5300_priv *priv;
-+	struct net_device *ndev;
-+	int err;
-+
-+	ndev = alloc_etherdev(sizeof(*priv));
-+	if (!ndev)
-+		return -ENOMEM;
-+	SET_NETDEV_DEV(ndev, &pdev->dev);
-+	platform_set_drvdata(pdev, ndev);
-+	priv = netdev_priv(ndev);
-+	priv->ndev = ndev;
-+
-+	ether_setup(ndev);
-+	ndev->netdev_ops = &w5300_netdev_ops;
-+	ndev->ethtool_ops = &w5300_ethtool_ops;
-+	ndev->watchdog_timeo = HZ;
-+	netif_napi_add(ndev, &priv->napi, w5300_napi_poll, 16);
-+
-+	/* This chip doesn't support VLAN packets with normal MTU,
-+	 * so disable VLAN for this device.
-+	 */
-+	ndev->features |= NETIF_F_VLAN_CHALLENGED;
-+
-+	err = register_netdev(ndev);
-+	if (err < 0)
-+		goto err_register;
-+
-+	err = w5300_hw_probe(pdev);
-+	if (err < 0)
-+		goto err_hw_probe;
-+
-+	return 0;
-+
-+err_hw_probe:
-+	unregister_netdev(ndev);
-+err_register:
-+	free_netdev(ndev);
-+	platform_set_drvdata(pdev, NULL);
-+	return err;
-+}
-+
-+static int __devexit w5300_remove(struct platform_device *pdev)
-+{
-+	struct net_device *ndev = platform_get_drvdata(pdev);
-+
-+	unregister_netdev(ndev);
-+	free_netdev(ndev);
-+	platform_set_drvdata(pdev, NULL);
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int w5300_suspend(struct platform_device *pdev, pm_message_t mesg)
-+{
-+	struct net_device *ndev = platform_get_drvdata(pdev);
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	if (netif_running(ndev)) {
-+		netif_carrier_off(ndev);
-+		netif_device_detach(ndev);
-+
-+		w5300_hw_close(priv);
-+	}
-+	return 0;
-+}
-+
-+static int w5300_resume(struct platform_device *pdev)
-+{
-+	struct net_device *ndev = platform_get_drvdata(pdev);
-+	struct w5300_priv *priv = netdev_priv(ndev);
-+
-+	if (!netif_running(ndev)) {
-+		w5300_hw_reset(priv);
-+		w5300_hw_start(priv);
-+
-+		netif_device_attach(ndev);
-+		if (!gpio_is_valid(priv->link_gpio) ||
-+		    gpio_get_value(priv->link_gpio) != 0)
-+			netif_carrier_on(ndev);
-+	}
-+	return 0;
-+}
-+#endif /* CONFIG_PM */
-+
-+static SIMPLE_DEV_PM_OPS(w5300_pm_ops, w5300_suspend, w5300_resume);
-+
-+static struct platform_driver w5300_driver = {
-+	.driver		= {
-+		.name	= DRV_NAME,
-+		.owner	= THIS_MODULE,
-+		.pm	= &w5300_pm_ops,
-+	},
-+	.probe		= w5300_probe,
-+	.remove		= __devexit_p(w5300_remove),
-+};
-+
-+module_platform_driver(w5300_driver);
-diff --git a/include/linux/platform_data/wiznet.h b/include/linux/platform_data/wiznet.h
-new file mode 100644
-index 0000000..b5d8c19
---- /dev/null
-+++ b/include/linux/platform_data/wiznet.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Ethernet driver for the WIZnet W5x00 chip.
-+ *
-+ * Licensed under the GPL-2 or later.
-+ */
-+
-+#ifndef PLATFORM_DATA_WIZNET_H
-+#define PLATFORM_DATA_WIZNET_H
-+
-+#include <linux/if_ether.h>
-+
-+struct wiznet_platform_data {
-+	int	link_gpio;
-+	u8	mac_addr[ETH_ALEN];
-+};
-+
-+#ifndef CONFIG_WIZNET_BUS_SHIFT
-+#define CONFIG_WIZNET_BUS_SHIFT 0
-+#endif
-+
-+#define W5100_BUS_DIRECT_SIZE	(0x8000 << CONFIG_WIZNET_BUS_SHIFT)
-+#define W5300_BUS_DIRECT_SIZE	(0x0400 << CONFIG_WIZNET_BUS_SHIFT)
-+
-+#endif /* PLATFORM_DATA_WIZNET_H */
+ \end_layout
+ 
+ \begin_layout Chapter*
+ 
+ \change_inserted 1531152142 1322571716
+-Appendix H: SCSI Host Device
++Appendix 
++\change_deleted -1096565211 1333519318
++H
++\change_inserted -1096565211 1333519319
++I
++\change_inserted 1531152142 1322571716
++: SCSI Host Device
+ \end_layout
+ 
+ \begin_layout Standard
 -- 
-1.6.3.3
-
+1.7.5.4
 
