@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2DDLvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 07:51:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45850 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab2DDLvi convert rfc822-to-8bit (ORCPT
+	id S1756270Ab2DDLws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 07:52:48 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:39958 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab2DDLwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 07:51:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F7A3CC2.1040200@zytor.com>
-References: <20120401125741.GA7484@p183.telecom.by> <CAHGf_=pgpRrQA3-YVtS=h-Bjq2LyTFmYtKGxxWgwP0XWexnh2g@mail.gmail.com>
- <4F7A3CC2.1040200@zytor.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Wed, 4 Apr 2012 07:51:17 -0400
-Message-ID: <CAOPLpQebqKED5G1nti6i=JLZ+A6df2UdA86RVEv1Er7hw7KFpQ@mail.gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Apr 2012 07:52:46 -0400
+Message-ID: <1333540355.5672.1.camel@phoenix>
+Subject: [PATCH] regulator: Fix rc5t583_regulator_probe error handling
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 04 Apr 2012 19:52:35 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 2, 2012 at 19:56, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> You can deal with this in one of two ways:
->
-> 2. Fix your malloc().
-> 1. Use the low level open()/getdents()/close() functions instead of
->   opendir()/readdir()/closedir().
+1. regulator_register returns ERR_PTR on error, thus use IS_ERR to check the
+   return value.
+2. Fix off-by-one for unregistering the registered regulator.
+   Current code does not unregister regs[0].rdev in clean_exit.
 
-And if their is concern about using opendir() then we can add
-something to posix_spawn.  And attribute like POSIX_SPAWN_CLOSEALL and
-you then would have to explicitly add dup and open requests for the
-descriptors you want to have open.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/rc5t583-regulator.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
+index 37732f7..cac8a2a 100644
+--- a/drivers/regulator/rc5t583-regulator.c
++++ b/drivers/regulator/rc5t583-regulator.c
+@@ -312,7 +312,7 @@ static int __devinit rc5t583_regulator_probe(struct platform_device *pdev)
+ skip_ext_pwr_config:
+ 		rdev = regulator_register(&ri->desc, &pdev->dev,
+ 					reg_data, reg, NULL);
+-		if (IS_ERR_OR_NULL(rdev)) {
++		if (IS_ERR(rdev)) {
+ 			dev_err(&pdev->dev, "Failed to register regulator %s\n",
+ 						ri->desc.name);
+ 			ret = PTR_ERR(rdev);
+@@ -324,7 +324,7 @@ skip_ext_pwr_config:
+ 	return 0;
+ 
+ clean_exit:
+-	while (--id > 0)
++	while (--id >= 0)
+ 		regulator_unregister(regs[id].rdev);
+ 
+ 	return ret;
+-- 
+1.7.5.4
+
+
+
