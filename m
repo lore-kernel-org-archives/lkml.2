@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab2DDMvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 08:51:40 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:48687 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab2DDMvj (ORCPT
+	id S1756364Ab2DDNGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 09:06:23 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48339 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756209Ab2DDNGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 08:51:39 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-	<1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
-	<m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-	<20120402202848.1EB833E02A7@localhost> <m2y5qdow0v.fsf@igel.home>
-	<1333489422.3040.11.camel@pasglop>
-X-Yow: If I have enough money to buy 5,000 CANS of NOODLE-RONI, can I get a
- VAT of MARSHMALLOW FLUFF free??
-Date: Wed, 04 Apr 2012 14:51:32 +0200
-In-Reply-To: <1333489422.3040.11.camel@pasglop> (Benjamin Herrenschmidt's
-	message of "Wed, 04 Apr 2012 07:43:42 +1000")
-Message-ID: <m2ehs3vewb.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 4 Apr 2012 09:06:22 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: linux-crypto@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [PATCH] crypto, xor: Sanitize checksumming function selection output
+Date: Wed,  4 Apr 2012 15:06:10 +0200
+Message-Id: <1333544770-21303-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-> Do you see a relevant difference in the X log ?
+Currently, it says
 
-Nothing at all.
+[    1.015541] xor: automatically using best checksumming function: generic_sse
+[    1.040769]    generic_sse:  6679.000 MB/sec
+[    1.045377] xor: using function: generic_sse (6679.000 MB/sec)
 
-Andreas.
+and repeats the function name three times unnecessarily. Change it into
 
+[    1.015115] xor: automatically using best checksumming function:
+[    1.040794]    generic_sse:  6680.000 MB/sec
+
+and save us a line in dmesg.
+
+No functional change.
+
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ crypto/xor.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/crypto/xor.c b/crypto/xor.c
+index b75182d8ab14..664b6dfa9e2c 100644
+--- a/crypto/xor.c
++++ b/crypto/xor.c
+@@ -129,9 +129,9 @@ calibrate_xor_blocks(void)
+ 
+ 	if (fastest) {
+ 		printk(KERN_INFO "xor: automatically using best "
+-			"checksumming function: %s\n",
+-			fastest->name);
++				 "checksumming function:\n");
+ 		xor_speed(fastest);
++		goto out;
+ 	} else {
+ 		printk(KERN_INFO "xor: measuring software checksum speed\n");
+ 		XOR_TRY_TEMPLATES;
+@@ -146,6 +146,7 @@ calibrate_xor_blocks(void)
+ 
+ #undef xor_speed
+ 
++ out:
+ 	free_pages((unsigned long)b1, 2);
+ 
+ 	active_template = fastest;
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.7.9.3.362.g71319
+
