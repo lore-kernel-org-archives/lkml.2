@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab2DDKko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 06:40:44 -0400
-Received: from plane.gmane.org ([80.91.229.3]:42329 "EHLO plane.gmane.org"
+	id S1756151Ab2DDKqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 06:46:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44935 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756037Ab2DDKkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 06:40:42 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Mantas M." <grawity@gmail.com>
-Subject: Re: 3.3.1 ath9k regression
-Date: Wed, 04 Apr 2012 13:40:39 +0300
-Message-ID: <jlh8eg$gqs$1@dough.gmane.org>
-References: <4F7A8EB7.4060200@silka.with-linux.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 78-60-211-195.static.zebra.lt
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120321 Thunderbird/12.0
-In-Reply-To: <4F7A8EB7.4060200@silka.with-linux.com>
+	id S1752913Ab2DDKqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 06:46:46 -0400
+Date: Wed, 4 Apr 2012 12:46:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, Alessandro Rubini <rubini@cvml.unipv.it>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: psmouse serio4: bad data from KBC - timeout
+Message-ID: <20120404104643.GA5193@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	linux-input@vger.kernel.org,
+	Alessandro Rubini <rubini@ipvvis.unipv.it>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120403094324.GA3346@gere.osrc.amd.com>
+ <20120403170659.GF24832@core.coreip.homeip.net>
+ <20120404045440.GB28344@liondog.tnic>
+ <20120404064053.GA26093@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120404064053.GA26093@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Kelly - use `journalctl -a` or just `dmesg` to get full logs.]
-
-I have a similar bug with Atheros AR9285 on a ASUS K52JT laptop. The
-device appears, but refuses to connect to any AP, timing out in less
-than a second. (3.3-ARCH did not have this bug.)
-
-dmesg output while trying to connect to an open AP follows.
-
-> # modprobe ath9k
-> [  213.662569] ath: EEPROM regdomain: 0x60
-> [  213.662574] ath: EEPROM indicates we should expect a direct regpair map
-> [  213.662580] ath: Country alpha2 being used: 00
-> [  213.662583] ath: Regpair used: 0x60
-> [  213.664533] ieee80211 phy1: Selected rate control algorithm 'ath9k_rate_control'
-> [  213.666228] Registered led device: ath9k-phy1
-> [  213.666255] ieee80211 phy1: Atheros AR9285 Rev:2 mem=0xffffc90022d60000, irq=17
-
-> # ip link set wlan0 up
-> [  215.577316] ADDRCONF(NETDEV_UP): wlan0: link is not ready
-
-> # iw wlan0 connect -w cloud
-> [  217.667382] wlan0: authenticate with 00:23:8e:e1:6c:c8 (try 1)
-> [  217.864456] wlan0: authenticate with 00:23:8e:e1:6c:c8 (try 2)
-> [  218.063975] wlan0: authenticate with 00:23:8e:e1:6c:c8 (try 3)
-> [  218.263514] wlan0: authentication with 00:23:8e:e1:6c:c8 timed out
-
-> # iw wlan0 connect -w cloud
-> [  276.603232] wlan0: authenticate with 00:23:8e:e1:6c:c8 (try 1)
-> [  276.802003] wlan0: authenticate with 00:23:8e:e1:6c:c8 (try 2)
-> [  277.001461] wlan0: authenticate with 00:23:8e:e1:6c:c8 (try 3)
-> [  277.200945] wlan0: authentication with 00:23:8e:e1:6c:c8 timed out
-
-Using "debug=0xe01" with rmmod/modprobe causes no visible difference.
-"pcie_aspm=off" did not help.
-
-`lspci -v` shows the device as:
-
+On Tue, Apr 03, 2012 at 11:40:53PM -0700, Dmitry Torokhov wrote:
+> As I said I would start at the latest ACPI and PM merges and try
+> reverting them - i8042 may interact in funny ways with embedded
+> controller since it is usually the same piece of firmware.
 > 
-> 03:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless Network Adapter (PCI-Express) (rev 01)
->         Subsystem: AzureWave AW-NE785 / AW-NE785H 802.11bgn Wireless Full or Half-size Mini PCIe Card
->         Flags: bus master, fast devsel, latency 0, IRQ 17
->         Memory at d2a00000 (64-bit, non-prefetchable) [size=64K]
->         Capabilities: [40] Power Management version 3
->         Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit-
->         Capabilities: [60] Express Legacy Endpoint, MSI 00
->         Capabilities: [100] Advanced Error Reporting
->         Capabilities: [140] Virtual Channel
->         Capabilities: [160] Device Serial Number 00-15-17-ff-ff-24-14-12
->         Capabilities: [170] Power Budgeting <?>
->         Kernel driver in use: ath9k
+> I assume it works fine in 3.3, right?
+
+Yes, it does.
+
+Let me checkout git trees before those merges to see whether it makes
+any difference.
+
+Thanks.
 
 -- 
-Mantas M. <grawity@gmail.com
-
+Regards/Gruss,
+Boris.
