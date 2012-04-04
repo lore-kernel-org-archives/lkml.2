@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab2DDWh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 18:37:59 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59171 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757050Ab2DDWh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 18:37:57 -0400
-Message-ID: <1333579075.23520.19.camel@joe2Laptop>
-Subject: Re: [PATCH net-next] vxge: Convert macro to inline function
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 04 Apr 2012 15:37:55 -0700
-In-Reply-To: <20120403.181830.799733266830291210.davem@davemloft.net>
-References: <1333489992.2695.17.camel@joe2Laptop>
-	 <20120403.175837.1897033408784057713.davem@davemloft.net>
-	 <1333491271.2695.20.camel@joe2Laptop>
-	 <20120403.181830.799733266830291210.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1757359Ab2DDWq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 18:46:29 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50642 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757310Ab2DDWq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 18:46:27 -0400
+Date: Wed, 04 Apr 2012 18:45:59 -0400 (EDT)
+Message-Id: <20120404.184559.1109693471298332312.davem@davemloft.net>
+To: consul.kautuk@gmail.com
+Cc: paul.gortmaker@windriver.com, mingo@elte.hu, joe@perches.com,
+        a.p.zijlstra@chello.nl, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/20 v4] sparc/mm/fault_32.c: Port OOM changes to
+ do_sparc_fault
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAFPAmTQNMMVbE_7csGizhYG0LAHe-LbFHTSXZwfanB2K6HaJEw@mail.gmail.com>
+References: <1332780474-2881-1-git-send-email-consul.kautuk@gmail.com>
+	<20120326.173606.1348576857155624658.davem@davemloft.net>
+	<CAFPAmTQNMMVbE_7csGizhYG0LAHe-LbFHTSXZwfanB2K6HaJEw@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 15:46:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 18:18 -0400, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Tue, 03 Apr 2012 15:14:31 -0700
-> > Convert the macro to inline function to check the arguments.
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >> Longer term I'd much rather see this turned into an inline
-> >> function with proper type checking etc.
-> > Something like this?
-> Yep.
+From: Kautuk Consul <consul.kautuk@gmail.com>
+Date: Wed, 4 Apr 2012 20:00:01 +0530
 
-I did sign the patch.
-I was intending that you could apply it.
-Do you want a resend?
+> Since one or two of my other patches are being taken by the other arch
+> owners in their branches,
+> can you take this patch and apply it to your branch also ?
 
-
-
+Both sparc patches applied, thanks.
