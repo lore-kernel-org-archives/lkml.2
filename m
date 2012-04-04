@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab2DDKtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 06:49:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44752 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752913Ab2DDKtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 06:49:52 -0400
-Date: Wed, 4 Apr 2012 11:49:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1] regulator: Add support for RICOH PMIC RC5T583
- regulator
-Message-ID: <20120404104948.GA9693@opensource.wolfsonmicro.com>
-References: <1333523640-8820-1-git-send-email-ldewangan@nvidia.com>
+	id S932121Ab2DDLA2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 07:00:28 -0400
+Received: from mail4.ccl.ru ([195.222.140.73]:60471 "EHLO mail4.ccl.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756133Ab2DDLA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 07:00:27 -0400
+Message-ID: <4F7C29C3.9000306@permonline.ru>
+Date: Wed, 04 Apr 2012 17:00:19 +0600
+From: Mike Sinkovsky <msink@permonline.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
-Content-Disposition: inline
-In-Reply-To: <1333523640-8820-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 1/2] Ethernet driver for the WIZnet W5300 chip
+References: <1332752876-1650-1-git-send-email-msink@permonline.ru> <1333450726-24455-2-git-send-email-msink@permonline.ru> <20120403133619.GA3960@sirena.org.uk> <4F7BE7A4.1060202@permonline.ru> <20120404100148.GB3002@opensource.wolfsonmicro.com>
+In-Reply-To: <20120404100148.GB3002@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+04.04.2012 16:01, Mark Brown написал:
+> On Wed, Apr 04, 2012 at 12:18:12PM +0600, Mike Sinkovsky wrote:
+>> 03.04.2012 19:36, Mark Brown написал:
+>
+>>> ...you use devm_request_threaded_irq() here and rely on it for cleanup.
+>>> Are you sure there's no possibility of the interrupt firing after you
+>>> start to tear down the device?
+>
+>>> By using a specifically threaded IRQ you're also adding a performance
+>>> overhead for no good reason if you can call netdev_carrier_*() from IRQ
+>>> context and the GPIO is capable of generating a hard IRQ.  If you use
+>>> request_any_context_irq() instead then the driver will get a hard IRQ if
+>>> that's supported.
+>
+>> There isn't devm* variant of request_any_context_irq(), and using
+>> plain version looks inconsistent with other resources handling.
+>> Anyway, this is not performance critical procedure, and latency
+>> around 100 millisecond is acceptable. Some our boards even don't
+>> have this gpio at all, and nothing bad happens, just userspace
+>> doesn't know is carrier on or off.
+>
+> None of this addresses the primary concern which is that because you're
+> not (as far as I can tell) ensuring that the interrupt won't fire the
+> driver might crash if the interrupt fires in between the resources it
+> needs to handle the interrupt being deallocated and the interrupt being
+> unregistered.  Managed interrupts are relatively tricky to use because
+> of this issue, with most things like memory it doesn't matter exactly
+> when it's deallocated but interrupts can potentially trigger actions
+> themselves.
+>
+> If you can use it and devm_request_any_context_irq() doesn't exist it'd
+> be better to add it.
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, now I understand - better don't use devm* functions for interrupts, 
+use plain request* in probe() and free_irq() in remove().
 
-On Wed, Apr 04, 2012 at 12:44:00PM +0530, Laxman Dewangan wrote:
-> The RC5T583 PMIC from RICOH consists of 4 DCDC and 10
-> LDOs. This driver supports the control of different
-> regulator output through regulator interface.
-> This driver depends on MFD driver of RC5T583 and uses
-> mfd rc5t583 apis to communicate to device for accessing
-> different device's registers.
+Will post v8.
 
-Applied, thanks.
 
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Mike
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPfCc0AAoJEBus8iNuMP3dqHkQAJUTn2b8hmMwYQgRH8o4ko0R
-4jt+wzkrFb4vhk7ln2UIOnLhrEn+kUWi5Vm4JdJd/CXOzMjuwfnAPj0D+6i6B0DB
-4G4wBBhJgtLrG57ZJZGQ1UUYQMFsDw8bbhPkOja5wHql3oP/ZkCM054QP0QlUJ/R
-e6x+8va1Q0d1n46pit0oOsGHbyBhlVzQAJvXxPCMzZ6NZa0rAf7PVAzRYGodg6xi
-bInBBIat6w+OiXYmQpaWSo8XTGHnXAj7/ENrAXeABfdcbjieSfr45vOncf/Mw7tB
-x0Au0Mpq7KAgfXl2LL0j2Ls4QWVaeM9c1tKq0iDRO41Qx3uZCbisEd/tve0Umid6
-HBCvY+6splmygMWEqdxo+ZezLHxYfA8LQ9vIa53te0LUErTsC77K+U1K9YitOOU9
-zquTPAp00yGYExY0BVng83/ngMWnLo/gKoFtdavcW7UiTIY8QNcpeVfi2uQJPtfh
-e5z25lmjIl6m6pkMeocel6ARLtDYmnaEDAhwY+NbWik+aSozg8kfisZIWtsZtD9j
-ZZjJ4/UUe/6/NEN+Qn8ZhrxhfSgdpIjB/TxZXNMCZGekPWAUg6TREm6sSzrSm1Y8
-35M11kce8LkWLHlojkGrvOclI+UajFBSXhhHKaRB4IkAQj0WA0h3r0lXFhvRLPnt
-la1pB+aY1ACdVTvAdRp0
-=vN2D
------END PGP SIGNATURE-----
-
---h31gzZEtNLTqOjlF--
