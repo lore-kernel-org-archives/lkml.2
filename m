@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab2DDXOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 19:14:25 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56833 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286Ab2DDXOY (ORCPT
+	id S1757412Ab2DDXPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 19:15:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54830 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286Ab2DDXPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 19:14:24 -0400
-Date: Wed, 4 Apr 2012 16:14:21 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tejun Heo <tj@kernel.org>
-cc: Mike Galbraith <mgalbraith@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] cgroups: disallow attaching kthreadd
-In-Reply-To: <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1204041611430.18500@chino.kir.corp.google.com>
-References: <1333475906.7439.7.camel@marge.simpson.net> <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com> <1333535915.7188.18.camel@marge.simpson.net> <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com> <1333542649.7188.40.camel@marge.simpson.net>
- <alpine.DEB.2.00.1204041414220.26086@chino.kir.corp.google.com> <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 4 Apr 2012 19:15:46 -0400
+Message-ID: <4F7CD61E.8000609@wwwdotorg.org>
+Date: Wed, 04 Apr 2012 17:15:42 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] regmap: add MMIO bus support
+References: <1333576113-13196-1-git-send-email-swarren@wwwdotorg.org> <1333576113-13196-4-git-send-email-swarren@wwwdotorg.org> <20120404225915.GH10787@opensource.wolfsonmicro.com>
+In-Reply-To: <20120404225915.GH10787@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Apr 2012, Tejun Heo wrote:
-
-> I don't see much problem with the proposed solution and am gonna take
-> it unless there are pretty good reasons not to.
+On 04/04/2012 04:59 PM, Mark Brown wrote:
+> On Wed, Apr 04, 2012 at 03:48:31PM -0600, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> This is a basic memory-mapped-IO bus for regmap. It has the following
+>> features and limitations:
 > 
+> I applied these up to here but it was painful as patch 2 didn't apply
+> cleanly to -rc1 and git am couldn't find the blobs to use for
+> resolution.  Please check things worked out OK but I'm pretty sure they
+> did.
 
-The only cgroup that cannot allow kthreadd is cpusets and that's 
-illustrated by Mike's changelog.  Restricting it for all cgroups is 
-completely unnecessary, as I've already said, and is the entire reason we 
-have ->can_attach() functions for each cgroup.
+The result of merging your topic/mmio and for-next branches is the same
+as my local copy of patch 4 I sent, modulo that my local copy still has
+regmap_open_file(), but that's not related.
 
-Also see Paul Menage's suggestion for only isolating this fix to cpusets 
-as well at 
-http://lkml.indiana.edu/hypermail/linux/kernel/1110.2/01280.html.
+So yes, I think the patches applied fine.
 
-Thanks.
+>> * Registers themselves may be 8, 16, 32, or 64-bit. 64-bit is only
+>>   supported on 64-bit platforms.
+>> * Register offsets are limited to precisely 32-bit.
+>> * IO is performed using readl/writel, with no provision for using the
+>>   __raw_readl or readl_relaxed variants.
+> 
+> Also limited native endian register I/O.  It would have been much better
+> to fix this in the core - please consider producing followup patches to
+> push the code there, though it's far from essential.
+
+I assume the solution here is to:
+
+* Always use __raw_readl/__raw_writel in regmap-mmio.c so that there's
+never any endianness conversion, and don't use the endianness conversion
+macros when reading/writing the work buffer.
+* Implement alternative formatters that format in LE instead of BE
+* Add a field to regmap_config indicating which endianness the data
+should be in, and use this flag to select the LE/BE formatters.
+
+Does that sound about right?
+
+>> +static int regmap_mmio_gather_write(void *context,
+>> +				    const void *reg, size_t reg_size,
+>> +				    const void *val, size_t val_size)
+>> +{
+>> +	struct regmap_mmio_context *ctx = context;
+>> +	u32 offset;
+>> +
+>> +	if (reg_size != 4)
+>> +		return -EIO;
+> 
+> Given that you constrain on registration too this should be BUG_ON(),
+> we're seriously confused if we're specifying a different register size
+> here and -EIO is going to be a bit obscure.
+
+I wondered about that. I would have been quite happy to repost with that
+change. Do you want an incremental patch?
