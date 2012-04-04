@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab2DDJ7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 05:59:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51240 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab2DDJ7I (ORCPT
+	id S1756179Ab2DDKAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 06:00:18 -0400
+Received: from msa106.auone-net.jp ([61.117.18.166]:43282 "EHLO
+	msa106.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab2DDKAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 05:59:08 -0400
-Message-ID: <4F7C1B67.6030300@openvz.org>
-Date: Wed, 04 Apr 2012 13:59:03 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Wed, 4 Apr 2012 06:00:17 -0400
+Date: Wed, 4 Apr 2012 19:00:15 +0900
+From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Commit 8ef874bfc7296fa206eea2ad1e8a426f576bf6f6 has broken ss
+ command
+References: <20120404090312.1B68C6AC03E@msa102.auone-net.jp>
+ <1333530463.18626.545.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC] mm: account VMA before forced-COW via /proc/pid/mem
-References: <20120402153631.5101.44091.stgit@zurg> <20120403143752.GA5150@redhat.com>
-In-Reply-To: <20120403143752.GA5150@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333530463.18626.545.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20120404100015.D41B162C03E@msa106.auone-net.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov wrote:
-> On 04/02, Konstantin Khlebnikov wrote:
->>
->> Currently kernel does not account read-only private mappings into memory commitment.
->> But these mappings can be force-COW-ed in get_user_pages().
->
-> Heh. tail -n3 Documentation/vm/overcommit-accounting
-> may be you should update it then.
+On 2012-04-04 11:07:43 +0200, Eric Dumazet wrote:
+> On Wed, 2012-04-04 at 18:03 +0900, Kusanagi Kouichi wrote:
+> > Since commit 8ef874bfc7296fa206eea2ad1e8a426f576bf6f6 ("sock_diag:
+> > Move the sock_ code to net/core/"), ss command from iproute package
+> > doesn't work if INET_DIAG is not enabled.
+> > 
+> > $ ss
+> > State       Recv-Q Send-Q                                             Local Address:Port                                                 Peer Address:Port
+> > TCPDIAG answers: Operation not supported
+> > --
+> 
+> Try to update your iproute2 package ?
 
-I just wonder how fragile this accounting...
+iproute seems up to date.
+$ ss --version
+ss utility, iproute2-ss120319
 
->
-> Can't really comment the patch, this is not my area. Still,
->
->> +	down_write(&mm->mmap_sem);
->> +	*pvma = vma = find_vma(mm, addr);
->> +	if (vma&&  vma->vm_start<= addr) {
->> +		ret = vma->vm_end - addr;
->> +		if ((vma->vm_flags&  (VM_ACCOUNT | VM_NORESERVE | VM_SHARED |
->> +				VM_HUGETLB | VM_MAYWRITE)) == VM_MAYWRITE) {
->> +			if (!security_vm_enough_memory_mm(mm, vma_pages(vma)))
->
-> Oooooh, the whole vma. Say, gdb installs the single breakpoint into
-> the huge .text mapping...
-
-We cannot split vma right there, this will be really weird. =)
-
->
-> I am not sure, but probably you want to check at least VM_IO/PFNMAP
-> as well. We do not want to charge this memory and retry with FOLL_FORCE
-> before vm_ops->access(). Say, /dev/mem
-
-No, VM_IO/PFNMAP aren't affect accounting, there is VM_NORESERVE for this.
-
->
-> Hmm. OTOH, if I am right then mprotect_fixup() should be fixed??
-
-mprotect_fixup() does not account area if it already accounted, so all ok.
-
->
->
-> We drop ->mmap_sem... Say, the task does mremap() in between and
-> len == 2 * PAGE_SIZE. Then, for example, copy_to_user_page() can
-> write to the same page twice. Perhaps not a problem in practice,
-> I dunno.
-
-I have an old unfinished patch which implements upgrade_read() for rw-semaphore =)
-
- >
+I tried git master commit 4bb00cd2b7525ad7d6cf6bbea945ad6e546873f4.
+It still fails.
