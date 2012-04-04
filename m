@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754Ab2DDTq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 15:46:56 -0400
-Received: from mail2.unitix.de ([176.9.2.175]:43140 "EHLO mail2.unitix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932386Ab2DDTqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 15:46:55 -0400
-From: Arnd Hannemann <arnd@arndnet.de>
-To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Arnd Hannemann <arnd@arndnet.de>
-Subject: [PATCH] Btrfs: allow mount -o remount,compress=no
-Date: Wed,  4 Apr 2012 21:46:17 +0200
-Message-Id: <1333568777-16986-1-git-send-email-arnd@arndnet.de>
-X-Mailer: git-send-email 1.7.9.1
+	id S932728Ab2DDTwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 15:52:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57776 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932515Ab2DDTwo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 15:52:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Eric Andersson <eric.andersson@unixphere.com>
+Subject: Re: [PATCHv3 0/3] bmp085: add support for bmp18x chip
+Date: Wed, 4 Apr 2012 19:52:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk, zhengguang.guo@bosch-sensortec.com,
+        peter.moeller@cn.bosch.com, stefan.nilsson@unixphere.com,
+        broonie@opensource.wolfsonmicro.com
+References: <1333568759-13536-1-git-send-email-eric.andersson@unixphere.com>
+In-Reply-To: <1333568759-13536-1-git-send-email-eric.andersson@unixphere.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204041952.34241.arnd@arndb.de>
+X-Provags-ID: V02:K0:ULUTTIvWw9tlXcS0hNLOYnaOKWYzfQfkOR5d0TyEl6f
+ vS+0gURTeUUmBKBzKQ+Fo8263VLJ4NPpPfTyTsCsA/zxFo++8S
+ 8V0A8aMEHme2MYRjPRIPNZVMFG6aVMdP6hxWsum+Ho2NGUsrX1
+ VWCNSiweZGESAkeJHnvvmKA0TcpbEwV1+tml4dif3FvscozUak
+ U8vOi82kNJzA+p/cE3d1jADWFZwV7KIK6rSen6nZTV78xLO6WI
+ MoNnkQivkE9H0Uvqadr/TLGmusrpvXQTKsYaTb9a51KwencRrA
+ impq1Wh9T6XWFP2h+ZNgC0hUhA/wPXgF847vxkwgbPii3kLXug
+ wfvByEGIxXIYEiqN0rDc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btrfs allows to turn on compression on a mounted and used filesystem
-by issuing mount -o remount,compress=lzo.
-This patch allows to turn compression off again
-while the filesystem is mounted.
+On Wednesday 04 April 2012, Eric Andersson wrote:
+> This is version 3 of the patch-set that adds support for the latest pressure
+> sensors from Bosch Sensortec.
+> 
+> Changes from last version:
+> - Dropped the platform data in favor of devicetree properties.
+> - Use regmap as communication layer.
+> - Changed Kconfig logic.
+> - Keep the original bmp085 file name.
+> - Use EXPORT_SYMBOL_GPL.
+> 
+Looks all good to me now,
 
-Signed-off-by: Arnd Hannemann <arnd@arndnet.de>
----
- fs/btrfs/super.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 8d5d380..f1fb6c0 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -394,15 +394,20 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
- 			    strcmp(args[0].from, "zlib") == 0) {
- 				compress_type = "zlib";
- 				info->compress_type = BTRFS_COMPRESS_ZLIB;
-+				btrfs_set_opt(info->mount_opt, COMPRESS);
- 			} else if (strcmp(args[0].from, "lzo") == 0) {
- 				compress_type = "lzo";
- 				info->compress_type = BTRFS_COMPRESS_LZO;
-+				btrfs_set_opt(info->mount_opt, COMPRESS);
-+			} else if (strncmp(args[0].from, "no", 2) == 0) {
-+				compress_type = "no";
-+				info->compress_type = BTRFS_COMPRESS_NONE;
-+				btrfs_clear_opt(info->mount_opt, COMPRESS);
- 			} else {
- 				ret = -EINVAL;
- 				goto out;
- 			}
- 
--			btrfs_set_opt(info->mount_opt, COMPRESS);
- 			if (compress_force) {
- 				btrfs_set_opt(info->mount_opt, FORCE_COMPRESS);
- 				pr_info("btrfs: force %s compression\n",
--- 
-1.7.9.1
-
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
