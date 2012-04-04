@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab2DDLJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 07:09:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47664 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756037Ab2DDLJe (ORCPT
+	id S1756245Ab2DDLKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 07:10:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51178 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756037Ab2DDLKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 07:09:34 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] MAINTAINERS: Don't list everyone working on Wolfson drivers
-Date: Wed,  4 Apr 2012 12:08:51 +0100
-Message-Id: <1333537731-10005-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	Wed, 4 Apr 2012 07:10:20 -0400
+Date: Wed, 4 Apr 2012 12:10:14 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Cc: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>, hauke@hauke-m.de,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        lf_driver_backport@lists.linux-foundation.org
+Subject: Re: [PATCH] compat: add compat kernel checker and downloader
+Message-ID: <20120404111014.GB3378@shadowen.org>
+References: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
+ <20120206160727.GA21048@tuxdriver.com>
+ <20120207041958.GA32377@bombadil.infradead.org>
+ <CAB=NE6VS79S4R6wQddQCqPfoYPyRbPzSdAYN2Mxfi-4G_sfCvg@mail.gmail.com>
+ <CAB=NE6Wv3PEJj5zKfK2o869ntxuU3V+Nv2dgKX1eDtk3zQ04dA@mail.gmail.com>
+ <CAB=NE6URWAgUgF+6bOsRBeeXnQ4VjYf1tWuUkkvMviCLOCxeqA@mail.gmail.com>
+ <CAB=NE6UNHufTggg0ka-+q7ri_X6ENx4nO5DfMCAxxrKLrERPWg@mail.gmail.com>
+ <CAB=NE6U_Sq88ro7onChn8U4tkkqt7Z9YN9wMyZjx+78j+M=_uA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6U_Sq88ro7onChn8U4tkkqt7Z9YN9wMyZjx+78j+M=_uA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than listing every single person who works on the drivers include
-the mailing list where they can all be found.  Leave myself as a human
-contact.
+On Fri, Mar 30, 2012 at 05:23:46PM -0700, Luis R. Rodriguez wrote:
+> Andy, so I just noticed that on all Ubuntu PPA (and generic) kernels
+> you guys have a broken symlink >= 2.6.33.
+> 
+> /lib/modules/2.6.33-02063305-generic/build/include/asm
+> 
+> points to asm-x86 and that is no longer present after 2.6.33 so any
+> module requiring those header files will break now on Ubuntu. I just
+> spotted this as some file from asm is now included in the modules were
+> are building. I guess not many external kernel modules include asm dir
+> otherwise you guys would have noticed this a long time ago.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- MAINTAINERS |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Luis, I concur that the link is now broken.  However that link is actually
+simply superfulous now.  Anything correctly using kernel 'external
+module' support will be using the -I path from the kernel Makefiles.
+They will therefore be including from /usr/src/<version>/include _and_
+/usr/src/<version>/arch/x86/include.  I presume this is why we have not
+noticed it.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1fa4754..2e1a96f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7468,8 +7468,7 @@ F:	include/linux/wm97xx.h
- 
- WOLFSON MICROELECTRONICS DRIVERS
- M:	Mark Brown <broonie@opensource.wolfsonmicro.com>
--M:	Ian Lartey <ian@opensource.wolfsonmicro.com>
--M:	Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-+L:	patches@opensource.wolfsonmicro.com
- T:	git git://opensource.wolfsonmicro.com/linux-2.6-asoc
- T:	git git://opensource.wolfsonmicro.com/linux-2.6-audioplus
- W:	http://opensource.wolfsonmicro.com/content/linux-drivers-wolfson-devices
--- 
-1.7.9.1
+I will get that link removed however as it is simply bogus.
 
+-apw
