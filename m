@@ -1,32 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2DDMKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 08:10:48 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47376 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756201Ab2DDMKr (ORCPT
+	id S932183Ab2DDMNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 08:13:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58576 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab2DDMNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 08:10:47 -0400
+	Wed, 4 Apr 2012 08:13:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] nextfd(2)
+Date: Wed, 4 Apr 2012 12:13:22 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+References: <20120401125741.GA7484@p183.telecom.by> <201204011921.59596.arnd@arndb.de> <4F78D141.4070609@zytor.com>
+In-Reply-To: <4F78D141.4070609@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <401E54CE964CD94BAE1EB4A729C7087E37982E5C8F@HQMAIL04.nvidia.com>
-References: <CA+55aFy4aFGRLUrF+rYN3dskTepBtC+=x3B3bc_rzf1OaN_5pw@mail.gmail.com>
-	<CAH9JG2Wha0+6BwGW0APtEX2KACyR1+9fdKpJkM+iOU1m8N6d4w@mail.gmail.com>
-	<201204030907.29306.arnd@arndb.de>
-	<401E54CE964CD94BAE1EB4A729C7087E37982E5C8F@HQMAIL04.nvidia.com>
-Date: Wed, 4 Apr 2012 15:10:46 +0300
-Message-ID: <CAJL_dMspptY9xSEbizBUy5SaUgsxNu4ue2eO0Ty3QiBcyhL3+g@mail.gmail.com>
-Subject: Re: Linux 3.4-rc1
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Krishna Reddy <vdumpa@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Kyungmin Park <kmpark@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204041213.22333.arnd@arndb.de>
+X-Provags-ID: V02:K0:utACgkM/lCsFFUyj7ovV0oI4FzGGuD+cmKUbnv+iuXF
+ BunLBPDJbQEsjfMS0+00ve5fBOsW/WtEvrm3e3Xt1jh0Zf/p6V
+ 6AZPp/1/7zEHVi7MkphfSn+WY29Vk7tzfrwJxYcsYqgkOlC3Lq
+ 5mRYeNqWpUya1OA2UhSMmUByhocTXArkgRLRgBSj6wRIwIb4LO
+ 10GDHpJ6amgR0i435bwhFNESBif/r1xV5Vy1mueZ8tbMqcDm7u
+ lgZKMDbXIDx0KPBf0b+445J8nQzXJPMfodoUWBDRBU/BBrn5Im
+ 3dhiulk66AiSXVA3UiK231SV+ofbtJ/Xvm01MJR3MIB9gk0W5o
+ rvpVi+9uC4wwD4tahmC8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I say include the new pohmelfs if the author show us some benckmark
-numbers. Is that ok ?
+On Sunday 01 April 2012, H. Peter Anvin wrote:
+> On 04/01/2012 12:21 PM, Arnd Bergmann wrote:
+> > On Sunday 01 April 2012, Alexey Dobriyan wrote:
+> >>  arch/x86/syscalls/syscall_32.tbl |    1 +
+> >>  arch/x86/syscalls/syscall_64.tbl |    1 +
+> >>  fs/Makefile                      |    1 +
+> >>  fs/nextfd.c                      |   27 +++++++++++++++++++++++++++
+> >>  include/linux/syscalls.h         |    1 +
+> >>  5 files changed, 31 insertions(+)
+> > 
+> > I don't have any comments on the syscall itself, but when you add one, please
+> > also make the change to include/asm-generic/unistd.h so it appears in the
+> > various architectures using the generic syscall table.
+> 
+> Arnd: do you have any interest in leveraging the syscall scripts I did
+> for x86?  I have tried to make them as generic as possible, with the
+> hope of getting more and more of syscall information into more easily
+> processed form.
+
+Sounds interesting, but I'm not planning to do the changes myself,
+especially since I have no machine that actually uses the generic
+syscall table.
+
+Maybe I should ask the next person who submits a new architecture to
+do that work, that's usually how progress in asm-generic happens
+these days ;-)
+
+	Arnd
