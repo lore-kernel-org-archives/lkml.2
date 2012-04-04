@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab2DDHAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 03:00:05 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:54608 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab2DDHAD convert rfc822-to-8bit (ORCPT
+	id S1753312Ab2DDHCj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 03:02:39 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:50632 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab2DDHCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 03:00:03 -0400
-Date: Wed, 4 Apr 2012 10:00:01 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Clemens Ladisch <clemens@ladisch.de>
-cc: Dave Airlie <airlied@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix warnings from vgaarb.h
-In-Reply-To: <4F7BEE91.1070309@ladisch.de>
-Message-ID: <alpine.SOC.1.00.1204040947170.26551@math.ut.ee>
-References: <alpine.SOC.1.00.1204040912210.26551@math.ut.ee> <4F7BEE91.1070309@ladisch.de>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Apr 2012 03:02:38 -0400
+Message-ID: <20347.61964.860903.97474@ipc1.ka-ro>
+Date: Wed, 4 Apr 2012 09:02:36 +0200
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: BUG: sleeping function called from invalid context at /usr/local/src/linux-3.4-rc1/include/linux/freezer.h:46
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Meelis Roos wrote:
-> > in 3.4-rc1-144, I get the following warnings. Fix them by including
-> > <linux/pci.h> to get struct pci_dev.
-> >
-> >   CC [M]  drivers/gpu/drm/i915/intel_display.o
-> > In file included from drivers/gpu/drm/i915/intel_display.c:33:0:
-> > include/linux/vgaarb.h:66:9: warning: °struct pci_dev¢ declared inside parameter list [enabled by default]
-> 
-> Or you could simply declare it:
-> 
->   struct pci_dev;
+Hi,
 
-Right, but any actual user of vgaarb would still need real pci_dev 
-anyway. But yes, nothing in vgaarb.h uses pci_dev contents, so the 
-following also compiles without warnings:
+commit a0acae0e added a might_sleep() to try_to_freeze() in
+include/linux/freezer.h.
+This leads to the following BUG message each time a process is started
+when compiled with CONFIG_DEBUG_ATOMIC_SLEEP=y
 
--
+|BUG: sleeping function called from invalid context at /usr/local/src/linux-3.4-rc1/include/linux/freezer.h:46
+|in_atomic(): 0, irqs_disabled(): 128, pid: 619, name: rc
+|no locks held by rc/619.
+|irq event stamp: 12235
+|hardirqs last  enabled at (12234): [<80334684>] _raw_spin_unlock_irq+0x2c/0x58
+|hardirqs last disabled at (12235): [<8000df0c>] ret_fast_syscall+0xc/0x3c
+|softirqs last  enabled at (11761): [<80021d00>] __do_softirq+0x140/0x160
+|softirqs last disabled at (11754): [<8002221c>] irq_exit+0x60/0xb4
+|Backtrace: 
+|[<800118b8>] (dump_backtrace+0x0/0x10c) from [<80330b90>] (dump_stack+0x18/0x1c)
+| r6:00000000 r5:00000002 r4:9ef66000 r3:9f86bb80
+|[<80330b78>] (dump_stack+0x0/0x1c) from [<8003ecb0>] (__might_sleep+0x110/0x130)
+|[<8003eba0>] (__might_sleep+0x0/0x130) from [<80010918>] (do_signal+0x8c/0x584)
+| r4:9ef67fb0
+|[<8001088c>] (do_signal+0x0/0x584) from [<80011340>] (do_notify_resume+0x20/0x64)
+|[<80011320>] (do_notify_resume+0x0/0x64) from [<8000df64>] (work_pending+0x24/0x28)
+| r4:00000000 r3:00000000
 
-in 3.4-rc1-144, I get several warnings like this
+I don't have the slightest idea how this should be fixed.
 
-  CC [M]  drivers/gpu/drm/i915/intel_display.o                                                                                                                                                                                             
-In file included from drivers/gpu/drm/i915/intel_display.c:33:0:                                                                                                                                                                           
-include/linux/vgaarb.h:66:9: warning: °struct pci_dev¢ declared inside parameter list [enabled by default]
 
-Fix them by forward declaring struct pci_dev:
-
-Signed-off-by: Meelis Roos <mroos@linux.ee>
-
-diff --git a/include/linux/vgaarb.h b/include/linux/vgaarb.h
-index 9c3120d..b572f80 100644
---- a/include/linux/vgaarb.h
-+++ b/include/linux/vgaarb.h
-@@ -47,6 +47,8 @@
-  */
- #define VGA_DEFAULT_DEVICE     (NULL)
- 
-+struct pci_dev;
-+
- /* For use by clients */
- 
- /**
-'
-
+Lothar Wa√ümann
 -- 
-Meelis Roos (mroos@linux.ee)
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstra√üe 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Gesch√§ftsf√ºhrer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
