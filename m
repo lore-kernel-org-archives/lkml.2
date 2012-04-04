@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab2DDLws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 07:52:48 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:39958 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab2DDLwq (ORCPT
+	id S1756256Ab2DDLys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 07:54:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51549 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756106Ab2DDLyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 07:52:46 -0400
-Message-ID: <1333540355.5672.1.camel@phoenix>
-Subject: [PATCH] regulator: Fix rc5t583_regulator_probe error handling
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 04 Apr 2012 19:52:35 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 4 Apr 2012 07:54:47 -0400
+Date: Wed, 4 Apr 2012 15:54:43 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Sasikantha babu <sasikanth.v19@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        WANG Cong <amwang@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Do notify userspace when there is change in
+ uts_kern_table.
+Message-ID: <20120404115443.GD24382@moon>
+References: <1333539391-11036-1-git-send-email-sasikanth.v19@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333539391-11036-1-git-send-email-sasikanth.v19@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. regulator_register returns ERR_PTR on error, thus use IS_ERR to check the
-   return value.
-2. Fix off-by-one for unregistering the registered regulator.
-   Current code does not unregister regs[0].rdev in clean_exit.
+On Wed, Apr 04, 2012 at 05:06:31PM +0530, Sasikantha babu wrote:
+> sethostname and setdomainname notifies userspace on failure (without modifying uts_kern_table) too
+> 
+> Notify userspace if there is change in uts_kern_table, on failure don't notify userspace 
+> 
+> Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/rc5t583-regulator.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
-index 37732f7..cac8a2a 100644
---- a/drivers/regulator/rc5t583-regulator.c
-+++ b/drivers/regulator/rc5t583-regulator.c
-@@ -312,7 +312,7 @@ static int __devinit rc5t583_regulator_probe(struct platform_device *pdev)
- skip_ext_pwr_config:
- 		rdev = regulator_register(&ri->desc, &pdev->dev,
- 					reg_data, reg, NULL);
--		if (IS_ERR_OR_NULL(rdev)) {
-+		if (IS_ERR(rdev)) {
- 			dev_err(&pdev->dev, "Failed to register regulator %s\n",
- 						ri->desc.name);
- 			ret = PTR_ERR(rdev);
-@@ -324,7 +324,7 @@ skip_ext_pwr_config:
- 	return 0;
- 
- clean_exit:
--	while (--id > 0)
-+	while (--id >= 0)
- 		regulator_unregister(regs[id].rdev);
- 
- 	return ret;
--- 
-1.7.5.4
-
-
-
+Looks reasonable to me.
