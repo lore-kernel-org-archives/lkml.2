@@ -1,101 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab2DDV1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 17:27:34 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47933 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2DDV1b (ORCPT
+	id S1753724Ab2DDV3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 17:29:31 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55076 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab2DDV3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 17:27:31 -0400
-Date: Wed, 4 Apr 2012 21:27:50 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        PhillipLougherplougher@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Eugene Teo <eteo@redhat.com>,
-        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] sysctl: fix write access to
- dmesg_restrict/kptr_restrict
-Message-ID: <20120404212750.GA29394@mail.hallyn.com>
-References: <20120404023033.GB18730@mail.hallyn.com>
- <20120404184019.GA32681@www.outflux.net>
+	Wed, 4 Apr 2012 17:29:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120404184019.GA32681@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201204042326.47683.rjw@sisk.pl>
+References: <201204010836.30707.rjw@sisk.pl> <201204042326.47683.rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 4 Apr 2012 14:29:08 -0700
+X-Google-Sender-Auth: tVQLwqEUJbB6fW6izaaK2TQrGHY
+Message-ID: <CA+55aFysMfRdZOJcEEnbZhrfG7Eqqy-0uZw_SvR9P_eoEvhr-Q@mail.gmail.com>
+Subject: Re: [GIT PULL] More power management updates for 3.4
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (keescook@chromium.org):
-> Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
-> however, it incorrectly alters kptr_restrict rather than
-> dmesg_restrict.
-> 
-> The original patch from Richard Weinberger
-> (https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
-> expected, and so the patch seems to have been misapplied.
-> 
-> This adds the CAP_SYS_ADMIN check to both dmesg_restrict and
-> kptr_restrict, since both are sensitive.
-> 
-> Reported-by: Phillip Lougher <plougher@redhat.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+On Wed, Apr 4, 2012 at 2:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> Given the lack of feedback and the fact that you don't seem to have pulled this,
+> I wonder if there's anything wrong with the changes or am I simply supposed to
+> queue them up for 3.5?
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Actually, I was just a bit unhappy with it, and decided I wanted to
+give it a second look, and then it just fell in between the cracks.
 
-> Cc: stable@vger.kernel.org
-> ---
->  kernel/sysctl.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 52b3a06..4ab1187 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -170,7 +170,7 @@ static int proc_taint(struct ctl_table *table, int write,
->  #endif
->  
->  #ifdef CONFIG_PRINTK
-> -static int proc_dmesg_restrict(struct ctl_table *table, int write,
-> +static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
->  				void __user *buffer, size_t *lenp, loff_t *ppos);
->  #endif
->  
-> @@ -703,7 +703,7 @@ static struct ctl_table kern_table[] = {
->  		.data		= &dmesg_restrict,
->  		.maxlen		= sizeof(int),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec_minmax,
-> +		.proc_handler	= proc_dointvec_minmax_sysadmin,
->  		.extra1		= &zero,
->  		.extra2		= &one,
->  	},
-> @@ -712,7 +712,7 @@ static struct ctl_table kern_table[] = {
->  		.data		= &kptr_restrict,
->  		.maxlen		= sizeof(int),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dmesg_restrict,
-> +		.proc_handler	= proc_dointvec_minmax_sysadmin,
->  		.extra1		= &zero,
->  		.extra2		= &two,
->  	},
-> @@ -1943,7 +1943,7 @@ static int proc_taint(struct ctl_table *table, int write,
->  }
->  
->  #ifdef CONFIG_PRINTK
-> -static int proc_dmesg_restrict(struct ctl_table *table, int write,
-> +static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
->  				void __user *buffer, size_t *lenp, loff_t *ppos)
->  {
->  	if (write && !capable(CAP_SYS_ADMIN))
-> -- 
-> 1.7.0.4
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
+I still don't like the timing of that thing, but I saw no major reason
+not to pull. So in it went,
+
+                  Linus
