@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab2DDW1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 18:27:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43794 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab2DDW1Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 18:27:24 -0400
-Date: Wed, 4 Apr 2012 15:27:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rtc-linux@googlegroups.com
-Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Subject: Re: [rtc-linux] [PATCH 2/2 RFC] rtc-pcf8563: Add
- RTC_VL_READ/RTC_VL_CLR ioctl feature
-Message-Id: <20120404152722.2f026ba6.akpm@linux-foundation.org>
-In-Reply-To: <1329236025-31323-2-git-send-email-alexander.stein@systec-electronic.com>
-References: <1329236025-31323-1-git-send-email-alexander.stein@systec-electronic.com>
-	<1329236025-31323-2-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932563Ab2DDWh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 18:37:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59171 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757050Ab2DDWh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 18:37:57 -0400
+Message-ID: <1333579075.23520.19.camel@joe2Laptop>
+Subject: Re: [PATCH net-next] vxge: Convert macro to inline function
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 04 Apr 2012 15:37:55 -0700
+In-Reply-To: <20120403.181830.799733266830291210.davem@davemloft.net>
+References: <1333489992.2695.17.camel@joe2Laptop>
+	 <20120403.175837.1897033408784057713.davem@davemloft.net>
+	 <1333491271.2695.20.camel@joe2Laptop>
+	 <20120403.181830.799733266830291210.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Feb 2012 17:13:45 +0100
-Alexander Stein <alexander.stein@systec-electronic.com> wrote:
+On Tue, 2012-04-03 at 18:18 -0400, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Tue, 03 Apr 2012 15:14:31 -0700
+> > Convert the macro to inline function to check the arguments.
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >> Longer term I'd much rather see this turned into an inline
+> >> function with proper type checking etc.
+> > Something like this?
+> Yep.
 
-> Changes are based on arch/cris/arch-v10/drivers/pcf8563.c
-> 
->  drivers/rtc/rtc-pcf8563.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
+I did sign the patch.
+I was intending that you could apply it.
+Do you want a resend?
 
-um, why does the kernel have two drivers for the same device?
 
-arch/cris/arch-v10/drivers/pcf8563.c reimplements some of drivers/rtc/rtc-lib.c :(
+
