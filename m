@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab2DDU1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 16:27:25 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53683 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752193Ab2DDU1X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 16:27:23 -0400
+	id S1756776Ab2DDUdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 16:33:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752707Ab2DDUdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 16:33:22 -0400
+Date: Wed, 4 Apr 2012 16:32:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120404203239.GM12676@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-Date: Wed, 4 Apr 2012 16:27:17 -0400
-Message-ID: <CAEZcMZkRLrY8NhJof+qeANb3Oo7vdKV_AhTpFeKWuwRYd66jaw@mail.gmail.com>
-Subject: FileNet Developer with DataCap FOR Monterey Park, CA!
-From: Vincent Smith <vincent.smith198@gmail.com>
-To: Vincent Smith <vincent.smith198@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Position:                        FileNet Developer with DataCap
+On Wed, Apr 04, 2012 at 11:49:09AM -0700, Tejun Heo wrote:
 
-Location:                        Monterey Park, CA
+[..]
 
-Position Type:               6+ Months (Contract)
+> Thirdly, I don't see how writeback can control all the IOs.  I mean,
+> what about reads or direct IOs?  It's not like IO devices have
+> separate channels for those different types of IOs.  They interact
+> heavily.
 
+> Let's say we have iops/bps limitation applied on top of proportional IO
+> distribution
 
-
-
-
-Job Description:
-
-FileNet IS, IDM Desktop, FileNet Capture, Datacap, ICM, FileNet P8 CE
-and PE APIs, FileNet System Administrator for IS & P8, and other ECM
-Technologies;
-
-Java J2EE, Java API's, Servlets, Java Server Pages, Java Script, Web
-sphere, Adobe Java scripting for PDF forms and IIS Web Servers, Active
-Server pages,
-
-Perl Scripts, Perl Modules, SQL Loader, TOAD, Oracle .9.x/8.x, SQL
-Server 6.5, MS Access, Unix, Linux & Windows OS.
+We already do that. First IO is subjected to throttling limit and only 
+then it is passed to the elevator to do the proportional IO. So throttling
+is already stacked on top of proportional IO. The only question is 
+should it be pushed to even higher layers or not.
 
 
+> or a device holds two partitions and one
+> of them is being used for direct IO w/o filesystems.  How would that
+> work?  I think the question goes even deeper, what do the separate
+> limits even mean?
 
-Responsibilities:
+Separate limits for buffered writes are just filling the gap. Agreed it
+is not a very neat solution.
 
-Designs, develops and implements software for the Bank's
-computer-oriented systems and networks;
+>  Does the IO sched have to calculate allocation of
+> IO resource to different types of IOs and then give a "number" to
+> writeback which in turn enforces that limit?  How does the elevator
+> know what number to give?  Is the number iops or bps or weight?
 
-Responsible for the analysis, development, system integration testing,
-user acceptance testing, implementation (pre and post), maintenance
-and support of bank's enterprise document and content management
-technology;
+If we push up all the throttling somewhere in higher layer, say some
+of kind of per bdi throttling interface, then elevator just have to
+worry about doing proportional IO. No interaction with higher layers
+regarding iops/bps etc. (Not that elevator worries about it today).
 
-Performs all duties required to gather, document, code, test and
-deliver automated document solutions for internal clients;
+> If
+> the iosched doesn't know how much write workload exists, how does it
+> distribute the surplus buffered writeback resource across different
+> cgroups?  If so, what makes the limit actualy enforceable (due to
+> inaccuracies in estimation, fluctuation in workload, delay in
+> enforcement in different layers and whatnot) except for block layer
+> applying the limit *again* on the resulting stream of combined IOs?
 
-Provides on-site and off-site support of production systems;
+So split model is definitely confusing. Anyway, block layer will not
+apply the limits again as flusher IO will go in root cgroup which 
+generally goes to root which is unthrottled generally. Or flusher
+could mark the bios with a flag saying "do not throttle" bios again as
+these have been throttled already. So throttling again is probably not
+an issue. 
 
-Provides troubleshooting support to ensure client operations are
-operating and performing correctly.
+In summary, agreed that split is confusing and it fills a gap existing
+today.
 
-
-
-Education/experience:
-
-Bachelor's degree or foreign equivalent in Computer Science,
-Management Information Systems, Engineering or related field and five
-(5) years post-baccalaureate, progressive experience in job offered or
-as a software engineer/developer/architect, systems/programmer analyst
-or programmer or related field.
-
-Any suitable combination of education, training or experience is acceptable.
-
-
-Thanks & Regards
-Vincent
+Thanks
+Vivek
