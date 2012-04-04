@@ -1,187 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab2DDP27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 11:28:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36545 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab2DDP2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 11:28:00 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V4 REPOST 2/5] dt: pinctrl: Document device tree binding
-Date: Wed,  4 Apr 2012 09:27:47 -0600
-Message-Id: <1333553270-9040-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1333553270-9040-1-git-send-email-swarren@wwwdotorg.org>
-References: <1333553270-9040-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	id S1756831Ab2DDPco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 11:32:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11176 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756415Ab2DDPcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 11:32:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="125279311"
+Message-ID: <4F7C6900.3080804@intel.com>
+Date: Wed, 04 Apr 2012 16:30:08 +0100
+From: Tadeusz Struk <tadeusz.struk@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] Fix warning
+References: <4f4faf68.hZnY8LUXJWXvhCtG%tadeusz.struk@intel.com>
+In-Reply-To: <4f4faf68.hZnY8LUXJWXvhCtG%tadeusz.struk@intel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Hi Bjorn,
+Did you have chance to look at this one?
+Regards,
+Tadeusz
 
-The core pin controller bindings define:
-* The fact that pin controllers expose pin configurations as nodes in
-  device tree.
-* That the bindings for those pin configuration nodes is defined by the
-  individual pin controller drivers.
-* A standardized set of properties for client devices to define numbered
-  or named pin configuration states, each referring to some number of the
-  afore-mentioned pin configuration nodes.
-* That the bindings for the client devices determines the set of numbered
-  or named states that must exist.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Acked-by: Simon Glass <sjg@chromium.org>
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
----
-v2: Fix a couple of grammar-os per Randy Dunlap. Add example of a client
-device that references no pin configuration nodes per Dong Aisheng.
----
- .../bindings/pinctrl/pinctrl-bindings.txt          |  128 ++++++++++++++++++++
- 1 files changed, 128 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-
-diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-new file mode 100644
-index 0000000..c95ea82
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-@@ -0,0 +1,128 @@
-+== Introduction ==
-+
-+Hardware modules that control pin multiplexing or configuration parameters
-+such as pull-up/down, tri-state, drive-strength etc are designated as pin
-+controllers. Each pin controller must be represented as a node in device tree,
-+just like any other hardware module.
-+
-+Hardware modules whose signals are affected by pin configuration are
-+designated client devices. Again, each client device must be represented as a
-+node in device tree, just like any other hardware module.
-+
-+For a client device to operate correctly, certain pin controllers must
-+set up certain specific pin configurations. Some client devices need a
-+single static pin configuration, e.g. set up during initialization. Others
-+need to reconfigure pins at run-time, for example to tri-state pins when the
-+device is inactive. Hence, each client device can define a set of named
-+states. The number and names of those states is defined by the client device's
-+own binding.
-+
-+The common pinctrl bindings defined in this file provide an infrastructure
-+for client device device tree nodes to map those state names to the pin
-+configuration used by those states.
-+
-+Note that pin controllers themselves may also be client devices of themselves.
-+For example, a pin controller may set up its own "active" state when the
-+driver loads. This would allow representing a board's static pin configuration
-+in a single place, rather than splitting it across multiple client device
-+nodes. The decision to do this or not somewhat rests with the author of
-+individual board device tree files, and any requirements imposed by the
-+bindings for the individual client devices in use by that board, i.e. whether
-+they require certain specific named states for dynamic pin configuration.
-+
-+== Pinctrl client devices ==
-+
-+For each client device individually, every pin state is assigned an integer
-+ID. These numbers start at 0, and are contiguous. For each state ID, a unique
-+property exists to define the pin configuration. Each state may also be
-+assigned a name. When names are used, another property exists to map from
-+those names to the integer IDs.
-+
-+Each client device's own binding determines the set of states the must be
-+defined in its device tree node, and whether to define the set of state
-+IDs that must be provided, or whether to define the set of state names that
-+must be provided.
-+
-+Required properties:
-+pinctrl-0:	List of phandles, each pointing at a pin configuration
-+		node. These referenced pin configuration nodes must be child
-+		nodes of the pin controller that they configure. Multiple
-+		entries may exist in this list so that multiple pin
-+		controllers may be configured, or so that a state may be built
-+		from multiple nodes for a single pin controller, each
-+		contributing part of the overall configuration. See the next
-+		section of this document for details of the format of these
-+		pin configuration nodes.
-+
-+		In some cases, it may be useful to define a state, but for it
-+		to be empty. This may be required when a common IP block is
-+		used in an SoC either without a pin controller, or where the
-+		pin controller does not affect the HW module in question. If
-+		the binding for that IP block requires certain pin states to
-+		exist, they must still be defined, but may be left empty.
-+
-+Optional properties:
-+pinctrl-1:	List of phandles, each pointing at a pin configuration
-+		node within a pin controller.
-+...
-+pinctrl-n:	List of phandles, each pointing at a pin configuration
-+		node within a pin controller.
-+pinctrl-names:	The list of names to assign states. List entry 0 defines the
-+		name for integer state ID 0, list entry 1 for state ID 1, and
-+		so on.
-+
-+For example:
-+
-+	/* For a client device requiring named states */
-+	device {
-+		pinctrl-names = "active", "idle";
-+		pinctrl-0 = <&state_0_node_a>;
-+		pinctrl-1 = <&state_1_node_a &state_1_node_b>;
-+	};
-+
-+	/* For the same device if using state IDs */
-+	device {
-+		pinctrl-0 = <&state_0_node_a>;
-+		pinctrl-1 = <&state_1_node_a &state_1_node_b>;
-+	};
-+
-+	/*
-+	 * For an IP block whose binding supports pin configuration,
-+	 * but in use on an SoC that doesn't have any pin control hardware
-+	 */
-+	device {
-+		pinctrl-names = "active", "idle";
-+		pinctrl-0 = <>;
-+		pinctrl-1 = <>;
-+	};
-+
-+== Pin controller devices ==
-+
-+Pin controller devices should contain the pin configuration nodes that client
-+devices reference.
-+
-+For example:
-+
-+	pincontroller {
-+		... /* Standard DT properties for the device itself elided */
-+
-+		state_0_node_a {
-+			...
-+		};
-+		state_1_node_a {
-+			...
-+		};
-+		state_1_node_b {
-+			...
-+		};
-+	}
-+
-+The contents of each of those pin configuration child nodes is defined
-+entirely by the binding for the individual pin controller device. There
-+exists no common standard for this content.
-+
-+The pin configuration nodes need not be direct children of the pin controller
-+device; they may be grandchildren, for example. Whether this is legal, and
-+whether there is any interaction between the child and intermediate parent
-+nodes, is again defined entirely by the binding for the individual pin
-+controller device.
--- 
-1.7.0.4
+On 01/03/12 17:18, tadeusz.struk@intel.com wrote:
+> From: Tadeusz Struk <tadeusz.struk@intel.com>
+> Date: Mon, 14 Feb 2011 14:38:18 +0000
+> Subject: [PATCH] Fixed warning
+> 
+> This patch fixes the following warning.
+> # virsh start fedora16-64
+> kernel: [  133.324565] pci-stub 0000:02:01.1: claimed by stub
+> kernel: [  134.163769] pci-stub 0000:02:01.1: enabling device (0000 -> 0002)
+> kernel: [  164.282679] ------------[ cut here ]------------
+> kernel: [  164.282685] WARNING: at drivers/pci/search.c:46 pci_find_upstream_pcie_bridge+0x87/0x9f()
+> kernel: [  164.282687] Hardware name: SandyBridge Platform
+> kernel: [  164.282689] Modules linked in: sha512_generic sha256_generic icp_qa_al(O) nfs fscache auth_rpcgss nfs_acl mga drm ip6table_filter ip6_tables ebtable_nat ebtables lockd ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_CHECKSUM iptable_mangle tun bridge stp llc sunrpc btrfs zlib_deflate libcrc32c virtio_net kvm_intel kvm uinput matroxfb_base matroxfb_DAC1064 matroxfb_accel matroxfb_Ti3026 matroxfb_g450 g450_pll matroxfb_misc e1000e iTCO_wdt iTCO_vendor_support igb microcode i2c_i801 shpchp serio_raw i2c_core pcspkr dca [last unloaded: scsi_wait_scan]
+> kernel: [  164.282724] Pid: 1233, comm: qemu-kvm Tainted: G           O 3.2.5 #10
+> kernel: [  164.282726] Call Trace:
+> kernel: [  164.282732]  [<ffffffff8104eac6>] warn_slowpath_common+0x83/0x9b
+> kernel: [  164.282735]  [<ffffffff8104eaf8>] warn_slowpath_null+0x1a/0x1c
+> kernel: [  164.282737]  [<ffffffff8123e028>] pci_find_upstream_pcie_bridge+0x87/0x9f
+> kernel: [  164.282741]  [<ffffffff813bf5eb>] domain_context_mapping+0x50/0xe6
+> kernel: [  164.282744]  [<ffffffff813bf6c5>] domain_add_dev_info+0x44/0xe3
+> kernel: [  164.282747]  [<ffffffff813bfcda>] intel_iommu_attach_device+0x14f/0x15c
+> kernel: [  164.282750]  [<ffffffff813bb48b>] iommu_attach_device+0x1c/0x1e
+> kernel: [  164.282764]  [<ffffffffa00f43aa>] kvm_assign_device+0x4a/0x114 [kvm]
+> kernel: [  164.282773]  [<ffffffffa00f3963>] kvm_vm_ioctl_assigned_device+0x434/0xb25 [kvm]
+> kernel: [  164.282777]  [<ffffffff810f0fee>] ? __do_fault+0x351/0x38b
+> kernel: [  164.282781]  [<ffffffff8107c05b>] ? arch_local_irq_save+0x15/0x1b
+> kernel: [  164.282784]  [<ffffffff814b26e4>] ? _raw_spin_unlock_irqrestore+0x17/0x19
+> kernel: [  164.282787]  [<ffffffff813c0f35>] ? pci_conf1_read+0xe1/0xee
+> kernel: [  164.282794]  [<ffffffffa00f07df>] kvm_vm_ioctl+0x377/0x3ac [kvm]
+> kernel: [  164.282797]  [<ffffffff8123eb7c>] ? pci_read_config+0xa2/0x1bd
+> kernel: [  164.282801]  [<ffffffff8110edc2>] ? virt_to_head_page+0xe/0x31
+> kernel: [  164.282804]  [<ffffffff8112f210>] do_vfs_ioctl+0x45d/0x49e
+> kernel: [  164.282808]  [<ffffffff811208da>] ? fsnotify_access+0x5f/0x67
+> kernel: [  164.282811]  [<ffffffff8112f2a7>] sys_ioctl+0x56/0x7b
+> kernel: [  164.282814]  [<ffffffff814b8e42>] system_call_fastpath+0x16/0x1b
+> kernel: [  164.282816] ---[ end trace 6a834ec5ac21cba8 ]---
+> 
+> Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
+> 
+> ---
+>  drivers/pci/search.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> index 9d75dc8..7847c6b 100644
+> --- a/drivers/pci/search.c
+> +++ b/drivers/pci/search.c
+> @@ -26,6 +26,7 @@ struct pci_dev *
+>  pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
+>  {
+>  	struct pci_dev *tmp = NULL;
+> +	struct pci_dev *vf = pdev;
+>  
+>  	if (pci_is_pcie(pdev))
+>  		return NULL;
+> @@ -40,8 +41,10 @@ pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
+>  		}
+>  		/* PCI device should connect to a PCIe bridge */
+>  		if (pdev->pcie_type != PCI_EXP_TYPE_PCI_BRIDGE) {
+> -			/* Busted hardware? */
+> -			WARN_ON_ONCE(1);
+> +			if (!vf->is_virtfn) {
+> +				/* Busted hardware? */
+> +				WARN_ON_ONCE(1);
+> +			}
+>  			return NULL;
+>  		}
+>  		return pdev;
 
