@@ -1,68 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2DDCeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 22:34:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38718 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755543Ab2DDCen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 22:34:43 -0400
-Message-ID: <1333506878.7433.2.camel@marge.simpson.net>
-Subject: Re: [patch] cgroups: disallow attaching kthreadd
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Li Zefan <lizf@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 04 Apr 2012 04:34:38 +0200
-In-Reply-To: <20120403184901.GC27794@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1333475906.7439.7.camel@marge.simpson.net>
-	 <20120403184901.GC27794@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755939Ab2DDCmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 22:42:08 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:40663 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab2DDCmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 22:42:04 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Patrick McHardy <kaber@trash.net>, Andrew Morgan <morgan@kernel.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        David Howells <dhowells@redhat.com>, Neil Brown <neilb@suse.de>,
+        Michal Januszewski <spock@gentoo.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-raid@vger.kernel.org
+References: <m1mx6sz2f2.fsf@fess.ebiederm.org>
+	<20120404022652.GA18730@mail.hallyn.com>
+Date: Tue, 03 Apr 2012 19:45:47 -0700
+In-Reply-To: <20120404022652.GA18730@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Wed, 4 Apr 2012 02:26:52 +0000")
+Message-ID: <m1sjgkxlic.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19FGhmzTgIWWLW4qs22hPmrJheZV5NFSSI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH] userns: Replace netlink uses of cap_raised with capable.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-03 at 11:49 -0700, Tejun Heo wrote: 
-> On Tue, Apr 03, 2012 at 07:58:26PM +0200, Mike Galbraith wrote:
-> > @@ -1894,6 +1895,14 @@ int cgroup_attach_task(struct cgroup *cg
-> >  	if (tsk->flags & PF_EXITING)
-> >  		return -ESRCH;
-> >  
-> > +	/*
-> > +	 * Workqueue threads may acquire PF_THREAD_BOUND and become
-> > +	 * trapped in a cpuset, or RT worker may be born in a cgroup
-> > +	 * with no rt_runtime allocated.  Just say no.
-> > +	 */
-> > +	if (tsk == kthreadd_task)
-> > +		return -EINVAL;
-> > +
-> >  	/* Nothing to do if the task is already in that cgroup */
-> >  	oldcgrp = task_cgroup_from_root(tsk, root);
-> >  	if (cgrp == oldcgrp)
-> > @@ -2172,6 +2181,17 @@ static int attach_task_by_pid(struct cgr
-> >  
-> >  	if (threadgroup)
-> >  		tsk = tsk->group_leader;
-> > +
-> > +	/*
-> > +	 * Workqueue threads may acquire PF_THREAD_BOUND and become
-> > +	 * trapped in a cpuset, or RT worker may be born in a cgroup
-> > +	 * with no rt_runtime allocated.  Just say no.
-> > +	 */
-> > +	if (tsk == kthreadd_task) {
-> > +		ret = -EINVAL;
-> > +		goto out_unlock_cgroup;
-> > +	}
-> 
-> If we have this test here, do we need the same check in
-> cgroup_attach_task()/
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-It looked to me like yes, because cgroup_attach_task() can be called
-directly.  For the problem at hand, user script doing bad things, no,
-it's not needed.
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> 
+>> In 2009 Philip Reiser notied that a few users of netlink connector
+>> interface needed a capability check and added the idiom
+>> cap_raised(nsp->eff_cap, CAP_SYS_ADMIN) to a few of them, on the premise
+>> that netlink was asynchronous.
+>> 
+>> In 2011 Patrick McHardy noticed we were being silly because netlink is
+>> synchronous and removed eff_cap from the netlink_skb_params and changed
+>> the idiom to cap_raised(current_cap(), CAP_SYS_ADMIN).
+>> 
+>> Looking at those spots with a fresh eye we should be calling
+>> capable(CAP_SYS_ADMIN).  The only reason I can see for not calling
+>> capable is that it once appeared we were not in the same task as the
+>> caller which would have made calling capable() impossible.
+>
+> And (just to make sure) that is now absolutely not the case?
 
--Mike
+Absolutely.  Netlink is synchronous.
 
+I reread netlink_unicast_kernel() in net/netlink/af_netlink.c while
+researching this patch.
+
+Netlink has been synchronous since 2007.  In a world of perfect
+knowledge transmission these calls could have been calls to capable
+from the very beginning.
+
+>> In the initial user_namespace the only difference between  between
+>> cap_raised(current_cap(), CAP_SYS_ADMIN) and capable(CAP_SYS_ADMIN)
+>> are a few sanity checks and the fact that capable(CAP_SYS_ADMIN)
+>> sets PF_SUPERPRIV if we use the capability.
+>> 
+>> Since we are going to be using root privilege setting PF_SUPERPRIV
+>> seems the right thing to do.
+>> 
+>> The motivation for this that patch is that in a child user namespace
+>> cap_raised(current_cap(),...) tests your capabilities with respect to
+>> that child user namespace not capabilities in the initial user namespace
+>> and thus will allow processes that should be unprivielged to use the
+>> kernel services that are only protected with
+>> cap_raised(current_cap(),..).
+>> 
+>> To fix possible user_namespace issues and to just clean up the code
+>> replace cap_raised(current_cap(), CAP_SYS_ADMIN) with
+>> capable(CAP_SYS_ADMIN).
+>> 
+>> Cc: Patrick McHardy <kaber@trash.net>
+>> Cc: Philipp Reisner <philipp.reisner@linbit.com>
+>> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+>
+> Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+>
+> thanks,
+> -serge
+>
+>> Cc: Andrew Morgan <morgan@kernel.org>
+>> Cc: Vasiliy Kulikov <segoon@openwall.com>
+>> Cc: David Howells <dhowells@redhat.com>
+>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>> ---
+>>  drivers/block/drbd/drbd_nl.c           |    2 +-
+>>  drivers/md/dm-log-userspace-transfer.c |    2 +-
+>>  drivers/video/uvesafb.c                |    2 +-
+>>  3 files changed, 3 insertions(+), 3 deletions(-)
+>> 
+>> diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+>> index abfaaca..946166e 100644
+>> --- a/drivers/block/drbd/drbd_nl.c
+>> +++ b/drivers/block/drbd/drbd_nl.c
+>> @@ -2297,7 +2297,7 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
+>>  		return;
+>>  	}
+>>  
+>> -	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
+>> +	if (!capable(CAP_SYS_ADMIN)) {
+>>  		retcode = ERR_PERM;
+>>  		goto fail;
+>>  	}
+>> diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
+>> index 1f23e04..08d9a20 100644
+>> --- a/drivers/md/dm-log-userspace-transfer.c
+>> +++ b/drivers/md/dm-log-userspace-transfer.c
+>> @@ -134,7 +134,7 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
+>>  {
+>>  	struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
+>>  
+>> -	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+>> +	if (!capable(CAP_SYS_ADMIN))
+>>  		return;
+>>  
+>>  	spin_lock(&receiving_list_lock);
+>> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+>> index 260cca7..9f7d27a 100644
+>> --- a/drivers/video/uvesafb.c
+>> +++ b/drivers/video/uvesafb.c
+>> @@ -73,7 +73,7 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
+>>  	struct uvesafb_task *utask;
+>>  	struct uvesafb_ktask *task;
+>>  
+>> -	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+>> +	if (!capable(CAP_SYS_ADMIN))
+>>  		return;
+>>  
+>>  	if (msg->seq >= UVESAFB_TASKS_MAX)
+>> -- 
+>> 1.7.2.5
