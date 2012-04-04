@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab2DDKX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 06:23:58 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:22958 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990Ab2DDKX4 (ORCPT
+	id S1756141Ab2DDK1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 06:27:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52488 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939Ab2DDK1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 06:23:56 -0400
-X-AuditID: cbfee61a-b7c49ae0000061d4-e0-4f7c213b0a3e
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: cpufreq@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>, Jaecheol Lee <jc.lee@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com, myungjoo.ham@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [CPUFREQ] EXYNOS: bugfix on retrieving old_index from freqs.old
-Date: Wed, 04 Apr 2012 19:23:56 +0900
-Message-id: <1333535036-24409-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Wed, 4 Apr 2012 06:27:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH v2] gpio: Device tree support for LPC32xx
+Date: Wed, 4 Apr 2012 08:48:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: grant.likely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
+References: <1333497518-25838-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1333497518-25838-1-git-send-email-stigge@antcom.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204040848.39376.arnd@arndb.de>
+X-Provags-ID: V02:K0:aigjimQBlK/Xoj/lsJm2TEqqir2T6EiMBRImDbdZxbP
+ O9IUOsySLBm4jYUWTNOhfoxG/NAy9mZhMoWJqD/bdq194QhArV
+ WqNzFs0/wi3W22eMtMEftxu2a0fxO+Pwm9Uuc16eSTMPKOXNDx
+ oftlMP3pjUTOKj2lNBWx/OHOIV/QRFWuyi3Sz9hIctdf7qwBkZ
+ XbI5m+CPiF4mowSF6wvzfDy5op2FRF7C7PkhiCcEE/pz482DDt
+ WiHwimBCh/7P0tZ1w05v7ti2yKKDhDBvQFwBbiGo3RFLyClV4C
+ DCxTcps4CTJB2D5TtIO7aA1VIzK713pVrIuvh68SaljG8HfmvC
+ X6sPzqy11T7dCEEnUbFo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The policy might have been changed since last call of target().
-Thus, using cpufreq_frequency_table_target(), which depends on
-policy to find the correspoding index from a frequency, may return
-inconsistent index for freqs.old. Thus, old_index should be
-calculated not based on the current policy.
+On Tuesday 03 April 2012, Roland Stigge wrote:
+> This patch adds device tree support for gpio-lpc32xx.c
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-We have been observing such issue when scaling_min/max_freq were
-updated and sometimes caused system lockups due to incorrectly
-configured voltages.
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
----
- drivers/cpufreq/exynos-cpufreq.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+Just one more comment:
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index b243a7e..1577522 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -62,8 +62,17 @@ static int exynos_target(struct cpufreq_policy *policy,
- 		goto out;
- 	}
- 
--	if (cpufreq_frequency_table_target(policy, freq_table,
--					   freqs.old, relation, &old_index)) {
-+	/*
-+	 * The policy may have been changed so that we cannot get proper
-+	 * old_index with cpufreq_frequency_table_target(). Thus, ignore
-+	 * policy and get the index from the raw frequency table.
-+	 */
-+	for (old_index = 0;
-+	     freq_table[old_index].frequency != CPUFREQ_TABLE_END;
-+	     old_index++)
-+		if (freq_table[old_index].frequency == freqs.old)
-+			break;
-+	if (freq_table[old_index].frequency == CPUFREQ_TABLE_END) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
--- 
-1.7.4.1
+> +#ifdef CONFIG_OF
+> +static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
+> +	{ .compatible = "nxp,lpc32xx-gpio", },
+> +	{ },
+> +};
+> +#endif
+> +
+> +static struct platform_driver lpc32xx_gpio_driver = {
+> +	.driver		= {
+> +		.name	= "lpc32xx-gpio",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = lpc32xx_gpio_of_match,
+> +	},
+> +	.probe		= lpc32xx_gpio_probe,
+> +};
+
+The #ifdef above is not helpful, it will cause a build error in the
+of_match_table= assignment. Since the plan for this driver is to
+be devicetree-only, it would be appropriate to just remove the
+#ifdef, but adding of_match_ptr() is ok too.
+
+	Arnd
 
