@@ -1,70 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab2DDDnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 23:43:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42156 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab2DDDno (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 23:43:44 -0400
-Message-ID: <4F7BC36E.4070000@wwwdotorg.org>
-Date: Tue, 03 Apr 2012 21:43:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1755997Ab2DDDpS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 23:45:18 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:33950 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755428Ab2DDDpP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Apr 2012 23:45:15 -0400
+From: Bhupesh SHARMA <bhupesh.sharma@st.com>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Wolfgang Grandegger <wg@grandegger.com>,
+        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
+        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Gole, Anant" <anantgole@ti.com>, "Nori,  Sekhar" <nsekhar@ti.com>
+Date: Wed, 4 Apr 2012 11:43:22 +0800
+Subject: RE: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
+ D_CAN controller
+Thread-Topic: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
+ D_CAN controller
+Thread-Index: AQHNEZXW4WifiYIc20mGGxLe7+r04paIr8SAgABeuVD//7NVAIAAXJrw///AfgCAAF6eQIAAx0IA
+Message-ID: <D5ECB3C7A6F99444980976A8C6D896384FA301D81D@EAPEX1MAIL1.st.com>
+References: <1333456339-9372-1-git-send-email-anilkumar@ti.com>
+ <4F7AF0C7.7020506@grandegger.com>
+ <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com>
+ <4F7AFFEC.1010805@pengutronix.de>
+ <331ABD5ECB02734CA317220B2BBEABC1317D86F7@DBDE01.ent.ti.com>
+ <4F7B1854.90106@pengutronix.de>
+ <331ABD5ECB02734CA317220B2BBEABC1317D88B7@DBDE01.ent.ti.com>
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC1317D88B7@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: FYYj GHpq LheL Lopt MIoz qgxV zEUI zZbP 0P9v 3odi +Dqh
+ +YcJ ABNKuQ== ABnoew== ACGhgQ==
+ AE3SlQ==;11;YQBuAGEAbgB0AGcAbwBsAGUAQAB0AGkALgBjAG8AbQA7AGEAbgBpAGwAawB1AG0AYQByAEAAdABpAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBjAGEAbgBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAG8AbQBhAHAAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG0ALgBrAGwAZQBpAG4AZQAtAGIAdQBkAGQAZQBAAHAAZQBuAGcAdQB0AHIAbwBuAGkAeAAuAGQAZQA7AG0AawBsAEAAcABlAG4AZwB1AHQAcgBvAG4AaQB4AC4AZABlADsAbgBlAHQAZABlAHYAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG4AcwBlAGsAaABhAHIAQAB0AGkALgBjAG8AbQA7AHMAbwBjAGsAZQB0AGMAYQBuAEAAaABhAHIAdABrAG8AcABwAC4AbgBlAHQAOwB3AGcAQABnAHIAYQBuAGQAZQBnAGcAZQByAC4AYwBvAG0A;Sosha1_v1;7;{F46C0B24-552E-4D6B-B701-B542EFCA5D14};YgBoAHUAcABlAHMAaAAuAHMAaABhAHIAbQBhAEAAcwB0AC4AYwBvAG0A;Wed,
+ 04 Apr 2012 03:43:22
+ GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAQQBSAE0AOgAgAE8ATQBBAFAAOgAgAEEATQAzADMAWABYADoAIABDAEEATgA6ACAAZABfAGMAYQBuADoAIABBAGQAZAAgAHMAdQBwAHAAbwByAHQAIABmAG8AcgAgAEIAbwBzAGMAaAAgAEQAXwBDAEEATgAgAGMAbwBuAHQAcgBvAGwAbABlAHIA
+x-cr-puzzleid: {F46C0B24-552E-4D6B-B701-B542EFCA5D14}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the pinctrl tree
-References: <20120404124437.ff05ebcc4db98109d5fcee22@canb.auug.org.au>
-In-Reply-To: <20120404124437.ff05ebcc4db98109d5fcee22@canb.auug.org.au>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 08:44 PM, Stephen Rothwell wrote:
-> Hi Linus,
+> -----Original Message-----
+> From: linux-can-owner@vger.kernel.org [mailto:linux-can-
+> owner@vger.kernel.org] On Behalf Of AnilKumar, Chimata
+> Sent: Tuesday, April 03, 2012 9:28 PM
+> To: Marc Kleine-Budde
+> Cc: Wolfgang Grandegger; socketcan@hartkopp.net; m.kleine-
+> budde@pengutronix.de; linux-can@vger.kernel.org;
+> netdev@vger.kernel.org; linux-omap@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Gole, Anant; Nori, Sekhar
+> Subject: RE: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for
+> Bosch D_CAN controller
 > 
-> After merging the pinctrl tree, today's linux-next build (powerpc 
-> ppc64_defconfig) failed like this:
+> On Tue, Apr 03, 2012 at 21:03:40, Marc Kleine-Budde wrote:
+> > On 04/03/2012 04:29 PM, AnilKumar, Chimata wrote:
+> > >>>> Please explain why this CAN controller cannot be handled by the
+> existing
+> > >>>> C_CAN driver, eventually with some extensions. The register
+> layout seems
+> > >>>> almost identical, at least.
+> > >>>>
+> > >>>> Wolfgang.
+> > >>>>
+> > >>>
+> > >>> These are the some of the pointers I can say, why I had gone for
+> separate
+> > >>> file instead of existing driver:
+> > >>> * In case of D_CAN driver we can see all the registers are 32bit
+> length
+> > >>>   but in case of C_CAN registers are in 16bit length.
+> > >>
+> > >> How many bits in these 32 bit registers are used?
+> > >
+> > > In some cases (D_CAN_TXRQ, D_CAN_INTPND, D_CAN_MSGVAL) I have used
+> all the
+> > > bits, in some cases used few bits.
+> > >
+> > > Roughly I can say that its (higher 16bits) % of usages is similar
+> as compare
+> > > to 16bits
+> > >
+> > > While checking the status of TXRequest registers and INT pending
+> register,
+> > > which is a hot code path, we have to put if checks for register
+> access.
+> >
+> > The c_can already has a c_can_read_reg32() function. It's for example
+> > used in the rx_poll function. You can make it a function pointer
+> (i.e.
+> > pric->read_reg32()) for easy abstraction.
 > 
-> drivers/pinctrl/devicetree.c: In function 'dt_free_map': 
-> drivers/pinctrl/devicetree.c:44:42: error: dereferencing pointer to
-> incomplete type drivers/pinctrl/devicetree.c:45:6: error:
-> dereferencing pointer to incomplete type 
-> drivers/pinctrl/devicetree.c: In function 'dt_to_map_one_config': 
-> drivers/pinctrl/devicetree.c:140:21: error: dereferencing pointer
-> to incomplete type drivers/pinctrl/devicetree.c:141:10: error:
-> dereferencing pointer to incomplete type 
-> drivers/pinctrl/devicetree.c:146:11: error: dereferencing pointer
-> to incomplete type
+> This won't fit for D_CAN case because offsets are different in c_can
+> compared
+> to d_can. For example if I read CONTROL_REG register (0x0) in case of
+> d_can,
+> which will read only control register. In case of c_can it will read
+> CONTROL_REG + STATUS register values in single read
 
-This doesn't repro for me with tegra_defconfig, which has both
-CONFIG_PINCTRL and CONFIG_OF enabled.
+C_CAN core has both 16-bit as well as 32-bit registers.
+While the registers like NEWDATA and INTPND are 32-bit the others
+like Control and Status are 16-bit.
 
-I believe this happens because of the following in
-drivers/pinctrl/Makefile:
+These cases are handled by the present C_CAN driver already.
+If you will see the C_CAN driver then you will see that the normal
+read/write operations are 16-bit whereas a special variant is provided
+for 32-bit access.
 
-obj-$(CONFIG_OF)		+= devicetree.o
+Are you sure you cannot use them as it is?
 
-On ppc64, CONFIG_OF is probably true, yet the rest of PINCTRL isn't
-enabled, hence the headers that are included probably don't declare
-all the types needed to compile that file.
+> >
+> > >>> * Some of the registers, bit masks are different, so we have to
+> add
+> > >>>   checks on every API for differentiating the kind of device
+> > >>
+> > >> Which registers are this? Can you give us an example?
+> > >
+> > > I am pointing out some of the resisters
+> > > * Single registers in case of D_CAN but multiple register in case
+> of C_CAN
+> > >   So masks will change MASK, ARB, INTPND
+> > > * D_CAN_IFCMD is the combination of COMM request and COMM mask
+> registers
+> >
+> > Maybe you can use the read_reg32 function on both c_can and d_can.
+> 
+> Above comment applies here as well
+> 
 
-In fact, the file shouldn't be compiled, since it's not needed if
-!CONFIG_PINCTRL. So perhaps the Makefile should be more like:
+This can be easily handled. I have worked on several drivers that do that.
+See for example the STMPE multi-function device driver (MFD), here [1]
 
-ifeq ($(CONFIG_OF),y)
-obj-$(CONFIG_PINCTRL)		+= devicetree.o
-endif
+There are various variants of STMPE devices (like STMPE801 etc..) and they
+can be handled by using a common driver and passing different platform data
+intelligently that provides specific handling for a specific STMPE device.
 
-(I see something similar to that in drivers/mmc/host/Makefile)
+Regards,
+Bhupesh
 
-But, I notice the same construct in ./drivers/regulator/Makefile, and
-I don't believe regulators are enabled for ppc64. Perhaps the
-regulator headers always declare the types, so the issue doesn't come
-up, although I daresay that perhaps the regulator file also shouldn't
-be compiled when CONFIG_REGULATOR is off?
+[1] http://lxr.linux.no/linux+v3.3.1/drivers/mfd/stmpe.c
+
