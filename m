@@ -1,52 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2DDDQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 23:16:32 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41782 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab2DDDQb (ORCPT
+	id S1755882Ab2DDDXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 23:23:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49196 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab2DDDXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 23:16:31 -0400
-Date: Wed, 4 Apr 2012 04:16:29 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org
-Subject: Re: [PATCH 5/6] vfs: reorganize do_lookup
-Message-ID: <20120404031629.GB6589@ZenIV.linux.org.uk>
-References: <1332759264-23533-1-git-send-email-miklos@szeredi.hu>
- <1332759264-23533-6-git-send-email-miklos@szeredi.hu>
- <20120330190526.GA29050@ZenIV.linux.org.uk>
- <87hax1s069.fsf@tucsk.pomaz.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hax1s069.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Apr 2012 23:23:45 -0400
+Date: Wed, 4 Apr 2012 13:23:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Ungerer <gerg@snapgear.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: linux-next: manual merge of the akpm tree with the m68knommu tree
+Message-Id: <20120404132335.d8d55177a608396c9270dc74@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__4_Apr_2012_13_23_35_+1000_OVtsOrOK=sT806Mj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 10:13:18AM +0200, Miklos Szeredi wrote:
+--Signature=_Wed__4_Apr_2012_13_23_35_+1000_OVtsOrOK=sT806Mj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The do_last() reorganization in the atomic-open series needs to be split
-> up, I realize.  Do you have any other high level comments about that
-> series?
+Hi Andrew,
 
-Yes.
-	a) Please, pull removal of open-from-d_revalidate() as far in front
-of the queue as possible, *along* *with* -EOPENSTALE stuff.  Without the
-latter the former is simply broken - we might have hit -ESTALE before and
-LOOKUP_REVAL might have already been set, so just failing ->open() with
-ESTALE may end up not repeating it.
-	TBH, had that thing been in front of the queue, I would've put
-it into the last pull request; that particular idiocy (NFS4 doing open
-from all methods involved, except for ->open()) had been a serious source
-of annoyance for a long time.  It really needs killing...
+Today's linux-next merge of the akpm tree got a conflict in
+arch/m68k/kernel/signal_no.c between commit de6bd4f40385 ("m68k: merge
+the MMU and non-MMU signal.c code") from the m68knommu tree and commit
+"m68k: use set_current_blocked() and block_sigmask()" from the akpm tree.
 
-	b) opendata is simply bogus.  You need to pass caller-allocated
-struct file in any case, right?  So why not use it to pass what you
-need to pass?  We want to be able to tell "it's a symlink, here's the
-vfsmount/dentry, now sod off and handle it yourself"?  Sure, but struct
-file *already* contains struct path and that's not something that might
-disappear on future kernel changes ;-)
+The former merged this file into arch/m68k/kernel/signal.c, git applied
+the changes for arch/m68k/kernel/signal_mm.c in the akpm tree commit
+there.  The whole patch is now as below.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --git a/arch/m68k/kernel/signal.c b/arch/m68k/kernel/signal.c
+index 1747c70..c9f519f 100644
+--- a/arch/m68k/kernel/signal.c
++++ b/arch/m68k/kernel/signal.c
+@@ -230,12 +230,13 @@ static inline void push_cache(unsigned long vaddr)
+ asmlinkage int
+ sys_sigsuspend(int unused0, int unused1, old_sigset_t mask)
+ {
+-	mask &=3D _BLOCKABLE;
+-	spin_lock_irq(&current->sighand->siglock);
++	sigset_t blocked;
++
+ 	current->saved_sigmask =3D current->blocked;
+-	siginitset(&current->blocked, mask);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++
++	mask &=3D _BLOCKABLE;
++	siginitset(&blocked, mask);
++	set_current_blocked(&blocked);
+=20
+ 	current->state =3D TASK_INTERRUPTIBLE;
+ 	schedule();
+@@ -804,8 +805,7 @@ asmlinkage int do_sigreturn(unsigned long __unused)
+ 		goto badframe;
+=20
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	current->blocked =3D set;
+-	recalc_sigpending();
++	set_current_blocked(&set);
+=20
+ 	if (restore_sigcontext(regs, &frame->sc, frame + 1))
+ 		goto badframe;
+@@ -830,8 +830,7 @@ asmlinkage int do_rt_sigreturn(unsigned long __unused)
+ 		goto badframe;
+=20
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	current->blocked =3D set;
+-	recalc_sigpending();
++	set_current_blocked(&set);
+=20
+ 	if (rt_restore_ucontext(regs, sw, &frame->uc))
+ 		goto badframe;
+@@ -1150,10 +1149,7 @@ handle_signal(int sig, struct k_sigaction *ka, sigin=
+fo_t *info,
+ 	if (err)
+ 		return;
+=20
+-	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&current->blocked,sig);
+-	recalc_sigpending();
++	block_sigmask(ka, sig);
+=20
+ 	if (test_thread_flag(TIF_DELAYED_TRACE)) {
+ 		regs->sr &=3D ~0x8000;
+
+--Signature=_Wed__4_Apr_2012_13_23_35_+1000_OVtsOrOK=sT806Mj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPe763AAoJEECxmPOUX5FEY5YP/jFVciIcibIhPDjNSg7DRxHv
+4ml4xJ3oRU2+8hell/vqsAp4ANVNImHAGcXxHNHYeyDEf/1oPXTPcg9MiBXb3UCI
+Rwrtx/oUajZBULxJ7kdCUCa8DsVysQEgbxQAEFbg+MNvH0Gs+CnrXLmuGtFS2fU3
+mRtueKxoIzMk+sC18j6mgnuIvtSrtf1zZ/r9Sq7VQcJ7EYveSguGZWyg0hr2SuGZ
+jBzotBPbaYKd3flZHB4YywEVZKPPFL8uSrboQRZ39NALd3oLCMK537e2ChtrKiio
+6GybHz9PTCRxhPOOML9ifHyTjX2INItES8A/Xe7VfQQfV8chWMb/uKyiMGavKGLo
+29R1eWJv+03hr0WLHC796txmsv5jCY18m/0xcVDXqZe/q4+NqgxarcD6gVtaRLUE
+Z/v7w69C1Om0VVd9xJ/fOxzEIYwXm92cTFHHz3JP/EPKh95FJvNDpgxpwmn6H7N+
+mSoPojXyCMvflBzZDkNUV10a+iCnzHMaZp2KhS4yD2V134wdCXdMf8J1/oa/MQTv
+M84OQsG49uZq2UxZ65Z4As9fsKFufv2HQaL/KnRlJZyWRAAVI9tPTEoT8ZMsxcSI
+vRjd/vWzW8YBnDY1yVVzz7zbVjwE/dcXzwHgJKROKUiHHnmLWCpe6dwARb9UGNTw
+VYN5fC7o0WKqJ4t7bS+s
+=MDaP
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__4_Apr_2012_13_23_35_+1000_OVtsOrOK=sT806Mj--
