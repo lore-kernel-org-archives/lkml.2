@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab2DDJTa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 05:19:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38008 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab2DDJT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 05:19:28 -0400
-Date: Wed, 4 Apr 2012 11:19:17 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: linux-arm-kernel@lists.infradead.org, Sascha Hauer <kernel@pengutronix.de>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Dinh Nguyen <dinh.nguyen@freescale.com>,
-        Troy Kisky <troy.kisky@boundarydevices.com>
-Subject: Re: [PATCH] ARM: mx53: fix pad definitions for
- MX53_PAD_EIM_D28__I2C1_SDA and MX53_PAD_GPIO_8__CAN1_RXCAN
-Message-ID: <20120404091917.GP3852@pengutronix.de>
-References: <1333459179-9325-1-git-send-email-LW@KARO-electronics.de>
+	id S1756040Ab2DDJTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 05:19:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825Ab2DDJTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 05:19:43 -0400
+Date: Wed, 4 Apr 2012 12:19:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: netdev@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+        kvm@vger.kernel.org
+Subject: [PATCH RFC] virtio-net: remove useless disable on freeze
+Message-ID: <20120404091954.GA3776@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1333459179-9325-1-git-send-email-LW@KARO-electronics.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:19:07 up 143 days, 17:06, 58 users,  load average: 0.15, 0.12,
- 0.13
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 03:19:39PM +0200, Lothar Waﬂmann wrote:
-> MX53_PAD_EIM_D28__I2C1_SDA uses an undefined PAD_CTRL_I2C
-> MX53_PAD_GPIO_8__CAN1_RXCAN has an incorrect input_select value
-> 
-> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+disable_cb is just an optimization: it
+can not guarantee that there are no callbacks.
 
-Applied, thanks
+I didn't yet figure out whether a callback
+in freeze will trigger a bug, but disable_cb
+won't address it in any case. So let's remove
+the useless calls as a first step.
 
-Sascha
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/virtio_net.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-> ---
->  arch/arm/plat-mxc/include/mach/iomux-mx53.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx53.h b/arch/arm/plat-mxc/include/mach/iomux-mx53.h
-> index 527f8fe..9761e00 100644
-> --- a/arch/arm/plat-mxc/include/mach/iomux-mx53.h
-> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx53.h
-> @@ -573,7 +573,7 @@
->  #define MX53_PAD_EIM_D28__UART2_CTS			IOMUX_PAD(0x494, 0x14C, 2, __NA_, 0, MX53_UART_PAD_CTRL)
->  #define MX53_PAD_EIM_D28__IPU_DISPB0_SER_DIO		IOMUX_PAD(0x494, 0x14C, 3, 0x82C, 1, NO_PAD_CTRL)
->  #define MX53_PAD_EIM_D28__CSPI_MOSI			IOMUX_PAD(0x494, 0x14C, 4, 0x788, 1, NO_PAD_CTRL)
-> -#define MX53_PAD_EIM_D28__I2C1_SDA			IOMUX_PAD(0x494, 0x14C, 5 | IOMUX_CONFIG_SION, 0x818, 1, PAD_CTRL_I2C)
-> +#define MX53_PAD_EIM_D28__I2C1_SDA			IOMUX_PAD(0x494, 0x14C, 5 | IOMUX_CONFIG_SION, 0x818, 1, NO_PAD_CTRL)
->  #define MX53_PAD_EIM_D28__IPU_EXT_TRIG			IOMUX_PAD(0x494, 0x14C, 6, __NA_, 0, NO_PAD_CTRL)
->  #define MX53_PAD_EIM_D28__IPU_DI0_PIN13			IOMUX_PAD(0x494, 0x14C, 7, __NA_, 0, NO_PAD_CTRL)
->  #define MX53_PAD_EIM_D29__EMI_WEIM_D_29			IOMUX_PAD(0x498, 0x150, 0, __NA_, 0, NO_PAD_CTRL)
-> @@ -1187,7 +1187,7 @@
->  #define MX53_PAD_GPIO_8__ESAI1_TX5_RX0			IOMUX_PAD(0x6C8, 0x338, 0, 0x7F8, 1, NO_PAD_CTRL)
->  #define MX53_PAD_GPIO_8__GPIO1_8			IOMUX_PAD(0x6C8, 0x338, 1, __NA_, 0, NO_PAD_CTRL)
->  #define MX53_PAD_GPIO_8__EPIT2_EPITO			IOMUX_PAD(0x6C8, 0x338, 2, __NA_, 0, NO_PAD_CTRL)
-> -#define MX53_PAD_GPIO_8__CAN1_RXCAN			IOMUX_PAD(0x6C8, 0x338, 3, 0x760, 3, NO_PAD_CTRL)
-> +#define MX53_PAD_GPIO_8__CAN1_RXCAN			IOMUX_PAD(0x6C8, 0x338, 3, 0x760, 2, NO_PAD_CTRL)
->  #define MX53_PAD_GPIO_8__UART2_RXD_MUX			IOMUX_PAD(0x6C8, 0x338, 4, 0x880, 5, MX53_UART_PAD_CTRL)
->  #define MX53_PAD_GPIO_8__FIRI_TXD			IOMUX_PAD(0x6C8, 0x338, 5, __NA_, 0, NO_PAD_CTRL)
->  #define MX53_PAD_GPIO_8__SPDIF_SRCLK			IOMUX_PAD(0x6C8, 0x338, 6, __NA_, 0, NO_PAD_CTRL)
-> -- 
-> 1.7.2.5
-> 
-> 
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 019da01..971931e5 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1182,11 +1182,6 @@ static int virtnet_freeze(struct virtio_device *vdev)
+ {
+ 	struct virtnet_info *vi = vdev->priv;
+ 
+-	virtqueue_disable_cb(vi->rvq);
+-	virtqueue_disable_cb(vi->svq);
+-	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ))
+-		virtqueue_disable_cb(vi->cvq);
+-
+ 	netif_device_detach(vi->dev);
+ 	cancel_delayed_work_sync(&vi->refill);
+ 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.9.111.gf3fb0
