@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab2DDIpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 04:45:32 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:33285 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784Ab2DDIpb (ORCPT
+	id S1755997Ab2DDIqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 04:46:09 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43257 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab2DDIqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 04:45:31 -0400
-Date: Wed, 4 Apr 2012 10:45:27 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] Fix perf build failure on glibc trunk
-Message-ID: <20120404084527.GA294@x4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Wed, 4 Apr 2012 04:46:07 -0400
+Date: Wed, 04 Apr 2012 04:39:52 -0400 (EDT)
+Message-Id: <20120404.043952.1333187975072018080.davem@davemloft.net>
+To: stigge@antcom.de
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, srinivas.bakki@nxp.com, kevin.wells@nxp.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-watchdog@vger.kernel.org, wim@iguana.be, jonsmirl@gmail.com
+Subject: Re: [PATCH v3 3/8] net: Add device tree support to LPC32xx
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1333528480-17134-4-git-send-email-stigge@antcom.de>
+References: <1333528480-17134-1-git-send-email-stigge@antcom.de>
+	<1333528480-17134-4-git-send-email-stigge@antcom.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 01:39:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a system running glibc trunk perf doesn't build:
+From: Roland Stigge <stigge@antcom.de>
+Date: Wed,  4 Apr 2012 10:34:35 +0200
 
-    CC builtin-sched.o
-builtin-sched.c: In function ‘get_cpu_usage_nsec_parent’:
-builtin-sched.c:399:16: error: storage size of ‘ru’ isn’t known
-builtin-sched.c:403:2: error: implicit declaration of function ‘getrusage’ [-Werror=implicit-function-declaration]
-builtin-sched.c:403:2: error: nested extern declaration of ‘getrusage’ [-Werror=nested-externs]
-builtin-sched.c:403:18: error: ‘RUSAGE_SELF’ undeclared (first use in this function)
-builtin-sched.c:403:18: note: each undeclared identifier is reported only once for each function it appears in
-builtin-sched.c:399:16: error: unused variable ‘ru’ [-Werror=unused-variable]
-cc1: all warnings being treated as errors
+> This patch adds device tree support for lpc_eth.c.
+> 
+> The runtime option for MII/RMII is solved via the "phy-mode" property, SRAM
+> ("IRAM") usage for DMA can be chosen via "use-iram".
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-Fix it by including sys/resource.h.
----
- tools/perf/builtin-sched.c |    1 +
- 1 file changed, 1 insertion(+)
+Feel free to merge this in via one of the ARM trees.
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index fb8b5f8..1cad3af 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -17,6 +17,7 @@
- #include "util/debug.h"
- 
- #include <sys/prctl.h>
-+#include <sys/resource.h>
- 
- #include <semaphore.h>
- #include <pthread.h>
--- 
-Markus
+Acked-by: David S. Miller <davem@davemloft.net>
