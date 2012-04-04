@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2DDWYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 18:24:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59660 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab2DDWYH (ORCPT
+	id S1757331Ab2DDW1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 18:27:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43794 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab2DDW1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 18:24:07 -0400
-Date: Wed, 4 Apr 2012 23:24:03 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 6/6] regmap: prevent division by zero in rbtree_show
-Message-ID: <20120404222400.GG10787@opensource.wolfsonmicro.com>
-References: <1333576113-13196-1-git-send-email-swarren@wwwdotorg.org>
- <1333576113-13196-6-git-send-email-swarren@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1giRMj6yz/+FOIRq"
-Content-Disposition: inline
-In-Reply-To: <1333576113-13196-6-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Apr 2012 18:27:24 -0400
+Date: Wed, 4 Apr 2012 15:27:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: rtc-linux@googlegroups.com
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: Re: [rtc-linux] [PATCH 2/2 RFC] rtc-pcf8563: Add
+ RTC_VL_READ/RTC_VL_CLR ioctl feature
+Message-Id: <20120404152722.2f026ba6.akpm@linux-foundation.org>
+In-Reply-To: <1329236025-31323-2-git-send-email-alexander.stein@systec-electronic.com>
+References: <1329236025-31323-1-git-send-email-alexander.stein@systec-electronic.com>
+	<1329236025-31323-2-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 14 Feb 2012 17:13:45 +0100
+Alexander Stein <alexander.stein@systec-electronic.com> wrote:
 
---1giRMj6yz/+FOIRq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Changes are based on arch/cris/arch-v10/drivers/pcf8563.c
+> 
+>  drivers/rtc/rtc-pcf8563.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
 
-On Wed, Apr 04, 2012 at 03:48:33PM -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->=20
-> If there are no nodes in the cache, nodes will be 0, so calculating
-> "registers / nodes" will cause division by zero.
+um, why does the kernel have two drivers for the same device?
 
-Applied, thanks.  I'm not sure what this patch was generated against,
-git am can't seem to find the blobs referenced.
-
---1giRMj6yz/+FOIRq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPfMn5AAoJEBus8iNuMP3doqcP/1++qs5BGpCG2l93dehGksjw
-ubRFGk10kvuh6oS+vdQI/ZkLylZ9+X+YOvRp4tVPskXDkiFt8PLw+TZ/logMH4nd
-OJfi7uOpfdlyvmmWwhlS1WZ+n5xEdBw1tCnAf7p7ckdiyMKMSzgjIi2xBgMQ6rzh
-zUS2NNu9ZVEmGrUrThqzaNONcdz2FBpLyz/GCUoFWEnosyI5fxANLMtpivpXQa0k
-W5nUNfkzjpSBGbO4S1knZL39pKxhWAnUaTmU9TjmRNHi7VgkAwzA2hgUQVZGrGFY
-6mgAUeRGX4AMTphgSUUwb3xPAzNKS7Eo4B18EmyeXLAS8xcbd/EWtjOUcmG/ibdy
-bkPXpNak3tcc2qhpPp+KaIoW8VAA56172ZJbs0gE646fe9aqLVikCEq1dEMj/W80
-wlxp9pBRYxFUyBr7WrJac891N8F18B5Z0RigUo9v5J72jS/HEfzqbnPPiTtQuRO4
-cIdDdzEdcEN8nBFCitbl1j6kON94nmaTOaihstGj7uvYsjCLCwkPScXtu16gSwnA
-Q8phpZKe4DmBNLvr2kLDSM/VA49jQAwxJ0yqFPzv40joy5Ga2HtCNMmtDzUpiA39
-kcG/Z6ythaJoCbiLHC9u1THs4kTYYAWOiV2S80gnGc8qg3YNVouDXQmDiXiTZAuY
-h7nOXaV0z8HS0gDYYUlz
-=oj8b
------END PGP SIGNATURE-----
-
---1giRMj6yz/+FOIRq--
+arch/cris/arch-v10/drivers/pcf8563.c reimplements some of drivers/rtc/rtc-lib.c :(
