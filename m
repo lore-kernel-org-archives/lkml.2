@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab2DDNOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 09:14:23 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9065 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab2DDNOV (ORCPT
+	id S1756568Ab2DDNO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 09:14:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52082 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756448Ab2DDNOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 09:14:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 04 Apr 2012 06:14:20 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        sameo@linux.intel.com, ldewangan@nvidia.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH V1 2/2] mfd: rc5t583: Initialize gpio during initialization.
-Date: Wed,  4 Apr 2012 18:34:31 +0530
-Message-Id: <1333544671-24549-3-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1333544671-24549-1-git-send-email-ldewangan@nvidia.com>
-References: <1333544671-24549-1-git-send-email-ldewangan@nvidia.com>
+	Wed, 4 Apr 2012 09:14:53 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mike Miller <mike.miller@hp.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        iss_storagedev@hp.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH v2] hpsa: use check_signature
+Date: Wed,  4 Apr 2012 22:14:59 +0900
+Message-Id: <1333545299-13040-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initializing gpios of the device RICOH's PMIC RC5T583
-during device initialization. This device support 8 gpios
-which can be access through gpio library.
+Use check_signature to find a signature in the mmio address.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Cc: Mike Miller <mike.miller@hp.com>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: iss_storagedev@hp.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
 ---
- drivers/mfd/Kconfig   |    1 +
- drivers/mfd/rc5t583.c |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+v2: select CHECK_SIGNATURE in Kconfig
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 29f463c..7155d5f 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -864,6 +864,7 @@ config MFD_RC5T583
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
- 	select REGMAP_I2C
-+	select GPIO_RC5T583
+ drivers/scsi/Kconfig |    1 +
+ drivers/scsi/hpsa.c  |    5 +----
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index 29684c8..bea04e5 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -408,6 +408,7 @@ config BLK_DEV_3W_XXXX_RAID
+ config SCSI_HPSA
+ 	tristate "HP Smart Array SCSI driver"
+ 	depends on PCI && SCSI
++	select CHECK_SIGNATURE
  	help
- 	  Select this option to get support for the RICOH583 Power
- 	  Management system device.
-diff --git a/drivers/mfd/rc5t583.c b/drivers/mfd/rc5t583.c
-index 99ef944..a0c9e61 100644
---- a/drivers/mfd/rc5t583.c
-+++ b/drivers/mfd/rc5t583.c
-@@ -331,6 +331,7 @@ static int __devinit rc5t583_i2c_probe(struct i2c_client *i2c,
- 		goto err_add_devs;
+ 	  This driver supports HP Smart Array Controllers (circa 2009).
+ 	  It is a SCSI alternative to the cciss driver, which is a block
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index ddbf5fe..c867eeb 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3839,10 +3839,7 @@ static void __devinit hpsa_find_board_params(struct ctlr_info *h)
+ 
+ static inline bool hpsa_CISS_signature_present(struct ctlr_info *h)
+ {
+-	if ((readb(&h->cfgtable->Signature[0]) != 'C') ||
+-	    (readb(&h->cfgtable->Signature[1]) != 'I') ||
+-	    (readb(&h->cfgtable->Signature[2]) != 'S') ||
+-	    (readb(&h->cfgtable->Signature[3]) != 'S')) {
++	if (!check_signature(h->cfgtable->Signature, "CISS", 4)) {
+ 		dev_warn(&h->pdev->dev, "not a valid CISS config table\n");
+ 		return false;
  	}
- 
-+	rc5t583_gpio_init(rc5t583, pdata);
- 	return 0;
- 
- err_add_devs:
 -- 
-1.7.1.1
+1.7.4.4
 
