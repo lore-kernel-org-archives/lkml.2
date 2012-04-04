@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab2DDEyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 00:54:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53020 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab2DDEyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 00:54:45 -0400
-Date: Wed, 4 Apr 2012 06:54:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Alessandro Rubini <rubini@cvml.unipv.it>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: psmouse serio4: bad data from KBC - timeout
-Message-ID: <20120404045440.GB28344@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	linux-input@vger.kernel.org,
-	Alessandro Rubini <rubini@ipvvis.unipv.it>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20120403094324.GA3346@gere.osrc.amd.com>
- <20120403170659.GF24832@core.coreip.homeip.net>
+	id S1752035Ab2DDFrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 01:47:42 -0400
+Received: from exprod5og103.obsmtp.com ([64.18.0.145]:55218 "HELO
+	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751579Ab2DDFrl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 01:47:41 -0400
+X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Apr 2012 01:47:41 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120403170659.GF24832@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+5PVA4_PJ2T7LGM_N_WemQKY2u6bLg0QFk4wPpd=FGESx7eiQ@mail.gmail.com>
+References: <1333348747-12713-1-git-send-email-tinamdar@apm.com>
+	<1333348747-12713-2-git-send-email-tinamdar@apm.com>
+	<1333348747-12713-3-git-send-email-tinamdar@apm.com>
+	<20120403155703.3B0593E053F@localhost>
+	<CA+5PVA4_PJ2T7LGM_N_WemQKY2u6bLg0QFk4wPpd=FGESx7eiQ@mail.gmail.com>
+Date: Wed, 4 Apr 2012 11:09:30 +0530
+Message-ID: <CACoXjckmC-3p1Wx-fEQo0MmgH4rKGT4gRKjJ6BdvrjVy6dRrKw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] powerpc: dts: klondike: Add UART nodes
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Wed, Apr 4, 2012 at 6:19 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Tue, Apr 3, 2012 at 11:57 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Mon,  2 Apr 2012 12:09:05 +0530, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>>> Adding UART nodes in Klondike device tree file.
+>>>
+>>> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>>> ---
+>>> :100644 100644 4ff2852... d5bf2e1... M        arch/powerpc/boot/dts/klondike.dts
+>>>  arch/powerpc/boot/dts/klondike.dts |   24 ++++++++++++++++++++++++
+>>>  1 files changed, 24 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/arch/powerpc/boot/dts/klondike.dts b/arch/powerpc/boot/dts/klondike.dts
+>>> index 4ff2852..d5bf2e1 100644
+>>> --- a/arch/powerpc/boot/dts/klondike.dts
+>>> +++ b/arch/powerpc/boot/dts/klondike.dts
+>>> @@ -222,6 +222,30 @@
+>>>                               #size-cells = <1>;
+>>>                               ranges;
+>>>                               clock-frequency = <0>;
+>>> +
+>>> +                             UART0: serial@50001000 {
+>>> +                                    device_type = "serial";
+>>> +                                    compatible = "ns16550";
+>>> +                                    reg = <0x50001000 0x00000100>;
+>>> +                                    virtual-reg = <0x50001000>;
+>>
+>> Why do you need virtual-reg?  The kernel should handle all iomapping
+>> properly without this.
+>
+> Right.  It's been used for platforms that actually use the
+> zImage/treeImage wrapper for printf support, but this uses u-boot as
+> far as I know.  It shouldn't need it.
+>
 
-On Tue, Apr 03, 2012 at 10:06:59AM -0700, Dmitry Torokhov wrote:
-> > I'm running 3.4-rc1 on a thinkpad x121e and it builds and boots just
-> > fine. However, after resuming from disk I get (this is the tail of
-> > dmesg):
-> > 
-> > [  905.857412] i8042: failed to resume active multiplexor, mouse won't work
-> > [  905.965568] usb 3-2: reset low-speed USB device number 2 using ohci_hcd
-> > [  907.626998] psmouse serio4: bad data from KBC - timeout
-> > [  907.675385] PM: restore of devices complete after 2358.155 msecs
-> > [  908.227481] Restarting tasks ... done.
-> > [  908.266229] video LNXVIDEO:01: Restoring backlight state
-> > [  917.628792] psmouse serio4: Failed to deactivate mouse on isa0060/serio4
-> > [  917.880639] psmouse serio4: Failed to enable mouse on isa0060/serio4
-> > [  919.867982] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input19
-> > [  947.277011] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
-> > [  996.231116] Bluetooth: Core ver 2.16
-> > [  996.231262] NET: Registered protocol family 31
-> > [  996.231273] Bluetooth: HCI device and connection manager initialized
-> > [  996.231559] Bluetooth: HCI socket layer initialized
-> > [  996.231575] Bluetooth: L2CAP socket layer initialized
-> > [  996.231630] Bluetooth: SCO socket layer initialized
-> > 
-> > and after that the keyboard and the mouse touchpad don't work. The
-> > connected USB mouse works fine though.
-> 
-> There weren't any changes to i8042 for a while so I'd look into recent
-> ACPI/PM merges. You can also try booting with i8042.nomux to see if it
-> will work better with i8042 in legacy multiplexing mode.
+Agreed. 'virtual-reg' is not required here. I will remove it in next
+version of patch.
 
-thanks for looking into this.
+> josh
+CONFIDENTIALITY NOTICE: This e-mail message, including any attachments, 
+is for the sole use of the intended recipient(s) and contains information 
+that is confidential and proprietary to AppliedMicro Corporation or its subsidiaries. 
+It is to be used solely for the purpose of furthering the parties' business relationship. 
+All unauthorized review, use, disclosure or distribution is prohibited. 
+If you are not the intended recipient, please contact the sender by reply e-mail 
+and destroy all copies of the original message.
 
-So, I just tested the "i8042.nomux" command line option and it seems to
-work. Even the touchpad went on after rubbing on it a couple of times
-initially.
 
-Then, I booted back into 3.4-rc1 without the above option and here's
-what I got again:
-
-[    0.924424] i8042: PNP: PS/2 Controller [PNP0303:KBC0,PNP0f13:MSE0] at 0x60,0x64 irq 1,12
-[    0.928313] i8042: Detected active multiplexing controller, rev 1.1
-[    0.929966] serio: i8042 KBD port at 0x60,0x64 irq 1
-[    0.930628] serio: i8042 AUX0 port at 0x60,0x64 irq 12
-[    0.930890] serio: i8042 AUX1 port at 0x60,0x64 irq 12
-[    0.931175] serio: i8042 AUX2 port at 0x60,0x64 irq 12
-[    0.931343] serio: i8042 AUX3 port at 0x60,0x64 irq 12
-[    0.971523] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0
-[    2.086110] psmouse serio4: synaptics: Touchpad model: 1, fw: 8.0, id: 0x1e2b1, caps: 0xd001a3/0x940300/0x121c00
-[    2.086378] psmouse serio4: synaptics: serio: Synaptics pass-through port at isa0060/serio4/input0
-[    2.127547] input: SynPS/2 Synaptics TouchPad as /devices/platform/i8042/serio4/input/input1
-[    7.880045] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio4/serio5/input/input2
-[  193.757348] i8042: failed to resume active multiplexor, mouse won't work
-
-It seems the mux controller doesn't resume properly (doh, it says so
-:)) so not only mousepad but keyboard is not working too.
-
-Actually, that's not 100% correct: the keyboard does work for a short
-period of time (a couple of seconds, judging by the printk timestamps
-below) right after I resume and then it stops ...
-
-[  195.526425] psmouse serio4: bad data from KBC - timeout
-[  205.532397] psmouse serio4: Failed to deactivate mouse on isa0060/serio4
-[  205.772260] psmouse serio4: Failed to enable mouse on isa0060/serio4
-[  207.447644] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input15
-
-.. with the above being the last line on dmesg.
-
-So, I'm ready for suggestions.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
