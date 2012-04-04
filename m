@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab2DDMg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 08:36:57 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:37175 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab2DDMg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 08:36:56 -0400
-Message-ID: <4F7C4058.6090405@in.ibm.com>
-Date: Wed, 04 Apr 2012 18:06:40 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1756424Ab2DDMiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 08:38:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33680 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756106Ab2DDMiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 08:38:13 -0400
+Date: Wed, 4 Apr 2012 14:38:09 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sp@numascale.com, bp@amd64.org, tglx@linutronix.de,
+        borislav.petkov@amd.com, daniel@numascale-asia.com,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH resend] x86/platform: Remove incorrect error message in
+ x86_default_fixup_cpu_id()
+Message-ID: <20120404123809.GB5193@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>, mingo@redhat.com, hpa@zytor.com,
+	linux-kernel@vger.kernel.org, sp@numascale.com, bp@amd64.org,
+	tglx@linutronix.de, borislav.petkov@amd.com,
+	daniel@numascale-asia.com,
+	Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <20120224153127.GD28921@alberich.amd.com>
+ <tip-20b25f03fbd17b4e32b786024a5f9c6306795411@git.kernel.org>
+ <20120302110440.GA24019@elte.hu>
+ <20120302115130.GA17876@alberich.amd.com>
+ <20120402160648.GR27684@alberich.amd.com>
 MIME-Version: 1.0
-To: Christian Kujau <lists@nerdbynature.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: 3.4.0-rc1: No init found
-References: <alpine.DEB.2.01.1204030008080.4930@trent.utfs.org> <1333440522.3040.9.camel@pasglop> <alpine.DEB.2.01.1204030953320.4930@trent.utfs.org>
-In-Reply-To: <alpine.DEB.2.01.1204030953320.4930@trent.utfs.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12040412-2000-0000-0000-000007054AB0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120402160648.GR27684@alberich.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2012 10:48 PM, Christian Kujau wrote:
-> On Tue, 3 Apr 2012 at 18:08, Benjamin Herrenschmidt wrote:
->> I have observed this randomly on the G5 ... sometimes, if I try again,
->> it works... it's very very odd. There is some kind of race maybe with
->> async startup ? Or a problem with the vfs path walking ? It's certainly
->> not easily reproducable for me, it goes away from one boot to the next.
->
-> It's 100% reproducible for me. This PowerBook G4 (1.25Ghz) is not the
-> fastes though, maybe a race triggers more easily here...?
->
->>> PS: Unfortunately I cannot boot into the old (3.3-rc7) kernel
->>>      right now (which is still installed via "yaboot" and present in
->>>      /boot), because of this:
->>>      http://nerdbynature.de/bits/3.4.0-rc1/init/mac-invalid-memory.JPG
->>>      Booting into Debian's "squeeze" kernel (2.6.32) which resides in
->>>      the same /boot directory succeeds.
->>
->> Hrm, did it used to boot ?
->
-> I'm using the "backup" kernel only when the new one has an issue, so I
-> have not tested it for a while, but it used to work, for sure.
->
->> Can you do printenv in OF and tell me what
->> your load-base, real-base, virt-base etc... are ?
->
-> load-base is 0x800000, real-base and virt-base is set to "-1", please see
-> http://nerdbynature.de/bits/3.4.0-rc1/init/printenv-1.JPG
->
-> Not sure if this is related, but at the end of each kernel compilation,
-> the following messages are printed:
->
-> ------------
->    SYSMAP  System.map
->    SYSMAP  .tmp_System.map
->    WRAP    arch/powerpc/boot/zImage.pmac
-> INFO: Uncompressed kernel (size 0x6e52f8) overlaps the address of the wrapper(0x400000)
-> INFO: Fixing the link_address of wrapper to (0x700000)
->    WRAP    arch/powerpc/boot/zImage.coff
-> INFO: Uncompressed kernel (size 0x6e52f8) overlaps the address of the wrapper(0x500000)
-> INFO: Fixing the link_address of wrapper to (0x700000)
->    WRAP    arch/powerpc/boot/zImage.miboot
-> INFO: Uncompressed kernel (size 0x6d4b80) overlaps the address of the wrapper(0x400000)
-> INFO: Fixing the link_address of wrapper to (0x700000)
->    Building modules, stage 2.
->    MODPOST 24 modules
-> ------------
->
-> I started to see these messages in January (around Linux 3.2.0), but never
-> investigated what it was since the produced kernels continued to boot just
-> fine.
+On Mon, Apr 02, 2012 at 06:06:48PM +0200, Andreas Herrmann wrote:
+> 
+> It's only called from amd.c:srat_detect_node(). The introduced
+> condition for calling the fixup code is true for all AMD multi-node
+> processors, e.g. Magny-Cours and Interlagos. There we have 2 NUMA
+> nodes on one socket. Thus there are cores having different
+> numa-node-id but with equal phys_proc_id.
+> 
+> There is no point to print error messages in such a situation.
+> 
+> The confusing/misleading error message was introduced with commit
+> 64be4c1c2428e148de6081af235e2418e6a66dda (x86: Add x86_init platform
+> override to fix up NUMA core numbering).
+> 
+> Remove the default fixup function (especially the error message) and
+> replace it by a NULL pointer check, move the Numascale-specific
+> condition for calling the fixup into the fixup-function itself and
+> slightly adapt the comment.
+> 
+> Cc: <stable@kernel.org>
+> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+> ---
+>  arch/x86/include/asm/x86_init.h      |    1 -
+>  arch/x86/kernel/apic/apic_numachip.c |    7 +++++--
+>  arch/x86/kernel/cpu/amd.c            |    7 ++++---
+>  arch/x86/kernel/cpu/common.c         |    9 ---------
+>  arch/x86/kernel/x86_init.c           |    1 -
+>  5 files changed, 9 insertions(+), 16 deletions(-)
+> 
+> This patch didn't make it into v3.3.
+> But the misleading error message introduced with numachip support was
+> merged.
 
-The above change was added by me. The message is printed when the 
-'wrapper' script finds that decompressed kernel overlaps the 'bootstrap 
-code' which does the decompression. So it shifts the 'address' of the 
-bootstrap code to the next higher MB. As such it is harmless.
+Yes, please apply this one, I still get the following on my box with
+3.4-rc1+:
 
+[    0.382396] Booting Node   0, Processors  #1 #2 #3 #4 #5 Ok.
+[    0.454471] Booting Node   1, Processors  #6
+[    0.469600] NUMA core number 1 differs from configured core number 0
+[    0.478361]  #7
+[    0.490949] NUMA core number 1 differs from configured core number 0
+[    0.499695]  #8
+[    0.512577] NUMA core number 1 differs from configured core number 0
+[    0.521331]  #9
+[    0.533921] NUMA core number 1 differs from configured core number 0
+[    0.542679]  #10
+[    0.555340] NUMA core number 1 differs from configured core number 0
+[    0.564088]  #11
+[    0.576730] NUMA core number 1 differs from configured core number 0
+[    0.585497]  Ok.
+[    0.587698] Booting Node   3, Processors  #12
+[    0.602916] NUMA core number 3 differs from configured core number 1
+[    0.709432]  #13
+[    0.722106] NUMA core number 3 differs from configured core number 1
+[    0.730856]  #14
+[    0.743823] NUMA core number 3 differs from configured core number 1
+[    0.752577]  #15
+[    0.765253] NUMA core number 3 differs from configured core number 1
+[    0.774002]  #16
+[    0.786684] NUMA core number 3 differs from configured core number 1
+[    0.795436]  #17
+[    0.808113] NUMA core number 3 differs from configured core number 1
+[    0.816878]  Ok.
+[    0.819377] Booting Node   2, Processors  #18
+[    0.834597] NUMA core number 2 differs from configured core number 1
+[    0.843348]  #19
+[    0.856025] NUMA core number 2 differs from configured core number 1
+[    0.864777]  #20
+[    0.877750] NUMA core number 2 differs from configured core number 1
+[    0.886505]  #21
+[    0.899180] NUMA core number 2 differs from configured core number 1
+[    0.907939]  #22
+[    0.920583] NUMA core number 2 differs from configured core number 1
+[    0.929335]  #23 Ok.
+[    0.942785] NUMA core number 2 differs from configured core number 1
+[    0.951262] Brought up 24 CPUs
 
-Thanks
-Suzuki
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
