@@ -1,185 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab2DDTeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 15:34:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53371 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724Ab2DDTeB (ORCPT
+	id S932729Ab2DDTfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 15:35:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41136 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932282Ab2DDTfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 15:34:01 -0400
-Date: Wed, 4 Apr 2012 12:33:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, vgoyal@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
+	Wed, 4 Apr 2012 15:35:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120404175124.GA8931@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAMjP1KmkS9aBXJm1GEavhcNx75ib7G4m+xYBe3_PcGSo6t5FsQ@mail.gmail.com>
+References: <CAMjP1Kka6MmT2zLc95ZQ=vigS6w9diS9-tawzdUdhbzzfzMh3w@mail.gmail.com>
+	<CAMjP1KmDxhOKOGtgKt=OWbcXoJgrbA_rAxdkV4j7Y8XC8yjnuA@mail.gmail.com>
+	<CAMjP1KmkS9aBXJm1GEavhcNx75ib7G4m+xYBe3_PcGSo6t5FsQ@mail.gmail.com>
+Date: Wed, 4 Apr 2012 14:35:41 -0500
+Message-ID: <CAMjP1KkwMuQY4eBxmQeK_8xa11fDWHu_401Tg3iiXtqnHGV0jw@mail.gmail.com>
+Subject: Re: Crash in __netif_receive_skb
+From: Avleen Vig <avleen@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Fengguang.
+On Thu, Mar 29, 2012 at 4:42 PM, Avleen Vig <avleen@gmail.com> wrote:
+> On Wed, Mar 28, 2012 at 10:01 PM, Avleen Vig <avleen@gmail.com> wrote:
+>> On Wed, Mar 28, 2012 at 8:31 PM, Avleen Vig <avleen@gmail.com> wrote:
+>>> Hi folks, someone in #kernel recommended I email these two lists. Hope
+>>> they're the right place.
+>>>
+>>> We're running 2.6.32-220.4.1.el6.x86_64 on Centos 6.2, and getting a
+>>> repeated crash:
+>>>    https://gist.github.com/2231998
+>>>
+>>> We can make this happen pretty easily just by passing some network
+>>> traffic and waiting a while.
+>>> I couldn't find any references to this particular issue.
+>>> I have vmcore files and am happy to dig into it if it would help (as
+>>> long as someone can tell me what to do :))
+>>
+>> I hope this debugging is legit, I'm really new to this level of insight.
+>>
+>> I think the problem is in include/linux/netpoll.h, at the "if"
+>> statement at line 86:
+>>    static inline int netpoll_receive_skb(struct sk_buff *skb)
+>>    {
+>>        if (!list_empty(&skb->dev->napi_list))
+>>                return netpoll_rx(skb);
+>>        return 0;
+>>    }
+>>
+>>
+>> This is based on poking around in the crash dump:
+>>    BUG: unable to handle kernel NULL pointer dereference at 0000000000000060
+>>    IP: [<ffffffff8142bb40>] __netif_receive_skb+0x60/0x6e0
+>>    crash> dis -rl ffffffff8142bb40
+>>    ....
+>>    /usr/src/debug/kernel-2.6.32-220.7.1.el6/linux-2.6.32-220.7.1.el6.x86_64/include/linux/netpoll.h:
+>> 86
+>>    0xffffffff8142bb33 <__netif_receive_skb+83>:    mov    0x20(%rbx),%r12
+>>    0xffffffff8142bb37 <__netif_receive_skb+87>:    mov    %r12,-0x38(%rbp)
+>>    0xffffffff8142bb3b <__netif_receive_skb+91>:    lea    0x60(%r12),%rax
+>>    0xffffffff8142bb40 <__netif_receive_skb+96>:    cmp    %rax,0x60(%r12)
+>>
+>>
+>>
+>> I *think* this means that "&skb->dev->napi_list" is null when we're
+>> trying to compare it, rather than being a list.
+>>
+>> If it matters, this is inside LXC containers.
+>
+> We've traced this to a problem with machines that have multiple hard
+> drives AND have NAPI enabled for the NIC driver.
+>
+> We recompiled the e1000e driver with NAPI disabled, with:
+>    make CFLAGS_EXTRA=-DE1000E_NO_NAPI
+>
+> and everything works great now.
 
-On Wed, Apr 04, 2012 at 10:51:24AM -0700, Fengguang Wu wrote:
-> Yeah it should be trivial to apply the balance_dirty_pages()
-> throttling algorithm to the read/direct IOs. However up to now I don't
-> see much added value to *duplicate* the current block IO controller
-> functionalities, assuming the current users and developers are happy
-> with it.
+Untrue! This eventually failed too, but after a lot more debugging, we
+think we've nailed it:
+    Multicast
 
-Heh, trust me.  It's half broken and people ain't happy.  I get that
-your algorithm can be updatd to consider all IOs and I believe that
-but what I don't get is how would such information get to writeback
-and in turn how writeback would enforce the result on reads and direct
-IOs.  Through what path?  Will all reads and direct IOs travel through
-balance_dirty_pages() even direct IOs on raw block devices?  Or would
-the writeback algorithm take the configuration from cfq, apply the
-algorithm and give back the limits to enforce to cfq?  If the latter,
-isn't that at least somewhat messed up?
+We use ganglia on all of our nodes (and we were setting it up inside
+the LXC containers), and ganglia listens / sends on multicast.
 
-> I did the buffered write IO controller mainly to fill the gap.  If I
-> happen to stand in your way, sorry that's not my initial intention.
+When gmond was starting inside the containers, it was giving an error:
+    Apr  4 17:00:42 hostname /usr/sbin/gmond[551]: Error creating
+multicast server mcast_join=239.2.11.110 port=8649 mcast_if=NULL
+family='inet4'. Exiting.
 
-No, no, it's not about standing in my way.  As Vivek said in the other
-reply, it's that the "gap" that you filled was created *because*
-writeback wasn't cgroup aware and now you're in turn filling that gap
-by making writeback work around that "gap".  I mean, my mind boggles.
-Doesn't yours?  I strongly believe everyone's should.
+It occurred to me that if the kernel is trying to read a multicast
+packet from a socket buffer, but the container can't handle multicast
+(mcast_if=NULL), that would explain why we got a NULL pointer
+dereference in &skb->dev->napi_list.
+(at least, this makes sense in my head.)
 
-> It's a pity and surprise that Google as a big user does not buy in
-> this simple solution. You may prefer more comprehensive controls which
-> may not be easily achievable with the simple scheme. However the
-> complexities and overheads involved in throttling the flusher IOs
-> really upsets me. 
+We disabled gmond in the containers, so nothing should be listening
+for multicast packets, and everything is stable again.
+Note that this ONLY seems to happen for us when we're using the
+onboard 82574L Intel NIC with the e1000e driver.
+We have other servers with the 82575 NIC which uses the igb driver and
+doesn't exhibit this problem.
 
-Heh, believe it or not, I'm not really wearing google hat on this
-subject and google's writeback people may have completely different
-opinions on the subject than mine.  In fact, I'm not even sure how
-much "work" time I'll be able to assign to this.  :(
-
-> The sweet split point would be for balance_dirty_pages() to do cgroup
-> aware buffered write throttling and leave other IOs to the current
-> blkcg. For this to work well as a total solution for end users, I hope
-> we can cooperate and figure out ways for the two throttling entities
-> to work well with each other.
-
-There's where I'm confused.  How is the said split supposed to work?
-They aren't independent.  I mean, who gets to decide what and where
-are those decisions enforced?
-
-> What I'm interested is, what's Google and other users' use schemes in
-> practice. What's their desired interfaces. Whether and how the
-> combined bdp+blkcg throttling can fulfill the goals.
-
-I'm not too privy of mm and writeback in google and even if so I
-probably shouldn't talk too much about it.  Confidentiality and all.
-That said, I have the general feeling that goog already figured out
-how to at least work around the existing implementation and would be
-able to continue no matter how upstream development fans out.
-
-That said, wearing the cgroup maintainer and general kernel
-contributor hat, I'd really like to avoid another design mess up.
-
-> > Let's please keep the layering clear.  IO limitations will be applied
-> > at the block layer and pressure will be formed there and then
-> > propagated upwards eventually to the originator.  Sure, exposing the
-> > whole information might result in better behavior for certain
-> > workloads, but down the road, say, in three or five years, devices
-> > which can be shared without worrying too much about seeks might be
-> > commonplace and we could be swearing at a disgusting structural mess,
-> > and sadly various cgroup support seems to be a prominent source of
-> > such design failures.
-> 
-> Super fast storages are coming which will make us regret to make the
-> IO path over complex.  Spinning disks are not going away anytime soon.
-> I doubt Google is willing to afford the disk seek costs on its
-> millions of disks and has the patience to wait until switching all of
-> the spin disks to SSD years later (if it will ever happen).
-
-This is new.  Let's keep the damn employer out of the discussion.
-While the area I work on is affected by my employment (writeback isn't
-even my area BTW), I'm not gonna do something adverse to upstream even
-if it's beneficial to google and I'm much more likely to do something
-which may hurt google a bit if it's gonna benefit upstream.
-
-As for the faster / newer storage argument, that is *exactly* why we
-want to keep the layering proper.  Writeback works from the pressure
-from the IO stack.  If IO technology changes, we update the IO stack
-and writeback still works from the pressure.  It may need to be
-adjusted but the principles don't change.
-
-> It's obvious that your below proposal involves a lot of complexities,
-> overheads, and will hurt performance. It basically involves
-
-Hmmm... that's not the impression I got from the discussion.
-According to Jan, applying the current writeback logic to cgroup'fied
-bdi shouldn't be too complex, no?
-
-> - running concurrent flusher threads for cgroups, which adds back the
->   disk seeks and lock contentions. And still has problems with sync
->   and shared inodes.
-
-I agree this is an actual concern but if the user wants to split one
-spindle to multiple resource domains, there's gonna be considerable
-amount of overhead no matter what.  If you want to improve how block
-layer handles the split, you're welcome to dive into the block layer,
-where the split is made, and improve it.
-
-> - splitting device queue for cgroups, possibly scaling up the pool of
->   writeback pages (and locked pages in the case of stable pages) which
->   could stall random processes in the system
-
-Sure, it'll take up more buffering and memory but that's the overhead
-of the cgroup business.  I want it to be less intrusive at the cost of
-somewhat more resource consumption.  ie. I don't want writeback logic
-itself deeply involved in block IO cgroup enforcement even if that
-means somewhat less efficient resource usage.
-
-> - the mess of metadata handling
-
-Does throttling from writeback actually solve this problem?  What
-about fsync()?  Does that already go through balance_dirty_pages()?
-
-> - unnecessarily coupled with memcg, in order to take advantage of the
->   per-memcg dirty limits for balance_dirty_pages() to actually convert
->   the "pushed back" dirty pages pressure into lowered dirty rate. Why
->   the hell the users *have to* setup memcg (suffering from all the
->   inconvenience and overheads) in order to do IO throttling?  Please,
->   this is really ugly! And the "back pressure" may constantly push the
->   memcg dirty pages to the limits. I'm not going to support *miss use*
->   of per-memcg dirty limits like this!
-
-Writeback sits between blkcg and memcg and it indeed can be hairy to
-consider both sides especially given the current sorry complex state
-of cgroup and I can see why it would seem tempting to add a separate
-controller or at least knobs to support that.  That said, I *think*
-given that memcg controls all other memory parameters it probably
-would make most sense giving that parameter to memcg too.  I don't
-think this is really relevant to this discussion tho.  Who owns
-dirty_limits is a separate issue.
-
-> I cannot believe you would keep overlooking all the problems without
-> good reasons. Please do tell us the reasons that matter.
-
-Well, I tried and I hope some of it got through.  I also wrote a lot
-of questions, mainly regarding how what you have in mind is supposed
-to work through what path.  Maybe I'm just not seeing what you're
-seeing but I just can't see where all the IOs would go through and
-come together.  Can you please elaborate more on that?
-
-Thanks.
-
--- 
-tejun
+Is anyone from Intel here who could look in to this?
