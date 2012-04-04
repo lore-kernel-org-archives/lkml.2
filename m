@@ -1,46 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab2DDIqJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 04:46:09 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43257 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754737Ab2DDIqH (ORCPT
+	id S1755545Ab2DDIxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 04:53:01 -0400
+Received: from mga05.intel.com ([192.55.52.89]:18113 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751447Ab2DDIw7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 04:46:07 -0400
-Date: Wed, 04 Apr 2012 04:39:52 -0400 (EDT)
-Message-Id: <20120404.043952.1333187975072018080.davem@davemloft.net>
-To: stigge@antcom.de
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, srinivas.bakki@nxp.com, kevin.wells@nxp.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        rtc-linux@googlegroups.com, a.zummo@towertech.it,
-        linux-watchdog@vger.kernel.org, wim@iguana.be, jonsmirl@gmail.com
-Subject: Re: [PATCH v3 3/8] net: Add device tree support to LPC32xx
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1333528480-17134-4-git-send-email-stigge@antcom.de>
-References: <1333528480-17134-1-git-send-email-stigge@antcom.de>
-	<1333528480-17134-4-git-send-email-stigge@antcom.de>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 01:39:55 -0700 (PDT)
+	Wed, 4 Apr 2012 04:52:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1333032100-4159-11-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1333032100-4159-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1333032100-4159-11-git-send-email-zohar@linux.vnet.ibm.com>
+Date: Wed, 4 Apr 2012 11:52:58 +0300
+Message-ID: <CALLzPKYOB1wdatgG-snePpCDFZKAGsD60HFadphrjFqVKqC1Jg@mail.gmail.com>
+Subject: Re: [PATCH v4 10/12] ima: defer calling __fput()
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Stigge <stigge@antcom.de>
-Date: Wed,  4 Apr 2012 10:34:35 +0200
+On Thu, Mar 29, 2012 at 5:41 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> ima_file_free(), which is called on __fput(), updates the file data
+> hash stored as an extended attribute to reflect file changes.  If a
+> file is closed before it is munmapped, __fput() is called with the
+> mmap_sem taken.  With IMA-appraisal enabled, this results in an
+> mmap_sem/i_mutex lockdep.  ima_defer_fput() increments the f_count to
+> defer the __fput() being called until after the mmap_sem is released.
+>
+> The number of __fput() calls needing to be deferred is minimal.  Only
+> those files in policy, that were closed prior to the munmap and were
+> mmapped write, need to defer the __fput().
+>
+> With this patch, on a clean F16 install, from boot to login, only
+> 5 out of ~100,000 mmap_sem held fput() calls were deferred.
+>
 
-> This patch adds device tree support for lpc_eth.c.
-> 
-> The runtime option for MII/RMII is solved via the "phy-mode" property, SRAM
-> ("IRAM") usage for DMA can be chosen via "use-iram".
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Hello Al,
 
-Feel free to merge this in via one of the ARM trees.
+Could you please provide your comments?
 
-Acked-by: David S. Miller <davem@davemloft.net>
+
+Thanks,
+Dmitry
+
+> Changelog v4:
+> - ima_defer_fput() performance improvements
+> - move ima_defer_fput() call from remove_vma() to __fput()
+> - only defer mmapped files opened for write
+> - remove unnecessary ima_fput_mempool_destroy()
+>
+> Changelog v3:
+> - use slab mempool (suggested by Dmitry Kasatkin)
+> - renamed a few functions based on Matt Helsley's review
+> - define ima_fput_mempool as static (fix sparse error)
+> - fix ima_defer_fput() stub definition
+>
+> Changelog v2:
+> - based on discussions with: Tyler Hicks (use workqueues),
+>  Dave Hansen (defer only IMA related files), and
+>  Dmitry Kasatkin (add new IMA hook)
+> - use slab memory for allocating work
+>
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> ---
+>  fs/file_table.c                       |    5 ++
+>  include/linux/ima.h                   |    5 ++
+>  security/integrity/ima/ima_appraise.c |   81 +++++++++++++++++++++++++++++++++
+>  3 files changed, 91 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/file_table.c b/fs/file_table.c
+> index 554161a..b91f039 100644
+> --- a/fs/file_table.c
+> +++ b/fs/file_table.c
+> @@ -229,6 +229,11 @@ static void __fput(struct file *file)
+>        struct vfsmount *mnt = file->f_path.mnt;
+>        struct inode *inode = dentry->d_inode;
+>
+> +       if (current->mm && rwsem_is_locked(&current->mm->mmap_sem)) {
+> +               if (ima_defer_fput(file) == 0)
+> +                       return;
+> +       }
+> +
+>        might_sleep();
+>
+>        fsnotify_close(file);
+> diff --git a/include/linux/ima.h b/include/linux/ima.h
+> index 2c7223d..bbfac16 100644
+> --- a/include/linux/ima.h
+> +++ b/include/linux/ima.h
+> @@ -47,6 +47,7 @@ extern void ima_inode_post_setattr(struct dentry *dentry);
+>  extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+>                       const void *xattr_value, size_t xattr_value_len);
+>  extern int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name);
+> +extern int ima_defer_fput(struct file *file);
+>  #else
+>  static inline void ima_inode_post_setattr(struct dentry *dentry)
+>  {
+> @@ -66,5 +67,9 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
+>  {
+>        return 0;
+>  }
+> +static inline int ima_defer_fput(struct file *file)
+> +{
+> +       return 1;
+> +}
+>  #endif /* CONFIG_IMA_APPRAISE_H */
+>  #endif /* _LINUX_IMA_H */
+> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> index becc7e0..220b20e 100644
+> --- a/security/integrity/ima/ima_appraise.c
+> +++ b/security/integrity/ima/ima_appraise.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/module.h>
+>  #include <linux/file.h>
+>  #include <linux/fs.h>
+> +#include <linux/mempool.h>
+>  #include <linux/xattr.h>
+>  #include <linux/magic.h>
+>  #include <linux/ima.h>
+> @@ -226,3 +227,83 @@ int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
+>        }
+>        return result;
+>  }
+> +
+> +struct ima_fput_req {
+> +       struct file *file;
+> +       struct work_struct work;
+> +};
+> +static struct kmem_cache *ima_fput_slab;
+> +static mempool_t *ima_fput_mempool;
+> +
+> +static void ima_deferred_fput(struct work_struct *work)
+> +{
+> +       struct ima_fput_req *deferred = container_of(work, struct ima_fput_req,
+> +                                                    work);
+> +
+> +       fput(deferred->file);
+> +       mempool_free(deferred, ima_fput_mempool);
+> +}
+> +
+> +/**
+> + * ima_defer_fput - defer calling __fput() for mmaped files
+> + * @file: pointer to file structure to be freed
+> + *
+> + * The i_mutex is taken by ima_file_free(), called on  __fput(), to
+> + * update 'security.ima' to reflect the current file data hash.  When
+> + * a file is closed before it is munmapped, __fput() is called with
+> + * the mmap_sem taken, resulting in an mmap_sem/i_mutex lockdep.
+> + * This function defers calling __fput() until after the mmap_sem is
+> + * released.
+> + *
+> + * Return 0 on success, 1 when unnecessary, or errno on failure.
+> + */
+> +int ima_defer_fput(struct file *file)
+> +{
+> +       struct dentry *dentry = file->f_path.dentry;
+> +       struct inode *inode = dentry->d_inode;
+> +       struct ima_fput_req *defer;
+> +       int result;
+> +
+> +       if (!(file->f_mode & FMODE_WRITE) || !IS_IMA(inode))
+> +               return 1;
+> +
+> +       defer = mempool_alloc(ima_fput_mempool, GFP_NOIO);
+> +       if (!defer)     /* should never happen */
+> +               return -ENOMEM;
+> +
+> +       get_file(file);
+> +
+> +       defer->file = file;
+> +       INIT_WORK(&defer->work, ima_deferred_fput);
+> +       result = schedule_work(&defer->work);
+> +       if (result == 0) {
+> +               pr_info("ima: fput already scheduled\n");
+> +               mempool_free(defer, ima_fput_mempool);
+> +               fput_atomic(file);
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int __init ima_fput_mempool_create(void)
+> +{
+> +       ima_fput_slab = kmem_cache_create("ima_fput",
+> +                                          sizeof(struct ima_fput_req),
+> +                                          0, 0, NULL);
+> +       if (!ima_fput_slab) {
+> +               pr_info("ima: failed kmem_cache_create\n");
+> +               goto err_out;
+> +       }
+> +
+> +       ima_fput_mempool = mempool_create_slab_pool(1, ima_fput_slab);
+> +       if (!ima_fput_mempool)  {
+> +               pr_info("ima: failed mempool_create_slab_pool\n");
+> +               goto free_slab;
+> +       }
+> +       return 0;
+> +
+> +free_slab:
+> +       kmem_cache_destroy(ima_fput_slab);
+> +err_out:
+> +       return -ENOMEM;
+> +}
+> +security_initcall(ima_fput_mempool_create);
+> --
+> 1.7.6.5
+>
