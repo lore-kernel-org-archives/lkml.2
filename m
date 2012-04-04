@@ -1,32 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab2DDTmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 15:42:16 -0400
-Received: from ka.mail.enyo.de ([87.106.162.201]:47423 "EHLO ka.mail.enyo.de"
+	id S932695Ab2DDTpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 15:45:23 -0400
+Received: from csmtp3.one.com ([91.198.169.23]:49889 "EHLO csmtp3.one.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401Ab2DDTmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 15:42:15 -0400
-X-Greylist: delayed 1513 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Apr 2012 15:42:15 EDT
-From: Florian Weimer <fw@deneb.enyo.de>
-To: Martin Lucina <martin@lucina.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] Implement IP_EVIL socket option (RFC 3514)
-References: <1333284791-5363-1-git-send-email-martin@lucina.net>
-Date: Wed, 04 Apr 2012 21:17:00 +0200
-In-Reply-To: <1333284791-5363-1-git-send-email-martin@lucina.net> (Martin
-	Lucina's message of "Sun, 1 Apr 2012 14:53:11 +0200")
-Message-ID: <87r4w3nw7n.fsf@mid.deneb.enyo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932386Ab2DDTpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 15:45:22 -0400
+From: Eric Andersson <eric.andersson@unixphere.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
+        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
+        stefan.nilsson@unixphere.com, broonie@opensource.wolfsonmicro.com,
+        Eric Andersson <eric.andersson@unixphere.com>
+Subject: [PATCHv3 0/3] bmp085: add support for bmp18x chip
+Date: Wed,  4 Apr 2012 21:45:56 +0200
+Message-Id: <1333568759-13536-1-git-send-email-eric.andersson@unixphere.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Martin Lucina:
+Hi,
 
-> This patch implements the IP_EVIL socket option, allowing user-space
-> applications to set the Security Flag in the IPv4 Header, aka "evil" bit,
-> as defined in RFC 3514.
+This is version 3 of the patch-set that adds support for the latest pressure
+sensors from Bosch Sensortec.
 
-I need this to fix a security issue.  Could this be merged for real,
-please?
+Changes from last version:
+- Dropped the platform data in favor of devicetree properties.
+- Use regmap as communication layer.
+- Changed Kconfig logic.
+- Keep the original bmp085 file name.
+- Use EXPORT_SYMBOL_GPL.
+
+--
+Best regards,
+ Eric
+
+  http://www.unixphere.com
+
+Eric Andersson (3):
+  misc: clean up bmp085 driver
+  misc: bmp085: add device tree properties
+  misc: add support for bmp18x chips to the bmp085 driver
+
+ Documentation/devicetree/bindings/misc/bmp085.txt |   20 ++
+ drivers/misc/Kconfig                              |   26 ++-
+ drivers/misc/Makefile                             |    2 +
+ drivers/misc/bmp085-i2c.c                         |   87 +++++
+ drivers/misc/bmp085-spi.c                         |   89 +++++
+ drivers/misc/bmp085.c                             |  356 +++++++++++----------
+ drivers/misc/bmp085.h                             |   33 ++
+ 7 files changed, 434 insertions(+), 179 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/misc/bmp085.txt
+ create mode 100644 drivers/misc/bmp085-i2c.c
+ create mode 100644 drivers/misc/bmp085-spi.c
+ create mode 100644 drivers/misc/bmp085.h
+
+-- 
+1.7.3.4
+
