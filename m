@@ -1,196 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab2DCX7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 19:59:00 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:60459 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754818Ab2DCX67 (ORCPT
+	id S1755585Ab2DDAOV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 20:14:21 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33109 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab2DDAOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 19:58:59 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: grant.likely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v2] gpio: Device tree support for LPC32xx
-Date: Wed,  4 Apr 2012 01:58:38 +0200
-Message-Id: <1333497518-25838-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Tue, 3 Apr 2012 20:14:19 -0400
+Date: Wed, 4 Apr 2012 10:14:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] MAINTAINERS: change in Documentation/ maintainer
+Message-Id: <20120404101409.2d2d176a3607ea43c8b70cda@canb.auug.org.au>
+In-Reply-To: <4F7B5CFB.1@xenotime.net>
+References: <4F7B5CFB.1@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__4_Apr_2012_10_14_09_+1000_jJ3o2.vPr2AS2Dwy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support for gpio-lpc32xx.c
+--Signature=_Wed__4_Apr_2012_10_14_09_+1000_jJ3o2.vPr2AS2Dwy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Hi Randy,
 
----
+On Tue, 03 Apr 2012 13:26:35 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
+>
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>=20
+> I'm dropping off as Documentation/ maintainer.
+> Rob Landley has agreed to take it over.  Thanks, Rob.
+>=20
+> I'll still be around reviewing patches and testing.
+> Stephen, please drop my quilt tree from linux-next.
 
- Applies to v3.4-rc1
+OK, I will do that today.  I also have a git tree form you:
 
- Changes since last version:
- * Documented property #address-cells (always 1)
- * Documented property status="disabled"
- * Removed gpio-lines property
- * Removed #gpio-cells from the parent node
- * Support both DT and non-DT to make patch less disruptive and independent
-   from DT switch of mach-lpc32xx
- * Use module_platform_driver()
+git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs.git#docs-m=
+ove
 
- Thanks to Arnd Bergmann and Grant Likely for reviewing!
+do you want anything done with that?
 
- Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   65 ++++++++++++++++
- arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 +-
- drivers/gpio/gpio-lpc32xx.c                             |   52 ++++++++++++
- 3 files changed, 123 insertions(+), 3 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
-@@ -0,0 +1,65 @@
-+NXP LPC32xx SoC GPIO controller
-+
-+Required properties:
-+- compatible: "nxp,lpc32xx-gpio"
-+- reg: Physical base address and length of the controller's registers.
-+- #address-cells: Always 1, for indexing of the subnodes (GPIO groups of the
-+  SoC)
-+- #size-cells: Always 0
-+
-+Required properties of sub-nodes which describe the GPIO groups of LPC32xx:
-+- gpio-controller: Marks the device node as a GPIO controller.
-+- #gpio-cells: Should be two. The first cell is the pin number and the
-+  second cell is used to specify optional parameters:
-+  - bit 0 specifies polarity (0 for normal, 1 for inverted)
-+- reg: Index of the GPIO group
-+
-+Optional properties of sub-nodes which describe the GPIO groups of LPC32xx:
-+- status: Set to "disabled" if you don't use the respective GPIO group
-+  of the LPC32 SoC
-+
-+Example:
-+
-+	gpio: gpio@40028000 {
-+		compatible = "nxp,lpc32xx-gpio";
-+		reg = <0x40028000 0x1000>;
-+		/* create a private address space for enumeration */
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		gpio_p0: gpio-bank@0 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <0>;
-+		};
-+
-+		gpio_p1: gpio-bank@1 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <1>;
-+		};
-+
-+		gpio_p2: gpio-bank@2 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <2>;
-+		};
-+
-+		gpio_p3: gpio-bank@3 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <3>;
-+		};
-+
-+		gpi_p3: gpio-bank@4 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <4>;
-+		};
-+
-+		gpo_p3: gpio-bank@5 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <5>;
-+		};
-+	};
---- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/gpio.h
-+++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/gpio.h
-@@ -1 +1,8 @@
--/* empty */
-+#ifndef __MACH_GPIO_H
-+#define __MACH_GPIO_H
-+
-+#include "gpio-lpc32xx.h"
-+
-+#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
-+
-+#endif /* __MACH_GPIO_H */
---- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
-+++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
-@@ -21,6 +21,9 @@
- #include <linux/io.h>
- #include <linux/errno.h>
- #include <linux/gpio.h>
-+#include <linux/of_gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/module.h>
- 
- #include <mach/hardware.h>
- #include <mach/platform.h>
-@@ -454,10 +457,55 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 	},
- };
- 
-+/* Empty now, can be removed later when mach-lpc32xx is finally switched over
-+ * to DT support
-+ */
- void __init lpc32xx_gpio_init(void)
- {
-+}
-+
-+static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
-+{
-+	struct device_node *node;
- 	int i;
- 
--	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
--		gpiochip_add(&lpc32xx_gpiochip[i].chip);
-+	if (pdev->dev.of_node) {
-+		for_each_child_of_node(pdev->dev.of_node, node) {
-+			if (of_device_is_available(node)) {
-+				u32 index;
-+				struct gpio_chip *chip;
-+				if (of_property_read_u32(node,
-+							 "reg", &index) <  0)
-+					continue;
-+				if (index >= ARRAY_SIZE(lpc32xx_gpiochip))
-+					continue;
-+				chip = &lpc32xx_gpiochip[index].chip;
-+				chip->of_node = of_node_get(node);
-+				gpiochip_add(chip);
-+			}
-+		}
-+	} else {
-+		for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
-+			gpiochip_add(&lpc32xx_gpiochip[i].chip);
-+	}
-+
-+	return 0;
- }
-+
-+#ifdef CONFIG_OF
-+static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
-+	{ .compatible = "nxp,lpc32xx-gpio", },
-+	{ },
-+};
-+#endif
-+
-+static struct platform_driver lpc32xx_gpio_driver = {
-+	.driver		= {
-+		.name	= "lpc32xx-gpio",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = lpc32xx_gpio_of_match,
-+	},
-+	.probe		= lpc32xx_gpio_probe,
-+};
-+
-+module_platform_driver(lpc32xx_gpio_driver);
+--Signature=_Wed__4_Apr_2012_10_14_09_+1000_jJ3o2.vPr2AS2Dwy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIbBAEBCAAGBQJPe5JRAAoJEECxmPOUX5FEoukP+JKR618UF0deF8P8C0MLTH18
+o8NKiqmhvDe4yOE0MVYzflTUgMpWgIGTANqmMmwGYkCFFBiIzkxoj8qYp/DuVUnb
+29HuzUGXJW3hNHXE/d94kHEmcr87i4370Fvp/V3S1Wd0itZkYU9NbqhkHlsWVVcL
+VfRMVxviazpvnKd8/V7WVgp6kIGthw79PgttUjaP9tFCDSFdOG6WhNJ+r3qKoAHB
+RdPjeP5SUzjf6GkH2736ER4hAx5X6+5ZSOfOMjaWN7DXelVDtDTYDhSf+/qG+uI2
+4qS2216w1yzJAhvch9UsguOL4hR+lBYnvylR9Z3G57jsTEJReV4FjC/RUQExUGRL
+wk5/0wVy6bUmJAFYIv4eqlvgB47CRlfOHoZRh1KyIt/qLTjTesygmzrPtNQzrdEc
+2Nc50Br9MSczrgTGDXC+iVd9nvA4aCpJNW64iHww3tNdVfl6EV5KM24adAS/d/L9
+tfaQua7OoRZyan+D0oGPGTcu/CMJDy/Qcx/dXhP/uw0UEUk+vMJrL8t2TMqEgWth
+AfuXRNTqBNY/WcxiQxc7I1KIsOebZghYUuanpLp3eLLAY7Tvgn3VPMPqdl10v1+h
+j89rsLjksUIaCRTH7Q0M5knaUGAa/p0obfmjl2ttrQ2rAc0wzuBYYdJZSEAZoa3O
+jCx3ZlBHgQUGzMp9Oqs=
+=1L5N
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__4_Apr_2012_10_14_09_+1000_jJ3o2.vPr2AS2Dwy--
