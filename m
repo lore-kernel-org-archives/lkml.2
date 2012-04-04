@@ -1,41 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab2DDCaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 22:30:17 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47723 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab2DDCaQ (ORCPT
+	id S1755917Ab2DDCcU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 22:32:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44452 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab2DDCcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 22:30:16 -0400
-Date: Wed, 4 Apr 2012 02:30:33 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Phillip Lougher <plougher@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Eugene Teo <eteo@redhat.com>,
-        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] sysctl: fix restrict write access to dmesg_restrict
-Message-ID: <20120404023033.GB18730@mail.hallyn.com>
-References: <20120330234317.GC411@lenovo-rd230-04.lab.bos.redhat.com>
- <CAGXu5jJhwy9=dmY_6WZWWxJ2MG2Vb2nwsh5zoQ3ocbvrt7HH0w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJhwy9=dmY_6WZWWxJ2MG2Vb2nwsh5zoQ3ocbvrt7HH0w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 Apr 2012 22:32:19 -0400
+Message-ID: <1333506730.15318.2.camel@phoenix>
+Subject: [PATCH] regulator: Support set_voltage_time_sel for drivers
+ implement set_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 04 Apr 2012 10:32:10 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (keescook@chromium.org):
-> Actually, proc_dmesg_restrict is just a CAP_SYSADMIN-checking wrapper
-> around proc_dointvec_minmax. Probably both dmesg_restrict and
-> kptr_restrict should use it.
+In currently implementation of _regulator_do_set_voltage, set_voltage_time_sel will
+only be called if set_voltage_sel is implemented.
 
-I've seen no more emails since this one.  Kees, do you want to send a
-new patch?  (or has someone handled it?)
+set_voltage_time_sel actually only needs get_voltage_sel to get old_selector.
 
-thanks,
--serge
+This patch makes regulator core support set_voltage_time_sel for drivers
+implement either set_voltage or set_voltage_sel.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |   59 ++++++++++++++++++++++++---------------------
+ 1 files changed, 31 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index e70dd38..09ffa84 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1843,23 +1843,35 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 	int ret;
+ 	int delay = 0;
+ 	unsigned int selector;
++	int old_selector = -1;
++	int best_val = INT_MAX;
+ 
+ 	trace_regulator_set_voltage(rdev_get_name(rdev), min_uV, max_uV);
+ 
+ 	min_uV += rdev->constraints->uV_offset;
+ 	max_uV += rdev->constraints->uV_offset;
+ 
++	/*
++	 * If we can't obtain the old selector there is not enough
++	 * info to call set_voltage_time_sel().
++	 */
++	if (rdev->desc->ops->set_voltage_time_sel &&
++	    rdev->desc->ops->get_voltage_sel) {
++		old_selector = rdev->desc->ops->get_voltage_sel(rdev);
++		if (old_selector < 0)
++			return old_selector;
++	}
++
+ 	if (rdev->desc->ops->set_voltage) {
+ 		ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV,
+ 						   &selector);
+ 
+ 		if (rdev->desc->ops->list_voltage)
+-			selector = rdev->desc->ops->list_voltage(rdev,
++			best_val = rdev->desc->ops->list_voltage(rdev,
+ 								 selector);
+ 		else
+-			selector = -1;
++			best_val = -1;
+ 	} else if (rdev->desc->ops->set_voltage_sel) {
+-		int best_val = INT_MAX;
+ 		int i;
+ 
+ 		selector = 0;
+@@ -1878,36 +1890,27 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 			}
+ 		}
+ 
+-		/*
+-		 * If we can't obtain the old selector there is not enough
+-		 * info to call set_voltage_time_sel().
+-		 */
+-		if (rdev->desc->ops->set_voltage_time_sel &&
+-		    rdev->desc->ops->get_voltage_sel) {
+-			unsigned int old_selector = 0;
+-
+-			ret = rdev->desc->ops->get_voltage_sel(rdev);
+-			if (ret < 0)
+-				return ret;
+-			old_selector = ret;
+-			ret = rdev->desc->ops->set_voltage_time_sel(rdev,
+-						old_selector, selector);
+-			if (ret < 0)
+-				rdev_warn(rdev, "set_voltage_time_sel() failed: %d\n", ret);
+-			else
+-				delay = ret;
+-		}
+-
+-		if (best_val != INT_MAX) {
++		if (best_val != INT_MAX)
+ 			ret = rdev->desc->ops->set_voltage_sel(rdev, selector);
+-			selector = best_val;
+-		} else {
++		else
+ 			ret = -EINVAL;
+-		}
+ 	} else {
+ 		ret = -EINVAL;
+ 	}
+ 
++	/* Call set_voltage_time_sel if successfully obtained old_selector */
++	if (ret == 0 && old_selector >= 0 &&
++	    rdev->desc->ops->set_voltage_time_sel) {
++
++		delay = rdev->desc->ops->set_voltage_time_sel(rdev,
++						old_selector, selector);
++		if (delay < 0) {
++			rdev_warn(rdev, "set_voltage_time_sel() failed: %d\n",
++				  delay);
++			delay = 0;
++		}
++	}
++
+ 	/* Insert any necessary delays */
+ 	if (delay >= 1000) {
+ 		mdelay(delay / 1000);
+@@ -1920,7 +1923,7 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
+ 		_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE,
+ 				     NULL);
+ 
+-	trace_regulator_set_voltage_complete(rdev_get_name(rdev), selector);
++	trace_regulator_set_voltage_complete(rdev_get_name(rdev), best_val);
+ 
+ 	return ret;
+ }
+-- 
+1.7.5.4
+
+
+
