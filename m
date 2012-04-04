@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab2DDI0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 04:26:00 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:61942 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab2DDIZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 04:25:57 -0400
-Date: Wed, 4 Apr 2012 10:25:52 +0200
-From: Alessandro Rubini <rubini@cvml.unipv.it>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] misc: remove me from maintainers file
-Message-ID: <20120404082552.GA1450@mail.gnudd.com>
+	id S1754602Ab2DDIaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 04:30:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48371 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254Ab2DDIaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 04:30:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <alpine.SOC.1.00.1204041050200.26551@math.ut.ee>
+References: <alpine.SOC.1.00.1204041000040.26551@math.ut.ee>
+	<CAPM=9twGWHgQU01mj0=Y2iOe1Oo2za4QLY-DkEyYCRVd60+iTg@mail.gmail.com>
+	<CAPM=9tx4jJLRzfBjePYWLQh5Ff6t6DGu3fSMxv7eENneokDsrQ@mail.gmail.com>
+	<alpine.SOC.1.00.1204041050200.26551@math.ut.ee>
+Date: Wed, 4 Apr 2012 09:30:11 +0100
+Message-ID: <CAPM=9tzZUr=_iFHOGRVGOEK3NkpZCnLEb_HEEWU7vYK6aekDXw@mail.gmail.com>
+Subject: Re: nouveau regression in 3.4-rc4-144
+From: Dave Airlie <airlied@gmail.com>
+To: Meelis Roos <mroos@linux.ee>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm definitely not up to date on the subject matter any more
-and haven't been able to comment on the messages on the topic.
+Hi Linus
 
-Signed-off-by: Alessandro Rubini <rubini@ipvvis.unipv.it>
----
+please revert d06221c0617ab6d0bc41c4980cefdd9c8cc9a1c1
 
-(Cc:ing andrew as it looks like maintainer entries go through him)
+I'm off on holidays and it probably needs a bit more testing.
 
- MAINTAINERS |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+Dave.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 05f9c4e..5ea84cf 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4462,12 +4462,6 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- F:	drivers/mmc/host/imxmmc.*
- 
--MOUSE AND MISC DEVICES [GENERAL]
--M:	Alessandro Rubini <rubini@ipvvis.unipv.it>
--S:	Maintained
--F:	drivers/input/mouse/
--F:	include/linux/gpio_mouse.h
--
- MOXA SMARTIO/INDUSTIO/INTELLIO SERIAL CARD
- M:	Jiri Slaby <jirislaby@gmail.com>
- S:	Maintained
--- 
-1.7.7.2
+On Wed, Apr 4, 2012 at 8:50 AM, Meelis Roos <mroos@linux.ee> wrote:
+>> Please try reverting d06221c0617ab6d0bc41c4980cefdd9c8cc9a1c1
+>>
+>> If this works, can someone get it fixed or reverted, I'm off on
+>> holidays, limited net.
+>
+> Yes, this fixes it.
+>
+> --
+> Meelis Roos (mroos@linux.ee)
