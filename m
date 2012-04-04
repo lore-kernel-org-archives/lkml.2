@@ -1,341 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab2DDUWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 16:22:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25441 "EHLO mx1.redhat.com"
+	id S1756959Ab2DDUXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 16:23:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab2DDUV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 16:21:57 -0400
+	id S1753564Ab2DDUV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 16:21:59 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/8] perf, tool: Split term type into value type and term type
-Date: Wed,  4 Apr 2012 22:21:32 +0200
-Message-Id: <1333570898-10505-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/8] perf, tool: Add hardcoded name term for pmu events
+Date: Wed,  4 Apr 2012 22:21:34 +0200
+Message-Id: <1333570898-10505-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1333570898-10505-1-git-send-email-jolsa@redhat.com>
 References: <1333570898-10505-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing type_val and type_term for term instead of a single
-type value. Currently the term type marked out the value type as
-well.
+Adding a new hardcoded term 'name' allowing to specify a name
+for the pmu event. The term is defined along with standard
+pmu terms. If no 'name' term is given, the event name become
+the pmu name itself ('cpu' for the example below).
 
-With this change we can have future string term values being
-specified by user and translated into proper number along the
-processing. This is going to be the case for the branch_sample_type
-comming in shortly.
+running:
+  perf stat -e cpu/config=1,name=krava1/u ls
+
+will produce following output:
+ ...
+ Performance counter stats for 'ls':
+
+                 0 krava1
+
+       0.009779735 seconds time elapsed
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/parse-events.c |   31 +++++++++++------
- tools/perf/util/parse-events.h |   19 ++++++-----
- tools/perf/util/parse-events.y |   26 ++++++++++----
- tools/perf/util/pmu.c          |   70 ++++++++++++++++++++++++----------------
- 4 files changed, 90 insertions(+), 56 deletions(-)
+ tools/perf/builtin-test.c      |   26 ++++++++++++++++++++++++++
+ tools/perf/util/parse-events.c |   10 +++++++++-
+ tools/perf/util/parse-events.h |    3 +++
+ tools/perf/util/parse-events.l |    1 +
+ tools/perf/util/parse-events.y |    8 ++++++++
+ tools/perf/util/pmu.c          |   15 +++++++++++++--
+ tools/perf/util/pmu.h          |    2 ++
+ 7 files changed, 62 insertions(+), 3 deletions(-)
 
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 1c5b980..d522cf4 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -986,6 +986,28 @@ static int test__checkevent_list(struct perf_evlist *evlist)
+ 	return 0;
+ }
+ 
++static int test__checkevent_pmu_name(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = list_entry(evlist->entries.next,
++					      struct perf_evsel, node);
++
++	/* cpu/config=1,name=krava1/u */
++	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",  1 == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "krava"));
++
++	/* cpu/config=2/" */
++	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "cpu"));
++
++	return 0;
++}
++
+ static struct test__event_st {
+ 	const char *name;
+ 	__u32 type;
+@@ -1091,6 +1113,10 @@ static struct test__event_st {
+ 		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
+ 		.check = test__checkevent_list,
+ 	},
++	{
++		.name  = "cpu/config=1,name=krava/u,cpu/config=2/u",
++		.check = test__checkevent_pmu_name,
++	},
+ };
+ 
+ #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5b3a0ef..37b8fc9 100644
+index e910632..c349cf3 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -593,17 +593,27 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
- static int config_term(struct perf_event_attr *attr,
- 		       struct parse_events__term *term)
- {
--	switch (term->type) {
-+#define CHECK_TYPE_VAL(type)					\
-+do {								\
-+	if (PARSE_EVENTS__TERM_TYPE_ ## type != term->type_val)	\
-+		return -EINVAL;					\
-+} while (0)
-+
-+	switch (term->type_term) {
- 	case PARSE_EVENTS__TERM_TYPE_CONFIG:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->config = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->config1 = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->config2 = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->sample_period = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
-@@ -615,7 +625,10 @@ static int config_term(struct perf_event_attr *attr,
- 	default:
+@@ -682,7 +682,9 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 	if (perf_pmu__config(pmu, &attr, head_config))
  		return -EINVAL;
- 	}
+ 
+-	return add_event(list, idx, &attr, (char *) "pmu");
++	name = perf_pmu__event_name(name, head_config);
 +
- 	return 0;
-+
-+#undef CHECK_TYPE_VAL
++	return add_event(list, idx, &attr, name);
  }
  
- static int config_attr(struct perf_event_attr *attr,
-@@ -1015,11 +1028,11 @@ void print_events(const char *event_glob)
- 
- int parse_events__is_hardcoded_term(struct parse_events__term *term)
- {
--	return term->type <= PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX;
-+	return term->type_term != PARSE_EVENTS__TERM_TYPE_USER;
+ void parse_events_update_lists(struct list_head *list_event,
+@@ -1031,6 +1033,11 @@ int parse_events__is_hardcoded_term(struct parse_events__term *term)
+ 	return term->type_term != PARSE_EVENTS__TERM_TYPE_USER;
  }
  
--int parse_events__new_term(struct parse_events__term **_term, int type,
--			   char *config, char *str, long num)
-+int parse_events__new_term(struct parse_events__term **_term, int type_val,
-+			   int type_term, char *config, char *str, long num)
- {
- 	struct parse_events__term *term;
- 
-@@ -1028,15 +1041,11 @@ int parse_events__new_term(struct parse_events__term **_term, int type,
- 		return -ENOMEM;
- 
- 	INIT_LIST_HEAD(&term->list);
--	term->type = type;
-+	term->type_val  = type_val;
-+	term->type_term = type_term;
- 	term->config = config;
- 
--	switch (type) {
--	case PARSE_EVENTS__TERM_TYPE_CONFIG:
--	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
--	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
--	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
--	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
-+	switch (type_val) {
++int parse_events__is_name_term(struct parse_events__term *term)
++{
++	return term->type_term == PARSE_EVENTS__TERM_TYPE_NAME;
++}
++
+ static int new_term(struct parse_events__term **_term, int type_val,
+ 		    int type_term, char *config,
+ 		    char *str, long num, struct list_head *list)
+@@ -1050,6 +1057,7 @@ static int new_term(struct parse_events__term **_term, int type_val,
  	case PARSE_EVENTS__TERM_TYPE_NUM:
  		term->val.num = num;
  		break;
++	case PARSE_EVENTS__TERM_TYPE_NAME:
+ 	case PARSE_EVENTS__TERM_TYPE_STR:
+ 		term->val.str = str;
+ 		break;
 diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index ca069f8..7053aa3 100644
+index 363aa22..cabcbc1 100644
 --- a/tools/perf/util/parse-events.h
 +++ b/tools/perf/util/parse-events.h
-@@ -34,16 +34,17 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
- #define EVENTS_HELP_MAX (128*1024)
+@@ -4,6 +4,7 @@
+  * Parse symbolic events/counts passed in as options:
+  */
  
- enum {
-+	PARSE_EVENTS__TERM_TYPE_NUM,
-+	PARSE_EVENTS__TERM_TYPE_STR,
-+};
-+
-+enum {
-+	PARSE_EVENTS__TERM_TYPE_USER,
++#include <linux/list.h>
+ #include "../../../include/linux/perf_event.h"
+ 
+ struct list_head;
+@@ -44,6 +45,7 @@ enum {
  	PARSE_EVENTS__TERM_TYPE_CONFIG,
  	PARSE_EVENTS__TERM_TYPE_CONFIG1,
  	PARSE_EVENTS__TERM_TYPE_CONFIG2,
++	PARSE_EVENTS__TERM_TYPE_NAME,
  	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
  	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
--	PARSE_EVENTS__TERM_TYPE_NUM,
--	PARSE_EVENTS__TERM_TYPE_STR,
--
--	PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX =
--		PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
  };
- 
- struct parse_events__term {
-@@ -52,14 +53,14 @@ struct parse_events__term {
- 		char *str;
- 		long  num;
- 	} val;
--	int type;
--
-+	int type_val;
-+	int type_term;
- 	struct list_head list;
+@@ -71,6 +73,7 @@ struct parse_events__term {
  };
  
  int parse_events__is_hardcoded_term(struct parse_events__term *term);
--int parse_events__new_term(struct parse_events__term **term, int type,
--			   char *config, char *str, long num);
-+int parse_events__new_term(struct parse_events__term **_term, int type_val,
-+			   int type_term, char *config, char *str, long num);
- void parse_events__free_terms(struct list_head *terms);
- int parse_events_modifier(struct list_head *list __used, char *str __used);
- int parse_events_add_tracepoint(struct list_head *list, int *idx,
++int parse_events__is_name_term(struct parse_events__term *term);
+ int parse_events__term_num(struct parse_events__term **_term,
+ 			   int type_term, char *config, long num);
+ int parse_events__term_str(struct parse_events__term **_term,
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 46c5b3a..cd6614d 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -102,6 +102,7 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
+ config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
+ config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
+ config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
++name			{ return term(PARSE_EVENTS__TERM_TYPE_NAME); }
+ period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
+ 
 diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index d9637da..b3b45e4 100644
+index 6d447b7..ef3ee2d 100644
 --- a/tools/perf/util/parse-events.y
 +++ b/tools/perf/util/parse-events.y
-@@ -176,8 +176,10 @@ PE_NAME '=' PE_NAME
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_STR,
--		 $1, $3, 0));
-+	ABORT_ON(parse_events__new_term(&term,
-+					PARSE_EVENTS__TERM_TYPE_STR,
-+					PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, $3, 0));
+@@ -202,6 +202,14 @@ PE_NAME
  	$$ = term;
  }
  |
-@@ -185,8 +187,10 @@ PE_NAME '=' PE_VALUE
++PE_TERM '=' PE_NAME
++{
++	struct parse_events__term *term;
++
++	ABORT_ON(parse_events__term_str(&term, $1, NULL, $3));
++	$$ = term;
++}
++|
+ PE_TERM '=' PE_VALUE
  {
  	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
--		 $1, NULL, $3));
-+	ABORT_ON(parse_events__new_term(&term,
-+					PARSE_EVENTS__TERM_TYPE_NUM,
-+					PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, NULL, $3));
- 	$$ = term;
- }
- |
-@@ -194,8 +198,10 @@ PE_NAME
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
--		 $1, NULL, 1));
-+	ABORT_ON(parse_events__new_term(&term,
-+					PARSE_EVENTS__TERM_TYPE_NUM,
-+					PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, NULL, 1));
- 	$$ = term;
- }
- |
-@@ -203,7 +209,9 @@ PE_TERM '=' PE_VALUE
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, $3));
-+	ABORT_ON(parse_events__new_term(&term,
-+					PARSE_EVENTS__TERM_TYPE_NUM,
-+					$1, NULL, NULL, $3));
- 	$$ = term;
- }
- |
-@@ -211,7 +219,9 @@ PE_TERM
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, 1));
-+	ABORT_ON(parse_events__new_term(&term,
-+					PARSE_EVENTS__TERM_TYPE_NUM,
-+					$1, NULL, NULL, 1));
- 	$$ = term;
- }
- 
 diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index cb08a11..8ee219b 100644
+index 8ee219b..5526446 100644
 --- a/tools/perf/util/pmu.c
 +++ b/tools/perf/util/pmu.c
-@@ -225,7 +225,7 @@ static int pmu_config_term(struct list_head *formats,
- 	if (parse_events__is_hardcoded_term(term))
- 		return 0;
+@@ -258,9 +258,9 @@ static int pmu_config_term(struct list_head *formats,
+ static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
+ 		      struct list_head *head_terms)
+ {
+-	struct parse_events__term *term, *h;
++	struct parse_events__term *term;
  
--	if (term->type != PARSE_EVENTS__TERM_TYPE_NUM)
-+	if (term->type_val != PARSE_EVENTS__TERM_TYPE_NUM)
- 		return -EINVAL;
+-	list_for_each_entry_safe(term, h, head_terms, list)
++	list_for_each_entry(term, head_terms, list)
+ 		if (pmu_config_term(formats, attr, term))
+ 			return -EINVAL;
  
- 	format = pmu_find_format(formats, term->config);
-@@ -246,6 +246,11 @@ static int pmu_config_term(struct list_head *formats,
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * XXX If we ever decide to go with string values for
-+	 * non-hardcoded terms, here's the place to translate
-+	 * them into value.
-+	 */
- 	*vp |= pmu_format_value(format->bits, term->val.num);
- 	return 0;
+@@ -308,6 +308,17 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 		set_bit(b, bits);
  }
-@@ -324,49 +329,58 @@ static struct test_format {
- /* Simulated users input. */
- static struct parse_events__term test_terms[] = {
- 	{
--		.config  = (char *) "krava01",
--		.val.num = 15,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava01",
-+		.val.num   = 15,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava02",
--		.val.num = 170,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava02",
-+		.val.num   = 170,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava03",
--		.val.num = 1,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava03",
-+		.val.num   = 1,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava11",
--		.val.num = 27,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava11",
-+		.val.num   = 27,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava12",
--		.val.num = 1,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava12",
-+		.val.num   = 1,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava13",
--		.val.num = 2,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava13",
-+		.val.num   = 2,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava21",
--		.val.num = 119,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava21",
-+		.val.num   = 119,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava22",
--		.val.num = 11,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava22",
-+		.val.num   = 11,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava23",
--		.val.num = 2,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava23",
-+		.val.num   = 2,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- };
- #define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
+ 
++char *perf_pmu__event_name(char *name, struct list_head *head_terms)
++{
++	struct parse_events__term *term;
++
++	list_for_each_entry(term, head_terms, list)
++		if (parse_events__is_name_term(term))
++			return term->val.str;
++
++	return name;
++}
++
+ /* Simulated format definitions. */
+ static struct test_format {
+ 	const char *name;
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 68c0db9..f602745 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -37,5 +37,7 @@ int perf_pmu__new_format(struct list_head *list, char *name,
+ 			 int config, unsigned long *bits);
+ void perf_pmu__set_format(unsigned long *bits, long from, long to);
+ 
++char *perf_pmu__event_name(char *name, struct list_head *head_terms);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
 1.7.7.6
 
