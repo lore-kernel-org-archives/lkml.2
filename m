@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab2DDMax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 08:30:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36856 "EHLO mx1.redhat.com"
+	id S932243Ab2DDMa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 08:30:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39906 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab2DDMav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 08:30:51 -0400
-Date: Wed, 4 Apr 2012 15:30:33 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: kvm: RCU warning in async pf
-Message-ID: <20120404123033.GD11918@redhat.com>
-References: <1333414472.11455.7.camel@lappy>
- <20120403105226.GF14939@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120403105226.GF14939@redhat.com>
+	id S932170Ab2DDMax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 08:30:53 -0400
+Message-ID: <1333542649.7188.40.camel@marge.simpson.net>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+From: Mike Galbraith <mgalbraith@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 04 Apr 2012 14:30:49 +0200
+In-Reply-To: <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com>
+	 <1333535915.7188.18.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 01:52:26PM +0300, Gleb Natapov wrote:
-> On Mon, Apr 02, 2012 at 08:54:32PM -0400, Sasha Levin wrote:
-> > Hi all,
-> > 
-> > I got the spew at the bottom of the mail in a KVM guest using the KVM tools and running trinity.
-> > 
-> > I'm not quite sure how default_idle managed to trigger a pagefault, so that part looks odd to me.
-> > 
-> This is not regular page fault. This is async page fault that tells the
-> guest that a page, previously swapped out by hypervisor, is now swapped
-> back in and it can happen while vcpu is idle. The code does not leave
-> idle state properly though. We probably need to call rcu_irq_enter()
-> there. Will look into it.
-> 
+On Wed, 2012-04-04 at 04:29 -0700, David Rientjes wrote:
 
-The patch below solves it for me:
+> I've never seen a nack from Peter on this, I only remember discussing 
+> whether this needs to be isolated to only cpusets or whether it needs to 
+> be a generic cgroup thing and I've always argued in favor of localizing it 
+> to cpusets because that cgroup happens to care about cpu affinity where 
+> others don't and this is why cgroups have ->can_attach() functions.  If a 
+> cgroup were created to have nothing to do with cpu affinity (only for 
+> collecting statistics for threads within it, for example), there's 
+> absolutely no reason why we need to exclude kthreadd.
 
-"Page ready" async PF can kick vcpu out of idle state much like IRQ.
-We need to tell RCU about this.
+Well, he didn't actually say "NAK", but was against it, which means
+pretty much the same thing as NAK to me.. we can call it a nak.
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index f0c6fd6..380079f 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -38,6 +38,7 @@
- #include <asm/traps.h>
- #include <asm/desc.h>
- #include <asm/tlbflush.h>
-+#include <asm/idle.h>
- 
- static int kvmapf = 1;
- 
-@@ -253,7 +254,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- 		kvm_async_pf_task_wait((u32)read_cr2());
- 		break;
- 	case KVM_PV_REASON_PAGE_READY:
-+		rcu_irq_enter();
-+		exit_idle();
- 		kvm_async_pf_task_wake((u32)read_cr2());
-+		rcu_irq_exit();
- 		break;
- 	}
- }
---
-			Gleb.
+> You know I've been very supportive of getting this fix included for 
+> cpusets in the past and I very much appreciate your time and patience in 
+> the review cycle.  I'm hoping we can finally do this.
+
+Whatever floats the boat works for me.  Peter likes generic, you like
+targeted.  I like generic best too fwtw, but I don't get to make the
+command decision, else you'd be saying revert, and I'd be saying NAK :)
+
+-Mike
+
