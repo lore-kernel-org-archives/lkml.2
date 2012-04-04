@@ -1,187 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab2DDOPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 10:15:12 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:64192 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538Ab2DDOPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 10:15:10 -0400
-Message-ID: <1333548898.5856.1.camel@phoenix>
-Subject: [PATCH] usb: gadget: use module_pci_driver
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Dahlmann <dahlmann.thomas@arcor.de>, Felipe Balbi <balbi@ti.com>,
-        Xiaochen Shen <xiaochen.shen@intel.com>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-geode@lists.infradead.org, linux-usb@vger.kernel.org
-Date: Wed, 04 Apr 2012 22:14:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756592Ab2DDOSc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 10:18:32 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:33608 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756541Ab2DDOSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 10:18:31 -0400
+Date: Wed, 4 Apr 2012 07:16:10 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.4-rc2
+Message-ID: <20120404141609.GA17301@ericsson.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the drivers in drivers/usb/gadget/* to use
-module_pci_driver() macro which makes the code smaller and a bit simpler.
+--9jxsPFA5p3P2qPhR
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Thomas Dahlmann <dahlmann.thomas@arcor.de>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Xiaochen Shen <xiaochen.shen@intel.com>
-Cc: Pavankumar Kondeti <pkondeti@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/usb/gadget/amd5536udc.c   |   14 +-------------
- drivers/usb/gadget/ci13xxx_pci.c  |   22 +---------------------
- drivers/usb/gadget/goku_udc.c     |   12 +-----------
- drivers/usb/gadget/langwell_udc.c |   16 +---------------
- drivers/usb/gadget/pch_udc.c      |   13 +------------
- 5 files changed, 5 insertions(+), 72 deletions(-)
+Hi Linus,
 
-diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
-index 7777927..e6bb107 100644
---- a/drivers/usb/gadget/amd5536udc.c
-+++ b/drivers/usb/gadget/amd5536udc.c
-@@ -3402,19 +3402,7 @@ static struct pci_driver udc_pci_driver = {
- 	.remove =	udc_pci_remove,
- };
- 
--/* Inits driver */
--static int __init init(void)
--{
--	return pci_register_driver(&udc_pci_driver);
--}
--module_init(init);
--
--/* Cleans driver */
--static void __exit cleanup(void)
--{
--	pci_unregister_driver(&udc_pci_driver);
--}
--module_exit(cleanup);
-+module_pci_driver(udc_pci_driver);
- 
- MODULE_DESCRIPTION(UDC_MOD_DESCRIPTION);
- MODULE_AUTHOR("Thomas Dahlmann");
-diff --git a/drivers/usb/gadget/ci13xxx_pci.c b/drivers/usb/gadget/ci13xxx_pci.c
-index 883ab5e..63ef96c 100644
---- a/drivers/usb/gadget/ci13xxx_pci.c
-+++ b/drivers/usb/gadget/ci13xxx_pci.c
-@@ -148,27 +148,7 @@ static struct pci_driver ci13xxx_pci_driver = {
- 	.remove       =	__devexit_p(ci13xxx_pci_remove),
- };
- 
--/**
-- * ci13xxx_pci_init: module init
-- *
-- * Driver load
-- */
--static int __init ci13xxx_pci_init(void)
--{
--	return pci_register_driver(&ci13xxx_pci_driver);
--}
--module_init(ci13xxx_pci_init);
--
--/**
-- * ci13xxx_pci_exit: module exit
-- *
-- * Driver unload
-- */
--static void __exit ci13xxx_pci_exit(void)
--{
--	pci_unregister_driver(&ci13xxx_pci_driver);
--}
--module_exit(ci13xxx_pci_exit);
-+module_pci_driver(ci13xxx_pci_driver);
- 
- MODULE_AUTHOR("MIPS - David Lopo <dlopo@chipidea.mips.com>");
- MODULE_DESCRIPTION("MIPS CI13XXX USB Peripheral Controller");
-diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
-index e151d6b..6ae874e 100644
---- a/drivers/usb/gadget/goku_udc.c
-+++ b/drivers/usb/gadget/goku_udc.c
-@@ -1895,14 +1895,4 @@ static struct pci_driver goku_pci_driver = {
- 	/* FIXME add power management support */
- };
- 
--static int __init init (void)
--{
--	return pci_register_driver (&goku_pci_driver);
--}
--module_init (init);
--
--static void __exit cleanup (void)
--{
--	pci_unregister_driver (&goku_pci_driver);
--}
--module_exit (cleanup);
-+module_pci_driver(goku_pci_driver);
-diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
-index f9cedd5..1308112 100644
---- a/drivers/usb/gadget/langwell_udc.c
-+++ b/drivers/usb/gadget/langwell_udc.c
-@@ -3412,23 +3412,9 @@ static struct pci_driver langwell_pci_driver = {
- 	.shutdown =	langwell_udc_shutdown,
- };
- 
--
--static int __init init(void)
--{
--	return pci_register_driver(&langwell_pci_driver);
--}
--module_init(init);
--
--
--static void __exit cleanup(void)
--{
--	pci_unregister_driver(&langwell_pci_driver);
--}
--module_exit(cleanup);
--
-+module_pci_driver(langwell_pci_driver);
- 
- MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_AUTHOR("Xiaochen Shen <xiaochen.shen@intel.com>");
- MODULE_VERSION(DRIVER_VERSION);
- MODULE_LICENSE("GPL");
--
-diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
-index 6530706..3143a83 100644
---- a/drivers/usb/gadget/pch_udc.c
-+++ b/drivers/usb/gadget/pch_udc.c
-@@ -3282,7 +3282,6 @@ static DEFINE_PCI_DEVICE_TABLE(pch_udc_pcidev_id) = {
- 
- MODULE_DEVICE_TABLE(pci, pch_udc_pcidev_id);
- 
--
- static struct pci_driver pch_udc_driver = {
- 	.name =	KBUILD_MODNAME,
- 	.id_table =	pch_udc_pcidev_id,
-@@ -3293,17 +3292,7 @@ static struct pci_driver pch_udc_driver = {
- 	.shutdown =	pch_udc_shutdown,
- };
- 
--static int __init pch_udc_pci_init(void)
--{
--	return pci_register_driver(&pch_udc_driver);
--}
--module_init(pch_udc_pci_init);
--
--static void __exit pch_udc_pci_exit(void)
--{
--	pci_unregister_driver(&pch_udc_driver);
--}
--module_exit(pch_udc_pci_exit);
-+module_pci_driver(pch_udc_driver);
- 
- MODULE_DESCRIPTION("Intel EG20T USB Device Controller");
- MODULE_AUTHOR("LAPIS Semiconductor, <tomoya-linux@dsn.lapis-semi.com>");
--- 
-1.7.5.4
+Please pull hwmon fixes for Linux 3.4-rc2 from signed tag:
 
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git =
+hwmon-for-linus
 
+Fix crash in ad7314 driver
+Add support for AMD Trinity CPUs to k10temp driver
+Fix __initdata/__initconst mixup in w83627ehf driver
+Fix runtime warnings in acpi_power_meter and max6639 drivers
+Fix build warnings in adm1031, f75375s, sht15, and gpio-fan drivers
 
+Thanks,
+Guenter
+
+------
+
+The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
+
+  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hw=
+mon-for-linus
+
+Andre Przywara (1):
+      hwmon: (k10temp) Add support for AMD Trinity CPUs
+
+Graeme Smecher (1):
+      hwmon: (ad7314) Adds missing spi_dev initialization
+
+Guenter Roeck (4):
+      hwmon: (gpio-fan) Fix Kconfig dependencies
+      hwmon: (sht15) Fix Kconfig dependencies
+      hwmon: (f75375s) Fix warning message seen in some configurations
+      hwmon: (adm1031) Fix compiler warning
+
+Kyle McMartin (1):
+      hwmon: (acpi_power_meter) fix lockdep spew due to non-static lock cla=
+ss
+
+Mark Brown (1):
+      hwmon: (max6639) Convert to dev_pm_ops
+
+Uwe Kleine-K=F6nig (1):
+      hwmon: (w83627ehf) mark const init data with __initconst instead of _=
+_initdata
+
+ Documentation/hwmon/k10temp      |    2 +-
+ drivers/hwmon/Kconfig            |    7 ++++---
+ drivers/hwmon/acpi_power_meter.c |    2 ++
+ drivers/hwmon/ad7314.c           |    1 +
+ drivers/hwmon/adm1031.c          |   20 ++++++++------------
+ drivers/hwmon/f75375s.c          |    2 ++
+ drivers/hwmon/k10temp.c          |    4 ++++
+ drivers/hwmon/max6639.c          |   15 +++++++++++----
+ drivers/hwmon/w83627ehf.c        |   18 +++++++++---------
+ 9 files changed, 42 insertions(+), 29 deletions(-)
+
+--9jxsPFA5p3P2qPhR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPfFepAAoJEMsfJm/On5mBfboP/3pKayEFAYljk9hL9UOOFSBx
+UXE7mmopjxtYg9lVZt7qS+XdhiRJeIn9bWYVyY7rwWzkbPDz8CMaBfnAZtZOvXn5
+iQBSTnClqJLqdw6O8hrO80PtBc4YSdb2KJI3pSEIErlt1Yd9foeNgPbtRArwvse7
+XJ5cA3Zbmzw3ayIujnaZp0bnZDyCCSZ8Uq2Gt5AdFym9qEqE7MfiwzR1PvsWhyn/
+hS3ZP2wVaGGm0O1GsYQ/tpQTTcW2ZHpK8f0j3W926sHsyw4p2jn1s5NnhdgbesDL
++B/lMuSdNmdBc6BKN/JDwk43yTjNnLDf03AQu0qnnEAqwBjuA+gQBOGbgoJro08g
+dS0BLXxsVRYJAF7MFPVNSyIUEM4Ro6wm7g7JSqJsAeQ7Pk3aVba+r67khitQokB3
+NtvBfVT329K9Xq54x49+iAreIJ2zu5Sbxhw6MTLBNvBxmB/Iem/wrPbpSdG1SfjN
++NgRoinS1Og3/yRihWCKM8oSZ4h8aFH/yYjYBFKnCJ/bEunCmJ/1Y2OW8X+y4uGV
+w7JNJeFGX3Cntb/k09BPEJqHGA0uZfHQSi0UmF8QpoR3lT3mfpwlTNjdpyGBriGl
+S+8Fbut96r9z2aOVmVDkqtQJpreTYw558pkTuWxEHcZzl4WR3aUFqYLS+CgLurEi
+OWSSx5qvZPBcc2IEaIJu
+=RgGQ
+-----END PGP SIGNATURE-----
+
+--9jxsPFA5p3P2qPhR--
