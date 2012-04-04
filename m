@@ -1,314 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2DDVQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 17:16:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8414 "EHLO mx1.redhat.com"
+	id S1756959Ab2DDVQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 17:16:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59718 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753384Ab2DDVQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 17:16:52 -0400
+	id S1753384Ab2DDVQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 17:16:56 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 8/8] perf, tool: Enable sampling on specified event group leader
-Date: Wed,  4 Apr 2012 23:16:16 +0200
-Message-Id: <1333574176-11388-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 7/8] perf, tool: Add support for parsing PERF_SAMPLE_READ
+Date: Wed,  4 Apr 2012 23:16:15 +0200
+Message-Id: <1333574176-11388-8-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
 References: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding the functionality to 'group:modifier=...' event syntax.
-Allowing user to select an event out of the defined group by
-event index ( = event order placement in the group).
+Adding support to parse out the PERF_SAMPLE_READ sample bits.
+The code contains both single and group format specification.
 
-This selected event becomes group leader and will be the
-only one which be sampling.
-
-The rest of the events counts are being read on each leader
-sample by PERF_SAMPLE_READ sample type.
-
-Following example:
-  perf record -e group:1=cycles,faults ls
-
-  - creates a group with 'cycles' and 'faults' events
-  - 'cycles' event is group leader and has sampling enabled
-  - 'faults' event is read each time 'cycles' sample,
-    the 'faults' count is attached to the 'cycles sample
-    via PERF_SAMPLE_READ sample type.
-
-It is possible to display the data by 'perf report -D' command.
-For each sample the PERF_SAMPLE_READ data are displayed if it's
-included. More sophisticated output comming shortly.
+this code parse out and prepare prepare PERF_SAMPLE_READ data
+into the perf_sample struct. It will be used for group leader
+sampling feature comming in shortly.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/evlist.c            |   63 ++++++++++++++++++++++++++++------
- tools/perf/util/evlist.h            |    3 +-
- tools/perf/util/evsel.c             |   18 +++++++++-
- tools/perf/util/evsel.h             |    6 ++--
- tools/perf/util/parse-events-test.c |   20 +++++++----
- tools/perf/util/parse-events.c      |    5 +--
- 6 files changed, 88 insertions(+), 27 deletions(-)
+ tools/perf/builtin-test.c |    4 ++--
+ tools/perf/util/event.h   |   21 ++++++++++++++++++++-
+ tools/perf/util/evlist.c  |   22 ++++++++++++++++++++++
+ tools/perf/util/evlist.h  |    2 ++
+ tools/perf/util/evsel.c   |   30 +++++++++++++++++++++++++++---
+ tools/perf/util/python.c  |    3 ++-
+ tools/perf/util/session.c |   42 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h |    5 ++++-
+ 8 files changed, 121 insertions(+), 8 deletions(-)
 
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index c19d2d7..7acc689 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -564,7 +564,7 @@ static int test__basic_mmap(void)
+ 		}
+ 
+ 		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
+-					       false, &sample, false);
++					       false, 0, &sample, false);
+ 		if (err) {
+ 			pr_err("Can't parse sample, err = %d\n", err);
+ 			goto out_munmap;
+@@ -786,7 +786,7 @@ static int test__PERF_RECORD(void)
+ 					nr_events[type]++;
+ 
+ 				err = perf_event__parse_sample(event, sample_type,
+-							       sample_size, true,
++							       sample_size, true, 0,
+ 							       &sample, false);
+ 				if (err < 0) {
+ 					if (verbose)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 1b19728..221266a 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -69,6 +69,23 @@ struct sample_event {
+ 	u64 array[];
+ };
+ 
++struct sample_read_value {
++	u64 value;
++	u64 id;
++};
++
++struct sample_read {
++	u64 time_enabled;
++	u64 time_running;
++	union {
++		struct {
++			u64 nr;
++			struct sample_read_value *values;
++		} group;
++		struct sample_read_value one;
++	};
++};
++
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+@@ -82,6 +99,7 @@ struct perf_sample {
+ 	void *raw_data;
+ 	struct ip_callchain *callchain;
+ 	struct branch_stack *branch_stack;
++	struct sample_read read;
+ };
+ 
+ #define BUILD_ID_SIZE 20
+@@ -199,7 +217,8 @@ const char *perf_event__name(unsigned int id);
+ 
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *sample, bool swapped);
++			     u64 read_format, struct perf_sample *sample,
++			     bool swapped);
+ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 				  const struct perf_sample *sample,
+ 				  bool swapped);
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index bd48bb3..b0d5038 100644
+index 0ffae44..bd48bb3 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -48,18 +48,27 @@ struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
- 	return evlist;
+@@ -693,6 +693,28 @@ u64 perf_evlist__sample_type(const struct perf_evlist *evlist)
+ 	return first->attr.sample_type;
  }
  
-+static void update_leader_sample(struct perf_evlist *evlist)
++bool perf_evlist__valid_read_format(const struct perf_evlist *evlist)
 +{
-+	struct perf_evsel *evsel;
++	struct perf_evsel *pos, *first;
 +
-+	list_for_each_entry(evsel, &evlist->entries, node)
-+		if (evsel->leader_sample)
-+			evlist->leader_sample = true;
++	pos = first = list_entry(evlist->entries.next, struct perf_evsel, node);
++
++	list_for_each_entry_continue(pos, &evlist->entries, node) {
++		if (first->attr.read_format != pos->attr.read_format)
++			return false;
++	}
++
++	return true;
 +}
 +
- void perf_evlist__config_attrs(struct perf_evlist *evlist,
- 			       struct perf_record_opts *opts)
- {
--	struct perf_evsel *evsel, *first;
-+	struct perf_evsel *evsel;
++u64 perf_evlist__read_format(const struct perf_evlist *evlist)
++{
++	struct perf_evsel *first;
 +
-+	update_leader_sample(evlist);
- 
- 	if (evlist->cpus->map[0] < 0)
- 		opts->no_inherit = true;
- 
--	first = list_entry(evlist->entries.next, struct perf_evsel, node);
--
- 	list_for_each_entry(evsel, &evlist->entries, node) {
--		perf_evsel__config(evsel, opts, first);
-+		perf_evsel__config(evlist, evsel, opts);
- 
- 		if (evlist->nr_entries > 1)
- 			evsel->attr.sample_type |= PERF_SAMPLE_ID;
-@@ -107,15 +116,48 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
- 	evlist->nr_entries += nr_entries;
- }
- 
--void perf_evlist__group_list(struct list_head *list)
-+static struct perf_evsel* get_evsel_nth_list(struct list_head *list, int n)
- {
--	struct perf_evsel *evsel, *first;
-+	struct perf_evsel *evsel;
-+	int i = 1;
- 
--	first = list_entry(list->next, struct perf_evsel, node);
-+	list_for_each_entry(evsel, list, node)
-+		if (i++ == n)
-+			return evsel;
-+
-+	return NULL;
++	first = list_entry(evlist->entries.next, struct perf_evsel, node);
++	return first->attr.read_format;
 +}
 +
-+int perf_evlist__group_list(struct list_head *list, int leader_sample)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	if (leader_sample) {
-+		leader = get_evsel_nth_list(list, leader_sample);
-+		if (!leader) {
-+			fprintf(stderr,
-+				"failed: leader number out of bounds\n");
-+			return -EINVAL;
-+		}
-+
-+		leader->leader_sample = true;
-+
-+		/*
-+		 * Make the leader first in the list, because we need it
-+		 * to be opened first, so we can use its fd for group fd.
-+		 */
-+		if (leader_sample != 1) {
-+			list_del(&leader->node);
-+			list_add(&leader->node, list);
-+		}
-+	} else
-+		leader = list_entry(list->next, struct perf_evsel, node);
- 
- 	list_for_each_entry(evsel, list, node)
--		if (evsel != first)
--			evsel->leader = first;
-+		if (evsel != leader)
-+			evsel->leader = leader;
-+
-+	return 0;
- }
- 
- int perf_evlist__group(struct perf_evlist *evlist)
-@@ -123,8 +165,7 @@ int perf_evlist__group(struct perf_evlist *evlist)
- 	if (!evlist->nr_entries)
- 		return -EINVAL;
- 
--	perf_evlist__group_list(&evlist->entries);
--	return 0;
-+	return perf_evlist__group_list(&evlist->entries, 0);
- }
- 
- int perf_evlist__add_default(struct perf_evlist *evlist)
+ u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *first;
 diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index c2fe77b..6fb380c 100644
+index 863789a..c2fe77b 100644
 --- a/tools/perf/util/evlist.h
 +++ b/tools/perf/util/evlist.h
-@@ -28,6 +28,7 @@ struct perf_evlist {
- 		pid_t	pid;
- 	} workload;
- 	bool		 overwrite;
-+	bool		 leader_sample;
- 	union perf_event event_copy;
- 	struct perf_mmap *mmap;
- 	struct pollfd	 *pollfd;
-@@ -124,7 +125,7 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+@@ -111,12 +111,14 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
+ void perf_evlist__delete_maps(struct perf_evlist *evlist);
+ int perf_evlist__set_filters(struct perf_evlist *evlist);
+ 
++u64 perf_evlist__read_format(const const struct perf_evlist *evlist);
+ u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
+ bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
+ u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist);
+ 
+ bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist);
+ bool perf_evlist__valid_sample_id_all(const struct perf_evlist *evlist);
++bool perf_evlist__valid_read_format(const struct perf_evlist *evlist);
+ 
+ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
  				   struct list_head *list,
- 				   int nr_entries);
- 
--void perf_evlist__group_list(struct list_head *list);
-+int perf_evlist__group_list(struct list_head *list, int leader_sample);
- int perf_evlist__group(struct perf_evlist *evlist);
- 
- #endif /* __PERF_EVLIST_H */
 diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 42f5256..0e0756a 100644
+index 445ba60..42f5256 100644
 --- a/tools/perf/util/evsel.c
 +++ b/tools/perf/util/evsel.c
-@@ -62,18 +62,27 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
- 	return evsel;
- }
+@@ -465,7 +465,8 @@ static bool sample_overlap(const union perf_event *event,
  
--void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
--			struct perf_evsel *first)
-+void perf_evsel__config(struct perf_evlist *evlist, struct perf_evsel *evsel,
-+			struct perf_record_opts *opts)
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *data, bool swapped)
++			     u64 read_format, struct perf_sample *data,
++			     bool swapped)
  {
-+	struct perf_evsel *first, *leader = evsel->leader;
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
+ 	const u64 *array;
  
-+	first = list_entry(evlist->entries.next, struct perf_evsel, node);
-+
- 	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
- 	attr->inherit	    = !opts->no_inherit;
- 	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
- 			      PERF_FORMAT_TOTAL_TIME_RUNNING |
- 			      PERF_FORMAT_ID;
- 
-+	if (evlist->leader_sample) {
-+		attr->read_format |= PERF_FORMAT_GROUP;
-+		attr->sample_type |= PERF_SAMPLE_READ;
-+		attr->inherit = 0;
-+	}
-+
- 	attr->sample_type  |= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
- 
- 	/*
-@@ -91,6 +100,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 		}
+@@ -554,8 +555,31 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
  	}
  
-+	if (leader && leader->leader_sample) {
-+		attr->sample_freq   = 0;
-+		attr->sample_period = 0;
+ 	if (type & PERF_SAMPLE_READ) {
+-		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+-		return -1;
++		if (read_format & PERF_FORMAT_GROUP)
++			data->read.group.nr = *array;
++		else
++			data->read.one.value = *array;
++
++		array++;
++
++		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
++			data->read.time_enabled = *array;
++			array++;
++		}
++
++		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
++			data->read.time_running = *array;
++			array++;
++		}
++
++		if (read_format & PERF_FORMAT_GROUP) {
++			data->read.group.values = (struct sample_read_value *) array;
++			array = (void *) array + data->read.group.nr *
++				sizeof(struct sample_read_value);
++		} else {
++			data->read.one.id = *array;
++			array++;
++		}
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_CALLCHAIN) {
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 419c29e..477f9a8 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -807,7 +807,8 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+ 		first = list_entry(evlist->entries.next, struct perf_evsel, node);
+ 		err = perf_event__parse_sample(event, first->attr.sample_type,
+ 					       perf_evsel__sample_size(first),
+-					       sample_id_all, &pevent->sample, false);
++					       sample_id_all, first->attr.read_format,
++					       &pevent->sample, false);
+ 		if (err)
+ 			return PyErr_Format(PyExc_OSError,
+ 					    "perf: can't parse sample, err=%d", err);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 9412e3b..b64f017 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -70,6 +70,11 @@ static int perf_session__open(struct perf_session *self, bool force)
+ 		goto out_close;
+ 	}
+ 
++	if (!perf_evlist__valid_read_format(self->evlist)) {
++		pr_err("non matching read_format");
++		goto out_close;
 +	}
 +
- 	if (opts->no_samples)
- 		attr->sample_freq = 0;
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index e749d5c..e40c5ff 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -67,6 +67,7 @@ struct perf_evsel {
- 	} handler;
- 	bool 			supported;
- 	struct perf_evsel	*leader;
-+	bool			leader_sample;
- };
- 
- struct cpu_map;
-@@ -80,9 +81,8 @@ void perf_evsel__init(struct perf_evsel *evsel,
- void perf_evsel__exit(struct perf_evsel *evsel);
- void perf_evsel__delete(struct perf_evsel *evsel);
- 
--void perf_evsel__config(struct perf_evsel *evsel,
--			struct perf_record_opts *opts,
--			struct perf_evsel *first);
-+void perf_evsel__config(struct perf_evlist *evlist, struct perf_evsel *evsel,
-+			struct perf_record_opts *opts);
- 
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index c2f7bd1..15a8c4d 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -490,22 +490,28 @@ static int test__checkevent_group_mod(struct perf_evlist *evlist)
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
- 
--	/* cycles */
-+	/*
-+	 * With modifier :2 we have 'faults leading the list
-+	 * and being the leader
-+	 */
-+
-+	/* faults */
- 	evsel = leader = list_entry(evlist->entries.next, struct perf_evsel, node);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_SOFTWARE == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong config",
--			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+			PERF_COUNT_SW_PAGE_FAULTS == evsel->attr.config);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
- 
--	/* faults */
-+	/* cycles */
- 	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_SOFTWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong config",
--			PERF_COUNT_SW_PAGE_FAULTS == evsel->attr.config);
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
- 
+ 	self->size = input_stat.st_size;
  	return 0;
+ 
+@@ -86,6 +91,7 @@ void perf_session__update_sample_type(struct perf_session *self)
+ 	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
+ 	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
+ 	self->host_machine.id_hdr_size = self->id_hdr_size;
++	self->read_format = perf_evlist__read_format(self->evlist);
  }
+ 
+ int perf_session__create_kernel_maps(struct perf_session *self)
+@@ -785,6 +791,39 @@ static void perf_session__print_tstamp(struct perf_session *session,
+ 		printf("%" PRIu64 " ", sample->time);
+ }
+ 
++static void sample_read__printf(struct perf_session *session,
++				struct perf_sample *sample)
++{
++	u64 read_format = session->read_format;
 +
- static struct test__event_st {
- 	const char *name;
- 	__u32 type;
-@@ -624,7 +630,7 @@ static struct test__event_st {
- 		.check = test__checkevent_group,
- 	},
- 	[28] = {
--		.name  = "group:1=cycles,faults",
-+		.name  = "group:2=cycles,faults",
- 		.check = test__checkevent_group_mod,
- 	},
- };
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index d7812bd..afec4d0 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -791,10 +791,9 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 	return add_event(list, idx, &attr, name);
- }
- 
--int parse_events__group(struct list_head *list, int mod __used)
-+int parse_events__group(struct list_head *list, int leader_sample)
++	printf("... sample_read:\n");
++
++	if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
++		printf("...... time enabled %016" PRIx64 "\n",
++		       sample->read.time_enabled);
++
++	if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
++		printf("...... time running %016" PRIx64 "\n",
++		       sample->read.time_running);
++
++	if (read_format & PERF_FORMAT_GROUP) {
++		u64 i;
++
++		printf(".... group nr %" PRIu64 "\n", sample->read.group.nr);
++
++		for (i = 0; i < sample->read.group.nr; i++) {
++			struct sample_read_value *value;
++
++			value = &sample->read.group.values[i];
++			printf("..... id %016" PRIx64
++			       ", value %016" PRIx64 "\n",
++			       value->id, value->value);
++		}
++	} else
++		printf("..... id %016" PRIx64 ", value %016" PRIx64 "\n",
++			sample->read.one.id, sample->read.one.value);
++}
++
+ static void dump_event(struct perf_session *session, union perf_event *event,
+ 		       u64 file_offset, struct perf_sample *sample)
  {
--	perf_evlist__group_list(list);
--	return 0;
-+	return perf_evlist__group_list(list, leader_sample);
+@@ -818,6 +857,9 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 
+ 	if (session->sample_type & PERF_SAMPLE_BRANCH_STACK)
+ 		branch_stack__printf(sample);
++
++	if (session->sample_type & PERF_SAMPLE_READ)
++		sample_read__printf(session, sample);
  }
  
- void parse_events_update_lists(struct list_head *list_event,
+ static struct machine *
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 7a5434c..8d2ea3c 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -42,6 +42,7 @@ struct perf_session {
+ 	struct hists		hists;
+ 	u64			sample_type;
+ 	int			sample_size;
++	u64			read_format;
+ 	int			fd;
+ 	bool			fd_pipe;
+ 	bool			repipe;
+@@ -134,7 +135,9 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+ {
+ 	return perf_event__parse_sample(event, session->sample_type,
+ 					session->sample_size,
+-					session->sample_id_all, sample,
++					session->sample_id_all,
++					session->read_format,
++					sample,
+ 					session->header.needs_swap);
+ }
+ 
 -- 
 1.7.7.6
 
