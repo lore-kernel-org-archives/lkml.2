@@ -1,110 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab2DDGlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 02:41:01 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:55391 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab2DDGlA (ORCPT
+	id S1751702Ab2DDGmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 02:42:04 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57699 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab2DDGmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 02:41:00 -0400
-Date: Tue, 3 Apr 2012 23:40:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, linux-input@vger.kernel.org,
-        Alessandro Rubini <rubini@cvml.unipv.it>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: psmouse serio4: bad data from KBC - timeout
-Message-ID: <20120404064053.GA26093@core.coreip.homeip.net>
-References: <20120403094324.GA3346@gere.osrc.amd.com>
- <20120403170659.GF24832@core.coreip.homeip.net>
- <20120404045440.GB28344@liondog.tnic>
+	Wed, 4 Apr 2012 02:42:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120404045440.GB28344@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 4 Apr 2012 08:41:59 +0200
+Message-ID: <CAF6WcOikGFo9OMJf5ePH39xoT=Ad0fZYfoPAHJfW1BZYxMVKbA@mail.gmail.com>
+Subject: accessfs patches
+From: Bart van der Meulen <bartvdrmeulen@gmail.com>
+To: olaf+list.linux-kernel@olafdietsche.de
+Cc: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf30563c297f067804bcd4b899
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 06:54:40AM +0200, Borislav Petkov wrote:
-> Hi Dmitry,
-> 
-> On Tue, Apr 03, 2012 at 10:06:59AM -0700, Dmitry Torokhov wrote:
-> > > I'm running 3.4-rc1 on a thinkpad x121e and it builds and boots just
-> > > fine. However, after resuming from disk I get (this is the tail of
-> > > dmesg):
-> > > 
-> > > [  905.857412] i8042: failed to resume active multiplexor, mouse won't work
-> > > [  905.965568] usb 3-2: reset low-speed USB device number 2 using ohci_hcd
-> > > [  907.626998] psmouse serio4: bad data from KBC - timeout
-> > > [  907.675385] PM: restore of devices complete after 2358.155 msecs
-> > > [  908.227481] Restarting tasks ... done.
-> > > [  908.266229] video LNXVIDEO:01: Restoring backlight state
-> > > [  917.628792] psmouse serio4: Failed to deactivate mouse on isa0060/serio4
-> > > [  917.880639] psmouse serio4: Failed to enable mouse on isa0060/serio4
-> > > [  919.867982] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input19
-> > > [  947.277011] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
-> > > [  996.231116] Bluetooth: Core ver 2.16
-> > > [  996.231262] NET: Registered protocol family 31
-> > > [  996.231273] Bluetooth: HCI device and connection manager initialized
-> > > [  996.231559] Bluetooth: HCI socket layer initialized
-> > > [  996.231575] Bluetooth: L2CAP socket layer initialized
-> > > [  996.231630] Bluetooth: SCO socket layer initialized
-> > > 
-> > > and after that the keyboard and the mouse touchpad don't work. The
-> > > connected USB mouse works fine though.
-> > 
-> > There weren't any changes to i8042 for a while so I'd look into recent
-> > ACPI/PM merges. You can also try booting with i8042.nomux to see if it
-> > will work better with i8042 in legacy multiplexing mode.
-> 
-> thanks for looking into this.
-> 
-> So, I just tested the "i8042.nomux" command line option and it seems to
-> work. Even the touchpad went on after rubbing on it a couple of times
-> initially.
-> 
-> Then, I booted back into 3.4-rc1 without the above option and here's
-> what I got again:
-> 
-> [    0.924424] i8042: PNP: PS/2 Controller [PNP0303:KBC0,PNP0f13:MSE0] at 0x60,0x64 irq 1,12
-> [    0.928313] i8042: Detected active multiplexing controller, rev 1.1
-> [    0.929966] serio: i8042 KBD port at 0x60,0x64 irq 1
-> [    0.930628] serio: i8042 AUX0 port at 0x60,0x64 irq 12
-> [    0.930890] serio: i8042 AUX1 port at 0x60,0x64 irq 12
-> [    0.931175] serio: i8042 AUX2 port at 0x60,0x64 irq 12
-> [    0.931343] serio: i8042 AUX3 port at 0x60,0x64 irq 12
-> [    0.971523] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0
-> [    2.086110] psmouse serio4: synaptics: Touchpad model: 1, fw: 8.0, id: 0x1e2b1, caps: 0xd001a3/0x940300/0x121c00
-> [    2.086378] psmouse serio4: synaptics: serio: Synaptics pass-through port at isa0060/serio4/input0
-> [    2.127547] input: SynPS/2 Synaptics TouchPad as /devices/platform/i8042/serio4/input/input1
-> [    7.880045] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio4/serio5/input/input2
-> [  193.757348] i8042: failed to resume active multiplexor, mouse won't work
-> 
-> It seems the mux controller doesn't resume properly (doh, it says so
-> :)) so not only mousepad but keyboard is not working too.
-> 
-> Actually, that's not 100% correct: the keyboard does work for a short
-> period of time (a couple of seconds, judging by the printk timestamps
-> below) right after I resume and then it stops ...
-> 
-> [  195.526425] psmouse serio4: bad data from KBC - timeout
-> [  205.532397] psmouse serio4: Failed to deactivate mouse on isa0060/serio4
-> [  205.772260] psmouse serio4: Failed to enable mouse on isa0060/serio4
-> [  207.447644] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input15
-> 
-> .. with the above being the last line on dmesg.
-> 
-> So, I'm ready for suggestions.
-> 
+--20cf30563c297f067804bcd4b899
+Content-Type: text/plain; charset=ISO-8859-1
 
-As I said I would start at the latest ACPI and PM merges and try
-reverting them - i8042 may interact in funny ways with embedded
-controller since it is usually the same piece of firmware.
+Hi Olaf,
 
-I assume it works fine in 3.3, right?
+Please find attached 2 patches for accessfs.
 
-Thanks.
+accessfs-clear-I_NEW-flag-after-initialising-inode.patch
+This fixes kernel messages generated during unmounting of the accessfs
+/proc filesystem, I started to get them when I upgraded to from 2.6.33
+to 3.0, I'm not sure if it is also valid for earlier versions of the
+kernel,
 
--- 
-Dmitry
+accessfs-integrate-with-the-LSM-system.patch:
+This adds an config option so that accessfs can be set as a LSM in the
+kernel, as far as I can tell it is applicable from version 2.6.37 and
+up.
+
+Kind regards,
+
+Bart
+
+--20cf30563c297f067804bcd4b899
+Content-Type: application/octet-stream; 
+	name="accessfs-integrate-with-the-LSM-system.patch"
+Content-Disposition: attachment; 
+	filename="accessfs-integrate-with-the-LSM-system.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h0m09zx40
+
+RnJvbSA4MTNmYmVkYmE0NjRkM2EzMmJiYWE1ZDQwNTE5OTdjNWIzYTgwNjI2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBCYXJ0IHZkci4gTWV1bGVuIDxiYXJ0LnZkcm1ldWxlbkBnbWFp
+bC5jb20+CkRhdGU6IEZyaSwgMTYgTWFyIDIwMTIgMDg6NDU6MjIgKzAxMDAKU3ViamVjdDogW1BB
+VENIXSBhY2Nlc3NmczogaW50ZWdyYXRlIHdpdGggdGhlIExTTSBzeXN0ZW0KClNpbmNlIC52Mi42
+LjM3LXJjMSBzZWN1cml0eSBtb2RlbHMgdGhhdCByZWdpc3RlciB3aXRoIExTTSBtdXN0IGJlIGtu
+b3cKY29tcGlsZSB0aW1lICh0aGUgZGVmYXVsdCBvbmUpIG9yIHNldCBhdCBib290dGltZSB3aXRo
+IHRoZSBzZWN1cml0eT0KcGFyYW1ldGVyLgoKQWRkIEtjb25maWcgb3B0aW9uIHNvIHRoYXQgdGhl
+IGFjY2Vzc2ZzIHVzZXIgY2FwYWJpbGl0aWVzIG1vZHVsZQpjYW4gYmUgc2V0IGFzIGRlZmF1bHQg
+Y29tcGlsZSB0aW1lLgoKU2lnbmVkLW9mZi1ieTogQmFydCB2ZHIuIE1ldWxlbiA8YmFydHZkcm1l
+dWxlbkBnbWFpbC5jb20+Ci0tLQogc2VjdXJpdHkvS2NvbmZpZyB8ICAgIDUgKysrKysKIDEgZmls
+ZXMgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBh
+L3NlY3VyaXR5L0tjb25maWcgYi9zZWN1cml0eS9LY29uZmlnCmluZGV4IGUwZjA4YjUuLjlmOTRj
+MmEgMTAwNjQ0Ci0tLSBhL3NlY3VyaXR5L0tjb25maWcKKysrIGIvc2VjdXJpdHkvS2NvbmZpZwpA
+QCAtMTk0LDYgKzE5NCw3IEBAIGNob2ljZQogCWRlZmF1bHQgREVGQVVMVF9TRUNVUklUWV9TTUFD
+SyBpZiBTRUNVUklUWV9TTUFDSwogCWRlZmF1bHQgREVGQVVMVF9TRUNVUklUWV9UT01PWU8gaWYg
+U0VDVVJJVFlfVE9NT1lPCiAJZGVmYXVsdCBERUZBVUxUX1NFQ1VSSVRZX0FQUEFSTU9SIGlmIFNF
+Q1VSSVRZX0FQUEFSTU9SCisJZGVmYXVsdCBERUZBVUxUX1NFQ1VSSVRZX0FDQ0VTU0ZTX1VTRVJf
+Q0FQQUJJTElUSUVTIGlmIEFDQ0VTU0ZTX1VTRVJfQ0FQQUJJTElUSUVTCiAJZGVmYXVsdCBERUZB
+VUxUX1NFQ1VSSVRZX0RBQwogCiAJaGVscApAQCAtMjE1LDYgKzIxNiw5IEBAIGNob2ljZQogCWNv
+bmZpZyBERUZBVUxUX1NFQ1VSSVRZX0RBQwogCQlib29sICJVbml4IERpc2NyZXRpb25hcnkgQWNj
+ZXNzIENvbnRyb2xzIgogCisJY29uZmlnIERFRkFVTFRfU0VDVVJJVFlfQUNDRVNTRlNfVVNFUl9D
+QVBBQklMSVRJRVMKKwkJYm9vbCAiVXNlciBwZXJtaXNzaW9uIGJhc2VkIGNhcGFiaWxpdGllcyIg
+aWYgQUNDRVNTRlNfVVNFUl9DQVBBQklMSVRJRVM9eQorCiBlbmRjaG9pY2UKIAogY29uZmlnIERF
+RkFVTFRfU0VDVVJJVFkKQEAgLTIyMyw2ICsyMjcsNyBAQCBjb25maWcgREVGQVVMVF9TRUNVUklU
+WQogCWRlZmF1bHQgInNtYWNrIiBpZiBERUZBVUxUX1NFQ1VSSVRZX1NNQUNLCiAJZGVmYXVsdCAi
+dG9tb3lvIiBpZiBERUZBVUxUX1NFQ1VSSVRZX1RPTU9ZTwogCWRlZmF1bHQgImFwcGFybW9yIiBp
+ZiBERUZBVUxUX1NFQ1VSSVRZX0FQUEFSTU9SCisJZGVmYXVsdCAidXNlcmNhcHMiIGlmIERFRkFV
+TFRfU0VDVVJJVFlfQUNDRVNTRlNfVVNFUl9DQVBBQklMSVRJRVMKIAlkZWZhdWx0ICIiIGlmIERF
+RkFVTFRfU0VDVVJJVFlfREFDCiAKIGVuZG1lbnUKLS0gCjEuNy4wLjQKCg==
+--20cf30563c297f067804bcd4b899
+Content-Type: application/octet-stream; 
+	name="accessfs-clear-I_NEW-flag-after-initialising-inode.patch"
+Content-Disposition: attachment; 
+	filename="accessfs-clear-I_NEW-flag-after-initialising-inode.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h0m09zx71
+
+RnJvbSA2ZjllOWRlYTU0YWYzYWZkOTA3YzQ0ODNiOTQxMjkwZDAwMTBiYTE5IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBCYXJ0IHZkci4gTWV1bGVuIDxiYXJ0LnZkcm1ldWxlbkBnbWFp
+bC5jb20+CkRhdGU6IEZyaSwgMTYgTWFyIDIwMTIgMTM6NTU6MTkgKzAxMDAKU3ViamVjdDogW1BB
+VENIXSBhY2Nlc3NmczogY2xlYXIgSV9ORVcgZmxhZyBhZnRlciBpbml0aWFsaXNpbmcgaW5vZGUK
+CldoZW4gdGhlIGlub2RlIGhhcyBiZWVuIGluaXRpYWxpc2VkIHRoZSBJX05FVyBmbGFnIHNob3Vs
+ZApiZSBjbGVhcmVkIHdpdGggYSBjYWxsIHRvIHVubG9ja19uZXdfaW5vZGUuCgpPdGhlcndpc2Ug
+dGhlIGlub2RlcyB3aWxsIHN0aWxsIGJlIG1hcmtlZCBhcyBidXN5IHdoZW4gdW1vdW50aW5nCnRo
+ZSBmaWxlc3lzdGVtIGR1cmluZyBzaHV0ZG93bi91bW91bnQKClNpZ25lZC1vZmYtYnk6IEJhcnQg
+dmRyLiBNZXVsZW4gPGJhcnR2ZHJtZXVsZW5AZ21haWwuY29tPgotLS0KIGZzL2FjY2Vzc2ZzL2lu
+b2RlLmMgfCAgICAxICsKIDEgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb25zKCspLCAwIGRlbGV0
+aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL2FjY2Vzc2ZzL2lub2RlLmMgYi9mcy9hY2Nlc3Nmcy9p
+bm9kZS5jCmluZGV4IGEyMjQ3ZTIuLjViNTUwZjIgMTAwNjQ0Ci0tLSBhL2ZzL2FjY2Vzc2ZzL2lu
+b2RlLmMKKysrIGIvZnMvYWNjZXNzZnMvaW5vZGUuYwpAQCAtMjk1LDYgKzI5NSw3IEBAIHN0YXRp
+YyBzdHJ1Y3QgaW5vZGUgKmFjY2Vzc2ZzX2lnZXQoc3RydWN0IHN1cGVyX2Jsb2NrICpzYiwgdW5z
+aWduZWQgbG9uZyBpbm8pCiAJCQlicmVhazsKIAkJfQogCX0KKwl1bmxvY2tfbmV3X2lub2RlKGlu
+b2RlKTsKIAogCW11dGV4X3VubG9jaygmYWNjZXNzZnNfc2VtKTsKIAlyZXR1cm4gaW5vZGU7Ci0t
+IAoxLjcuMC40Cgo=
+--20cf30563c297f067804bcd4b899--
