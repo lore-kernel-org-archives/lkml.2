@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab2DDKCK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 06:02:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447Ab2DDKCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 06:02:07 -0400
-Date: Wed, 4 Apr 2012 12:01:45 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yevgeny Petrilin <yevgenyp@mellanox.com>, Jiang Liu <liuj97@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yael Shenhav <yaeli@mellanox.com>
-Subject: Re: IRQ affinity enforced only after first interrupt.
-Message-ID: <20120404100143.GH28177@dhcp-26-207.brq.redhat.com>
-References: <4F7031A4.70601@mellanox.co.il>
- <CAErSpo7ciBYG1-jCL3F6bFcktmJj4H-SXn_1NcRnhc-gPDsHUw@mail.gmail.com>
- <4F707E39.50502@gmail.com>
- <953B660C027164448AE903364AC447D2618E1A8B@MTLDAG02.mtl.com>
- <alpine.LFD.2.02.1203262059070.2542@ionos>
+	id S1756037Ab2DDKJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 06:09:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47276 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab2DDKJE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 06:09:04 -0400
+Date: Wed, 4 Apr 2012 03:08:36 -0700
+From: tip-bot for Markus Trippelsdorf <markus@trippelsdorf.de>
+Message-ID: <tip-7b78f13603c6fcb64e020a0bbe31a651ea2b657b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, markus@trippelsdorf.de, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        markus@trippelsdorf.de, a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <20120404084527.GA294@x4>
+References: <20120404084527.GA294@x4>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools: Fix getrusage()
+  related build failure on glibc trunk
+Git-Commit-ID: 7b78f13603c6fcb64e020a0bbe31a651ea2b657b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1203262059070.2542@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 04 Apr 2012 03:08:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 26, 2012 at 09:04:20PM +0200, Thomas Gleixner wrote:
-> On Mon, 26 Mar 2012, Yevgeny Petrilin wrote:
-> 
-> > > 
-> > > The architecture specific code will determine whether the IRQ could be migrated
-> > > in process context. For example, the IRQ_MOVE_PCNTXT flag will be set on x86
-> > > systems if interrupt remapping is enabled.
-> >
-> > Actually I am encountering this issue with x86, and see different
-> > behavior with different HW devices (NICs). On same machine I have
-> > one device that responds immediately to affinity changes while the
-> > other one changes the affinity only after first interrupt.
-> 
-> That simply depends on the underlying hardware. On certain hardware we
-> can change the affinity only in hard interrupt context, that means
-> right when a interrupt of that device is delivered.
-> 
-> On the other devices we can change it right away and the corresponding
-> interrupt chips set IRQ_MOVE_PCNTXT to indicate that.
+Commit-ID:  7b78f13603c6fcb64e020a0bbe31a651ea2b657b
+Gitweb:     http://git.kernel.org/tip/7b78f13603c6fcb64e020a0bbe31a651ea2b657b
+Author:     Markus Trippelsdorf <markus@trippelsdorf.de>
+AuthorDate: Wed, 4 Apr 2012 10:45:27 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 4 Apr 2012 11:59:00 +0200
 
-Actually, even with IRQ_MOVE_PCNTXT capable chips, a hardware handler still
-might be called on a core that belongs to old affinity, after the successful
-write of new affinity. Threaded handlers are also racy with irq affinity
-updates.
+perf tools: Fix getrusage() related build failure on glibc trunk
 
-If that is inconsistency, bug or design?
+On a system running glibc trunk perf doesn't build:
 
-> There is nothing we can do about this. It's dictated by hardware.
+    CC builtin-sched.o
+builtin-sched.c: In function ‘get_cpu_usage_nsec_parent’: builtin-sched.c:399:16: error: storage size of ‘ru’ isn’t known builtin-sched.c:403:2: error: implicit declaration of function ‘getrusage’ [-Werror=implicit-function-declaration]
+    [...]
 
-May be we could wait for desc->pending_mask to be cleared before returning from
-irq_set_affinity()?
+Fix it by including sys/resource.h.
 
-> Thanks,
-> 
-> 	tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120404084527.GA294@x4
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/builtin-sched.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index fb8b5f8..1cad3af 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -17,6 +17,7 @@
+ #include "util/debug.h"
+ 
+ #include <sys/prctl.h>
++#include <sys/resource.h>
+ 
+ #include <semaphore.h>
+ #include <pthread.h>
