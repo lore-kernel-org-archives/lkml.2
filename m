@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab2DDV3b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 17:29:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55076 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab2DDV3a (ORCPT
+	id S1756999Ab2DDVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 17:34:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43323 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab2DDVeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 17:29:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <201204042326.47683.rjw@sisk.pl>
-References: <201204010836.30707.rjw@sisk.pl> <201204042326.47683.rjw@sisk.pl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 Apr 2012 14:29:08 -0700
-X-Google-Sender-Auth: tVQLwqEUJbB6fW6izaaK2TQrGHY
-Message-ID: <CA+55aFysMfRdZOJcEEnbZhrfG7Eqqy-0uZw_SvR9P_eoEvhr-Q@mail.gmail.com>
-Subject: Re: [GIT PULL] More power management updates for 3.4
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 4 Apr 2012 17:34:06 -0400
+Date: Wed, 4 Apr 2012 14:34:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 5/6] memcg: fix broken boolen expression
+Message-Id: <20120404143403.fd05a284.akpm@linux-foundation.org>
+In-Reply-To: <1324695619-5537-5-git-send-email-kirill@shutemov.name>
+References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
+	<1324695619-5537-5-git-send-email-kirill@shutemov.name>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 4, 2012 at 2:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> Given the lack of feedback and the fact that you don't seem to have pulled this,
-> I wonder if there's anything wrong with the changes or am I simply supposed to
-> queue them up for 3.5?
+On Sat, 24 Dec 2011 05:00:18 +0200
+"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-Actually, I was just a bit unhappy with it, and decided I wanted to
-give it a second look, and then it just fell in between the cracks.
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> 
+> action != CPU_DEAD || action != CPU_DEAD_FROZEN is always true.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b27ce0f..3833a7b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2100,7 +2100,7 @@ static int __cpuinit memcg_cpu_hotplug_callback(struct notifier_block *nb,
+>  		return NOTIFY_OK;
+>  	}
+>  
+> -	if ((action != CPU_DEAD) || action != CPU_DEAD_FROZEN)
+> +	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
+>  		return NOTIFY_OK;
+>  
+>  	for_each_mem_cgroup(iter)
 
-I still don't like the timing of that thing, but I saw no major reason
-not to pull. So in it went,
+This spent too long in the backlog, sorry.
 
-                  Linus
+I don't want to merge this patch into either mainline or -stable until
+I find out what it does!
+
+afacit the patch will newly cause the kernel to drain various resource
+counters away from the target CPU when the CPU_DEAD or CPU_DEAD_FROZEN
+events occur for thet CPU, yes?
+
+So the user-visible effects of the bug whcih was just fixed is that
+these counters will be somewhat inaccurate after a CPU is taken down,
+yes?
+
+Why wasn't this bug noticed before?  Has anyone tested the patch and
+confirmed that the numbers are now correct?
+
+Given that this bug has been present for 1.5 years and nobody noticed,
+I don't think a backport into -stable is warranted?
+
