@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2DDNsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 09:48:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59289 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756302Ab2DDNs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 09:48:29 -0400
-Message-ID: <4F7C5123.9050106@ti.com>
-Date: Wed, 4 Apr 2012 15:48:19 +0200
+	id S1756543Ab2DDNvu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 09:51:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57523 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756302Ab2DDNvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 09:51:48 -0400
+Message-ID: <4F7C51EA.1040902@ti.com>
+Date: Wed, 4 Apr 2012 15:51:38 +0200
 From: "Cousson, Benoit" <b-cousson@ti.com>
 Organization: Texas Instruments
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
@@ -27,18 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sourav,
-
 On 4/4/2012 3:30 PM, Sourav Poddar wrote:
 > This patch add keypad data node in omap4 device tree
 > file.
 
-Nit: You should adapt first the driver to DT and document the binding 
-before using it.
+Nit #2: Never write "this patch" in a patch changelog... Because at some 
+point it will become a commit in a GIT tree.
 
-So this patch should be the second one.
+I think AKPM wrote something on that.
 
-Regards,
 Benoit
 
 >
