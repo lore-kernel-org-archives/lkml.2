@@ -1,35 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab2DDVQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 17:16:10 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61326 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751944Ab2DDVQJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 17:16:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120404210507.GA1716@kroah.com>
-References: <1333569554.864.3.camel@mop>
-	<20120404210507.GA1716@kroah.com>
-Date: Wed, 4 Apr 2012 23:16:07 +0200
-Message-ID: <CAFLxGvzVccmuUKpbdqWfi+JEsgk2X59hK=C7RWY2q5+a2JjR2g@mail.gmail.com>
-Subject: Re: [PATCH] printk: support structured and multi-facility log messages
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Greg Kroah-Hartmann <greg@kroah.com>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753029Ab2DDVQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 17:16:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752645Ab2DDVQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 17:16:37 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
+Subject: [RFCv2 0/8] perf tool: Add new event group management
+Date: Wed,  4 Apr 2012 23:16:08 +0200
+Message-Id: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 4, 2012 at 11:05 PM, Greg Kroah-Hartmann <greg@kroah.com> wrote:
-> I just noticed that 'tail -f' doesn't seem to work on /dev/kmsg, should
-> it?  Or does it need to do something else to get "just the new ones"?
->
+hi,
+adding support for creating event groups based on the way they
+are specified on the command line. 
 
-AFAIK tail looks at the file size/timestamp to detect modifications...
+- added 'group=...' syntax to group events (patches 1-5).
+  I think this part is quite ready.
 
--- 
-Thanks,
-//richard
+- added 'group:1=...' syntax to specify which event to sample (leader)
+  and use  PERF_SAMPLE_READ and PERF_FORMAT_GROUP to read all siblings
+  on every leader's events (patches 6-8).
+  Currently it is only possible to display siblings values by
+  'perf report -D' PERF_SAMPLE_READ dump output containing only perf
+  internal IDs displayed.. so not very usefull. But I was hoping to
+  straighten up the data design/directions before I touch the gui.
+
+
+Attached patches:
+ 1/8 perf, tool: Add support to parse event group syntax
+ 2/8 perf, tool: Enable grouping logic for parsed events
+ 3/8 perf: Add PERF_EVENT_IOC_ID ioctl to return event ID
+ 4/8 perf, tool: Use PERF_EVENT_IOC_ID perf ioctl to read event id
+ 5/8 perf, tool: Separate 'mem:' event scanner bits
+ 6/8 perf, tool: Add modifier support to group event syntax
+ 7/8 perf, tool: Add support for parsing PERF_SAMPLE_READ
+ 8/8 perf, tool: Enable sampling on specified event group leader
+
+thanks for comments,
+jirka
+---
+ include/linux/perf_event.h          |    1 +
+ kernel/events/core.c                |    9 +++
+ tools/perf/builtin-record.c         |   13 ++---
+ tools/perf/builtin-stat.c           |   13 ++---
+ tools/perf/builtin-test.c           |   12 ++--
+ tools/perf/builtin-top.c            |   12 +---
+ tools/perf/util/event.h             |   21 ++++++-
+ tools/perf/util/evlist.c            |  120 +++++++++++++++++++++++++++--------
+ tools/perf/util/evlist.h            |    8 ++-
+ tools/perf/util/evsel.c             |   94 +++++++++++++++++++++-------
+ tools/perf/util/evsel.h             |   16 ++---
+ tools/perf/util/parse-events-test.c |   93 ++++++++++++++++++++++++++-
+ tools/perf/util/parse-events.c      |    6 ++
+ tools/perf/util/parse-events.h      |    1 +
+ tools/perf/util/parse-events.l      |   39 +++++++++++-
+ tools/perf/util/parse-events.y      |   66 +++++++++++++++++---
+ tools/perf/util/python.c            |   10 ++-
+ tools/perf/util/session.c           |   42 ++++++++++++
+ tools/perf/util/session.h           |    5 +-
+ 19 files changed, 476 insertions(+), 105 deletions(-)
