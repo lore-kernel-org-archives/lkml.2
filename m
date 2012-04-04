@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab2DDLKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 07:10:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51178 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756037Ab2DDLKU (ORCPT
+	id S1756219Ab2DDLN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 07:13:29 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36109 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756037Ab2DDLN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 07:10:20 -0400
-Date: Wed, 4 Apr 2012 12:10:14 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Cc: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>, hauke@hauke-m.de,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        lf_driver_backport@lists.linux-foundation.org
-Subject: Re: [PATCH] compat: add compat kernel checker and downloader
-Message-ID: <20120404111014.GB3378@shadowen.org>
-References: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
- <20120206160727.GA21048@tuxdriver.com>
- <20120207041958.GA32377@bombadil.infradead.org>
- <CAB=NE6VS79S4R6wQddQCqPfoYPyRbPzSdAYN2Mxfi-4G_sfCvg@mail.gmail.com>
- <CAB=NE6Wv3PEJj5zKfK2o869ntxuU3V+Nv2dgKX1eDtk3zQ04dA@mail.gmail.com>
- <CAB=NE6URWAgUgF+6bOsRBeeXnQ4VjYf1tWuUkkvMviCLOCxeqA@mail.gmail.com>
- <CAB=NE6UNHufTggg0ka-+q7ri_X6ENx4nO5DfMCAxxrKLrERPWg@mail.gmail.com>
- <CAB=NE6U_Sq88ro7onChn8U4tkkqt7Z9YN9wMyZjx+78j+M=_uA@mail.gmail.com>
+	Wed, 4 Apr 2012 07:13:28 -0400
+Date: Wed, 4 Apr 2012 12:13:24 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH] gpio: Device tree support for LPC32xx
+Message-ID: <20120404111323.GA9457@sirena.org.uk>
+References: <1333407513-18231-1-git-send-email-stigge@antcom.de>
+ <20120403150430.EBA423E0436@localhost>
+ <4F7B8A39.5000701@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAB=NE6U_Sq88ro7onChn8U4tkkqt7Z9YN9wMyZjx+78j+M=_uA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F7B8A39.5000701@antcom.de>
+X-Cookie: hangover, n.:
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 30, 2012 at 05:23:46PM -0700, Luis R. Rodriguez wrote:
-> Andy, so I just noticed that on all Ubuntu PPA (and generic) kernels
-> you guys have a broken symlink >= 2.6.33.
-> 
-> /lib/modules/2.6.33-02063305-generic/build/include/asm
-> 
-> points to asm-x86 and that is no longer present after 2.6.33 so any
-> module requiring those header files will break now on Ubuntu. I just
-> spotted this as some file from asm is now included in the modules were
-> are building. I guess not many external kernel modules include asm dir
-> otherwise you guys would have noticed this a long time ago.
+On Wed, Apr 04, 2012 at 01:39:37AM +0200, Roland Stigge wrote:
+> On 03/04/12 17:04, Grant Likely wrote:
 
-Luis, I concur that the link is now broken.  However that link is actually
-simply superfulous now.  Anything correctly using kernel 'external
-module' support will be using the -I path from the kernel Makefiles.
-They will therefore be including from /usr/src/<version>/include _and_
-/usr/src/<version>/arch/x86/include.  I presume this is why we have not
-noticed it.
+> >> +postcore_initcall(lpc32xx_gpio_init);
 
-I will get that link removed however as it is simply bogus.
+> ===============================================================
+> Error requesting gpio 50
+> ...
+> gpiochip_add: registered GPIOs 0 to 7 on device: gpio_p0
 
--apw
+> Are you sure that module_platform_driver() can already handle
+> this in v3.4-rc1?
+
+For the present moment it needs explicit handling in each GPIO user to
+translate a failure to get a GPIO into -EPROBE_DEFER.  I sent a patch
+which would change the default return code for failed GPIO lookups to
+that which should get most users doing the right thing but I've had no
+response to that patch so far so it's not in any tree.
