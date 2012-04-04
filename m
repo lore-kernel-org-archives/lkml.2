@@ -1,120 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab2DDMiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 08:38:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33680 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756106Ab2DDMiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 08:38:13 -0400
-Date: Wed, 4 Apr 2012 14:38:09 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sp@numascale.com, bp@amd64.org, tglx@linutronix.de,
-        borislav.petkov@amd.com, daniel@numascale-asia.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH resend] x86/platform: Remove incorrect error message in
- x86_default_fixup_cpu_id()
-Message-ID: <20120404123809.GB5193@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>, mingo@redhat.com, hpa@zytor.com,
-	linux-kernel@vger.kernel.org, sp@numascale.com, bp@amd64.org,
-	tglx@linutronix.de, borislav.petkov@amd.com,
-	daniel@numascale-asia.com,
-	Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <20120224153127.GD28921@alberich.amd.com>
- <tip-20b25f03fbd17b4e32b786024a5f9c6306795411@git.kernel.org>
- <20120302110440.GA24019@elte.hu>
- <20120302115130.GA17876@alberich.amd.com>
- <20120402160648.GR27684@alberich.amd.com>
+	id S1756368Ab2DDMsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 08:48:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59272 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756193Ab2DDMsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 08:48:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: swap on eMMC and other flash
+Date: Wed, 4 Apr 2012 12:47:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linaro-kernel@lists.linaro.org, linux-mm@kvack.org,
+        "Luca Porzio (lporzio)" <lporzio@micron.com>,
+        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
+        Saugata Das <saugata.das@linaro.org>,
+        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
+        Hyojin Jeong <syr.jeong@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        kernel-team@android.com
+References: <201203301744.16762.arnd@arndb.de> <201203301850.22784.arnd@arndb.de> <4F7C3CE2.5070803@intel.com>
+In-Reply-To: <4F7C3CE2.5070803@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120402160648.GR27684@alberich.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204041247.53289.arnd@arndb.de>
+X-Provags-ID: V02:K0:hgRFNx0NydERscTCboagXkASj0nqTKPhEyhI/9lcVo4
+ Rl2C5kafrW8QgHa1CpjFZzLTAD5BGi+JzODWjGXLfUf7weEAm1
+ oknDY2g6lhZIeOkPzRhegRcDUMY8v/w8hVZs1MT/QV3w+ZtzPc
+ O/+YGJ055vEjS0PGMH36f9c/FfGzQAzKDlcSBjesnSu1OtZLHt
+ gFMvwk0XRcqNt/bbfsmAbm0O2N53hzpExDNgbc64nIqmFDiedK
+ Jkk/+DSm0Dbe0kX2ZMG2CYlCBzve5y+pLYx1+S8REcgKLk1zZg
+ kiKdVqbYpptQHzkXhXPczz15oiBaueI2EPaY3kKPbWBPJVndH4
+ TtfTYL9B8/uWUABWBenI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 06:06:48PM +0200, Andreas Herrmann wrote:
+On Wednesday 04 April 2012, Adrian Hunter wrote:
+> On 30/03/12 21:50, Arnd Bergmann wrote:
+> > (sorry for the duplicated email, this corrects the address of the android
+> > kernel team, please reply here)
+> > 
+> > On Friday 30 March 2012, Arnd Bergmann wrote:
+> > 
+> >  We've had a discussion in the Linaro storage team (Saugata, Venkat and me,
+> >  with Luca joining in on the discussion) about swapping to flash based media
+> >  such as eMMC. This is a summary of what we found and what we think should
+> >  be done. If people agree that this is a good idea, we can start working
+> >  on it.
 > 
-> It's only called from amd.c:srat_detect_node(). The introduced
-> condition for calling the fixup code is true for all AMD multi-node
-> processors, e.g. Magny-Cours and Interlagos. There we have 2 NUMA
-> nodes on one socket. Thus there are cores having different
-> numa-node-id but with equal phys_proc_id.
-> 
-> There is no point to print error messages in such a situation.
-> 
-> The confusing/misleading error message was introduced with commit
-> 64be4c1c2428e148de6081af235e2418e6a66dda (x86: Add x86_init platform
-> override to fix up NUMA core numbering).
-> 
-> Remove the default fixup function (especially the error message) and
-> replace it by a NULL pointer check, move the Numascale-specific
-> condition for calling the fixup into the fixup-function itself and
-> slightly adapt the comment.
-> 
-> Cc: <stable@kernel.org>
-> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-> ---
->  arch/x86/include/asm/x86_init.h      |    1 -
->  arch/x86/kernel/apic/apic_numachip.c |    7 +++++--
->  arch/x86/kernel/cpu/amd.c            |    7 ++++---
->  arch/x86/kernel/cpu/common.c         |    9 ---------
->  arch/x86/kernel/x86_init.c           |    1 -
->  5 files changed, 9 insertions(+), 16 deletions(-)
-> 
-> This patch didn't make it into v3.3.
-> But the misleading error message introduced with numachip support was
-> merged.
+> There is mtdswap.
 
-Yes, please apply this one, I still get the following on my box with
-3.4-rc1+:
+Ah, very interesting. I wasn't aware of that. Obviously we can't directly
+use it on block devices that have their own garbage collection and wear
+leveling built into them, but it's interesting to see how this was solved
+before.
 
-[    0.382396] Booting Node   0, Processors  #1 #2 #3 #4 #5 Ok.
-[    0.454471] Booting Node   1, Processors  #6
-[    0.469600] NUMA core number 1 differs from configured core number 0
-[    0.478361]  #7
-[    0.490949] NUMA core number 1 differs from configured core number 0
-[    0.499695]  #8
-[    0.512577] NUMA core number 1 differs from configured core number 0
-[    0.521331]  #9
-[    0.533921] NUMA core number 1 differs from configured core number 0
-[    0.542679]  #10
-[    0.555340] NUMA core number 1 differs from configured core number 0
-[    0.564088]  #11
-[    0.576730] NUMA core number 1 differs from configured core number 0
-[    0.585497]  Ok.
-[    0.587698] Booting Node   3, Processors  #12
-[    0.602916] NUMA core number 3 differs from configured core number 1
-[    0.709432]  #13
-[    0.722106] NUMA core number 3 differs from configured core number 1
-[    0.730856]  #14
-[    0.743823] NUMA core number 3 differs from configured core number 1
-[    0.752577]  #15
-[    0.765253] NUMA core number 3 differs from configured core number 1
-[    0.774002]  #16
-[    0.786684] NUMA core number 3 differs from configured core number 1
-[    0.795436]  #17
-[    0.808113] NUMA core number 3 differs from configured core number 1
-[    0.816878]  Ok.
-[    0.819377] Booting Node   2, Processors  #18
-[    0.834597] NUMA core number 2 differs from configured core number 1
-[    0.843348]  #19
-[    0.856025] NUMA core number 2 differs from configured core number 1
-[    0.864777]  #20
-[    0.877750] NUMA core number 2 differs from configured core number 1
-[    0.886505]  #21
-[    0.899180] NUMA core number 2 differs from configured core number 1
-[    0.907939]  #22
-[    0.920583] NUMA core number 2 differs from configured core number 1
-[    0.929335]  #23 Ok.
-[    0.942785] NUMA core number 2 differs from configured core number 1
-[    0.951262] Brought up 24 CPUs
+While we could build something similar that remaps blocks between an
+eMMC device and the logical swap space that is used by the mm code,
+my feeling is that it would be easier to modify the swap code itself
+to do the right thing.
 
-Thanks.
+> Also the old Nokia N900 had swap to eMMC.
+> 
+> The last I heard was that swap was considered to be simply too slow on hand
+> held devices.
 
--- 
-Regards/Gruss,
-Boris.
+That's the part that we want to solve here. It has nothing to do with
+handheld devices, but more with specific incompatibilities of the
+block allocation in the swap code vs. what an eMMC device expects
+to see for fast operation. If you write data in the wrong order on
+flash devices, you get long delays that you don't get when you do
+it the right way. The same problem exists for file systems, and is
+being addressed there as well.
+
+> As systems adopt more RAM, isn't there a decreasing demand for swap?
+
+No. You would never be able to make hibernate work, no matter how much
+RAM you add ;-)
+
+More seriously, the need for swap is not to work around the fact that
+we have too little memory, it's one of the fundamental assumptions of
+the mm subsystem that swap exists, and it's generally a good idea to
+have, so you treat file backed memory in the same way as anonymous
+memory.
+
+	Arnd
