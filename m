@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab2DDO3e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 10:29:34 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35818 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab2DDO3c (ORCPT
+	id S1756568Ab2DDO3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 10:29:31 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40450 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756415Ab2DDO33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 10:29:32 -0400
-Date: Wed, 4 Apr 2012 16:29:24 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux@arm.linux.org.uk, sam@ravnborg.org,
-        Fabio Estevam <fabio.estevam@freescale.com>, kernel@pengutronix.de
-Subject: Re: [PATCH v2] compiler.h: Include <linux/bug.h> to avoid build
- breakage with ARRAY_SIZE()
-Message-ID: <20120404142924.GA15647@pengutronix.de>
-References: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>
- <1330650922-24143-1-git-send-email-festevam@gmail.com>
- <CAP=VYLpd5EFmD+8Yo_jm-9N7O5zkLTsTwGjgmxG4u_G6t=4fag@mail.gmail.com>
- <4F50D78A.1020209@windriver.com>
+	Wed, 4 Apr 2012 10:29:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F50D78A.1020209@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120326.173614.1619139899994626442.davem@davemloft.net>
+References: <1332780049-2777-1-git-send-email-consul.kautuk@gmail.com>
+	<20120326.173614.1619139899994626442.davem@davemloft.net>
+Date: Wed, 4 Apr 2012 19:59:28 +0530
+Message-ID: <CAFPAmTRpB2hzW6=yfX38MkPteb=9ZuNx2k5YL-nF0e+jL8T6uQ@mail.gmail.com>
+Subject: Re: [PATCH 20/20 v4] sparc/mm/fault_64.c: Port OOM changes to do_sparc64_fault
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: paul.gortmaker@windriver.com, mingo@elte.hu, joe@perches.com,
+        a.p.zijlstra@chello.nl, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Mar 27, 2012 at 3:06 AM, David Miller <davem@davemloft.net> wrote:
+> From: Kautuk Consul <consul.kautuk@gmail.com>
+> Date: Mon, 26 Mar 2012 12:40:49 -0400
+>
+>> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+>> (mm: retry page fault when blocking on disk transfer) and
+>> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+>> (x86,mm: make pagefault killable)
+>>
+>> The above commits introduced changes into the x86 pagefault handler
+>> for making the page fault handler retryable as well as killable.
+>>
+>> These changes reduce the mmap_sem hold time, which is crucial
+>> during OOM killer invocation.
+>>
+>> Port these changes to 64-bit sparc.
+>>
+>> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+>
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-On Fri, Mar 02, 2012 at 09:22:02AM -0500, Paul Gortmaker wrote:
-> On 12-03-01 10:13 PM, Fabio Estevam wrote:
-> > On Thu, Mar 1, 2012 at 11:49 PM, Paul Gortmaker
-> > <paul.gortmaker@windriver.com> wrote:
-> > 
-> >> Thanks, but no.
-> >>
-> >> You missed the whole point of my previous comments -- that being
-> >> that we don't want to just jam headers into always-used headers.
-> > 
-> > Yes, it is not clear for me how to fix this build error. I got
-> > different feedbacks from you, Russell and Sam.
-> 
-> Understood, there was some discussion there.  Anyways it is already
-> dealt with in yesterday's linux-next tree, so you won't have the
-> build failure anymore.
-I hit that same problem in an not yet mainlined source file. A simple
-file containing only:
+Thanks David.
 
-	#include <linux/kernel.h>
+Since one or two of my other patches are being taken by the other arch
+owners in their branches,
+can you take this patch and apply it to your branch also ?
 
-	int array[3];
-
-	int func(void)
-	{
-		return ARRAY_SIZE(array);
-	}
-
-fails to build on top of v3.4-rc1. Am I right that you saying "you won't
-have the build failure anymore" means that each of these is now needed
-to be fixed individually by adding
-
-	#include <linux/bug.h>
-
-? Otherwise it's not fixed for me.
-
-Thanks
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Much obliged if you do !
