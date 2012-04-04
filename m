@@ -1,79 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab2DDWT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 18:19:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47636 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab2DDWTZ (ORCPT
+	id S1757314Ab2DDWUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 18:20:38 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56818 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab2DDWUh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 18:19:25 -0400
-Date: Wed, 4 Apr 2012 23:19:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 5/6] regmap: add runtime PM calls to debugfs file IO
-Message-ID: <20120404221920.GF10787@opensource.wolfsonmicro.com>
-References: <1333576113-13196-1-git-send-email-swarren@wwwdotorg.org>
- <1333576113-13196-5-git-send-email-swarren@wwwdotorg.org>
+	Wed, 4 Apr 2012 18:20:37 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V4b9U9vrdWczvw78"
-Content-Disposition: inline
-In-Reply-To: <1333576113-13196-5-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120404144656.7b2a06ec.akpm@linux-foundation.org>
+References: <1325254651-15379-1-git-send-email-glorioustao@gmail.com> <20120404144656.7b2a06ec.akpm@linux-foundation.org>
+From: Tao Guo <glorioustao@gmail.com>
+Date: Wed, 4 Apr 2012 15:20:16 -0700
+Message-ID: <CAAV8rn+T7FM7bG+Q6fyoUrVtzOkYOx94Nh87Rg12UqCdk9HhWQ@mail.gmail.com>
+Subject: Re: [PATCH] umem: fix up unplugging.
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, neilb@suse.de, axboe@fusionio.com,
+        Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew,
 
---V4b9U9vrdWczvw78
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for your reply.
 
-On Wed, Apr 04, 2012 at 03:48:32PM -0600, Stephen Warren wrote:
+Yes, without this patch the umem driver just doesn't work.
+It is a bug introduced by commit 7eaceaccab5f40bbfda044629a6298616aeaed50.
+In that patch, Jens removed the whole mm_unplug_device() function,
+which used to be
+the trigger to make umem start to work.
 
-> It's quite probably that devices need to be active in order for their
-> registers to be read/written. In normal regmap usage by drivers, it's the
-> responsibility of the driver to assure this if needed. However, regmap
-> debugfs file handling is outside the driver's control, so we need to
-> explicitly ensure this.
+Thanks,
+-Tao
 
-This feels wrong, it's too invasive on the device.  If we're in cache
-only mode (which we should be if the device is off and we have a cache)
-then I'd expect us to error out if we can't satisfy the read from cache
-rather than wake the device up which might be terribly expensive and
-cause register writes which change the device state we were trying to
-inspect, and if we have a cache then we might not need to interact with
-the hardware at all at which point the wakeup would've been needless.
-It's certainly not what I'd expect a diagnostic interface to be doing,
-I'd expect it to reflect the current state of the device.
 
-Now, quite how the mmio bus deals with access to a suspended device is
-probably platform specific and certainly more fun than at least I2C (SPI
-has issues since it's hard to tell if the device is there or not and the
-MISO line might be undriven but at least you'll not lock up or anything).
-
---V4b9U9vrdWczvw78
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPfMjgAAoJEBus8iNuMP3d408QAJIUv+7UC3447b4fcFebco79
-MtyeFcT5qHhJnRxSDAcfrasp298S5dtTVmj4rMrqDnAZ9FL/nsC1oFjUfosGqQ0N
-5dQpXZLerG2lgeSFVQEIxmdKUb8fayHPDaEDdb+AJc7Zqs/cJ4HymfeKxd+kAvpF
-CDFaEPgKUvqKMTxFGBZbYdxb4xiMbxcYpwAlWYePhSDwfZKpNx9JGlLa8PHplYr/
-Pe+Hug/560fNk3rH499G09ttd/ZGFvs/hXxprX2ge4Z/s43y8qsLJOs1nnZ0ynE+
-u859qHNbkgu59A03jc+k6J6OlspAWDhjl+E6mmMo71xb9gvSBaM6BsSKKB3hwT4i
-VwFhIt43W5kNkAC/KWGiJa0nLNpYvKuToTmVDUYmvPzmFWyCr6h69BtPMiN3ksyo
-QYLJmBfgvFVpZbvJHV3zlMLWYwuYsJeTp3UGo0xc4pmhGRKHimx3JR+KoBNdn2hr
-QLFsya3j6dhlmzJTpeyiAXzhCowy74PX+7H9rFFYKs70vYFnl2j5Qfilg18yB7oE
-HKNipvcNX5pLpCruz6QZMETbrIBNK51NmFepZ+ZTA86auqZroRQ4uL30/0J82IJV
-mlX4UVIc05U32mYNAnTq5bsgJ0C43rxQdumvaQH69d0VdLTqIh6YtC2KgOTuxvQM
-RO9VOkcBVpo0y7hKsgzo
-=D38s
------END PGP SIGNATURE-----
-
---V4b9U9vrdWczvw78--
+On Wed, Apr 4, 2012 at 2:46 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 30 Dec 2011 09:17:31 -0500
+>
+> (Long delay...)
+>
+> Tao Guo <glorioustao@gmail.com> wrote:
+>
+>> We need to implement unplugging to make umem start to work, or I/O
+>> will never be triggered.
+>>
+>
+> I take it from this that umem simply doesn't work at all?
+>
+> If so, for how long has this been the case and should we just delete the
+> thing?
+>
+>>
+>> --- a/drivers/block/umem.c
+>> +++ b/drivers/block/umem.c
+>> @@ -111,7 +111,8 @@ struct cardinfo {
+>>       int             current_idx;
+>>       sector_t        current_sector;
+>>
+>> -     struct request_queue *queue;
+>> +     struct request_queue    *queue;
+>> +     struct blk_plug_cb      plug_cb;
+>>
+>>       struct mm_page {
+>>               dma_addr_t              page_dma;
+>> @@ -513,6 +514,33 @@ static void process_page(unsigned long data)
+>>       }
+>>  }
+>>
+>> +static void mm_unplug(struct blk_plug_cb *cb)
+>> +{
+>> +     struct cardinfo *card = container_of(cb, struct cardinfo, plug_cb);
+>> +
+>> +     spin_lock_irq(&card->lock);
+>> +     activate(card);
+>> +     spin_unlock_irq(&card->lock);
+>> +}
+>> +
+>> +int mm_check_plugged(struct cardinfo *card)
+>> +{
+>> +     struct blk_plug *plug = current->plug;
+>> +     struct cardinfo *c;
+>> +
+>> +     if (!plug)
+>> +             return 0;
+>> +
+>> +     list_for_each_entry(c, &plug->cb_list, plug_cb.list) {
+>> +             if (c == card)
+>> +                     return 1;
+>> +     }
+>> +
+>> +     /* set up unplug callback */
+>> +     list_add(&card->plug_cb.list, &plug->cb_list);
+>> +     return 1;
+>> +}
+>> +
+>>  static void mm_make_request(struct request_queue *q, struct bio *bio)
+>>  {
+>>       struct cardinfo *card = q->queuedata;
+>> @@ -523,6 +551,8 @@ static void mm_make_request(struct request_queue *q, struct bio *bio)
+>>       *card->biotail = bio;
+>>       bio->bi_next = NULL;
+>>       card->biotail = &bio->bi_next;
+>> +     if (bio->bi_rw & REQ_SYNC || !mm_check_plugged(card))
+>> +             activate(card);
+>>       spin_unlock_irq(&card->lock);
+>>
+>>       return;
+>> @@ -884,6 +914,7 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
+>>       blk_queue_make_request(card->queue, mm_make_request);
+>>       card->queue->queue_lock = &card->lock;
+>>       card->queue->queuedata = card;
+>> +     card->plug_cb.callback = mm_unplug;
+>>
+>>       tasklet_init(&card->tasklet, process_page, (unsigned long)card);
+>
