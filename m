@@ -1,106 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab2DDGmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 02:42:04 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57699 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2DDGmC (ORCPT
+	id S1752081Ab2DDGre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 02:47:34 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.31.28]:41774 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab2DDGrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 02:42:02 -0400
+	Wed, 4 Apr 2012 02:47:33 -0400
+Message-ID: <4F7BEE91.1070309@ladisch.de>
+Date: Wed, 04 Apr 2012 08:47:45 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Date: Wed, 4 Apr 2012 08:41:59 +0200
-Message-ID: <CAF6WcOikGFo9OMJf5ePH39xoT=Ad0fZYfoPAHJfW1BZYxMVKbA@mail.gmail.com>
-Subject: accessfs patches
-From: Bart van der Meulen <bartvdrmeulen@gmail.com>
-To: olaf+list.linux-kernel@olafdietsche.de
-Cc: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf30563c297f067804bcd4b899
+To: Meelis Roos <mroos@linux.ee>
+CC: Dave Airlie <airlied@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fix warnings from vgaarb.h
+References: <alpine.SOC.1.00.1204040912210.26551@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1204040912210.26551@math.ut.ee>
+Content-Type: text/plain; charset=ISO-8859-7
+Content-Transfer-Encoding: 8bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf30563c297f067804bcd4b899
-Content-Type: text/plain; charset=ISO-8859-1
+Meelis Roos wrote:
+> in 3.4-rc1-144, I get the following warnings. Fix them by including
+> <linux/pci.h> to get struct pci_dev.
+>
+>   CC [M]  drivers/gpu/drm/i915/intel_display.o
+> In file included from drivers/gpu/drm/i915/intel_display.c:33:0:
+> include/linux/vgaarb.h:66:9: warning: ¡struct pci_dev¢ declared inside parameter list [enabled by default]
 
-Hi Olaf,
+Or you could simply declare it:
 
-Please find attached 2 patches for accessfs.
+  struct pci_dev;
 
-accessfs-clear-I_NEW-flag-after-initialising-inode.patch
-This fixes kernel messages generated during unmounting of the accessfs
-/proc filesystem, I started to get them when I upgraded to from 2.6.33
-to 3.0, I'm not sure if it is also valid for earlier versions of the
-kernel,
 
-accessfs-integrate-with-the-LSM-system.patch:
-This adds an config option so that accessfs can be set as a LSM in the
-kernel, as far as I can tell it is applicable from version 2.6.37 and
-up.
-
-Kind regards,
-
-Bart
-
---20cf30563c297f067804bcd4b899
-Content-Type: application/octet-stream; 
-	name="accessfs-integrate-with-the-LSM-system.patch"
-Content-Disposition: attachment; 
-	filename="accessfs-integrate-with-the-LSM-system.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h0m09zx40
-
-RnJvbSA4MTNmYmVkYmE0NjRkM2EzMmJiYWE1ZDQwNTE5OTdjNWIzYTgwNjI2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBCYXJ0IHZkci4gTWV1bGVuIDxiYXJ0LnZkcm1ldWxlbkBnbWFp
-bC5jb20+CkRhdGU6IEZyaSwgMTYgTWFyIDIwMTIgMDg6NDU6MjIgKzAxMDAKU3ViamVjdDogW1BB
-VENIXSBhY2Nlc3NmczogaW50ZWdyYXRlIHdpdGggdGhlIExTTSBzeXN0ZW0KClNpbmNlIC52Mi42
-LjM3LXJjMSBzZWN1cml0eSBtb2RlbHMgdGhhdCByZWdpc3RlciB3aXRoIExTTSBtdXN0IGJlIGtu
-b3cKY29tcGlsZSB0aW1lICh0aGUgZGVmYXVsdCBvbmUpIG9yIHNldCBhdCBib290dGltZSB3aXRo
-IHRoZSBzZWN1cml0eT0KcGFyYW1ldGVyLgoKQWRkIEtjb25maWcgb3B0aW9uIHNvIHRoYXQgdGhl
-IGFjY2Vzc2ZzIHVzZXIgY2FwYWJpbGl0aWVzIG1vZHVsZQpjYW4gYmUgc2V0IGFzIGRlZmF1bHQg
-Y29tcGlsZSB0aW1lLgoKU2lnbmVkLW9mZi1ieTogQmFydCB2ZHIuIE1ldWxlbiA8YmFydHZkcm1l
-dWxlbkBnbWFpbC5jb20+Ci0tLQogc2VjdXJpdHkvS2NvbmZpZyB8ICAgIDUgKysrKysKIDEgZmls
-ZXMgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBh
-L3NlY3VyaXR5L0tjb25maWcgYi9zZWN1cml0eS9LY29uZmlnCmluZGV4IGUwZjA4YjUuLjlmOTRj
-MmEgMTAwNjQ0Ci0tLSBhL3NlY3VyaXR5L0tjb25maWcKKysrIGIvc2VjdXJpdHkvS2NvbmZpZwpA
-QCAtMTk0LDYgKzE5NCw3IEBAIGNob2ljZQogCWRlZmF1bHQgREVGQVVMVF9TRUNVUklUWV9TTUFD
-SyBpZiBTRUNVUklUWV9TTUFDSwogCWRlZmF1bHQgREVGQVVMVF9TRUNVUklUWV9UT01PWU8gaWYg
-U0VDVVJJVFlfVE9NT1lPCiAJZGVmYXVsdCBERUZBVUxUX1NFQ1VSSVRZX0FQUEFSTU9SIGlmIFNF
-Q1VSSVRZX0FQUEFSTU9SCisJZGVmYXVsdCBERUZBVUxUX1NFQ1VSSVRZX0FDQ0VTU0ZTX1VTRVJf
-Q0FQQUJJTElUSUVTIGlmIEFDQ0VTU0ZTX1VTRVJfQ0FQQUJJTElUSUVTCiAJZGVmYXVsdCBERUZB
-VUxUX1NFQ1VSSVRZX0RBQwogCiAJaGVscApAQCAtMjE1LDYgKzIxNiw5IEBAIGNob2ljZQogCWNv
-bmZpZyBERUZBVUxUX1NFQ1VSSVRZX0RBQwogCQlib29sICJVbml4IERpc2NyZXRpb25hcnkgQWNj
-ZXNzIENvbnRyb2xzIgogCisJY29uZmlnIERFRkFVTFRfU0VDVVJJVFlfQUNDRVNTRlNfVVNFUl9D
-QVBBQklMSVRJRVMKKwkJYm9vbCAiVXNlciBwZXJtaXNzaW9uIGJhc2VkIGNhcGFiaWxpdGllcyIg
-aWYgQUNDRVNTRlNfVVNFUl9DQVBBQklMSVRJRVM9eQorCiBlbmRjaG9pY2UKIAogY29uZmlnIERF
-RkFVTFRfU0VDVVJJVFkKQEAgLTIyMyw2ICsyMjcsNyBAQCBjb25maWcgREVGQVVMVF9TRUNVUklU
-WQogCWRlZmF1bHQgInNtYWNrIiBpZiBERUZBVUxUX1NFQ1VSSVRZX1NNQUNLCiAJZGVmYXVsdCAi
-dG9tb3lvIiBpZiBERUZBVUxUX1NFQ1VSSVRZX1RPTU9ZTwogCWRlZmF1bHQgImFwcGFybW9yIiBp
-ZiBERUZBVUxUX1NFQ1VSSVRZX0FQUEFSTU9SCisJZGVmYXVsdCAidXNlcmNhcHMiIGlmIERFRkFV
-TFRfU0VDVVJJVFlfQUNDRVNTRlNfVVNFUl9DQVBBQklMSVRJRVMKIAlkZWZhdWx0ICIiIGlmIERF
-RkFVTFRfU0VDVVJJVFlfREFDCiAKIGVuZG1lbnUKLS0gCjEuNy4wLjQKCg==
---20cf30563c297f067804bcd4b899
-Content-Type: application/octet-stream; 
-	name="accessfs-clear-I_NEW-flag-after-initialising-inode.patch"
-Content-Disposition: attachment; 
-	filename="accessfs-clear-I_NEW-flag-after-initialising-inode.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h0m09zx71
-
-RnJvbSA2ZjllOWRlYTU0YWYzYWZkOTA3YzQ0ODNiOTQxMjkwZDAwMTBiYTE5IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBCYXJ0IHZkci4gTWV1bGVuIDxiYXJ0LnZkcm1ldWxlbkBnbWFp
-bC5jb20+CkRhdGU6IEZyaSwgMTYgTWFyIDIwMTIgMTM6NTU6MTkgKzAxMDAKU3ViamVjdDogW1BB
-VENIXSBhY2Nlc3NmczogY2xlYXIgSV9ORVcgZmxhZyBhZnRlciBpbml0aWFsaXNpbmcgaW5vZGUK
-CldoZW4gdGhlIGlub2RlIGhhcyBiZWVuIGluaXRpYWxpc2VkIHRoZSBJX05FVyBmbGFnIHNob3Vs
-ZApiZSBjbGVhcmVkIHdpdGggYSBjYWxsIHRvIHVubG9ja19uZXdfaW5vZGUuCgpPdGhlcndpc2Ug
-dGhlIGlub2RlcyB3aWxsIHN0aWxsIGJlIG1hcmtlZCBhcyBidXN5IHdoZW4gdW1vdW50aW5nCnRo
-ZSBmaWxlc3lzdGVtIGR1cmluZyBzaHV0ZG93bi91bW91bnQKClNpZ25lZC1vZmYtYnk6IEJhcnQg
-dmRyLiBNZXVsZW4gPGJhcnR2ZHJtZXVsZW5AZ21haWwuY29tPgotLS0KIGZzL2FjY2Vzc2ZzL2lu
-b2RlLmMgfCAgICAxICsKIDEgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb25zKCspLCAwIGRlbGV0
-aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL2FjY2Vzc2ZzL2lub2RlLmMgYi9mcy9hY2Nlc3Nmcy9p
-bm9kZS5jCmluZGV4IGEyMjQ3ZTIuLjViNTUwZjIgMTAwNjQ0Ci0tLSBhL2ZzL2FjY2Vzc2ZzL2lu
-b2RlLmMKKysrIGIvZnMvYWNjZXNzZnMvaW5vZGUuYwpAQCAtMjk1LDYgKzI5NSw3IEBAIHN0YXRp
-YyBzdHJ1Y3QgaW5vZGUgKmFjY2Vzc2ZzX2lnZXQoc3RydWN0IHN1cGVyX2Jsb2NrICpzYiwgdW5z
-aWduZWQgbG9uZyBpbm8pCiAJCQlicmVhazsKIAkJfQogCX0KKwl1bmxvY2tfbmV3X2lub2RlKGlu
-b2RlKTsKIAogCW11dGV4X3VubG9jaygmYWNjZXNzZnNfc2VtKTsKIAlyZXR1cm4gaW5vZGU7Ci0t
-IAoxLjcuMC40Cgo=
---20cf30563c297f067804bcd4b899--
+Regards,
+Clemens
