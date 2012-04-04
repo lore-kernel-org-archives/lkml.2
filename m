@@ -1,145 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2DDQQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 12:16:33 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:37962 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab2DDQQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 12:16:32 -0400
-Date: Wed, 4 Apr 2012 18:16:30 +0200 (CEST)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: Jon Brenner <jbrenner@taosinc.com>
-cc: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio <linux-iio@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V5] TAOS tsl2x7x
-In-Reply-To: <1333385439.2151.1.camel@jonz-ub2>
-Message-ID: <alpine.DEB.2.01.1204041743080.18315@pmeerw.net>
-References: <1333385439.2151.1.camel@jonz-ub2>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S932373Ab2DDQWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 12:22:00 -0400
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:34488 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932305Ab2DDQV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 12:21:57 -0400
+X-manitu-Original-Sender-IP: 84.145.249.98
+X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
+Message-ID: <4F7C7515.4070802@grandegger.com>
+Date: Wed, 04 Apr 2012 18:21:41 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
+        "m.kleine-budde@pengutronix.de" <m.kleine-budde@pengutronix.de>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Gole, Anant" <anantgole@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [PATCH] ARM: OMAP: AM33XX: CAN: d_can: Add support for Bosch
+ D_CAN controller
+References: <1333456339-9372-1-git-send-email-anilkumar@ti.com> <4F7AF0C7.7020506@grandegger.com> <331ABD5ECB02734CA317220B2BBEABC1317D85D0@DBDE01.ent.ti.com> <4F7AFFEC.1010805@pengutronix.de> <331ABD5ECB02734CA317220B2BBEABC1317D86F7@DBDE01.ent.ti.com> <4F7B1854.90106@pengutronix.de> <331ABD5ECB02734CA317220B2BBEABC1317D88B7@DBDE01.ent.ti.com>
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC1317D88B7@DBDE01.ent.ti.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/03/2012 05:58 PM, AnilKumar, Chimata wrote:
+> On Tue, Apr 03, 2012 at 21:03:40, Marc Kleine-Budde wrote:
+>> On 04/03/2012 04:29 PM, AnilKumar, Chimata wrote:
+>>>>>> Please explain why this CAN controller cannot be handled by the existing
+>>>>>> C_CAN driver, eventually with some extensions. The register layout seems
+>>>>>> almost identical, at least.
+>>>>>>
+>>>>>> Wolfgang.
+>>>>>>
+>>>>>
+>>>>> These are the some of the pointers I can say, why I had gone for separate
+>>>>> file instead of existing driver:
+>>>>> * In case of D_CAN driver we can see all the registers are 32bit length
+>>>>>   but in case of C_CAN registers are in 16bit length.
+>>>>
+>>>> How many bits in these 32 bit registers are used?
+>>>
+>>> In some cases (D_CAN_TXRQ, D_CAN_INTPND, D_CAN_MSGVAL) I have used all the
+>>> bits, in some cases used few bits.
+>>>
+>>> Roughly I can say that its (higher 16bits) % of usages is similar as compare
+>>> to 16bits 
+>>>
+>>> While checking the status of TXRequest registers and INT pending register,
+>>> which is a hot code path, we have to put if checks for register access.
+>>
+>> The c_can already has a c_can_read_reg32() function. It's for example
+>> used in the rx_poll function. You can make it a function pointer (i.e.
+>> pric->read_reg32()) for easy abstraction.
+> 
+> This won't fit for D_CAN case because offsets are different in c_can compared
+> to d_can. For example if I read CONTROL_REG register (0x0) in case of d_can,
+> which will read only control register. In case of c_can it will read
+> CONTROL_REG + STATUS register values in single read
+> 
+>>
+>>>>> * Some of the registers, bit masks are different, so we have to add
+>>>>>   checks on every API for differentiating the kind of device
+>>>>
+>>>> Which registers are this? Can you give us an example?
+>>>
+>>> I am pointing out some of the resisters
+>>> * Single registers in case of D_CAN but multiple register in case of C_CAN
+>>>   So masks will change MASK, ARB, INTPND
+>>> * D_CAN_IFCMD is the combination of COMM request and COMM mask registers
+>>
+>> Maybe you can use the read_reg32 function on both c_can and d_can.
+> 
+> Above comment applies here as well
 
-just some nitpicking on comments below
+I did look into the manual. Unfortunately, a direct mapping of the C_CAN
+to the D_CAN registers seems not possible. It's not just a different
+alignment but sometimes two 16-bit C_CAN registers are folded into *one*
+32-bit D_CAN register. Therefore we need something more clever, e.g.
+using a separate struct or union or handling those register separately.
+I still think, if feasible, we should avoid an extra driver for the
+D_CAN controller, also because we sooner than later need the same
+infrastructure (register_c_can_dev etc.).
 
-prox/PRX and als/ALS/lux are used interchangingly
-
-> +++ b/drivers/staging/iio/Documentation/light/sysfs-bus-iio-light-tsl2x7x
-> +		Causes an recalculation and adjustment to the
-> +		proximity_thresh_rising_value.
-a recalculation
-
-> diff --git a/drivers/staging/iio/light/tsl2x7x.h b/drivers/staging/iio/light/tsl2x7x.h
-> + * struct tsl2x7x_default_settings - power on defaults unless
-> + *                                   overridden by platform data.
-> + *  @als_time:              ALS Integration time - multiple of 50mS
-ms
-
-> + *  @als_gain:              Index into the ALS gain table.
-> + *  @prx_time:              5.2ms prox integration time -
-> + *                          dec in 2.7ms periods
-what does 'dec' mean?
-
-> + *  @wait_time:             Time between PRX and ALS cycles
-> + *                          in 2.7 periods
-PRX -> prox?
-should ALS be lux?
-
-used inconsistently throughout
-
-> + *  @als_gain_trim:         default gain trim to account for
-> + *                          aperture effects.
-Default
-
-> + *  @als_thresh_high:       CH0 'high' count to trigger interrupt.
-> + *  @persistence:           H/W Filters, Number of 'out of limits'
-> + *                          ADC readings PRX/ALS.
-prox?
-
-> + *  @interrupts_en:         Enable/Disable - 0x00 = none, 0x10 = als,
-> + *                                           0x20 = prx,  0x30 = bth
-bth -> both?
-
-> + *  @prox_max_samples_cal:  Used for prox cal.
-cal -> calibration or calculation?
-
-> +++ b/drivers/staging/iio/light/tsl2x7x_core.c
-> +/* Cal defs*/
-Calibration?
-
-> +static const struct tsl2x7x_settings tsl2x7x_default_settings = {
-> +	.als_time = 200,
-> +	.als_gain = 0,
-> +	.prx_time = 0xfe, /*5.4 mS */
-ms
-
-> +	/* determine als integration regster */
-register
-
-> +		reg_val |= chip->tsl2x7x_settings.interrupts_en;
-> +		ret = i2c_smbus_write_byte_data(chip->client,
-> +			(TSL2X7X_CMD_REG | TSL2X7X_CNTRL), reg_val);
-> +		if (ret < 0)
-> +			dev_err(&chip->client->dev,
-> +				"%s: failed in tsl2x7x_IOCTL_INT_SET.\n",
-> +				__func__);
-why is this called tsl2x7x_IOCTL_INT_SET?
-misleading?
-
-> +/**
-> + * Proximity calibration - collects a number of samples,
-> + * calculates a standard deviation based on the samples, and
-> + * sets the threshold accordingly.
-> + */
-a standard deviation -> the standard deviation
-
-> +	/*turn on device if not already on*/
-> +	tsl2x7x_chip_on(indio_dev);
-/* Turn on ... */
-
-> +	/*gather the samples*/
-/* Gather the samples */
-
-> +	if ((n % 3) || n < 6 ||
-> +			n > ((ARRAY_SIZE(chip->tsl2x7x_device_lux) - 1) * 3)) {
-> +		dev_info(dev, "LUX TABLE INPUT ERROR 1 Value[0]=%d\n", n);
-> +		return -EINVAL;
-why uppercase?
-
-> +	if ((value[(n - 2)] | value[(n - 1)] | value[n]) != 0) {
-> +		dev_info(dev, "LUX TABLE INPUT ERROR 2 Value[0]=%d\n", n);
-> +		return -EINVAL;
-why uppercase?
-
-> +static int tsl2x7x_device_id(unsigned char *id, int target)
-> +{
-> +	switch (target) {
-> +	case tsl2571:
-> +	case tsl2671:
-> +	case tsl2771:
-> +		return ((*id & 0xf0) == TRITON_ID);
-> +	break;
-break look weird here
-
-> +	case tmd2671:
-> +	case tmd2771:
-> +		return ((*id & 0xf0) == HALIBUT_ID);
-> +	break;
-break look weird here
-
-> +	case tsl2572:
-> +	case tsl2672:
-> +	case tmd2672:
-> +	case tsl2772:
-> +	case tmd2772:
-> +		return ((*id & 0xf0) == SWORDFISH_ID);
-> +	break;
-break look weird here
-
--- 
-
-Peter Meerwald
-+43-664-2444418 (mobile)
+Wolfgang.
