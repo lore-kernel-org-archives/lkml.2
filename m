@@ -1,39 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab2DDIxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 04:53:21 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:65322 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600Ab2DDIxQ (ORCPT
+	id S1756106Ab2DDJDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 05:03:14 -0400
+Received: from msa102.auone-net.jp ([61.117.18.162]:38930 "EHLO
+	msa102.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab2DDJDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 04:53:16 -0400
+	Wed, 4 Apr 2012 05:03:13 -0400
+Date: Wed, 4 Apr 2012 18:03:11 +0900
+From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+To: netdev@vger.kernel.org
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
+Subject: Commit 8ef874bfc7296fa206eea2ad1e8a426f576bf6f6 has broken ss command
 MIME-Version: 1.0
-X-Originating-IP: [87.66.129.146]
-Date: Wed, 4 Apr 2012 10:53:15 +0200
-Message-ID: <CAORVsuWw1rwcsMUrSqZJCeSY_vjJDwakF27kfb6=utN8nBqvag@mail.gmail.com>
-Subject: gpiolib: per-gpio edges count
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20120404090312.1B68C6AC03E@msa102.auone-net.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant, Linus,
+Since commit 8ef874bfc7296fa206eea2ad1e8a426f576bf6f6 ("sock_diag:
+Move the sock_ code to net/core/"), ss command from iproute package
+doesn't work if INET_DIAG is not enabled.
 
-I would like to know if it is possible to get the edges count on a GPIO pin.
-I was hoping to get it by configuring the pin as input with an edge
-trigger but on OMAP there is only one irq line per controller (which
-controls 32 pins).
-Btw I am using a Beaglebone with OMAP AM3358.
-
-The options I see now are:
-- use select/poll on the value in sysfs and count the edges in user
-space. This looks like overkill for the task though.
-- hack the gpiolib code to export an irq count and timestamp to sysfs.
-
-What do you think?
-
-Regards,
-Jean Pihet
+$ ss
+State       Recv-Q Send-Q                                             Local Address:Port                                                 Peer Address:Port
+TCPDIAG answers: Operation not supported
