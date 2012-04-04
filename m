@@ -1,119 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab2DDWUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 18:20:38 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56818 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab2DDWUh convert rfc822-to-8bit (ORCPT
+	id S1757320Ab2DDWXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 18:23:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43784 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868Ab2DDWXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 18:20:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120404144656.7b2a06ec.akpm@linux-foundation.org>
-References: <1325254651-15379-1-git-send-email-glorioustao@gmail.com> <20120404144656.7b2a06ec.akpm@linux-foundation.org>
-From: Tao Guo <glorioustao@gmail.com>
-Date: Wed, 4 Apr 2012 15:20:16 -0700
-Message-ID: <CAAV8rn+T7FM7bG+Q6fyoUrVtzOkYOx94Nh87Rg12UqCdk9HhWQ@mail.gmail.com>
-Subject: Re: [PATCH] umem: fix up unplugging.
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, neilb@suse.de, axboe@fusionio.com,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Apr 2012 18:23:49 -0400
+Date: Wed, 4 Apr 2012 15:23:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: rtc-linux@googlegroups.com
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
+Subject: Re: [rtc-linux] [PATCH 1/2 RFC] rtc: Add ioctl to get/clear battery
+ low voltage status
+Message-Id: <20120404152347.2982ec50.akpm@linux-foundation.org>
+In-Reply-To: <1329236025-31323-1-git-send-email-alexander.stein@systec-electronic.com>
+References: <1329236025-31323-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, 14 Feb 2012 17:13:44 +0100
+Alexander Stein <alexander.stein@systec-electronic.com> wrote:
 
-Thanks for your reply.
+> Currently there is no generic way to get the RTC battery status within
+> an application. So add an ioctl to read the status bit.
+> The idea is that the bit is set once a low voltage is detected. It stays
+> there until it is reset using the RTC_VL_CLR ioctl.
+> 
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> ---
+>  include/linux/rtc.h |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+> index 93f4d03..1a6ec5f 100644
+> --- a/include/linux/rtc.h
+> +++ b/include/linux/rtc.h
+> @@ -91,6 +91,9 @@ struct rtc_pll_info {
+>  #define RTC_PLL_GET	_IOR('p', 0x11, struct rtc_pll_info)  /* Get PLL correction */
+>  #define RTC_PLL_SET	_IOW('p', 0x12, struct rtc_pll_info)  /* Set PLL correction */
+>  
+> +#define RTC_VL_READ	_IOR('p', 0x13, int)	/* Voltage low detector */
+> +#define RTC_VL_CLR	_IO('p', 0x14)		/* Clear voltage low information */
+> +
+>  /* interrupt flags */
+>  #define RTC_IRQF 0x80	/* Any of the following is active */
+>  #define RTC_PF 0x40	/* Periodic interrupt */
 
-Yes, without this patch the umem driver just doesn't work.
-It is a bug introduced by commit 7eaceaccab5f40bbfda044629a6298616aeaed50.
-In that patch, Jens removed the whole mm_unplug_device() function,
-which used to be
-the trigger to make umem start to work.
+Looks good to me, but I'd like to hear from other RTC driver
+maintainers, please.
 
-Thanks,
--Tao
+Which other devices provide support for reading the batttery status,
+and is the proposed interface suitable for their drivers?
 
-
-On Wed, Apr 4, 2012 at 2:46 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 30 Dec 2011 09:17:31 -0500
->
-> (Long delay...)
->
-> Tao Guo <glorioustao@gmail.com> wrote:
->
->> We need to implement unplugging to make umem start to work, or I/O
->> will never be triggered.
->>
->
-> I take it from this that umem simply doesn't work at all?
->
-> If so, for how long has this been the case and should we just delete the
-> thing?
->
->>
->> --- a/drivers/block/umem.c
->> +++ b/drivers/block/umem.c
->> @@ -111,7 +111,8 @@ struct cardinfo {
->>       int             current_idx;
->>       sector_t        current_sector;
->>
->> -     struct request_queue *queue;
->> +     struct request_queue    *queue;
->> +     struct blk_plug_cb      plug_cb;
->>
->>       struct mm_page {
->>               dma_addr_t              page_dma;
->> @@ -513,6 +514,33 @@ static void process_page(unsigned long data)
->>       }
->>  }
->>
->> +static void mm_unplug(struct blk_plug_cb *cb)
->> +{
->> +     struct cardinfo *card = container_of(cb, struct cardinfo, plug_cb);
->> +
->> +     spin_lock_irq(&card->lock);
->> +     activate(card);
->> +     spin_unlock_irq(&card->lock);
->> +}
->> +
->> +int mm_check_plugged(struct cardinfo *card)
->> +{
->> +     struct blk_plug *plug = current->plug;
->> +     struct cardinfo *c;
->> +
->> +     if (!plug)
->> +             return 0;
->> +
->> +     list_for_each_entry(c, &plug->cb_list, plug_cb.list) {
->> +             if (c == card)
->> +                     return 1;
->> +     }
->> +
->> +     /* set up unplug callback */
->> +     list_add(&card->plug_cb.list, &plug->cb_list);
->> +     return 1;
->> +}
->> +
->>  static void mm_make_request(struct request_queue *q, struct bio *bio)
->>  {
->>       struct cardinfo *card = q->queuedata;
->> @@ -523,6 +551,8 @@ static void mm_make_request(struct request_queue *q, struct bio *bio)
->>       *card->biotail = bio;
->>       bio->bi_next = NULL;
->>       card->biotail = &bio->bi_next;
->> +     if (bio->bi_rw & REQ_SYNC || !mm_check_plugged(card))
->> +             activate(card);
->>       spin_unlock_irq(&card->lock);
->>
->>       return;
->> @@ -884,6 +914,7 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
->>       blk_queue_make_request(card->queue, mm_make_request);
->>       card->queue->queue_lock = &card->lock;
->>       card->queue->queuedata = card;
->> +     card->plug_cb.callback = mm_unplug;
->>
->>       tasklet_init(&card->tasklet, process_page, (unsigned long)card);
->
