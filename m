@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab2DDMa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 08:30:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932170Ab2DDMax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 08:30:53 -0400
-Message-ID: <1333542649.7188.40.camel@marge.simpson.net>
-Subject: Re: [patch] cgroups: disallow attaching kthreadd
-From: Mike Galbraith <mgalbraith@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 04 Apr 2012 14:30:49 +0200
-In-Reply-To: <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com>
-References: <1333475906.7439.7.camel@marge.simpson.net>
-	 <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com>
-	 <1333535915.7188.18.camel@marge.simpson.net>
-	 <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756306Ab2DDMcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 08:32:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62896 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756106Ab2DDMcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 08:32:31 -0400
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Wed, 4 Apr 2012 05:32:10 -0700
+X-Google-Sender-Auth: PqtjJpPqnc1WlpzRZowE4m53rrk
+Message-ID: <CAB=NE6XO3+36C3yxd+Tw-zBd86Fd3=xOgtto86+SsG4kw1LLYw@mail.gmail.com>
+Subject: compat-wireless release based on v3.4-rc1
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        netdev@vger.kernel.org, lf_driver_backport@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-04 at 04:29 -0700, David Rientjes wrote:
+v3.4-rc1 is out and we now have a respective backport of that release
+[0] for ethernet, bluetooth and wireless. This release has been
+compile tested with ckmake against all supported kernel versions,
+v2.6.24 - v3.3 and verified to have compiled on each one of them.
+Moving forward every single compat-wireless release will have been
+tested with ckmake to ensure that it builds on all supported kernels.
+For details of the changes involved in this release check the
+ChangeLog-3.4-rc1 [1], for details of the build you can check the
+ckmake-3.4-rc1-2.log.bz2 [2].
 
-> I've never seen a nack from Peter on this, I only remember discussing 
-> whether this needs to be isolated to only cpusets or whether it needs to 
-> be a generic cgroup thing and I've always argued in favor of localizing it 
-> to cpusets because that cgroup happens to care about cpu affinity where 
-> others don't and this is why cgroups have ->can_attach() functions.  If a 
-> cgroup were created to have nothing to do with cpu affinity (only for 
-> collecting statistics for threads within it, for example), there's 
-> absolutely no reason why we need to exclude kthreadd.
+compat-wireless code metrics
 
-Well, he didn't actually say "NAK", but was against it, which means
-pretty much the same thing as NAK to me.. we can call it a nak.
+    829306 - Total upstream lines of code being pulled
+      2748 - backport code changes
+      2333 - backport code additions
+       415 - backport code deletions
+      9551 - backport from compat module
+     12299 - total backport code
+    1.4830 - % of code consists of backport work
 
-> You know I've been very supportive of getting this fix included for 
-> cpusets in the past and I very much appreciate your time and patience in 
-> the review cycle.  I'm hoping we can finally do this.
+Base tree: linux-stable.git
+Base tree version: v3.4-rc1
+compat-wireless release: compat-wireless-v3.4-rc1-2
+Code metrics archive: http://bit.ly/H6BTF7
 
-Whatever floats the boat works for me.  Peter likes generic, you like
-targeted.  I like generic best too fwtw, but I don't get to make the
-command decision, else you'd be saying revert, and I'd be saying NAK :)
+mcgrof@flash ~/compat-wireless-3.4-rc1-2 $ time ckmake
 
--Mike
+Trying kernel                     3.2.2-030202-generic  [OK]
+Trying kernel                    3.1.10-030110-generic  [OK]
+Trying kernel                    3.0.18-030018-generic  [OK]
+Trying kernel                  2.6.39-02063904-generic  [OK]
+Trying kernel                  2.6.38-02063808-generic  [OK]
+Trying kernel                  2.6.37-02063706-generic  [OK]
+Trying kernel                  2.6.36-02063604-generic  [OK]
+Trying kernel                  2.6.35-02063512-generic  [OK]
+Trying kernel                  2.6.34-02063410-generic  [OK]
+Trying kernel                  2.6.33-02063305-generic  [OK]
+Trying kernel                  2.6.32-02063255-generic  [OK]
+Trying kernel                  2.6.31-02063113-generic  [OK]
+Trying kernel                  2.6.30-02063010-generic  [OK]
+Trying kernel                  2.6.29-02062906-generic  [OK]
+Trying kernel                  2.6.28-02062810-generic  [OK]
+Trying kernel                    2.6.27-020627-generic  [OK]
+Trying kernel                    2.6.26-020626-generic  [OK]
+Trying kernel                    2.6.25-020625-generic  [OK]
+Trying kernel                    2.6.24-020624-generic  [OK]
 
+real    78m2.934s
+user    234m29.807s
+sys     21m29.209s
+
+[0] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.4/compat-wireless-3.4-rc1-2.tar.bz2
+[1] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.4/ChangeLog-3.4-rc1
+[2] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.4/ckmake-3.4-rc1-2.log.bz2
+
+  Luis
