@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab2DDAn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Apr 2012 20:43:59 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55973 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754946Ab2DDAn5 (ORCPT
+	id S1755671Ab2DDAtm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Apr 2012 20:49:42 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:35766 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab2DDAtk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Apr 2012 20:43:57 -0400
-Date: Wed, 4 Apr 2012 10:43:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Randy Dunlap" <rdunlap@xenotime.net>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Rob Landley" <rob@landley.net>
-Subject: Re: [PATCH] MAINTAINERS: change in Documentation/ maintainer
-Message-Id: <20120404104348.a6a1aacd64c833709e869f9c@canb.auug.org.au>
-In-Reply-To: <ba61ee90a67ed84fb31703185d71dee7.squirrel@xenotime.net>
-References: <4F7B5CFB.1@xenotime.net>
-	<20120404101409.2d2d176a3607ea43c8b70cda@canb.auug.org.au>
-	<ba61ee90a67ed84fb31703185d71dee7.squirrel@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__4_Apr_2012_10_43_48_+1000_rGB5ad3JehJX8509"
+	Tue, 3 Apr 2012 20:49:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120403155703.3B0593E053F@localhost>
+References: <1333348747-12713-1-git-send-email-tinamdar@apm.com>
+	<1333348747-12713-2-git-send-email-tinamdar@apm.com>
+	<1333348747-12713-3-git-send-email-tinamdar@apm.com>
+	<20120403155703.3B0593E053F@localhost>
+Date: Tue, 3 Apr 2012 20:49:40 -0400
+Message-ID: <CA+5PVA4_PJ2T7LGM_N_WemQKY2u6bLg0QFk4wPpd=FGESx7eiQ@mail.gmail.com>
+Subject: Re: [PATCH 3/5] powerpc: dts: klondike: Add UART nodes
+From: Josh Boyer <jwboyer@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Tanmay Inamdar <tinamdar@apm.com>, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Apr_2012_10_43_48_+1000_rGB5ad3JehJX8509
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Randy,
-
-On Tue, 3 Apr 2012 17:35:33 -0700 "Randy Dunlap" <rdunlap@xenotime.net> wro=
-te:
+On Tue, Apr 3, 2012 at 11:57 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon,  2 Apr 2012 12:09:05 +0530, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>> Adding UART nodes in Klondike device tree file.
+>>
+>> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>> ---
+>> :100644 100644 4ff2852... d5bf2e1... M        arch/powerpc/boot/dts/klondike.dts
+>>  arch/powerpc/boot/dts/klondike.dts |   24 ++++++++++++++++++++++++
+>>  1 files changed, 24 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/powerpc/boot/dts/klondike.dts b/arch/powerpc/boot/dts/klondike.dts
+>> index 4ff2852..d5bf2e1 100644
+>> --- a/arch/powerpc/boot/dts/klondike.dts
+>> +++ b/arch/powerpc/boot/dts/klondike.dts
+>> @@ -222,6 +222,30 @@
+>>                               #size-cells = <1>;
+>>                               ranges;
+>>                               clock-frequency = <0>;
+>> +
+>> +                             UART0: serial@50001000 {
+>> +                                    device_type = "serial";
+>> +                                    compatible = "ns16550";
+>> +                                    reg = <0x50001000 0x00000100>;
+>> +                                    virtual-reg = <0x50001000>;
 >
-> > OK, I will do that today.  I also have a git tree form you:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs.git#do=
-cs-move
-> >
-> > do you want anything done with that?
->=20
-> duh, yes, please drop it also.
+> Why do you need virtual-reg?  The kernel should handle all iomapping
+> properly without this.
 
-OK, will do.
+Right.  It's been used for platforms that actually use the
+zImage/treeImage wrapper for printf support, but this uses u-boot as
+far as I know.  It shouldn't need it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__4_Apr_2012_10_43_48_+1000_rGB5ad3JehJX8509
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPe5lEAAoJEECxmPOUX5FEUMwP/28cHCY2MUXAejAlZlmdIaky
-EWNeAKZx0R36+9BXDt2Q0qwBTl6fFYVb392Epl98E0dlLzb4N+RlFAWLyde3iG4j
-Th/XWmvRPDvU8YnHECMUw4drKp6uh2FRTdOgqxqrBGrW5UrkA1He89f7tlgwhvaC
-+iQbNQvAIKssD4ZsKp6ca39n7N6vpaVP5Rl2FqcnL9aMqDPjmSD9ljZDSoSVEkYQ
-xQOmHvWao7D/UbdoEd2/52pMc1wZ7NEiaj5ABdcROJXGboMEY60WR9djjEfolv7x
-W9KFIvEboV6Iwjum43v74z6MF3oo/3Kehzg+umM7Lby3uQLrBAg4ysxP22b/wDbE
-YQ7GYxyXkeecsLrmOtf4CbQELxzlyvvHQVET+pJbwdHTY5gx3YPKp+jbZgDBV08m
-OALXIyhQy9wr/cj6PztoMZzu41IY1nXJ9n8nozeQtyh8ZMGuLq8z+DVr9hBsE/UC
-OXEMgmtt/OFTLaxZqklsD75AP5roDB+i9dr2IgEfeg9h/mlKzyFomu1aXeUBcMHA
-seM5yt8FOqJJX9KcTV1BzgkQutebQ3AnlpzSMPzBwnET+71gkLy6y98QXvCebZwh
-A9OUvMzmSkwT1hKuX453g+Ujhd7jcyPby1fvFXIoQSAYmHGFkp9ZTSWrGnwzy4wt
-DyS/FkUEUTbLX65rEZQk
-=uexp
------END PGP SIGNATURE-----
-
---Signature=_Wed__4_Apr_2012_10_43_48_+1000_rGB5ad3JehJX8509--
+josh
