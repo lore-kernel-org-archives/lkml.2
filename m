@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab2DDVrD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 17:47:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43516 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007Ab2DDVrB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 17:47:01 -0400
-Date: Wed, 4 Apr 2012 14:46:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tao Guo <glorioustao@gmail.com>
-Cc: linux-kernel@vger.kernel.org, neilb@suse.de, axboe@fusionio.com,
-        Tao Guo <Tao.Guo@emc.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] umem: fix up unplugging.
-Message-Id: <20120404144656.7b2a06ec.akpm@linux-foundation.org>
-In-Reply-To: <1325254651-15379-1-git-send-email-glorioustao@gmail.com>
-References: <1325254651-15379-1-git-send-email-glorioustao@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757199Ab2DDVrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 17:47:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40333 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757100Ab2DDVr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 17:47:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="137740135"
+Date: Wed, 4 Apr 2012 14:42:28 -0700
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120404214228.GA6471@localhost>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404175124.GA8931@localhost>
+ <20120404183528.GJ12676@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404183528.GJ12676@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Dec 2011 09:17:31 -0500
-
-(Long delay...)
-
-Tao Guo <glorioustao@gmail.com> wrote:
-
-> We need to implement unplugging to make umem start to work, or I/O
-> will never be triggered.
+On Wed, Apr 04, 2012 at 02:35:29PM -0400, Vivek Goyal wrote:
+> On Wed, Apr 04, 2012 at 10:51:24AM -0700, Fengguang Wu wrote:
 > 
-
-I take it from this that umem simply doesn't work at all?
-
-If so, for how long has this been the case and should we just delete the
-thing?
-
+> [..]
+> > The sweet split point would be for balance_dirty_pages() to do cgroup
+> > aware buffered write throttling and leave other IOs to the current
+> > blkcg. For this to work well as a total solution for end users, I hope
+> > we can cooperate and figure out ways for the two throttling entities
+> > to work well with each other.
 > 
-> --- a/drivers/block/umem.c
-> +++ b/drivers/block/umem.c
-> @@ -111,7 +111,8 @@ struct cardinfo {
->  	int		current_idx;
->  	sector_t	current_sector;
->  
-> -	struct request_queue *queue;
-> +	struct request_queue	*queue;
-> +	struct blk_plug_cb	plug_cb;
->  
->  	struct mm_page {
->  		dma_addr_t		page_dma;
-> @@ -513,6 +514,33 @@ static void process_page(unsigned long data)
->  	}
->  }
->  
-> +static void mm_unplug(struct blk_plug_cb *cb)
-> +{
-> +	struct cardinfo *card = container_of(cb, struct cardinfo, plug_cb);
-> +
-> +	spin_lock_irq(&card->lock);
-> +	activate(card);
-> +	spin_unlock_irq(&card->lock);
-> +}
-> +
-> +int mm_check_plugged(struct cardinfo *card)
-> +{
-> +	struct blk_plug *plug = current->plug;
-> +	struct cardinfo *c;
-> +
-> +	if (!plug)
-> +		return 0;
-> +
-> +	list_for_each_entry(c, &plug->cb_list, plug_cb.list) {
-> +		if (c == card)
-> +			return 1;
-> +	}
-> +
-> +	/* set up unplug callback */
-> +	list_add(&card->plug_cb.list, &plug->cb_list);
-> +	return 1;
-> +}
-> +
->  static void mm_make_request(struct request_queue *q, struct bio *bio)
->  {
->  	struct cardinfo *card = q->queuedata;
-> @@ -523,6 +551,8 @@ static void mm_make_request(struct request_queue *q, struct bio *bio)
->  	*card->biotail = bio;
->  	bio->bi_next = NULL;
->  	card->biotail = &bio->bi_next;
-> +	if (bio->bi_rw & REQ_SYNC || !mm_check_plugged(card))
-> +		activate(card);
->  	spin_unlock_irq(&card->lock);
->  
->  	return;
-> @@ -884,6 +914,7 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
->  	blk_queue_make_request(card->queue, mm_make_request);
->  	card->queue->queue_lock = &card->lock;
->  	card->queue->queuedata = card;
-> +	card->plug_cb.callback = mm_unplug;
->  
->  	tasklet_init(&card->tasklet, process_page, (unsigned long)card);
+> Throttling read + direct IO, higher up has few issues too. Users will
 
+Yeah I have a bit worry about high layer throttling, too.
+Anyway here are the ideas.
+
+> not like that a task got blocked as it tried to submit a read from a
+> throttled group.
+
+That's not the same issue I worried about :) Throttling is about
+inserting small sleep/waits into selected points. For reads, the ideal
+sleep point is immediately after readahead IO is summited, at the end
+of __do_page_cache_readahead(). The same should be applicable to
+direct IO.
+
+> Current async behavior works well where we queue up the
+> bio from the task in throttled group and let task do other things. Same
+> is true for AIO where we would not like to block in bio submission.
+
+For AIO, we'll need to delay the IO completion notification or status
+update, which may involve computing some delay time and delay the
+calls to io_complete() with the help of some delayed work queue. There
+may be more issues to deal with as I didn't look into aio.c carefully.
+
+The thing worried me is that in the proportional throttling case, the
+high level throttling works on the *estimated* task_ratelimit =
+disk_bandwidth / N, where N is the number of read IO tasks. When N
+suddenly changes from 2 to 1, it may take 1 second for the estimated
+task_ratelimit to adapt from disk_bandwidth/2 up to disk_bandwidth,
+during which time the disk won't get 100% utilized because of the
+temporally over-throttling of the remaining IO task.
+
+This is not a problem when throttling at the block/cfq layer, since it
+has the full information of pending requests and should not depend on
+such estimations.
+
+The workaround I can think of, is to put the throttled task into a wait
+queue, and let block layer wake up the waiters when the IO queue runs
+empty. This should be able to avoid most disk idle time.
+
+Thanks,
+Fengguang
