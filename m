@@ -1,56 +1,500 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab2DDHV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 03:21:59 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60267 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab2DDHV6 convert rfc822-to-8bit (ORCPT
+	id S1754239Ab2DDHXe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 03:23:34 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9279 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab2DDHXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 03:21:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120403171736.GD2477@pengutronix.de>
-References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
-	<20120403165320.GG19952@sequoia.sous-sol.org>
-	<20120403170708.GC2477@pengutronix.de>
-	<20120403171112.GH19952@sequoia.sous-sol.org>
-	<20120403171736.GD2477@pengutronix.de>
-Date: Wed, 4 Apr 2012 09:21:57 +0200
-Message-ID: <CAMSQXEHpjD7LWQkKWJOU=9eFYqsaJi-xHFTxexQr7yoKiCG7HQ@mail.gmail.com>
-Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Chris Wright <chrisw@sous-sol.org>, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Apr 2012 03:23:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 04 Apr 2012 00:23:32 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: lrg@ti.com, broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
+        sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH V1] regulator: Add support for RICOH PMIC RC5T583 regulator
+Date: Wed,  4 Apr 2012 12:44:00 +0530
+Message-Id: <1333523640-8820-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The RC5T583 PMIC from RICOH consists of 4 DCDC and 10
+LDOs. This driver supports the control of different
+regulator output through regulator interface.
+This driver depends on MFD driver of RC5T583 and uses
+mfd rc5t583 apis to communicate to device for accessing
+different device's registers.
 
-Op 3 april 2012 19:17 heeft Wolfram Sang <w.sang@pengutronix.de> het
-volgende geschreven:
->
->> > > > +#define EE_INSTR_BIT3_IS_ADDR  0x0010
->> > >
->> > > Is there some guarantee that this chip flag will always have this
->> > > meaning?
->> >
->> > ? This is a driver flag.
->>
->> Sorry, I don't see it set anywhere, so unclear on where it comes from.
->> I thought it was from a generic spi probe.
->
-> Yeah, agreed, 'struct spi_eeprom' does not sound much like platform_data :/
-> Thanks for checking.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/regulator/Kconfig             |   10 +
+ drivers/regulator/Makefile            |    1 +
+ drivers/regulator/rc5t583-regulator.c |  367 +++++++++++++++++++++++++++++++++
+ include/linux/mfd/rc5t583.h           |   29 +++
+ 4 files changed, 407 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/rc5t583-regulator.c
 
-The flag is indeed used in the platform initialization to enable the
-"address bit" behavior, so you don't see it set anywhere in this patch
-(and not anywhere in the kernel, since no board uses this flag yet).
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 8fb5f81..4ad4e8d 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -223,6 +223,16 @@ config REGULATOR_PCF50633
+ 	 Say Y here to support the voltage regulators and convertors
+ 	 on PCF50633
+ 
++config REGULATOR_RC5T583
++	tristate "RICOH RC5T583 Power regulators"
++	depends on MFD_RC5T583
++	help
++	  Select this option to enable the power regulator of RICOH
++	  PMIC RC5T583.
++	  This driver supports the control of different power rails of device
++	  through regulator interface. The device supports multiple DCDC/LDO
++	  outputs which can be controlled by i2c communication.
++
+ config REGULATOR_S5M8767
+ 	tristate "Samsung S5M8767A voltage regulator"
+ 	depends on MFD_S5M_CORE
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 2cc91d1..a083029 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -35,6 +35,7 @@ obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
+ obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
+ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
++obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
+ obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
+ obj-$(CONFIG_REGULATOR_TPS6105X) += tps6105x-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS62360) += tps62360-regulator.o
+diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
+new file mode 100644
+index 0000000..37732f7
+--- /dev/null
++++ b/drivers/regulator/rc5t583-regulator.c
+@@ -0,0 +1,367 @@
++/*
++ * Regulator driver for RICOH RC5T583 power management chip.
++ *
++ * Copyright (c) 2011-2012, NVIDIA CORPORATION.  All rights reserved.
++ * Author: Laxman dewangan <ldewangan@nvidia.com>
++ *
++ * based on code
++ *      Copyright (C) 2011 RICOH COMPANY,LTD
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/gpio.h>
++#include <linux/mfd/rc5t583.h>
++
++struct rc5t583_regulator_info {
++	int			deepsleep_id;
++
++	/* Regulator register address.*/
++	uint8_t			reg_en_reg;
++	uint8_t			en_bit;
++	uint8_t			reg_disc_reg;
++	uint8_t			disc_bit;
++	uint8_t			vout_reg;
++	uint8_t			vout_mask;
++	uint8_t			deepsleep_reg;
++
++	/* Chip constraints on regulator behavior */
++	int			min_uV;
++	int			max_uV;
++	int			step_uV;
++	int			nsteps;
++
++	/* Regulator specific turn-on delay  and voltage settling time*/
++	int			enable_uv_per_us;
++	int			change_uv_per_us;
++
++	/* Used by regulator core */
++	struct regulator_desc	desc;
++};
++
++struct rc5t583_regulator {
++	struct rc5t583_regulator_info *reg_info;
++
++	/* Devices */
++	struct device		*dev;
++	struct rc5t583		*mfd;
++	struct regulator_dev	*rdev;
++};
++
++static int rc5t583_reg_is_enabled(struct regulator_dev *rdev)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	struct rc5t583_regulator_info *ri = reg->reg_info;
++	uint8_t control;
++	int ret;
++
++	ret = rc5t583_read(reg->mfd->dev, ri->reg_en_reg, &control);
++	if (ret < 0) {
++		dev_err(&rdev->dev,
++			"Error in reading the control register 0x%02x\n",
++			ri->reg_en_reg);
++		return ret;
++	}
++	return !!(control & BIT(ri->en_bit));
++}
++
++static int rc5t583_reg_enable(struct regulator_dev *rdev)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	struct rc5t583_regulator_info *ri = reg->reg_info;
++	int ret;
++
++	ret = rc5t583_set_bits(reg->mfd->dev, ri->reg_en_reg,
++				(1 << ri->en_bit));
++	if (ret < 0) {
++		dev_err(&rdev->dev,
++			"Error in setting bit of STATE register 0x%02x\n",
++			ri->reg_en_reg);
++		return ret;
++	}
++	return ret;
++}
++
++static int rc5t583_reg_disable(struct regulator_dev *rdev)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	struct rc5t583_regulator_info *ri = reg->reg_info;
++	int ret;
++
++	ret = rc5t583_clear_bits(reg->mfd->dev, ri->reg_en_reg,
++				(1 << ri->en_bit));
++	if (ret < 0)
++		dev_err(&rdev->dev,
++			"Error in clearing bit of STATE register 0x%02x\n",
++			ri->reg_en_reg);
++
++	return ret;
++}
++
++static int rc5t583_list_voltage(struct regulator_dev *rdev, unsigned selector)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	struct rc5t583_regulator_info *ri = reg->reg_info;
++	return ri->min_uV + (ri->step_uV * selector);
++}
++
++static int rc5t583_set_voltage_sel(struct regulator_dev *rdev,
++		unsigned int selector)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	struct rc5t583_regulator_info *ri = reg->reg_info;
++	int ret;
++	if (selector > ri->nsteps) {
++		dev_err(&rdev->dev, "Invalid selector 0x%02x\n", selector);
++		return -EINVAL;
++	}
++
++	ret = rc5t583_update(reg->mfd->dev, ri->vout_reg,
++				selector, ri->vout_mask);
++	if (ret < 0)
++		dev_err(&rdev->dev,
++		    "Error in update voltage register 0x%02x\n", ri->vout_reg);
++	return ret;
++}
++
++static int rc5t583_get_voltage_sel(struct regulator_dev *rdev)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	struct rc5t583_regulator_info *ri = reg->reg_info;
++	uint8_t vsel;
++	int ret;
++	ret = rc5t583_read(reg->mfd->dev, ri->vout_reg, &vsel);
++	if (ret < 0) {
++		dev_err(&rdev->dev,
++		    "Error in reading voltage register 0x%02x\n", ri->vout_reg);
++		return ret;
++	}
++	return vsel & ri->vout_mask;
++}
++
++static int rc5t583_regulator_enable_time(struct regulator_dev *rdev)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	int vsel = rc5t583_get_voltage_sel(rdev);
++	int curr_uV = rc5t583_list_voltage(rdev, vsel);
++	return DIV_ROUND_UP(curr_uV, reg->reg_info->enable_uv_per_us);
++}
++
++static int rc5t583_set_voltage_time_sel(struct regulator_dev *rdev,
++		unsigned int old_selector, unsigned int new_selector)
++{
++	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
++	int old_uV, new_uV;
++	old_uV = rc5t583_list_voltage(rdev, old_selector);
++
++	if (old_uV < 0)
++		return old_uV;
++
++	new_uV = rc5t583_list_voltage(rdev, new_selector);
++	if (new_uV < 0)
++		return new_uV;
++
++	return DIV_ROUND_UP(abs(old_uV - new_uV),
++				reg->reg_info->change_uv_per_us);
++}
++
++
++static struct regulator_ops rc5t583_ops = {
++	.is_enabled		= rc5t583_reg_is_enabled,
++	.enable			= rc5t583_reg_enable,
++	.disable		= rc5t583_reg_disable,
++	.enable_time		= rc5t583_regulator_enable_time,
++	.get_voltage_sel	= rc5t583_get_voltage_sel,
++	.set_voltage_sel	= rc5t583_set_voltage_sel,
++	.list_voltage		= rc5t583_list_voltage,
++	.set_voltage_time_sel	= rc5t583_set_voltage_time_sel,
++};
++
++#define RC5T583_REG(_id, _en_reg, _en_bit, _disc_reg, _disc_bit, _vout_reg,  \
++		_vout_mask, _ds_reg, _min_mv, _max_mv, _step_uV, _nsteps,    \
++		_enable_mv)					\
++{								\
++	.reg_en_reg	= RC5T583_REG_##_en_reg,		\
++	.en_bit		= _en_bit,				\
++	.reg_disc_reg	= RC5T583_REG_##_disc_reg,		\
++	.disc_bit	= _disc_bit,				\
++	.vout_reg	= RC5T583_REG_##_vout_reg,		\
++	.vout_mask	= _vout_mask,				\
++	.deepsleep_reg	= RC5T583_REG_##_ds_reg,		\
++	.min_uV		= _min_mv * 1000,			\
++	.max_uV		= _max_mv * 1000,			\
++	.step_uV	= _step_uV,				\
++	.nsteps		= _nsteps,				\
++	.enable_uv_per_us = _enable_mv * 1000,			\
++	.change_uv_per_us = 40 * 1000,				\
++	.deepsleep_id	= RC5T583_DS_##_id,			\
++	.desc = {						\
++		.name = "rc5t583-regulator-"#_id,		\
++		.id = RC5T583_REGULATOR_##_id,			\
++		.n_voltages = _nsteps,				\
++		.ops = &rc5t583_ops,				\
++		.type = REGULATOR_VOLTAGE,			\
++		.owner = THIS_MODULE,				\
++	},							\
++}
++
++static struct rc5t583_regulator_info rc5t583_reg_info[RC5T583_REGULATOR_MAX] = {
++	RC5T583_REG(DC0, DC0CTL, 0, DC0CTL, 1, DC0DAC, 0x7F, DC0DAC_DS,
++			700, 1500, 12500, 0x41, 4),
++	RC5T583_REG(DC1, DC1CTL, 0, DC1CTL, 1, DC1DAC, 0x7F, DC1DAC_DS,
++			700, 1500, 12500, 0x41,  14),
++	RC5T583_REG(DC2, DC2CTL, 0, DC2CTL, 1, DC2DAC, 0x7F, DC2DAC_DS,
++			900, 2400, 12500, 0x79,  14),
++	RC5T583_REG(DC3, DC3CTL, 0, DC3CTL, 1, DC3DAC, 0x7F, DC3DAC_DS,
++			900, 2400, 12500, 0x79,  14),
++	RC5T583_REG(LDO0, LDOEN2, 0, LDODIS2, 0, LDO0DAC, 0x7F, LDO0DAC_DS,
++			900, 3400, 25000, 0x65,  160),
++	RC5T583_REG(LDO1, LDOEN2, 1, LDODIS2, 1, LDO1DAC, 0x7F, LDO1DAC_DS,
++			900, 3400, 25000, 0x65,  160),
++	RC5T583_REG(LDO2, LDOEN2, 2, LDODIS2, 2, LDO2DAC, 0x7F, LDO2DAC_DS,
++			900, 3400, 25000, 0x65,  160),
++	RC5T583_REG(LDO3, LDOEN2, 3, LDODIS2, 3, LDO3DAC, 0x7F, LDO3DAC_DS,
++			900, 3400, 25000, 0x65,  160),
++	RC5T583_REG(LDO4, LDOEN2, 4, LDODIS2, 4, LDO4DAC, 0x3F, LDO4DAC_DS,
++			750, 1500, 12500, 0x3D,  133),
++	RC5T583_REG(LDO5, LDOEN2, 5, LDODIS2, 5, LDO5DAC, 0x7F, LDO5DAC_DS,
++			900, 3400, 25000, 0x65,  267),
++	RC5T583_REG(LDO6, LDOEN2, 6, LDODIS2, 6, LDO6DAC, 0x7F, LDO6DAC_DS,
++			900, 3400, 25000, 0x65,  133),
++	RC5T583_REG(LDO7, LDOEN2, 7, LDODIS2, 7, LDO7DAC, 0x7F, LDO7DAC_DS,
++			900, 3400, 25000, 0x65,  233),
++	RC5T583_REG(LDO8, LDOEN1, 0, LDODIS1, 0, LDO8DAC, 0x7F, LDO8DAC_DS,
++			900, 3400, 25000, 0x65,  233),
++	RC5T583_REG(LDO9, LDOEN1, 1, LDODIS1, 1, LDO9DAC, 0x7F, LDO9DAC_DS,
++			900, 3400, 25000, 0x65,  133),
++};
++
++static int __devinit rc5t583_regulator_probe(struct platform_device *pdev)
++{
++	struct rc5t583 *rc5t583 = dev_get_drvdata(pdev->dev.parent);
++	struct rc5t583_platform_data *pdata = dev_get_platdata(rc5t583->dev);
++	struct regulator_init_data *reg_data;
++	struct rc5t583_regulator *reg = NULL;
++	struct rc5t583_regulator *regs;
++	struct regulator_dev *rdev;
++	struct rc5t583_regulator_info *ri;
++	int ret;
++	int id;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "No platform data, exiting...\n");
++		return -ENODEV;
++	}
++
++	regs = devm_kzalloc(&pdev->dev, RC5T583_REGULATOR_MAX *
++			sizeof(struct rc5t583_regulator), GFP_KERNEL);
++	if (!regs) {
++		dev_err(&pdev->dev, "Memory allocation failed exiting..\n");
++		return -ENOMEM;
++	}
++
++
++	for (id = 0; id < RC5T583_REGULATOR_MAX; ++id) {
++		reg_data = pdata->reg_init_data[id];
++
++		/* No need to register if there is no regulator data */
++		if (!reg_data)
++			continue;
++
++		reg = &regs[id];
++		ri = &rc5t583_reg_info[id];
++		reg->reg_info = ri;
++		reg->mfd = rc5t583;
++		reg->dev = &pdev->dev;
++
++		if (ri->deepsleep_id == RC5T583_DS_NONE)
++			goto skip_ext_pwr_config;
++
++		ret = rc5t583_ext_power_req_config(rc5t583->dev,
++				ri->deepsleep_id,
++				pdata->regulator_ext_pwr_control[id],
++				pdata->regulator_deepsleep_slot[id]);
++		/*
++		 * Configuring external control is not a major issue,
++		 * just give warning.
++		 */
++		if (ret < 0)
++			dev_warn(&pdev->dev,
++				"Failed to configure ext control %d\n", id);
++
++skip_ext_pwr_config:
++		rdev = regulator_register(&ri->desc, &pdev->dev,
++					reg_data, reg, NULL);
++		if (IS_ERR_OR_NULL(rdev)) {
++			dev_err(&pdev->dev, "Failed to register regulator %s\n",
++						ri->desc.name);
++			ret = PTR_ERR(rdev);
++			goto clean_exit;
++		}
++		reg->rdev = rdev;
++	}
++	platform_set_drvdata(pdev, regs);
++	return 0;
++
++clean_exit:
++	while (--id > 0)
++		regulator_unregister(regs[id].rdev);
++
++	return ret;
++}
++
++static int __devexit rc5t583_regulator_remove(struct platform_device *pdev)
++{
++	struct rc5t583_regulator *regs = platform_get_drvdata(pdev);
++	int id;
++
++	for (id = 0; id < RC5T583_REGULATOR_MAX; ++id)
++		regulator_unregister(regs[id].rdev);
++	return 0;
++}
++
++static struct platform_driver rc5t583_regulator_driver = {
++	.driver	= {
++		.name	= "rc5t583-regulator",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= rc5t583_regulator_probe,
++	.remove		= __devexit_p(rc5t583_regulator_remove),
++};
++
++static int __init rc5t583_regulator_init(void)
++{
++	return platform_driver_register(&rc5t583_regulator_driver);
++}
++subsys_initcall(rc5t583_regulator_init);
++
++static void __exit rc5t583_regulator_exit(void)
++{
++	platform_driver_unregister(&rc5t583_regulator_driver);
++}
++module_exit(rc5t583_regulator_exit);
++
++MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
++MODULE_DESCRIPTION("RC5T583 regulator driver");
++MODULE_ALIAS("platform:rc5t583-regulator");
++MODULE_LICENSE("GPL V2");
+diff --git a/include/linux/mfd/rc5t583.h b/include/linux/mfd/rc5t583.h
+index a2c6160..b2c1f44 100644
+--- a/include/linux/mfd/rc5t583.h
++++ b/include/linux/mfd/rc5t583.h
+@@ -249,6 +249,26 @@ enum {
+ 	RC5T583_EXT_PWRREQ2_CONTROL = 0x2,
+ };
+ 
++enum {
++	RC5T583_REGULATOR_DC0,
++	RC5T583_REGULATOR_DC1,
++	RC5T583_REGULATOR_DC2,
++	RC5T583_REGULATOR_DC3,
++	RC5T583_REGULATOR_LDO0,
++	RC5T583_REGULATOR_LDO1,
++	RC5T583_REGULATOR_LDO2,
++	RC5T583_REGULATOR_LDO3,
++	RC5T583_REGULATOR_LDO4,
++	RC5T583_REGULATOR_LDO5,
++	RC5T583_REGULATOR_LDO6,
++	RC5T583_REGULATOR_LDO7,
++	RC5T583_REGULATOR_LDO8,
++	RC5T583_REGULATOR_LDO9,
++
++	/* Should be last entry */
++	RC5T583_REGULATOR_MAX,
++};
++
+ struct rc5t583 {
+ 	struct device	*dev;
+ 	struct regmap	*regmap;
+@@ -272,11 +292,20 @@ struct rc5t583 {
+  * The board specific data is provided through this structure.
+  * @irq_base: Irq base number on which this device registers their interrupts.
+  * @enable_shutdown: Enable shutdown through the input pin "shutdown".
++ * @regulator_deepsleep_slot: The slot number on which device goes to sleep
++ *		in device sleep mode.
++ * @regulator_ext_pwr_control: External power request regulator control. The
++ *		regulator output enable/disable is controlled by the external
++ *		power request input state.
++ * @reg_init_data: Regulator init data.
+  */
+ 
+ struct rc5t583_platform_data {
+ 	int		irq_base;
+ 	bool		enable_shutdown;
++	int		regulator_deepsleep_slot[RC5T583_REGULATOR_MAX];
++	unsigned long	regulator_ext_pwr_control[RC5T583_REGULATOR_MAX];
++	struct regulator_init_data *reg_init_data[RC5T583_REGULATOR_MAX];
+ };
+ 
+ int rc5t583_write(struct device *dev, u8 reg, uint8_t val);
+-- 
+1.7.1.1
 
-Is it OK if we leave this patch like this?
-
-Regards,
-Ivo Sieben
