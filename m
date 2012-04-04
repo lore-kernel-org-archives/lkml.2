@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab2DDXFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 19:05:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44143 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab2DDXFq (ORCPT
+	id S1757384Ab2DDXGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 19:06:54 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:62921 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757211Ab2DDXGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 19:05:46 -0400
-Date: Wed, 4 Apr 2012 16:05:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: serge.hallyn@canonical.com, criu@openvz.org, lucas.demarchi@profusion.mobi,
-        linux-kernel@vger.kernel.org, cmetcalf@tilera.com, dhowells@redhat.com,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/2] IPC: message queue receive cleanup
-Message-Id: <20120404160544.f60c2150.akpm@linux-foundation.org>
-In-Reply-To: <20120215165431.27978.36457.stgit@localhost6.localdomain6>
-References: <20120215163203.27978.52494.stgit@localhost6.localdomain6>
-	<20120215165431.27978.36457.stgit@localhost6.localdomain6>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Apr 2012 19:06:53 -0400
+Date: Wed, 4 Apr 2012 16:06:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Li Zefan <lizf@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+Message-ID: <20120404230648.GB2173@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net>
+ <20120403184901.GC27794@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1333506878.7433.2.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333506878.7433.2.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Feb 2012 20:54:31 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+On Wed, Apr 04, 2012 at 04:34:38AM +0200, Mike Galbraith wrote:
+> It looked to me like yes, because cgroup_attach_task() can be called
+> directly.  For the problem at hand, user script doing bad things, no,
+> it's not needed.
 
-> This patch moves all message related manipulation into one function msg_fill().
-> Actually, two functions because of the compat one.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->  arch/tile/kernel/compat.c |   11 +----------
->  include/linux/compat.h    |    2 ++
->  include/linux/msg.h       |    5 +++--
->  ipc/compat.c              |   33 +++++++++++++++++----------------
->  ipc/msg.c                 |   44 +++++++++++++++++++++++---------------------
+Then that's a kernel bug.  We're just trying to protect userland from
+shotting itself, so please just keep the one in the user-facing
+interface.
 
-The arch/tile/kernel/compat.c change throws a big reject against
-current mainline because the code it is patching has disappeared and I
-didn't check where it went.  Check this, please?
+Thanks.
 
-Arnd, could you please pass an eye across this work?  Thanks.
+-- 
+tejun
