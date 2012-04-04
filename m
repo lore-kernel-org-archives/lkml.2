@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab2DDNWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 09:22:30 -0400
-Received: from msa106.auone-net.jp ([61.117.18.166]:36265 "EHLO
-	msa106.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209Ab2DDNW3 (ORCPT
+	id S1756510Ab2DDN14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 09:27:56 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57707 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756415Ab2DDN1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 09:22:29 -0400
-Date: Wed, 4 Apr 2012 22:22:27 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Commit 8ef874bfc7296fa206eea2ad1e8a426f576bf6f6 has broken ss
- command
-References: <20120404090312.1B68C6AC03E@msa102.auone-net.jp>
- <1333530463.18626.545.camel@edumazet-glaptop>
- <20120404100015.D41B162C03E@msa106.auone-net.jp>
- <1333534877.18626.566.camel@edumazet-glaptop>
+	Wed, 4 Apr 2012 09:27:54 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 0/2] Add device tree support for omap4 keypad
+Date: Wed, 4 Apr 2012 19:00:19 +0530
+Message-ID: <1333546221-19700-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333534877.18626.566.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Message-Id: <20120404132228.3C5B262C03B@msa106.auone-net.jp>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-04 12:21:17 +0200, Eric Dumazet wrote:
-> Please try this patch :
-> 
-> diff --git a/misc/ss.c b/misc/ss.c
-> index 5414f75..8c00760 100644
-> --- a/misc/ss.c
-> +++ b/misc/ss.c
-> @@ -1534,8 +1534,10 @@ static int tcp_show_netlink(struct filter *f, FILE *dump_fp, int socktype)
->  		.msg_iovlen = f->f ? 3 : 1,
->  	};
->  
-> -	if (sendmsg(fd, &msg, 0) < 0)
-> +	if (sendmsg(fd, &msg, 0) < 0) {
-> +		close(fd);
->  		return -1;
-> +	}
->  
->  	iov[0] = (struct iovec){
->  		.iov_base = buf,
-> @@ -1589,6 +1591,10 @@ static int tcp_show_netlink(struct filter *f, FILE *dump_fp, int socktype)
->  					fprintf(stderr, "ERROR truncated\n");
->  				} else {
->  					errno = -err->error;
-> +					if (errno == EOPNOTSUPP) {
-> +						close(fd);
-> +						return -1;
-> +					}
->  					perror("TCPDIAG answers");
->  				}
->  				close(fd);
+This series adds device tree support for omap4
+onchip keypad.
 
-This patch solved the problem. Thank you!
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Felipe Balbi <balbi@ti.com>
+
+Sourav Poddar (2):
+  arm/dts: omap4-sdp: Add keypad data
+  drivers: input: keypad: Add device tree support
+
+Test Info:
+-Tested on Omap4430 sdp with 3.4-rc1
+
+ .../devicetree/bindings/input/omap-keypad.txt      |   52 ++++
+ arch/arm/boot/dts/omap4-sdp.dts                    |  291 ++++++++++++++++++++
+ arch/arm/boot/dts/omap4.dtsi                       |    5 +
+ drivers/input/keyboard/omap4-keypad.c              |  114 ++++++--
+ 4 files changed, 439 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/omap-keypad.txt
+
