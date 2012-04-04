@@ -1,103 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab2DDTXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 15:23:37 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:49599 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658Ab2DDTXf convert rfc822-to-8bit (ORCPT
+	id S932744Ab2DDTd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 15:33:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57923 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724Ab2DDTdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 15:23:35 -0400
+	Wed, 4 Apr 2012 15:33:55 -0400
+Message-ID: <4F7CA21C.2000907@onlinehome.de>
+Date: Wed, 04 Apr 2012 21:33:48 +0200
+From: Martin <marogge@onlinehome.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120314 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
-	<20120404145134.GC12676@redhat.com>
-	<20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
-Date: Wed, 4 Apr 2012 14:23:34 -0500
-Message-ID: <CAH2r5mvP56D0y4mk5wKrJcj+=OZ0e0Q5No_L+9a8a=GMcEhRew@mail.gmail.com>
-Subject: Re: [Lsf] [RFC] writeback and cgroup
-From: Steve French <smfrench@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, ctalbott@google.com, rni@google.com,
-        andrea@betterlinux.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
-        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
-        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ath9k-devel@venema.h4ckr.net, ath9k-devel@venema.h4ckr.net
+Subject: Re: 3.3.1 ath9k regression
+References: <iM4WB-6k6-3@gated-at.bofh.it> <iM56i-6N7-11@gated-at.bofh.it>
+In-Reply-To: <iM56i-6N7-11@gated-at.bofh.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:YMVfXMt2CsNCdrvi+CNk1YFliHsgfjuY5wnRMTMbzRj
+ npI+ewxcTSJe0ibtqGU/4XRUynBITQ9gE2ya/9SXworsNIL0t7
+ 7ezUjOrEc1x8D8XLzZuOIXSsGlBkWc+X6QBGqZiQEQBT6bvGoI
+ OOgbnZ3s784X4FmQY1JK3gI7eDJf/bOGdg6s/lExkeXblEK1AB
+ GRblbA+qFrfNTPpc6ZJTjc2CMVCJPVTB3V6O4JqABf5RsYooWK
+ ulkgHgYupHSgo9HN18bF+vm1FwTQNIdMDKcstzjhcZ14NjLEn1
+ PlLUr9OvNQ0kO9l6MNxIzRUqL3oF5iRXt8S2SsW5+KLVwLRuQ3
+ n7YiFXA/rNsZAM/Vt7RQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 4, 2012 at 1:49 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hey, Vivek.
+On 04/03/2012 08:10 AM, Ben Greear wrote:
+> Ath9k list should be interested in this...
 >
-> On Wed, Apr 04, 2012 at 10:51:34AM -0400, Vivek Goyal wrote:
->> On Tue, Apr 03, 2012 at 11:36:55AM -0700, Tejun Heo wrote:
->> > IIUC, without cgroup, the current writeback code works more or less
->> > like this.  Throwing in cgroup doesn't really change the fundamental
->> > design.  Instead of a single pipe going down, we just have multiple
->> > pipes to the same device, each of which should be treated separately.
->> > Of course, a spinning disk can't be divided that easily and their
->> > performance characteristics will be inter-dependent, but the place to
->> > solve that problem is where the problem is, the block layer.
+> Ben
+>
+> On 04/02/2012 10:46 PM, Kelly Anderson wrote:
+>> This patch in 3.3.1 is causing ath9k device not to show/work on bootup.
+>> ifconfig does not show the device unless I revert this patch. With the
+>> patch
+>> reverted the device works as expected. This is verified on two different
+>> machines that are both using ath9k mini-pcie wifi cards.
 >>
->> How do you take care of thorottling IO to NFS case in this model? Current
->> throttling logic is tied to block device and in case of NFS, there is no
->> block device.
->
-> On principle, I don't think it has be any different.  Filesystems's
-> interface to the underlying device is through bdi.  If a fs is block
-> backed, block pressure should be propagated through bdi, which should
-> be mostly trivial.  If a fs is network backed, we can implement a
-> mechanism for network backed bdis, so that they can relay the pressure
-> from the server side to the local fs users.
->
-> That said, network filesystems often show different behaviors and use
-> different mechanisms for various reasons and it wouldn't be too
-> surprising if something different would fit them better here or we
-> might need something supplemental to the usual mechanism.
+>>>> ath9k: fix going to full-sleep on PS idle
+>>
+>>>> commit c1afdaff90538ef085b756454f12b29575411214 upstream.
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at http://www.tux.org/lkml/
 
-For the network file system clients, we may be close already,
-but I don't know how to allow servers like Samba or Apache
-to query btrfs, xfs etc. for this information.
+fwiw, I find the same issue on an Asus P50IJ, same fix by reverting the 
+commit from above.
 
-superblock -> struct backing_dev_info is probably fine as long
-as we aren't making that structure more block device specific.
-Current use of bdi is a little hard to understand since
-there are 25+ fields in the structure.  Is their use/purpose written
-up anywhere?  I have a feeling we are under-utilizing what
-is already there.  In any case bdi is "backing" info not "block"
-specific info.  Since bdi can be assigned to a superblock
-and an inode, it seems reasonable for either network or local.
+Martin
 
-Note that it isn't just traditional network file systems (nfs and cifs and smb2)
-but also virtualization (virtfs) and some special purpose file systems
-for which block device specific interfaces to higher layers (above the fs)
-are an awkward way to think about congestion.   What
-about a case of a file system like btrfs that could back a
-volume to a pool of devices and distribute hot/cold data
-across multiple physical or logical devices?
 
-By the way, there may be less of a problem with current
-network file system clients due to small limits on simultaneous i/o.
-Until recently NFS client had a low default slot count of 16 IIRC and
-it was not much better for cifs.   The typical cifs server defaulted
-to allowing a client to only send 50 simultaneous requests to that
-server at one time ...
-The cifs protocol allows more (up to 64K) and in 3.4 the client now
-can send more requests (up to 32K) if the server is so configured.
+02:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless 
+Network Adapter (PCI-Express) (rev 01)
+	Subsystem: AzureWave Device 1089
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 32 bytes
+	Interrupt: pin A routed to IRQ 17
+	Region 0: Memory at feaf0000 (64-bit, non-prefetchable) [size=64K]
+	Capabilities: [40] Power Management version 3
+		Flags: PMEClk- DSI- D1+ D2- AuxCurrent=375mA 
+PME(D0+,D1+,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit-
+		Address: 00000000  Data: 0000
+	Capabilities: [60] Express (v2) Legacy Endpoint, MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+			ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 512 bytes
+		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 
+<512ns, L1 <64us
+			ClockPM- Surprise- LLActRep- BwNot-
+		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- 
+BWMgmt- ABWMgmt-
+		DevCap2: Completion Timeout: Not Supported, TimeoutDis+
+		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
+Selectable De-emphasis: -6dB
+			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
+ComplianceSOS-
+			 Compliance De-emphasis: -6dB
+		LnkSta2: Current De-emphasis Level: -6dB
+	Kernel driver in use: ath9k
 
-With SMB2 since "credits" are returned on every response, fast
-servers (e.g. Samba running on a good clustered file system,
-or a good NAS box) may end up allowing thousands of simultaneous
-requests if they have the resources to handle this.   Unfortunately,
-the Samba server developers do not know how to request information
-on superblock->bdi congestion information from user space.
-I vaguely remember bdi debugging info available in sysfs, but how
-would an application find out how congested the underlying volume
-it is exporting is.
 
--- 
-Thanks,
-
-Steve
