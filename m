@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab2DDVvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 17:51:32 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:36768 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756910Ab2DDVvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 17:51:31 -0400
-Date: Wed, 4 Apr 2012 23:51:04 +0200
-From: Michael Leun <lkml20120218@newton.leun.net>
-To: Mohammed Shafi <shafi.wireless@gmail.com>
-Cc: casteyde.christian@free.fr, Kelly Anderson <kelly@silka.with-linux.com>,
-        Ben Greear <greearb@candelatech.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>
-Subject: Re: [ath9k-devel] 3.3.1 ath9k regression
-Message-ID: <20120404235104.682cfad3@xenia.leun.net>
-In-Reply-To: <CAD2nsn1AshPTYd-FcydV-5HpiXPb0FfqLQPTqFYyw3kJX+fXEA@mail.gmail.com>
-References: <4F7A8EB7.4060200@silka.with-linux.com>
-	<4F7A923D.5000002@candelatech.com>
-	<CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com>
-	<4F7A9D5C.8040402@silka.with-linux.com>
-	<CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com>
-	<4F7AAAD9.2040307@silka.with-linux.com>
-	<CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com>
-	<CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
-	<4F7AB6FE.3080009@silka.with-linux.com>
-	<20120403200306.0afbb48b@xenia.leun.net>
-	<CAD2nsn2k3mKMm3gK=fXqDYcOeKBwkyqGz9RWz1KOe=6=CDyhHA@mail.gmail.com>
-	<CAD2nsn1AshPTYd-FcydV-5HpiXPb0FfqLQPTqFYyw3kJX+fXEA@mail.gmail.com>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757246Ab2DDVws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 17:52:48 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:32954 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab2DDVwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 17:52:47 -0400
+Message-ID: <4F7CC2AC.5040309@tilera.com>
+Date: Wed, 4 Apr 2012 17:52:44 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] marvell sky2 driver: fix so it works without unaligned
+ accesses
+References: <20120403.174610.2089715131687430500.davem@davemloft.net> <1333469916.18626.284.camel@edumazet-glaptop> <201204031527.q33FR04i031747@farm-0027.internal.tilera.com> <201204041419.q34EJ49H025297@farm-0012.internal.tilera.com> <20120404114253.5f84d4c8@s6510.linuxnetplumber.net>
+In-Reply-To: <20120404114253.5f84d4c8@s6510.linuxnetplumber.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Apr 2012 20:33:22 +0530
-Mohammed Shafi <shafi.wireless@gmail.com> wrote:
+On 4/4/2012 2:42 PM, Stephen Hemminger wrote:
+> On Wed, 4 Apr 2012 10:13:32 -0400
+> Chris Metcalf <cmetcalf@tilera.com> wrote:
+>
+>> The driver uses a receive_new() routine that ends up requiring unaligned
+>> accesses in IP header processing.  If the architecture doesn't support
+>> efficient unaligned accesses, and SKY2_HW_RAM_BUFFER is set,
+>> just copy all ingress packets to the bounce buffers instead.
+>> Thanks to Eric Dumazet for pointing out the SKY2_HW_RAM_BUFFER issue.
+>>
+>> This allows the driver to be used on the Tilera TILEmpower-Gx, since
+>> the tile architecture doesn't currently handle kernel unaligned accesses,
+>> just userspace.
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>>  drivers/net/ethernet/marvell/sky2.c |    6 +++++-
+>>  1 files changed, 5 insertions(+), 1 deletions(-)
+> What about the following (compile tested only)
+> --- a/drivers/net/ethernet/marvell/sky2.c	2012-04-04 08:49:05.954853108 -0700
+> +++ b/drivers/net/ethernet/marvell/sky2.c	2012-04-04 11:30:54.201432707 -0700
+> @@ -2468,6 +2468,17 @@ static int sky2_change_mtu(struct net_de
+>  	return err;
+>  }
+>  
+> +static inline bool needs_copy(const struct rx_ring_info *re,
+> +			      unsigned length)
+> +{
+> +#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+> +	/* Some architectures need the IP header to be aligned */
+> +	if (!IS_ALIGNED(re->data_addr + ETH_HLEN, sizeof(u32)))
+> +		return 1;
+> +#endif
+> +	return length < copybreak;
+> +}
+> +
+>  /* For small just reuse existing skb for next receive */
+>  static struct sk_buff *receive_copy(struct sky2_port *sky2,
+>  				    const struct rx_ring_info *re,
+> @@ -2605,7 +2616,7 @@ static struct sk_buff *sky2_receive(stru
+>  		goto error;
+>  
+>  okay:
+> -	if (length < copybreak)
+> +	if (needs_copy(re, length))
+>  		skb = receive_copy(sky2, re, length);
+>  	else
+>  		skb = receive_new(sky2, re, length);
 
-> Hi,
-> 
-> >> I've trouble with db6a6a78d8602964c9dfb1d8ce18daefd92da0a7 /
-> >> c1afdaff90538ef085b756454f12b29575411214 ath9k: fix going to
-> >> full-sleep on PS idle also.
-> 
-> with a basic analysis the commit under question seems to be logically
-> correct, let me soon come with some idea or root cause why it may be
-> happening
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Surprise, surprise: This (what I saw) really only happens in 3.3.1 -
-3.4-rc1 works also when the patch is in place.
+This works on our TILEmpower-Gx boxes and seems like it's likely more
+efficient.  I believe kernel style says you should "return true" rather
+than "return 1" from a "bool" routine, though.
 
-Would never have expected that...
-
+Thanks!
 
 -- 
-MfG,
-
-Michael Leun
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
