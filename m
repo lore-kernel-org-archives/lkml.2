@@ -1,144 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab2DDQYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 12:24:14 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:44425 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932412Ab2DDQYM convert rfc822-to-8bit (ORCPT
+	id S932409Ab2DDQYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 12:24:11 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:16465 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932286Ab2DDQYH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 12:24:12 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-References: <B4B07CCC7B7A084E989CF9386538EA1D0120B3B3@exchsrvr.taosinc.com> <4F7C08C3.7090603@cam.ac.uk> <B4B07CCC7B7A084E989CF9386538EA1D0120B931@exchsrvr.taosinc.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <B4B07CCC7B7A084E989CF9386538EA1D0120B931@exchsrvr.taosinc.com>
-MIME-Version: 1.0
+	Wed, 4 Apr 2012 12:24:07 -0400
+Date: Wed, 4 Apr 2012 18:23:48 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Knut Petersen <Knut_Petersen@t-online.de>, airlied@linux.ie,
+        eric@anholt.net, jesse.barnes@intel.com, linux-kernel@vger.kernel.org,
+        intel-gfx <intel-gfx@lists.freedesktop.org>, gregkh@suse.de
+Subject: Re: [PATCH] Fix i915 drm regression on AOpen i915GMm-HFS
+ motherboard
+Message-ID: <20120404182348.10baa7f6@endymion.delvare>
+In-Reply-To: <AANLkTi=JGSL5=cXRJgv857AXx64OvWzz8TAS4XJNHtW8@mail.gmail.com>
+References: <4D21DC41.8070408@t-online.de>
+	<b7da2f$q1ffv6@fmsmga001.fm.intel.com>
+	<4D22119B.9050007@t-online.de>
+	<AANLkTikffkQJnVKzcGhEZjPqg_iQPQ+P2Bbqz7A9Unq_@mail.gmail.com>
+	<849307$b0clt4@azsmga001.ch.intel.com>
+	<AANLkTi=JGSL5=cXRJgv857AXx64OvWzz8TAS4XJNHtW8@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: RE: Proposed addition to 'IIO interface' for color light sensing devices
-From: Jonathan Cameron <jic23@cam.ac.uk>
-Date: Wed, 04 Apr 2012 17:17:04 +0100
-To: Jon Brenner <jbrenner@TAOSinc.com>, Jon Brenner <jbrenner@TAOSinc.com>
-CC: jic23@kernel.org, gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jic23@kernel.org,
-        gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <dc98342b-23cd-49c3-8615-e867a148121b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 3 Jan 2011 12:26:07 -0800, Linus Torvalds wrote:
+> [ related, but independent, issue ]
+> 
+> On Mon, Jan 3, 2011 at 11:59 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> >
+> >                            That function currently requires
+> > GMBUS to differentiate between a NAK and an IO error (bitbanging just
+> > returns EREMOTEIO regardless, iirc).
+> 
+> Hmm. That sounds like something that would be worth fixing regardless
+> and independently of this. I'd expect that a lot of users would care
+> whether there was an actual protocol error or whether the command got
+> a NAK. There's a big difference between "those lines don't seem to
+> even be connected to anything" and "the other end didn't like us".
+> 
+> Even the comments in the bitbanging code seem to say that it should be
+> returning ETIMEDOUT etc for when there is no answer (and the low-level
+> "i2c_outb()" seems to do that), but then the code does seem to ignore
+> all that information and turn all errors into EREMOTEIO.
+> 
+> Which sounds bogus.
+> 
+> Added Jean to the cc in case he has some input (or knows who we should
+> bug about algo-bit.c). Also David Brownell, because he touched an
+> error code in that file two and a half years ago, so he now owns it
+> forever ;)
+
+For the records, I did fix the bogus error codes in i2c-algo-bit in:
+
+>From abc01b2718ee1d26e83c4c62c4b79806b3240ac7
+From: Jean Delvare <khali@linux-fr.org>
+Date: Sun, 30 Oct 2011 13:47:25 +0100
+Subject: [PATCH] i2c-algo-bit: Return standard fault codes
+
+Adjust i2c-algo-bit to return fault codes compliant with
+Documentation/i2c/fault-codes, rather than the undocumented and
+vague -EREMOTEIO.
 
 
-Jon Brenner <jbrenner@TAOSinc.com> wrote:
 
->Replies in-line,
->
->
->> -----Original Message-----
->> From: Jonathan Cameron [mailto:jic23@cam.ac.uk]
->> Sent: Wednesday, April 04, 2012 3:40 AM
->> To: Jon Brenner
->> Cc: jic23@kernel.org; gregkh@linuxfoundation.org;
->linux-iio@vger.kernel.org;
->> linux-kernel@vger.kernel.org
->> Subject: Re: Proposed addition to 'IIO interface' for color light
->sensing devices
->> 
->> Not sure who else would be interested in this discussion so if anyone
->can cc any
->> interested parties that would be great! (
->> > I would like to propose the following addition to the 'IIO device
->> > interface' for color light sensing devices to accommodate CCT (AKA
->> > color
->> > temperature) and access to the raw RGB channel data for user
->analysis.
->> >
->> > IIO channel type name: CCT
->> >
->> > The CCT ABI should be documented similar to as follows:
->> > In sys-bus-iio-light:
->> > What:		/sys/bus/iio/devices/device[n]/cct[_input|_raw]
->> > KernelVersion:	3.3.0
->> > Contact:	linux-iio@vger.kernel.org
->> > Description:
->> > 		This should return the correlated color temperature from
->the
->> RGBC
->> > color sensor
->> > 		expressed as SI unit (degree kelvin).
->> > 		If it comes back in SI units, it should also
->include_input else it
->> > 		should include _raw to signify it is not in SI units.
->> Works for me though the formatting of the above is somewhat different
->from
->> our current docs...
->> >
->> > IIO modifiers:
->> > IIO_MOD_LIGHT_RED
->> > IIO_MOD_LIGHT_GREEN
->> > IIO_MOD_LIGHT_BLUE
->> So these modifiers apply to intensity channels?   Colour temp is
->built
->from
->> multiple raw sensors I believe (like illuminance is often done?)
->Hence
->it's another
->> 'virtual' channel we compute?
->Yes.
->At channel 0 - correct?
-Yup. It is the first illuminance channel.
->
->So we now have illuminance0_input and in_cct0 - correct?
-Should be in_illuminance0_input and in_cct0_input
-Otherwise yes.  Maybe don't skimp on chars and have in_colourtemp_input 
->
->Clear uses chan 0 and as before, chan 1 - so as before intensityN_raw
->mapped to both - correct?
-Don't necessarily need indexes if using modifiers. We don't bother for inertial sensors... event codes include modifiers so they are optional.  Channel can have index or modifier or both...
->
->Red is channel 1 - so we have in_intensity1_red_raw -  correct?
->
->Green = intensity2_green_raw.. and so on correct?
->> >
->> > The 'clear' and IR channels are already covered by the use of
->> > IIO_LIGHT and IIO ILLUMINANCE (and respective modifiers).
->> > The RGB modifiers will help to express the relative frequencies to
->> > their respective channel, and appear to fit well with the overall
->convention.
->> >
->> > And last but not least, the textual modifier names "red", "green",
->and
->> > "blue" be accommodated within 'industrialio-core'.
->> Fine with me.
->> 
->
->Proximity remains at channel 0 correct?
-Yes
->
->
->> >
->> > Channel specific interrupt event / sources are not presented at
->this
->> > time.
->> >
->> > Any thoughts or comments are welcomed.
->> >
->> > Jon Brenner
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe
->linux-iio"
->> > in the body of a message to majordomo@vger.kernel.org More
->majordomo
->> > info at  http://vger.kernel.org/majordomo-info.html
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+R.I.P David...
 
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Jean Delvare
