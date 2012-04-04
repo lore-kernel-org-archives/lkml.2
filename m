@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab2DDNLq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 09:11:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43898 "EHLO mail.skyhub.de"
+	id S932227Ab2DDNM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 09:12:27 -0400
+Received: from seven.medozas.de ([188.40.89.202]:55482 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756214Ab2DDNLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 09:11:45 -0400
-Date: Wed, 4 Apr 2012 15:11:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Alessandro Rubini <rubini@cvml.unipv.it>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: psmouse serio4: bad data from KBC - timeout
-Message-ID: <20120404131139.GA3277@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	linux-input@vger.kernel.org,
-	Alessandro Rubini <rubini@ipvvis.unipv.it>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20120403094324.GA3346@gere.osrc.amd.com>
- <20120403170659.GF24832@core.coreip.homeip.net>
- <20120404045440.GB28344@liondog.tnic>
- <20120404064053.GA26093@core.coreip.homeip.net>
- <20120404104643.GA5193@x1.osrc.amd.com>
+	id S932087Ab2DDNM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 09:12:26 -0400
+Date: Wed, 4 Apr 2012 15:12:24 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: gorcunov@openvz.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: use more apprioriate types when dumping
+ /proc/N/stat
+In-Reply-To: <20120322145712.d9efbc34.akpm@linux-foundation.org>
+Message-ID: <alpine.LNX.2.01.1204041511410.2090@frira.zrqbmnf.qr>
+References: <1332339136-26022-1-git-send-email-jengelh@medozas.de> <20120322145712.d9efbc34.akpm@linux-foundation.org>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120404104643.GA5193@x1.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 12:46:43PM +0200, Borislav Petkov wrote:
-> On Tue, Apr 03, 2012 at 11:40:53PM -0700, Dmitry Torokhov wrote:
-> > As I said I would start at the latest ACPI and PM merges and try
-> > reverting them - i8042 may interact in funny ways with embedded
-> > controller since it is usually the same piece of firmware.
-> > 
-> > I assume it works fine in 3.3, right?
-> 
-> Yes, it does.
-> 
-> Let me checkout git trees before those merges to see whether it makes
-> any difference.
 
-Well, what do you know, I checked out the commit before Len's ACPI pull request:
+On Thursday 2012-03-22 22:57, Andrew Morton wrote:
+>On Wed, 21 Mar 2012 15:12:16 +0100 Jan Engelhardt wrote:
+>> @@ -463,8 +463,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+>>  	start_time = nsec_to_clock_t(start_time);
+>>  
+>>  	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
+>> -%lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
+>> -%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
+>> +%lu %lu %lu %ld %ld %ld %ld %d %d %d 0 %llu %lu %lu %lu %lu %lu %lu %lu \
+>> +%lu %lu %lu %lu %lu %lu 0 0 %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
+>>  		pid_nr_ns(pid, ns),
+>>  		tcomm,
+>>  		state,
+>
+>When trying to review this I went completely crosseyed then fell on
+>the floor.  Which is why this code got ripped out and redone in
+>linux-next, against which I'll ask you to redo the patch, please.
 
-git checkout a335750b9a039a9d4cd727cdccacfb90fd63c4e8~1
+>From d066116cdffdeac58815f0417bb8f7ed1dba4433 Mon Sep 17 00:00:00 2001
+From: Jan Engelhardt <jengelh@medozas.de>
+Date: Mon, 19 Mar 2012 20:28:46 +0100
+Subject: [PATCH] procfs: use more apprioriate types when dumping /proc/N/stat
 
-I.e., the tree I'm currently testing has
+- use int, since task_nice()/task_prio() return that
+- field 24: get_mm_rss returns unsigned long
 
-commit 10f3cb41d48ab30f5c754b30eea557371892b4c2
-Merge: 919c840167ec 867646f246de
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Fri Mar 30 16:24:38 2012 -0700
+Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
+---
+ fs/proc/array.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-    Merge git://git.samba.org/sfrench/cifs-2.6
-
-at its top and the mux controller resumes fine:
-
-[    0.922202] i8042: PNP: PS/2 Controller [PNP0303:KBC0,PNP0f13:MSE0] at 0x60,0x64 irq 1,12
-[    0.924542] i8042: Detected active multiplexing controller, rev 1.1
-[    0.927501] serio: i8042 KBD port at 0x60,0x64 irq 1
-[    0.928161] serio: i8042 AUX0 port at 0x60,0x64 irq 12
-[    0.928426] serio: i8042 AUX1 port at 0x60,0x64 irq 12
-[    0.928682] serio: i8042 AUX2 port at 0x60,0x64 irq 12
-[    0.928963] serio: i8042 AUX3 port at 0x60,0x64 irq 12
-[    0.968243] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0
-[    2.080993] psmouse serio4: synaptics: Touchpad model: 1, fw: 8.0, id: 0x1e2b1, caps: 0xd001a3/0x940300/0x121c00
-[    2.081224] psmouse serio4: synaptics: serio: Synaptics pass-through port at isa0060/serio4/input0
-[    2.125315] input: SynPS/2 Synaptics TouchPad as /devices/platform/i8042/serio4/input/input1
-[    7.850636] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio4/serio5/input/input2
-[  511.028833] psmouse serio4: TouchPad at isa0060/serio4/input0 lost sync at byte 1
-[  511.033921] psmouse serio4: TouchPad at isa0060/serio4/input0 lost sync at byte 1
-[  511.035284] psmouse serio4: TouchPad at isa0060/serio4/input0 lost sync at byte 1
-[  511.036719] psmouse serio4: TouchPad at isa0060/serio4/input0 lost sync at byte 1
-[  511.047286] psmouse serio4: TouchPad at isa0060/serio4/input0 - driver resynced.
-
-IOW, I've cut off the tree before the merge commit below, now I have to
-go over those patches and see which one is the offender. Stay tuned.
-
-commit a335750b9a039a9d4cd727cdccacfb90fd63c4e8
-Merge: 10f3cb41d48a d326f44e5f22
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Fri Mar 30 16:45:38 2012 -0700
-
-    Merge branch 'release' of git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux
-    
-    Pull ACPI & Power Management changes from Len Brown:
-     - ACPI 5.0 after-ripples, ACPICA/Linux divergence cleanup
-     - cpuidle evolving, more ARM use
-     - thermal sub-system evolving, ditto
-     - assorted other PM bits
-    
-    Fix up conflicts in various cpuidle implementations due to ARM cpuidle
-    cleanups (ARM at91 self-refresh and cpu idle code rewritten into
-    "standby" in asm conflicting with the consolidation of cpuidle time
-    keeping), trivial SH include file context conflict and RCU tracing fixes
-    in generic code.
-
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index f9bd395..8e27e53 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -361,7 +361,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 			struct pid *pid, struct task_struct *task, int whole)
+ {
+ 	unsigned long vsize, eip, esp, wchan = ~0UL;
+-	long priority, nice;
++	int priority, nice;
+ 	int tty_pgrp = -1, tty_nr = 0;
+ 	sigset_t sigign, sigcatch;
+ 	char state;
+@@ -483,7 +483,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 	seq_put_decimal_ull(m, ' ', 0);
+ 	seq_put_decimal_ull(m, ' ', start_time);
+ 	seq_put_decimal_ull(m, ' ', vsize);
+-	seq_put_decimal_ll(m, ' ', mm ? get_mm_rss(mm) : 0);
++	seq_put_decimal_ull(m, ' ', mm ? get_mm_rss(mm) : 0);
+ 	seq_put_decimal_ull(m, ' ', rsslim);
+ 	seq_put_decimal_ull(m, ' ', mm ? (permitted ? mm->start_code : 1) : 0);
+ 	seq_put_decimal_ull(m, ' ', mm ? (permitted ? mm->end_code : 1) : 0);
 -- 
-Regards/Gruss,
-Boris.
+1.7.7
+
