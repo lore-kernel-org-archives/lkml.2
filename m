@@ -1,33 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab2DDOaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 10:30:07 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60828 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545Ab2DDOaC (ORCPT
+	id S1756695Ab2DDOeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 10:34:23 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38822 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428Ab2DDOeT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 10:30:02 -0400
+	Wed, 4 Apr 2012 10:34:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120326.173606.1348576857155624658.davem@davemloft.net>
-References: <1332780474-2881-1-git-send-email-consul.kautuk@gmail.com>
-	<20120326.173606.1348576857155624658.davem@davemloft.net>
-Date: Wed, 4 Apr 2012 20:00:01 +0530
-Message-ID: <CAFPAmTQNMMVbE_7csGizhYG0LAHe-LbFHTSXZwfanB2K6HaJEw@mail.gmail.com>
-Subject: Re: [PATCH 19/20 v4] sparc/mm/fault_32.c: Port OOM changes to do_sparc_fault
+In-Reply-To: <CAF8ieYUyiRj45O+zu399yL_biE6fm-q8W-qjaxTHNS4ci3otBA@mail.gmail.com>
+References: <1333380769-2650-1-git-send-email-consul.kautuk@gmail.com>
+	<CAF8ieYUyiRj45O+zu399yL_biE6fm-q8W-qjaxTHNS4ci3otBA@mail.gmail.com>
+Date: Wed, 4 Apr 2012 20:04:18 +0530
+Message-ID: <CAFPAmTT+TGmFjDr-asxuoXz7kR6JeWCma5PYApBvjmMx1zqy6g@mail.gmail.com>
+Subject: Re: [PATCH 01/19 v2.1] avr32/mm/fault.c: Port OOM changes to do_page_fault
 From: Kautuk Consul <consul.kautuk@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: paul.gortmaker@windriver.com, mingo@elte.hu, joe@perches.com,
-        a.p.zijlstra@chello.nl, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-kernel@vger.kernel.org, "Mohd. Faris" <mohdfarisq2010@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 3:06 AM, David Miller <davem@davemloft.net> wrote:
-> From: Kautuk Consul <consul.kautuk@gmail.com>
-> Date: Mon, 26 Mar 2012 12:47:54 -0400
->
+On Mon, Apr 2, 2012 at 9:46 PM, Håvard Skinnemoen <hskinnemoen@gmail.com> wrote:
+> On Mon, Apr 2, 2012 at 8:32 AM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
 >> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
 >> (mm: retry page fault when blocking on disk transfer) and
 >> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
@@ -39,16 +37,17 @@ On Tue, Mar 27, 2012 at 3:06 AM, David Miller <davem@davemloft.net> wrote:
 >> These changes reduce the mmap_sem hold time, which is crucial
 >> during OOM killer invocation.
 >>
->> Port these changes to 32-bit sparc.
+>> Port these changes to AVR32.
 >>
+>> Signed-off-by: Mohd. Faris <mohdfarisq2010@gmail.com>
 >> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 >
-> Acked-by: David S. Miller <davem@davemloft.net>
+> Acked-by: Havard Skinnemoen <hskinnemoen@gmail.com>
 
-Thanks David.
+Thanks.
 
 Since one or two of my other patches are being taken by the other arch
-owners in their branches,
-can you take this patch and apply it to your branch also ?
+owners in their branches, can you take this patch and apply it to your
+branch also ?
 
-Much obliged if you do !
+Much obliged if you do ! :-)
