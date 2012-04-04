@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599Ab2DDTR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 15:17:57 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:42277 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564Ab2DDTRz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 15:17:55 -0400
-Date: Wed, 4 Apr 2012 12:17:54 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v2 13/13] ARM: at91: dt: remove unit-address part for
- memory nodes
-Message-ID: <20120404191754.GE10603@quad.lixom.net>
-References: <cover.1333437885.git.nicolas.ferre@atmel.com>
- <1db62b280314855c35cb7a3188fc9d9cb8501948.1333437885.git.nicolas.ferre@atmel.com>
+	id S932595Ab2DDTTc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 15:19:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38172 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932292Ab2DDTT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 15:19:29 -0400
+Date: Wed, 4 Apr 2012 15:19:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Steve French <smfrench@gmail.com>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+Message-ID: <20120404191918.GK12676@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <CAH2r5mtwQa0Uu=_Yd2JywVJXA=OMGV43X_OUfziC-yeVy9BGtQ@mail.gmail.com>
+ <20120404185605.GC29686@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1db62b280314855c35cb7a3188fc9d9cb8501948.1333437885.git.nicolas.ferre@atmel.com>
+In-Reply-To: <20120404185605.GC29686@dhcp-172-17-108-109.mtv.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 03, 2012 at 09:32:57AM +0200, Nicolas Ferre wrote:
-> From: Ludovic Desroches <ludovic.desroches@atmel.com>
+On Wed, Apr 04, 2012 at 11:56:05AM -0700, Tejun Heo wrote:
+> On Wed, Apr 04, 2012 at 10:36:04AM -0500, Steve French wrote:
+> > > How do you take care of thorottling IO to NFS case in this model? Current
+> > > throttling logic is tied to block device and in case of NFS, there is no
+> > > block device.
+> > 
+> > Similarly smb2 gets congestion info (number of "credits") returned from
+> > the server on every response - but not sure why congestion
+> > control is tied to the block device when this would create
+> > problems for network file systems
 > 
-> Having a unit-address different from 0 causes bad memory node detection
-> during early_init_dt_scan_memory.
+> I hope the previous replies answered this.  It's about writeback
+> getting pressure from bdi and isn't restricted to block devices.
 
-Sounds like a bug in the generic code to me? But specifying a unit
-address on a non-ambiguous device node isn't necessary anyway, so this
-patch is still a reasonable thing to do.
+So the controlling knobs for network filesystems will be very different
+as current throttling knobs are per device (and not per bdi). So
+presumably there will be some throttling logic in network layer (network
+tc), and that should communicate the back pressure.
 
-> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
+I have tried limiting network traffic on NFS using network controller
+and tc but that did not help for variety of reasons.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+- We again have the problem of losing submitter's context down the layer.
 
+- We have interesting TCP/IP sequencing issues. I don't have the details
+  but if you throttle traffic from one group, it kind of led to some 
+  kind of multiple re-transmissions from server for ack due to some
+  sequence number issues. Sorry, I am short on details as it was long back
+  and nfs guys told me that pNFS might help here.
 
+  The basic problem seemed to that that if you multiplex traffic from
+  all cgroups on single tcp/ip session and then choke IO suddenly from
+  one of them, that was leading to some sequence number issues and led
+  to really sucky performance.
 
--Olof
+So something to keep in mind while coming up ways for how to implement
+throttling for network file systems.
+
+Thanks
+Vivek 
