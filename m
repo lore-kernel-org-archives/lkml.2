@@ -1,74 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab2DDNhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 09:37:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756288Ab2DDNhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 09:37:12 -0400
-Date: Wed, 4 Apr 2012 09:37:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: Tao Ma <tm@tao.ma>, Tejun Heo <tj@kernel.org>, axboe@kernel.dk,
-        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org
-Subject: Re: IOPS based scheduler (Was: Re: [PATCH 18/21] blkcg: move
- blkio_group_conf->weight to cfq)
-Message-ID: <20120404133705.GB12676@redhat.com>
-References: <4F7A2217.2030201@tao.ma>
- <20120402221702.GA21017@dhcp-172-17-108-109.mtv.corp.google.com>
- <4F7A261A.9000200@tao.ma>
- <20120402222504.GA2672@redhat.com>
- <4F7A2B21.5000907@tao.ma>
- <20120403153736.GI5913@redhat.com>
- <4F7B2708.6080504@tao.ma>
- <20120403164959.GJ5913@redhat.com>
- <4F7B32AE.7050900@tao.ma>
- <CANejiEU1qAsvogozY3MjZnpcrbYZO4CkRE8s73WGPc_R5LKV9g@mail.gmail.com>
+	id S1756532Ab2DDNsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 09:48:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59289 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756302Ab2DDNs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 09:48:29 -0400
+Message-ID: <4F7C5123.9050106@ti.com>
+Date: Wed, 4 Apr 2012 15:48:19 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANejiEU1qAsvogozY3MjZnpcrbYZO4CkRE8s73WGPc_R5LKV9g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH 1/2] arm/dts: omap4-sdp: Add keypad data
+References: <1333546221-19700-1-git-send-email-sourav.poddar@ti.com> <1333546221-19700-2-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1333546221-19700-2-git-send-email-sourav.poddar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 05:35:49AM -0700, Shaohua Li wrote:
+Hi Sourav,
 
-[..]
-> >> How iops_weight and switching different than CFQ group scheduling logic?
-> >> I think shaohua was talking of using similar logic. What would you do
-> >> fundamentally different so that without idling you will get service
-> >> differentiation?
-> > I am thinking of differentiate different groups with iops, so if there
-> > are 3 groups(the weight are 100, 200, 300) we can let them submit 1 io,
-> > 2 io and 3 io in a round-robin way. With a intel ssd, every io can be
-> > finished within 100us. So the maximum latency for one io is about 600us,
-> > still less than 1ms. But with cfq, if all the cgroups are busy, we have
-> > to switch between these group in ms which means the maximum latency will
-> > be 6ms. It is terrible for some applications since they use ssds now.
-> Yes, with iops based scheduling, we do queue switching for every request.
-> Doing the same thing between groups is quite straightforward. The only issue
-> I found is this will introduce more process context switch, this isn't
-> a big issue
-> for io bound application, but depends. It cuts latency a lot, which I
-> guess is more
-> important for web 2.0 application.
+On 4/4/2012 3:30 PM, Sourav Poddar wrote:
+> This patch add keypad data node in omap4 device tree
+> file.
 
-In iops_mode(), expire each cfqq after dispatch of 1 or bunch of requests
-and you should get the same behavior (with slice_idle=0 and group_idle=0).
-So why write a new scheduler.
+Nit: You should adapt first the driver to DT and document the binding 
+before using it.
 
-Only thing is that with above, current code will provide iops fairness only
-for groups. We should be able to tweak queue scheduling to support iops
-fairness also.
+So this patch should be the second one.
 
-Anyway, we will end up doing that at some point of time. Supporting two
-scheduling algorihtms for queue and groups is not sustainable. There are
-already calls to make CFQ hierarchical and in that case both queue and
-groups need to be on a single service tree and that means need to follow
-same algorithm for scheduling.
+Regards,
+Benoit
 
-Thanks
-Vivek
+>
+> Cc: Benoit Cousson<b-cousson@ti.com>
+> Cc: Rob Herring<rob.herring@calxeda.com>
+> Cc: Grant Likely<grant.likely@secretlab.ca>
+> Cc: Felipe Balbi<balbi@ti.com>
+> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+> ---
+>   arch/arm/boot/dts/omap4-sdp.dts |  291 +++++++++++++++++++++++++++++++++++++++
+>   arch/arm/boot/dts/omap4.dtsi    |    5 +
+>   2 files changed, 296 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+> index 63c6b2b..ac855b8 100644
+> --- a/arch/arm/boot/dts/omap4-sdp.dts
+> +++ b/arch/arm/boot/dts/omap4-sdp.dts
+> @@ -17,4 +17,295 @@
+>   		device_type = "memory";
+>   		reg =<0x80000000 0x40000000>; /* 1 GB */
+>   	};
+> +
+> +	keypad@4ae1c000 {
+> +		keypad,num-rows =<8>;
+> +		keypad,num-columns =<8>;
+> +
+> +		key_E {
+> +			keypad,row =<0>;
+> +			keypad,column =<0>;
+> +			linux,code =<18>;
+> +		};
+> +		key_R {
+> +			keypad,row =<0>;
+> +			keypad,column =<1>;
+> +			linux,code =<19>;
+> +		};
+> +		key_T {
+> +			keypad,row =<0>;
+> +			keypad,column =<2>;
+> +			linux,code =<20>;
+> +		};
+> +		key_HOME {
+> +			keypad,row =<0>;
+> +			keypad,column =<3>;
+> +			linux,code =<102>;
+> +		};
+> +		key_F5 {
+> +			keypad,row =<0>;
+> +			keypad,column =<4>;
+> +			linux,code =<63>;
+> +		};
+> +		key_I {
+> +			keypad,row =<0>;
+> +			keypad,column =<6>;
+> +			linux,code =<23>;
+> +		};
+> +		key_LEFTSHIFT {
+> +			keypad,row =<0>;
+> +			keypad,column =<7>;
+> +			linux,code =<42>;
+> +		};
+> +		key_D {
+> +			keypad,row =<1>;
+> +			keypad,column =<0>;
+> +			linux,code =<32>;
+> +		};
+> +		key_F {
+> +			keypad,row =<1>;
+> +			keypad,column =<1>;
+> +			linux,code =<33>;
+> +		};
+> +		key_G {
+> +			keypad,row =<1>;
+> +			keypad,column =<2>;
+> +			linux,code =<34>;
+> +		};
+> +		key_SEND {
+> +			keypad,row =<1>;
+> +			keypad,column =<3>;
+> +			linux,code =<84>;
+> +		};
+> +		key_F6 {
+> +			keypad,row =<1>;
+> +			keypad,column =<4>;
+> +			linux,code =<64>;
+> +		};
+> +		key_K {
+> +			keypad,row =<1>;
+> +			keypad,column =<6>;
+> +			linux,code =<37>;
+> +		};
+> +		key_ENTER {
+> +			keypad,row =<1>;
+> +			keypad,column =<7>;
+> +			linux,code =<28>;
+> +		};
+> +		key_X {
+> +			keypad,row =<2>;
+> +			keypad,column =<0>;
+> +			linux,code =<45>;
+> +		};
+> +		key_C {
+> +			keypad,row =<2>;
+> +			keypad,column =<1>;
+> +			linux,code =<46>;
+> +		};
+> +		key_V {
+> +			keypad,row =<2>;
+> +			keypad,column =<2>;
+> +			linux,code =<47>;
+> +		};
+> +		key_END {
+> +			keypad,row =<2>;
+> +			keypad,column =<3>;
+> +			linux,code =<107>;
+> +		};
+> +		key_F7 {
+> +			keypad,row =<2>;
+> +			keypad,column =<4>;
+> +			linux,code =<65>;
+> +		};
+> +		key_DOT {
+> +			keypad,row =<2>;
+> +			keypad,column =<6>;
+> +			linux,code =<52>;
+> +		};
+> +		key_CAPSLOCK {
+> +                        keypad,row =<2>;
+> +                        keypad,column =<7>;
+> +                        linux,code =<58>;
+> +                };
+> +		key_Z {
+> +			keypad,row =<3>;
+> +			keypad,column =<0>;
+> +			linux,code =<44>;
+> +		};
+> +		key_KPLUS {
+> +			keypad,row =<3>;
+> +			keypad,column =<1>;
+> +			linux,code =<78>;
+> +		};
+> +		key_B {
+> +			keypad,row =<3>;
+> +			keypad,column =<2>;
+> +			linux,code =<48>;
+> +		};
+> +		key_F1 {
+> +			keypad,row =<3>;
+> +			keypad,column =<3>;
+> +			linux,code =<59>;
+> +		};
+> +		key_F8 {
+> +			keypad,row =<3>;
+> +			keypad,column =<4>;
+> +			linux,code =<66>;
+> +		};
+> +		key_O {
+> +			keypad,row =<3>;
+> +			keypad,column =<6>;
+> +			linux,code =<24>;
+> +                };
+> +		key_SPACE {
+> +			keypad,row =<3>;
+> +			keypad,column =<7>;
+> +			linux,code =<57>;
+> +                };
+> +		key_W {
+> +			keypad,row =<4>;
+> +			keypad,column =<0>;
+> +			linux,code =<17>;
+> +                };
+> +		key_Y {
+> +			keypad,row =<4>;
+> +			keypad,column =<1>;
+> +			linux,code =<21>;
+> +		};
+> +		key_U {
+> +			keypad,row =<4>;
+> +			keypad,column =<2>;
+> +			linux,code =<22>;
+> +		};
+> +		key_F2 {
+> +			keypad,row =<4>;
+> +			keypad,column =<3>;
+> +			linux,code =<60>;
+> +		};
+> +		key_VOLUMEUP {
+> +			keypad,row =<4>;
+> +			keypad,column =<4>;
+> +			linux,code =<115>;
+> +		};
+> +		key_L {
+> +			keypad,row =<4>;
+> +			keypad,column =<6>;
+> +			linux,code =<38>;
+> +		};
+> +		key_LEFT {
+> +			keypad,row =<4>;
+> +			keypad,column =<7>;
+> +			linux,code =<105>;
+> +		};
+> +		key_S {
+> +			keypad,row =<5>;
+> +			keypad,column =<0>;
+> +			linux,code =<31>;
+> +		};
+> +		key_H {
+> +			keypad,row =<5>;
+> +			keypad,column =<1>;
+> +			linux,code =<35>;
+> +		};
+> +		key_J {
+> +			keypad,row =<5>;
+> +			keypad,column =<2>;
+> +			linux,code =<36>;
+> +		};
+> +		key_F3 {
+> +			keypad,row =<5>;
+> +			keypad,column =<3>;
+> +			linux,code =<61>;
+> +		};
+> +		key_F9 {
+> +			keypad,row =<5>;
+> +			keypad,column =<4>;
+> +			linux,code =<67>;
+> +		};
+> +		key_VOLUMEDOWN {
+> +			keypad,row =<5>;
+> +			keypad,column =<5>;
+> +			linux,code =<114>;
+> +		};
+> +		key_M {
+> +			keypad,row =<5>;
+> +			keypad,column =<6>;
+> +			linux,code =<50>;
+> +		};
+> +		key_RIGHT {
+> +			keypad,row =<5>;
+> +			keypad,column =<7>;
+> +			linux,code =<106>;
+> +		};
+> +		key_Q {
+> +			keypad,row =<6>;
+> +			keypad,column =<0>;
+> +			linux,code =<16>;
+> +		};
+> +		key_A {
+> +			keypad,row =<6>;
+> +			keypad,column =<1>;
+> +			linux,code =<30>;
+> +                };
+> +		key_N {
+> +			keypad,row =<6>;
+> +			keypad,column =<2>;
+> +			linux,code =<49>;
+> +                };
+> +		key_BACK {
+> +			keypad,row =<6>;
+> +			keypad,column =<3>;
+> +			linux,code =<92>;
+> +                };
+> +		key_BACKSPACE {
+> +			keypad,row =<6>;
+> +			keypad,column =<4>;
+> +			linux,code =<14>;
+> +		};
+> +		key_P {
+> +			keypad,row =<6>;
+> +			keypad,column =<6>;
+> +			linux,code =<25>;
+> +		};
+> +		key_UP {
+> +			keypad,row =<6>;
+> +			keypad,column =<7>;
+> +			linux,code =<103>;
+> +		};
+> +		key_PROG1 {
+> +			keypad,row =<7>;
+> +			keypad,column =<0>;
+> +			linux,code =<148>;
+> +		};
+> +		key_PROG2 {
+> +			keypad,row =<7>;
+> +			keypad,column =<1>;
+> +			linux,code =<149>;
+> +		};
+> +		key_PROG3 {
+> +			keypad,row =<7>;
+> +			keypad,column =<2>;
+> +			linux,code =<202>;
+> +                };
+> +		key_PROG4 {
+> +			keypad,row =<7>;
+> +			keypad,column =<3>;
+> +			linux,code =<203>;
+> +		};
+> +		key_F4 {
+> +			keypad,row =<7>;
+> +			keypad,column =<4>;
+> +			linux,code =<62>;
+> +		};
+> +		key_Ok {
+> +			keypad,row =<7>;
+> +			keypad,column =<6>;
+> +			linux,code =<352>;
+> +		};
+> +		key_DOWN {
+> +			keypad,row =<7>;
+> +			keypad,column =<7>;
+> +			linux,code =<108>;
+> +		};
+> +	};
+>   };
+> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+> index 3d35559..e0f678a 100644
+> --- a/arch/arm/boot/dts/omap4.dtsi
+> +++ b/arch/arm/boot/dts/omap4.dtsi
+> @@ -156,4 +156,9 @@
+>   			ti,hwmods = "i2c4";
+>   		};
+>   	};
+> +
+> +	keypad@4ae1c000 {
+> +		compatible = "ti,omap4-keypad";
+> +		ti,hwmods = "kbd";
+> +	};
+>   };
+
