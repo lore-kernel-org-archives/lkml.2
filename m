@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab2DDVV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 17:21:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58641 "EHLO mx1.redhat.com"
+	id S1753242Ab2DDVWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 17:22:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54122 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab2DDVV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 17:21:29 -0400
-Date: Wed, 4 Apr 2012 23:21:10 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Subject: Re: [RFCv2 0/8] perf tool: Add new event group management
-Message-ID: <20120404212109.GA11460@m.brq.redhat.com>
-References: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
+	id S1751943Ab2DDVW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 17:22:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] More power management updates for 3.4
+Date: Wed, 4 Apr 2012 23:26:47 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201204010836.30707.rjw@sisk.pl>
+In-Reply-To: <201204010836.30707.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204042326.47683.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-oops, forgot to add that this patchset is based on another
-one I sent just recently..
+Hi,
 
-http://marc.info/?l=linux-kernel&m=133357111816870&w=2
+On Sunday, April 01, 2012, Rafael J. Wysocki wrote:
+> Hi Linus,
+> 
+> I prepared this on Friday with the hope to send the pull request before the end
+> of the merge window, but then I had to go to San Francisco (for the LFCS) and
+> missed the opportunity.  That said, this includes fixes mostly (and -stable
+> ones for that matter), so I think it's appropriate for the -rc1 time frame too. 
+> 
+> Please pull additional power management updates for 3.4 since commit
+> 735e941caa9a35f933297af0ab1e0ad6447411c4:
+> 
+>     Merge tag 'common-clk-api' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+> 
+> with top-most commit c4772d192c70b61d52262b0db76f7abd8aeb51c6:
+> 
+>     PM / QoS: add pm_qos_update_request_timeout() API
+> 
+> from the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-for-3.4-part-2
 
-jirka
+Given the lack of feedback and the fact that you don't seem to have pulled this,
+I wonder if there's anything wrong with the changes or am I simply supposed to
+queue them up for 3.5?
+
+Or would you like me to prepare another pull request without the top-most
+commit that doesn't count as a fix (I rather won't be able to prepare it
+before -rc2 is out, though, due to travel-related limitations)?
+
+Rafael
 
 
-On Wed, Apr 04, 2012 at 11:16:08PM +0200, Jiri Olsa wrote:
-> hi,
-> adding support for creating event groups based on the way they
-> are specified on the command line. 
+> This mostly consists of fixes and changes requisite for those fixes, with the
+> exception of the last commit, which is a new feature.  However, that new
+> feature is reasonably isolated and very unlikely to cause any regressions to
+> happen, although it is necessary for some future changes in the works now.
+> Included are:
 > 
-> - added 'group=...' syntax to group events (patches 1-5).
->   I think this part is quite ready.
+> * Patch series that hopefully fixes races between the freezer and request_firmware()
+>   and request_firmware_nowait() for good, with two cleanups from Stephen Boyd on top.
 > 
-> - added 'group:1=...' syntax to specify which event to sample (leader)
->   and use  PERF_SAMPLE_READ and PERF_FORMAT_GROUP to read all siblings
->   on every leader's events (patches 6-8).
->   Currently it is only possible to display siblings values by
->   'perf report -D' PERF_SAMPLE_READ dump output containing only perf
->   internal IDs displayed.. so not very usefull. But I was hoping to
->   straighten up the data design/directions before I touch the gui.
+> * Runtime PM fix from Alan Stern preventing tasks from getting stuck indefinitely
+>   in the runtime PM wait queue.
+> 
+> * Device PM QoS update from MyungJoo Ham introducing a new variant of
+>   pm_qos_update_request() allowing the callers to specify a timeout.
+> 
+> Thanks!
 > 
 > 
-> Attached patches:
->  1/8 perf, tool: Add support to parse event group syntax
->  2/8 perf, tool: Enable grouping logic for parsed events
->  3/8 perf: Add PERF_EVENT_IOC_ID ioctl to return event ID
->  4/8 perf, tool: Use PERF_EVENT_IOC_ID perf ioctl to read event id
->  5/8 perf, tool: Separate 'mem:' event scanner bits
->  6/8 perf, tool: Add modifier support to group event syntax
->  7/8 perf, tool: Add support for parsing PERF_SAMPLE_READ
->  8/8 perf, tool: Enable sampling on specified event group leader
+>  drivers/base/firmware_class.c |  208 +++++++++++++++++++++--------------------
+>  drivers/base/power/runtime.c  |    3 +-
+>  include/linux/kmod.h          |   27 +++++-
+>  include/linux/pm_qos.h        |    4 +
+>  kernel/kmod.c                 |  117 +++++++++++++++++------
+>  kernel/power/hibernate.c      |   18 +---
+>  kernel/power/process.c        |    8 ++
+>  kernel/power/qos.c            |   50 ++++++++++
+>  kernel/power/suspend.c        |    7 --
+>  kernel/power/user.c           |   10 +--
+>  10 files changed, 284 insertions(+), 168 deletions(-)
 > 
-> thanks for comments,
-> jirka
-> ---
->  include/linux/perf_event.h          |    1 +
->  kernel/events/core.c                |    9 +++
->  tools/perf/builtin-record.c         |   13 ++---
->  tools/perf/builtin-stat.c           |   13 ++---
->  tools/perf/builtin-test.c           |   12 ++--
->  tools/perf/builtin-top.c            |   12 +---
->  tools/perf/util/event.h             |   21 ++++++-
->  tools/perf/util/evlist.c            |  120 +++++++++++++++++++++++++++--------
->  tools/perf/util/evlist.h            |    8 ++-
->  tools/perf/util/evsel.c             |   94 +++++++++++++++++++++-------
->  tools/perf/util/evsel.h             |   16 ++---
->  tools/perf/util/parse-events-test.c |   93 ++++++++++++++++++++++++++-
->  tools/perf/util/parse-events.c      |    6 ++
->  tools/perf/util/parse-events.h      |    1 +
->  tools/perf/util/parse-events.l      |   39 +++++++++++-
->  tools/perf/util/parse-events.y      |   66 +++++++++++++++++---
->  tools/perf/util/python.c            |   10 ++-
->  tools/perf/util/session.c           |   42 ++++++++++++
->  tools/perf/util/session.h           |    5 +-
->  19 files changed, 476 insertions(+), 105 deletions(-)
+> ---------------
+> 
+> Alan Stern (1):
+>       PM / Runtime: don't forget to wake up waitqueue on failure
+> 
+> MyungJoo Ham (1):
+>       PM / QoS: add pm_qos_update_request_timeout() API
+> 
+> Rafael J. Wysocki (6):
+>       firmware_class: Rework usermodehelper check
+>       firmware_class: Split _request_firmware() into three functions, v2
+>       firmware_class: Do not warn that system is not ready from async loads
+>       PM / Hibernate: Disable usermode helpers right before freezing tasks
+>       PM / Sleep: Move disabling of usermode helpers to the freezer
+>       PM / Sleep: Mitigate race between the freezer and request_firmware()
+> 
+> Stephen Boyd (2):
+>       firmware_class: Reorganize fw_create_instance()
+>       firmware_class: Move request_firmware_nowait() to workqueues
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+
