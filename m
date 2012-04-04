@@ -1,239 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab2DDR40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 13:56:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9339 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932300Ab2DDR4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 13:56:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="137642120"
-Date: Wed, 4 Apr 2012 10:51:24 -0700
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, vgoyal@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120404175124.GA8931@localhost>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S932482Ab2DDSBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 14:01:15 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51971 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300Ab2DDSBO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 14:01:14 -0400
+Message-ID: <4F7C8C3E.1020203@us.ibm.com>
+Date: Wed, 04 Apr 2012 11:00:30 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1333552260-1170-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040418-6148-0000-0000-000004CDC42F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On 04/04/2012 08:11 AM, Prarit Bhargava wrote:
+> The clocksource code has a watchdog which runs once a minute.  The
+> clocksource watchdog calculates the number of nanoseconds since the last
+> time the watchdog ran and compares that value to the number of nanoseconds
+> that have passed on another clocksource.  If these values do not match (to
+> within .0625s) then the watchdog marks the current clocksource as unstable
+> and switches to another clocksource.
+>
+> This works so long as the delta between calls of the watchdog is small
+> (maximum delta is ~18 seconds with the tsc).  After that, the
+> clocksource_cyc2ns() calculation will overflow and the calculated number
+> of ns returned is incorrect.
+>
+> This causes the watchdog to erroneously mark the tsc as unstable and
+> switch to the hpet.
+>
+> A long delay on the system is not usual, however, it can be reproduced
+> simply by doing
+>
+> echo 1>  /proc/sys/kernel/sysrq
+> for i in `seq 10000`; do sleep 1000&  done
+> echo t>  /proc/sysrq-trigger
+>
+> on a 32-cpu system (which is not an unusual number of processes for this
+> size of system).  This floods the printk buffer and results in a
+> pause of approximately 600 seconds which prevents the clocksource watchdog
+> from running during that time.  On the next call, the watchdog erroneously
+> marks the tsc as unstable and switches to the hpet because the checked
+> values for the tsc overflow.
 
-On Tue, Apr 03, 2012 at 11:36:55AM -0700, Tejun Heo wrote:
-> Hello, guys.
-> 
-> So, during LSF, I, Fengguang and Jan had a chance to sit down and talk
-> about how to cgroup support to writeback.  Here's what I got from it.
-> 
-> Fengguang's opinion is that the throttling algorithm implemented in
-> writeback is good enough and blkcg parameters can be exposed to
-> writeback such that those limits can be applied from writeback.  As
-> for reads and direct IOs, Fengguang opined that the algorithm can
-> easily be extended to cover those cases and IIUC all IOs, whether
-> buffered writes, reads or direct IOs can eventually all go through
-> writeback layer which will be the one layer controlling all IOs.
- 
-Yeah it should be trivial to apply the balance_dirty_pages()
-throttling algorithm to the read/direct IOs. However up to now I don't
-see much added value to *duplicate* the current block IO controller
-functionalities, assuming the current users and developers are happy
-with it.
+Hmm. This is a pretty good mix of existing problems. :)
 
-I did the buffered write IO controller mainly to fill the gap.  If I
-happen to stand in your way, sorry that's not my initial intention.
-It's a pity and surprise that Google as a big user does not buy in
-this simple solution. You may prefer more comprehensive controls which
-may not be easily achievable with the simple scheme. However the
-complexities and overheads involved in throttling the flusher IOs
-really upsets me. 
+We've seen clocksource watchdog false-positives w/ virtualization 
+migrations before, and I think that recently got resolved . Also the 
+huge dumps to printk's which runs with irqs off (usually over slow 
+serial ports) causing lost time also is an outstanding issue.
 
-The sweet split point would be for balance_dirty_pages() to do cgroup
-aware buffered write throttling and leave other IOs to the current
-blkcg. For this to work well as a total solution for end users, I hope
-we can cooperate and figure out ways for the two throttling entities
-to work well with each other.
 
-What I'm interested is, what's Google and other users' use schemes in
-practice. What's their desired interfaces. Whether and how the
-combined bdp+blkcg throttling can fulfill the goals.
+> Fixing this is simple -- use mult_frac() in clocksource_cyc2ns().
+>
+> Signed-off-by: Prarit Bhargava<prarit@redhat.com>
+> Cc: John Stultz<johnstul@us.ibm.com>
+> Cc: Thomas Gleixner<tglx@linutronix.de>
+> Cc: Salman Qazi<sqazi@google.com>
+> Cc: stable@kernel.org
+> ---
+>   include/linux/clocksource.h |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+> index fbe89e1..1625ddb 100644
+> --- a/include/linux/clocksource.h
+> +++ b/include/linux/clocksource.h
+> @@ -273,7 +273,7 @@ static inline u32 clocksource_hz2mult(u32 hz, u32 shift_constant)
+>    */
+>   static inline s64 clocksource_cyc2ns(cycle_t cycles, u32 mult, u32 shift)
+>   {
+> -	return ((u64) cycles * mult)>>  shift;
+> +	return mult_frac(cycles, mult, (1UL<<  shift));
+>   }
+>
+>
+So I'm not sure this is actually the right fix.
 
-> Unfortunately, I don't agree with that at all.  I think it's a gross
-> layering violation and lacks any longterm design.  We have a well
-> working model of applying and propagating resource pressure - we apply
-> the pressure where the resource exists and propagates the back
-> pressure through buffers to upper layers upto the originator.  Think
-> about network, the pressure exists or is applied at the in/egress
-> points which gets propagated through socket buffers and eventually
-> throttles the originator.
-> 
-> Writeback, without cgroup, isn't different.  It consists a part of the
-> pressure propagation chain anchored at the IO device.  IO devices
-> these days generate very high pressure, which gets propgated through
-> the IO sched and buffered requests, which in turn creates pressure at
-> writeback.  Here, the buffering happens in page cache and pressure at
-> writeback increases the amount of dirty page cache.  Propagating this
-> IO pressure to the dirtying task is one of the biggest
-> responsibililties of the writeback code, and this is the underlying
-> design of the whole thing.
-> 
-> IIUC, without cgroup, the current writeback code works more or less
-> like this.  Throwing in cgroup doesn't really change the fundamental
-> design.  Instead of a single pipe going down, we just have multiple
-> pipes to the same device, each of which should be treated separately.
-> Of course, a spinning disk can't be divided that easily and their
-> performance characteristics will be inter-dependent, but the place to
-> solve that problem is where the problem is, the block layer.
-> 
-> We may have to look for optimizations and expose some details to
-> improve the overall behavior and such optimizations may require some
-> deviation from the fundamental design, but such optimizations should
-> be justified and such deviations kept at minimum, so, no, I don't
-> think we're gonna be expose blkcg / block / elevator parameters
-> directly to writeback.  Unless someone can *really* convince me
-> otherwise, I'll be vetoing any change toward that direction.
-> 
-> Let's please keep the layering clear.  IO limitations will be applied
-> at the block layer and pressure will be formed there and then
-> propagated upwards eventually to the originator.  Sure, exposing the
-> whole information might result in better behavior for certain
-> workloads, but down the road, say, in three or five years, devices
-> which can be shared without worrying too much about seeks might be
-> commonplace and we could be swearing at a disgusting structural mess,
-> and sadly various cgroup support seems to be a prominent source of
-> such design failures.
+The first issue is that the overflow is expected at a specific 
+frequency, and the clocksource code and clockevent code work together to 
+make sure the timekeeping core can accumulate time within that 
+frequency. This is important not just for multiplication overflows, but 
+also because some clocksource hardware wraps after just a few seconds, 
+requiring we accumulate frequently.
 
-Super fast storages are coming which will make us regret to make the
-IO path over complex.  Spinning disks are not going away anytime soon.
-I doubt Google is willing to afford the disk seek costs on its
-millions of disks and has the patience to wait until switching all of
-the spin disks to SSD years later (if it will ever happen).
+The rest of the timekeeping code is designed with the requirement that 
+the overflow you're solving with the above doesn't happen.  It doesn't 
+mean it can't happen (as you've experience), but that you're running 
+outside the expected bounds of the timekeeping code. So just fixing the 
+multiply in clocksource_cyc2ns doesn't also change the assumptions 
+elsewhere in the timekeeping code.
 
-Sorry, I won't buy in the layering arguments and analog to networking.
-Yeah network is a good way to show your "push back" idea, however
-writeback has its own metadata, seeking, etc. problems.
+Additionally, gettimeofday/clock_gettime is a hotpath, and this adds 
+extra overhead to the calculation.  So that's not great either.
 
-I'd prefer we base our discussions on real things like complexities,
-overheads, performance as well as user demands.
+So as I said above, I think there's really two issues at play here:
+1) If you starve the timekeeping code from being able to periodically 
+accumulate time bad things happen.
+2) The clocksource watchdog in particular cannot suffer much delay at 
+all, and falsely triggers on occasion.
 
-It's obvious that your below proposal involves a lot of complexities,
-overheads, and will hurt performance. It basically involves
+Item #1 is really an issue of degree. We can try to be more flexible by 
+stretching the expected length of the period out further. But some 
+hardware that wraps quickly just cannot accommodate long intervals.  On 
+the TSC we have quite a bit of time till it wraps, but by keeping the 
+periods shorter, we allow for finer grained clock adjustments for NTP.  
+So its somewhat of a balancing act between allowing for really precise 
+timekeeping and robustness in the face of interrupt starvation (and we 
+have only been getting better here, the periodic accumulation was only a 
+tick back in the day, so SMIs or any long period with irqs off would 
+cause lost time). Currently the TSC period should be 10 minutes before 
+we overflow (which aligns to your 600 seconds above). I believe this to 
+be a reasonable length of time where we should expect interrupts to be 
+able to occur.   For example, other common clock hardware, like the 
+acpi_pm can really only last ~5 seconds before it wraps.
 
-- running concurrent flusher threads for cgroups, which adds back the
-  disk seeks and lock contentions. And still has problems with sync
-  and shared inodes.
+Item #2 is where I think the real fix is needed. The watchdog has been 
+useful in being able to detect flakey TSCs, but because running with a 
+bad TSC can be very problematic for the kernel, its is quick on the 
+trigger to disqualify it. Also, over the years, the expected use cases 
+have grown for systems, and that has run into problems as it hits the 
+bounds of the watchdogs' expectations. In fact, I suspect its not that 
+the TSC wrapping but the HPET or acpi_pm that is being used as the 
+"stable" watchdog clocksource.  One likely way to trigger a false 
+positive is if the watchdog is the acpi_pm, but the clocksoruce is the 
+TSC, we can delay/starve interrupts for quite some time, since the TSC 
+won't wrap. But if the watchdog arrives late, and the acpi_pm clock has 
+wrapped, then it assumes the TSC is broken. The problem with these 
+issues is from the kernel's perspective you have to trust one of the two 
+clocks. A similar issue can happen w/ the HPET but not as quickly (since 
+it won't wrap as fast,  although maybe you're hitting the multiplication 
+overflow there... honestly your 18 second interval time in the above 
+isn't lining up for me right now, have to think more on that).
 
-- splitting device queue for cgroups, possibly scaling up the pool of
-  writeback pages (and locked pages in the case of stable pages) which
-  could stall random processes in the system
+The hard problem is that the TSC can go wrong in *many* ways. Its a 
+terrible architecture feature,  but there's nothing close to it 
+performance wise, so we do what we can to try to make use of it when its 
+safe.   Its variation of problems makes it hard to detect false 
+positives when the "trusted" watchdog fails.
 
-- the mess of metadata handling
+One idea I've had is to replace the watchdog clocksource with the 
+read_persistent_clock() RTC  interface. This would allow us to avoid 
+wrapping issues with watchdog clocksources, however it would also mean 
+we couldn't really check the TSC accuracy for a number of seconds to 
+minutes (due to the RTC granularity being just seconds itself). Or maybe 
+it would be good to still use the watchdog, but double check against the 
+RTC if we get a false positive long after boot?
 
-- unnecessarily coupled with memcg, in order to take advantage of the
-  per-memcg dirty limits for balance_dirty_pages() to actually convert
-  the "pushed back" dirty pages pressure into lowered dirty rate. Why
-  the hell the users *have to* setup memcg (suffering from all the
-  inconvenience and overheads) in order to do IO throttling?  Please,
-  this is really ugly! And the "back pressure" may constantly push the
-  memcg dirty pages to the limits. I'm not going to support *miss use*
-  of per-memcg dirty limits like this!
+Another idea I had tried to work on a few years ago was to try to catch 
+watchdog overflows was checking if the TSC delta ==  watchdog delta + 
+some multiple of watchdog intervals, but I didn't manage to get the math 
+right there, and with small enough wrapping intervals and a long enough 
+delay, a % error bound becomes impossible to trigger.
 
-I cannot believe you would keep overlooking all the problems without
-good reasons. Please do tell us the reasons that matter.
+One idea might be to replace the cyc2ns w/ mult_frac in only the 
+watchdog code.  I need to think on that some more (and maybe have you 
+provide some debug output) to really understand how that's solving the 
+issue for you, but it would be able to be done w/o affecting the other 
+assumptions of the timekeeping core.
 
-Thanks,
-Fengguang
+Thomas: Any other ideas? Looking at the watchdog code, since its not an 
+hrtimer, could it also possibly be delayed past its .0625s threshold 
+even just due to long NOHZ deep idle? I suspect quite a few assumptions 
+have changed since that code was written. :)
 
-> IMHO, treating cgroup - device/bdi pair as a separate device should
-> suffice as the underlying design.  After all, blkio cgroup support's
-> ultimate goal is dividing the IO resource into separate bins.
-> Implementation details might change as underlying technology changes
-> and we learn more about how to do it better but that is the goal which
-> we'll always try to keep close to.  Writeback should (be able to)
-> treat them as separate devices.  We surely will need adjustments and
-> optimizations to make things work at least somewhat reasonably but
-> that is the baseline.
-> 
-> In the discussion, for such implementation, the following obstacles
-> were identified.
-> 
-> * There are a lot of cases where IOs are issued by a task which isn't
->   the originiator.  ie. Writeback issues IOs for pages which are
->   dirtied by some other tasks.  So, by the time an IO reaches the
->   block layer, we don't know which cgroup the IO belongs to.
-> 
->   Recently, block layer has grown support to attach a task to a bio
->   which causes the bio to be handled as if it were issued by the
->   associated task regardless of the actual issuing task.  It currently
->   only allows attaching %current to a bio - bio_associate_current() -
->   but changing it to support other tasks is trivial.
-> 
->   We'll need to update the async issuers to tag the IOs they issue but
->   the mechanism is already there.
-> 
-> * There's a single request pool shared by all issuers per a request
->   queue.  This can lead to priority inversion among cgroups.  Note
->   that problem also exists without cgroups.  Lower ioprio issuer may
->   be holding a request holding back highprio issuer.
-> 
->   We'll need to make request allocation cgroup (and hopefully ioprio)
->   aware.  Probably in the form of separate request pools.  This will
->   take some work but I don't think this will be too challenging.  I'll
->   work on it.
-> 
-> * cfq cgroup policy throws all async IOs, which all buffered writes
->   are, into the shared cgroup regardless of the actual cgroup.  This
->   behavior is, I believe, mostly historical and changing it isn't
->   difficult.  Prolly only few tens of lines of changes.  This may
->   cause significant changes to actual IO behavior with cgroups tho.  I
->   personally think the previous behavior was too wrong to keep (the
->   weight was completely ignored for buffered writes) but we may want
->   to introduce a switch to toggle between the two behaviors.
-> 
->   Note that blk-throttle doesn't have this problem.
-> 
-> * Unlike dirty data pages, metadata tends to have strict ordering
->   requirements and thus is susceptible to priority inversion.  Two
->   solutions were suggested - 1. allow overdrawl for metadata writes so
->   that low prio metadata writes don't block the whole FS, 2. provide
->   an interface to query and wait for bdi-cgroup congestion which can
->   be called from FS metadata paths to throttle metadata operations
->   before they enter the stream of ordered operations.
-> 
->   I think combination of the above two should be enough for solving
->   the problem.  I *think* the second can be implemented as part of
->   cgroup aware request allocation update.  The first one needs a bit
->   more thinking but there can be easier interim solutions (e.g. throw
->   META writes to the head of the cgroup queue or just plain ignore
->   cgroup limits for META writes) for now.
-> 
-> * I'm sure there are a lot of design choices to be made in the
->   writeback implementation but IIUC Jan seems to agree that the
->   simplest would be simply deal different cgroup-bdi pairs as
->   completely separate which shouldn't add too much complexity to the
->   already intricate writeback code.
-> 
-> So, I think we have something which sounds like a plan, which at least
-> I can agree with and seems doable without adding a lot of complexity.
-> 
-> Jan, Fengguang, I'm pretty sure I missed some stuff from writeback's
-> side and IIUC Fengguang doesn't agree with this approach too much, so
-> please voice your opinions & comments.
-> 
-> Thank you.
-> 
-> --
-> tejun
+thanks
+-john
+
