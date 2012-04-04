@@ -1,111 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab2DDOSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 10:18:32 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:33608 "EHLO imr4.ericy.com"
+	id S1756627Ab2DDOS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 10:18:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22186 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756541Ab2DDOSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 10:18:31 -0400
-Date: Wed, 4 Apr 2012 07:16:10 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.4-rc2
-Message-ID: <20120404141609.GA17301@ericsson.com>
+	id S1756541Ab2DDOS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 10:18:56 -0400
+Date: Wed, 4 Apr 2012 17:18:31 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: kvm: RCU warning in async pf
+Message-ID: <20120404141831.GF11918@redhat.com>
+References: <1333414472.11455.7.camel@lappy>
+ <20120403105226.GF14939@redhat.com>
+ <20120404123033.GD11918@redhat.com>
+ <20120404140416.GF2302@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120404140416.GF2302@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 04, 2012 at 07:04:16AM -0700, Paul E. McKenney wrote:
+> On Wed, Apr 04, 2012 at 03:30:33PM +0300, Gleb Natapov wrote:
+> > On Tue, Apr 03, 2012 at 01:52:26PM +0300, Gleb Natapov wrote:
+> > > On Mon, Apr 02, 2012 at 08:54:32PM -0400, Sasha Levin wrote:
+> > > > Hi all,
+> > > > 
+> > > > I got the spew at the bottom of the mail in a KVM guest using the KVM tools and running trinity.
+> > > > 
+> > > > I'm not quite sure how default_idle managed to trigger a pagefault, so that part looks odd to me.
+> > > > 
+> > > This is not regular page fault. This is async page fault that tells the
+> > > guest that a page, previously swapped out by hypervisor, is now swapped
+> > > back in and it can happen while vcpu is idle. The code does not leave
+> > > idle state properly though. We probably need to call rcu_irq_enter()
+> > > there. Will look into it.
+> > > 
+> > 
+> > The patch below solves it for me:
+> > 
+> > "Page ready" async PF can kick vcpu out of idle state much like IRQ.
+> > We need to tell RCU about this.
+> 
+> This is invoked from an exception or interrupt handler, not from
+> process-level code?  If so:
+> 
+>From an exception.
 
-Hi Linus,
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> > index f0c6fd6..380079f 100644
+> > --- a/arch/x86/kernel/kvm.c
+> > +++ b/arch/x86/kernel/kvm.c
+> > @@ -38,6 +38,7 @@
+> >  #include <asm/traps.h>
+> >  #include <asm/desc.h>
+> >  #include <asm/tlbflush.h>
+> > +#include <asm/idle.h>
+> > 
+> >  static int kvmapf = 1;
+> > 
+> > @@ -253,7 +254,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+> >  		kvm_async_pf_task_wait((u32)read_cr2());
+> >  		break;
+> >  	case KVM_PV_REASON_PAGE_READY:
+> > +		rcu_irq_enter();
+> > +		exit_idle();
+> >  		kvm_async_pf_task_wake((u32)read_cr2());
+> > +		rcu_irq_exit();
+> >  		break;
+> >  	}
+> >  }
+> > --
+> > 			Gleb.
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Please pull hwmon fixes for Linux 3.4-rc2 from signed tag:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git =
-hwmon-for-linus
-
-Fix crash in ad7314 driver
-Add support for AMD Trinity CPUs to k10temp driver
-Fix __initdata/__initconst mixup in w83627ehf driver
-Fix runtime warnings in acpi_power_meter and max6639 drivers
-Fix build warnings in adm1031, f75375s, sht15, and gpio-fan drivers
-
-Thanks,
-Guenter
-
-------
-
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
-
-  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hw=
-mon-for-linus
-
-Andre Przywara (1):
-      hwmon: (k10temp) Add support for AMD Trinity CPUs
-
-Graeme Smecher (1):
-      hwmon: (ad7314) Adds missing spi_dev initialization
-
-Guenter Roeck (4):
-      hwmon: (gpio-fan) Fix Kconfig dependencies
-      hwmon: (sht15) Fix Kconfig dependencies
-      hwmon: (f75375s) Fix warning message seen in some configurations
-      hwmon: (adm1031) Fix compiler warning
-
-Kyle McMartin (1):
-      hwmon: (acpi_power_meter) fix lockdep spew due to non-static lock cla=
-ss
-
-Mark Brown (1):
-      hwmon: (max6639) Convert to dev_pm_ops
-
-Uwe Kleine-K=F6nig (1):
-      hwmon: (w83627ehf) mark const init data with __initconst instead of _=
-_initdata
-
- Documentation/hwmon/k10temp      |    2 +-
- drivers/hwmon/Kconfig            |    7 ++++---
- drivers/hwmon/acpi_power_meter.c |    2 ++
- drivers/hwmon/ad7314.c           |    1 +
- drivers/hwmon/adm1031.c          |   20 ++++++++------------
- drivers/hwmon/f75375s.c          |    2 ++
- drivers/hwmon/k10temp.c          |    4 ++++
- drivers/hwmon/max6639.c          |   15 +++++++++++----
- drivers/hwmon/w83627ehf.c        |   18 +++++++++---------
- 9 files changed, 42 insertions(+), 29 deletions(-)
-
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPfFepAAoJEMsfJm/On5mBfboP/3pKayEFAYljk9hL9UOOFSBx
-UXE7mmopjxtYg9lVZt7qS+XdhiRJeIn9bWYVyY7rwWzkbPDz8CMaBfnAZtZOvXn5
-iQBSTnClqJLqdw6O8hrO80PtBc4YSdb2KJI3pSEIErlt1Yd9foeNgPbtRArwvse7
-XJ5cA3Zbmzw3ayIujnaZp0bnZDyCCSZ8Uq2Gt5AdFym9qEqE7MfiwzR1PvsWhyn/
-hS3ZP2wVaGGm0O1GsYQ/tpQTTcW2ZHpK8f0j3W926sHsyw4p2jn1s5NnhdgbesDL
-+B/lMuSdNmdBc6BKN/JDwk43yTjNnLDf03AQu0qnnEAqwBjuA+gQBOGbgoJro08g
-dS0BLXxsVRYJAF7MFPVNSyIUEM4Ro6wm7g7JSqJsAeQ7Pk3aVba+r67khitQokB3
-NtvBfVT329K9Xq54x49+iAreIJ2zu5Sbxhw6MTLBNvBxmB/Iem/wrPbpSdG1SfjN
-+NgRoinS1Og3/yRihWCKM8oSZ4h8aFH/yYjYBFKnCJ/bEunCmJ/1Y2OW8X+y4uGV
-w7JNJeFGX3Cntb/k09BPEJqHGA0uZfHQSi0UmF8QpoR3lT3mfpwlTNjdpyGBriGl
-S+8Fbut96r9z2aOVmVDkqtQJpreTYw558pkTuWxEHcZzl4WR3aUFqYLS+CgLurEi
-OWSSx5qvZPBcc2IEaIJu
-=RgGQ
------END PGP SIGNATURE-----
-
---9jxsPFA5p3P2qPhR--
+--
+			Gleb.
