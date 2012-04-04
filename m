@@ -1,94 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab2DDHp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 03:45:57 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:15185 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab2DDHpz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 03:45:55 -0400
-Date: Wed, 4 Apr 2012 09:45:54 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        Greg Ungerer <gerg@uclinux.org>,
-        sparclinux <sparclinux@vger.kernel.org>
-Subject: [PATCH] irq: remove obsolete definitions in interrupt.h
-Message-ID: <20120404074553.GA14959@merkur.ravnborg.org>
+	id S1754442Ab2DDHtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 03:49:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751669Ab2DDHta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 03:49:30 -0400
+Date: Wed, 4 Apr 2012 10:49:37 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, davem@davemloft.net,
+        qemu-devel@nongnu.org, Amit Shah <amit.shah@redhat.com>
+Subject: Re: [V6 PATCH] virtio-net: send gratuitous packets when needed
+Message-ID: <20120404074937.GA22658@redhat.com>
+References: <20120328054428.34415.75432.stgit@amd-6168-8-1.englab.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120328054428.34415.75432.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-interrupt.h contained a small fixlet for the days when
-m68k and sparc32 did not use genirq.
-As they have both entered the modern world this
-fixlet can be dropped.
+On Wed, Mar 28, 2012 at 01:44:28PM +0800, Jason Wang wrote:
+> As hypervior does not have the knowledge of guest network configuration, it's
+> better to ask guest to send gratuitous packets when needed.
+> 
+> Guest tests VIRTIO_NET_S_ANNOUNCE bit during config change interrupt and when it
+> is set, a workqueue is scheduled to send gratuitous packet through
+> NETDEV_NOTIFY_PEERS. This feature is negotiated through bit
+> VIRTIO_NET_F_GUEST_ANNOUNCE.
+> 
+> Changes from v5:
+> - notify the chain before acking the link annoucement
+> - ack the link announcement notification through control vq
+> 
+> Changes from v4:
+> - typos
+> - handle workqueue unconditionally
+> - move VIRTIO_NET_S_ANNOUNCE to bit 8 to separate rw bits from ro bits
+> 
+> Changes from v3:
+> - cancel the workqueue during freeze
+> 
+> Changes from v2:
+> - fix the race between unregister_dev() and workqueue
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: "David S. Miller" <davem@davemloft.net>
----
+I think this needs some fixes. See below.
+Thanks.
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 2aea5d2..3848176 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -122,7 +122,6 @@ struct irqaction {
- 
- extern irqreturn_t no_action(int cpl, void *dev_id);
- 
--#ifdef CONFIG_GENERIC_HARDIRQS
- extern int __must_check
- request_threaded_irq(unsigned int irq, irq_handler_t handler,
- 		     irq_handler_t thread_fn,
-@@ -144,42 +143,6 @@ request_percpu_irq(unsigned int irq, irq_handler_t handler,
- 		   const char *devname, void __percpu *percpu_dev_id);
- 
- extern void exit_irq_thread(void);
--#else
--
--extern int __must_check
--request_irq(unsigned int irq, irq_handler_t handler, unsigned long flags,
--	    const char *name, void *dev);
--
--/*
-- * Special function to avoid ifdeffery in kernel/irq/devres.c which
-- * gets magically built by GENERIC_HARDIRQS=n architectures (sparc,
-- * m68k). I really love these $@%#!* obvious Makefile references:
-- * ../../../kernel/irq/devres.o
-- */
--static inline int __must_check
--request_threaded_irq(unsigned int irq, irq_handler_t handler,
--		     irq_handler_t thread_fn,
--		     unsigned long flags, const char *name, void *dev)
--{
--	return request_irq(irq, handler, flags, name, dev);
--}
--
--static inline int __must_check
--request_any_context_irq(unsigned int irq, irq_handler_t handler,
--			unsigned long flags, const char *name, void *dev_id)
--{
--	return request_irq(irq, handler, flags, name, dev_id);
--}
--
--static inline int __must_check
--request_percpu_irq(unsigned int irq, irq_handler_t handler,
--		   const char *devname, void __percpu *percpu_dev_id)
--{
--	return request_irq(irq, handler, 0, devname, percpu_dev_id);
--}
--
--static inline void exit_irq_thread(void) { }
--#endif
- 
- extern void free_irq(unsigned int, void *);
- extern void free_percpu_irq(unsigned int, void __percpu *);
+> ---
+>  drivers/net/virtio_net.c   |   32 +++++++++++++++++++++++++++++++-
+>  include/linux/virtio_net.h |   13 +++++++++++++
+>  2 files changed, 44 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 4880aa8..0f60da7 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -72,6 +72,9 @@ struct virtnet_info {
+>  	/* Work struct for refilling if we run low on memory. */
+>  	struct delayed_work refill;
+>  
+> +	/* Work struct for sending gratuitous packets. */
 
+A bit confusing: it does not send anything itself.
+A better comment 'for announcing the existence of device
+on the network'.
+
+> +	struct work_struct announce;
+> +
+>  	/* Chain pages by the private ptr. */
+>  	struct page *pages;
+>  
+> @@ -781,12 +784,30 @@ static bool virtnet_send_command(struct virtnet_info *vi, u8 class, u8 cmd,
+>  	return status == VIRTIO_NET_OK;
+>  }
+>  
+> +static void virtnet_ack_link_announce(struct virtnet_info *vi)
+> +{
+> +	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_ANNOUNCE,
+> +				  VIRTIO_NET_CTRL_ANNOUNCE_ACK, NULL,
+> +				  0, 0)) {
+
+This can run in parallel with other commands. That's pretty bad -
+will corrupt the cvq.
+Take rtnl lock around calls to this function?
+
+> +		dev_warn(&vi->dev->dev, "Failed to ack link nnounce.\n");
+
+announce
+
+> +	}
+
+Better to drop {} around a single statement.
+
+> +}
+> +
+> +static void announce_work(struct work_struct *work)
+> +{
+> +	struct virtnet_info *vi = container_of(work, struct virtnet_info,
+> +					       announce);
+> +	netif_notify_peers(vi->dev);
+> +	virtnet_ack_link_announce(vi);
+> +}
+> +
+>  static int virtnet_close(struct net_device *dev)
+>  {
+>  	struct virtnet_info *vi = netdev_priv(dev);
+>  
+>  	/* Make sure refill_work doesn't re-enable napi! */
+>  	cancel_delayed_work_sync(&vi->refill);
+> +	cancel_work_sync(&vi->announce);
+
+I think that a config change event can trigger after this point,
+so cancel here won't be effective. But why do it here?
+virtnet_remove not a better place? We can do it
+after remove_vq_common.
+
+>  	napi_disable(&vi->napi);
+>  
+>  	return 0;
+> @@ -962,11 +983,17 @@ static void virtnet_update_status(struct virtnet_info *vi)
+>  		return;
+>  
+>  	/* Ignore unknown (future) status bits */
+> -	v &= VIRTIO_NET_S_LINK_UP;
+> +	v &= VIRTIO_NET_S_LINK_UP | VIRTIO_NET_S_ANNOUNCE;
+
+The announce bit in vi->status is always clear,
+so this is IMO confusing. I would do:
+
+	if (v & VIRTIO_NET_S_ANNOUNCE) {
+		schedule
+	}
+
+	v &= VIRTIO_NET_S_LINK_UP;
+
+and the rest of the logic is not necessary then.
+
+Also, this might run extra ack announce commands after
+VIRTIO_NET_S_ANNOUNCE bit is clear. The spec
+isn't clear on whether this is legal.
+
+It would be very hard to fix this, so let's add a comment
+stating that it's legal, and clarify the spec
+in any case.
+
+
+>  
+>  	if (vi->status == v)
+>  		return;
+>  
+> +	if (v & VIRTIO_NET_S_ANNOUNCE) {
+> +		v &= ~VIRTIO_NET_S_ANNOUNCE;
+> +		if (v & VIRTIO_NET_S_LINK_UP)
+> +			schedule_work(&vi->announce);
+
+I think we really want an nrt wq here - if this triggers
+multiple times there's no good reason to try and run
+the ack command many times in parallel.
+
+> +	}
+> +
+>  	vi->status = v;
+>  
+>  	if (vi->status & VIRTIO_NET_S_LINK_UP) {
+
+
+> @@ -1076,6 +1103,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  		goto free;
+>  
+>  	INIT_DELAYED_WORK(&vi->refill, refill_work);
+> +	INIT_WORK(&vi->announce, announce_work);
+>  	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
+>  	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
+>  
+> @@ -1187,6 +1215,7 @@ static int virtnet_freeze(struct virtio_device *vdev)
+>  	virtqueue_disable_cb(vi->svq);
+>  	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ))
+>  		virtqueue_disable_cb(vi->cvq);
+> +	cancel_work_sync(&vi->announce);
+
+A config change event can trigger after this point,
+so cancel here won't be effective.
+Possibly, we need state like config_enable in the block
+device.
+
+Also, what exactly will happen on suspend?
+As we reset, ANNOUCE bit will be clear so -
+do we forget to announce? Probably not good ...
+
+>  
+>  	netif_device_detach(vi->dev);
+>  	cancel_delayed_work_sync(&vi->refill);
+> @@ -1233,6 +1262,7 @@ static unsigned int features[] = {
+>  	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
+>  	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
+>  	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
+> +	VIRTIO_NET_F_GUEST_ANNOUNCE,
+>  };
+>  
+>  static struct virtio_driver virtio_net_driver = {
+> diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
+> index 970d5a2..383e8a0 100644
+> --- a/include/linux/virtio_net.h
+> +++ b/include/linux/virtio_net.h
+> @@ -49,8 +49,10 @@
+>  #define VIRTIO_NET_F_CTRL_RX	18	/* Control channel RX mode support */
+>  #define VIRTIO_NET_F_CTRL_VLAN	19	/* Control channel VLAN filtering */
+>  #define VIRTIO_NET_F_CTRL_RX_EXTRA 20	/* Extra RX mode control support */
+> +#define VIRTIO_NET_F_GUEST_ANNOUNCE 21  /* Guest can send gratituous packet */
+
+Rusty aligned the comments using tabs so let's do it here too?
+A better comment 'can announce device on the network'.
+
+>  
+>  #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
+> +#define VIRTIO_NET_S_ANNOUNCE   2	/* Announcement is needed */
+
+why 3 spaces before the value here?
+
+>  
+>  struct virtio_net_config {
+>  	/* The config defining mac address (if VIRTIO_NET_F_MAC) */
+> @@ -152,4 +154,15 @@ struct virtio_net_ctrl_mac {
+>   #define VIRTIO_NET_CTRL_VLAN_ADD             0
+>   #define VIRTIO_NET_CTRL_VLAN_DEL             1
+>  
+> +/*
+> + * Control link announce acknowledgement
+> + *
+> + * The command VIRTIO_NET_CTRL_ANNOUNCE_ACK is used to indicate that
+> + * driver has recevied the notification and device would clear the
+
+s/recevied/received/
+
+A bit clearer to replace 'and' with ; here.
+
+> + * VIRTIO_NET_S_ANNOUNCE bit in the status filed after it received
+
+s/filed/field/
+s/received/receives/
+
+> + * this command.
+> + */
+> +#define VIRTIO_NET_CTRL_ANNOUNCE       3
+> + #define VIRTIO_NET_CTRL_ANNOUNCE_ACK         0
+> +
+>  #endif /* _LINUX_VIRTIO_NET_H */
+> 
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
