@@ -1,68 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab2DDRSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 13:18:10 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:35280 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932202Ab2DDRSI (ORCPT
+	id S932439Ab2DDRTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 13:19:46 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:44944 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932211Ab2DDRTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 13:18:08 -0400
-Message-ID: <4F7C824D.2050308@tao.ma>
-Date: Thu, 05 Apr 2012 01:18:05 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Wed, 4 Apr 2012 13:19:45 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4F7C82A6.80706@cam.ac.uk>
+Date: Wed, 04 Apr 2012 18:19:34 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120314 Thunderbird/11.0
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Shaohua Li <shli@kernel.org>, Tejun Heo <tj@kernel.org>, axboe@kernel.dk,
-        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org
-Subject: Re: IOPS based scheduler (Was: Re: [PATCH 18/21] blkcg: move blkio_group_conf->weight
- to cfq)
-References: <4F7A261A.9000200@tao.ma> <20120402222504.GA2672@redhat.com> <4F7A2B21.5000907@tao.ma> <20120403153736.GI5913@redhat.com> <4F7B2708.6080504@tao.ma> <20120403164959.GJ5913@redhat.com> <4F7B32AE.7050900@tao.ma> <CANejiEU1qAsvogozY3MjZnpcrbYZO4CkRE8s73WGPc_R5LKV9g@mail.gmail.com> <20120404133705.GB12676@redhat.com> <4F7C7A91.8040707@tao.ma> <20120404165048.GF12676@redhat.com>
-In-Reply-To: <20120404165048.GF12676@redhat.com>
+To: Jon Brenner <jbrenner@TAOSinc.com>
+CC: jic23@kernel.org, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dg77.kim@samsung.com
+Subject: Re: tsl2x7x driver Sampling frequency
+References: <B4B07CCC7B7A084E989CF9386538EA1D0120B9AB@exchsrvr.taosinc.com>
+In-Reply-To: <B4B07CCC7B7A084E989CF9386538EA1D0120B9AB@exchsrvr.taosinc.com>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 50.1.53.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2012 12:50 AM, Vivek Goyal wrote:
-> On Thu, Apr 05, 2012 at 12:45:05AM +0800, Tao Ma wrote:
+On 04/04/2012 05:40 PM, Jon Brenner wrote:
+> Jonathon,
 > 
-> [..]
->>> In iops_mode(), expire each cfqq after dispatch of 1 or bunch of requests
->>> and you should get the same behavior (with slice_idle=0 and group_idle=0).
->>> So why write a new scheduler.
->> really? How could we config cfq to work like this? Or you mean we can
->> change the code for it?
+> You wrote;
+> <snip>
+> Units don't look right for sampling frequency.  Sorry, but that's an abi
 > 
-> You can just put a few lines of code to expire queue after 1-2 requests
-> dispatched from the queue. Than run your workload with slice_idle=0
-> and group_idle=0 and see what happens.
-oh, yes I can do this to see whether the latency helps, but it is
-hacking and doesn't work with the cgroup proportion...
+> issue so even if it is
+> fiddly to do the conversion to Hz it needs to be done.
+> </snip>
 > 
-> I don't even know what your workload is. 
-Sorry for not allowing to say more about it.
-> 
->>>
->>> Only thing is that with above, current code will provide iops fairness only
->>> for groups. We should be able to tweak queue scheduling to support iops
->>> fairness also.
->> OK, as I have said in another e-mail another my concern is the
->> complexity. It will make cfq too much complicated. I just checked the
->> source code of shaohua's original patch, fiops scheduler is only ~700
->> lines, so with cgroup support added it would be ~1000 lines I guess.
->> Currently cfq-iosched.c is around ~4000 lines even after Tejun's cleanup
->> of io context...
-> 
-> I think a large chunk of that iops scheduler code will be borrowed from
-> CFQ code. All the cgroup logic, queue creation logic, group scheduling
-> logic etc. And that's the reason I was still exploring the possibility 
-> of having common code base.
-Yeah, actually I was thinking of abstracting a generic logic, but it
-seems a lot bit hard. Maybe we can try to unify the code later?
+> Need some help here.
+> In the tsl2x7x driver sampling frequency is being used for setting
+> "persistence register".
+> It's actually a H/W filter.
+Gah, you mentioned this before and I meant to look back at the previous
+times we have hit this particular type of control (it's pretty common!)
 
-Thanks
-Tao
+> Here is an abstract from the data sheet:
+> --
+> Persistence Register (0x0C)
+> The persistence register controls the filtering interrupt capabilities
+> of the device. Configurable filtering is
+> provided to allow interrupts to be generated after each ADC integration
+> cycle or if the ADC integration has
+> produced a result that is outside of the values specified by threshold
+> register for some specified amount of time.
+> Separate filtering is provided for proximity and ALS functions. ALS
+> interrupts are generated using C0DATA.
+> --
+> The value provided here by the ABI is actually the number of
+> 'consecutive values out of range'.
+> 
+> The H/W takes care of counting the consecutive values out of range and
+> issues and interrupt when reached.
+> 
+> The timing (or frequency) of these out of range values are based on the
+> ALS or Prox integration time (determined by that respective setting).
+> That being the case a fixed table of sampling "frequencies" cannot be
+> reasonably defined - as the frequency can vary widely, based on other
+> settings.
+> 
+> So the register really is set to the desired number of 'values out of
+> range'.  
+> To add another slight twist, the value (number of out of range)
+> increases by 1 until 5, then by 5 until 60 - with the caveat that a
+> value of 0 generates an interrupt every ALS or Prox integration cycle . 
+> 
+> Since the sysfs-bus-iio doc contained a close match with respect to the
+> operation:
+> Description:
+> 		Some devices have internal clocks.  This parameter sets
+> the
+> 		resulting sampling frequency.  In many devices this
+> 		parameter has an effect on input filters etc rather than
+> 		simply controlling when the input is sampled.  As this
+> 		effects datardy triggers, hardware buffers and the sysfs
+> 		direct access interfaces, it may be found in any of the
+> 		relevant directories.  If it effects all of the above
+> 		then it is to be found in the base device directory.
+> 
+> Thus we used "sampling_frequency" - but now I am wondering if it should
+> be something else. 
+> 
+> If this is better suited for a different ABI please tell me what that
+> would be. 
+I'd argue this should really be sampling frequency anyway.  It's
+actually a common enough thing to see.
+I was sure we'd hit this before and indeed we did with the
+tmd277711 driver back in 2010 (hit the mailing list archives for that
+one).  Dongguen Kim was the author (cc'd).  Actually grep shows
+that my own sca3000 driver has this too (it's been a while!)
+
+It's actually made it through in the abi docs for all sorts of event
+types though I think the only correct user is the sca3000 accelerometer.
+Description is...
+	Period of time (in seconds) for which the condition must be
+	met before an event is generated. If direction is not
+	specified then this period applies to both directions.
+
+I know it is annoying that this parameter in side the device is very
+heavily dependent on other controls (often the case with this sort of
+thing) but to have a remotely consistent interface we have to define
+a standard unit.  Hence the 'right' way to handle this is to have a
+cached value in seconds and then work out the nearest possible setting
+when ever anything else that effects it is changed. Fiddly, but we
+are playing this game all over the place in other drivers.
+
+So here you are going to have
+
+in_intensity0_thresh_period and in_proximity0_thresh_period
+
+Both probably taking values as INT_PLUS_MICRO.
+
+Note that we have other filters controls for events such as
+hysterisis which is common on raw adc's.
+
+
+Jonathan
+> 
+> Please help!
+> 
+> Jon
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
