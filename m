@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab2DDOiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 10:38:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65145 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932142Ab2DDOiP (ORCPT
+	id S1756652Ab2DDOqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 10:46:22 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:54513 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756354Ab2DDOqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 10:38:15 -0400
-Message-ID: <1333550289.5856.4.camel@phoenix>
-Subject: [PATCH] regulator: rc5t583: Fix off-by-one valid range checking for
- selector
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 04 Apr 2012 22:38:09 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 4 Apr 2012 10:46:21 -0400
+Message-ID: <4F7C5EBA.3010506@xenotime.net>
+Date: Wed, 04 Apr 2012 07:46:18 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Meelis Roos <mroos@linux.ee>
+CC: Clemens Ladisch <clemens@ladisch.de>, Dave Airlie <airlied@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fix warnings from vgaarb.h
+References: <alpine.SOC.1.00.1204040912210.26551@math.ut.ee> <4F7BEE91.1070309@ladisch.de> <alpine.SOC.1.00.1204040947170.26551@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1204040947170.26551@math.ut.ee>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The valid selector should be 0 ... nsteps-1.
+On 04/04/2012 12:00 AM, Meelis Roos wrote:
+>> Meelis Roos wrote:
+>>> in 3.4-rc1-144, I get the following warnings. Fix them by including
+>>> <linux/pci.h>  to get struct pci_dev.
+>>>
+>>>    CC [M]  drivers/gpu/drm/i915/intel_display.o
+>>> In file included from drivers/gpu/drm/i915/intel_display.c:33:0:
+>>> include/linux/vgaarb.h:66:9: warning: ‘struct pci_dev’ declared inside parameter list [enabled by default]
+>>
+>> Or you could simply declare it:
+>>
+>>    struct pci_dev;
+>
+> Right, but any actual user of vgaarb would still need real pci_dev
+> anyway. But yes, nothing in vgaarb.h uses pci_dev contents, so the
+> following also compiles without warnings:
+>
+> -
+>
+> in 3.4-rc1-144, I get several warnings like this
+>
+>    CC [M]  drivers/gpu/drm/i915/intel_display.o
+> In file included from drivers/gpu/drm/i915/intel_display.c:33:0:
+> include/linux/vgaarb.h:66:9: warning: ‘struct pci_dev’ declared inside parameter list [enabled by default]
+>
+> Fix them by forward declaring struct pci_dev:
+>
+> Signed-off-by: Meelis Roos<mroos@linux.ee>
+>
+> diff --git a/include/linux/vgaarb.h b/include/linux/vgaarb.h
+> index 9c3120d..b572f80 100644
+> --- a/include/linux/vgaarb.h
+> +++ b/include/linux/vgaarb.h
+> @@ -47,6 +47,8 @@
+>    */
+>   #define VGA_DEFAULT_DEVICE     (NULL)
+>
+> +struct pci_dev;
+> +
+>   /* For use by clients */
+>
+>   /**
+> '
+>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/rc5t583-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
-index cac8a2a..dc9ebb9 100644
---- a/drivers/regulator/rc5t583-regulator.c
-+++ b/drivers/regulator/rc5t583-regulator.c
-@@ -131,7 +131,7 @@ static int rc5t583_set_voltage_sel(struct regulator_dev *rdev,
- 	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
- 	struct rc5t583_regulator_info *ri = reg->reg_info;
- 	int ret;
--	if (selector > ri->nsteps) {
-+	if (selector >= ri->nsteps) {
- 		dev_err(&rdev->dev, "Invalid selector 0x%02x\n", selector);
- 		return -EINVAL;
- 	}
--- 
-1.7.5.4
-
-
+Yes, I have sent this same patch at least 2 times, beginning on 
+Jan-30-2012.  And I cc-ed dri-devel mailing list and Dave Airlie
+on it also.
 
