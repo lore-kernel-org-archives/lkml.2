@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab2DDK1n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 06:27:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52488 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939Ab2DDK1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 06:27:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v2] gpio: Device tree support for LPC32xx
-Date: Wed, 4 Apr 2012 08:48:38 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: grant.likely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-References: <1333497518-25838-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1333497518-25838-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1756165Ab2DDKil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 06:38:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33302 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755789Ab2DDKik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 06:38:40 -0400
+Message-ID: <1333535915.7188.18.camel@marge.simpson.net>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+From: Mike Galbraith <mgalbraith@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 04 Apr 2012 12:38:35 +0200
+In-Reply-To: <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204040848.39376.arnd@arndb.de>
-X-Provags-ID: V02:K0:aigjimQBlK/Xoj/lsJm2TEqqir2T6EiMBRImDbdZxbP
- O9IUOsySLBm4jYUWTNOhfoxG/NAy9mZhMoWJqD/bdq194QhArV
- WqNzFs0/wi3W22eMtMEftxu2a0fxO+Pwm9Uuc16eSTMPKOXNDx
- oftlMP3pjUTOKj2lNBWx/OHOIV/QRFWuyi3Sz9hIctdf7qwBkZ
- XbI5m+CPiF4mowSF6wvzfDy5op2FRF7C7PkhiCcEE/pz482DDt
- WiHwimBCh/7P0tZ1w05v7ti2yKKDhDBvQFwBbiGo3RFLyClV4C
- DCxTcps4CTJB2D5TtIO7aA1VIzK713pVrIuvh68SaljG8HfmvC
- X6sPzqy11T7dCEEnUbFo=
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 April 2012, Roland Stigge wrote:
-> This patch adds device tree support for gpio-lpc32xx.c
+On Wed, 2012-04-04 at 00:15 -0700, David Rientjes wrote: 
+> On Tue, 3 Apr 2012, Mike Galbraith wrote:
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> > The hazzards of moving kthreadd into a non-root cgroup is still present
+> > in mainline.  Last go 'round stalled with Peter not liking the
+> > cpuset,cpu per controller specific exclusion.  I agree that total
+> > exclusion is the better option, and below is a respin doing that.
+> > 
+> 
+> We've been through this several times now iterating between two different 
+> functional changes.  I appreciate the persistence, but please, again, 
+> explain why you are doing this at the cgroups level rather than the 
+> cpusets level?
+> 
+> The last time we discussed this, you had proposed a patch to only do this 
+> for cpusets after the points I'm about to bring up for the fifth time.  
+> Peter ended up not responding and as I remember it didn't have strong 
+> feelings against doing it only for cpusets.  And here we are, yet again, 
+> back to the cgroups version.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Suggest a third version.
 
-Just one more comment:
+> There's _nothing_ wrong with attaching a kthread to most cgroups.  We do 
+> it for memcg.  And now you're trying to break it for ABSOLUTELY NO REASON.
 
-> +#ifdef CONFIG_OF
-> +static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
-> +	{ .compatible = "nxp,lpc32xx-gpio", },
-> +	{ },
-> +};
-> +#endif
-> +
-> +static struct platform_driver lpc32xx_gpio_driver = {
-> +	.driver		= {
-> +		.name	= "lpc32xx-gpio",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = lpc32xx_gpio_of_match,
-> +	},
-> +	.probe		= lpc32xx_gpio_probe,
-> +};
+Oh, caps made that so much more legible.
 
-The #ifdef above is not helpful, it will cause a build error in the
-of_match_table= assignment. Since the plan for this driver is to
-be devicetree-only, it would be appropriate to just remove the
-#ifdef, but adding of_match_ptr() is ok too.
+One, I don't see what it's breaking, and two, the reason for this repeat
+is that the last attempt with cpuset,cpu exclusion did not fly.
 
-	Arnd
+I don't care how it gets fixed.  I just thought I should mention that
+the problem is still alive upstream, did that, and was told I should try
+this way again with CCs.
+
+Ok, so you NAK this way, Peter NAKS the other way, and the bug lives on
+forever.  So be it.
+
+-Mike
 
