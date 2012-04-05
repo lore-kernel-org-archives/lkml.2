@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab2DEQLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:11:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab2DEQLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:11:40 -0400
-Message-ID: <4F7DC40F.5000805@redhat.com>
-Date: Thu, 05 Apr 2012 19:10:55 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1755121Ab2DEQMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:12:03 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:54704 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017Ab2DEQMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 12:12:01 -0400
+Date: Thu, 5 Apr 2012 09:11:56 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+Message-ID: <20120405161156.GB12854@google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net>
+ <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com>
+ <1333535915.7188.18.camel@marge.simpson.net>
+ <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com>
+ <1333542649.7188.40.camel@marge.simpson.net>
+ <alpine.DEB.2.00.1204041414220.26086@chino.kir.corp.google.com>
+ <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1333601231.7783.31.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Sasha Levin <levinsasha928@gmail.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: kvm: RCU warning in async pf
-References: <1333414472.11455.7.camel@lappy> <20120403105226.GF14939@redhat.com> <20120404123033.GD11918@redhat.com>
-In-Reply-To: <20120404123033.GD11918@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333601231.7783.31.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2012 03:30 PM, Gleb Natapov wrote:
-> On Tue, Apr 03, 2012 at 01:52:26PM +0300, Gleb Natapov wrote:
-> > On Mon, Apr 02, 2012 at 08:54:32PM -0400, Sasha Levin wrote:
-> > > Hi all,
-> > > 
-> > > I got the spew at the bottom of the mail in a KVM guest using the KVM tools and running trinity.
-> > > 
-> > > I'm not quite sure how default_idle managed to trigger a pagefault, so that part looks odd to me.
-> > > 
-> > This is not regular page fault. This is async page fault that tells the
-> > guest that a page, previously swapped out by hypervisor, is now swapped
-> > back in and it can happen while vcpu is idle. The code does not leave
-> > idle state properly though. We probably need to call rcu_irq_enter()
-> > there. Will look into it.
-> > 
->
-> The patch below solves it for me:
->
-> "Page ready" async PF can kick vcpu out of idle state much like IRQ.
-> We need to tell RCU about this.
->
->
+On Thu, Apr 05, 2012 at 06:47:11AM +0200, Mike Galbraith wrote:
+> cgroups: disallow attaching kthreadd 
+> 
+> Allowing kthreadd to be moved to a non-root group makes no sense, it being
+> a global resource, and needlessly leads unsuspecting users toward trouble.
+> 
+> 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+> allocated is not schedulable.  Simple user error, but harmful to the box.
+> 
+> 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+> rendering the cpuset immortal.
+> 
+> Save the user some unexpected trouble, just say no.
+> 
+> Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
 
-Applied it, thanks.
+Li, I'm gonna route this through for-3.4-fixes.  Can you please ack
+it?
+
+Thanks.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+tejun
