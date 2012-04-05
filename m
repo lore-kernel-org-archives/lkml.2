@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab2DEPQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:16:15 -0400
-Received: from linux-sh.org ([111.68.239.195]:56002 "EHLO linux-sh.org"
+	id S1753765Ab2DEPYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:24:48 -0400
+Received: from linux-sh.org ([111.68.239.195]:41901 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752226Ab2DEPQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 11:16:13 -0400
-Date: Fri, 6 Apr 2012 00:15:59 +0900
+	id S1752226Ab2DEPYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 11:24:46 -0400
+Date: Fri, 6 Apr 2012 00:24:43 +0900
 From: Paul Mundt <lethal@linux-sh.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, dhowells@redhat.com,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH 07/11] sh: fix several build failures from system.h fallout
-Message-ID: <20120405151558.GD23761@linux-sh.org>
-References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com> <1333312727-11428-8-git-send-email-paul.gortmaker@windriver.com> <20120402010048.GA21647@linux-sh.org> <4F79ECD9.6000108@windriver.com> <20120403095754.a70f38eb70766580843debc7@canb.auug.org.au> <CAP=VYLpxEvcQv=AOZCU46PQrVn04MC7_Jhodba9z-mmj9XamSw@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 3.4-rc1
+Message-ID: <20120405152443.GE23761@linux-sh.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAP=VYLpxEvcQv=AOZCU46PQrVn04MC7_Jhodba9z-mmj9XamSw@mail.gmail.com>
 User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 10:49:30PM -0400, Paul Gortmaker wrote:
-> [sorry for empty mail, pilot error]
-> 
-> On Mon, Apr 2, 2012 at 7:57 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> >
-> > I used to have sh-current and sh trees (and rmobile-current and rmobile)
-> > trees in linux-next, but they have not been resurrected since the
-> > kernel.org problems last year ...
-> >
-> > They were all branches of
-> > git://git.kernel.org/pub/scm/linux/kernel/git/lethal/sh-2.6.git which is
-> > still listed in MAINTAINERS but does not exist :-(
-> >
-> > Paul M, to you have an alternate place I can fetch from?
-> 
-> Hi Paul M.
-> 
-> Is this the tree Stephen should be using in linux-next?
-> 
->         git://github.com/pmundt/linux-sh.git sh-latest
-> 
-Yes, that's the current one for sh stuff for now. The rmobile stuff is
-going through the ARM SoC tree nowadays, so that shouldn't matter.  I
-haven't bothered getting the trees back on kernel.org yet, so I haven't
-updated the MAINTAINERS entry, but will probably do so in the future.
+The following changes since commit f52b69f86e27903d6896ed5fa7cd280fec8de532:
+
+  Merge tag 'sh-for-linus' of git://github.com/pmundt/linux-sh (2012-03-30 00:09:17 -0700)
+
+are available in the git repository at:
+
+  git://github.com/pmundt/linux-sh.git sh-for-linus
+
+Paul Mundt (6):
+      sh: fix up fallout from system.h disintegration.
+      sh: dwarf unwinder depends on SHcompact.
+      sh: dma: Fix up device attribute mismatch from sysdev fallout.
+      sh: vsyscall: Fix up .eh_frame generation.
+      serial: sh-sci: use serial_port_in/out vs sci_in/out.
+      Merge branches 'sh/urgent', 'sh/vsyscall' and 'common/serial-rework' into sh-latest
+
+Shimoda, Yoshihiro (1):
+      sh: fix clock-sh7757 for the latest sh_mobile_sdhi driver
+
+ arch/sh/Kconfig.debug                        |    1 +
+ arch/sh/boards/board-sh7785lcr.c             |    1 +
+ arch/sh/boards/mach-hp6xx/pm.c               |    1 +
+ arch/sh/drivers/dma/dma-sysfs.c              |    2 +-
+ arch/sh/kernel/cpu/fpu.c                     |    1 +
+ arch/sh/kernel/cpu/sh2a/fpu.c                |    1 +
+ arch/sh/kernel/cpu/sh4/fpu.c                 |    1 +
+ arch/sh/kernel/cpu/sh4a/clock-sh7757.c       |    2 +-
+ arch/sh/kernel/cpu/shmobile/pm.c             |    1 +
+ arch/sh/kernel/idle.c                        |    2 +-
+ arch/sh/kernel/kgdb.c                        |    1 +
+ arch/sh/kernel/process_32.c                  |    1 +
+ arch/sh/kernel/smp.c                         |    1 +
+ arch/sh/kernel/vsyscall/vsyscall-sigreturn.S |   35 ++++++
+ arch/sh/kernel/vsyscall/vsyscall-trapa.S     |   23 ++--
+ arch/sh/mm/cache-sh4.c                       |    1 +
+ arch/sh/mm/flush-sh4.c                       |    1 +
+ arch/sh/mm/sram.c                            |    1 +
+ drivers/tty/serial/sh-sci.c                  |  167 +++++++++++++-------------
+ drivers/tty/serial/sh-sci.h                  |    8 +-
+ 20 files changed, 147 insertions(+), 105 deletions(-)
