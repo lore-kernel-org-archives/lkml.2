@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab2DEX3Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:29:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54153 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab2DEX3M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:29:12 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sorin Dumitru <dumitru.sorin87@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/5] perf/urgent fixes
-Date: Thu,  5 Apr 2012 20:28:47 -0300
-Message-Id: <1333668532-3624-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1756734Ab2DEX3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:29:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59480 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756557Ab2DEX3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 19:29:19 -0400
+Date: Fri, 6 Apr 2012 01:29:13 +0200
+From: Jan Kara <jack@suse.cz>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: dramatic I/O slowdown after upgrading 2.6.32->3.0
+Message-ID: <20120405232913.GA6640@quack.suse.cz>
+References: <4F75E46E.2000503@msgid.tls.msk.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F75E46E.2000503@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+  Hello,
 
-	Please consider pulling,
+On Fri 30-03-12 20:50:54, Michael Tokarev wrote:
+> I'm observing a dramatic slowdown of several hosts after upgrading
+> from 2.6.32.y to 3.0.x i686 kernels (in both cases from kernel.org,
+> on both cases the last version is relatively latest).
+> 
+> On 2.6.32 everything is fast.  On 3.0 the same operations which goes
+> instantly takes ages to complete.
+> 
+> For example, out of observed actual differences, munin-graph process
+> on 2.6.32 completes in a few secs writing to a ext4 /var filesystem.
+> On 3.0, the same process takes about a minute and keeps all 5 hard
+> drives (md raid5) 99% busy all this time.
+> 
+> apt-get upgrade (from debian/ubuntu) first reads current package
+> status database.  This process takes about 3 secs on a freshly
+> booted 2.6.32, and about 40 seconds on a freshly booted 3.0,
+> again, keeping all 5 hdds 99% busy (according to iostat).
+> 
+> Only the kernel is different, all the rest is exactly the same.
+> I can reboot into 2.6.32 again after running 3.0, and the system
+> is fast again.
+> 
+> The machine is relatively old, it is an IBM xSeries 345 server
+> with some 2.66GHz Xeon (stepping 9) CPU, a Broadcom chipset, an
+> LSI Logic / Symbios Logic 53c1030 PCI-X Fusion-MPT Dual Ultra320
+> SCSI controller and 5x74Gb pSCSI drives.  But it is obviously not
+> a reason for it to run _this_ slow... ;)
+> 
+> There's another machine here, with an AMD BE-2400 CPU, nVidia MCP55
+> chipset, AHA-3940U2x pSCSI controller and a set of 74Gb HDDs.  It
+> shows similar sympthoms after upgrading from 2.6.32 to 3.0 -- every
+> I/O becomes very slow with all HDDs being busy for long periods.
+> 
+> What's the way to debug this issue?
+  Identifying a particular kernel where things regresses might help as Jon
+wrote. Just from top of my head, 3.0 had a bug in device plugging so
+readahead was broken. I think it was addressed in -stable series so you
+might want to check out latest 3.0-stable.
 
-- Arnaldo
-
-The following changes since commit 7b78f13603c6fcb64e020a0bbe31a651ea2b657b:
-
-  perf tools: Fix getrusage() related build failure on glibc trunk (2012-04-04 11:59:00 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-
-for you to fetch changes up to 31d68e7b66f168e623902e194af1e52b8cf75d71:
-
-  perf annotate: Validate addr in symbol__inc_addr_samples (2012-04-05 19:51:14 -0300)
-
-----------------------------------------------------------------
-Fixes for perf/urgent
-
-. Fix annotation histograms decay: We were decaying just the entries on the
-  objdump lines, i.e. the first byte of an instruction, leading to percentage
-  errors when samples happened in the other bytes of instructions. Affects
-  only live annotation.
-
-. Use most recent map for an histogram, avoiding underflow problems in
-  annotation histograms. Fix from David Miller
-
-. Add validation in 'perf top' for the underflow problems mentioned in the
-  previous fix. Present information to the user when such thing happens and
-  ask for reporting to lkml.
-
-. Fix the hists browser when there are multiple events in a perf.data file but
-  one of them has no samples. Fix from Jiri Olsa
-
-. Add intel_idle to the list of idle routines to skip in perf top.
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (3):
-      perf top: Add intel_idle to the skip list
-      perf annotate: Fix hist decay
-      perf annotate: Validate addr in symbol__inc_addr_samples
-
-David Miller (1):
-      perf hists: Catch and handle out-of-date hist entry maps.
-
-Jiri Olsa (1):
-      perf hists browser: Fix NULL deref in hists browsing code
-
- tools/perf/builtin-top.c            |   36 ++++++++++++++++++++++++++++++++++-
- tools/perf/util/annotate.c          |   16 ++++++----------
- tools/perf/util/hist.c              |   12 ++++++++++++
- tools/perf/util/map.c               |    1 +
- tools/perf/util/map.h               |    1 +
- tools/perf/util/ui/browsers/hists.c |    3 +++
- 6 files changed, 58 insertions(+), 11 deletions(-)
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
