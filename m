@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2DEPg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:36:29 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:43230 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab2DEPg2 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 5 Apr 2012 11:36:28 -0400
-Message-Id: <4F7DD852020000780007CC2A@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 05 Apr 2012 16:37:22 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Jens Axboe" <axboe@kernel.dk>, "xen-devel" <xen-devel@lists.xen.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen-blkfront: properly name all devices
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753998Ab2DEPkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:40:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57885 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab2DEPkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 11:40:09 -0400
+Date: Thu, 5 Apr 2012 10:40:04 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Akio Idehara <zbe64533@gmail.com>
+Cc: mjg59@srcf.ucam.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] toshiba_acpi: Add support for transflective LCD
+Message-ID: <20120405154004.GB14821@thinkpad-t410>
+Mail-Followup-To: Akio Idehara <zbe64533@gmail.com>, mjg59@srcf.ucam.org,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1333551646-4575-1-git-send-email-zbe64533@gmail.com>
+ <20120404183758.GA17327@thinkpad-t410>
+ <4F7DAE00.6010101@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4F7DAE00.6010101@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- devices beyond xvdzz didn't get proper names assigned at all
-- extended devices with minors not representable within the kernel's
-  major/minor bit split spilled into foreign majors
+On Thu, Apr 05, 2012 at 11:36:48PM +0900, Akio Idehara wrote:
+> >>  static const struct backlight_ops toshiba_backlight_data = {
+> >> +	.options	= BL_CORE_SUSPENDRESUME,
+> > 
+> > What's the reason for adding this? I don't see that it's useful unless
+> > we're handling BL_CORE_SUSPENDED, which toshiba_acpi is not doing.
+> 
+> 
+> The reason is to restore transflective status, which is always disabled
+> after resuming.  If BL_CORE_SUSPENDRESUME is added,
+> set_lcd_state_status() is called from backlight_update_status() with
+> stored brightness. So, when its brightness is 0, transflective status is
+> enabled after resuming.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Okay, that makes sense.
 
----
- drivers/block/xen-blkfront.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
+Since you're in the neighborhood, would you mind fixing the whitespace
+issues in the other fields of toshiba_backlight_data while you're at it?
+Both get_brightness and update_status are indented using spaces rather
+than a tab.
 
---- 3.4-rc1/drivers/block/xen-blkfront.c
-+++ 3.4-rc1-xen-blkfront-all-devices/drivers/block/xen-blkfront.c
-@@ -528,6 +528,14 @@ static int xen_translate_vdev(int vdevic
- 	return 0;
- }
- 
-+static char *encode_disk_name(char *ptr, unsigned int n)
-+{
-+	if (n >= 26)
-+		ptr = encode_disk_name(ptr, n / 26 - 1);
-+	*ptr = 'a' + n % 26;
-+	return ptr + 1;
-+}
-+
- static int xlvbd_alloc_gendisk(blkif_sector_t capacity,
- 			       struct blkfront_info *info,
- 			       u16 vdisk_info, u16 sector_size)
-@@ -538,6 +546,7 @@ static int xlvbd_alloc_gendisk(blkif_sec
- 	unsigned int offset;
- 	int minor;
- 	int nr_parts;
-+	char *ptr;
- 
- 	BUG_ON(info->gd != NULL);
- 	BUG_ON(info->rq != NULL);
-@@ -562,7 +571,11 @@ static int xlvbd_alloc_gendisk(blkif_sec
- 					"emulated IDE disks,\n\t choose an xvd device name"
- 					"from xvde on\n", info->vdevice);
- 	}
--	err = -ENODEV;
-+	if (minor >> MINORBITS) {
-+		pr_warn("blkfront: %#x's minor (%#x) out of range; ignoring\n",
-+			info->vdevice, minor);
-+		return -ENODEV;
-+	}
- 
- 	if ((minor % nr_parts) == 0)
- 		nr_minors = nr_parts;
-@@ -576,23 +589,14 @@ static int xlvbd_alloc_gendisk(blkif_sec
- 	if (gd == NULL)
- 		goto release;
- 
--	if (nr_minors > 1) {
--		if (offset < 26)
--			sprintf(gd->disk_name, "%s%c", DEV_NAME, 'a' + offset);
--		else
--			sprintf(gd->disk_name, "%s%c%c", DEV_NAME,
--				'a' + ((offset / 26)-1), 'a' + (offset % 26));
--	} else {
--		if (offset < 26)
--			sprintf(gd->disk_name, "%s%c%d", DEV_NAME,
--				'a' + offset,
--				minor & (nr_parts - 1));
--		else
--			sprintf(gd->disk_name, "%s%c%c%d", DEV_NAME,
--				'a' + ((offset / 26) - 1),
--				'a' + (offset % 26),
--				minor & (nr_parts - 1));
--	}
-+	strcpy(gd->disk_name, DEV_NAME);
-+	ptr = encode_disk_name(gd->disk_name + sizeof(DEV_NAME) - 1, offset);
-+	BUG_ON(ptr >= gd->disk_name + DISK_NAME_LEN);
-+	if (nr_minors > 1)
-+		*ptr = 0;
-+	else
-+		snprintf(ptr, gd->disk_name + DISK_NAME_LEN - ptr,
-+			 "%d", minor & (nr_parts - 1));
- 
- 	gd->major = XENVBD_MAJOR;
- 	gd->first_minor = minor;
-
-
+Thanks,
+Seth
 
