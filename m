@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab2DEWWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 18:22:17 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:65107 "EHLO mail.gnudd.com"
+	id S1756325Ab2DEWWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 18:22:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26574 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756336Ab2DEWWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 18:22:14 -0400
-Date: Fri, 6 Apr 2012 00:21:54 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH 0/1] Renaming AMBA to PRIMECELL
-Message-ID: <cover.1333663714.git.rubini@gnudd.com>
+	id S1756228Ab2DEWWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 18:22:08 -0400
+Date: Fri, 6 Apr 2012 00:21:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: [PATCH 3/6] uprobes: teach find_active_uprobe() to provide the
+	"is_swbp" info
+Message-ID: <20120405222127.GC19166@redhat.com>
+References: <20120405222024.GA19154@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20120405222024.GA19154@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only patch in this series renames CONFIG_ARM_AMBA to
-CONFIG_ARM_PRIMECELL in Kconfig and the only source file with
-#ifdef.
+A separate patch to simplify the review, and for the documentation.
 
-I compile-tested on the following defconfigs: "integrator realview
-versatile vexpress bcmring ep93xx lpc32xx u300 u8500 nhk8815 spear3xx
-spear6xx", diffing the stderr of the two compilations.
+The patch adds another "int *is_swbp" argument to find_active_uprobe(),
+so far its only caller doesn't use this info.
 
-While this patch is self-contained and works, there are other
-open points. I think only 4- below is worth doing, but I need
-confirmation before doing that.
+With this patch find_active_uprobe() additionally does:
 
-1- drivers/of/platform.c still has "amba" in its names. Worse, it has
-"amba-bus" in its device tree compatibility list (and some drivers
-have it too). I think this should stay.
+	- if find_vma() + ->vm_start check fails, *is_swbp = -EFAULT
 
-2- Actually, grepping for "amba" or "AMBA" finds a lot of related
-code. Some uses are correct and some are not.  I don't think an
-audit here is worth the effort; users will adapt over time, only
-where it makes sense and only when otherwise touching the code.
+	- otherwise, if valid_vma() + find_uprobe() fails, we return
+	  the result of is_swbp_at_addr_fast(), can be -EFAULT too.
 
-3- Should drivers/amba/bus.c  be renamed to drivers/primecell/bus.c
-or drivers/amba/primecell.c (I think the former but I'm not sure
-it's the bext name anyways)
+IOW. If find_active_uprobe(&is_swbp) returns NULL, the caller can look
+at is_swbp to figure out if the current insn is bp or not, or if we
+can't access this memory.
 
-4- Should linux/amba/bus.h be renamed to linux/primecell/bus.h or
-linux/amba/primecell.h? (I think the former, leaving the old
-name around for a while, so out-of-tree drivers are happy
-and #warn'ed about the change.
+Note: I think that performance-wise this change is fine. This adds
+is_swbp_at_addr_fast(), but only if we race with uprobe_unregister()
+or we hit the "normal" int3 but this mm has uprobes as well. And even
+in this case the slow read_opcode() path is very unlikely, this insn
+recently triggered do_int3(), __copy_from_user_inatomic() shouldn't
+fail in the likely case.
+---
+ kernel/events/uprobes.c |   27 +++++++++++++++++----------
+ 1 files changed, 17 insertions(+), 10 deletions(-)
 
-/alessandro
-
-
-
-Alessandro Rubini (1):
-  ARM: Rename CONFIG_ARM_AMBA to CONFIG_ARM_PRIMECELL
-
- arch/arm/Kconfig                  |   36 ++++++++++++++++++++++--------------
- arch/arm/Kconfig.debug            |    2 +-
- arch/arm/mach-exynos/Kconfig      |    4 ++--
- arch/arm/mach-mxs/devices/Kconfig |    2 +-
- arch/arm/mach-netx/Kconfig        |    4 ++--
- arch/arm/mach-omap2/Kconfig       |    2 +-
- arch/arm/plat-samsung/Kconfig     |    2 +-
- drivers/Makefile                  |    2 +-
- drivers/dma/Kconfig               |    4 ++--
- drivers/gpio/Kconfig              |    2 +-
- drivers/input/serio/Kconfig       |    2 +-
- drivers/mmc/host/Kconfig          |    2 +-
- drivers/of/platform.c             |   10 +++++-----
- drivers/rtc/Kconfig               |    4 ++--
- drivers/spi/Kconfig               |    2 +-
- drivers/tty/serial/Kconfig        |    4 ++--
- drivers/video/Kconfig             |    2 +-
- drivers/watchdog/Kconfig          |    2 +-
- sound/arm/Kconfig                 |    2 +-
- 19 files changed, 49 insertions(+), 41 deletions(-)
-
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 2050b1a..054c00f 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1497,7 +1497,7 @@ int __weak is_swbp_at_addr_fast(unsigned long vaddr)
+ 	return is_swbp_insn(&opcode);
+ }
+ 
+-static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
++static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct uprobe *uprobe = NULL;
+@@ -1505,15 +1505,21 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
+ 
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_vma(mm, bp_vaddr);
++	if (vma && vma->vm_start <= bp_vaddr) {
++		if (valid_vma(vma, false)) {
++			struct inode *inode;
++			loff_t offset;
++
++			inode = vma->vm_file->f_mapping->host;
++			offset = bp_vaddr - vma->vm_start;
++			offset += (vma->vm_pgoff << PAGE_SHIFT);
++			uprobe = find_uprobe(inode, offset);
++		}
+ 
+-	if (vma && vma->vm_start <= bp_vaddr && valid_vma(vma, false)) {
+-		struct inode *inode;
+-		loff_t offset;
+-
+-		inode = vma->vm_file->f_mapping->host;
+-		offset = bp_vaddr - vma->vm_start;
+-		offset += (vma->vm_pgoff << PAGE_SHIFT);
+-		uprobe = find_uprobe(inode, offset);
++		if (!uprobe)
++			*is_swbp = is_swbp_at_addr_fast(bp_vaddr);
++	} else {
++		*is_swbp = -EFAULT;
+ 	}
+ 
+ 	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
+@@ -1532,9 +1538,10 @@ static void handle_swbp(struct pt_regs *regs)
+ 	struct uprobe_task *utask;
+ 	struct uprobe *uprobe;
+ 	unsigned long bp_vaddr;
++	int is_swbp;
+ 
+ 	bp_vaddr = uprobe_get_swbp_addr(regs);
+-	uprobe = find_active_uprobe(bp_vaddr);
++	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+ 
+ 	if (!uprobe) {
+ 		/* No matching uprobe; signal SIGTRAP. */
 -- 
-1.7.7.2
+1.5.5.1
+
+
