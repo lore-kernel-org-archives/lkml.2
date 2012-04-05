@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab2DEKvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 06:51:37 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:46011 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab2DEKvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 06:51:36 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-	<1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
-	<m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-	<20120402202848.1EB833E02A7@localhost> <m2y5qdow0v.fsf@igel.home>
-	<20120404154020.40C513E09D5@localhost>
-X-Yow: Hello, GORRY-O!!  I'm a GENIUS from HARVARD!!
-Date: Thu, 05 Apr 2012 12:51:27 +0200
-In-Reply-To: <20120404154020.40C513E09D5@localhost> (Grant Likely's message of
-	"Wed, 04 Apr 2012 08:40:20 -0700")
-Message-ID: <m21uo2v4cw.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	id S1754708Ab2DEKyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 06:54:15 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16510 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753976Ab2DEKyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 06:54:14 -0400
+Message-ID: <4F7D79C3.1010306@parallels.com>
+Date: Thu, 05 Apr 2012 14:53:55 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "serge.hallyn@canonical.com" <serge.hallyn@canonical.com>,
+        "criu@openvz.org" <criu@openvz.org>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/2] IPC: message queue stealing feature introduced
+References: <20120215163203.27978.52494.stgit@localhost6.localdomain6>	<20120215165439.27978.43513.stgit@localhost6.localdomain6> <20120404161224.dea67733.akpm@linux-foundation.org>
+In-Reply-To: <20120404161224.dea67733.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> writes:
+05.04.2012 03:12, Andrew Morton пишет:
+>
+> I'd be a bit more comfortable if there was some sign that other c/r
+> developers have reviewed and tested this and have successfully used it
+> in c/r operation testing?
+>
 
-> I bet it is NR_IRQS related.  You have SPARSE_IRQ enabled, which means
-> the maximum number of irq_descs is IRQ_BITMAP_BITS (NR_IRQS + 8192).
+We have a user-space test (part of our regression testing test suite) for this 
+functionality. Thus we run this test very ofter.
 
-The actual definition uses NR_IRQS + 8196.  Guess that's a typo.  (Does
-it really make sense to add NR_IRQS here?)
+> We've been trying to isolate the c/r-specific functions inside #ifdef
+> CONFIG_CHECKPOINT_RESTORE, but this patch doesn't do that.  I have been
+> encouraging this isolation so that people who aren't using c/r don't
+> have to carry the overhead it adds and so that we can more easily hunt
+> down and remove everything if the entire c/r project doesn't work out
+> successfully.
+>
 
-> diff --git a/arch/powerpc/include/asm/irq.h b/arch/powerpc/include/asm/irq.h
-> index cf417e51..9edf499 100644
-> --- a/arch/powerpc/include/asm/irq.h
-> +++ b/arch/powerpc/include/asm/irq.h
-> @@ -20,7 +20,7 @@
->  
->  /* Define a way to iterate across irqs. */
->  #define for_each_irq(i) \
-> -       for ((i) = 0; (i) < NR_IRQS; ++(i))
-> +       for ((i) = 0; (i) < nr_irqs; ++(i))
+Sorry. I'll add this ifdef's and send rebased patch set once more.
 
-There are exactly two uses of for_each_irq, one is related to cpu
-hotplug, the other to kexec, so that cannot make any difference.
+> This patch modifies the sys_msgrcv() API and so we should update the
+> manpage for that syscall.  Please work with Michael on this.
+>
 
-Andreas.
+Sure.
+
+> What does all the compat fiddling actually do?  I guess it's needed for
+> checkpoint and restore of 32-bit userspace on 64-bit kernels?  Does c/r
+> as a whole support that?  It should.  How well tested is this?
+>
+
+CRIU doesn't support 32-bit processes migration yet. But we are going to add 
+this support in future.
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Best regards,
+Stanislav Kinsbursky
