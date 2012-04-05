@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab2DEPLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:11:40 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52161 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab2DEPLh (ORCPT
+	id S1755094Ab2DEPLe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:11:34 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49393 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755002Ab2DEPLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 11:11:37 -0400
+	Thu, 5 Apr 2012 11:11:30 -0400
 From: Benjamin Poirier <bpoirier@suse.de>
 To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Cc: Alex Duyck <alexander.h.duyck@intel.com>,
@@ -23,47 +23,62 @@ Cc: Alex Duyck <alexander.h.duyck@intel.com>,
         John Ronciak <john.ronciak@intel.com>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH 2/2] ixgbe: add missing rtnl_lock in PM resume path
-Date: Thu,  5 Apr 2012 11:11:04 -0400
-Message-Id: <1333638664-17062-2-git-send-email-bpoirier@suse.de>
+Subject: [PATCH 1/2] igb: fix rtnl race in PM resume path
+Date: Thu,  5 Apr 2012 11:11:03 -0400
+Message-Id: <1333638664-17062-1-git-send-email-bpoirier@suse.de>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1333638664-17062-1-git-send-email-bpoirier@suse.de>
-References: <1333638664-17062-1-git-send-email-bpoirier@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upon resume from standby, ixgbe may trigger the ASSERT_RTNL() in
-netif_set_real_num_tx_queues(). The call stack is:
-	netif_set_real_num_tx_queues
-	ixgbe_set_num_queues
-	ixgbe_init_interrupt_scheme
-	ixgbe_resume
+Since the caller (PM resume code) is not the one holding rtnl, when taking the
+'else' branch rtnl may be released at any moment, thereby defeating the whole
+purpose of this code block.
 
 Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-
 ---
-Unlike patch 1 for igb, we cannot lock rtnl closer to the point where
-netif_set_real_num_tx_queues() is called because ixgbe_init_interrupt_scheme()
-is also called by the dcb code, already under rtnl.
----
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |   20 ++++++--------------
+ 1 files changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 3e26b1f..ff6edab 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -4836,7 +4836,9 @@ static int ixgbe_resume(struct pci_dev *pdev)
- 
- 	pci_wake_from_d3(pdev, false);
- 
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index f022ff7..4854ab6 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -1083,9 +1083,12 @@ msi_only:
+ 		adapter->flags |= IGB_FLAG_HAS_MSI;
+ out:
+ 	/* Notify the stack of the (possibly) reduced queue counts. */
 +	rtnl_lock();
- 	err = ixgbe_init_interrupt_scheme(adapter);
+ 	netif_set_real_num_tx_queues(adapter->netdev, adapter->num_tx_queues);
+-	return netif_set_real_num_rx_queues(adapter->netdev,
+-					    adapter->num_rx_queues);
++	err = netif_set_real_num_rx_queues(adapter->netdev,
++		adapter->num_rx_queues);
 +	rtnl_unlock();
- 	if (err) {
- 		e_dev_err("Cannot initialize interrupts for device\n");
- 		return err;
++	return err;
+ }
+ 
+ /**
+@@ -6646,18 +6649,7 @@ static int igb_resume(struct device *dev)
+ 	pci_enable_wake(pdev, PCI_D3hot, 0);
+ 	pci_enable_wake(pdev, PCI_D3cold, 0);
+ 
+-	if (!rtnl_is_locked()) {
+-		/*
+-		 * shut up ASSERT_RTNL() warning in
+-		 * netif_set_real_num_tx/rx_queues.
+-		 */
+-		rtnl_lock();
+-		err = igb_init_interrupt_scheme(adapter);
+-		rtnl_unlock();
+-	} else {
+-		err = igb_init_interrupt_scheme(adapter);
+-	}
+-	if (err) {
++	if (igb_init_interrupt_scheme(adapter)) {
+ 		dev_err(&pdev->dev, "Unable to allocate memory for queues\n");
+ 		return -ENOMEM;
+ 	}
 -- 
 1.7.7
 
