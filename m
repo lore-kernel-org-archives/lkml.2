@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab2DEPH2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:07:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52339 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab2DEO7d (ORCPT
+	id S1754234Ab2DEO7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:59:32 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60434 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab2DEO6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:59:33 -0400
+	Thu, 5 Apr 2012 10:58:42 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 30/34] ceph: implement i_op->atomic_open() and i_op->atomic_create()
-Date: Thu,  5 Apr 2012 16:58:56 +0200
-Message-Id: <1333637940-31884-31-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 04/34] vfs: do_last(): use inode variable
+Date: Thu,  5 Apr 2012 16:58:30 +0200
+Message-Id: <1333637940-31884-5-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
@@ -23,187 +23,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Instead of calling ceph_lookup_open() from ->lookup and ->create, call it from
-->atomic_open and ->atomic_create.
-
-CEPH does non-create open in ->atomic_open and create-open in ->atomic_create.
-To prevent unnecessary call to ->atomic_open the FS_NO_LOOKUP_CREATE flag is set
-in the filesystem flags to only call ->atomic_open on non-create opens.
+Use helper variable instead of path->dentry->d_inode before complete_walk().
+This will allow this code to be used in RCU mode.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/ceph/dir.c   |   68 ++++++++++++++++++++++++++++++++++--------------------
- fs/ceph/file.c  |   21 ++++++++---------
- fs/ceph/super.h |    5 ++-
- 3 files changed, 56 insertions(+), 38 deletions(-)
+ fs/namei.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
-index c4b7832..75df600 100644
---- a/fs/ceph/dir.c
-+++ b/fs/ceph/dir.c
-@@ -594,14 +594,6 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
- 	if (err < 0)
- 		return ERR_PTR(err);
+diff --git a/fs/namei.c b/fs/namei.c
+index 0ca5e40..58d1f62 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2389,15 +2389,16 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (error)
+ 		nd->flags |= LOOKUP_JUMPED;
  
--	/* open (but not create!) intent? */
--	if (nd &&
--	    (nd->flags & LOOKUP_OPEN) &&
--	    !(nd->intent.open.flags & O_CREAT)) {
--		int mode = nd->intent.open.create_mode & ~current->fs->umask;
--		return ceph_lookup_open(dir, dentry, nd, mode);
--	}
--
- 	/* can we conclude ENOENT locally? */
- 	if (dentry->d_inode == NULL) {
- 		struct ceph_inode_info *ci = ceph_inode(dir);
-@@ -642,6 +634,47 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
- 	return dentry;
- }
++	inode = path->dentry->d_inode;
+ 	error = -ENOENT;
+-	if (!path->dentry->d_inode)
++	if (!inode)
+ 		goto exit_dput;
  
-+struct file *ceph_atomic_open(struct inode *dir, struct dentry *dentry,
-+			      struct opendata *od, unsigned flags, umode_t mode,
-+			      bool *created)
-+{
-+	int err;
-+	struct dentry *res = NULL;
-+	struct file *filp;
-+
-+	if (!(flags & O_CREAT)) {
-+		if (dentry->d_name.len > NAME_MAX)
-+			return ERR_PTR(-ENAMETOOLONG);
-+
-+		err = ceph_init_dentry(dentry);
-+		if (err < 0)
-+			return ERR_PTR(err);
-+
-+		return ceph_lookup_open(dir, dentry, od, flags, mode);
-+	}
-+
-+	if (d_unhashed(dentry)) {
-+		res = ceph_lookup(dir, dentry, NULL);
-+		if (IS_ERR(res))
-+			return ERR_CAST(res);
-+
-+		if (res)
-+			dentry = res;
-+	}
-+
-+	/* We don't deal with positive dentries here */
-+	if (dentry->d_inode) {
-+		finish_no_open(od, res);
-+		return NULL;
-+	}
-+
-+	*created = true;
-+	filp = ceph_lookup_open(dir, dentry, od, flags, mode);
-+	dput(res);
-+
-+	return filp;
-+}
-+
- /*
-  * If we do a create but get no trace back from the MDS, follow up with
-  * a lookup (the VFS expects us to link up the provided dentry).
-@@ -702,23 +735,7 @@ static int ceph_mknod(struct inode *dir, struct dentry *dentry,
- static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 		       struct nameidata *nd)
- {
--	dout("create in dir %p dentry %p name '%.*s'\n",
--	     dir, dentry, dentry->d_name.len, dentry->d_name.name);
--
--	if (ceph_snap(dir) != CEPH_NOSNAP)
--		return -EROFS;
--
--	if (nd) {
--		BUG_ON((nd->flags & LOOKUP_OPEN) == 0);
--		dentry = ceph_lookup_open(dir, dentry, nd, mode);
--		/* hrm, what should i do here if we get aliased? */
--		if (IS_ERR(dentry))
--			return PTR_ERR(dentry);
--		return 0;
--	}
--
--	/* fall back to mknod */
--	return ceph_mknod(dir, dentry, (mode & ~S_IFMT) | S_IFREG, 0);
-+	return ceph_mknod(dir, dentry, mode, 0);
- }
+-	if (path->dentry->d_inode->i_op->follow_link)
++	if (inode->i_op->follow_link)
+ 		return NULL;
  
- static int ceph_symlink(struct inode *dir, struct dentry *dentry,
-@@ -1357,6 +1374,7 @@ const struct inode_operations ceph_dir_iops = {
- 	.rmdir = ceph_unlink,
- 	.rename = ceph_rename,
- 	.create = ceph_create,
-+	.atomic_open = ceph_atomic_open,
- };
- 
- const struct dentry_operations ceph_dentry_ops = {
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index 2fe9a3e..bf35158 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -214,21 +214,15 @@ out:
-  * may_open() fails, the struct *file gets cleaned up (i.e.
-  * ceph_release gets called).  So fear not!
-  */
--/*
-- * flags
-- *  path_lookup_open   -> LOOKUP_OPEN
-- *  path_lookup_create -> LOOKUP_OPEN|LOOKUP_CREATE
-- */
--struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
--				struct nameidata *nd, int mode)
-+struct file *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
-+			      struct opendata *od, unsigned flags, umode_t mode)
- {
- 	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
- 	struct ceph_mds_client *mdsc = fsc->mdsc;
--	struct file *file;
-+	struct file *file = NULL;
- 	struct ceph_mds_request *req;
- 	struct dentry *ret;
- 	int err;
--	int flags = nd->intent.open.flags;
- 
- 	dout("ceph_lookup_open dentry %p '%.*s' flags %d mode 0%o\n",
- 	     dentry, dentry->d_name.len, dentry->d_name.name, flags, mode);
-@@ -254,14 +248,19 @@ struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
- 		err = ceph_handle_notrace_create(dir, dentry);
- 	if (err)
- 		goto out;
--	file = lookup_instantiate_filp(nd, req->r_dentry, ceph_open);
-+	file = finish_open(od, req->r_dentry, ceph_open);
- 	if (IS_ERR(file))
- 		err = PTR_ERR(file);
- out:
- 	ret = ceph_finish_lookup(req, dentry, err);
- 	ceph_mdsc_put_request(req);
- 	dout("ceph_lookup_open result=%p\n", ret);
--	return ret;
-+
-+	if (IS_ERR(ret))
-+		return ERR_CAST(ret);
-+
-+	dput(ret);
-+	return err ? ERR_PTR(err) : file;
- }
- 
- int ceph_release(struct inode *inode, struct file *file)
-diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-index 8471db9..e61e546 100644
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -806,8 +806,9 @@ extern int ceph_copy_from_page_vector(struct page **pages,
- 				    loff_t off, size_t len);
- extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
- extern int ceph_open(struct inode *inode, struct file *file);
--extern struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
--				       struct nameidata *nd, int mode);
-+extern struct file *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
-+				     struct opendata *od, unsigned flags,
-+				     umode_t mode);
- extern int ceph_release(struct inode *inode, struct file *filp);
- 
- /* dir.c */
+ 	path_to_nameidata(path, nd);
+-	nd->inode = path->dentry->d_inode;
++	nd->inode = inode;
+ 	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
+ 	error = complete_walk(nd);
+ 	if (error)
 -- 
 1.7.7
 
