@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab2DEQ10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:27:26 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:8439 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755216Ab2DEQ0j (ORCPT
+	id S1755279Ab2DEQbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:31:22 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53745 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab2DEQbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:26:39 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M20LO9-01-4MV-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 2/4] perf tools: Fix thread map that is type pid_t
-Date: Thu, 5 Apr 2012 18:26:26 +0200
-Message-ID: <1333643188-26895-3-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1333643188-26895-1-git-send-email-robert.richter@amd.com>
-References: <1333643188-26895-1-git-send-email-robert.richter@amd.com>
+	Thu, 5 Apr 2012 12:31:20 -0400
+Date: Thu, 5 Apr 2012 09:31:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120405163113.GD12854@google.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404175124.GA8931@localhost>
+ <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404201816.GL12676@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404201816.GL12676@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thread map is actually type pid_t and not int.
+Hey, Vivek.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/util/thread_map.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Wed, Apr 04, 2012 at 04:18:16PM -0400, Vivek Goyal wrote:
+> Hey how about reconsidering my other proposal for which I had posted
+> the patches. And that is keep throttling still at device level. Reads
+> and direct IO get throttled asynchronously but buffered writes get
+> throttled synchronously.
+> 
+> Advantages of this scheme.
+> 
+> - There are no separate knobs.
+> 
+> - All the IO (read, direct IO and buffered write) is controlled using
+>   same set of knobs and goes in queue of same cgroup.
+> 
+> - Writeback logic has no knowledge of throttling. It just invokes a 
+>   hook into throttling logic of device queue.
+> 
+> I guess this is a hybrid of active writeback throttling and back pressure
+> mechanism.
+> 
+> But it still does not solve the NFS issue as well as for direct IO,
+> filesystems still can get serialized, so metadata issue still needs to 
+> be resolved. So one can argue that why not go for full "back pressure"
+> method, despite it being more complex.
+> 
+> Here is the link, just to refresh the memory. Something to keep in mind
+> while assessing alternatives.
+> 
+> https://lkml.org/lkml/2011/6/28/243
 
-diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
-index 7da80f1..f718df8 100644
---- a/tools/perf/util/thread_map.h
-+++ b/tools/perf/util/thread_map.h
-@@ -6,7 +6,7 @@
- 
- struct thread_map {
- 	int nr;
--	int map[];
-+	pid_t map[];
- };
- 
- struct thread_map *thread_map__new_by_pid(pid_t pid);
+Hmmm... so, this only works for blk-throttle and not with the weight.
+How do you manage interaction between buffered writes and direct
+writes for the same cgroup?
+
+Thanks.
+
 -- 
-1.7.8.4
-
-
+tejun
