@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2DEWKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 18:10:30 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:58773 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328Ab2DEWK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 18:10:29 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-	<1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
-	<m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-	<20120402202848.1EB833E02A7@localhost> <m2y5qdow0v.fsf@igel.home>
-	<20120404154020.40C513E09D5@localhost>
-X-Yow: How many retired bricklayers from FLORIDA are out purchasing
- PENCIL SHARPENERS right NOW??
-Date: Fri, 06 Apr 2012 00:10:23 +0200
-In-Reply-To: <20120404154020.40C513E09D5@localhost> (Grant Likely's message of
-	"Wed, 04 Apr 2012 08:40:20 -0700")
-Message-ID: <m2r4w1akz4.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	id S1756237Ab2DEWV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 18:21:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755368Ab2DEWVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 18:21:25 -0400
+Date: Fri, 6 Apr 2012 00:20:24 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+Message-ID: <20120405222024.GA19154@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> writes:
+Hello.
 
-> Can you attach console output logs for each of configs above and also
-> with NR_IRQS=128?  That might give me some clues as to which specific
-> code is causing the issues.
+Not for inclusion yet, only for the early review.
 
-It really looks like the issue starts when irq_expand_nr_irqs is called
-the first time to make nr_irqs bigger than NR_IRQS.
+I didn't even try to test these changes, and I am not expert
+in this area. And even _if_ this code is correct, I need to
+re-split these changes anyway, update the changelogs, etc.
 
-Andreas.
+Questions:
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+	- does it make sense?
+
+	- can it work or I missed something "in general" ?
+
+Why:
+
+	- It would be nice to remove a member from task_struct.
+
+	- Afaics, the usage of uprobes_srcu does not look right,
+	  at least in theory, see 6/6.
+
+	  The comment above delete_uprobe() says:
+
+	  	The current unregistering thread waits till all
+	  	other threads have hit a breakpoint, to acquire
+	  	the uprobes_treelock before the uprobe is removed
+	  	from the rbtree.
+
+	  but synchronize_srcu() can only help if a thread which
+	  have hit the breakpoint has already called srcu_read_lock().
+	  It can't synchronize with read_lock "in future", and there
+	  is a small window.
+
+	  We could probably add another synchronize_sched() before
+	  synchronize_srcu(), but this doesn't look very nice and
+
+	- I am not sure yet, but perhaps with these changes we can
+	  also kill mm->uprobes_state.count.
+
+Any review is very much appreciated.
+
+Oleg.
+
+ include/linux/sched.h   |    1 -
+ kernel/events/uprobes.c |  117 ++++++++++++++++++++++++++++++-----------------
+ 2 files changed, 75 insertions(+), 43 deletions(-)
+
