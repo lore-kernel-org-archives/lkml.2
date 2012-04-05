@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab2DED6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 23:58:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38433 "EHLO
+	id S1757437Ab2DED71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 23:59:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44524 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab2DED6L (ORCPT
+	with ESMTP id S1753160Ab2DED70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 23:58:11 -0400
-Message-ID: <1333598286.10597.4.camel@phoenix>
-Subject: [PATCH 2/6] regulator: isl6271a: Constify regulator_desc
+	Wed, 4 Apr 2012 23:59:26 -0400
+Message-ID: <1333598360.10597.5.camel@phoenix>
+Subject: [PATCH 3/6] regulator: lp3971: Constify regulator_desc
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Marek Vasut <marek.vasut@gmail.com>, Liam Girdwood <lrg@ti.com>,
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 05 Apr 2012 11:58:06 +0800
+Date: Thu, 05 Apr 2012 11:59:20 +0800
 In-Reply-To: <1333598216.10597.3.camel@phoenix>
 References: <1333598216.10597.3.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
@@ -26,22 +27,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/isl6271a-regulator.c |    2 +-
+ drivers/regulator/lp3971.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
-index 6539ef9..eee6f6b 100644
---- a/drivers/regulator/isl6271a-regulator.c
-+++ b/drivers/regulator/isl6271a-regulator.c
-@@ -112,7 +112,7 @@ static struct regulator_ops isl_fixed_ops = {
- 	.list_voltage	= isl6271a_list_fixed_voltage,
+diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+index 2013525..499986e 100644
+--- a/drivers/regulator/lp3971.c
++++ b/drivers/regulator/lp3971.c
+@@ -281,7 +281,7 @@ static struct regulator_ops lp3971_dcdc_ops = {
+ 	.set_voltage_sel = lp3971_dcdc_set_voltage_sel,
  };
  
--static struct regulator_desc isl_rd[] = {
-+static const struct regulator_desc isl_rd[] = {
+-static struct regulator_desc regulators[] = {
++static const struct regulator_desc regulators[] = {
  	{
- 		.name		= "Core Buck",
- 		.id		= 0,
+ 		.name = "LDO1",
+ 		.id = LP3971_LDO1,
 -- 
 1.7.5.4
 
