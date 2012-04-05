@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab2DEOoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:44:25 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50296 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab2DEOoX (ORCPT
+	id S1753516Ab2DEO6j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:58:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37053 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab2DEO6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:44:23 -0400
+	Thu, 5 Apr 2012 10:58:36 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
+To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org
-Subject: Re: [PATCH 5/6] vfs: reorganize do_lookup
-References: <1332759264-23533-1-git-send-email-miklos@szeredi.hu>
-	<1332759264-23533-6-git-send-email-miklos@szeredi.hu>
-	<20120330190526.GA29050@ZenIV.linux.org.uk>
-	<87hax1s069.fsf@tucsk.pomaz.szeredi.hu>
-	<20120404031629.GB6589@ZenIV.linux.org.uk>
-Date: Thu, 05 Apr 2012 16:44:47 +0200
-In-Reply-To: <20120404031629.GB6589@ZenIV.linux.org.uk> (Al Viro's message of
-	"Wed, 4 Apr 2012 04:16:29 +0100")
-Message-ID: <87aa2qb5ls.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+        hch@infradead.org, mszeredi@suse.cz
+Subject: [PATCH 00/34] vfs: atomic open v3
+Date: Thu,  5 Apr 2012 16:58:26 +0200
+Message-Id: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
+This series allows clean implementation of atomic lookup+(create)+open
+operations that previously were done via ->lookup and ->create using open
+intents.
 
-> On Tue, Apr 03, 2012 at 10:13:18AM +0200, Miklos Szeredi wrote:
->
->> The do_last() reorganization in the atomic-open series needs to be split
->> up, I realize.  Do you have any other high level comments about that
->> series?
->
-> Yes.
-> 	a) Please, pull removal of open-from-d_revalidate() as far in front
-> of the queue as possible, *along* *with* -EOPENSTALE stuff.  Without the
-> latter the former is simply broken - we might have hit -ESTALE before and
-> LOOKUP_REVAL might have already been set, so just failing ->open() with
-> ESTALE may end up not repeating it.
-> 	TBH, had that thing been in front of the queue, I would've put
-> it into the last pull request; that particular idiocy (NFS4 doing open
-> from all methods involved, except for ->open()) had been a serious source
-> of annoyance for a long time.  It really needs killing...
+Changes from the last version:
 
-Will post updated series in a minute.
+ - fixed some bugs
+ - pulled the EOPENSTALE patches towards the head of the queue
+ - split up some patches for easier reviewability
 
->
-> 	b) opendata is simply bogus.  You need to pass caller-allocated
-> struct file in any case, right?  So why not use it to pass what you
-> need to pass?  We want to be able to tell "it's a symlink, here's the
-> vfsmount/dentry, now sod off and handle it yourself"?
+git tree is here:
 
-My concern is about the visibility of a half cooked file pointer to the
-filesystem.  The compiler won't notice anything wrong with the
-following, neither will casual testing, but it will go boom at
-inopportune times:
-
-foo_atomic_open(..., struct file *filp, ...)
-{
-	/* ... */
-
-        if (unlikely error)
-		goto cleanup;
-
-	filp = finish_open(filp, dentry, NULL);
-
-	/* ... */
-
-	if (some other error)
-		goto cleanup;
-
-	return filp;
-
-cleanup:
-	fput(filp);
-        return ERR_PTR(error);
-}
-
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git atomic-open.v3
 
 Thanks,
 Miklos
+---
+
+
+Miklos Szeredi (34):
+      vfs: split do_lookup()
+      vfs: do_last(): make exit RCU safe
+      vfs: do_last(): inline walk_component()
+      vfs: do_last(): use inode variable
+      vfs: make follow_link check RCU safe
+      vfs: do_last(): make ENOENT exit RCU safe
+      vfs: do_last(): check LOOKUP_DIRECTORY
+      vfs: do_last(): only return EISDIR for O_CREAT
+      vfs: do_last(): add audit_inode before open
+      vfs: do_last() common post lookup
+      vfs: split __dentry_open()
+      vfs: do_dentry_open(): don't put filp
+      vfs: nameidata_to_filp(): inline __dentry_open()
+      vfs: nameidata_to_filp(): don't throw away file on error
+      vfs: retry last component if opening stale dentry
+      nfs: don't open in ->d_revalidate
+      vfs: do_last(): inline lookup_slow()
+      vfs: do_last(): separate O_CREAT specific code
+      vfs: do_last(): common slow lookup
+      vfs: add lookup_open()
+      vfs: lookup_open(): expand lookup_hash()
+      vfs: add i_op->atomic_open()
+      nfs: implement i_op->atomic_open()
+      nfs: clean up ->create in nfs_rpc_ops
+      nfs: don't use nd->intent.open.flags
+      nfs: don't use intents for checking atomic open
+      fuse: implement i_op->atomic_create()
+      cifs: implement i_op->atomic_open() and i_op->atomic_create()
+      ceph: remove unused arg from ceph_lookup_open()
+      ceph: implement i_op->atomic_open() and i_op->atomic_create()
+      9p: implement i_op->atomic_create()
+      vfs: remove open intents from nameidata
+      vfs: do_last(): clean up error handling
+      vfs: move O_DIRECT check to common code
+
+---
+ fs/9p/vfs_inode.c       |  169 +++++++++------
+ fs/9p/vfs_inode_dotl.c  |   52 +++--
+ fs/ceph/dir.c           |   68 ++++---
+ fs/ceph/file.c          |   22 +-
+ fs/ceph/super.h         |    6 +-
+ fs/cifs/cifsfs.c        |    1 +
+ fs/cifs/cifsfs.h        |    3 +
+ fs/cifs/dir.c           |  437 +++++++++++++++++++++-----------------
+ fs/fuse/dir.c           |   97 ++++++---
+ fs/internal.h           |    9 +-
+ fs/namei.c              |  553 +++++++++++++++++++++++++++++++++++------------
+ fs/nfs/dir.c            |  298 +++++++++-----------------
+ fs/nfs/file.c           |   77 +++++++-
+ fs/nfs/nfs3proc.c       |    2 +-
+ fs/nfs/nfs4proc.c       |   37 +---
+ fs/nfs/proc.c           |    2 +-
+ fs/open.c               |  123 +++++------
+ include/linux/errno.h   |    1 +
+ include/linux/fs.h      |    7 +
+ include/linux/namei.h   |   11 -
+ include/linux/nfs_xdr.h |    2 +-
+ 21 files changed, 1190 insertions(+), 787 deletions(-)
+
 
