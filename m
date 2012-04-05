@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab2DEIMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 04:12:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27200 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539Ab2DEIMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 04:12:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127369620"
-Date: Thu, 5 Apr 2012 11:13:03 +0300
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: ranjith kumar <ranjithproxy@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: regarding transfer of files through bluetooth, WIFI and WIFI
- direct
-Message-ID: <20120405081255.GC804@aemeltch-MOBL1>
-References: <CAG9fbzaEzPMn6uBmobR2C+Hd6rjxRMNQpQBLhr7S1wnEQRTZNw@mail.gmail.com>
+	id S1752227Ab2DEIO4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 04:14:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34016 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab2DEIOz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 04:14:55 -0400
+Date: Thu, 5 Apr 2012 10:14:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] irq: Kill pointless irqd_to_hw export
+In-Reply-To: <1333464796-21861-1-git-send-email-grant.likely@secretlab.ca>
+Message-ID: <alpine.LFD.2.02.1204051014310.2542@ionos>
+References: <1333464796-21861-1-git-send-email-grant.likely@secretlab.ca>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG9fbzaEzPMn6uBmobR2C+Hd6rjxRMNQpQBLhr7S1wnEQRTZNw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 3 Apr 2012, Grant Likely wrote:
 
-On Thu, Apr 05, 2012 at 01:35:01PM +0530, ranjith kumar wrote:
-> Hi,
-> I want to transfer image files  through bluetooth between two computers.
-> Which profile I have to use?
+> It makes no sense to export this trivial function.  Make it a static inline
+> instead.
 > 
-> I dont know much about "Basic Imaging Profile".
-> But the thing is that I cant use Basic image profile.
-> 
-> So what profile I have to use for transfer of files? Can I use OBEX
-> profile for that?
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Yes you can. This shall be supported in your distro.
-
-> Also want transfer video files through WIFI and WIFI direct.
-
-Check this out:
-
-http://wireless.kernel.org/en/developers/p2p/howto
-
-Best regards 
-Andrei Emeltchenko 
-
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
