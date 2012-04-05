@@ -1,34 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab2DEOKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:10:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46776 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab2DEOKE (ORCPT
+	id S1753706Ab2DEOL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:11:56 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.29.24]:60238 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab2DEOLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:10:04 -0400
-Message-ID: <4F7DA7AE.2010006@kernel.dk>
-Date: Thu, 05 Apr 2012 08:09:50 -0600
-From: Jens Axboe <axboe@kernel.dk>
+	Thu, 5 Apr 2012 10:11:55 -0400
+X-Greylist: delayed 113261 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Apr 2012 10:11:55 EDT
+Message-ID: <4F7DA8FD.1020909@ladisch.de>
+Date: Thu, 05 Apr 2012 16:15:25 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Ryosuke Saito <raitosyo@gmail.com>
-CC: asamymuthupa@micron.com, sbradshaw@micron.com, dan.carpenter@oracle.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mtip32xx: fix error handling in mtip_init()
-References: <1333623351.3193.10.camel@HDL00099>
-In-Reply-To: <1333623351.3193.10.camel@HDL00099>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: semaphore and mutex in current Linux kernel (3.2.2)
+References: <491D6B4EAD0A714894D8AD22F4BDE0439F94AB@SCYBEXDAG02.amd.com> <20120401121943.GA11893@gmail.com> <491D6B4EAD0A714894D8AD22F4BDE0439F9560@SCYBEXDAG02.amd.com> <20120403075245.GD26826@gmail.com> <491D6B4EAD0A714894D8AD22F4BDE0439F98F4@SCYBEXDAG02.amd.com>
+In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE0439F98F4@SCYBEXDAG02.amd.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-05 04:55, Ryosuke Saito wrote:
-> Sweep registered blkdev when pci_register_driver has failed.
+Chen, Dennis (SRDC SW) wrote:
+> I know that the rationale of the mutex's optimization is, if the lock owner is
+> running, it's likely to release the lock soon. So make the waiter to spin a
+> short time waiting for the lock to be released is reasonable given the workload
+> of a process switch.
+>
+> But how about if the lock owner running doesn't release the lock soon?
 
-Thanks, applied.
+It would not make sense to spin too long, especially if some other
+process wants to run on the same CPU.
 
--- 
-Jens Axboe
+> int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+> {
+> 	...
+> 	while (owner_running(lock, owner)) {
+> 		if (need_resched())
+> 			break;
+>
+> 		arch_mutex_cpu_relax();
+> 	}
+> 	...
+> }
+>
+> [experiment]
+>
+> D+ means the App in CPU1 is sleeping in a UNINTERRUPTIBLE state. This is very interesting,
+> How does this happen?
 
+Your experiment shows that there must be some condition that makes the
+code break out of the spin loop ...
+
+
+Regards,
+Clemens
