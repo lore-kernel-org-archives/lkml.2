@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2DEWh0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 18:37:26 -0400
-Received: from ip-relay-002.utdallas.edu ([129.110.20.112]:50564 "EHLO
-	ip-relay-002.utdallas.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab2DEWhY (ORCPT
+	id S1756253Ab2DEWqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 18:46:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53376 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab2DEWq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 18:37:24 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Apr 2012 18:37:24 EDT
-X-Group: RELAYLIST
-X-IronPort-AV: E=Sophos;i="4.75,378,1330927200"; 
-   d="scan'208";a="90232828"
-From: Qasim Javed <qasimj@gmail.com>
-To: linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Qasim Javed <qasimj@gmail.com>
-Subject: [PATCH] ath5k: Remove extraneous statements from ath5k_hw_proc_4word_tx_status and ath5k_hw_proc_2word_status.
-Date: Thu,  5 Apr 2012 20:40:15 -0500
-Message-Id: <1333676415-17329-1-git-send-email-qasimj@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 5 Apr 2012 18:46:29 -0400
+Date: Thu, 5 Apr 2012 15:46:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Subject: Re: [PATCH] LEDS: LED module for DA9052/53 PMIC v2
+Message-Id: <20120405154627.bf474920.akpm@linux-foundation.org>
+In-Reply-To: <4F621DDE.8010603@metafoo.de>
+References: <1329916149.24042.7.camel@dhruva>
+	<1331641560.7058.1.camel@dhruva>
+	<4F621DDE.8010603@metafoo.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Qasim Javed <qasimj@gmail.com>
----
- drivers/net/wireless/ath/ath5k/desc.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+On Thu, 15 Mar 2012 17:50:38 +0100
+Lars-Peter Clausen <lars@metafoo.de> wrote:
 
-diff --git a/drivers/net/wireless/ath/ath5k/desc.c b/drivers/net/wireless/ath/ath5k/desc.c
-index f8bfa3a..97b92c3 100644
---- a/drivers/net/wireless/ath/ath5k/desc.c
-+++ b/drivers/net/wireless/ath/ath5k/desc.c
-@@ -441,10 +441,8 @@ ath5k_hw_proc_2word_tx_status(struct ath5k_hw *ah,
- 				struct ath5k_desc *desc,
- 				struct ath5k_tx_status *ts)
- {
--	struct ath5k_hw_2w_tx_ctl *tx_ctl;
- 	struct ath5k_hw_tx_status *tx_status;
- 
--	tx_ctl = &desc->ud.ds_tx5210.tx_ctl;
- 	tx_status = &desc->ud.ds_tx5210.tx_stat;
- 
- 	/* No frame has been send or error */
-@@ -495,11 +493,9 @@ ath5k_hw_proc_4word_tx_status(struct ath5k_hw *ah,
- 				struct ath5k_desc *desc,
- 				struct ath5k_tx_status *ts)
- {
--	struct ath5k_hw_4w_tx_ctl *tx_ctl;
- 	struct ath5k_hw_tx_status *tx_status;
- 	u32 txstat0, txstat1;
- 
--	tx_ctl = &desc->ud.ds_tx5212.tx_ctl;
- 	tx_status = &desc->ud.ds_tx5212.tx_stat;
- 
- 	txstat1 = ACCESS_ONCE(tx_status->tx_status_1);
--- 
-1.7.8.2
+> On 03/13/2012 01:26 PM, Ashish Jangam wrote:
+> > Any update on below patch?
+> 
+> The patch itself looks good to me. But if David is the author as the C file
+> states he should also be the autor of the git commit. You can change the
+> author of the git commit for example by running `git commit --amend --author
+> 'David Dajun Chen <dchen@diasemi.com>'`.
+
+Some reply to Lars-Peter's email would have been useful.
+
+As drivers/leds/leds-da9052.c contains
+
+ * Author: David Dajun Chen <dchen@diasemi.com>
+
+I rewrote my copy of the changelog so that it lists David as the
+primary author.
 
