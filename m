@@ -1,134 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab2DEGE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 02:04:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54756 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab2DEGE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 02:04:57 -0400
-Message-ID: <1333605888.18055.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: rc5t583: Remove nsteps from struct
- rc5t583_regulator_info
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 05 Apr 2012 14:04:48 +0800
+	id S1754190Ab2DEGGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 02:06:23 -0400
+Received: from mga14.intel.com ([143.182.124.37]:24856 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751890Ab2DEGGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 02:06:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127325771"
+Subject: Re: [dmaengine] Cyclic DMA regression.
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+In-Reply-To: <CACKLOr2-=BF4AV=ZDizj9D37OL-d9D06p6R+dp9cJ_vDbBwqBw@mail.gmail.com>
+References: <CACKLOr2-=BF4AV=ZDizj9D37OL-d9D06p6R+dp9cJ_vDbBwqBw@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 05 Apr 2012 11:38:03 +0530
+Message-ID: <1333606083.31825.4.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nsteps can be calculated by (_max_mv - _min_mv) * 1000 / _step_uV + 1,
-thus we can remove _nsteps from RC5T583_REG macro, and then remove
-nsteps from struct rc5t583_regulator_info.
+On Tue, 2012-04-03 at 12:17 +0200, javier Martin wrote:
+> The following BUG has been found trying an 'aplay' with a
+> Visstrim_SM10 board in linux-3.4-rc1:
+> 
+> aplay /usr/share/sounds/linphone/hello16000.wav
+> Playing WAVE '/usr/share/sounds/linphone/hello16000.wav' : Signed 16
+> bit Little Endian, Rate 16000 Hz, Mono
+> ------------[ cut here ]------------
+> kernel BUG at drivers/dma/dmaengine.h:53!
+> Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
+> Modules linked in:
+> CPU: 0    Not tainted  (3.4.0-rc1 #18)
+> PC is at imxdma_tasklet+0x118/0x140
+> LR is at imxdma_tasklet+0x38/0x140
+> pc : [<c022af9c>]    lr : [<c022aebc>]    psr: 60000013
+> sp : c049fed8  ip : c31974a4  fp : c04d85a0
+> r10: c04d85b8  r9 : 00000102  r8 : 00000001
+> r7 : c3018000  r6 : c30181ac  r5 : c3018160  r4 : c3343f60
+> r3 : 00000000  r2 : 00000000  r1 : 0000001d  r0 : c31974b8
+> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 0005317f  Table: a3330000  DAC: 00000017
+> Process swapper (pid: 0, stack limit = 0xc049e270)
+> Stack: (0xc049fed8 to 0xc04a0000)
+> fec0:                                                       00000000 c04ab758
+> fee0: 00000000 00000018 00000001 c0028a14 c049e000 00000006 c049e000 c0028fdc
+> ff00: c04afeb8 00000000 0000000a 00000000 41069264 c049e000 c04c3c10 00000000
+> ff20: c049ff94 c04d3940 41069264 c04a6000 00000000 c0029330 00000021 c0015520
+> ff40: c049ff60 0000ffff c04d3c48 c00086f0 c0015738 60000013 ffffffff c0362200
+> ff60: 00000000 0005317f 0005217f 60000013 c049e000 c04d39c8 c04a8de0 00000001
+> ff80: c04d3940 41069264 c04a6000 00000000 600000d3 c049ffa8 c001572c c0015738
+> ffa0: 60000013 ffffffff c049e000 c0015cdc c04a6390 00000000 c0498684 c047f824
+> ffc0: 00000000 00000000 c047f360 00000000 00000000 c0498684 00000000 00053175
+> ffe0: c04a601c c0498680 c04a8dd4 a0004000 a04973e8 a0008040 00000000 00000000
+> [<c022af9c>] (imxdma_tasklet+0x118/0x140) from [<c0028a14>]
+> (tasklet_action+0x70/0xd8)
+> [<c0028a14>] (tasklet_action+0x70/0xd8) from [<c0028fdc>]
+> (__do_softirq+0xf0/0x240)
+> [<c0028fdc>] (__do_softirq+0xf0/0x240) from [<c0029330>] (irq_exit+0x88/0x9c)
+> [<c0029330>] (irq_exit+0x88/0x9c) from [<c0015520>] (handle_IRQ+0x34/0x84)
+> [<c0015520>] (handle_IRQ+0x34/0x84) from [<c00086f0>]
+> (avic_handle_irq+0x30/0x50)
+> [<c00086f0>] (avic_handle_irq+0x30/0x50) from [<c0362200>] (__irq_svc+0x40/0x6c)
+> Exception stack(0xc049ff60 to 0xc049ffa8)
+> ff60: 00000000 0005317f 0005217f 60000013 c049e000 c04d39c8 c04a8de0 00000001
+> ff80: c04d3940 41069264 c04a6000 00000000 600000d3 c049ffa8 c001572c c0015738
+> ffa0: 60000013 ffffffff
+> [<c0362200>] (__irq_svc+0x40/0x6c) from [<c0015738>] (default_idle+0x38/0x40)
+> [<c0015738>] (default_idle+0x38/0x40) from [<c0015cdc>] (cpu_idle+0x9c/0xc4)
+> [<c0015cdc>] (cpu_idle+0x9c/0xc4) from [<c047f824>] (start_kernel+0x230/0x2a4)
+> Code: e3a03000 e595404c e5c530c0 eaffffd7 (e7f001f2)
+> ---[ end trace 5b6e58d2f7425625 ]---
+> 
+> The issue is that all DMA cyclic users call "dmaengine_submit" just
+> once [1], so only one descriptor is used and this descriptor is just
+> looped  until "dmaengine_terminateall" is called.
+> It seems this BUG affects every use of a DMA cyclic transfer in the kernel.
+> 
+> The implication of this is that the cookie of this descriptor is
+> always 0 when "dma_cookie_complete" is called.
+> 
+> I've temporally solved the problem in my local tree with this (dirty) patch:
+> ---
+> diff --git a/drivers/dma/dmaengine.h b/drivers/dma/dmaengine.h
+> index 17f983a..266e8ff 100644
+> --- a/drivers/dma/dmaengine.h
+> +++ b/drivers/dma/dmaengine.h
+> @@ -52,7 +52,7 @@ static inline void dma_cookie_complete(struct
+> dma_async_tx_descriptor *tx)
+>  {
+>         BUG_ON(tx->cookie < DMA_MIN_COOKIE);
+>         tx->chan->completed_cookie = tx->cookie;
+> -       tx->cookie = 0;
+> +//     tx->cookie = 0;
+>  }
+> 
+>  /**
+> ---
+> 
+> But I guess we need something cleaner here.
+this is not right fix. The problem is that we shouldn't mark the cyclic
+descriptor as complete. So for all drivers using cyclic API they should
+do something like this. Can you test if this fixes your issue.
+-----------------
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index a45b5d2..0c7362a 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -571,11 +571,14 @@ static void imxdma_tasklet(unsigned long data)
+        if (desc->desc.callback)
+                desc->desc.callback(desc->desc.callback_param);
+ 
+-       dma_cookie_complete(&desc->desc);
+-
+-       /* If we are dealing with a cyclic descriptor keep it on ld_active */
++       /* If we are dealing with a cyclic descriptor keep it on ld_active
++        * and don't mark the descriptor as complete.
++        * Only in non-cyclic cases it would be marked as complete
++        */
+        if (imxdma_chan_is_doing_cyclic(imxdmac))
+                goto out;
++       else
++               dma_cookie_complete(&desc->desc);
+ 
+        /* Free 2D slot if it was an interleaved transfer */
+        if (imxdmac->enabled_2d) {
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/rc5t583-regulator.c |   37 +++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
-index dc9ebb9..578bd5d 100644
---- a/drivers/regulator/rc5t583-regulator.c
-+++ b/drivers/regulator/rc5t583-regulator.c
-@@ -49,7 +49,6 @@ struct rc5t583_regulator_info {
- 	int			min_uV;
- 	int			max_uV;
- 	int			step_uV;
--	int			nsteps;
- 
- 	/* Regulator specific turn-on delay  and voltage settling time*/
- 	int			enable_uv_per_us;
-@@ -131,7 +130,7 @@ static int rc5t583_set_voltage_sel(struct regulator_dev *rdev,
- 	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
- 	struct rc5t583_regulator_info *ri = reg->reg_info;
- 	int ret;
--	if (selector >= ri->nsteps) {
-+	if (selector >= rdev->desc->n_voltages) {
- 		dev_err(&rdev->dev, "Invalid selector 0x%02x\n", selector);
- 		return -EINVAL;
- 	}
-@@ -198,8 +197,7 @@ static struct regulator_ops rc5t583_ops = {
- };
- 
- #define RC5T583_REG(_id, _en_reg, _en_bit, _disc_reg, _disc_bit, _vout_reg,  \
--		_vout_mask, _ds_reg, _min_mv, _max_mv, _step_uV, _nsteps,    \
--		_enable_mv)					\
-+		_vout_mask, _ds_reg, _min_mv, _max_mv, _step_uV, _enable_mv) \
- {								\
- 	.reg_en_reg	= RC5T583_REG_##_en_reg,		\
- 	.en_bit		= _en_bit,				\
-@@ -211,14 +209,13 @@ static struct regulator_ops rc5t583_ops = {
- 	.min_uV		= _min_mv * 1000,			\
- 	.max_uV		= _max_mv * 1000,			\
- 	.step_uV	= _step_uV,				\
--	.nsteps		= _nsteps,				\
- 	.enable_uv_per_us = _enable_mv * 1000,			\
- 	.change_uv_per_us = 40 * 1000,				\
- 	.deepsleep_id	= RC5T583_DS_##_id,			\
- 	.desc = {						\
- 		.name = "rc5t583-regulator-"#_id,		\
- 		.id = RC5T583_REGULATOR_##_id,			\
--		.n_voltages = _nsteps,				\
-+		.n_voltages = (_max_mv - _min_mv) * 1000 / _step_uV + 1, \
- 		.ops = &rc5t583_ops,				\
- 		.type = REGULATOR_VOLTAGE,			\
- 		.owner = THIS_MODULE,				\
-@@ -227,33 +224,33 @@ static struct regulator_ops rc5t583_ops = {
- 
- static struct rc5t583_regulator_info rc5t583_reg_info[RC5T583_REGULATOR_MAX] = {
- 	RC5T583_REG(DC0, DC0CTL, 0, DC0CTL, 1, DC0DAC, 0x7F, DC0DAC_DS,
--			700, 1500, 12500, 0x41, 4),
-+			700, 1500, 12500, 4),
- 	RC5T583_REG(DC1, DC1CTL, 0, DC1CTL, 1, DC1DAC, 0x7F, DC1DAC_DS,
--			700, 1500, 12500, 0x41,  14),
-+			700, 1500, 12500, 14),
- 	RC5T583_REG(DC2, DC2CTL, 0, DC2CTL, 1, DC2DAC, 0x7F, DC2DAC_DS,
--			900, 2400, 12500, 0x79,  14),
-+			900, 2400, 12500, 14),
- 	RC5T583_REG(DC3, DC3CTL, 0, DC3CTL, 1, DC3DAC, 0x7F, DC3DAC_DS,
--			900, 2400, 12500, 0x79,  14),
-+			900, 2400, 12500, 14),
- 	RC5T583_REG(LDO0, LDOEN2, 0, LDODIS2, 0, LDO0DAC, 0x7F, LDO0DAC_DS,
--			900, 3400, 25000, 0x65,  160),
-+			900, 3400, 25000, 160),
- 	RC5T583_REG(LDO1, LDOEN2, 1, LDODIS2, 1, LDO1DAC, 0x7F, LDO1DAC_DS,
--			900, 3400, 25000, 0x65,  160),
-+			900, 3400, 25000, 160),
- 	RC5T583_REG(LDO2, LDOEN2, 2, LDODIS2, 2, LDO2DAC, 0x7F, LDO2DAC_DS,
--			900, 3400, 25000, 0x65,  160),
-+			900, 3400, 25000, 160),
- 	RC5T583_REG(LDO3, LDOEN2, 3, LDODIS2, 3, LDO3DAC, 0x7F, LDO3DAC_DS,
--			900, 3400, 25000, 0x65,  160),
-+			900, 3400, 25000, 160),
- 	RC5T583_REG(LDO4, LDOEN2, 4, LDODIS2, 4, LDO4DAC, 0x3F, LDO4DAC_DS,
--			750, 1500, 12500, 0x3D,  133),
-+			750, 1500, 12500, 133),
- 	RC5T583_REG(LDO5, LDOEN2, 5, LDODIS2, 5, LDO5DAC, 0x7F, LDO5DAC_DS,
--			900, 3400, 25000, 0x65,  267),
-+			900, 3400, 25000, 267),
- 	RC5T583_REG(LDO6, LDOEN2, 6, LDODIS2, 6, LDO6DAC, 0x7F, LDO6DAC_DS,
--			900, 3400, 25000, 0x65,  133),
-+			900, 3400, 25000, 133),
- 	RC5T583_REG(LDO7, LDOEN2, 7, LDODIS2, 7, LDO7DAC, 0x7F, LDO7DAC_DS,
--			900, 3400, 25000, 0x65,  233),
-+			900, 3400, 25000, 233),
- 	RC5T583_REG(LDO8, LDOEN1, 0, LDODIS1, 0, LDO8DAC, 0x7F, LDO8DAC_DS,
--			900, 3400, 25000, 0x65,  233),
-+			900, 3400, 25000, 233),
- 	RC5T583_REG(LDO9, LDOEN1, 1, LDODIS1, 1, LDO9DAC, 0x7F, LDO9DAC_DS,
--			900, 3400, 25000, 0x65,  133),
-+			900, 3400, 25000, 133),
- };
- 
- static int __devinit rc5t583_regulator_probe(struct platform_device *pdev)
 -- 
-1.7.5.4
-
-
+~Vinod
 
