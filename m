@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2DEIlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 04:41:11 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:41109 "EHLO violet"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752310Ab2DEIlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 04:41:10 -0400
-Date: Thu, 5 Apr 2012 10:37:43 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: hayeswang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next v3 5/5] r8169: support RTL8411
-Message-ID: <20120405083743.GB32027@electric-eye.fr.zoreil.com>
-References: <1333089184-1773-5-git-send-email-hayeswang@realtek.com> <1333090086-1815-1-git-send-email-hayeswang@realtek.com> <20120330072521.GA11548@electric-eye.fr.zoreil.com> <52E71C7B42A44FB1A8556BB6B75CD9A0@realtek.com.tw>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E71C7B42A44FB1A8556BB6B75CD9A0@realtek.com.tw>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	id S1753449Ab2DEInV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 04:43:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34078 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab2DEInU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 04:43:20 -0400
+Date: Thu, 5 Apr 2012 10:43:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: lkml <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>,
+        sparclinux <sparclinux@vger.kernel.org>
+Subject: Re: [PATCH] irq: remove obsolete definitions in interrupt.h
+In-Reply-To: <20120404074553.GA14959@merkur.ravnborg.org>
+Message-ID: <alpine.LFD.2.02.1204051036470.2542@ionos>
+References: <20120404074553.GA14959@merkur.ravnborg.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hayeswang <hayeswang@realtek.com> :
-[...]
-> There is nothing to do for rtl_init_jumbo_ops. It is all right for keeping
-> NULL.
+On Wed, 4 Apr 2012, Sam Ravnborg wrote:
 
-Ok, I'll add it to the commit message for future reference.
+> interrupt.h contained a small fixlet for the days when
+> m68k and sparc32 did not use genirq.
+> As they have both entered the modern world this
+> fixlet can be dropped.
 
-> Do I need to resend this patch?
+You forgot that there is still an esoteric architecture which has
+CONFIG_GENERIC_HARDIRQS=n.
 
-No, I'll give it a short testing and forward to David.
+So at least the exit_irq_thread() needs to stay.
 
-We have a few weeks of net-next head. If there are further changes in sight,
-you may consider planning for those before the cycle ends. Otherwise they
-will experience a complete kernel cycle delay.
+The request_threaded_irq() one should not be used by any S390
+driver. If it's used, they have probably a special opcode for it. :)
 
-Thanks.
+Thanks,
 
--- 
-Ueimor
+	tglx
 
-Will code drivers for food.
+ 
