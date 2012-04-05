@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2DEPCm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:02:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49382 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab2DEPCk (ORCPT
+	id S1754665Ab2DEO7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:59:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37053 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853Ab2DEO65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 11:02:40 -0400
-Message-ID: <4F7DB40D.20300@wwwdotorg.org>
-Date: Thu, 05 Apr 2012 09:02:37 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Dong Aisheng <b29396@freescale.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH 1/1] pinctrl: fix compile error if not select PINMUX support
-References: <1333616843-3607-1-git-send-email-b29396@freescale.com>
-In-Reply-To: <1333616843-3607-1-git-send-email-b29396@freescale.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Apr 2012 10:58:57 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, mszeredi@suse.cz
+Subject: [PATCH 13/34] vfs: nameidata_to_filp(): inline __dentry_open()
+Date: Thu,  5 Apr 2012 16:58:39 +0200
+Message-Id: <1333637940-31884-14-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
+References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2012 03:07 AM, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> The pinctrl_register_mappings is defined in core.c, so change the dependent
-> macro from CONFIG_MUX to CONFIG_PINCTRL.
-> 
-> The compile error message is:
-> drivers/pinctrl/core.c:886: error: redefinition of 'pinctrl_register_mappings'
-> include/linux/pinctrl/machine.h:160: note: previous definition of 'pinctrl_register_mappings' was here
-> make[2]: *** [drivers/pinctrl/core.o] Error 1
-> make[1]: *** [drivers/pinctrl] Error 2
-> make: *** [drivers] Error 2
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Copy __dentry_open() into nameidata_to_filp().
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/open.c |   20 ++++++++++++++++++--
+ 1 files changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/fs/open.c b/fs/open.c
+index e1448cd..161c15f 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -818,9 +818,25 @@ struct file *nameidata_to_filp(struct nameidata *nd)
+ 
+ 	/* Has the filesystem initialised the file for us? */
+ 	if (filp->f_path.dentry == NULL) {
++		struct file *res;
++
+ 		path_get(&nd->path);
+-		filp = __dentry_open(nd->path.dentry, nd->path.mnt, filp,
+-				     NULL, cred);
++		res = do_dentry_open(nd->path.dentry, nd->path.mnt,
++				     filp, NULL, cred);
++		if (!IS_ERR(res)) {
++			int error;
++
++			BUG_ON(res != filp);
++
++			error = open_check_o_direct(filp);
++			if (error) {
++				fput(filp);
++				filp = ERR_PTR(error);
++			}
++		} else {
++			put_filp(filp);
++			filp = res;
++		}
+ 	}
+ 	return filp;
+ }
+-- 
+1.7.7
+
