@@ -1,433 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab2DEVBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 17:01:49 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:64554 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab2DEVBh (ORCPT
+	id S1754510Ab2DEVDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 17:03:06 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:53688 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab2DEVDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 17:01:37 -0400
-Message-ID: <4F7E07E9.4020200@micron.com>
-Date: Thu, 5 Apr 2012 14:00:25 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Thu, 5 Apr 2012 17:03:05 -0400
+Message-ID: <4F7E0884.5090602@suse.cz>
+Date: Thu, 05 Apr 2012 23:03:00 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120331 Thunderbird/13.0a2
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: [PATCH 4/5] mtip32xx: handling of commands in various scenarios
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Boris Ostrovsky <boris.ostrovsky@amd.com>
+CC: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: BUG at cpuidle_play_dead
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.000.1038-18810.005
-X-TM-AS-Result: No--17.095300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* If a ncq  command time out and a non-ncq command is active, skip restart port
-* Queue(pause) ncq commands during operations spanning more than one non-ncq commands - secure erase, download microcode
-* When a non-ncq command is active, allow incoming non-ncq commands to wait instead of failing back
-* Changed timeout for download microcode and smart commands
-* If the device in write protect mode, fail all writes (do not send to device)
-* Set maximum retries to 2
+I'm hitting this BUG as the last thing during shutdown:
+BUG: unable to handle kernel NULL pointer dereference at 00000000000002d8
+IP: [<ffffffff814ab60d>] cpuidle_play_dead+0x1d/0xb0
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Reviewed-by: Sam Bradshaw <sbradshaw@micron.com>
----
- drivers/block/mtip32xx/mtip32xx.c |  144 +++++++++++++++++++++++++++----------
- drivers/block/mtip32xx/mtip32xx.h |   39 +++++++----
- 2 files changed, 132 insertions(+), 51 deletions(-)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index d22aa1b..95066b7 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -436,7 +436,8 @@ static void mtip_init_port(struct mtip_port *port)
- 		writel(0xFFFFFFFF, port->completed[i]);
- 
- 	/* Clear any pending interrupts for this port */
--	writel(readl(port->mmio + PORT_IRQ_STAT), port->mmio + PORT_IRQ_STAT);
-+	writel(readl(port->dd->mmio + PORT_IRQ_STAT),
-+					port->dd->mmio + PORT_IRQ_STAT);
- 
- 	/* Clear any pending interrupts on the HBA. */
- 	writel(readl(port->dd->mmio + HOST_IRQ_STAT),
-@@ -540,6 +541,7 @@ static void mtip_timeout_function(unsigned long int data)
- 	int tag, cmdto_cnt = 0;
- 	unsigned int bit, group;
- 	unsigned int num_command_slots = port->dd->slot_groups * 32;
-+	unsigned long to;
- 
- 	if (unlikely(!port))
- 		return;
-@@ -604,7 +606,7 @@ static void mtip_timeout_function(unsigned long int data)
- 		}
- 	}
- 
--	if (cmdto_cnt) {
-+	if (cmdto_cnt && !test_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags)) {
- 		dev_warn(&port->dd->pdev->dev,
- 			"%d commands timed out: restarting port",
- 			cmdto_cnt);
-@@ -613,6 +615,21 @@ static void mtip_timeout_function(unsigned long int data)
- 		wake_up_interruptible(&port->svc_wait);
- 	}
- 
-+	if (port->ic_pause_timer) {
-+		to  = port->ic_pause_timer + msecs_to_jiffies(1000);
-+		if (time_after(jiffies, to)) {
-+			if (!test_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags)) {
-+				port->ic_pause_timer = 0;
-+				clear_bit(MTIP_PF_SE_ACTIVE_BIT, &port->flags);
-+				clear_bit(MTIP_PF_DM_ACTIVE_BIT, &port->flags);
-+				clear_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags);
-+				wake_up_interruptible(&port->svc_wait);
-+			}
+It's because drv is NULL. The problem is gone if I do this:
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -83,6 +83,11 @@ int cpuidle_play_dead(void)
+        int i, dead_state = -1;
+        int power_usage = -1;
+
++       if (!drv) {
++               printk("DRIVER IS NULL\n");
++               return -ENODEV;
++       }
 +
-+
-+		}
-+	}
-+
- 	/* Restart the timer */
- 	mod_timer(&port->cmd_timer,
- 		jiffies + msecs_to_jiffies(MTIP_TIMEOUT_CHECK_PERIOD));
-@@ -1105,6 +1122,39 @@ static void mtip_issue_non_ncq_command(struct mtip_port *port, int tag)
- 		port->cmd_issue[MTIP_TAG_INDEX(tag)]);
- }
- 
-+static bool mtip_pause_ncq(struct mtip_port *port,
-+				struct host_to_dev_fis *fis)
-+{
-+	struct host_to_dev_fis *reply;
-+	unsigned long task_file_data;
-+
-+	reply = port->rxfis + RX_FIS_D2H_REG;
-+	task_file_data = readl(port->mmio+PORT_TFDATA);
-+
-+	if ((task_file_data & 1) || (fis->command == ATA_CMD_SEC_ERASE_UNIT))
-+		return false;
-+
-+	if (fis->command == ATA_CMD_SEC_ERASE_PREP) {
-+		set_bit(MTIP_PF_SE_ACTIVE_BIT, &port->flags);
-+		port->ic_pause_timer = jiffies;
-+		return true;
-+	} else if ((fis->command == ATA_CMD_DOWNLOAD_MICRO) &&
-+					(fis->features == 0x03)) {
-+		set_bit(MTIP_PF_DM_ACTIVE_BIT, &port->flags);
-+		port->ic_pause_timer = jiffies;
-+		return true;
-+	} else if ((fis->command == ATA_CMD_SEC_ERASE_UNIT) ||
-+		((fis->command == 0xFC) &&
-+			(fis->features == 0x27 || fis->features == 0x72 ||
-+			 fis->features == 0x62 || fis->features == 0x26))) {
-+		/* Com reset after secure erase or lowlevel format */
-+		mtip_restart_port(port);
-+		return false;
-+	}
-+
-+	return false;
-+}
-+
- /*
-  * Wait for port to quiesce
-  *
-@@ -1176,8 +1226,9 @@ static int mtip_exec_internal_command(struct mtip_port *port,
- {
- 	struct mtip_cmd_sg *command_sg;
- 	DECLARE_COMPLETION_ONSTACK(wait);
--	int rv = 0;
-+	int rv = 0, ready2go = 1;
- 	struct mtip_cmd *int_cmd = &port->commands[MTIP_TAG_INTERNAL];
-+	unsigned long to;
- 
- 	/* Make sure the buffer is 8 byte aligned. This is asic specific. */
- 	if (buffer & 0x00000007) {
-@@ -1186,13 +1237,26 @@ static int mtip_exec_internal_command(struct mtip_port *port,
- 		return -EFAULT;
- 	}
- 
--	/* Only one internal command should be running at a time */
--	if (test_and_set_bit(MTIP_TAG_INTERNAL, port->allocated)) {
-+	to = jiffies + msecs_to_jiffies(timeout);
-+	do {
-+		ready2go = !test_and_set_bit(MTIP_TAG_INTERNAL,
-+						port->allocated);
-+		if (ready2go)
-+			break;
-+		mdelay(100);
-+	} while (time_before(jiffies, to));
-+	if (!ready2go) {
- 		dev_warn(&port->dd->pdev->dev,
--			"Internal command already active\n");
-+			"Internal cmd active. new cmd [%02X]\n", fis->command);
- 		return -EBUSY;
- 	}
- 	set_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags);
-+	port->ic_pause_timer = 0;
-+
-+	if (fis->command == ATA_CMD_SEC_ERASE_UNIT)
-+		clear_bit(MTIP_PF_SE_ACTIVE_BIT, &port->flags);
-+	else if (fis->command == ATA_CMD_DOWNLOAD_MICRO)
-+		clear_bit(MTIP_PF_DM_ACTIVE_BIT, &port->flags);
- 
- 	if (atomic == GFP_KERNEL) {
- 		if (fis->command != ATA_CMD_STANDBYNOW1) {
-@@ -1314,6 +1378,10 @@ exec_ic_exit:
- 	/* Clear the allocated and active bits for the internal command. */
- 	atomic_set(&int_cmd->active, 0);
- 	release_slot(port, MTIP_TAG_INTERNAL);
-+	if (rv >= 0 && mtip_pause_ncq(port, fis)) {
-+		/* NCQ paused */
-+		return rv;
-+	}
- 	clear_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags);
- 	wake_up_interruptible(&port->svc_wait);
- 
-@@ -1776,8 +1844,7 @@ static int exec_drive_task(struct mtip_port *port, u8 *command)
- 	fis.cyl_hi	= command[5];
- 	fis.device	= command[6] & ~0x10; /* Clear the dev bit*/
- 
--
--	dbg_printk(MTIP_DRV_NAME "%s: User Command: cmd %x, feat %x, nsect %x, sect %x, lcyl %x, hcyl %x, sel %x\n",
-+	dbg_printk(MTIP_DRV_NAME " %s: User Command: cmd %x, feat %x, nsect %x, sect %x, lcyl %x, hcyl %x, sel %x\n",
- 		__func__,
- 		command[0],
- 		command[1],
-@@ -1804,7 +1871,7 @@ static int exec_drive_task(struct mtip_port *port, u8 *command)
- 	command[4] = reply->cyl_low;
- 	command[5] = reply->cyl_hi;
- 
--	dbg_printk(MTIP_DRV_NAME "%s: Completion Status: stat %x, err %x , cyl_lo %x cyl_hi %x\n",
-+	dbg_printk(MTIP_DRV_NAME " %s: Completion Status: stat %x, err %x , cyl_lo %x cyl_hi %x\n",
- 		__func__,
- 		command[0],
- 		command[1],
-@@ -1847,7 +1914,7 @@ static int exec_drive_command(struct mtip_port *port, u8 *command,
- 	}
- 
- 	dbg_printk(MTIP_DRV_NAME
--		"%s: User Command: cmd %x, sect %x, "
-+		" %s: User Command: cmd %x, sect %x, "
- 		"feat %x, sectcnt %x\n",
- 		__func__,
- 		command[0],
-@@ -1876,7 +1943,7 @@ static int exec_drive_command(struct mtip_port *port, u8 *command,
- 	command[2] = command[3];
- 
- 	dbg_printk(MTIP_DRV_NAME
--		"%s: Completion Status: stat %x, "
-+		" %s: Completion Status: stat %x, "
- 		"err %x, cmd %x\n",
- 		__func__,
- 		command[0],
-@@ -2079,9 +2146,10 @@ static int exec_drive_taskfile(struct driver_data *dd,
- 	}
- 
- 	dbg_printk(MTIP_DRV_NAME
--		"taskfile: cmd %x, feat %x, nsect %x,"
-+		" %s: cmd %x, feat %x, nsect %x,"
- 		" sect/lbal %x, lcyl/lbam %x, hcyl/lbah %x,"
- 		" head/dev %x\n",
-+		__func__,
- 		fis.command,
- 		fis.features,
- 		fis.sect_count,
-@@ -2092,8 +2160,8 @@ static int exec_drive_taskfile(struct driver_data *dd,
- 
- 	switch (fis.command) {
- 	case ATA_CMD_DOWNLOAD_MICRO:
--		/* Change timeout for Download Microcode to 60 seconds.*/
--		timeout = 60000;
-+		/* Change timeout for Download Microcode to 2 minutes */
-+		timeout = 120000;
- 		break;
- 	case ATA_CMD_SEC_ERASE_UNIT:
- 		/* Change timeout for Security Erase Unit to 4 minutes.*/
-@@ -2109,8 +2177,8 @@ static int exec_drive_taskfile(struct driver_data *dd,
- 		timeout = 10000;
- 		break;
- 	case ATA_CMD_SMART:
--		/* Change timeout for vendor unique command to 10 secs */
--		timeout = 10000;
-+		/* Change timeout for vendor unique command to 15 secs */
-+		timeout = 15000;
- 		break;
- 	default:
- 		timeout = MTIP_IOCTL_COMMAND_TIMEOUT_MS;
-@@ -2172,18 +2240,8 @@ static int exec_drive_taskfile(struct driver_data *dd,
- 		req_task->hob_ports[1] = reply->features_ex;
- 		req_task->hob_ports[2] = reply->sect_cnt_ex;
- 	}
--
--	/* Com rest after secure erase or lowlevel format */
--	if (((fis.command == ATA_CMD_SEC_ERASE_UNIT) ||
--		((fis.command == 0xFC) &&
--			(fis.features == 0x27 || fis.features == 0x72 ||
--			 fis.features == 0x62 || fis.features == 0x26))) &&
--			 !(reply->command & 1)) {
--		mtip_restart_port(dd->port);
--	}
--
- 	dbg_printk(MTIP_DRV_NAME
--		"%s: Completion: stat %x,"
-+		" %s: Completion: stat %x,"
- 		"err %x, sect_cnt %x, lbalo %x,"
- 		"lbamid %x, lbahi %x, dev %x\n",
- 		__func__,
-@@ -2405,8 +2463,7 @@ static void mtip_hw_submit_io(struct driver_data *dd, sector_t start,
- 	 * To prevent this command from being issued
- 	 * if an internal command is in progress or error handling is active.
- 	 */
--	if (unlikely(test_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags) ||
--			test_bit(MTIP_PF_EH_ACTIVE_BIT, &port->flags))) {
-+	if (port->flags & MTIP_PF_PAUSE_IO) {
- 		set_bit(tag, port->cmds_to_issue);
- 		set_bit(MTIP_PF_ISSUE_CMDS_BIT, &port->flags);
- 		return;
-@@ -2735,8 +2792,7 @@ static int mtip_service_thread(void *data)
- 		 * is in progress nor error handling is active
- 		 */
- 		wait_event_interruptible(port->svc_wait, (port->flags) &&
--			!test_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags) &&
--			!test_bit(MTIP_PF_EH_ACTIVE_BIT, &port->flags));
-+			!(port->flags & MTIP_PF_PAUSE_IO));
- 
- 		if (kthread_should_stop())
- 			break;
-@@ -2744,6 +2800,7 @@ static int mtip_service_thread(void *data)
- 		if (unlikely(test_bit(MTIP_DDF_REMOVE_PENDING_BIT,
- 				&dd->dd_flag)))
- 			break;
-+
- 		set_bit(MTIP_PF_SVC_THD_ACTIVE_BIT, &port->flags);
- 		if (test_bit(MTIP_PF_ISSUE_CMDS_BIT, &port->flags)) {
- 			slot = 1;
-@@ -2782,7 +2839,7 @@ static int mtip_service_thread(void *data)
- 		}
- 		clear_bit(MTIP_PF_SVC_THD_ACTIVE_BIT, &port->flags);
- 
--		if (test_bit(MTIP_PF_SVC_THD_SHOULD_STOP_BIT, &port->flags))
-+		if (test_bit(MTIP_PF_SVC_THD_STOP_BIT, &port->flags))
- 			break;
- 	}
- 	return 0;
-@@ -3430,9 +3487,22 @@ static void mtip_make_request(struct request_queue *queue, struct bio *bio)
- 	int nents = 0;
- 	int tag = 0;
- 
--	if (test_bit(MTIP_DDF_REMOVE_PENDING_BIT, &dd->dd_flag)) {
--		bio_endio(bio, -ENXIO);
--		return;
-+	if (unlikely(dd->dd_flag & MTIP_DDF_STOP_IO)) {
-+		if (unlikely(test_bit(MTIP_DDF_REMOVE_PENDING_BIT,
-+							&dd->dd_flag))) {
-+			bio_endio(bio, -ENXIO);
-+			return;
-+		}
-+		if (unlikely(test_bit(MTIP_DDF_OVER_TEMP_BIT, &dd->dd_flag))) {
-+			bio_endio(bio, -ENODATA);
-+			return;
-+		}
-+		if (unlikely(test_bit(MTIP_DDF_WRITE_PROTECT_BIT,
-+							&dd->dd_flag) &&
-+				bio_data_dir(bio))) {
-+			bio_endio(bio, -ENODATA);
-+			return;
-+		}
- 	}
- 
- 	if (unlikely(!bio_has_data(bio))) {
-@@ -3608,7 +3678,7 @@ start_service_thread:
- 						dd, thd_name);
- 
- 	if (IS_ERR(dd->mtip_svc_handler)) {
--		printk(KERN_ERR "mtip32xx: service thread failed to start\n");
-+		dev_err(&dd->pdev->dev, "service thread failed to start\n");
- 		dd->mtip_svc_handler = NULL;
- 		rv = -EFAULT;
- 		goto kthread_run_error;
-@@ -3657,7 +3727,7 @@ static int mtip_block_remove(struct driver_data *dd)
- 	struct kobject *kobj;
- 
- 	if (dd->mtip_svc_handler) {
--		set_bit(MTIP_PF_SVC_THD_SHOULD_STOP_BIT, &dd->port->flags);
-+		set_bit(MTIP_PF_SVC_THD_STOP_BIT, &dd->port->flags);
- 		wake_up_interruptible(&dd->port->svc_wait);
- 		kthread_stop(dd->mtip_svc_handler);
- 	}
-diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
-index 5ad2d79..4ef5833 100644
---- a/drivers/block/mtip32xx/mtip32xx.h
-+++ b/drivers/block/mtip32xx/mtip32xx.h
-@@ -34,8 +34,8 @@
- /* offset of Device Control register in PCIe extended capabilites space */
- #define PCIE_CONFIG_EXT_DEVICE_CONTROL_OFFSET	0x48
- 
--/* # of times to retry timed out IOs */
--#define MTIP_MAX_RETRIES	5
-+/* # of times to retry timed out/failed IOs */
-+#define MTIP_MAX_RETRIES	2
- 
- /* Various timeout values in ms */
- #define MTIP_NCQ_COMMAND_TIMEOUT_MS       5000
-@@ -114,22 +114,32 @@
- #define __force_bit2int (unsigned int __force)
- 
- /* below are bit numbers in 'flags' defined in mtip_port */
--#define MTIP_PF_IC_ACTIVE_BIT			0
--#define MTIP_PF_EH_ACTIVE_BIT			1
--#define MTIP_PF_SVC_THD_ACTIVE_BIT		2
--#define MTIP_PF_ISSUE_CMDS_BIT			4
--#define MTIP_PF_REBUILD_BIT			5
--#define MTIP_PF_SVC_THD_SHOULD_STOP_BIT		8
-+#define MTIP_PF_IC_ACTIVE_BIT		0 /* pio/ioctl */
-+#define MTIP_PF_EH_ACTIVE_BIT		1 /* error handling */
-+#define MTIP_PF_SE_ACTIVE_BIT		2 /* secure erase */
-+#define MTIP_PF_DM_ACTIVE_BIT		3 /* download microcde */
-+#define MTIP_PF_PAUSE_IO	((1 << MTIP_PF_IC_ACTIVE_BIT) | \
-+				(1 << MTIP_PF_EH_ACTIVE_BIT) | \
-+				(1 << MTIP_PF_SE_ACTIVE_BIT) | \
-+				(1 << MTIP_PF_DM_ACTIVE_BIT))
-+
-+#define MTIP_PF_SVC_THD_ACTIVE_BIT	4
-+#define MTIP_PF_ISSUE_CMDS_BIT		5
-+#define MTIP_PF_REBUILD_BIT		6
-+#define MTIP_PF_SVC_THD_STOP_BIT	8
- 
- /* below are bit numbers in 'dd_flag' defined in driver_data */
- #define MTIP_DDF_REMOVE_PENDING_BIT	1
--#define MTIP_DDF_RESUME_BIT		2
--#define MTIP_DDF_CLEANUP_BIT		3
--#define MTIP_DDF_INIT_DONE_BIT		4
-+#define MTIP_DDF_OVER_TEMP_BIT		2
-+#define MTIP_DDF_WRITE_PROTECT_BIT	3
-+#define MTIP_DDF_STOP_IO	((1 << MTIP_DDF_REMOVE_PENDING_BIT) | \
-+				(1 << MTIP_DDF_OVER_TEMP_BIT) | \
-+				(1 << MTIP_DDF_WRITE_PROTECT_BIT))
- 
--#define MTIP_DDF_WRITE_PROTECT_BIT	5
--#define MTIP_DDF_OVER_TEMP_BIT		6
--#define MTIP_DDF_REBUILD_FAILED_BIT	7
-+#define MTIP_DDF_CLEANUP_BIT		5
-+#define MTIP_DDF_RESUME_BIT		6
-+#define MTIP_DDF_INIT_DONE_BIT		7
-+#define MTIP_DDF_REBUILD_FAILED_BIT	8
- 
- __packed struct smart_attr{
- 	u8 attr_id;
-@@ -393,6 +403,7 @@ struct mtip_port {
- 	 * Timer used to complete commands that have been active for too long.
- 	 */
- 	struct timer_list cmd_timer;
-+	unsigned long ic_pause_timer;
- 	/*
- 	 * Semaphore used to block threads if there are no
- 	 * command slots available.
+        /* Find lowest-power state that supports long-term idle */
+        for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+                struct cpuidle_state *s = &drv->states[i];
+
+thanks,
 -- 
-1.7.1
-
+js
+suse labs
 
