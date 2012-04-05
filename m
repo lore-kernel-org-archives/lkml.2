@@ -1,75 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab2DEQpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:45:08 -0400
-Received: from nm2-vm0.bullet.mail.ird.yahoo.com ([77.238.189.199]:46057 "HELO
-	nm2-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752169Ab2DEQpG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:45:06 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 536265.83786.bm@omp1014.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=c/Pq9I2Sj9aI+EFyDurGICDqbCNyP9qbMLEDoDGEzS6shyoQkfXMursfWw6+OgMtzqfYb2sOkzdc2/Gz7ZpGS22bloP+nLevd35Qy+Rju8uDFGXT21PVtLnaf6Z2MQlXSzWQHwys1q9Z85RZ17qs3kpqnfzSqfgpYHvE8zX3RaE=;
-X-YMail-OSG: dokZbV4VM1mVcWIFi6wmUDbWZklsXvSp9mWmAsScN_otfgv
- mCPc6cJIOso3ifTy41T62L2qODT4nEmhVkjHK2D91G1mHiQI5b0rCan7Gy6V
- _IpAQ0oQxjhlrdwtnExfIZgEZOxgoDm__65TfBj0NB1LL7Y.tteyuf68vpri
- 1bMmkMQ0L5WWTEkpUvi7BvnKa9gGUJz_9L7VA8zcCqCLnHTYZ0qR_LDyDAIb
- mbe1wG46xYZh91G532SHfQbY554YJXkv.CohneOuI1Y1qHLpM_Us251GEYkp
- ak1RJI6P2v0Q6qf.BDsZIVTVJNao04x8Z8YLo5b9QM01sVN2nksJoQMrQXIH
- HZkDk5SkUN5KpJinJr4.vCh71thprUw1XXjRY8Ojk7Gvs1hJ0zBGHbi9qaPK
- 3SvzdodDc7D_rJ2pzxQ8nh0zLVgO7ZYxHJpeyyQCzfHE-
-X-Mailer: YahooMailClassic/15.0.5 YahooMailWebService/0.8.117.340979
-Message-ID: <1333644304.97070.YahooMailClassic@web29013.mail.ird.yahoo.com>
-Date: Thu, 5 Apr 2012 17:45:04 +0100 (BST)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: [PATCH 3/3] mfd: asic3: Add PCMCIA/CF support
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, philipp.zabel@gmail.com
+	id S1755409Ab2DEQqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:46:25 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:58262 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab2DEQqY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 12:46:24 -0400
+Message-ID: <4F7DCC3C.70208@us.ibm.com>
+Date: Thu, 05 Apr 2012 09:45:48 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com>
+In-Reply-To: <4F7D8FA1.1010107@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040516-5518-0000-0000-00000379D9C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is part of a set which adds PCMCIA/CF support for the hx4700.
-This patch adds asic3_set_register() calls to:
-1. Enable the PCMCIA/CF in asic3_probe().
-2. Disable the PCMCIA/CF in asic3_remove().
+On 04/05/2012 05:27 AM, Prarit Bhargava wrote:
+>> So what kernel version are you using?
+> I retested using top of the linux.git tree, running
+>
+> echo 1>  /proc/sys/kernel/sysrq
+> for i in `seq 10000`; do sleep 1000&  done
+> echo t>  /proc/sysrq-trigger
+>
+> and I no longer see a problem.  However, if I increase the number of threads to
+> 1000/cpu I get
+>
+> Clocksource %s unstable (delta = -429565427)
+> Clocksource switching to hpet
 
-Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>
----
- drivers/mfd/asic3.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Yea, so this is with the 12minute + stall starving the system from irqs? 
+Again, its all a matter of degree.
 
-diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
-index 1895cf9..0c083e7 100644
---- a/drivers/mfd/asic3.c
-+++ b/drivers/mfd/asic3.c
-@@ -998,6 +998,9 @@ static int __init asic3_probe(struct platform_device *pdev)
- 
- 	asic3_mfd_probe(pdev, pdata, mem);
- 
-+	asic3_set_register(asic, ASIC3_OFFSET(EXTCF, SELECT),
-+		(ASIC3_EXTCF_CF0_BUF_EN|ASIC3_EXTCF_CF0_PWAIT_EN), 1);
-+
- 	dev_info(asic->dev, "ASIC3 Core driver\n");
- 
- 	return 0;
-@@ -1019,6 +1022,9 @@ static int __devexit asic3_remove(struct platform_device *pdev)
- 	int ret;
- 	struct asic3 *asic = platform_get_drvdata(pdev);
- 
-+	asic3_set_register(asic, ASIC3_OFFSET(EXTCF, SELECT),
-+		(ASIC3_EXTCF_CF0_BUF_EN|ASIC3_EXTCF_CF0_PWAIT_EN), 0);
-+
- 	asic3_mfd_remove(pdev);
- 
- 	ret = asic3_gpio_remove(pdev);
--- 
-1.7.3.4
+>
+>> to narrow down if you're  problem  is currently present in mainline or only in
+>> older kernels, as that will help us find the proper fix.
+> If I hack in (sorry for the cut-and-paste)
+>
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index c958338..f38b8d0 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -279,11 +279,16 @@ static void clocksource_watchdog(unsigned long data)
+>                          continue;
+>                  }
+>
+> -               wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last)&  watchdog->m
+> -                                            watchdog->mult, watchdog->shift);
+> +               /*wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last)&  watchdog-
+> +                                            watchdog->mult, watchdog->shift);*/
+> +               wd_nsec = mult_frac(((wdnow - cs->wd_last), watchdog->mult,
+> +                                   1UL<<  watchdog->shift);
+> +
+> +               /*cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last)&
+> +                                            cs->mask, cs->mult, cs->shift);*/
+> +               cs_nsec = mult_frac(((csnow - cs->cs_last), cs->mult,
+> +                                   1UL<<  cs->shift);
+>
+> -               cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last)&
+> -                                            cs->mask, cs->mult, cs->shift);
+>                  cs->cs_last = csnow;
+>                  cs->wd_last = wdnow;
+>
+>
+> then I don't see unstable messages.
+>
+> I think the problem is still here but it only happens in extreme cases.
+
+I suspect if you were closely watching the clock  you'd probably see 
+some odd time inconsistencies as well. Its all due to running outside 
+the expected bounds of the system.  If you were to use the acpi_pm 
+clocksource and stall the system for 10+ minutes, when you returned the 
+system clock would be 10 minutes behind.
+
+I think if 10 minutes printk dumps is going to be expected behavior 
+(which given the size of these machines, isn't unreasonable), we may 
+need to find a way to allow printk to take a break every so often and 
+allow irqs to happen. Disabling irqs for 10+ minutes can cause all sorts 
+of system trouble.  I've seen scsi adapters hang if their heart beat 
+code didn't get an irq every 10 minutes or so.
+
+I had proposed something like this awhile back, but the issue cropping 
+up there was lost time due to long printks holding off irqs while we're 
+using the jiffies clocks in early boot, so it was at a much smaller scale.
+
+Could you give the following a try and let me know if it helps?
+
+thanks
+-john
+
+
+Only flush 1k chunks max from console_unlock to allow IRQ starvation 
+from happening.
+
+NOT FOR INCLUSION
+
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index b663c2c..b699cc7 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1272,6 +1272,7 @@ void console_unlock(void)
+  	unsigned long flags;
+  	unsigned _con_start, _log_end;
+  	unsigned wake_klogd = 0, retry = 0;
++	unsigned chunk_size, length;
+
+  	if (console_suspended) {
+  		up(&console_sem);
+@@ -1280,15 +1281,18 @@ void console_unlock(void)
+
+  	console_may_schedule = 0;
+
++	chunk_size = min(LOG_BUF_MASK, 1024); /* 1k chunks */
+  again:
+  	for ( ; ; ) {
+  		raw_spin_lock_irqsave(&logbuf_lock, flags);
+  		wake_klogd |= log_start - log_end;
+  		if (con_start == log_end)
+  			break;			/* Nothing to print */
++		length = (log_end - con_start)&  LOG_BUF_MASK;
++		length = min(length , chunk_size);
+  		_con_start = con_start;
+-		_log_end = log_end;
+-		con_start = log_end;		/* Flush */
++		_log_end = (con_start + length)&  LOG_BUF_MASK;
++		con_start = _log_end;		/* Flush */
+  		raw_spin_unlock(&logbuf_lock);
+  		stop_critical_timings();	/* don't trace print latency */
+  		call_console_drivers(_con_start, _log_end);
 
