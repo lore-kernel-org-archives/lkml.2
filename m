@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab2DEQjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:39:04 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39009 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab2DEQjB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:39:01 -0400
-Date: Thu, 5 Apr 2012 09:38:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120405163854.GE12854@google.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1755380Ab2DEQkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:40:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752324Ab2DEQkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 12:40:09 -0400
+Message-ID: <4F7DCAE0.6010605@redhat.com>
+Date: Thu, 05 Apr 2012 19:40:00 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [GIT PULL] KVM fixes for 3.4-rc1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Vivek.
+Linus, please pull a few fixes from
 
-On Wed, Apr 04, 2012 at 11:49:09AM -0700, Tejun Heo wrote:
-> > I am not sure what are you trying to say here. But primarily blk-throttle
-> > will throttle read and direct IO. Buffered writes will go to root cgroup
-> > which is typically unthrottled.
-> 
-> Ooh, my bad then.  Anyways, then the same applies to blk-throttle.
-> Our current implementation essentially collapses at the face of
-> write-heavy workload.
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.4
 
-I went through the code and couldn't find where blk-throttle is
-discriminating async IOs.  Were you saying that blk-throttle currently
-doesn't throttle because those IOs aren't associated with the dirtying
-task?  If so, note that it's different from cfq which explicitly
-assigns all async IOs when choosing cfqq even if we fix tagging.
+A bunch of powerpc KVM fixes, a guest and a host RCU fix (unrelated),
+and a small build fix.
 
-Thanks.
+----------------------------------------------------------------
+Alexander Graf (3):
+      KVM: PPC: Book3S: Compile fix for ppc32 in HIOR access code
+      KVM: PPC: Save/Restore CR over vcpu_run
+      KVM: PPC: Book3S: PR: Fix preemption
+
+Avi Kivity (1):
+      Merge tag 'powerpc-fixes' of git://github.com/paulusmack/linux
+into new/master
+
+Gleb Natapov (1):
+      KVM: Resolve RCU vs. async page fault problem
+
+Marcelo Tosatti (1):
+      KVM: VMX: vmx_set_cr0 expects kvm->srcu locked
+
+Paul Mackerras (2):
+      KVM: PPC: Book3S HV: Fix kvm_alloc_linear in case where no linears
+exist
+      KVM: PPC: Book3S HV: Save and restore CR in __kvmppc_vcore_entry
+
+Sasikantha babu (1):
+      KVM: PMU: Fix integer constant is too large warning in
+kvm_pmu_set_msr()
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
+
