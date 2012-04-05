@@ -1,197 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab2DEPJn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:09:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52339 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624Ab2DEO7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:59:23 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 27/34] fuse: implement i_op->atomic_create()
-Date: Thu,  5 Apr 2012 16:58:53 +0200
-Message-Id: <1333637940-31884-28-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
-References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
+	id S1754960Ab2DEPLW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:11:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19651 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754881Ab2DEPLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 11:11:19 -0400
+Date: Thu, 5 Apr 2012 11:10:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120405151026.GB23999@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404175124.GA8931@localhost>
+ <20120404183528.GJ12676@redhat.com>
+ <20120404214228.GA6471@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404214228.GA6471@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Wed, Apr 04, 2012 at 02:42:28PM -0700, Fengguang Wu wrote:
+> On Wed, Apr 04, 2012 at 02:35:29PM -0400, Vivek Goyal wrote:
+> > On Wed, Apr 04, 2012 at 10:51:24AM -0700, Fengguang Wu wrote:
+> > 
+> > [..]
+> > > The sweet split point would be for balance_dirty_pages() to do cgroup
+> > > aware buffered write throttling and leave other IOs to the current
+> > > blkcg. For this to work well as a total solution for end users, I hope
+> > > we can cooperate and figure out ways for the two throttling entities
+> > > to work well with each other.
+> > 
+> > Throttling read + direct IO, higher up has few issues too. Users will
+> 
+> Yeah I have a bit worry about high layer throttling, too.
+> Anyway here are the ideas.
+> 
+> > not like that a task got blocked as it tried to submit a read from a
+> > throttled group.
+> 
+> That's not the same issue I worried about :) Throttling is about
+> inserting small sleep/waits into selected points. For reads, the ideal
+> sleep point is immediately after readahead IO is summited, at the end
+> of __do_page_cache_readahead(). The same should be applicable to
+> direct IO.
 
-Replace fuse's ->create implementation with a ->atomic_create implementation.
-No functionality is changed.
+But after a read the process might want to process the read data and
+do something else altogether. So throttling the process after completing
+the read is not the best thing.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/fuse/dir.c |   97 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 69 insertions(+), 28 deletions(-)
+> 
+> > Current async behavior works well where we queue up the
+> > bio from the task in throttled group and let task do other things. Same
+> > is true for AIO where we would not like to block in bio submission.
+> 
+> For AIO, we'll need to delay the IO completion notification or status
+> update, which may involve computing some delay time and delay the
+> calls to io_complete() with the help of some delayed work queue. There
+> may be more issues to deal with as I didn't look into aio.c carefully.
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 2066328..75e5142 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -369,8 +369,9 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
-  * If the filesystem doesn't support this, then fall back to separate
-  * 'mknod' + 'open' requests.
-  */
--static int fuse_create_open(struct inode *dir, struct dentry *entry,
--			    umode_t mode, struct nameidata *nd)
-+static struct file *fuse_create_open(struct inode *dir, struct dentry *entry,
-+				     struct opendata *od, unsigned flags,
-+				     umode_t mode)
- {
- 	int err;
- 	struct inode *inode;
-@@ -382,17 +383,15 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 	struct fuse_entry_out outentry;
- 	struct fuse_file *ff;
- 	struct file *file;
--	int flags = nd->intent.open.flags;
--
--	if (fc->no_create)
--		return -ENOSYS;
- 
-+	err = -EINVAL;
- 	if (flags & O_DIRECT)
--		return -EINVAL;
-+		goto out_err;
- 
- 	forget = fuse_alloc_forget();
-+	err = -ENOMEM;
- 	if (!forget)
--		return -ENOMEM;
-+		goto out_err;
- 
- 	req = fuse_get_req(fc);
- 	err = PTR_ERR(req);
-@@ -431,11 +430,8 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 	req->out.args[1].value = &outopen;
- 	fuse_request_send(fc, req);
- 	err = req->out.h.error;
--	if (err) {
--		if (err == -ENOSYS)
--			fc->no_create = 1;
-+	if (err)
- 		goto out_free_ff;
--	}
- 
- 	err = -EIO;
- 	if (!S_ISREG(outentry.attr.mode) || invalid_nodeid(outentry.nodeid))
-@@ -451,28 +447,78 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
- 		fuse_sync_release(ff, flags);
- 		fuse_queue_forget(fc, forget, outentry.nodeid, 1);
--		return -ENOMEM;
-+		err = -ENOMEM;
-+		goto out_err;
- 	}
- 	kfree(forget);
- 	d_instantiate(entry, inode);
- 	fuse_change_entry_timeout(entry, &outentry);
- 	fuse_invalidate_attr(dir);
--	file = lookup_instantiate_filp(nd, entry, generic_file_open);
-+	file = finish_open(od, entry, generic_file_open);
- 	if (IS_ERR(file)) {
- 		fuse_sync_release(ff, flags);
--		return PTR_ERR(file);
-+	} else {
-+		file->private_data = fuse_file_get(ff);
-+		fuse_finish_open(inode, file);
- 	}
--	file->private_data = fuse_file_get(ff);
--	fuse_finish_open(inode, file);
--	return 0;
-+	return file;
- 
-- out_free_ff:
-+out_free_ff:
- 	fuse_file_free(ff);
-- out_put_request:
-+out_put_request:
- 	fuse_put_request(fc, req);
-- out_put_forget_req:
-+out_put_forget_req:
- 	kfree(forget);
--	return err;
-+out_err:
-+	return ERR_PTR(err);
-+}
-+
-+static int fuse_mknod(struct inode *, struct dentry *, umode_t, dev_t);
-+static struct file *fuse_atomic_open(struct inode *dir, struct dentry *entry,
-+				     struct opendata *od, unsigned flags,
-+				     umode_t mode, bool *created)
-+{
-+	int err;
-+	struct fuse_conn *fc = get_fuse_conn(dir);
-+	struct file *file;
-+	struct dentry *res = NULL;
-+
-+	if (d_unhashed(entry)) {
-+		res = fuse_lookup(dir, entry, NULL);
-+		if (IS_ERR(res))
-+			return ERR_CAST(res);
-+
-+		if (res)
-+			entry = res;
-+	}
-+
-+	if (!(flags & O_CREAT) || entry->d_inode)
-+		goto no_open;
-+
-+	/* Only creates */
-+	*created = true;
-+
-+	if (fc->no_create)
-+		goto mknod;
-+
-+	file = fuse_create_open(dir, entry, od, flags, mode);
-+	if (PTR_ERR(file) == -ENOSYS) {
-+		fc->no_create = 1;
-+		goto mknod;
-+	}
-+out_dput:
-+	dput(res);
-+	return file;
-+
-+mknod:
-+	err = fuse_mknod(dir, entry, mode, 0);
-+	if (err) {
-+		file = ERR_PTR(err);
-+		goto out_dput;
-+	}
-+no_open:
-+	finish_no_open(od, res);
-+	return NULL;
- }
- 
- /*
-@@ -576,12 +622,6 @@ static int fuse_mknod(struct inode *dir, struct dentry *entry, umode_t mode,
- static int fuse_create(struct inode *dir, struct dentry *entry, umode_t mode,
- 		       struct nameidata *nd)
- {
--	if (nd) {
--		int err = fuse_create_open(dir, entry, mode, nd);
--		if (err != -ENOSYS)
--			return err;
--		/* Fall back on mknod */
--	}
- 	return fuse_mknod(dir, entry, mode, 0);
- }
- 
-@@ -1632,6 +1672,7 @@ static const struct inode_operations fuse_dir_inode_operations = {
- 	.link		= fuse_link,
- 	.setattr	= fuse_setattr,
- 	.create		= fuse_create,
-+	.atomic_open	= fuse_atomic_open,
- 	.mknod		= fuse_mknod,
- 	.permission	= fuse_permission,
- 	.getattr	= fuse_getattr,
--- 
-1.7.7
+I don't know but delaying compltion notifications sounds odd to me. So
+you don't throttle while submitting requests. That does not help with
+pressure on request queue as process can dump whole bunch of IO without
+waiting for completion?
 
+What I like better that AIO is allowed to submit bunch of IO till it
+hits the nr_requests limit on request queue and then it is blocked as
+request queue is too busy and not enough request descriptors are free.
+
+> 
+> The thing worried me is that in the proportional throttling case, the
+> high level throttling works on the *estimated* task_ratelimit =
+> disk_bandwidth / N, where N is the number of read IO tasks. When N
+> suddenly changes from 2 to 1, it may take 1 second for the estimated
+> task_ratelimit to adapt from disk_bandwidth/2 up to disk_bandwidth,
+> during which time the disk won't get 100% utilized because of the
+> temporally over-throttling of the remaining IO task.
+
+I thought we were only considering the case of absolute throttling in
+higher layers. Proportional IO will continue to be in CFQ. I don't think
+we need to push proportional IO in higher layers.
+
+> 
+> This is not a problem when throttling at the block/cfq layer, since it
+> has the full information of pending requests and should not depend on
+> such estimations.
+
+CFQ does not even look at pending requests. It just maintains bunch
+of IO queues and selects one queue to dispatch IO from based on its
+weight. So proportional IO comes very naturally to CFQ.
+
+> 
+> The workaround I can think of, is to put the throttled task into a wait
+> queue, and let block layer wake up the waiters when the IO queue runs
+> empty. This should be able to avoid most disk idle time.
+
+Again, I am not convinced that proportional IO should go in higher layers.
+
+For fast devices we are already suffering from queue locking overhead and
+Jens seems to have patches for multi queue. Now by trying to implement
+something at higher layer, that locking overhead will show up there too
+and we will end up doing something similar to multi queue there and it
+is not desirable.
+
+Thanks
+Vivek
