@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2DEWsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 18:48:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48332 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646Ab2DEWsg (ORCPT
+	id S1756474Ab2DEWs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 18:48:27 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63387 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756382Ab2DEWsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 18:48:36 -0400
+	Thu, 5 Apr 2012 18:48:23 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Steven Rostedt <srostedt@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
         Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 12/15] parse-events: Support '+' opcode in print format
-Date: Fri,  6 Apr 2012 00:48:03 +0200
-Message-Id: <1333666086-6517-13-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 04/15] events: Update tools/lib/traceevent to work with perf
+Date: Fri,  6 Apr 2012 00:47:55 +0200
+Message-Id: <1333666086-6517-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
 References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
@@ -28,15 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-The '+' opcode is not supported in the arguments for the print format.
-This patch adds support for it.
+Some of the util functions of libtraceevent.a conflict with perf,
+such as die(), warning() and others. Move them into event-util.h
+that is not included by the perf tools.
 
-Cc: Michael Rubin <mrubin@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Link: http://lkml.kernel.org/r/1310785241-3799-4-git-send-email-vnagarnaik@google.com
+Also, as perf compiles with 'bool' the filter_arg->bool needs to
+be renamed to filter_arg->boolean.
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -49,32 +47,234 @@ Cc: Arun Sharma <asharma@fb.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/lib/traceevent/event-parse.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ tools/lib/traceevent/event-parse.c  |    1 +
+ tools/lib/traceevent/event-parse.h  |   20 +++-----------------
+ tools/lib/traceevent/event-utils.h  |   16 ++++++++++++++++
+ tools/lib/traceevent/parse-filter.c |   32 ++++++++++++++++----------------
+ tools/lib/traceevent/trace-seq.c    |    1 +
+ 5 files changed, 37 insertions(+), 33 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 4d5092f..476626a 100644
+index 47a3227..3ce75b5 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -2047,6 +2047,18 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+@@ -33,6 +33,7 @@
+ #include <errno.h>
+ 
+ #include "event-parse.h"
++#include "event-utils.h"
+ 
+ static const char *input_buf;
+ static unsigned long long input_buf_ptr;
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index c32d715..2e0222d 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -167,6 +167,8 @@ enum format_flags {
+ 	FIELD_IS_STRING		= 8,
+ 	FIELD_IS_DYNAMIC	= 16,
+ 	FIELD_IS_LONG		= 32,
++	FIELD_IS_FLAG		= 64,
++	FIELD_IS_SYMBOLIC	= 128,
+ };
+ 
+ struct format_field {
+@@ -406,22 +408,6 @@ struct pevent {
+ 	struct event_format *last_event;
+ };
+ 
+-/* Can be overridden */
+-void die(const char *fmt, ...);
+-void *malloc_or_die(unsigned int size);
+-void warning(const char *fmt, ...);
+-void pr_stat(const char *fmt, ...);
+-void vpr_stat(const char *fmt, va_list ap);
+-
+-/* Always available */
+-void __die(const char *fmt, ...);
+-void __warning(const char *fmt, ...);
+-void __pr_stat(const char *fmt, ...);
+-
+-void __vdie(const char *fmt, ...);
+-void __vwarning(const char *fmt, ...);
+-void __vpr_stat(const char *fmt, ...);
+-
+ static inline unsigned short
+ __data2host2(struct pevent *pevent, unsigned short data)
+ {
+@@ -734,7 +720,7 @@ struct filter_arg_str {
+ struct filter_arg {
+ 	enum filter_arg_type	type;
+ 	union {
+-		struct filter_arg_boolean	bool;
++		struct filter_arg_boolean	boolean;
+ 		struct filter_arg_field		field;
+ 		struct filter_arg_value		value;
+ 		struct filter_arg_op		op;
+diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
+index a8fb48f..0829638 100644
+--- a/tools/lib/traceevent/event-utils.h
++++ b/tools/lib/traceevent/event-utils.h
+@@ -23,6 +23,22 @@
+ 
+ #include <ctype.h>
+ 
++/* Can be overridden */
++void die(const char *fmt, ...);
++void *malloc_or_die(unsigned int size);
++void warning(const char *fmt, ...);
++void pr_stat(const char *fmt, ...);
++void vpr_stat(const char *fmt, va_list ap);
++
++/* Always available */
++void __die(const char *fmt, ...);
++void __warning(const char *fmt, ...);
++void __pr_stat(const char *fmt, ...);
++
++void __vdie(const char *fmt, ...);
++void __vwarning(const char *fmt, ...);
++void __vpr_stat(const char *fmt, ...);
++
+ static inline char *strim(char *string)
+ {
+ 	char *ret;
+diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+index 1df9966..fe37182 100644
+--- a/tools/lib/traceevent/parse-filter.c
++++ b/tools/lib/traceevent/parse-filter.c
+@@ -359,7 +359,7 @@ create_arg_item(struct event_format *event,
+ 			if (strcmp(token, COMM) != 0) {
+ 				/* not a field, Make it false */
+ 				arg->type = FILTER_ARG_BOOLEAN;
+-				arg->bool.value = FILTER_FALSE;
++				arg->boolean.value = FILTER_FALSE;
  				break;
- 			*val = left - right;
- 			break;
-+		case '+':
-+			if (arg->op.left->type == PRINT_NULL)
-+				left = 0;
-+			else
-+				ret = arg_num_eval(arg->op.left, &left);
-+			if (!ret)
-+				break;
-+			ret = arg_num_eval(arg->op.right, &right);
-+			if (!ret)
-+				break;
-+			*val = left + right;
-+			break;
+ 			}
+ 			/* If token is 'COMM' then it is special */
+@@ -487,7 +487,7 @@ static int add_right(struct filter_arg *op, struct filter_arg *arg,
+ 				free_arg(left);
+ 				free_arg(arg);
+ 				op->type = FILTER_ARG_BOOLEAN;
+-				op->bool.value = FILTER_FALSE;
++				op->boolean.value = FILTER_FALSE;
+ 				break;
+ 			}
+ 
+@@ -772,7 +772,7 @@ enum filter_vals test_arg(struct filter_arg *parent, struct filter_arg *arg)
+ 
+ 		/* bad case */
+ 	case FILTER_ARG_BOOLEAN:
+-		return FILTER_VAL_FALSE + arg->bool.value;
++		return FILTER_VAL_FALSE + arg->boolean.value;
+ 
+ 		/* good cases: */
+ 	case FILTER_ARG_STR:
+@@ -871,7 +871,7 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg)
+ 		free_arg(arg);
+ 		arg = allocate_arg();
+ 		arg->type = FILTER_ARG_BOOLEAN;
+-		arg->bool.value = ret == FILTER_VAL_TRUE;
++		arg->boolean.value = ret == FILTER_VAL_TRUE;
+ 	}
+ 
+ 	return arg;
+@@ -1116,7 +1116,7 @@ process_event(struct event_format *event, const char *filter_str,
+ 	if (!*parg) {
+ 		*parg = allocate_arg();
+ 		(*parg)->type = FILTER_ARG_BOOLEAN;
+-		(*parg)->bool.value = FILTER_FALSE;
++		(*parg)->boolean.value = FILTER_FALSE;
+ 	}
+ 
+ 	return 0;
+@@ -1139,7 +1139,7 @@ static int filter_event(struct event_filter *filter,
+ 		/* just add a TRUE arg */
+ 		arg = allocate_arg();
+ 		arg->type = FILTER_ARG_BOOLEAN;
+-		arg->bool.value = FILTER_TRUE;
++		arg->boolean.value = FILTER_TRUE;
+ 	}
+ 
+ 	filter_type = add_filter_type(filter, event->id);
+@@ -1369,9 +1369,9 @@ static int copy_filter_type(struct event_filter *filter,
+ 		arg = allocate_arg();
+ 		arg->type = FILTER_ARG_BOOLEAN;
+ 		if (strcmp(str, "TRUE") == 0)
+-			arg->bool.value = 1;
++			arg->boolean.value = 1;
+ 		else
+-			arg->bool.value = 0;
++			arg->boolean.value = 0;
+ 
+ 		filter_type = add_filter_type(filter, event->id);
+ 		filter_type->filter = arg;
+@@ -1442,8 +1442,8 @@ int pevent_update_trivial(struct event_filter *dest, struct event_filter *source
+ 		arg = filter_type->filter;
+ 		if (arg->type != FILTER_ARG_BOOLEAN)
+ 			continue;
+-		if ((arg->bool.value && type == FILTER_TRIVIAL_FALSE) ||
+-		    (!arg->bool.value && type == FILTER_TRIVIAL_TRUE))
++		if ((arg->boolean.value && type == FILTER_TRIVIAL_FALSE) ||
++		    (!arg->boolean.value && type == FILTER_TRIVIAL_TRUE))
+ 			continue;
+ 
+ 		event = filter_type->event;
+@@ -1497,10 +1497,10 @@ void pevent_filter_clear_trivial(struct event_filter *filter,
+ 			continue;
+ 		switch (type) {
+ 		case FILTER_TRIVIAL_FALSE:
+-			if (filter_type->filter->bool.value)
++			if (filter_type->filter->boolean.value)
+ 				continue;
+ 		case FILTER_TRIVIAL_TRUE:
+-			if (!filter_type->filter->bool.value)
++			if (!filter_type->filter->boolean.value)
+ 				continue;
  		default:
- 			do_warning("unknown op '%s'", arg->op.op);
- 			ret = 0;
+ 			break;
+@@ -1551,10 +1551,10 @@ int pevent_filter_event_has_trivial(struct event_filter *filter,
+ 
+ 	switch (type) {
+ 	case FILTER_TRIVIAL_FALSE:
+-		return !filter_type->filter->bool.value;
++		return !filter_type->filter->boolean.value;
+ 
+ 	case FILTER_TRIVIAL_TRUE:
+-		return filter_type->filter->bool.value;
++		return filter_type->filter->boolean.value;
+ 	default:
+ 		return 1;
+ 	}
+@@ -1783,7 +1783,7 @@ static int test_filter(struct event_format *event,
+ 	switch (arg->type) {
+ 	case FILTER_ARG_BOOLEAN:
+ 		/* easy case */
+-		return arg->bool.value;
++		return arg->boolean.value;
+ 
+ 	case FILTER_ARG_OP:
+ 		return test_op(event, arg, record);
+@@ -2147,7 +2147,7 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
+ 	switch (arg->type) {
+ 	case FILTER_ARG_BOOLEAN:
+ 		str = malloc_or_die(6);
+-		if (arg->bool.value)
++		if (arg->boolean.value)
+ 			strcpy(str, "TRUE");
+ 		else
+ 			strcpy(str, "FALSE");
+diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+index d2f265b..b1ccc92 100644
+--- a/tools/lib/traceevent/trace-seq.c
++++ b/tools/lib/traceevent/trace-seq.c
+@@ -24,6 +24,7 @@
+ #include <stdarg.h>
+ 
+ #include "event-parse.h"
++#include "event-utils.h"
+ 
+ /*
+  * The TRACE_SEQ_POISON is to catch the use of using
 -- 
 1.7.5.4
 
