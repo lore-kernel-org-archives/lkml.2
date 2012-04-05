@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab2DEGBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 02:01:01 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49059 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932478Ab2DEGA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 02:00:59 -0400
+	id S1754312Ab2DEGBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 02:01:54 -0400
+Received: from ka.mail.enyo.de ([87.106.162.201]:32804 "EHLO ka.mail.enyo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753815Ab2DEGBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 02:01:53 -0400
+From: Florian Weimer <fw@deneb.enyo.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Martin Lucina <martin@lucina.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] Implement IP_EVIL socket option (RFC 3514)
+References: <1333284791-5363-1-git-send-email-martin@lucina.net>
+	<87r4w3nw7n.fsf@mid.deneb.enyo.de>
+	<20120404201821.GC6589@ZenIV.linux.org.uk>
+Date: Thu, 05 Apr 2012 08:01:49 +0200
+In-Reply-To: <20120404201821.GC6589@ZenIV.linux.org.uk> (Al Viro's message of
+	"Wed, 4 Apr 2012 21:18:21 +0100")
+Message-ID: <874nsyk982.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-In-Reply-To: <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
-References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
-	<Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
-	<CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
-	<CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
-Date: Thu, 5 Apr 2012 14:00:57 +0800
-X-Google-Sender-Auth: bWCrH45Ftx4z21xXKZQ658Rqsa0
-Message-ID: <CAF1ivSZ6cZ0G9uYSRsz=h0iTYarb1kx=k6_UOqCuBX+0OMOXSw@mail.gmail.com>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Zhang Rui <rui.zhang@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-acpi <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 29, 2012 at 9:50 PM, Aaron Lu <aaron.lu@amd.com> wrote:
+* Al Viro:
 
-[.....]
-
-> For the ODD to be put into suspend state, the conditions should be:
-> 1 tray closed
-> 2 no media inside
-> I think we missed the condition 1 check now.
+> On Wed, Apr 04, 2012 at 09:17:00PM +0200, Florian Weimer wrote:
+>> * Martin Lucina:
+>> 
+>> > This patch implements the IP_EVIL socket option, allowing user-space
+>> > applications to set the Security Flag in the IPv4 Header, aka "evil" bit,
+>> > as defined in RFC 3514.
+>> 
+>> I need this to fix a security issue.  Could this be merged for real,
+>> please?
 >
-> And if we follow the two conditions, the events can be safely ignored.
->
-> What do you think of blocking events for it when going to suspend and unblocking
-> when resume? This could erase the unnecessary calls of the check events function
-> when ODD is suspended.
+> I would suggest switching away from your RFC1149 link - looks like your mail
+> took 3 days on the way out...
 
-Good idea.
-Will try this.
+Sorry, I saw it just now.
 
-> But disk_(un)block_events are not exported and can't be used in sr
-> module. So I'm
-> not sure how to do this.
-
-We can simply export it.
-
->
-> Another thing to consider is, user might want to eject the tray by
-> software like the
-> eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
-> thinking how to do this correctly.
-
-Assume eject /dev/sr0 is implemented as:
-
-int fd = open("/dev/sr0", ...)
-ioctl(fd, CDROMEJECT)
-
-We may need to resume ODD in the ioctl handler(scsi_cmd_ioctl).
-
-Thanks,
-Lin Ming
+The idea is to change the JVM to set IP_EVIL when an applet creates a
+socket, so that this socket cannot be used to trick firewalls to open
+up access to totally unrelated services.
