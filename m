@@ -1,91 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab2DENBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 09:01:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:7646 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab2DENBt convert rfc822-to-8bit (ORCPT
+	id S1753059Ab2DENhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 09:37:48 -0400
+Received: from amber.schedom-europe.net ([193.109.184.92]:44995 "EHLO
+	amber.schedom-europe.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab2DENhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 09:01:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85650500"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Brown, Len" <len.brown@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
- platform
-Thread-Topic: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and	xen
- platform
-Thread-Index: AQHNDCf6qmcRrTC4dkmeB7vjruTwoZaMP2Vw
-Date: Thu, 5 Apr 2012 13:01:45 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351241B0@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923350AD088@SHSMSX101.ccr.corp.intel.com>
- <4F46530B020000780007F751@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
- <20120226173458.GB18098@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350BAC09@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC8292335105EFA@SHSMSX101.ccr.corp.intel.com>
- <20120326164835.GE10236@phenom.dumpdata.com>
-In-Reply-To: <20120326164835.GE10236@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Apr 2012 09:37:37 -0400
+Date: Thu, 5 Apr 2012 15:37:27 +0200
+From: Marc Leeman <marc.leeman@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Marc Leeman <marc.leeman@gmail.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Subject: Re: [PATCH]: expose FORCE_MAX_ZONEORDER on x86
+Message-ID: <20120405133726.GS2473@scorpius.homelinux.org>
+Reply-To: Marc Leeman <marc.leeman@gmail.com>
+References: <CAH+fs=-WkbLgB-wsNEPS_OnvqwK9eChMCrMOudjtg7bu2ZtqHg@mail.gmail.com> <20111205125107.GH3143@elte.hu> <20120405124322.GQ2473@scorpius.homelinux.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UbqA5qh2E+WCbFAw"
+Content-Disposition: inline
+In-Reply-To: <20120405124322.GQ2473@scorpius.homelinux.org>
+X-Operating-System: Linux harvey 2.6.29.1
+X-Religion: Church of Tux
+X-Registered-Linux-User: #138583
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
->>> Compare approaches:
->>> 
->>> 1. xen overwritten approach (patches V2, x86_init, osl approach)   
->>>         Pros: a little simpler code
->>>     Cons:
->>>         1). specific to xen, cannot extend to other virt platform;
->>>         2). need to change natvie acpi_pad as modular;
->>> 
->>> 2. paravirt interface approach (original patches V1)     Pros:
->>>         1). standard hypervisor-agnostic interface (USENIX
->>>         conference 2006), can easily hook to Xen/lguest/... on
->>>         demand; 2). arch independent; 3). no need to change native
->>>         acpi_pad as     non-modular; Cons: a little complicated
->>> code, and code patching is some 
->>> overkilled for this case (but no harm);
->>> 
->>> (BTW, in the future we need add more and more pv ops, like
->>> pv_pm_ops, pv_cpu_hotplug_ops, pv_mem_hotplug_ops, etc. So how
->>> about add a pv_misc_ops template to handle them all? seems it's a
->>> common issue). 
->>> 
-> 
-> I think (and you probabaly have a better idea) is that the maintainer
-> of drivers/acpi/* is not very open to adding in code that only
-> benefits Xen. 
-> 
-> If it benefits other architectures (say ARM) then adding in hooks
-> there (in osl for example) makes sense - but I am not sure if ARM has
-> a form 
-> of _PUR code/calls it needs to do.
-> 
-> So with that in mind, neither of those options seems proper - as all
-> of them depend on changing something in drivers/acpi/*.
-> 
-> I've one or two suggestions of what could be done to still make this
-> work, but I need you to first see what happens if the native acpi_pad
-> runs under Xen with the latest upstream code (along with three patches
-> that are in a BZ I pointed you too).
 
-Konrad, any new idea? seems we hardly totally walk around acpi staff. Thanks, Jinsong
+--UbqA5qh2E+WCbFAw
+Content-Type: multipart/mixed; boundary="UNifc18z8z6e1QHx"
+Content-Disposition: inline
+
+
+--UNifc18z8z6e1QHx
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+> > I guess we could do this - but you forgot to sign off on your=20
+> > patch.
+>=20
+> It took me some time, but I finally rebased the patch against 3.3
+
+Sorry, the previous patch gave a (sloppy) whitespace warning, refreshed
+it.
+
+--=20
+  greetz, marc
+harvey 2.6.29.1 #1 PREEMPT Mon Apr 6 22:33:31 CDT 2009 GNU/Linux
+
+--UNifc18z8z6e1QHx
+Content-Type: text/x-diff; charset=iso-8859-15
+Content-Disposition: attachment; filename="0001-KConfig-x86-enable-FORCE_MAX_ZONEORDER-updated.patch"
+Content-Transfer-Encoding: quoted-printable
+
+=46rom 463bf232150089ee114ebc9712890ff5b0aca9c5 Mon Sep 17 00:00:00 2001
+=46rom: Marc Leeman <marc.leeman@gmail.com>
+Date: Thu, 5 Apr 2012 14:25:22 +0200
+Subject: KConfig x86: enable FORCE_MAX_ZONEORDER
+
+Larger blocks of memory can be required for e.g. higher resolutions on
+some capture card drivers; this patch just enables an already
+available configuration option on x86 (it was already exposed on other
+architectures).
+
+The default is set to 11, as in
+=2E/include/linux/mmzone.h
+
+[barco@nmgserver001 linux-3.0]$ find . -name Kconfig | xargs grep FORCE_MAX=
+_ZONEORDER
+=2E/arch/ia64/Kconfig:config FORCE_MAX_ZONEORDER
+=2E/arch/cris/Kconfig:config FORCE_MAX_ZONEORDER
+=2E/arch/arm/Kconfig:config FORCE_MAX_ZONEORDER
+=2E/arch/s390/Kconfig:config FORCE_MAX_ZONEORDER
+=2E/arch/mips/Kconfig:config FORCE_MAX_ZONEORDER
+=2E/arch/sh/mm/Kconfig:config FORCE_MAX_ZONEORDER
+=2E/arch/blackfin/Kconfig:config FORCE_MAX_ZONEORDER
+=2E/arch/powerpc/Kconfig:config FORCE_MAX_ZONEORDER
+
+
+Signed-off-by: Marc Leeman <marc.leeman@barco.com>
+---
+ arch/x86/Kconfig |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 1d14cc6..ba4ed6a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1296,6 +1296,22 @@ config ILLEGAL_POINTER_VALUE
+=20
+ source "mm/Kconfig"
+=20
++config FORCE_MAX_ZONEORDER
++	int "Maximum zone order"=20
++	range 11 64
++	default "11"
++	help
++	  The kernel memory allocator divides physically contiguous memory
++	  blocks into "zones", where each zone is a power of two number of
++	  pages.  This option selects the largest power of two that the kernel
++	  keeps in the memory allocator.  If you need to allocate very large
++	  blocks of physically contiguous memory, then you may need to
++	  increase this value.
++
++	  This config option is actually maximum order plus one. For example,
++	  a value of 11 means that the largest free memory block is 2^10 pages.
++
++
+ config HIGHPTE
+ 	bool "Allocate 3rd-level pagetables from highmem"
+ 	depends on HIGHMEM
+--=20
+1.7.2.5
+
+
+--UNifc18z8z6e1QHx--
+
+--UbqA5qh2E+WCbFAw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.6 (GNU/Linux)
+
+iD8DBQFPfaAWUQpj09NWLeERAoXaAKDBDN35V96u3pAFJN0uoy4v0Jr9gQCg3067
+BUor5kShYphqTcOmL5Mucb4=
+=UhZE
+-----END PGP SIGNATURE-----
+
+--UbqA5qh2E+WCbFAw--
