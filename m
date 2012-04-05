@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab2DEQOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:14:24 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:19948 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752848Ab2DEQOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:14:23 -0400
-Message-ID: <4F7DC4CC.9080502@parallels.com>
-Date: Thu, 05 Apr 2012 20:14:04 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	id S1755002Ab2DEQXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:23:05 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43910 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab2DEQXD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 12:23:03 -0400
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: kernel BUG at include/net/netns/generic.h:41
-References: <20120328002346.GB3077@redhat.com> <20120402172600.GA3728@redhat.com> <1333390230.13718.34.camel@lade.trondhjem.org> <4F7DC37F.7090404@parallels.com> <20120405161241.GA23658@redhat.com>
-In-Reply-To: <20120405161241.GA23658@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
+References: <1333570774-26462-1-git-send-email-bobbypowers@gmail.com>
+	<1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
+Date: Thu, 5 Apr 2012 12:23:01 -0400
+Message-ID: <CAArOQ2Vc35VnbTCAZigTGZ3pL-f8mAtA9Ugpdjo5S=M7Ujpeiw@mail.gmail.com>
+Subject: Re: [PATCH v2] Btrfs, lockdep: get_restripe_target: use lockdep in BUG_ON
+From: Bobby Powers <bobbypowers@gmail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: Bobby Powers <bobbypowers@gmail.com>, Ilya Dryomov <idryomov@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, Andi Kleen <ak@linux.intel.com>,
+        Jeff Mahoney <jeffm@suse.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-05.04.2012 20:12, Dave Jones Ð¿Ð¸ÑˆÐµÑ‚:
-> On Thu, Apr 05, 2012 at 08:08:31PM +0400, Stanislav Kinsbursky wrote:
->
->   >  So, there are few questions to you, Dave:
->   >  1) can this happen (PipeFS mount attempt before SUNPRC module insertion has
->   >  returned any value) in your case?
->
-> I don't know enough of what systemd is doing to answer this.
->
->   >  2) how often do you experience this problem? Not every boot, I suppose?
->   >  3) And is it easy for you to reproduce?
->
-> It happens most the time, but not every time.
->
+On Wed, Apr 4, 2012 at 10:04 PM, Bobby Powers <bobbypowers@gmail.com> wrote:
+> spin_is_locked always returns 0 on non-SMP systems, which causes btrfs
+> to fail the mount.  There is documentation pending as to why checking
 
-Ok, I'll send the patch soon.
-Hope, it will help.
+I guess I should be explicit in stating that this is a regression, so
+this patch or something else that addresses it should be pulled into
+3.4.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+> for spin_is_locked is a bad idea:
+>
+> https://lkml.org/lkml/2012/3/27/413
+>
+> The suggested lockdep_assert_held() is not appropriate in this case,
+> as what get_restripe_target() is checking for is that either
+> volume_mutex is held or balance_lock is held.  Luckily
+> lockdep_assert_held() is a simple macro:
+>
+> WARN_ON(debug_locks && !lockdep_is_held(l))
+>
+> We can mimic the structure in get_restripe_target(), but we need to
+> make sure lockdep_is_held() is defined for the !LOCKDEP case.
+>
+> CC: Ilya Dryomov <idryomov@gmail.com>
+> CC: Chris Mason <chris.mason@oracle.com>
+> CC: Andi Kleen <ak@linux.intel.com>
+> CC: Jeff Mahoney <jeffm@suse.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: linux-kernel@vger.kernel.org
+> Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
+> ---
+>  fs/btrfs/extent-tree.c  |    5 +++--
+>  include/linux/lockdep.h |    1 +
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+> index a844204..4d13eb1 100644
+> --- a/fs/btrfs/extent-tree.c
+> +++ b/fs/btrfs/extent-tree.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/slab.h>
+>  #include <linux/ratelimit.h>
+> +#include <linux/lockdep.h>
+>  #include "compat.h"
+>  #include "hash.h"
+>  #include "ctree.h"
+> @@ -3158,8 +3159,8 @@ static u64 get_restripe_target(struct btrfs_fs_info *fs_info, u64 flags)
+>        struct btrfs_balance_control *bctl = fs_info->balance_ctl;
+>        u64 target = 0;
+>
+> -       BUG_ON(!mutex_is_locked(&fs_info->volume_mutex) &&
+> -              !spin_is_locked(&fs_info->balance_lock));
+> +       BUG_ON(debug_locks && !lockdep_is_held(&fs_info->volume_mutex) &&
+> +              !lockdep_is_held(&fs_info->balance_lock));
+>
+>        if (!bctl)
+>                return 0;
+> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+> index d36619e..94c0edb 100644
+> --- a/include/linux/lockdep.h
+> +++ b/include/linux/lockdep.h
+> @@ -392,6 +392,7 @@ struct lock_class_key { };
+>
+>  #define lockdep_depth(tsk)     (0)
+>
+> +#define lockdep_is_held(l)     (0)
+>  #define lockdep_assert_held(l)                 do { } while (0)
+>
+>  #define lockdep_recursing(tsk)                 (0)
+> --
+> 1.7.10.rc3.3.g19a6c
+>
