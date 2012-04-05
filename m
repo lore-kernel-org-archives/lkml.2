@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab2DEWsd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 18:48:33 -0400
+	id S1756672Ab2DEWsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 18:48:38 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:48332 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756488Ab2DEWsa (ORCPT
+	with ESMTP id S1756646Ab2DEWsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 18:48:30 -0400
+	Thu, 5 Apr 2012 18:48:36 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Julia Lawall <julia@diku.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
         Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 08/15] perf/events: Correct size given to memset
-Date: Fri,  6 Apr 2012 00:47:59 +0200
-Message-Id: <1333666086-6517-9-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 12/15] parse-events: Support '+' opcode in print format
+Date: Fri,  6 Apr 2012 00:48:03 +0200
+Message-Id: <1333666086-6517-13-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
 References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
@@ -26,13 +28,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-This is a forward port of commit 5660ce34241ab
-perf tools: Correct size given to memset
-written by Julia Lawall and forward ported by Steven Rostedt.
+The '+' opcode is not supported in the arguments for the print format.
+This patch adds support for it.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Cc: Michael Rubin <mrubin@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Link: http://lkml.kernel.org/r/1310785241-3799-4-git-send-email-vnagarnaik@google.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -45,22 +49,32 @@ Cc: Arun Sharma <asharma@fb.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/lib/traceevent/event-parse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/lib/traceevent/event-parse.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index f012395..16da20c 100644
+index 4d5092f..476626a 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -2076,7 +2076,7 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
- 			goto out_free;
- 
- 		field = malloc_or_die(sizeof(*field));
--		memset(field, 0, sizeof(field));
-+		memset(field, 0, sizeof(*field));
- 
- 		value = arg_eval(arg);
- 		field->value = strdup(value);
+@@ -2047,6 +2047,18 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+ 				break;
+ 			*val = left - right;
+ 			break;
++		case '+':
++			if (arg->op.left->type == PRINT_NULL)
++				left = 0;
++			else
++				ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
++			*val = left + right;
++			break;
+ 		default:
+ 			do_warning("unknown op '%s'", arg->op.op);
+ 			ret = 0;
 -- 
 1.7.5.4
 
