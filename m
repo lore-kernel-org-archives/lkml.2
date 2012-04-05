@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2DEHUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 03:20:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32842 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451Ab2DEHUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 03:20:06 -0400
-Date: Thu, 5 Apr 2012 00:20:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: vichy <vichy.kuo@gmail.com>
-cc: Kautuk Consul <consul.kautuk@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: some questions about __get_vm_area_node
-In-Reply-To: <CAOVJa8GEVr69+FStuiyu3vyejD+4PZtyKm=vO3n9=LkqgS==1Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1204050017290.11895@chino.kir.corp.google.com>
-References: <CAOVJa8EVHhfFfHHNAyAeT0ZYj3vZFW3Uu4K2PzBEGGOz92fhiw@mail.gmail.com> <alpine.DEB.2.00.1204042308470.7534@chino.kir.corp.google.com> <CAOVJa8GEVr69+FStuiyu3vyejD+4PZtyKm=vO3n9=LkqgS==1Q@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754529Ab2DEHVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 03:21:40 -0400
+Received: from csmtp3.one.com ([91.198.169.23]:50094 "EHLO csmtp3.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752013Ab2DEHVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 03:21:39 -0400
+From: Eric Andersson <eric.andersson@unixphere.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
+        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
+        stefan.nilsson@unixphere.com, broonie@opensource.wolfsonmicro.com,
+        christoph.mair@gmail.com,
+        Eric Andersson <eric.andersson@unixphere.com>
+Subject: [PATCHv4 0/3] bmp085: add support for bmp18x chip
+Date: Thu,  5 Apr 2012 09:22:12 +0200
+Message-Id: <1333610535-15804-1-git-send-email-eric.andersson@unixphere.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Apr 2012, vichy wrote:
+Hi,
 
-> Yes, I saw your check in message on Mon Dec 19 17:12:04 2011 -0800.
-> BTW, why we declare it as static previously?
+This is version 4 of the patch-set that adds support for the latest pressure
+sensors from Bosch Sensortec.
 
-Most likely copy-and-paste error by the original author.
+Changes from last version:
+- Fixed some typos
+- Fixed regmap error handling
+- Use devm_regmap_init_i2c()
+- Changed devicetree compatible string
 
-> for saving stack usage?
+--
+Best regards,
+ Eric
 
-For that you would need some kind of synchronization to protect it from 
-concurrent access which doesn't exist in this context, so it was simply a 
-mistake that got past review.
+   http://www.unixphere.com
+
+Eric Andersson (3):
+  misc: clean up bmp085 driver
+  misc: bmp085: add device tree properties
+  misc: add support for bmp18x chips to the bmp085 driver
+
+ Documentation/devicetree/bindings/misc/bmp085.txt |   20 ++
+ drivers/misc/Kconfig                              |   26 ++-
+ drivers/misc/Makefile                             |    2 +
+ drivers/misc/bmp085-i2c.c                         |   91 ++++++
+ drivers/misc/bmp085-spi.c                         |   91 ++++++
+ drivers/misc/bmp085.c                             |  356 +++++++++++----------
+ drivers/misc/bmp085.h                             |   33 ++
+ 7 files changed, 440 insertions(+), 179 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/misc/bmp085.txt
+ create mode 100644 drivers/misc/bmp085-i2c.c
+ create mode 100644 drivers/misc/bmp085-spi.c
+ create mode 100644 drivers/misc/bmp085.h
+
+-- 
+1.7.3.4
+
