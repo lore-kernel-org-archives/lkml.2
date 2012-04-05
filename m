@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab2DEHqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 03:46:31 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52069 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab2DEHqa convert rfc822-to-8bit (ORCPT
+	id S1752167Ab2DEIAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 04:00:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56621 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab2DEIAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 03:46:30 -0400
+	Thu, 5 Apr 2012 04:00:23 -0400
+Date: Thu, 5 Apr 2012 01:00:20 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mike Galbraith <mgalbraith@suse.de>
+cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+In-Reply-To: <1333611379.7783.143.camel@marge.simpson.net>
+Message-ID: <alpine.DEB.2.00.1204050055180.13439@chino.kir.corp.google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net> <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com> <1333535915.7188.18.camel@marge.simpson.net> <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com> <1333542649.7188.40.camel@marge.simpson.net>
+ <alpine.DEB.2.00.1204041414220.26086@chino.kir.corp.google.com> <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com> <1333601231.7783.31.camel@marge.simpson.net> <alpine.DEB.2.00.1204042157530.31186@chino.kir.corp.google.com>
+ <1333604949.7783.76.camel@marge.simpson.net> <alpine.DEB.2.00.1204042303510.7035@chino.kir.corp.google.com> <1333608177.7783.106.camel@marge.simpson.net> <alpine.DEB.2.00.1204042344090.8991@chino.kir.corp.google.com>
+ <1333611379.7783.143.camel@marge.simpson.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1333586419.23520.52.camel@joe2Laptop>
-References: <1333569554.864.3.camel@mop> <1333583480.23520.37.camel@joe2Laptop>
- <20120405003321.GB27595@kroah.com> <1333586419.23520.52.camel@joe2Laptop>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 5 Apr 2012 09:46:09 +0200
-Message-ID: <CAPXgP11qdyccftPPA9LSRKVb-Xnf8BzP+deUmTzHnuVxoTQKog@mail.gmail.com>
-Subject: Re: [PATCH] printk: support structured and multi-facility log messages
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 5, 2012 at 02:40, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2012-04-04 at 17:33 -0700, Greg Kroah-Hartmann wrote:
->> On Wed, Apr 04, 2012 at 04:51:20PM -0700, Joe Perches wrote:
->> > On Wed, 2012-04-04 at 21:59 +0200, Kay Sievers wrote:
->> > > From: Kay Sievers <kay@vrfy.org>
->> > > Subject: printk: support structured and multi-facility log messages
->> > []
->> > > This patch extends printk() to be able to attach arbitrary key/value
->> > > pairs to logged messages,
->> > How does it do that?
->> The implementation doesn't show that?
->
-> Not so far as I can tell.
->
-> How are arbitrary key/value pairs attached
-> in a printk?
+On Thu, 5 Apr 2012, Mike Galbraith wrote:
 
-There are 120 lines in the changelog, and a 100 lines large comment
-block in the source code, and another 50 lines spread over the code,
-and the hexdump examples in it, and all that? Even without looking at
-a single line of code, it should be explained from different
-viewpoints more than once.
+> That question made perfect sense to me.  Putting a global resource in
+> any bin of any sort makes little if any sense.
+> 
 
->> > > - Records consume almost the same amount, sometimes less memory than
->> > >   the traditional byte stream buffer (if printk_time is enabled). The record
->> > >   header is 16 bytes long, plus some padding bytes at the end if needed.
->> > >   The byte-stream buffer needed 3 chars for the syslog prefix, 15 char for
->> > >   the timestamp and a newline.
->> >
->> > I suggest using lzo on the string portion.
->>
->> As the used overall size is pretty much the same, that doesn't really
->> seem necessary to me.
->
-> As dmesg output would still exist, compression could reduce
-> the size of the duplicated logged output buffers significantly.
+This has nothing to do with global resources, it has to do with 
+PF_THREAD_BOUND since those threads cannot move amongst these cgroups.
 
-There are no other or duplicated buffers than the primary log buffer,
-which is exactly the same buffer as today's printk() uses. When this
-buffer is exported, the data is converted to a stream on-the-fly, and
-it's a feature, that such stream is human readable and not compressed
-output. I don't think there is much justification for a compression
-overhead and the problems it would introduce.
+For cgroups that do not have anything to do with cpu affinity, 
+PF_THREAD_BOUND means nothing to their attachment rules.  This patch is 
+addressing kthreadd since it, as the changelog says, has the ability to 
+spawn threads that become PF_THREAD_BOUND.  By logic, we then can't allow 
+kthreadd to be attached to cgroups where PF_THREAD_BOUND matters either.
 
-Kay
+I know we've been through several iterations on this over the past several 
+months and the patch getting dropped a couple times along the way, but I 
+really do appreciate your time and effort spent in developing this fix, 
+it's very helpful.
