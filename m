@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2DEPAD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:00:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38928 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab2DEO7I (ORCPT
+	id S1754802Ab2DEO77 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:59:59 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49884 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab2DEO7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:59:08 -0400
+	Thu, 5 Apr 2012 10:59:04 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 19/34] vfs: do_last(): common slow lookup
-Date: Thu,  5 Apr 2012 16:58:45 +0200
-Message-Id: <1333637940-31884-20-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 17/34] vfs: do_last(): inline lookup_slow()
+Date: Thu,  5 Apr 2012 16:58:43 +0200
+Message-Id: <1333637940-31884-18-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
@@ -23,55 +23,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Make the slow lookup part of O_CREAT and non-O_CREAT opens common.
-
-This allows atomic_open to be hooked into the slow lookup part.
+Copy lookup_slow() into do_last().
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   27 +++++----------------------
- 1 files changed, 5 insertions(+), 22 deletions(-)
+ fs/namei.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index f89827a..a7a9c2e 100644
+index c8a8b28..47bff57 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2272,30 +2272,13 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 			symlink_ok = 1;
- 		/* we _can_ be in RCU mode here */
- 		error = lookup_fast(nd, &nd->last, path, &inode);
--		if (unlikely(error)) {
+@@ -2276,9 +2276,22 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 			if (error < 0)
+ 				goto exit;
+ 
+-			error = lookup_slow(nd, &nd->last, path);
 -			if (error < 0)
--				goto exit;
--
--			BUG_ON(nd->inode != dir->d_inode);
--
--			mutex_lock(&dir->d_inode->i_mutex);
--			dentry = __lookup_hash(&nd->last, dir, nd);
--			mutex_unlock(&dir->d_inode->i_mutex);
--			error = PTR_ERR(dentry);
--			if (IS_ERR(dentry))
--				goto exit;
--			path->mnt = nd->path.mnt;
--			path->dentry = dentry;
--			error = follow_managed(path, nd->flags);
--			if (unlikely(error < 0))
--				goto exit_dput;
-+		if (likely(!error))
-+			goto finish_lookup;
++			BUG_ON(nd->inode != dir->d_inode);
++
++			mutex_lock(&dir->d_inode->i_mutex);
++			dentry = __lookup_hash(&nd->last, dir, nd);
++			mutex_unlock(&dir->d_inode->i_mutex);
++			error = PTR_ERR(dentry);
++			if (IS_ERR(dentry))
+ 				goto exit;
++			path->mnt = nd->path.mnt;
++			path->dentry = dentry;
++			error = follow_managed(path, nd->flags);
++			if (unlikely(error < 0))
++				goto exit_dput;
++
++			if (error)
++				nd->flags |= LOOKUP_JUMPED;
  
--			if (error)
--				nd->flags |= LOOKUP_JUMPED;
-+		if (error < 0)
-+			goto exit;
- 
--			inode = path->dentry->d_inode;
--		}
--		goto finish_lookup;
-+		BUG_ON(nd->inode != dir->d_inode);
- 	} else {
- 		/* create side of things */
- 		/*
+ 			inode = path->dentry->d_inode;
+ 		}
 -- 
 1.7.7
 
