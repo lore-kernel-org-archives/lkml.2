@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab2DEX3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:29:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57605 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab2DEX3A (ORCPT
+	id S1756418Ab2DEXkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:40:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59223 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab2DEXkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:29:00 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 1/5] perf top: Add intel_idle to the skip list
-Date: Thu,  5 Apr 2012 20:28:48 -0300
-Message-Id: <1333668532-3624-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1333668532-3624-1-git-send-email-acme@infradead.org>
-References: <1333668532-3624-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 5 Apr 2012 19:40:09 -0400
+Date: Thu, 5 Apr 2012 16:40:06 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tejun Heo <tj@kernel.org>
+cc: Mike Galbraith <mgalbraith@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
+In-Reply-To: <20120405231306.GF29517@google.com>
+Message-ID: <alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1204042344090.8991@chino.kir.corp.google.com> <alpine.DEB.2.00.1204050011550.9466@chino.kir.corp.google.com> <20120405160829.GA12854@google.com> <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com> <20120405213704.GA29517@google.com>
+ <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com> <20120405222400.GC29517@google.com> <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com> <20120405225854.GE29517@google.com> <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
+ <20120405231306.GF29517@google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Thu, 5 Apr 2012, Tejun Heo wrote:
 
-TODO: Accrue the cycles in the skip_list to an idle total, and show this
-on the 'top' UI, as suggested by Steven.
+> > We could still move to a single hierarchy, though, if we introduced a 
+> > change to allow PF_THREAD_BOUND to attach to both cpusets and cpu iff 
+> > its bound cpu is allowed and then do -EINVAL if its changed while still 
+> > attached.
+> 
+> Yeah, making the affected controllers to deal with them somehow
+> definitely is an option and will probably have to be chosen for some
+> other cases too (e.g. rt tasks).
 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-9nfecmgghgl5747rjxqpc28f@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |    1 +
- 1 file changed, 1 insertion(+)
+For cpusets, it's easy if update_nodemask() iterates over threads and 
+finds if any PF_THREAD_BOUND thread is bound to a cpu that is disallowed 
+by the new nodemask.
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e3c63ae..fab0a1c 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -615,6 +615,7 @@ process_hotkey:
- 
- /* Tag samples to be skipped. */
- static const char *skip_symbols[] = {
-+	"intel_idle",
- 	"default_idle",
- 	"native_safe_halt",
- 	"cpu_idle",
--- 
-1.7.9.2.358.g22243
+It's a very typical configuration to have threads within a cpuset attached 
+to a set of mems to use sched_setaffinity() for a subset of those cpus as 
+well.  A PF_THREAD_BOUND thread is then perfectly legitimate in a cpuset 
+where its cpu intersects with the set of mems but with the above 
+restriction that update_nodemask() fails with -EINVAL if its changed to be 
+disjoint.
 
+> I still feel lukewarm about the
+> ability to put kthreadd to !root cgroup tho.  I mean, for any kind of
+> sane accounting, forked kthreads would have to be further classified
+> and where kthreadd lives and fork happens wouldn't matter all that
+> much.
+
+Forked kthreads may not have to be further classified if the memcg cgroup, 
+for example, is mounted after boot and you want to track the memory usage 
+of all workqueues or kmem incurred by certain syscalls that don't get 
+attributed to the thread calling the syscall because the memory allocation 
+is done by a kthread.
+
+The problem is that I'm not in a position to say what everybodys use-case 
+is or isn't so I'm biased toward unnecessarily restricting it unless 
+absolutely necessary (for cpusets and cpu _until_ we move in the direction 
+where update_nodemask(), for example, can fail when PF_THREAD_BOUND 
+threads are attached).
+
+I'd also hate to see a cgroup come along in the future, perhaps for 
+security where you can only access certain portions of a thread's state if 
+they are in the same cgroup, where this will make even more sense beyond 
+memcg and cpuacct and then we get into a discussion about why kthreadd is 
+prohibited and need to recall this discussion that it's only really 
+cpusets and cpu.
+
+> It feels like we're fussing over stuff which isn't that
+> significant either way.
+> 
+
+Well, I'm fussing over it because the patch being considered unnecessary 
+requires that kthreadd can't be moved anywhere and I know one company is 
+trying to move in a direction where nothing is in the root memcg.
