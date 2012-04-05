@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2DEXDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:03:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46921 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756608Ab2DEXDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:03:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="138245215"
-Message-ID: <1333666991.2567.19.camel@jtkirshe-mobl>
-Subject: Re: [PATCH 2/2] ixgbe: add missing rtnl_lock in PM resume path
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: Alex Duyck <alexander.h.duyck@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Emil Tantilov <emil.s.tantilov@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        John Ronciak <john.ronciak@intel.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Date: Thu, 05 Apr 2012 16:03:11 -0700
-In-Reply-To: <1333638664-17062-2-git-send-email-bpoirier@suse.de>
-References: <1333638664-17062-1-git-send-email-bpoirier@suse.de>
-	 <1333638664-17062-2-git-send-email-bpoirier@suse.de>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-QObKXCRu2TLoDvU+SH1l"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S1756523Ab2DEXFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:05:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44054 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab2DEXFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 19:05:45 -0400
+Date: Thu, 5 Apr 2012 16:05:43 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tejun Heo <tj@kernel.org>
+cc: Mike Galbraith <mgalbraith@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
+In-Reply-To: <20120405225854.GE29517@google.com>
+Message-ID: <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1204042303510.7035@chino.kir.corp.google.com> <1333608177.7783.106.camel@marge.simpson.net> <alpine.DEB.2.00.1204042344090.8991@chino.kir.corp.google.com> <alpine.DEB.2.00.1204050011550.9466@chino.kir.corp.google.com>
+ <20120405160829.GA12854@google.com> <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com> <20120405213704.GA29517@google.com> <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com> <20120405222400.GC29517@google.com>
+ <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com> <20120405225854.GE29517@google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 5 Apr 2012, Tejun Heo wrote:
 
---=-QObKXCRu2TLoDvU+SH1l
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > > I can see your point but the problem is that it conflicts with the
+> > > long term direction cgroup is taking and that cgroup seems generally
+> > > over-engineered to allow too many things which aren't too necessary to
+> > > the point where it's a giant pain in the ass for the subsystems and
+> > > people involved, so I'm far more likely to go for chopping down and
+> > > restricting stuff if it's not strictly necessary.
+> > 
+> > How does kthreadd's placement conflict with the long-term direction of 
+> > cgroups?
+> 
+> Because there's only single hierarchy, random subsystem saying no on
+> ->can_attach() doesn't work.
+> 
 
-On Thu, 2012-04-05 at 11:11 -0400, Benjamin Poirier wrote:
-> Upon resume from standby, ixgbe may trigger the ASSERT_RTNL() in
-> netif_set_real_num_tx_queues(). The call stack is:
->         netif_set_real_num_tx_queues
->         ixgbe_set_num_queues
->         ixgbe_init_interrupt_scheme
->         ixgbe_resume
->=20
-> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
->=20
-> ---
-> Unlike patch 1 for igb, we cannot lock rtnl closer to the point where
-> netif_set_real_num_tx_queues() is called because
-> ixgbe_init_interrupt_scheme()
-> is also called by the dcb code, already under rtnl.
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)=20
+The cgroups of interest here, cpusets and cpu, which have restrictions for 
+PF_THREAD_BOUND threads is disjoint from memcg and cpuacct, which I'm 
+saying it's useful for.  There's no requirement to mount them all.  But if 
+you do try to do memory accounting in the presence of cpusets, though, it 
+should be restricted.
 
-Thanks Benjamin, I will add the patch to my igb queue of patches.
-
---=-QObKXCRu2TLoDvU+SH1l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCgAGBQJPfiSvAAoJEOVv75VaS+3OjtAP/0lEerebAsNk6txLYd3vsYWS
-mbY9VDY6iAuEUeueoArNCSxMiHQVFu+dutpq5TAzXUd7QIX+8KQExB90R/9sVhUv
-3vcZGCfe5WWTFh8nK0RLvXUeHQEFB4om4dY+/6HZ5AnhX+fDBdn3CJrwpCwwDJei
-Pn3SfnUJfPCfbkQ+9madKmW37t8FtTfzFUlpYA+lwEengAXMXpCB6915/QAe+QzM
-EXskZ5rzBqdDXLVx3wehV4M8eNMqxV7ESXW6ay8tl61Hvhp6aBt+MYQoiywZCOBi
-zZ5WClSKNJ1bBwOCOXLGBh/zMd7ThjsH8TNzp2mGlgP48N6iFlrPJmMYhyLRuG2g
-u5WBbwrJLQrqFVHEbIAvLs5p7UvWBBpksetmOjvPwd78y6LaHcXQ4V2C2CIHdx42
-M8SL0n4rswvKPLh6XSJcvkYOBstEss1Jl2ncUJ6G4wvrvfgRXZ27KVaFihaLTEDW
-O+S7u+ftDrSHXiZaQ8BzxWzlHyHzf6dYAy/ib4k5FB15su/bBtddKkPgPseN9zfo
-QUtIeKpDF7ELoyGuE+9CBVmyc/3xBFwXdXcdayzg5Cfx3sMCmDucyx2OtRsaHXnM
-rmd/HOIBWe7isD2vrA+Wu6YU6AVkbgDIGH1UIREezU9T8dcCthghIT9X53SI65+d
-0RX5ly/kPZawkgeEHu7x
-=cuiC
------END PGP SIGNATURE-----
-
---=-QObKXCRu2TLoDvU+SH1l--
-
+We could still move to a single hierarchy, though, if we introduced a 
+change to allow PF_THREAD_BOUND to attach to both cpusets and cpu iff 
+its bound cpu is allowed and then do -EINVAL if its changed while still 
+attached.
