@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab2DERE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 13:04:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22526 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746Ab2DERE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 13:04:56 -0400
-Subject: [PATCH] SUNRPC: register PipeFS file system after pernet sybsystem
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davej@redhat.com,
-        davem@davemloft.net, devel@openvz.org
-Date: Thu, 05 Apr 2012 21:04:37 +0400
-Message-ID: <20120405170405.15055.85431.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1754139Ab2DERG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 13:06:26 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33798 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752471Ab2DERGZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 13:06:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120405085911.GC1624@m.brq.redhat.com>
+References: <1333570898-10505-1-git-send-email-jolsa@redhat.com>
+	<1333570898-10505-6-git-send-email-jolsa@redhat.com>
+	<CABPqkBRyEmouSfJC=PYzgC8hTPmSzODVC81swnZvLPm3EG2vcQ@mail.gmail.com>
+	<20120405085911.GC1624@m.brq.redhat.com>
+Date: Thu, 5 Apr 2012 10:06:23 -0700
+Message-ID: <CABPqkBT5iQo00Wi3dX6uZQqrGWm-H-Q6GMFHUmupnodVUWngXg@mail.gmail.com>
+Subject: Re: [PATCH 5/8] perf, tool: Add pmu event parse support for
+ branch_sample_type values
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PipeFS superblock creation routine relays on SUNRPC pernet data presense, which
-is created on register_pernet_subsys() call in SUNRPC module init function.
-Registering of PipeFS filesystem prior to registering of per-net subsystem
-leads to races (mount of PipeFS can dereference uninitialized data).
+On Thu, Apr 5, 2012 at 1:59 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Wed, Apr 04, 2012 at 09:50:12PM -0700, Stephane Eranian wrote:
+>> On Wed, Apr 4, 2012 at 1:21 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> > Adding a support to specify branch_type as a hardcoded term
+>> > inside the pmu event definition.
+>> >
+>> > It is possible to specify pmu event like:
+>> >  "cpu/config=1,branch_type=hv|any_ret|1,config2=2/u"
+>> >
+>> > Following string values could be used as value for branch_type:
+>> >  u (PERF_SAMPLE_BRANCH_USER)
+>> >  k (PERF_SAMPLE_BRANCH_KERNEL)
+>> >  hv (PERF_SAMPLE_BRANCH_HV)
+>> >  any (PERF_SAMPLE_BRANCH_ANY)
+>> >  any_call (PERF_SAMPLE_BRANCH_ANY_CALL)
+>> >  any_ret (PERF_SAMPLE_BRANCH_ANY_RETURN)
+>> >  ind_call (PERF_SAMPLE_BRANCH_IND_CALL)
+>> >
+>> > Also a number could be specified as value.
+>> >
+>> Although it would be nice to have, the current kernel sampling
+>> buffer layout + perf would not be able to parse the RECORD_SAMPLE
+>> if you were to sample different things for different events:
+>>
+>>  perf record -e
+>> cpu/event=0xc0,umask=1:branch_type=any/,cpu/event=0x3c,umask=0x1/
+> hi,
+> for some reason I thought there might be sense to have multiple branch
+> types enabled in a single event.. I misread the code probably
+>
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+You can combine the branch types but I don't see how
+this could be really useful. As for priv levels, you can of course
+combine them. If they are not specificied, then the levels of
+the associated event are used.
 
----
- net/sunrpc/sunrpc_syms.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
-index 8adfc88..3d6498a 100644
---- a/net/sunrpc/sunrpc_syms.c
-+++ b/net/sunrpc/sunrpc_syms.c
-@@ -75,20 +75,21 @@ static struct pernet_operations sunrpc_net_ops = {
- static int __init
- init_sunrpc(void)
- {
--	int err = register_rpc_pipefs();
-+	int err = rpc_init_mempool();
- 	if (err)
- 		goto out;
--	err = rpc_init_mempool();
--	if (err)
--		goto out2;
- 	err = rpcauth_init_module();
- 	if (err)
--		goto out3;
-+		goto out2;
- 
- 	cache_initialize();
- 
- 	err = register_pernet_subsys(&sunrpc_net_ops);
- 	if (err)
-+		goto out3;
-+
-+	err = register_rpc_pipefs();
-+	if (err)
- 		goto out4;
- #ifdef RPC_DEBUG
- 	rpc_register_sysctl();
-@@ -98,11 +99,11 @@ init_sunrpc(void)
- 	return 0;
- 
- out4:
--	rpcauth_remove_module();
-+	unregister_pernet_subsys(&sunrpc_net_ops);
- out3:
--	rpc_destroy_mempool();
-+	rpcauth_remove_module();
- out2:
--	unregister_rpc_pipefs();
-+	rpc_destroy_mempool();
- out:
- 	return err;
- }
-
+>>
+>> Perf report/annotate would not be able to distinguish a RECORD_SAMPLE
+>> generated by the first or the second event. That's because the RECORD_SAMPLE
+>> fixed header does not contain enough info to determine which event caused the
+>> record to be generated. You need to event ID to decode the sample. The event ID
+>> gives you the attr struct which gives you the attr->sample_type which drives the
+>> layout of the RECORD_SAMPLE variable size body. The event ID is currently
+>> saved "somewhere" in the variable-size body of the sample. You have  a chicken
+>> and egg problem here.
+>
+> yep, I'm aware of this.. cool you're preparing fix
+>
+> thanks,
+> jirka
