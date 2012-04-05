@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab2DEWxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 18:53:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53463 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab2DEWxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 18:53:00 -0400
-Date: Thu, 5 Apr 2012 15:52:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, <rpurdie@rpsys.net>,
-        <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Subject: Re: [PATCH] LEDS: LED module for DA9052/53 PMIC v2
-Message-Id: <20120405155258.6af697f3.akpm@linux-foundation.org>
-In-Reply-To: <1329916149.24042.7.camel@dhruva>
-References: <1329916149.24042.7.camel@dhruva>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756614Ab2DEWxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 18:53:40 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:49082 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755783Ab2DEWxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 18:53:38 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] drxk: Does not unlock mutex if sanity check failed in scu_command()
+Date: Thu,  5 Apr 2012 15:53:20 -0700
+Message-Id: <1333666400-29357-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Feb 2012 18:39:09 +0530
-Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
+If sanity check fails in scu_command(), goto error leads to unlock of
+an unheld mutex. The check should not fail in reality, but it nevertheless
+worth fixing.
 
-> LED Driver for Dialog Semiconductor DA9052/53 PMICs.
-> 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Found by Linux Driver Verification project (linuxtesting.org).
 
-This email was cc'ed to Dajun.Chen@diasemi.com.  I'll assume that both
-work correctly.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/media/dvb/frontends/drxk_hard.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
->  drivers/leds/Kconfig       |    8 ++
->  drivers/leds/Makefile      |    1 +
->  drivers/leds/leds-da9052.c |  214 ++++++++++++++++++++++++++++++++++++++++++++
-
-Looks OK.  I added one little fixup:
-
---- a/drivers/leds/leds-da9052.c~leds-led-module-for-da9052-53-pmic-v2-fix
-+++ a/drivers/leds/leds-da9052.c
-@@ -40,7 +40,7 @@ struct da9052_led {
- 	int brightness;
- };
+diff --git a/drivers/media/dvb/frontends/drxk_hard.c b/drivers/media/dvb/frontends/drxk_hard.c
+index 6980ed7..3cce362 100644
+--- a/drivers/media/dvb/frontends/drxk_hard.c
++++ b/drivers/media/dvb/frontends/drxk_hard.c
+@@ -1525,8 +1525,10 @@ static int scu_command(struct drxk_state *state,
+ 	dprintk(1, "\n");
  
--unsigned char led_reg[] = {
-+static unsigned char led_reg[] = {
- 	DA9052_LED_CONT_4_REG,
- 	DA9052_LED_CONT_5_REG,
- };
+ 	if ((cmd == 0) || ((parameterLen > 0) && (parameter == NULL)) ||
+-	    ((resultLen > 0) && (result == NULL)))
+-		goto error;
++	    ((resultLen > 0) && (result == NULL))) {
++		printk(KERN_ERR "drxk: Error %d on %s\n", status, __func__);
++		return status;
++	}
+ 
+ 	mutex_lock(&state->mutex);
+ 
+-- 
+1.7.4.1
 
-This array could actually be made static within da9052_set_led_brightness().
