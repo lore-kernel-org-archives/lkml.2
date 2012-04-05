@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab2DEO2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:28:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33350 "EHLO mx2.suse.de"
+	id S1752902Ab2DEO30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:29:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33408 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752859Ab2DEO23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:28:29 -0400
-Date: Thu, 05 Apr 2012 16:28:28 +0200
-Message-ID: <s5hiphefe2b.wl%tiwai@suse.de>
+	id S1751638Ab2DEO3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 10:29:25 -0400
+Date: Thu, 05 Apr 2012 16:29:24 +0200
+Message-ID: <s5hhawyfe0r.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] sound/pci/hda: Fix Amp-In count for widgets with implied selector
-In-Reply-To: <1333632596.4159.11.camel@localhost>
-References: <1333632596.4159.11.camel@localhost>
+Subject: Re: [PATCH 2/6] sound/pci/hda: Rename capture sources of CX20549 to match common conventions
+In-Reply-To: <1333632606.4159.12.camel@localhost>
+References: <1333632606.4159.12.camel@localhost>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,44 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 05 Apr 2012 15:29:56 +0200,
+At Thu, 05 Apr 2012 15:30:06 +0200,
 Michael Karcher wrote:
 > 
-> A selector widget with AC_WCAP_IN_AMP has multiple input amplifiers (if
-> the selector widget would have only one common amp, it would be labeled
-> as "output amplifier" instead). This is just like mixer widgets.
-> 
-> If a non-mixer/selector widget has an input amplifier, it is only one
-> input amplifier, even if it has a connection list with more than one
-> entry. The implied selector is placed before the single input amplifier.
-> 
-> At least that is how I read the HDA specs, and what Conexant implements in
-> their CX20549 codec.
+> diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+> index 8c6523b..7d92aac 100644
+> --- a/sound/pci/hda/patch_conexant.c
+> +++ b/sound/pci/hda/patch_conexant.c
+> @@ -687,18 +687,18 @@ static const struct hda_channel_mode cxt5045_modes[1] = {
+>  static const struct hda_input_mux cxt5045_capture_source = {
+>  	.num_items = 2,
+>  	.items = {
+> -		{ "IntMic", 0x1 },
+> -		{ "ExtMic", 0x2 },
+> +		{ "Internal Mic", 0x1 },
+> +		{ "Mic", 0x2 },
+>  	}
+>  };
+>  
+>  static const struct hda_input_mux cxt5045_capture_source_benq = {
+>  	.num_items = 5,
+>  	.items = {
+> -		{ "IntMic", 0x1 },
+> -		{ "ExtMic", 0x2 },
+> -		{ "LineIn", 0x3 },
+>  		{ "CD",     0x4 },
+> +		{ "Internal Mic", 0x1 },
+> +		{ "Mic", 0x2 },
+> +		{ "Line In", 0x3 },
 
-It's rather cx20549-specific behavior.  If you take a look at the BIOS
-auto-parser, spec->single_adc_amp is set as a workaround.
-
-Yes, the proc file output should be fixed as well, but you can't
-change it globally for all codecs.
+This could be simply "Line".
+Other than that, looks good.
 
 
 Takashi
-
-> diff --git a/sound/pci/hda/hda_proc.c b/sound/pci/hda/hda_proc.c
-> index 254ab52..9b942f0 100644
-> --- a/sound/pci/hda/hda_proc.c
-> +++ b/sound/pci/hda/hda_proc.c
-> @@ -653,7 +653,7 @@ static void print_codec_info(struct snd_info_entry *entry,
->  			snd_iprintf(buffer, "  Amp-In vals: ");
->  			print_amp_vals(buffer, codec, nid, HDA_INPUT,
->  				       wid_caps & AC_WCAP_STEREO,
-> -				       wid_type == AC_WID_PIN ? 1 : conn_len);
-> +				       (wid_type == AC_WID_AUD_SEL || wid_type == AC_WID_AUD_MIX) ? conn_len : 1);
->  		}
->  		if (wid_caps & AC_WCAP_OUT_AMP) {
->  			snd_iprintf(buffer, "  Amp-Out caps: ");
-> -- 
-> 1.7.9.1
-> 
-> 
-> 
