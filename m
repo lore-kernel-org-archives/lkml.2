@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab2DEXkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:40:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59223 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab2DEXkJ (ORCPT
+	id S1756362Ab2DEXtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:49:35 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:46160 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab2DEXtd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:40:09 -0400
-Date: Thu, 5 Apr 2012 16:40:06 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tejun Heo <tj@kernel.org>
-cc: Mike Galbraith <mgalbraith@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
-In-Reply-To: <20120405231306.GF29517@google.com>
-Message-ID: <alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1204042344090.8991@chino.kir.corp.google.com> <alpine.DEB.2.00.1204050011550.9466@chino.kir.corp.google.com> <20120405160829.GA12854@google.com> <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com> <20120405213704.GA29517@google.com>
- <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com> <20120405222400.GC29517@google.com> <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com> <20120405225854.GE29517@google.com> <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
- <20120405231306.GF29517@google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 5 Apr 2012 19:49:33 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: davem <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>, Dave Jones <davej@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+References: <1333664446.3538.12.camel@lappy>
+Date: Thu, 05 Apr 2012 16:53:18 -0700
+In-Reply-To: <1333664446.3538.12.camel@lappy> (Sasha Levin's message of "Thu,
+	05 Apr 2012 18:20:46 -0400")
+Message-ID: <m1aa2pwxap.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18yKZ6jHn7JlrEX1oVKTFZmXg1a7t1Me0Q=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Sasha Levin <levinsasha928@gmail.com>
+X-Spam-Relay-Country: **
+Subject: Re: net: kernel BUG() in net/netns/generic.h:45
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Apr 2012, Tejun Heo wrote:
+Sasha Levin <levinsasha928@gmail.com> writes:
 
-> > We could still move to a single hierarchy, though, if we introduced a 
-> > change to allow PF_THREAD_BOUND to attach to both cpusets and cpu iff 
-> > its bound cpu is allowed and then do -EINVAL if its changed while still 
-> > attached.
-> 
-> Yeah, making the affected controllers to deal with them somehow
-> definitely is an option and will probably have to be chosen for some
-> other cases too (e.g. rt tasks).
+> Hi all,
+>
+> When an initialization of a network namespace in setup_net() fails, we
+> try to undo everything by executing each of the exit callbacks of every
+> namespace in the network.
+>
+> The problem is, it might be possible that the net_generic array wasn't
+> initialized before we fail and try to undo everything. At that point,
+> some of the networks assume that since we're already calling the exit
+> callback, the net_generic structure is initialized and we hit the BUG()
+> in net/netns/generic.h:45 .
+>
+> I'm not quite sure whether the right fix from the following three
+> options is, and would be happy to figure it out before fixing it:
+>
+>  1. Don't assume net_generic was initialized in the exit callback, which
+> is a bit problematic since we can't query that nicely anyway (a
+> sub-option here would be adding an API to query whether the net_generic
+> structure is initialized.
+>
+>  2. Remove the BUG(), switch it to a WARN() and let each subsystem
+> handle the case of NULL on it's own. While it sounds a bit wrong, it's
+> worth mentioning that that BUG() was initially added in an attempt to
+> fix an issue in CAIF, which was fixed in a completely different way
+> afterwards, so it's not strictly necessary here.
+>
+>  3. Only call the exit callback for subsystems we have called the init
+> callback for.
 
-For cpusets, it's easy if update_nodemask() iterates over threads and 
-finds if any PF_THREAD_BOUND thread is bound to a cpu that is disallowed 
-by the new nodemask.
+Your option 3 only calling the exit callbacks for subsystems we have
+initialized should be what is implemented.  Certainly it looks like we
+are attempting to only call the exit callbacks for code whose init
+callback has succeeded.
 
-It's a very typical configuration to have threads within a cpuset attached 
-to a set of mems to use sched_setaffinity() for a subset of those cpus as 
-well.  A PF_THREAD_BOUND thread is then perfectly legitimate in a cpuset 
-where its cpu intersects with the set of mems but with the above 
-restriction that update_nodemask() fails with -EINVAL if its changed to be 
-disjoint.
+What problem are you seeing?
 
-> I still feel lukewarm about the
-> ability to put kthreadd to !root cgroup tho.  I mean, for any kind of
-> sane accounting, forked kthreads would have to be further classified
-> and where kthreadd lives and fork happens wouldn't matter all that
-> much.
+This smells suspiciously like a problem we had a little while ago caif
+was registering as a pernet device instead of a pernet subsystem,
+and because of that we had packets flying around after it had been
+unregistered and was trying access it's net_generic data.
 
-Forked kthreads may not have to be further classified if the memcg cgroup, 
-for example, is mounted after boot and you want to track the memory usage 
-of all workqueues or kmem incurred by certain syscalls that don't get 
-attributed to the thread calling the syscall because the memory allocation 
-is done by a kthread.
+commit 8a8ee9aff6c3077dd9c2c7a77478e8ed362b96c6
+Author: Eric W. Biederman <ebiederm@xmission.com>
+Date:   Thu Jan 26 14:04:53 2012 +0000
 
-The problem is that I'm not in a position to say what everybodys use-case 
-is or isn't so I'm biased toward unnecessarily restricting it unless 
-absolutely necessary (for cpusets and cpu _until_ we move in the direction 
-where update_nodemask(), for example, can fail when PF_THREAD_BOUND 
-threads are attached).
+    net caif: Register properly as a pernet subsystem.
+    
+    caif is a subsystem and as such it needs to register with
+    register_pernet_subsys instead of register_pernet_device.
+    
+    Among other problems using register_pernet_device was resulting in
+    net_generic being called before the caif_net structure was allocated.
+    Which has been causing net_generic to fail with either BUG_ON's or by
+    return NULL pointers.
+    
+    A more ugly problem that could be caused is packets in flight why the
+    subsystem is shutting down.
+    
+    To remove confusion also remove the cruft cause by inappropriately
+    trying to fix this bug.
+    
+    With the aid of the previous patch I have tested this patch and
+    confirmed that using register_pernet_subsys makes the failure go away as
+    it should.
+    
+    Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+    Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+    Tested-by: Sasha Levin <levinsasha928@gmail.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-I'd also hate to see a cgroup come along in the future, perhaps for 
-security where you can only access certain portions of a thread's state if 
-they are in the same cgroup, where this will make even more sense beyond 
-memcg and cpuacct and then we get into a discussion about why kthreadd is 
-prohibited and need to recall this discussion that it's only really 
-cpusets and cpu.
-
-> It feels like we're fussing over stuff which isn't that
-> significant either way.
-> 
-
-Well, I'm fussing over it because the patch being considered unnecessary 
-requires that kthreadd can't be moved anywhere and I know one company is 
-trying to move in a direction where nothing is in the root memcg.
+Eric
