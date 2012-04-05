@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2DEGxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 02:53:10 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:23127 "EHLO csmtp3.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab2DEGxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 02:53:08 -0400
-Date: Thu, 5 Apr 2012 08:53:49 +0200
-From: Eric Andersson <eric.andersson@unixphere.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
-        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
-        stefan.nilsson@unixphere.com, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCHv3 3/3] misc: add support for bmp18x chips to the bmp085
- driver
-Message-ID: <20120405065349.GA7346@skinner.xfiles.lan>
-References: <1333568759-13536-1-git-send-email-eric.andersson@unixphere.com>
- <1333568759-13536-4-git-send-email-eric.andersson@unixphere.com>
- <20120404195532.GB10787@opensource.wolfsonmicro.com>
- <201204042000.34160.arnd@arndb.de>
- <20120404201116.GC10787@opensource.wolfsonmicro.com>
+	id S1754483Ab2DEGxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 02:53:36 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3476 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab2DEGxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 02:53:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6670"; a="176769491"
+Message-ID: <4F7D4165.2060101@codeaurora.org>
+Date: Thu, 05 Apr 2012 12:23:25 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120404201116.GC10787@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: Kevin Hilman <khilman@ti.com>, jean.pihet@newoldbits.com,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-omap@vger.kernel.org, Jean Pihet <j-pihet@ti.com>,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/9] ARM: OMAP2+: SmartReflex: move the driver specific
+ macros in include/linux/power
+References: <1332173578-27422-1-git-send-email-j-pihet@ti.com> <1332173578-27422-3-git-send-email-j-pihet@ti.com> <4F7C9C89.9080605@codeaurora.org> <4F7CA3E1.2050809@ti.com>
+In-Reply-To: <4F7CA3E1.2050809@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Benoit,
 
-Thanks for the review guys!
+>
+> The main motivation is that it's a driver and thus does not have
+> anything to do inside mach-omap2.
 
-On 21:11 Wed 04 Apr     , Mark Brown wrote:
-> On Wed, Apr 04, 2012 at 08:00:33PM +0000, Arnd Bergmann wrote:
-> > On Wednesday 04 April 2012, Mark Brown wrote:
-> > > > +static const struct of_device_id bmp085_of_match[] = {
-> > > > +     { .compatible = "bosch-sensortec,bmp085", },
-> 
-> > > Traditionally the stock ticker symbol would be used.
-> 
-> > I though about commenting on that as well, but since Bosch is a foundation
-> > and not publically traded, that would be hard to accomplish. Is there
-> > an official fallback for companies that don't have a stock ticker symbol?
-> 
-> Guess we should ask the DT people...  I mostly just noticed that the
-> name appeared somewhat verbose - perhaps just plain "bosch" if there's
-> not a better abbrevation?
+Right, I understood that. mach-omap2 is not suitable for full fledged 
+drivers.
 
-If there are no further objections let's go with "bosch". I'll prepare a
-new patch-set ASAP.
+>
+> Where will you put that otherwise?
+
+Couple of suggestions:
+
+drivers/platform/omap/avs?
+drivers/misc/omap/avs?
+
+I prefer first one.
+
+>
+> IIRC, David Brownell was referring to the rule of three for such case.
+> Meaning that it worth having a generic fmwk when at least three
+> different drivers are doing the same kind of things.
+
+Yes, I remember that rule, but that's not stopping us to create a fwk, 
+may be others will rise once they see the framework and contribute
+if their h/w architecture requirements are not addressed?
+
+---Trilok Soni
 
 -- 
-Best regards,
- Eric
-
-http://www.unixphere.com
+--
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
