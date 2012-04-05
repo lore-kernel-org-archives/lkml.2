@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab2DEXCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:02:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50854 "EHLO mga01.intel.com"
+	id S1756692Ab2DEXDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:03:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46921 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab2DEXCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:02:46 -0400
+	id S1756608Ab2DEXDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 19:03:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="138245087"
-Message-ID: <1333666962.2567.18.camel@jtkirshe-mobl>
-Subject: Re: [PATCH 1/2] igb: fix rtnl race in PM resume path
+   d="asc'?scan'208";a="138245215"
+Message-ID: <1333666991.2567.19.camel@jtkirshe-mobl>
+Subject: Re: [PATCH 2/2] ixgbe: add missing rtnl_lock in PM resume path
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Reply-To: jeffrey.t.kirsher@intel.com
 To: Benjamin Poirier <bpoirier@suse.de>
@@ -28,12 +28,13 @@ Cc: Alex Duyck <alexander.h.duyck@intel.com>,
         John Ronciak <john.ronciak@intel.com>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Date: Thu, 05 Apr 2012 16:02:42 -0700
-In-Reply-To: <1333638664-17062-1-git-send-email-bpoirier@suse.de>
+Date: Thu, 05 Apr 2012 16:03:11 -0700
+In-Reply-To: <1333638664-17062-2-git-send-email-bpoirier@suse.de>
 References: <1333638664-17062-1-git-send-email-bpoirier@suse.de>
+	 <1333638664-17062-2-git-send-email-bpoirier@suse.de>
 Organization: Intel Corporation
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jdn7DrY/BTWNCgZuvLsZ"
+	protocol="application/pgp-signature"; boundary="=-QObKXCRu2TLoDvU+SH1l"
 X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,25 +42,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-jdn7DrY/BTWNCgZuvLsZ
+--=-QObKXCRu2TLoDvU+SH1l
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 On Thu, 2012-04-05 at 11:11 -0400, Benjamin Poirier wrote:
-> Since the caller (PM resume code) is not the one holding rtnl, when
-> taking the
-> 'else' branch rtnl may be released at any moment, thereby defeating
-> the whole
-> purpose of this code block.
+> Upon resume from standby, ixgbe may trigger the ASSERT_RTNL() in
+> netif_set_real_num_tx_queues(). The call stack is:
+>         netif_set_real_num_tx_queues
+>         ixgbe_set_num_queues
+>         ixgbe_init_interrupt_scheme
+>         ixgbe_resume
 >=20
 > Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+>=20
 > ---
->  drivers/net/ethernet/intel/igb/igb_main.c |   20 ++++++--------------
->  1 files changed, 6 insertions(+), 14 deletions(-)=20
+> Unlike patch 1 for igb, we cannot lock rtnl closer to the point where
+> netif_set_real_num_tx_queues() is called because
+> ixgbe_init_interrupt_scheme()
+> is also called by the dcb code, already under rtnl.
+> ---
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)=20
 
 Thanks Benjamin, I will add the patch to my igb queue of patches.
 
---=-jdn7DrY/BTWNCgZuvLsZ
+--=-QObKXCRu2TLoDvU+SH1l
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -67,20 +75,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABCgAGBQJPfiSSAAoJEOVv75VaS+3Ozv4P/25134S/5/yCRlnheOE0VRJo
-ercJHQgQP3lCbLLjFlauScZfg+LyAUtwaB5WF2Yb8rSzkWof7jiVFKoO/XKsotba
-GfPIdOoDy9b9VgviXTa0AkJXv9tWVjCnL81BkltzKH/OWFNEhDQjbX7IzkdDL/bd
-VuEVxrzI3majvqCawIu/lkdqD58I9Oh4G6bOMtOJ92H7hDhgdjwH1OYSJzaw/AOL
-g6NdTsbIUI+cRaMwOy04JaXhiVue/nYr2VqFolWFI3LgDlbAOLcI7Y9N1JF9R3IS
-R4K4vdwoRcV2yu0RPg7cEaFmSCr/BUtr3Xyfw4+kB3XR//P7kKY2tvZsH2uKIpm/
-pO4i/JntmTQlLKqow5KD8Cj0q+AvFy5DmkWsQuBhtvrIOu/5HM4uZ1kEX2sbOfkW
-OuSA/d9OOGDaLKqlzejnxo2LOu3/DN8mYZdhg+CT7f9uKfcRXwRRidYLcO/UgSog
-Q/bosYWgBMol3hYX8BISl6PoGkfSBZp9MzpGtRCgNjF2ZRHgl6bsEMMQfUSdEymw
-5gG2DzBXGhv6JCdeogVJeaiM3HESZNZim8dnop+l++2CqEvZrMKhDv0EaHu54F3g
-S136++M2pq5B4SA+Ubi8H/GIraKWZUj32FcOzaJYGEumqQIop74iaO8cg8cuNd59
-bdAPmNhEWagnI4EW/nsx
-=V5s4
+iQIcBAABCgAGBQJPfiSvAAoJEOVv75VaS+3OjtAP/0lEerebAsNk6txLYd3vsYWS
+mbY9VDY6iAuEUeueoArNCSxMiHQVFu+dutpq5TAzXUd7QIX+8KQExB90R/9sVhUv
+3vcZGCfe5WWTFh8nK0RLvXUeHQEFB4om4dY+/6HZ5AnhX+fDBdn3CJrwpCwwDJei
+Pn3SfnUJfPCfbkQ+9madKmW37t8FtTfzFUlpYA+lwEengAXMXpCB6915/QAe+QzM
+EXskZ5rzBqdDXLVx3wehV4M8eNMqxV7ESXW6ay8tl61Hvhp6aBt+MYQoiywZCOBi
+zZ5WClSKNJ1bBwOCOXLGBh/zMd7ThjsH8TNzp2mGlgP48N6iFlrPJmMYhyLRuG2g
+u5WBbwrJLQrqFVHEbIAvLs5p7UvWBBpksetmOjvPwd78y6LaHcXQ4V2C2CIHdx42
+M8SL0n4rswvKPLh6XSJcvkYOBstEss1Jl2ncUJ6G4wvrvfgRXZ27KVaFihaLTEDW
+O+S7u+ftDrSHXiZaQ8BzxWzlHyHzf6dYAy/ib4k5FB15su/bBtddKkPgPseN9zfo
+QUtIeKpDF7ELoyGuE+9CBVmyc/3xBFwXdXcdayzg5Cfx3sMCmDucyx2OtRsaHXnM
+rmd/HOIBWe7isD2vrA+Wu6YU6AVkbgDIGH1UIREezU9T8dcCthghIT9X53SI65+d
+0RX5ly/kPZawkgeEHu7x
+=cuiC
 -----END PGP SIGNATURE-----
 
---=-jdn7DrY/BTWNCgZuvLsZ--
+--=-QObKXCRu2TLoDvU+SH1l--
 
