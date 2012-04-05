@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2DERKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 13:10:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753190Ab2DERKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 13:10:50 -0400
-Date: Thu, 5 Apr 2012 13:09:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120405170956.GE23999@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404201816.GL12676@redhat.com>
- <20120405163113.GD12854@google.com>
+	id S1755175Ab2DERSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 13:18:45 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43691 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744Ab2DERSo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 13:18:44 -0400
+Date: Thu, 5 Apr 2012 19:18:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Kay Sievers <kay@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] printk: support structured and multi-facility log
+ messages
+Message-ID: <20120405171838.GA32275@gmail.com>
+References: <1333569554.864.3.camel@mop>
+ <20120405150516.GA27223@gmail.com>
+ <CAPXgP116dUAG61Fa34BsUitH+t=zMy3krLDQofZ9=LFBTCp5KA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120405163113.GD12854@google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP116dUAG61Fa34BsUitH+t=zMy3krLDQofZ9=LFBTCp5KA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 05, 2012 at 09:31:13AM -0700, Tejun Heo wrote:
-> Hey, Vivek.
+
+* Kay Sievers <kay@vrfy.org> wrote:
+
+> On Thu, Apr 5, 2012 at 17:05, Ingo Molnar <mingo@kernel.org> wrote:
+> > * Kay Sievers <kay@vrfy.org> wrote:
 > 
-> On Wed, Apr 04, 2012 at 04:18:16PM -0400, Vivek Goyal wrote:
-> > Hey how about reconsidering my other proposal for which I had posted
-> > the patches. And that is keep throttling still at device level. Reads
-> > and direct IO get throttled asynchronously but buffered writes get
-> > throttled synchronously.
-> > 
-> > Advantages of this scheme.
-> > 
-> > - There are no separate knobs.
-> > 
-> > - All the IO (read, direct IO and buffered write) is controlled using
-> >   same set of knobs and goes in queue of same cgroup.
-> > 
-> > - Writeback logic has no knowledge of throttling. It just invokes a 
-> >   hook into throttling logic of device queue.
-> > 
-> > I guess this is a hybrid of active writeback throttling and back pressure
-> > mechanism.
-> > 
-> > But it still does not solve the NFS issue as well as for direct IO,
-> > filesystems still can get serialized, so metadata issue still needs to 
-> > be resolved. So one can argue that why not go for full "back pressure"
-> > method, despite it being more complex.
-> > 
-> > Here is the link, just to refresh the memory. Something to keep in mind
-> > while assessing alternatives.
-> > 
-> > https://lkml.org/lkml/2011/6/28/243
+> >> - Record-based stream instead of the traditional byte stream
+> >>   buffer. All records carry a 64 bit timestamp, the syslog facility
+> >>   and priority in the record header.
 > 
-> Hmmm... so, this only works for blk-throttle and not with the weight.
-> How do you manage interaction between buffered writes and direct
-> writes for the same cgroup?
+> > Hm, this seems to be a conceptual duplication of the console
+> > tracepoint that include/trace/events/printk.h already offers.
 > 
+> General purpose kernel logging should not depend on _optional_ 
+> facilities mainly intended for debugging and profiling. This 
+> is stuff that should be used on every box out there, very much 
+> much unlike tracing.
 
-Yes, it is only for blk-throttle. We just account for buffered write
-in balance_dirty_pages() instead of when they are actually submitted to
-device by flusher thread.
+Firstly, you modify printk() and make it less simple and break 
+its ASCII oriented nature - which is my primary objection: if 
+you want to emit binary data then use existing binary logging 
+facilities.
 
-IIRC, I just had two queues. In one queue I had bios and in another queue
-I had  tasks with information how much memory they are dirtying. So I 
-did round robin in terms of dispatch between two queues depending on
-throttling rate. I will allow dispatch bio from direct IO queue, then 
-look at the other queue and see how much IO other task wanted to do and
-when sufficient time had passed based on throttling rate, I will remove
-that task from my wait queue and wake it up. 
+If you want to extend the ASCII output then work in the ASCII, 
+human readable space and improve it.
 
-That way it becomes equivalent to that two IO paths (direct IO + buffered
-write),  doing IO to single pipe which has throttling limit. Both the
-IOs are sujected to same common limit (and no split). Just that we round
-robin between two types of IO and try to divide available bandwidth
-equally (This ofcourse could be made tunable).
+If you want binary record logging (I'm not convinced printk() 
+should do that, btw. - we are keeping it ASCII for damn good 
+reasons), use perf software events - check your kernel, those 
+are enabled more widely than even CONFIG_PRINTK is enabled - so 
+your whole "but I don't want to rely on a non-generic facility" 
+objection is bogus: perf events, if you decide to use them, are 
+as generic as it gets.
 
-Thanks
-Vivek
+So unless you have better justification for it than what you 
+listed so far, or unless you have a better implementation that 
+either goes into the better binary logging or into the better 
+ASCII logging direction:
+
+NAcked-by: Ingo Molnar <mingo@kernel.org>
+
+Because this one is neither.
+
+Thanks,
+
+	Ingo
