@@ -1,59 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab2DECte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 22:49:34 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46287 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752488Ab2DECtc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 22:49:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120403095754.a70f38eb70766580843debc7@canb.auug.org.au>
-References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
-	<1333312727-11428-8-git-send-email-paul.gortmaker@windriver.com>
-	<20120402010048.GA21647@linux-sh.org>
-	<4F79ECD9.6000108@windriver.com>
-	<20120403095754.a70f38eb70766580843debc7@canb.auug.org.au>
-Date: Wed, 4 Apr 2012 22:49:30 -0400
-X-Google-Sender-Auth: h57oOQrm-AYkMcjp6sOdOC5M1cs
-Message-ID: <CAP=VYLpxEvcQv=AOZCU46PQrVn04MC7_Jhodba9z-mmj9XamSw@mail.gmail.com>
-Subject: Re: [PATCH 07/11] sh: fix several build failures from system.h fallout
+	id S1756966Ab2DECx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 22:53:28 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:40299 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab2DECx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 22:53:26 -0400
+Date: Wed, 4 Apr 2012 22:53:20 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Mundt <lethal@linux-sh.org>, dhowells@redhat.com,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: <linux-next@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <lethal@linux-sh.org>
+Subject: linux-next: triage for April 4, 2012
+Message-ID: <20120405025320.GA12153@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[sorry for empty mail, pilot error]
+Seems arch=cris got revitalized; all the defconfigs are OK now.
 
-On Mon, Apr 2, 2012 at 7:57 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+	http://marc.info/?l=linux-kernel&m=133345265304853&w=2
 
->
-> I used to have sh-current and sh trees (and rmobile-current and rmobile)
-> trees in linux-next, but they have not been resurrected since the
-> kernel.org problems last year ...
->
-> They were all branches of
-> git://git.kernel.org/pub/scm/linux/kernel/git/lethal/sh-2.6.git which is
-> still listed in MAINTAINERS but does not exist :-(
->
-> Paul M, to you have an alternate place I can fetch from?
+Looking at the error spew from allyes/modconfig it may be
+unreasonable for these to ever work on cris.  Going back to Jan
+2009 shows nothing but fails.  But there might be stuff in there
+that can be fixed -- e.g. the kgdb error looks fixable.
 
-Hi Paul M.
+------------
 
-Is this the tree Stephen should be using in linux-next?
+New breakage since last report:
+	<none>
 
-        git://github.com/pmundt/linux-sh.git sh-latest
+Randconfig fails that may or may not be new (by their very nature):
+	i386: hpet.c: undefined ref to `arch_setup_hpet_msi' `destroy_irq'
+		http://kisskb.ellerman.id.au/kisskb/buildresult/6035160/
+	powerpc: asm/mpic_msgr.h: implicit decl 'get_hard_smp_processor_id'
+		http://kisskb.ellerman.id.au/kisskb/buildresult/6035238/
 
-Thanks,
-Paul G.
+Builds that are fixed since last report:
+	ARM:collie_defconfig
+	cris: all fixed, but yesconfig allmodconfig.
+	
+Note: The randconfig fails are only listed once and not tracked
+in the below listing.
 
+I'm also not tracking the kallsyms extra pass stuff on ARM on
+a per board basis anymore.  It has nothing to do with the board.
+Why? See:  http://marc.info/?l=linux-next&m=133267456809502
 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+            ------------------------------------------------
+
+Latest results at:
+	http://kisskb.ellerman.id.au/kisskb/branch/9/
+
+Failures as of April 4th, 2012:
+===============================
+
+AM33:asb2303_defconfig,asb2364_defconfig
+	when:	Mar 15
+	why:	cc1: error: unrecognized command line option '-mmem-funcs'
+	status:	Possible fix from TonyB sent for review.
+	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
+----------------
+
+ARM:tct_hammer_defconfig,s3c2410_defconfig
+	when:	Apr 1
+	why:	missing "common.h"
+	status:	fix pending, borkage probably masked by other global borkage.
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133349249421262&w=2
+
+ARM:netx_defconfig,pnx4008_defconfig 
+	when:	Mar 14
+	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
+	ref:	https://lkml.org/lkml/2012/3/13/670
+
+ARM:ixp4xx_defconfig
+	when:	Oct 26
+	why:	gpio.h: implicit declaration of function '__gpio_get_value'
+	status:	fixed (Imre Kaloz) - but possibly needs rework?
+	fix:	https://lkml.org/lkml/2012/2/8/288
+	ref:	https://lkml.org/lkml/2012/2/8/287
+
+ARM:raumfeld_defconfig
+	when:	Nov 23
+	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
+	status:	perhaps broken since 2010?  See ref below.
+	fix:	
+	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
+
+ARM:arm-allnoconfig
+	when:	forever
+	why:	not supported
+	status:	nothing pending, but patches accepted
+	fix:	n/a
+	ref:	https://lkml.org/lkml/2009/4/30/105
+	ref:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081218.html
+----------------
+
+AVR32:allnoconfig
+	when:	May 26 2010, 20:49
+	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
+	status:
+	fix:
+	ref:
+---------------
+
+bfin: 50% of builds
+	when:	Mar 31
+	why:	"Error: pcrel too far BFD_RELOC_BFIN_10" from kernel/time/timekeeping.c
+	status:	unknown, binutils issue?
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5981475/
+---------------
+
+cris:allyesconfig,allmodconfig
+	when:	Apr 3
+	why:	too many to list here
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035250/
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035249/
+----------------
+
+frv:defconfig
+	when:	Mar 15
+	why:	undefined reference to `pci_cardbus_resource_alignment'
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6030067/
+----------------
+
+ia64:defconfig
+	when:	Apr 2
+	why:	processor_idle.c: implicit declaration of function 'halt'
+	status:	bisected (PaulG) - fix pending from Len
+	fix:	
+	ref:	http://marc.info/?l=linux-ia64&m=133346998813009&w=2
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6029643/
+----------------
+
+h8300:defconfig
+	when:	Mar 15
+	why:	time.c: implicit declaration of function 'get_irq_regs'
+	why:	also seems gcc suffers an ICE
+	status:	ICE bug lodged with gcc folks (TonyB)
+	fix:
+	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
+----------------
+
+m32r:m32700ut.smp_defconfig
+	when:	Mar 15
+	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
+----------------
+
+m68k:allmodconfig
+	when:	Mar 16
+	why:	persistent_ram.c: implicit declaration of 'memblock_reserve'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884324/
+	ref:	http://www.spinics.net/lists/linux-next/msg19343.html
+----------------
+
+mips:allmodconfig
+	when:
+	why:	driver_pci_host.c: implicit declaration of function 'pcibios_enable_device'
+	status: one of many fixes mips needs...
+	fix:	http://marc.info/?l=linux-wireless&m=133272031621916&w=2
+	ref:	http://patchwork.ozlabs.org/patch/148614/
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5807000/
+----------------
+
+parisc:allmodconfig
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+
+parisc64:a500_defconfig 
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+powerpc:allyesconfig
+	when:	May 18 2009, 22:11
+	why:	fat ass kernel with everything simply won't link
+	status:	need to fix build config to ignore the final link
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
+------------------
+
+sh4:***all-builds***
+	when:	Feb 24, 17:38
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	fixes apparently in sh tree; needed in linux-next
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133341117224552&w=2
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+um:um-defconfig
+	when:	Sep 16 2010, 01:28
+	why:	os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared
+	status:	clearly broken forever, so does anyone care?
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/target/2979/
+Cc: 
+Bcc: 
+Subject: sdf
+Reply-To: 
+
