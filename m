@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab2DENhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 09:37:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63201 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773Ab2DENhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 09:37:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="129029832"
-Message-ID: <4F7DA009.4010802@linux.intel.com>
-Date: Thu, 05 Apr 2012 06:37:13 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] cpuidle: allow per cpu latencies
-References: <1333619620-21201-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1333619620-21201-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753011Ab2DENtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 09:49:41 -0400
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:38342 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752773Ab2DENtk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 09:49:40 -0400
+X-Greylist: delayed 1206 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Apr 2012 09:49:40 EDT
+Message-ID: <1333632635.4159.15.camel@localhost>
+Subject: [PATCH 5/6] sound/pci/hda: CX20549 doesn't need pin_amp_workaround.
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+To: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Date: Thu, 05 Apr 2012 15:30:35 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Originating-IP: 89.247.230.181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/5/2012 2:53 AM, Peter De Schrijver wrote:
-> This patch doesn't update all cpuidle device registrations. I will do that
+CX20549 (ctx5045) doesn't accept data on index 1 for output pins,
+as shown in the following hda-var transaction:
 
-question is if you want to do per cpu latencies, or if you want to have
-both types of C state in one big table, and have each of the tegra cpyu
-types pick half of them...
+  $ hda-verb /dev/snd/hwC0D0 0x10 set_amp_gain 0xb126
+  nid = 0x10, verb = 0x300, param = 0xb126
+  value = 0x0
+  $ hda-verb /dev/snd/hwC0D0 0x10 get_amp_gain 0x8001
+  nid = 0x10, verb = 0xb00, param = 0x8001
+  value = 0x0
+
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 8d7a977..3ab7b25 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -1087,7 +1087,6 @@ static int patch_cxt5045(struct hda_codec *codec)
+ 	if (!spec)
+ 		return -ENOMEM;
+ 	codec->spec = spec;
+-	codec->pin_amp_workaround = 1;
+ 
+ 	spec->multiout.max_channels = 2;
+ 	spec->multiout.num_dacs = ARRAY_SIZE(cxt5045_dac_nids);
+-- 
+1.7.9.1
+
+
 
