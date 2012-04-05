@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab2DEEBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 00:01:39 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48846 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab2DEEBi (ORCPT
+	id S1752610Ab2DEEBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 00:01:49 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:52563 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab2DEEBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 00:01:38 -0400
-Message-ID: <1333598493.10597.7.camel@phoenix>
-Subject: [PATCH 5/6] regulator: pcap: Constify regulator_desc
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Daniel Ribeiro <drwyrm@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 05 Apr 2012 12:01:33 +0800
-In-Reply-To: <1333598216.10597.3.camel@phoenix>
-References: <1333598216.10597.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Apr 2012 00:01:46 -0400
+Date: Wed, 04 Apr 2012 23:59:33 -0400 (EDT)
+Message-Id: <20120404.235933.350585244341009071.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, deepak.sikri@st.com,
+        shiraz.hashim@st.com, vikas.manocha@st.com, peppe.cavallaro@st.com
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120405132515.e61465875407a452c1a6f78e@canb.auug.org.au>
+References: <20120405132515.e61465875407a452c1a6f78e@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 20:59:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/pcap-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 5 Apr 2012 13:25:15 +1000
 
-diff --git a/drivers/regulator/pcap-regulator.c b/drivers/regulator/pcap-regulator.c
-index 781bf34..b55128d 100644
---- a/drivers/regulator/pcap-regulator.c
-+++ b/drivers/regulator/pcap-regulator.c
-@@ -241,7 +241,7 @@ static struct regulator_ops pcap_regulator_ops = {
- 		.owner		= THIS_MODULE,			\
- 	}
- 
--static struct regulator_desc pcap_regulators[] = {
-+static const struct regulator_desc pcap_regulators[] = {
- 	VREG(V1), VREG(V2), VREG(V3), VREG(V4), VREG(V5), VREG(V6), VREG(V7),
- 	VREG(V8), VREG(V9), VREG(V10), VREG(VAUX1), VREG(VAUX2), VREG(VAUX3),
- 	VREG(VAUX4), VREG(VSIM), VREG(VSIM2), VREG(VVIB), VREG(SW1), VREG(SW2),
--- 
-1.7.5.4
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: In function 'stmmac_probe_config_dt':
+> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c:53:7: error: 'struct plat_stmmacenet_data' has no member named 'pbl'
+> 
+> Caused by commit 8327eb65e795 ("stmmac: re-work the internal GMAC DMA
+> platf parameters").  Clearly I am missing something, because I can't see
+> how that patch is correct since nothing ever assigns to the new dma_cfg
+> pointer but it is dereferenced.
+> 
+> I have added this patch to make it build today, but it is obviously not
+> correct.
 
+Sorry Stephen.
 
+Giuseppe don't submit patches to me that don't even compile.
 
+Please submit a proper fix to me for this _now_.
