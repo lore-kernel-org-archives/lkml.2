@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2DEJrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 05:47:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48853 "EHLO
+	id S1754359Ab2DEJsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 05:48:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48861 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753686Ab2DEJri (ORCPT
+	by vger.kernel.org with ESMTP id S1753124Ab2DEJsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 05:47:38 -0400
-Date: Thu, 5 Apr 2012 10:47:35 +0100
+	Thu, 5 Apr 2012 05:48:50 -0400
+Date: Thu, 5 Apr 2012 10:48:47 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
         Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT 2/2] regulator: Convert rc5t583 to set_voltage
-Message-ID: <20120405094735.GD3129@opensource.wolfsonmicro.com>
-References: <1333605888.18055.1.camel@phoenix>
- <1333606056.18055.3.camel@phoenix>
- <4F7D4358.50000@nvidia.com>
+Subject: Re: [PATCH] regulator: rc5t583: Fix off-by-one valid range checking
+ for selector
+Message-ID: <20120405094847.GE3129@opensource.wolfsonmicro.com>
+References: <1333550289.5856.4.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ieNMXl1Fr3cevapt"
+	protocol="application/pgp-signature"; boundary="RpqchZ26BWispMcB"
 Content-Disposition: inline
-In-Reply-To: <4F7D4358.50000@nvidia.com>
+In-Reply-To: <1333550289.5856.4.camel@phoenix>
 X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,41 +28,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ieNMXl1Fr3cevapt
+--RpqchZ26BWispMcB
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Apr 05, 2012 at 12:31:44PM +0530, Laxman Dewangan wrote:
+On Wed, Apr 04, 2012 at 10:38:09PM +0800, Axel Lin wrote:
+> The valid selector should be 0 ... nsteps-1.
 
-> I wanted to provide the settling delay whenever voltage output get
-> change as per datasheet. In place of having this delay in the
-> driver, I wanted to use implementation of core and for this I need
-> to implement set_voltage_sel() not set_voltage().
+Applied, thanks.
 
-The correct thing to do here is to make the core able to do this with
-set_voltage, which conveniently enough Axel sent a patch for yesterday
-that I've not reviwed yet.
-
---ieNMXl1Fr3cevapt
+--RpqchZ26BWispMcB
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPfWoPAAoJEBus8iNuMP3dt0MQAIyHmRedmeRc0kpJBGsfhAx+
-RXqHzlf6ihCjTt5eF1/4A5YpIP3kVaGeoFbDhTRMyh8B6LTwXbQRjpqKseK5tw8T
-ChbKfJNPxuYbt7SrZkV21a2PcC4iL+WBvQRmP1nrRVDoV3XzqSFlABJ0tP6SXOM9
-YlH5ulcGSZQL2UQQX/QFaD21m8fQRJ8bCuGTStGRw4yrzIuaWbW/WUCi12qsOy9Y
-8uvQmUs7wnPqEs13UeF8xhCyTfdVzrZWNnoFP7OFeYOgBuKfe7eTeSvMK/SELu4o
-F9w2L2Hc6juql0VXfRxzqllnBdTKFH+WW44AesjlsHq2sI15m5s3lNBdDpOCArpv
-YPeirkrRNPG/OadqpIrJwv/GwYPU5jCNyQpdN6jBY6ePAToHkSn34bqCPAcb8vTi
-hgw+4Hhr86B9RTYgzM7UiYqbov3Yw5X4g5/2Pt6xSfIwPs+jkbLtfnUIXzTTn5Rv
-QryXGeFPFbVpaCzF1SHw+1nInwXcluM24BFHLfTU35D+Arde9elSseOP1PNy1tbn
-gE7+bSvSj8N7lFY/AI5ALmihAPwwCu0qsh1R2U2PhKJKjzsfjSVdxwhfIrYa3skn
-BXqhLdviAS54ndDs+1fNbn9DIZYqDZD6ca2+hPn7n1UPIWS0ygegWFDk3lBUsgZP
-odcvDqn6cg7ykY7y6LJd
-=ERVw
+iQIcBAEBAgAGBQJPfWp0AAoJEBus8iNuMP3dh8UP/1JRxxNCG3X6Blg1fLru851U
+YrUATMyj2+CaBq5KY+OdtGIl8DYrDJrSgezdpa79u7au7r5v5j1P6zZLSOTrMupd
+ghkf5Srj7e4Z2dhZ9yvmkYUuLs8Swu3uRGiA7tjaPqZI3tzgS3shRFkZyWDA69oy
+78S/QTQ/D7Q3ze8yMK1BzzzvXGJzxAR7C9UKnSUVYHiyeUO/+yL5tMa5IbghlkT3
+44KFpvDgopqUtNQsywZq4d7SckkBLvnZRAutPBLxP09OgM21EuOj3X5TGS9ymdCh
+kJVAl3Bv3FORlDzyX66Cg9LUlRo/D1LhOHjdOBnGM/zhyToSeAovb3ynAGxdyc4o
+hdInyulQvCHC1ne6CJmEIc2PKFRO+27v+bpHGesGa0Qx3QInc+gTsiPtEaVQNamT
+kx0el3vaZ89B1HVsz7W/9AptWQJhnOaprk5ymGqRdzV9wD9nTi+LUhKBVdxKjoCi
+lMnewElbLklzr+QP9VOHkSbhSYqB5qNnfmJcOqTa7LZ6CKcX8wTwax3gKKmv8Kfv
+FHIpH6lhvRzkBmKy6rxJE9ZESU0JObdOZlEfiOIMKqfI4SqWYxw086oItj+RHCUW
+izpGZToe01hQbm3DEpSH4c2UlkNkwtnmrFzycLGKbrmLnQsOIAl8oEL6UR/wPZk3
+zjjD0kMvrqVarZugoXHl
+=0Xlc
 -----END PGP SIGNATURE-----
 
---ieNMXl1Fr3cevapt--
+--RpqchZ26BWispMcB--
