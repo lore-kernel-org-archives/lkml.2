@@ -1,130 +1,441 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2DEKlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 06:41:45 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:37810 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab2DEKlo (ORCPT
+	id S1754658Ab2DEKo6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 06:44:58 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4698 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab2DEKo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 06:41:44 -0400
-Message-ID: <4F7D76B4.1090600@linux.vnet.ibm.com>
-Date: Thu, 05 Apr 2012 16:10:52 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Alan Meadows <alan.meadows@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com> <4F707C5F.1000905@redhat.com>	<4F716E31.3000803@linux.vnet.ibm.com> <CAMy5W3foop40+R1RLv_JPhnO5ZmV90uMmNERYY-e3QCeaJfqLw@mail.gmail.com> <4F73568D.7000703@linux.vnet.ibm.com> <4F743247.5080407@redhat.com> <4F74A405.2040609@linux.vnet.ibm.com> <4F7585EE.7060203@linux.vnet.ibm.com> <4F7855A1.80107@redhat.com> <4F785CC9.7070204@linux.vnet.ibm.com> <4F785DCF.7020809@redhat.com> <4F7976B6.5050000@linux.vnet.ibm.com> <4F7D5F5B.2020209@redhat.com>
-In-Reply-To: <4F7D5F5B.2020209@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12040510-9574-0000-0000-0000021B8830
+	Thu, 5 Apr 2012 06:44:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Apr 2012 03:44:56 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] cpuidle: allow per cpu latencies
+Date: Thu,  5 Apr 2012 13:44:10 +0300
+Message-Id: <1333622662-22106-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2012 02:31 PM, Avi Kivity wrote:
-> On 04/02/2012 12:51 PM, Raghavendra K T wrote:
->> On 04/01/2012 07:23 PM, Avi Kivity wrote:
->>> On 04/01/2012 04:48 PM, Raghavendra K T wrote:
->>>>>> I have patch something like below in mind to try:
->>>>>>
->>>>>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->>>>>> index d3b98b1..5127668 100644
->>>>>> --- a/virt/kvm/kvm_main.c
->>>>>> +++ b/virt/kvm/kvm_main.c
->>>>>> @@ -1608,15 +1608,18 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>>>>>          * else and called schedule in __vcpu_run.  Hopefully that
->>>>>>          * VCPU is holding the lock that we need and will release it.
->>>>>>          * We approximate round-robin by starting at the last boosted
->>>>>> VCPU.
->>>>>> +     * Priority is given to vcpu that are unhalted.
->>>>>>          */
->>>>>> -    for (pass = 0; pass<    2&&    !yielded; pass++) {
->>>>>> +    for (pass = 0; pass<    3&&    !yielded; pass++) {
->>>>>>             kvm_for_each_vcpu(i, vcpu, kvm) {
->>>>>>                 struct task_struct *task = NULL;
->>>>>>                 struct pid *pid;
->>>>>> -            if (!pass&&    i<    last_boosted_vcpu) {
->>>>>> +            if (!pass&&    !vcpu->pv_unhalted)
->>>>>> +                continue;
->>>>>> +            else if (pass == 1&&    i<    last_boosted_vcpu) {
->>>>>>                     i = last_boosted_vcpu;
->>>>>>                     continue;
->>>>>> -            } else if (pass&&    i>    last_boosted_vcpu)
->>>>>> +            } else if (pass == 2&&    i>    last_boosted_vcpu)
->>>>>>                     break;
->>>>>>                 if (vcpu == me)
->>>>>>                     continue;
->>>>>>
->>>>>
->>>>> Actually I think this is unneeded.  The loops tries to find vcpus
->> that
->>>>> are runnable but not running (vcpu_active(vcpu->wq)), and halted
->> vcpus
->>>>> don't match this condition.
->>>>>
->>
->> Oh! I think I misinterpreted your statement. hmm I got it. you told to
->> remove if (vcpu == me) condition.
->
-> No, the entire patch is unneeded.  My original comment was:
->
->> from the PLE handler, don't wake up a vcpu that is sleeping because it
-> is waiting for a kick
->
-> But the PLE handler never wakes up sleeping vcpus anyway.
+On some systems (eg Tegra30) latencies for a given C state are not equal for
+all CPUs. Therefore we introduce a new per CPU structure which contains
+those parameters.
 
-I agree with you. It is already doing that. But my approach here is
-little different.
+--
 
-In 2 classes of vcpus we have (one is subset of another when we try to
-do yield_to) viz,
+This patch doesn't update all cpuidle device registrations. I will do that
+in a next version after agreement on the exact data structure to be
+introduced.
 
-1) runnable and kicked < (subset of) 2) just runnable
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/cpuidle.c      |   15 +++++++++++----
+ drivers/cpuidle/cpuidle.c          |   27 ++++++++++++++++++++++++---
+ drivers/cpuidle/driver.c           |   25 -------------------------
+ drivers/cpuidle/governors/ladder.c |   21 ++++++++++++---------
+ drivers/cpuidle/governors/menu.c   |    7 ++++---
+ drivers/cpuidle/sysfs.c            |   34 +++++++++++++++++++++++-----------
+ include/linux/cpuidle.h            |   17 ++++++++++-------
+ 7 files changed, 84 insertions(+), 62 deletions(-)
 
-what we are trying to do here is targeting 1) first so that we get good
-lock progress.
-
-Here was the sequence I was talking.
-
-vcpu1 releases lock->finds that vcpu2  is next candidate ->
-kick hypercall -> kvm_pv_kick_cpu_op -> set kicked flag ->
-vcpu->kick(vcpu2)
-
-at this point we have vcpu2 waiting for getting scheduled. But
-above yield call can wake *anybody*.
-
-I agree this is not serious (rather it is overhead) when there are are 
-less number of vcpus, But when we have more number of vcpu/vm.. it may
-not scale well. My attempt was to fix that.
-
-Let me know if I am completely missing something..
-
->
-> There's still a conflict with PLE in that it may trigger during the spin
-> phase and send a random yield_to() somewhere.  Maybe it's sufficient to
-> tune the PLE timeout to be longer than the spinlock timeout.
->
-
-Ok ... But we also should be cautious that, we may do more halt, though 
-we are about to get spinlock.
-Need more study on this.
+diff --git a/arch/arm/mach-tegra/cpuidle.c b/arch/arm/mach-tegra/cpuidle.c
+index d83a8c0..b8fdf02 100644
+--- a/arch/arm/mach-tegra/cpuidle.c
++++ b/arch/arm/mach-tegra/cpuidle.c
+@@ -41,14 +41,20 @@ struct cpuidle_driver tegra_idle_driver = {
+ 	.states = {
+ 		[0] = {
+ 			.enter			= tegra_idle_enter_lp3,
+-			.exit_latency		= 10,
+-			.target_residency	= 10,
+-			.power_usage		= 600,
+-			.flags			= CPUIDLE_FLAG_TIME_VALID,
+ 			.name			= "LP3",
+ 			.desc			= "CPU flow-controlled",
+ 		},
+ 	},
++	.power_specified = 1,
++};
++
++static struct cpuidle_state_parameters __initdata tegra_idle_parameters[] = {
++	[0] = {
++		.exit_latency		= 10,
++		.target_residency	= 10,
++		.power_usage		= 600,
++		.flags			= CPUIDLE_FLAG_TIME_VALID,
++	},
+ };
+ 
+ static DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
+@@ -95,6 +101,7 @@ static int __init tegra_cpuidle_init(void)
+ 		dev->cpu = cpu;
+ 
+ 		dev->state_count = drv->state_count;
++		dev->state_parameters[0] =  tegra_idle_parameters[0];
+ 		ret = cpuidle_register_device(dev);
+ 		if (ret) {
+ 			pr_err("CPU%u: CPUidle device registration failed\n",
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 87411ce..b992d00 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -87,8 +87,9 @@ int cpuidle_play_dead(void)
+ 	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+ 		struct cpuidle_state *s = &drv->states[i];
+ 
+-		if (s->power_usage < power_usage && s->enter_dead) {
+-			power_usage = s->power_usage;
++		if (dev->state_parameters[i].power_usage < power_usage
++				&& s->enter_dead) {
++			power_usage = dev->state_parameters[i].power_usage;
+ 			dead_state = i;
+ 		}
+ 	}
+@@ -371,7 +372,7 @@ EXPORT_SYMBOL_GPL(cpuidle_disable_device);
+  */
+ static int __cpuidle_register_device(struct cpuidle_device *dev)
+ {
+-	int ret;
++	int ret, i;
+ 	struct device *cpu_dev = get_cpu_device((unsigned long)dev->cpu);
+ 	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+ 
+@@ -389,6 +390,26 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+ 		return ret;
+ 	}
+ 
++	/*
++	 * cpuidle driver should set the drv->power_specified bit
++	 * before registering if the driver provides
++	 * power_usage numbers.
++	 *
++	 * If power_specified is not set,
++	 * we fill in power_usage with decreasing values as the
++	 * cpuidle code has an implicit assumption that state Cn
++	 * uses less power than C(n-1).
++	 *
++	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
++	 * an power value of -1.  So we use -2, -3, etc, for other
++	 * c-states.
++	 */
++	if (!cpuidle_driver->power_specified) {
++		for (i = CPUIDLE_DRIVER_STATE_START;
++				i < cpuidle_driver->state_count; i++)
++			dev->state_parameters[i].power_usage = -1 - i;
++	}
++
+ 	dev->registered = 1;
+ 	return 0;
+ }
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 40cd3f3..d81c6db 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -17,30 +17,6 @@
+ static struct cpuidle_driver *cpuidle_curr_driver;
+ DEFINE_SPINLOCK(cpuidle_driver_lock);
+ 
+-static void __cpuidle_register_driver(struct cpuidle_driver *drv)
+-{
+-	int i;
+-	/*
+-	 * cpuidle driver should set the drv->power_specified bit
+-	 * before registering if the driver provides
+-	 * power_usage numbers.
+-	 *
+-	 * If power_specified is not set,
+-	 * we fill in power_usage with decreasing values as the
+-	 * cpuidle code has an implicit assumption that state Cn
+-	 * uses less power than C(n-1).
+-	 *
+-	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
+-	 * an power value of -1.  So we use -2, -3, etc, for other
+-	 * c-states.
+-	 */
+-	if (!drv->power_specified) {
+-		for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
+-			drv->states[i].power_usage = -1 - i;
+-	}
+-}
+-
+-
+ /**
+  * cpuidle_register_driver - registers a driver
+  * @drv: the driver
+@@ -58,7 +34,6 @@ int cpuidle_register_driver(struct cpuidle_driver *drv)
+ 		spin_unlock(&cpuidle_driver_lock);
+ 		return -EBUSY;
+ 	}
+-	__cpuidle_register_driver(drv);
+ 	cpuidle_curr_driver = drv;
+ 	spin_unlock(&cpuidle_driver_lock);
+ 
+diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+index b6a09ea..2e7ea8c 100644
+--- a/drivers/cpuidle/governors/ladder.c
++++ b/drivers/cpuidle/governors/ladder.c
+@@ -79,9 +79,9 @@ static int ladder_select_state(struct cpuidle_driver *drv,
+ 
+ 	last_state = &ldev->states[last_idx];
+ 
+-	if (drv->states[last_idx].flags & CPUIDLE_FLAG_TIME_VALID) {
++	if (dev->state_parameters[last_idx].flags & CPUIDLE_FLAG_TIME_VALID) {
+ 		last_residency = cpuidle_get_last_residency(dev) - \
+-					 drv->states[last_idx].exit_latency;
++				 dev->state_parameters[last_idx].exit_latency;
+ 	}
+ 	else
+ 		last_residency = last_state->threshold.promotion_time + 1;
+@@ -89,7 +89,7 @@ static int ladder_select_state(struct cpuidle_driver *drv,
+ 	/* consider promotion */
+ 	if (last_idx < drv->state_count - 1 &&
+ 	    last_residency > last_state->threshold.promotion_time &&
+-	    drv->states[last_idx + 1].exit_latency <= latency_req) {
++	    dev->state_parameters[last_idx + 1].exit_latency <= latency_req) {
+ 		last_state->stats.promotion_count++;
+ 		last_state->stats.demotion_count = 0;
+ 		if (last_state->stats.promotion_count >= last_state->threshold.promotion_count) {
+@@ -100,11 +100,12 @@ static int ladder_select_state(struct cpuidle_driver *drv,
+ 
+ 	/* consider demotion */
+ 	if (last_idx > CPUIDLE_DRIVER_STATE_START &&
+-	    drv->states[last_idx].exit_latency > latency_req) {
++	    dev->state_parameters[last_idx].exit_latency > latency_req) {
+ 		int i;
+ 
+ 		for (i = last_idx - 1; i > CPUIDLE_DRIVER_STATE_START; i--) {
+-			if (drv->states[i].exit_latency <= latency_req)
++			if (dev->state_parameters[i].exit_latency <=
++					latency_req)
+ 				break;
+ 		}
+ 		ladder_do_selection(ldev, last_idx, i);
+@@ -136,12 +137,12 @@ static int ladder_enable_device(struct cpuidle_driver *drv,
+ 	int i;
+ 	struct ladder_device *ldev = &per_cpu(ladder_devices, dev->cpu);
+ 	struct ladder_device_state *lstate;
+-	struct cpuidle_state *state;
++	struct cpuidle_state_parameters *state_parameters;
+ 
+ 	ldev->last_state_idx = CPUIDLE_DRIVER_STATE_START;
+ 
+ 	for (i = 0; i < drv->state_count; i++) {
+-		state = &drv->states[i];
++		state_parameters = &dev->state_parameters[i];
+ 		lstate = &ldev->states[i];
+ 
+ 		lstate->stats.promotion_count = 0;
+@@ -151,9 +152,11 @@ static int ladder_enable_device(struct cpuidle_driver *drv,
+ 		lstate->threshold.demotion_count = DEMOTION_COUNT;
+ 
+ 		if (i < drv->state_count - 1)
+-			lstate->threshold.promotion_time = state->exit_latency;
++			lstate->threshold.promotion_time =
++				state_parameters->exit_latency;
+ 		if (i > 0)
+-			lstate->threshold.demotion_time = state->exit_latency;
++			lstate->threshold.demotion_time =
++				state_parameters->exit_latency;
+ 	}
+ 
+ 	return 0;
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 0633575..e9bbc20 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -281,7 +281,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	 * unless the timer is happening really really soon.
+ 	 */
+ 	if (data->expected_us > 5 &&
+-		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
++		dev->state_parameters[CPUIDLE_DRIVER_STATE_START].disable == 0)
+ 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
+ 
+ 	/*
+@@ -289,7 +289,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	 * our constraints.
+ 	 */
+ 	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+-		struct cpuidle_state *s = &drv->states[i];
++		struct cpuidle_state_parameters *s = &dev->state_parameters[i];
+ 
+ 		if (s->disable)
+ 			continue;
+@@ -336,7 +336,8 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	struct menu_device *data = &__get_cpu_var(menu_devices);
+ 	int last_idx = data->last_state_idx;
+ 	unsigned int last_idle_us = cpuidle_get_last_residency(dev);
+-	struct cpuidle_state *target = &drv->states[last_idx];
++	struct cpuidle_state_parameters *target =
++			&dev->state_parameters[last_idx];
+ 	unsigned int measured_us;
+ 	u64 new_factor;
+ 
+diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+index 88032b4..7b17413 100644
+--- a/drivers/cpuidle/sysfs.c
++++ b/drivers/cpuidle/sysfs.c
+@@ -215,9 +215,10 @@ static struct kobj_type ktype_cpuidle = {
+ 
+ struct cpuidle_state_attr {
+ 	struct attribute attr;
+-	ssize_t (*show)(struct cpuidle_state *, \
+-					struct cpuidle_state_usage *, char *);
+-	ssize_t (*store)(struct cpuidle_state *, const char *, size_t);
++	ssize_t (*show)(struct cpuidle_state *, struct cpuidle_state_usage *,
++				struct cpuidle_state_parameters *, char *);
++	ssize_t (*store)(struct cpuidle_state_parameters *, const char *,
++				size_t);
+ };
+ 
+ #define define_one_state_ro(_name, show) \
+@@ -228,13 +229,15 @@ static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644, show, store)
+ 
+ #define define_show_state_function(_name) \
+ static ssize_t show_state_##_name(struct cpuidle_state *state, \
+-			 struct cpuidle_state_usage *state_usage, char *buf) \
++			 struct cpuidle_state_usage *state_usage, \
++			 struct cpuidle_state_parameters *state_parameters, \
++			 char *buf) \
+ { \
+-	return sprintf(buf, "%u\n", state->_name);\
++	return sprintf(buf, "%u\n", state_parameters->_name);\
+ }
+ 
+ #define define_store_state_function(_name) \
+-static ssize_t store_state_##_name(struct cpuidle_state *state, \
++static ssize_t store_state_##_name(struct cpuidle_state_parameters *state, \
+ 		const char *buf, size_t size) \
+ { \
+ 	long value; \
+@@ -253,14 +256,18 @@ static ssize_t store_state_##_name(struct cpuidle_state *state, \
+ 
+ #define define_show_state_ull_function(_name) \
+ static ssize_t show_state_##_name(struct cpuidle_state *state, \
+-			struct cpuidle_state_usage *state_usage, char *buf) \
++			struct cpuidle_state_usage *state_usage, \
++			struct cpuidle_state_parameters *state_parameters, \
++			char *buf) \
+ { \
+ 	return sprintf(buf, "%llu\n", state_usage->_name);\
+ }
+ 
+ #define define_show_state_str_function(_name) \
+ static ssize_t show_state_##_name(struct cpuidle_state *state, \
+-			struct cpuidle_state_usage *state_usage, char *buf) \
++			struct cpuidle_state_usage *state_usage, \
++			struct cpuidle_state_parameters *state_parameters, \
++			char *buf) \
+ { \
+ 	if (state->_name[0] == '\0')\
+ 		return sprintf(buf, "<null>\n");\
+@@ -298,6 +305,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
+ #define kobj_to_state_obj(k) container_of(k, struct cpuidle_state_kobj, kobj)
+ #define kobj_to_state(k) (kobj_to_state_obj(k)->state)
+ #define kobj_to_state_usage(k) (kobj_to_state_obj(k)->state_usage)
++#define kobj_to_state_parameters(k) (kobj_to_state_obj(k)->state_parameters)
+ #define attr_to_stateattr(a) container_of(a, struct cpuidle_state_attr, attr)
+ static ssize_t cpuidle_state_show(struct kobject * kobj,
+ 	struct attribute * attr ,char * buf)
+@@ -305,10 +313,12 @@ static ssize_t cpuidle_state_show(struct kobject * kobj,
+ 	int ret = -EIO;
+ 	struct cpuidle_state *state = kobj_to_state(kobj);
+ 	struct cpuidle_state_usage *state_usage = kobj_to_state_usage(kobj);
++	struct cpuidle_state_parameters *state_parameters =
++				kobj_to_state_parameters(kobj);
+ 	struct cpuidle_state_attr * cattr = attr_to_stateattr(attr);
+ 
+ 	if (cattr->show)
+-		ret = cattr->show(state, state_usage, buf);
++		ret = cattr->show(state, state_usage, state_parameters, buf);
+ 
+ 	return ret;
+ }
+@@ -317,11 +327,12 @@ static ssize_t cpuidle_state_store(struct kobject *kobj,
+ 	struct attribute *attr, const char *buf, size_t size)
+ {
+ 	int ret = -EIO;
+-	struct cpuidle_state *state = kobj_to_state(kobj);
++	struct cpuidle_state_parameters *state_parameters =
++				kobj_to_state_parameters(kobj);
+ 	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
+ 
+ 	if (cattr->store)
+-		ret = cattr->store(state, buf, size);
++		ret = cattr->store(state_parameters, buf, size);
+ 
+ 	return ret;
+ }
+@@ -369,6 +380,7 @@ int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+ 			goto error_state;
+ 		kobj->state = &drv->states[i];
+ 		kobj->state_usage = &device->states_usage[i];
++		kobj->state_parameters = &device->state_parameters[i];
+ 		init_completion(&kobj->kobj_unregister);
+ 
+ 		ret = kobject_init_and_add(&kobj->kobj, &ktype_state_cpuidle, &device->kobj,
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 6c26a3d..cddbd34 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -42,12 +42,6 @@ struct cpuidle_state {
+ 	char		name[CPUIDLE_NAME_LEN];
+ 	char		desc[CPUIDLE_DESC_LEN];
+ 
+-	unsigned int	flags;
+-	unsigned int	exit_latency; /* in US */
+-	int		power_usage; /* in mW */
+-	unsigned int	target_residency; /* in US */
+-	unsigned int    disable;
+-
+ 	int (*enter)	(struct cpuidle_device *dev,
+ 			struct cpuidle_driver *drv,
+ 			int index);
+@@ -55,6 +49,14 @@ struct cpuidle_state {
+ 	int (*enter_dead) (struct cpuidle_device *dev, int index);
+ };
+ 
++struct cpuidle_state_parameters {
++	unsigned int	flags;
++	unsigned int	exit_latency; /* in US */
++	int		power_usage; /* in mW */
++	unsigned int	target_residency; /* in US */
++	unsigned int    disable;
++};
++
+ /* Idle State Flags */
+ #define CPUIDLE_FLAG_TIME_VALID	(0x01) /* is residency time measurable? */
+ 
+@@ -83,6 +85,7 @@ cpuidle_set_statedata(struct cpuidle_state_usage *st_usage, void *data)
+ struct cpuidle_state_kobj {
+ 	struct cpuidle_state *state;
+ 	struct cpuidle_state_usage *state_usage;
++	struct cpuidle_state_parameters *state_parameters;
+ 	struct completion kobj_unregister;
+ 	struct kobject kobj;
+ };
+@@ -96,7 +99,7 @@ struct cpuidle_device {
+ 	int			state_count;
+ 	struct cpuidle_state_usage	states_usage[CPUIDLE_STATE_MAX];
+ 	struct cpuidle_state_kobj *kobjs[CPUIDLE_STATE_MAX];
+-
++	struct cpuidle_state_parameters state_parameters[CPUIDLE_STATE_MAX];
+ 	struct list_head 	device_list;
+ 	struct kobject		kobj;
+ 	struct completion	kobj_unregister;
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
