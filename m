@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab2DEPIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:08:18 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:63254 "EHLO
+	id S1754143Ab2DEO72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:59:28 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:65045 "EHLO
 	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab2DEO73 (ORCPT
+	with ESMTP id S1753545Ab2DEO6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:59:29 -0400
+	Thu, 5 Apr 2012 10:58:40 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 29/34] ceph: remove unused arg from ceph_lookup_open()
-Date: Thu,  5 Apr 2012 16:58:55 +0200
-Message-Id: <1333637940-31884-30-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 03/34] vfs: do_last(): inline walk_component()
+Date: Thu,  5 Apr 2012 16:58:29 +0200
+Message-Id: <1333637940-31884-4-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
@@ -23,65 +23,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-What was the purpose of this?
+Copy walk_component() into do_lookup().
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/ceph/dir.c   |    4 ++--
- fs/ceph/file.c  |    3 +--
- fs/ceph/super.h |    3 +--
- 3 files changed, 4 insertions(+), 6 deletions(-)
+ fs/namei.c |   35 ++++++++++++++++++++++++++++++-----
+ 1 files changed, 30 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
-index 3e8094b..c4b7832 100644
---- a/fs/ceph/dir.c
-+++ b/fs/ceph/dir.c
-@@ -599,7 +599,7 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
- 	    (nd->flags & LOOKUP_OPEN) &&
- 	    !(nd->intent.open.flags & O_CREAT)) {
- 		int mode = nd->intent.open.create_mode & ~current->fs->umask;
--		return ceph_lookup_open(dir, dentry, nd, mode, 1);
-+		return ceph_lookup_open(dir, dentry, nd, mode);
- 	}
+diff --git a/fs/namei.c b/fs/namei.c
+index dc4003e..0ca5e40 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2231,6 +2231,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	int want_write = 0;
+ 	int acc_mode = op->acc_mode;
+ 	struct file *filp;
++	struct inode *inode;
+ 	int error;
  
- 	/* can we conclude ENOENT locally? */
-@@ -710,7 +710,7 @@ static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 
- 	if (nd) {
- 		BUG_ON((nd->flags & LOOKUP_OPEN) == 0);
--		dentry = ceph_lookup_open(dir, dentry, nd, mode, 0);
-+		dentry = ceph_lookup_open(dir, dentry, nd, mode);
- 		/* hrm, what should i do here if we get aliased? */
- 		if (IS_ERR(dentry))
- 			return PTR_ERR(dentry);
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index ed72428..2fe9a3e 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -220,8 +220,7 @@ out:
-  *  path_lookup_create -> LOOKUP_OPEN|LOOKUP_CREATE
-  */
- struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
--				struct nameidata *nd, int mode,
--				int locked_dir)
-+				struct nameidata *nd, int mode)
- {
- 	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
- 	struct ceph_mds_client *mdsc = fsc->mdsc;
-diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-index fc35036..8471db9 100644
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -807,8 +807,7 @@ extern int ceph_copy_from_page_vector(struct page **pages,
- extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
- extern int ceph_open(struct inode *inode, struct file *file);
- extern struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
--				       struct nameidata *nd, int mode,
--				       int locked_dir);
-+				       struct nameidata *nd, int mode);
- extern int ceph_release(struct inode *inode, struct file *filp);
- 
- /* dir.c */
+ 	nd->flags &= ~LOOKUP_PARENT;
+@@ -2268,12 +2269,36 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 		if (open_flag & O_PATH && !(nd->flags & LOOKUP_FOLLOW))
+ 			symlink_ok = 1;
+ 		/* we _can_ be in RCU mode here */
+-		error = walk_component(nd, path, &nd->last, LAST_NORM,
+-					!symlink_ok);
+-		if (error < 0)
+-			return ERR_PTR(error);
+-		if (error) /* symlink */
++		error = lookup_fast(nd, &nd->last, path, &inode);
++		if (unlikely(error)) {
++			if (error < 0)
++				goto exit;
++
++			error = lookup_slow(nd, &nd->last, path);
++			if (error < 0)
++				goto exit;
++
++			inode = path->dentry->d_inode;
++		}
++		error = -ENOENT;
++		if (!inode) {
++			path_to_nameidata(path, nd);
++			goto exit;
++		}
++
++		if (should_follow_link(inode, !symlink_ok)) {
++			if (nd->flags & LOOKUP_RCU) {
++				if (unlikely(unlazy_walk(nd, path->dentry))) {
++					error = -ECHILD;
++					goto exit;
++				}
++			}
++			BUG_ON(inode != path->dentry->d_inode);
+ 			return NULL;
++		}
++		path_to_nameidata(path, nd);
++		nd->inode = inode;
++
+ 		/* sayonara */
+ 		error = complete_walk(nd);
+ 		if (error)
 -- 
 1.7.7
 
