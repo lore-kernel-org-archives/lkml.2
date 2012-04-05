@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2DEQXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:23:05 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43910 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab2DEQXD convert rfc822-to-8bit (ORCPT
+	id S1755229Ab2DEQXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:23:37 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60530 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab2DEQXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:23:03 -0400
+	Thu, 5 Apr 2012 12:23:36 -0400
+Message-ID: <4F7DC6ED.7060508@us.ibm.com>
+Date: Thu, 05 Apr 2012 09:23:09 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
-References: <1333570774-26462-1-git-send-email-bobbypowers@gmail.com>
-	<1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
-Date: Thu, 5 Apr 2012 12:23:01 -0400
-Message-ID: <CAArOQ2Vc35VnbTCAZigTGZ3pL-f8mAtA9Ugpdjo5S=M7Ujpeiw@mail.gmail.com>
-Subject: Re: [PATCH v2] Btrfs, lockdep: get_restripe_target: use lockdep in BUG_ON
-From: Bobby Powers <bobbypowers@gmail.com>
-To: linux-btrfs@vger.kernel.org
-Cc: Bobby Powers <bobbypowers@gmail.com>, Ilya Dryomov <idryomov@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, Andi Kleen <ak@linux.intel.com>,
-        Jeff Mahoney <jeffm@suse.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D7B4B.7050203@redhat.com>
+In-Reply-To: <4F7D7B4B.7050203@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040516-5518-0000-0000-00000379B0D7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 4, 2012 at 10:04 PM, Bobby Powers <bobbypowers@gmail.com> wrote:
-> spin_is_locked always returns 0 on non-SMP systems, which causes btrfs
-> to fail the mount.  There is documentation pending as to why checking
+On 04/05/2012 04:00 AM, Prarit Bhargava wrote:
+>
+> On 04/04/2012 09:08 PM, John Stultz wrote:
+>> So what kernel version are you using?
+> I was on an earlier version of Fedora (F16) ... but I'll jump forward and see if
+> I can still hit it.
 
-I guess I should be explicit in stating that this is a regression, so
-this patch or something else that addresses it should be pulled into
-3.4.
+Ok, but if you have the specific kernel version, it would help, since 
+even if the issue is resolved upstream, we can see if a backport to 
+stable is appropriate.
 
-> for spin_is_locked is a bad idea:
->
-> https://lkml.org/lkml/2012/3/27/413
->
-> The suggested lockdep_assert_held() is not appropriate in this case,
-> as what get_restripe_target() is checking for is that either
-> volume_mutex is held or balance_lock is held.  Luckily
-> lockdep_assert_held() is a simple macro:
->
-> WARN_ON(debug_locks && !lockdep_is_held(l))
->
-> We can mimic the structure in get_restripe_target(), but we need to
-> make sure lockdep_is_held() is defined for the !LOCKDEP case.
->
-> CC: Ilya Dryomov <idryomov@gmail.com>
-> CC: Chris Mason <chris.mason@oracle.com>
-> CC: Andi Kleen <ak@linux.intel.com>
-> CC: Jeff Mahoney <jeffm@suse.de>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: linux-kernel@vger.kernel.org
-> Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
-> ---
->  fs/btrfs/extent-tree.c  |    5 +++--
->  include/linux/lockdep.h |    1 +
->  2 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-> index a844204..4d13eb1 100644
-> --- a/fs/btrfs/extent-tree.c
-> +++ b/fs/btrfs/extent-tree.c
-> @@ -24,6 +24,7 @@
->  #include <linux/kthread.h>
->  #include <linux/slab.h>
->  #include <linux/ratelimit.h>
-> +#include <linux/lockdep.h>
->  #include "compat.h"
->  #include "hash.h"
->  #include "ctree.h"
-> @@ -3158,8 +3159,8 @@ static u64 get_restripe_target(struct btrfs_fs_info *fs_info, u64 flags)
->        struct btrfs_balance_control *bctl = fs_info->balance_ctl;
->        u64 target = 0;
->
-> -       BUG_ON(!mutex_is_locked(&fs_info->volume_mutex) &&
-> -              !spin_is_locked(&fs_info->balance_lock));
-> +       BUG_ON(debug_locks && !lockdep_is_held(&fs_info->volume_mutex) &&
-> +              !lockdep_is_held(&fs_info->balance_lock));
->
->        if (!bctl)
->                return 0;
-> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-> index d36619e..94c0edb 100644
-> --- a/include/linux/lockdep.h
-> +++ b/include/linux/lockdep.h
-> @@ -392,6 +392,7 @@ struct lock_class_key { };
->
->  #define lockdep_depth(tsk)     (0)
->
-> +#define lockdep_is_held(l)     (0)
->  #define lockdep_assert_held(l)                 do { } while (0)
->
->  #define lockdep_recursing(tsk)                 (0)
-> --
-> 1.7.10.rc3.3.g19a6c
->
+> Keep in mind that 10000 threads is the *minimum* I was able to cause 
+> this with, which is only ~315 threads/cpu, which isn't a lot :/. At 
+> that number of threads the dump takes about 6 mins. Doubling it, IIRC, 
+> exceeded 10 mins.
+
+At that point, if we're starving the system of interrupts for over 10 
+minutes, a number of other non-timekeeping issues can crop up. I've seen 
+scsci controllers fall over if their heart-beat checks don't come in, etc.
+
+I suspect if printk dumps taking 10 minutes or more is going to be 
+considered "acceptable" behavior, we may need to see about adding some 
+breaks in the printk code, so that the system can take a few necessary 
+irqs.
+
+thanks
+-john
+
+
