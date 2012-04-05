@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab2DEWsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 18:48:42 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63387 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646Ab2DEWsj (ORCPT
+	id S1756742Ab2DEWsn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 18:48:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48332 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab2DEWsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 18:48:39 -0400
+	Thu, 5 Apr 2012 18:48:38 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Steven Rostedt <srostedt@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
@@ -16,9 +16,9 @@ Cc: Steven Rostedt <srostedt@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
         Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
         Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 15/15] parse-events: Rename struct record to struct pevent_record
-Date: Fri,  6 Apr 2012 00:48:06 +0200
-Message-Id: <1333666086-6517-16-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 14/15] parse-event: Fix memset pointer size bug in handle
+Date: Fri,  6 Apr 2012 00:48:05 +0200
+Message-Id: <1333666086-6517-15-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
 References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
@@ -28,9 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-As libtraceevent will be a library, having struct record is far
-too generic of a name to use. Renaming it to be consistent with the
-rest of the functions will be a better long term solution.
+Fix memset(ptr, 0, sizeof(ptr)) to memset(ptr, 0, sizeof(*ptr))
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -44,415 +42,22 @@ Cc: Arun Sharma <asharma@fb.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/lib/traceevent/event-parse.c  |   22 +++++++++++-----------
- tools/lib/traceevent/event-parse.h  |   30 +++++++++++++++---------------
- tools/lib/traceevent/parse-filter.c |   24 ++++++++++++------------
- tools/perf/util/trace-event-parse.c |    8 ++++----
- tools/perf/util/trace-event-read.c  |   10 +++++-----
- tools/perf/util/trace-event.h       |    4 ++--
- 6 files changed, 49 insertions(+), 49 deletions(-)
+ tools/lib/traceevent/event-parse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index ec13174..9985349 100644
+index 876b2720..ec13174 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -3872,7 +3872,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
-  * and lock depth) and places it into the trace_seq.
-  */
- void pevent_data_lat_fmt(struct pevent *pevent,
--			 struct trace_seq *s, struct record *record)
-+			 struct trace_seq *s, struct pevent_record *record)
- {
- 	static int check_lock_depth = 1;
- 	static int lock_depth_exists;
-@@ -3933,7 +3933,7 @@ void pevent_data_lat_fmt(struct pevent *pevent,
-  *
-  * This returns the event id from the @rec.
-  */
--int pevent_data_type(struct pevent *pevent, struct record *rec)
-+int pevent_data_type(struct pevent *pevent, struct pevent_record *rec)
- {
- 	return trace_parse_common_type(pevent, rec->data);
- }
-@@ -3957,7 +3957,7 @@ struct event_format *pevent_data_event_from_type(struct pevent *pevent, int type
-  *
-  * This returns the PID from a raw data.
-  */
--int pevent_data_pid(struct pevent *pevent, struct record *rec)
-+int pevent_data_pid(struct pevent *pevent, struct pevent_record *rec)
- {
- 	return parse_common_pid(pevent, rec->data);
- }
-@@ -3991,7 +3991,7 @@ const char *pevent_data_comm_from_pid(struct pevent *pevent, int pid)
-  * writes the print format into the trace_seq.
-  */
- void pevent_event_info(struct trace_seq *s, struct event_format *event,
--		       struct record *record)
-+		       struct pevent_record *record)
- {
- 	int print_pretty = 1;
- 
-@@ -4011,7 +4011,7 @@ void pevent_event_info(struct trace_seq *s, struct event_format *event,
- }
- 
- void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
--			struct record *record)
-+			struct pevent_record *record)
- {
- 	static char *spaces = "                    "; /* 20 spaces */
- 	struct event_format *event;
-@@ -4587,7 +4587,7 @@ int pevent_parse_event(struct pevent *pevent,
- }
- 
- int get_field_val(struct trace_seq *s, struct format_field *field,
--		  const char *name, struct record *record,
-+		  const char *name, struct pevent_record *record,
- 		  unsigned long long *val, int err)
- {
- 	if (!field) {
-@@ -4620,7 +4620,7 @@ int get_field_val(struct trace_seq *s, struct format_field *field,
-  * On failure, it returns NULL.
-  */
- void *pevent_get_field_raw(struct trace_seq *s, struct event_format *event,
--			   const char *name, struct record *record,
-+			   const char *name, struct pevent_record *record,
- 			   int *len, int err)
- {
- 	struct format_field *field;
-@@ -4667,7 +4667,7 @@ void *pevent_get_field_raw(struct trace_seq *s, struct event_format *event,
-  * Returns 0 on success -1 on field not found.
-  */
- int pevent_get_field_val(struct trace_seq *s, struct event_format *event,
--			 const char *name, struct record *record,
-+			 const char *name, struct pevent_record *record,
- 			 unsigned long long *val, int err)
- {
- 	struct format_field *field;
-@@ -4692,7 +4692,7 @@ int pevent_get_field_val(struct trace_seq *s, struct event_format *event,
-  * Returns 0 on success -1 on field not found.
-  */
- int pevent_get_common_field_val(struct trace_seq *s, struct event_format *event,
--				const char *name, struct record *record,
-+				const char *name, struct pevent_record *record,
- 				unsigned long long *val, int err)
- {
- 	struct format_field *field;
-@@ -4717,7 +4717,7 @@ int pevent_get_common_field_val(struct trace_seq *s, struct event_format *event,
-  * Returns 0 on success -1 on field not found.
-  */
- int pevent_get_any_field_val(struct trace_seq *s, struct event_format *event,
--			     const char *name, struct record *record,
-+			     const char *name, struct pevent_record *record,
- 			     unsigned long long *val, int err)
- {
- 	struct format_field *field;
-@@ -4743,7 +4743,7 @@ int pevent_get_any_field_val(struct trace_seq *s, struct event_format *event,
-  */
- int pevent_print_num_field(struct trace_seq *s, const char *fmt,
- 			   struct event_format *event, const char *name,
--			   struct record *record, int err)
-+			   struct pevent_record *record, int err)
- {
- 	struct format_field *field = pevent_find_field(event, name);
- 	unsigned long long val;
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 8852827..ac997bc 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -39,7 +39,7 @@
- #define DEBUG_RECORD 0
- #endif
- 
--struct record {
-+struct pevent_record {
- 	unsigned long long	ts;
- 	unsigned long long	offset;
- 	long long		missed_events;	/* buffer dropped events before */
-@@ -51,8 +51,8 @@ struct record {
- 	int			locked;		/* Do not free, even if ref_count is zero */
- 	void			*private;
- #if DEBUG_RECORD
--	struct record		*prev;
--	struct record		*next;
-+	struct pevent_record	*prev;
-+	struct pevent_record	*next;
- 	long			alloc_addr;
- #endif
- };
-@@ -91,7 +91,7 @@ struct pevent;
- struct event_format;
- 
- typedef int (*pevent_event_handler_func)(struct trace_seq *s,
--					 struct record *record,
-+					 struct pevent_record *record,
- 					 struct event_format *event,
- 					 void *context);
- 
-@@ -497,7 +497,7 @@ int pevent_register_print_string(struct pevent *pevent, char *fmt,
- int pevent_pid_is_registered(struct pevent *pevent, int pid);
- 
- void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
--			struct record *record);
-+			struct pevent_record *record);
- 
- int pevent_parse_header_page(struct pevent *pevent, char *buf, unsigned long size,
- 			     int long_size);
-@@ -506,22 +506,22 @@ int pevent_parse_event(struct pevent *pevent, const char *buf,
- 		       unsigned long size, const char *sys);
- 
- void *pevent_get_field_raw(struct trace_seq *s, struct event_format *event,
--			   const char *name, struct record *record,
-+			   const char *name, struct pevent_record *record,
- 			   int *len, int err);
- 
- int pevent_get_field_val(struct trace_seq *s, struct event_format *event,
--			 const char *name, struct record *record,
-+			 const char *name, struct pevent_record *record,
- 			 unsigned long long *val, int err);
- int pevent_get_common_field_val(struct trace_seq *s, struct event_format *event,
--				const char *name, struct record *record,
-+				const char *name, struct pevent_record *record,
- 				unsigned long long *val, int err);
- int pevent_get_any_field_val(struct trace_seq *s, struct event_format *event,
--			     const char *name, struct record *record,
-+			     const char *name, struct pevent_record *record,
- 			     unsigned long long *val, int err);
- 
- int pevent_print_num_field(struct trace_seq *s, const char *fmt,
- 			   struct event_format *event, const char *name,
--			   struct record *record, int err);
-+			   struct pevent_record *record, int err);
- 
- int pevent_register_event_handler(struct pevent *pevent, int id, char *sys_name, char *event_name,
- 				  pevent_event_handler_func func, void *context);
-@@ -547,13 +547,13 @@ struct event_format *
- pevent_find_event_by_name(struct pevent *pevent, const char *sys, const char *name);
- 
- void pevent_data_lat_fmt(struct pevent *pevent,
--			 struct trace_seq *s, struct record *record);
--int pevent_data_type(struct pevent *pevent, struct record *rec);
-+			 struct trace_seq *s, struct pevent_record *record);
-+int pevent_data_type(struct pevent *pevent, struct pevent_record *rec);
- struct event_format *pevent_data_event_from_type(struct pevent *pevent, int type);
--int pevent_data_pid(struct pevent *pevent, struct record *rec);
-+int pevent_data_pid(struct pevent *pevent, struct pevent_record *rec);
- const char *pevent_data_comm_from_pid(struct pevent *pevent, int pid);
- void pevent_event_info(struct trace_seq *s, struct event_format *event,
--		       struct record *record);
-+		       struct pevent_record *record);
- 
- struct event_format **pevent_list_events(struct pevent *pevent, enum event_sort_type);
- struct format_field **pevent_event_common_fields(struct event_format *event);
-@@ -773,7 +773,7 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
- 
- 
- int pevent_filter_match(struct event_filter *filter,
--			struct record *record);
-+			struct pevent_record *record);
- 
- int pevent_event_filtered(struct event_filter *filter,
- 			  int event_id);
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index fe37182..2d40c5e 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -1561,10 +1561,10 @@ int pevent_filter_event_has_trivial(struct event_filter *filter,
- }
- 
- static int test_filter(struct event_format *event,
--		       struct filter_arg *arg, struct record *record);
-+		       struct filter_arg *arg, struct pevent_record *record);
- 
- static const char *
--get_comm(struct event_format *event, struct record *record)
-+get_comm(struct event_format *event, struct pevent_record *record)
- {
- 	const char *comm;
- 	int pid;
-@@ -1576,7 +1576,7 @@ get_comm(struct event_format *event, struct record *record)
- 
- static unsigned long long
- get_value(struct event_format *event,
--	  struct format_field *field, struct record *record)
-+	  struct format_field *field, struct pevent_record *record)
- {
- 	unsigned long long val;
- 
-@@ -1607,10 +1607,10 @@ get_value(struct event_format *event,
- }
- 
- static unsigned long long
--get_arg_value(struct event_format *event, struct filter_arg *arg, struct record *record);
-+get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record);
- 
- static unsigned long long
--get_exp_value(struct event_format *event, struct filter_arg *arg, struct record *record)
-+get_exp_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
- {
- 	unsigned long long lval, rval;
- 
-@@ -1656,7 +1656,7 @@ get_exp_value(struct event_format *event, struct filter_arg *arg, struct record
- }
- 
- static unsigned long long
--get_arg_value(struct event_format *event, struct filter_arg *arg, struct record *record)
-+get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
- {
- 	switch (arg->type) {
- 	case FILTER_ARG_FIELD:
-@@ -1677,7 +1677,7 @@ get_arg_value(struct event_format *event, struct filter_arg *arg, struct record
- }
- 
- static int test_num(struct event_format *event,
--		    struct filter_arg *arg, struct record *record)
-+		    struct filter_arg *arg, struct pevent_record *record)
- {
- 	unsigned long long lval, rval;
- 
-@@ -1709,7 +1709,7 @@ static int test_num(struct event_format *event,
- 	}
- }
- 
--static const char *get_field_str(struct filter_arg *arg, struct record *record)
-+static const char *get_field_str(struct filter_arg *arg, struct pevent_record *record)
- {
- 	const char *val = record->data + arg->str.field->offset;
- 
-@@ -1727,7 +1727,7 @@ static const char *get_field_str(struct filter_arg *arg, struct record *record)
- }
- 
- static int test_str(struct event_format *event,
--		    struct filter_arg *arg, struct record *record)
-+		    struct filter_arg *arg, struct pevent_record *record)
- {
- 	const char *val;
- 
-@@ -1757,7 +1757,7 @@ static int test_str(struct event_format *event,
- }
- 
- static int test_op(struct event_format *event,
--		   struct filter_arg *arg, struct record *record)
-+		   struct filter_arg *arg, struct pevent_record *record)
- {
- 	switch (arg->op.type) {
- 	case FILTER_OP_AND:
-@@ -1778,7 +1778,7 @@ static int test_op(struct event_format *event,
- }
- 
- static int test_filter(struct event_format *event,
--		       struct filter_arg *arg, struct record *record)
-+		       struct filter_arg *arg, struct pevent_record *record)
- {
- 	switch (arg->type) {
- 	case FILTER_ARG_BOOLEAN:
-@@ -1843,7 +1843,7 @@ int pevent_event_filtered(struct event_filter *filter,
-  * -2 - if no filters exist
-  */
- int pevent_filter_match(struct event_filter *filter,
--			struct record *record)
-+			struct pevent_record *record)
- {
- 	struct pevent *pevent = filter->pevent;
- 	struct filter_type *filter_type;
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 39f22f8..df2fddb 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -152,7 +152,7 @@ void *raw_field_ptr(struct event_format *event, const char *name, void *data)
- 
- int trace_parse_common_type(void *data)
- {
--	struct record record;
-+	struct pevent_record record;
- 
- 	record.data = data;
- 	return pevent_data_type(pevent, &record);
-@@ -160,7 +160,7 @@ int trace_parse_common_type(void *data)
- 
- int trace_parse_common_pid(void *data)
- {
--	struct record record;
-+	struct pevent_record record;
- 
- 	record.data = data;
- 	return pevent_data_pid(pevent, &record);
-@@ -180,7 +180,7 @@ struct event_format *trace_find_event(int type)
- void print_trace_event(int cpu, void *data, int size)
- {
- 	struct event_format *event;
--	struct record record;
-+	struct pevent_record record;
- 	struct trace_seq s;
- 	int type;
- 
-@@ -206,7 +206,7 @@ void print_trace_event(int cpu, void *data, int size)
- void print_event(int cpu, void *data, int size, unsigned long long nsecs,
- 		  char *comm)
- {
--	struct record record;
-+	struct pevent_record record;
- 	struct trace_seq s;
- 	int pid;
- 
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index 29b9206..f097e0d 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -292,7 +292,7 @@ struct cpu_data {
- 	unsigned long long	offset;
- 	unsigned long long	size;
- 	unsigned long long	timestamp;
--	struct record		*next;
-+	struct pevent_record	*next;
- 	char			*page;
- 	int			cpu;
- 	int			index;
-@@ -377,9 +377,9 @@ static int calc_index(void *ptr, int cpu)
- 	return (unsigned long)ptr - (unsigned long)cpu_data[cpu].page;
- }
- 
--struct record *trace_peek_data(int cpu)
-+struct pevent_record *trace_peek_data(int cpu)
- {
--	struct record *data;
-+	struct pevent_record *data;
- 	void *page = cpu_data[cpu].page;
- 	int idx = cpu_data[cpu].index;
- 	void *ptr = page + idx;
-@@ -477,9 +477,9 @@ read_again:
- 	return data;
- }
- 
--struct record *trace_read_data(int cpu)
-+struct pevent_record *trace_read_data(int cpu)
- {
--	struct record *data;
-+	struct pevent_record *data;
- 
- 	data = trace_peek_data(cpu);
- 	cpu_data[cpu].next = NULL;
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 112bc2a..639852a 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -38,7 +38,7 @@ void print_event(int cpu, void *data, int size, unsigned long long nsecs,
- int parse_ftrace_file(char *buf, unsigned long size);
- int parse_event_file(char *buf, unsigned long size, char *sys);
- 
--struct record *trace_peek_data(int cpu);
-+struct pevent_record *trace_peek_data(int cpu);
- struct event_format *trace_find_event(int type);
- 
- unsigned long long
-@@ -57,7 +57,7 @@ struct event_format *trace_find_next_event(struct event_format *event);
- unsigned long long read_size(void *ptr, int size);
- unsigned long long eval_flag(const char *flag);
- 
--struct record *trace_read_data(int cpu);
-+struct pevent_record *trace_read_data(int cpu);
- int read_tracing_data(int fd, struct list_head *pattrs);
- 
- struct tracing_data {
+@@ -4904,7 +4904,7 @@ int pevent_register_event_handler(struct pevent *pevent,
+  not_found:
+ 	/* Save for later use. */
+ 	handle = malloc_or_die(sizeof(*handle));
+-	memset(handle, 0, sizeof(handle));
++	memset(handle, 0, sizeof(*handle));
+ 	handle->id = id;
+ 	if (event_name)
+ 		handle->event_name = strdup(event_name);
 -- 
 1.7.5.4
 
