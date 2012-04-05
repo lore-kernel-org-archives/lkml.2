@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2DESPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 14:15:15 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49551 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab2DESPN (ORCPT
+	id S1755669Ab2DESZl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 14:25:41 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64298 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753640Ab2DESZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 14:15:13 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6670"; a="179247927"
-Date: Thu, 5 Apr 2012 11:15:09 -0700
-From: David Brown <davidb@codeaurora.org>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Point-to-point bus in device tree
-Message-ID: <20120405181509.GA28693@codeaurora.org>
+	Thu, 5 Apr 2012 14:25:39 -0400
+Message-ID: <4F7DE39D.3040207@gmail.com>
+Date: Fri, 06 Apr 2012 02:25:33 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 09/13] KVM: MMU: get expected spte out of mmu-lock
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F742A97.6030308@linux.vnet.ibm.com> <4F7879E6.8020103@redhat.com>
+In-Reply-To: <4F7879E6.8020103@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some MSM SoCs have a small serial-type "bus" that is used to
-communicate with the PMIC devices.  This interface is always
-point-to-point.  I'm doing a device-tree conversion of the driver that
-Ken Heitke posted last year <https://lkml.org/lkml/2011/2/17/503>.
+On 04/01/2012 11:53 PM, Avi Kivity wrote:
 
-A naive conversion to device tree, would result in something like
-this:
+> On 03/29/2012 11:25 AM, Xiao Guangrong wrote:
+>> It depends on PTE_LIST_WRITE_PROTECT bit in rmap which let us quickly know
+>> whether the page is writable out of mmu-lock
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/mmu.c         |   17 +++++++++++++----
+>>  arch/x86/kvm/paging_tmpl.h |    2 +-
+>>  2 files changed, 14 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 3887a07..c029185 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1148,6 +1148,12 @@ static int rmap_write_protect(struct kvm *kvm, u64 gfn)
+>>
+>>  	*rmapp |= PTE_LIST_WRITE_PROTECT;
+>>
+>> +	/*
+>> +	 * Setting PTE_LIST_WRITE_PROTECT bit before doing page
+>> +	 * write-protect.
+>> +	 */
+>> +	smp_mb();
+>> +
+> 
+> wmb only needed.
+> 
 
-	qcom,ssbi@500000 {
-		compatible = "qcom,ssbi";
-		reg = <0x500000 0x1000>;
-		qcom,controller-type = "ssbi";
 
-		qcom,pmic8058@0 {
-			reg = <0x0 0x01>;
-			...
-		}
-	}
+We should ensure setting this bit before reading spte, it cooperates with
+fast page fault path to avoid this case:
 
-There would end up being an extraneous register for the device on the
-other end (there are no addresses), and there would need to be code in
-the ssbi driver to traverse this small tree to find these nodes.
+On fast page fault path:                    On rmap_write_protect path:
+                                            read spte: old_spte = *spte
+                                       (reading spte is reordered to the front of
+                                        setting PTE_LIST_WRITE_PROTECT bit)
+set spte.identification
+   smp_mb
+if (!rmap.PTE_LIST_WRITE_PROTECT)
+                                            set rmap.PTE_LIST_WRITE_PROTECT
+    cmpxchg(sptep, spte, spte | WRITABLE)
+                                            see old_spte.identification is not set,
+                                            so it does not write-protect this page
+                                                  OOPS!!!
 
-Another approach would be to make the pmic driver the actual device,
-and just have it use the ssbi code as a library.  Something like:
+> Would it be better to store this bit in all the sptes instead?  We're
+> touching them in any case.  More work to clear them, but
+> un-write-protecting a page is beneficial anyway as it can save a fault.
+> 
 
-	qcom,pmic8058@500000 {
-		compatible = "qcom,pmic8058";
-		reg = <0x500000 0x1000>;
-		qcom,ssbi-type = "ssbi";
-		...
-	}
+There are two reasons:
+- if we set this bit in rmap, we can do the quickly check to see the page is
+  writble before doing shadow page walking.
 
-This is a lot cleaner, takes less code, but doesn't technically
-represent how the hardware is really structured.
+- since a full barrier is needed, we should use smp_mb for every spte like this:
 
-Does anyone have strong (or weak) feelings about this?
+  while ((spte = rmap_next(rmapp, spte))) {
+	read spte
+        smp_mb
+        write-protect spte
+  }
 
-Thanks,
-David
+  smp_mb is called in the loop, i think it is not good, yes?
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+If you just want to save the fault, we can let all spte to be writeable in
+mmu_need_write_protect, but we should cache gpte access bits into spte firstly.
+It should be another patchset i think. :)
+
