@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab2DEO7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:59:47 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37053 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab2DEO6w (ORCPT
+	id S1754575Ab2DEO7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:59:49 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49884 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab2DEO6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:58:52 -0400
+	Thu, 5 Apr 2012 10:58:55 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 10/34] vfs: do_last() common post lookup
-Date: Thu,  5 Apr 2012 16:58:36 +0200
-Message-Id: <1333637940-31884-11-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 11/34] vfs: split __dentry_open()
+Date: Thu,  5 Apr 2012 16:58:37 +0200
+Message-Id: <1333637940-31884-12-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
@@ -23,65 +23,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Now the post lookup code can be shared between O_CREAT and plain opens since
-they are essentially the same.
+Split __dentry_open() into two functions:
+
+  do_dentry_open() - does most of the actual work, doesn't put file on failure
+  open_check_o_direct() - after a successful open, checks direct_IO method
+
+This will allow i_op->atomic_open to do just the file initialization and leave
+the direct_IO checking to the VFS.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   33 ++-------------------------------
- 1 files changed, 2 insertions(+), 31 deletions(-)
+ fs/internal.h |    1 +
+ fs/open.c     |   47 +++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 34 insertions(+), 14 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 69adb62..9e4ec13 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2280,37 +2280,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+diff --git a/fs/internal.h b/fs/internal.h
+index 9962c59..4d69fdd 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -100,6 +100,7 @@ extern struct file *do_file_open_root(struct dentry *, struct vfsmount *,
  
- 			inode = path->dentry->d_inode;
- 		}
--		error = -ENOENT;
--		if (!inode) {
--			path_to_nameidata(path, nd);
--			goto exit;
--		}
--
--		if (should_follow_link(inode, !symlink_ok)) {
--			if (nd->flags & LOOKUP_RCU) {
--				if (unlikely(unlazy_walk(nd, path->dentry))) {
--					error = -ECHILD;
--					goto exit;
--				}
--			}
--			BUG_ON(inode != path->dentry->d_inode);
--			return NULL;
--		}
--		path_to_nameidata(path, nd);
--		nd->inode = inode;
--
--		/* sayonara */
--		error = complete_walk(nd);
--		if (error)
--			return ERR_PTR(error);
--
--		error = -ENOTDIR;
--		if (nd->flags & LOOKUP_DIRECTORY) {
--			if (!nd->inode->i_op->lookup)
--				goto exit;
--		}
--		audit_inode(pathname, nd->path.dentry);
--		goto ok;
-+		goto finish_lookup;
- 	}
+ extern long do_handle_open(int mountdirfd,
+ 			   struct file_handle __user *ufh, int open_flag);
++extern int open_check_o_direct(struct file *f);
  
- 	/* create side of things */
-@@ -2390,6 +2360,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 		nd->flags |= LOOKUP_JUMPED;
+ /*
+  * inode.c
+diff --git a/fs/open.c b/fs/open.c
+index 5720854..971b474 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -644,10 +644,23 @@ static inline int __get_file_write_access(struct inode *inode,
+ 	return error;
+ }
  
- 	inode = path->dentry->d_inode;
-+finish_lookup:
- 	error = -ENOENT;
- 	if (!inode) {
- 		path_to_nameidata(path, nd);
+-static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+-					struct file *f,
+-					int (*open)(struct inode *, struct file *),
+-					const struct cred *cred)
++int open_check_o_direct(struct file *f)
++{
++	/* NB: we're sure to have correct a_ops only after f_op->open */
++	if (f->f_flags & O_DIRECT) {
++		if (!f->f_mapping->a_ops ||
++		    ((!f->f_mapping->a_ops->direct_IO) &&
++		    (!f->f_mapping->a_ops->get_xip_mem))) {
++			return -EINVAL;
++		}
++	}
++	return 0;
++}
++
++static struct file *do_dentry_open(struct dentry *dentry, struct vfsmount *mnt,
++				   struct file *f,
++				   int (*open)(struct inode *, struct file *),
++				   const struct cred *cred)
+ {
+ 	static const struct file_operations empty_fops = {};
+ 	struct inode *inode;
+@@ -703,16 +716,6 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+ 
+ 	file_ra_state_init(&f->f_ra, f->f_mapping->host->i_mapping);
+ 
+-	/* NB: we're sure to have correct a_ops only after f_op->open */
+-	if (f->f_flags & O_DIRECT) {
+-		if (!f->f_mapping->a_ops ||
+-		    ((!f->f_mapping->a_ops->direct_IO) &&
+-		    (!f->f_mapping->a_ops->get_xip_mem))) {
+-			fput(f);
+-			f = ERR_PTR(-EINVAL);
+-		}
+-	}
+-
+ 	return f;
+ 
+ cleanup_all:
+@@ -740,6 +743,22 @@ cleanup_file:
+ 	return ERR_PTR(error);
+ }
+ 
++static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
++				struct file *f,
++				int (*open)(struct inode *, struct file *),
++				const struct cred *cred)
++{
++	struct file *res = do_dentry_open(dentry, mnt, f, open, cred);
++	if (!IS_ERR(res)) {
++		int error = open_check_o_direct(f);
++		if (error) {
++			fput(res);
++			res = ERR_PTR(error);
++		}
++	}
++	return res;
++}
++
+ /**
+  * lookup_instantiate_filp - instantiates the open intent filp
+  * @nd: pointer to nameidata
 -- 
 1.7.7
 
