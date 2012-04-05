@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab2DEEP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 00:15:59 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:36993
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751978Ab2DEEP6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 00:15:58 -0400
-X-SpamScore: -6
-X-BigFish: VPS-6(zz9371I542Mzz1202hzz8275bh8275dhz2dh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 5 Apr 2012 00:15:59 -0400
-Subject: RE: [PATCH 1/6] regulator: ad5398: Constify regulator_desc
-Thread-Topic: [PATCH 1/6] regulator: ad5398: Constify regulator_desc
-Thread-Index: Ac0S4C/9JucumqQkTdWWJX3C2q5/3QAAo0cw
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16F25B9528F@NWD2CMBX1.ad.analog.com>
-References: <1333598216.10597.3.camel@phoenix>
-In-Reply-To: <1333598216.10597.3.camel@phoenix>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+	id S1752876Ab2DEErR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 00:47:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56528 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130Ab2DEErQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 00:47:16 -0400
+Message-ID: <1333601231.7783.31.camel@marge.simpson.net>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Date: Thu, 05 Apr 2012 06:47:11 +0200
+In-Reply-To: <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com>
+	 <1333535915.7188.18.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com>
+	 <1333542649.7188.40.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204041414220.26086@chino.kir.corp.google.com>
+	 <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q354GRC2024046
 
-Acked-by: Sonic Zhang <sonic.zhang@analog.com>
+(replaces bouncy CC)
 
------Original Message-----
-From: Axel Lin [mailto:axel.lin@gmail.com]
-Sent: Thursday, April 05, 2012 11:57 AM
-To: linux-kernel@vger.kernel.org
-Cc: Zhang, Sonic; Liam Girdwood; Mark Brown
-Subject: [PATCH 1/6] regulator: ad5398: Constify regulator_desc
+On Wed, 2012-04-04 at 16:09 -0700, Tejun Heo wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> I don't see much problem with the proposed solution and am gonna take
+> it unless there are pretty good reasons not to.
+
+Below is user interface only patchlet.  I find it cleaner than the
+cpuset,cpu variant, but don't have strong feelings either way.
+
+If this one don't fly, I'll just declare buglet immortal, he ain't worth
+near the electrons he's already wasted ;-) 
+
+cgroups: disallow attaching kthreadd 
+
+Allowing kthreadd to be moved to a non-root group makes no sense, it being
+a global resource, and needlessly leads unsuspecting users toward trouble.
+
+1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+allocated is not schedulable.  Simple user error, but harmful to the box.
+
+2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+rendering the cpuset immortal.
+
+Save the user some unexpected trouble, just say no.
+
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
 ---
- drivers/regulator/ad5398.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/cgroup.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
-index 7d51793..9ba69c4 100644
---- a/drivers/regulator/ad5398.c
-+++ b/drivers/regulator/ad5398.c
-@@ -184,7 +184,7 @@ static struct regulator_ops ad5398_ops = {
-        .is_enabled = ad5398_is_enabled,
- };
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -60,6 +60,7 @@
+ #include <linux/eventfd.h>
+ #include <linux/poll.h>
+ #include <linux/flex_array.h> /* used in cgroup_attach_proc */
++#include <linux/kthread.h>
+ 
+ #include <linux/atomic.h>
+ 
+@@ -2172,6 +2181,17 @@ static int attach_task_by_pid(struct cgr
+ 
+ 	if (threadgroup)
+ 		tsk = tsk->group_leader;
++
++	/*
++	 * Workqueue threads may acquire PF_THREAD_BOUND and become
++	 * trapped in a cpuset, or RT worker may be born in a cgroup
++	 * with no rt_runtime allocated.  Just say no.
++	 */
++	if (tsk == kthreadd_task) {
++		ret = -EINVAL;
++		goto out_unlock_cgroup;
++	}
++
+ 	get_task_struct(tsk);
+ 	rcu_read_unlock();
+ 
 
--static struct regulator_desc ad5398_reg = {
-+static const struct regulator_desc ad5398_reg = {
-        .name = "isink",
-        .id = 0,
-        .ops = &ad5398_ops,
---
-1.7.5.4
 
 
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
