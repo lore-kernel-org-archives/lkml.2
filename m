@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab2DEGxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 02:53:36 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3476 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab2DEGxe (ORCPT
+	id S1754190Ab2DEHH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 03:07:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60892 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab2DEHHq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 02:53:34 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6670"; a="176769491"
-Message-ID: <4F7D4165.2060101@codeaurora.org>
-Date: Thu, 05 Apr 2012 12:23:25 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Thu, 5 Apr 2012 03:07:46 -0400
 MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: Kevin Hilman <khilman@ti.com>, jean.pihet@newoldbits.com,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-omap@vger.kernel.org, Jean Pihet <j-pihet@ti.com>,
-        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 2/9] ARM: OMAP2+: SmartReflex: move the driver specific
- macros in include/linux/power
-References: <1332173578-27422-1-git-send-email-j-pihet@ti.com> <1332173578-27422-3-git-send-email-j-pihet@ti.com> <4F7C9C89.9080605@codeaurora.org> <4F7CA3E1.2050809@ti.com>
-In-Reply-To: <4F7CA3E1.2050809@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1204042308470.7534@chino.kir.corp.google.com>
+References: <CAOVJa8EVHhfFfHHNAyAeT0ZYj3vZFW3Uu4K2PzBEGGOz92fhiw@mail.gmail.com>
+	<alpine.DEB.2.00.1204042308470.7534@chino.kir.corp.google.com>
+Date: Thu, 5 Apr 2012 15:07:46 +0800
+Message-ID: <CAOVJa8GEVr69+FStuiyu3vyejD+4PZtyKm=vO3n9=LkqgS==1Q@mail.gmail.com>
+Subject: Re: some questions about __get_vm_area_node
+From: vichy <vichy.kuo@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Kautuk Consul <consul.kautuk@gmail.com>,
+        Kernel Newbies <kernelnewbies@nl.linux.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+hi david:
 
+2012/4/5 David Rientjes <rientjes@google.com>:
+> On Thu, 5 Apr 2012, vichy wrote:
 >
-> The main motivation is that it's a driver and thus does not have
-> anything to do inside mach-omap2.
-
-Right, I understood that. mach-omap2 is not suitable for full fledged 
-drivers.
-
+>> Hi all:
+>> I have a question about __get_vm_area_node.
+>> Q. Why we announce "static struct vmap_area *va;" instead of "struct
+>> vmap_area *va;"
+>> I cannot see is there any benefit to take this variable as static.
+>>
 >
-> Where will you put that otherwise?
-
-Couple of suggestions:
-
-drivers/platform/omap/avs?
-drivers/misc/omap/avs?
-
-I prefer first one.
-
+> You're right, there's no need for it to be static.  However, you're
+> looking at an old tree.
 >
-> IIRC, David Brownell was referring to the rule of three for such case.
-> Meaning that it worth having a generic fmwk when at least three
-> different drivers are doing the same kind of things.
+> This was fixed with 0006526d78e9 ("mm/vmalloc.c: remove static declaration
+> of va from __get_vm_area_node") in 3.3.
 
-Yes, I remember that rule, but that's not stopping us to create a fwk, 
-may be others will rise once they see the framework and contribute
-if their h/w architecture requirements are not addressed?
-
----Trilok Soni
-
--- 
---
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Yes, I saw your check in message on Mon Dec 19 17:12:04 2011 -0800.
+BTW, why we declare it as static previously?
+for saving stack usage?
+Thanks for your help,
