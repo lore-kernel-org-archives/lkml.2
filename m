@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab2DEGBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 02:01:54 -0400
-Received: from ka.mail.enyo.de ([87.106.162.201]:32804 "EHLO ka.mail.enyo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815Ab2DEGBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 02:01:53 -0400
-From: Florian Weimer <fw@deneb.enyo.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Martin Lucina <martin@lucina.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] Implement IP_EVIL socket option (RFC 3514)
-References: <1333284791-5363-1-git-send-email-martin@lucina.net>
-	<87r4w3nw7n.fsf@mid.deneb.enyo.de>
-	<20120404201821.GC6589@ZenIV.linux.org.uk>
-Date: Thu, 05 Apr 2012 08:01:49 +0200
-In-Reply-To: <20120404201821.GC6589@ZenIV.linux.org.uk> (Al Viro's message of
-	"Wed, 4 Apr 2012 21:18:21 +0100")
-Message-ID: <874nsyk982.fsf@mid.deneb.enyo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754618Ab2DEGCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 02:02:10 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15991 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab2DEGCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 02:02:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 04 Apr 2012 22:59:44 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: stern@rowland.harvard.edu, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: host: tegra: re-arranging ehci functions
+Date: Thu,  5 Apr 2012 11:28:56 +0530
+Message-Id: <1333605536-5792-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Al Viro:
+Re-arranged standard and tegra specific ehci functions
+into two separate groups, for more readability
 
-> On Wed, Apr 04, 2012 at 09:17:00PM +0200, Florian Weimer wrote:
->> * Martin Lucina:
->> 
->> > This patch implements the IP_EVIL socket option, allowing user-space
->> > applications to set the Security Flag in the IPv4 Header, aka "evil" bit,
->> > as defined in RFC 3514.
->> 
->> I need this to fix a security issue.  Could this be merged for real,
->> please?
->
-> I would suggest switching away from your RFC1149 link - looks like your mail
-> took 3 days on the way out...
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ drivers/usb/host/ehci-tegra.c |   23 ++++++++++++-----------
+ 1 files changed, 12 insertions(+), 11 deletions(-)
 
-Sorry, I saw it just now.
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 3de48a2..96c942c 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -552,31 +552,32 @@ static const struct hc_driver tegra_ehci_hc_driver = {
+ 	.description		= hcd_name,
+ 	.product_desc		= "Tegra EHCI Host Controller",
+ 	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-
+ 	.flags			= HCD_USB2 | HCD_MEMORY,
+ 
+-	.reset			= tegra_ehci_setup,
+-	.irq			= ehci_irq,
+-
++	/* standard ehci functions */
+ 	.start			= ehci_run,
+ 	.stop			= ehci_stop,
+-	.shutdown		= tegra_ehci_shutdown,
+-	.urb_enqueue		= ehci_urb_enqueue,
+ 	.urb_dequeue		= ehci_urb_dequeue,
+-	.map_urb_for_dma	= tegra_ehci_map_urb_for_dma,
+-	.unmap_urb_for_dma	= tegra_ehci_unmap_urb_for_dma,
+ 	.endpoint_disable	= ehci_endpoint_disable,
+ 	.endpoint_reset		= ehci_endpoint_reset,
+ 	.get_frame_number	= ehci_get_frame,
+ 	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= tegra_ehci_hub_control,
+ 	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
++	.relinquish_port	= ehci_relinquish_port,
++	.port_handed_over	= ehci_port_handed_over,
++
++	/* modified ehci functions for tegra */
++	.reset			= tegra_ehci_setup,
++	.irq			= tegra_ehci_irq,
++	.shutdown		= tegra_ehci_shutdown,
++	.map_urb_for_dma	= tegra_ehci_map_urb_for_dma,
++	.unmap_urb_for_dma	= tegra_ehci_unmap_urb_for_dma,
++	.hub_control		= tegra_ehci_hub_control,
++	.urb_enqueue		= tegra_ehci_urb_enqueue,
+ #ifdef CONFIG_PM
+ 	.bus_suspend		= tegra_ehci_bus_suspend,
+ 	.bus_resume		= tegra_ehci_bus_resume,
+ #endif
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+ };
+ 
+ static int setup_vbus_gpio(struct platform_device *pdev)
+-- 
+1.7.1.1
 
-The idea is to change the JVM to set IP_EVIL when an applet creates a
-socket, so that this socket cannot be used to trick firewalls to open
-up access to totally unrelated services.
