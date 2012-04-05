@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab2DEO1F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:27:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33247 "EHLO mx2.suse.de"
+	id S1752507Ab2DEO2V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:28:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33343 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab2DEO1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:27:04 -0400
-Date: Thu, 05 Apr 2012 16:27:01 +0200
-Message-ID: <s5hlimafe4q.wl%tiwai@suse.de>
+	id S1751421Ab2DEO2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 10:28:21 -0400
+Date: Thu, 05 Apr 2012 16:28:20 +0200
+Message-ID: <s5hk41ufe2j.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 0/6] sound/pci/hda: CX20549 cleanup/fixes
-In-Reply-To: <1333632577.4159.9.camel@localhost>
+In-Reply-To: <s5hlimafe4q.wl%tiwai@suse.de>
 References: <1333632577.4159.9.camel@localhost>
+	<s5hlimafe4q.wl%tiwai@suse.de>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,25 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 05 Apr 2012 15:29:37 +0200,
-Michael Karcher wrote:
+At Thu, 05 Apr 2012 16:27:01 +0200,
+Takashi Iwai wrote:
 > 
-> This series of patches fixes recording on a Gigabyte W551N laptop that
-> seems to be identical to the BenW R55E. The Audio Codec uses the same
-> subsystem ID, which is assigned to Quanta. The Gigabyte laptop is based
-> on the Quanta TW3 ODM.
+> At Thu, 05 Apr 2012 15:29:37 +0200,
+> Michael Karcher wrote:
+> > 
+> > This series of patches fixes recording on a Gigabyte W551N laptop that
+> > seems to be identical to the BenW R55E. The Audio Codec uses the same
+> > subsystem ID, which is assigned to Quanta. The Gigabyte laptop is based
+> > on the Quanta TW3 ODM.
+> 
+> Thanks for the patch.
+> I'll review and give comments back for each.
+> 
+> > (for the whole series)
+> > Signed-Off-By: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+> 
+> Please give your sign-off in each patch changelog, so that I can apply
+> the patches directly via git-am.
+> 
+> Also, the subject lines should be with ALSA: prefix.  Take a look at
+> other git commits to that file as an example.
 
-Thanks for the patch.
-I'll review and give comments back for each.
+BTW, did you try model=auto option to enable the auto-parser?
+If it doesn't work well for you, let me know.
 
-> (for the whole series)
-> Signed-Off-By: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+In anyway, give alsa-info.sh output (run with --no-upload option) for
+better checks.
 
-Please give your sign-off in each patch changelog, so that I can apply
-the patches directly via git-am.
 
-Also, the subject lines should be with ALSA: prefix.  Take a look at
-other git commits to that file as an example.
-
+thanks,
 
 Takashi
