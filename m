@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab2DEPEA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:04:00 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:42688 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab2DEPD6 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 5 Apr 2012 11:03:58 -0400
-Message-Id: <4F7DD0B4020000780007CBF0@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 05 Apr 2012 16:04:52 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Jens Axboe" <axboe@kernel.dk>, "xen-devel" <xen-devel@lists.xen.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen-blkfront: module exit handling adjustments
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753904Ab2DEO7p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:59:45 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60434 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757Ab2DEO6v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 10:58:51 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, mszeredi@suse.cz
+Subject: [PATCH 09/34] vfs: do_last(): add audit_inode before open
+Date: Thu,  5 Apr 2012 16:58:35 +0200
+Message-Id: <1333637940-31884-10-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
+References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The blkdev major must be released upon exit, or else the module can't
-attach to devices using the same majors upon being loaded again. Also
-avoid leaking the minor tracking bitmap.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+This allows this code to be shared between O_CREAT and plain opens.
 
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- drivers/block/xen-blkfront.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/namei.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
---- 3.4-rc1/drivers/block/xen-blkfront.c
-+++ 3.4-rc1-xen-blkfront-exit-cleanup/drivers/block/xen-blkfront.c
-@@ -1497,7 +1497,9 @@ module_init(xlblk_init);
- 
- static void __exit xlblk_exit(void)
- {
--	return xenbus_unregister_driver(&blkfront_driver);
-+	xenbus_unregister_driver(&blkfront_driver);
-+	unregister_blkdev(XENVBD_MAJOR, DEV_NAME);
-+	kfree(minors);
- }
- module_exit(xlblk_exit);
- 
-
-
+diff --git a/fs/namei.c b/fs/namei.c
+index a405260..69adb62 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2419,6 +2419,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	error = -ENOTDIR;
+ 	if ((nd->flags & LOOKUP_DIRECTORY) && !nd->inode->i_op->lookup)
+ 		goto exit;
++	audit_inode(pathname, nd->path.dentry);
+ ok:
+ 	if (!S_ISREG(nd->inode->i_mode))
+ 		will_truncate = 0;
+-- 
+1.7.7
 
