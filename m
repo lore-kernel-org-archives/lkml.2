@@ -1,175 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2DEPJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:09:14 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:43153 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab2DEPJM convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Thu, 5 Apr 2012 11:09:12 -0400
-Message-Id: <4F7DD1EF020000780007CC05@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 05 Apr 2012 16:10:07 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen/gnttab: add deferred freeing logic
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754907Ab2DEPJn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:09:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52339 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab2DEO7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 10:59:23 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, mszeredi@suse.cz
+Subject: [PATCH 27/34] fuse: implement i_op->atomic_create()
+Date: Thu,  5 Apr 2012 16:58:53 +0200
+Message-Id: <1333637940-31884-28-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
+References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than just leaking pages that can't be freed at the point where
-access permission for the backend domain gets revoked, put them on a
-list and run a timer to (infrequently) retry freeing them. (This can
-particularly happen when unloading a frontend driver when devices are
-still present, and the backend still has them in non-closed state or
-hasn't finished closing them yet.)
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Replace fuse's ->create implementation with a ->atomic_create implementation.
+No functionality is changed.
 
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- drivers/xen/grant-table.c |  106 +++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 96 insertions(+), 10 deletions(-)
+ fs/fuse/dir.c |   97 ++++++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 69 insertions(+), 28 deletions(-)
 
---- 3.4-rc1/drivers/xen/grant-table.c
-+++ 3.4-rc1-xen-gnttab-deferred-end-access/drivers/xen/grant-table.c
-@@ -426,10 +426,8 @@ static int gnttab_end_foreign_access_ref
- 	nflags = *pflags;
- 	do {
- 		flags = nflags;
--		if (flags & (GTF_reading|GTF_writing)) {
--			printk(KERN_ALERT "WARNING: g.e. still in use!\n");
-+		if (flags & (GTF_reading|GTF_writing))
- 			return 0;
--		}
- 	} while ((nflags = sync_cmpxchg(pflags, flags, 0)) != flags);
- 
- 	return 1;
-@@ -458,12 +456,103 @@ static int gnttab_end_foreign_access_ref
- 	return 1;
- }
- 
--int gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
-+static inline int _gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 2066328..75e5142 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -369,8 +369,9 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
+  * If the filesystem doesn't support this, then fall back to separate
+  * 'mknod' + 'open' requests.
+  */
+-static int fuse_create_open(struct inode *dir, struct dentry *entry,
+-			    umode_t mode, struct nameidata *nd)
++static struct file *fuse_create_open(struct inode *dir, struct dentry *entry,
++				     struct opendata *od, unsigned flags,
++				     umode_t mode)
  {
- 	return gnttab_interface->end_foreign_access_ref(ref, readonly);
- }
-+
-+int gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
-+{
-+	if (_gnttab_end_foreign_access_ref(ref, readonly))
-+		return 1;
-+	pr_warn("WARNING: g.e. %#x still in use!\n", ref);
-+	return 0;
-+}
- EXPORT_SYMBOL_GPL(gnttab_end_foreign_access_ref);
+ 	int err;
+ 	struct inode *inode;
+@@ -382,17 +383,15 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
+ 	struct fuse_entry_out outentry;
+ 	struct fuse_file *ff;
+ 	struct file *file;
+-	int flags = nd->intent.open.flags;
+-
+-	if (fc->no_create)
+-		return -ENOSYS;
  
-+struct deferred_entry {
-+	struct list_head list;
-+	grant_ref_t ref;
-+	bool ro;
-+	uint16_t warn_delay;
-+	struct page *page;
-+};
-+static LIST_HEAD(deferred_list);
-+static void gnttab_handle_deferred(unsigned long);
-+static DEFINE_TIMER(deferred_timer, gnttab_handle_deferred, 0, 0);
-+
-+static void gnttab_handle_deferred(unsigned long unused)
-+{
-+	unsigned int nr = 10;
-+	struct deferred_entry *first = NULL;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&gnttab_list_lock, flags);
-+	while (nr--) {
-+		struct deferred_entry *entry
-+			= list_first_entry(&deferred_list,
-+					   struct deferred_entry, list);
-+
-+		if (entry == first)
-+			break;
-+		list_del(&entry->list);
-+		spin_unlock_irqrestore(&gnttab_list_lock, flags);
-+		if (_gnttab_end_foreign_access_ref(entry->ref, entry->ro)) {
-+			put_free_entry(entry->ref);
-+			if (entry->page) {
-+				pr_debug("freeing g.e. %#x (pfn %#lx)\n",
-+					 entry->ref, page_to_pfn(entry->page));
-+				__free_page(entry->page);
-+			} else
-+				pr_info("freeing g.e. %#x\n", entry->ref);
-+			kfree(entry);
-+			entry = NULL;
-+		} else {
-+			if (!--entry->warn_delay)
-+				pr_info("g.e. %#x still pending\n",
-+					entry->ref);
-+			if (!first)
-+				first = entry;
-+		}
-+		spin_lock_irqsave(&gnttab_list_lock, flags);
-+		if (entry)
-+			list_add_tail(&entry->list, &deferred_list);
-+		else if (list_empty(&deferred_list))
-+			break;
-+	}
-+	if (!list_empty(&deferred_list) && !timer_pending(&deferred_timer)) {
-+		deferred_timer.expires = jiffies + HZ;
-+		add_timer(&deferred_timer);
-+	}
-+	spin_unlock_irqrestore(&gnttab_list_lock, flags);
-+}
-+
-+static void gnttab_add_deferred(grant_ref_t ref, bool readonly,
-+				struct page *page)
-+{
-+	struct deferred_entry *entry = kmalloc(sizeof(*entry), GFP_ATOMIC);
-+	const char *what = KERN_WARNING "leaking";
-+
-+	if (entry) {
-+		unsigned long flags;
-+
-+		entry->ref = ref;
-+		entry->ro = readonly;
-+		entry->page = page;
-+		entry->warn_delay = 60;
-+		spin_lock_irqsave(&gnttab_list_lock, flags);
-+		list_add_tail(&entry->list, &deferred_list);
-+		if (!timer_pending(&deferred_timer)) {
-+			deferred_timer.expires = jiffies + HZ;
-+			add_timer(&deferred_timer);
-+		}
-+		spin_unlock_irqrestore(&gnttab_list_lock, flags);
-+		what = KERN_DEBUG "deferring";
-+	}
-+	printk("%s g.e. %#x (pfn %#lx)\n",
-+	       what, ref, page ? page_to_pfn(page) : -1);
-+}
-+
- void gnttab_end_foreign_access(grant_ref_t ref, int readonly,
- 			       unsigned long page)
- {
-@@ -471,12 +560,9 @@ void gnttab_end_foreign_access(grant_ref
- 		put_free_entry(ref);
- 		if (page != 0)
- 			free_page(page);
--	} else {
--		/* XXX This needs to be fixed so that the ref and page are
--		   placed on a list to be freed up later. */
--		printk(KERN_WARNING
--		       "WARNING: leaking g.e. and page still in use!\n");
++	err = -EINVAL;
+ 	if (flags & O_DIRECT)
+-		return -EINVAL;
++		goto out_err;
+ 
+ 	forget = fuse_alloc_forget();
++	err = -ENOMEM;
+ 	if (!forget)
+-		return -ENOMEM;
++		goto out_err;
+ 
+ 	req = fuse_get_req(fc);
+ 	err = PTR_ERR(req);
+@@ -431,11 +430,8 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
+ 	req->out.args[1].value = &outopen;
+ 	fuse_request_send(fc, req);
+ 	err = req->out.h.error;
+-	if (err) {
+-		if (err == -ENOSYS)
+-			fc->no_create = 1;
++	if (err)
+ 		goto out_free_ff;
 -	}
-+	} else
-+		gnttab_add_deferred(ref, readonly,
-+				    page ? virt_to_page(page) : NULL);
- }
- EXPORT_SYMBOL_GPL(gnttab_end_foreign_access);
  
-
+ 	err = -EIO;
+ 	if (!S_ISREG(outentry.attr.mode) || invalid_nodeid(outentry.nodeid))
+@@ -451,28 +447,78 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
+ 		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
+ 		fuse_sync_release(ff, flags);
+ 		fuse_queue_forget(fc, forget, outentry.nodeid, 1);
+-		return -ENOMEM;
++		err = -ENOMEM;
++		goto out_err;
+ 	}
+ 	kfree(forget);
+ 	d_instantiate(entry, inode);
+ 	fuse_change_entry_timeout(entry, &outentry);
+ 	fuse_invalidate_attr(dir);
+-	file = lookup_instantiate_filp(nd, entry, generic_file_open);
++	file = finish_open(od, entry, generic_file_open);
+ 	if (IS_ERR(file)) {
+ 		fuse_sync_release(ff, flags);
+-		return PTR_ERR(file);
++	} else {
++		file->private_data = fuse_file_get(ff);
++		fuse_finish_open(inode, file);
+ 	}
+-	file->private_data = fuse_file_get(ff);
+-	fuse_finish_open(inode, file);
+-	return 0;
++	return file;
+ 
+- out_free_ff:
++out_free_ff:
+ 	fuse_file_free(ff);
+- out_put_request:
++out_put_request:
+ 	fuse_put_request(fc, req);
+- out_put_forget_req:
++out_put_forget_req:
+ 	kfree(forget);
+-	return err;
++out_err:
++	return ERR_PTR(err);
++}
++
++static int fuse_mknod(struct inode *, struct dentry *, umode_t, dev_t);
++static struct file *fuse_atomic_open(struct inode *dir, struct dentry *entry,
++				     struct opendata *od, unsigned flags,
++				     umode_t mode, bool *created)
++{
++	int err;
++	struct fuse_conn *fc = get_fuse_conn(dir);
++	struct file *file;
++	struct dentry *res = NULL;
++
++	if (d_unhashed(entry)) {
++		res = fuse_lookup(dir, entry, NULL);
++		if (IS_ERR(res))
++			return ERR_CAST(res);
++
++		if (res)
++			entry = res;
++	}
++
++	if (!(flags & O_CREAT) || entry->d_inode)
++		goto no_open;
++
++	/* Only creates */
++	*created = true;
++
++	if (fc->no_create)
++		goto mknod;
++
++	file = fuse_create_open(dir, entry, od, flags, mode);
++	if (PTR_ERR(file) == -ENOSYS) {
++		fc->no_create = 1;
++		goto mknod;
++	}
++out_dput:
++	dput(res);
++	return file;
++
++mknod:
++	err = fuse_mknod(dir, entry, mode, 0);
++	if (err) {
++		file = ERR_PTR(err);
++		goto out_dput;
++	}
++no_open:
++	finish_no_open(od, res);
++	return NULL;
+ }
+ 
+ /*
+@@ -576,12 +622,6 @@ static int fuse_mknod(struct inode *dir, struct dentry *entry, umode_t mode,
+ static int fuse_create(struct inode *dir, struct dentry *entry, umode_t mode,
+ 		       struct nameidata *nd)
+ {
+-	if (nd) {
+-		int err = fuse_create_open(dir, entry, mode, nd);
+-		if (err != -ENOSYS)
+-			return err;
+-		/* Fall back on mknod */
+-	}
+ 	return fuse_mknod(dir, entry, mode, 0);
+ }
+ 
+@@ -1632,6 +1672,7 @@ static const struct inode_operations fuse_dir_inode_operations = {
+ 	.link		= fuse_link,
+ 	.setattr	= fuse_setattr,
+ 	.create		= fuse_create,
++	.atomic_open	= fuse_atomic_open,
+ 	.mknod		= fuse_mknod,
+ 	.permission	= fuse_permission,
+ 	.getattr	= fuse_getattr,
+-- 
+1.7.7
 
