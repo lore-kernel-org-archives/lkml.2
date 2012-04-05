@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2DEOAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:00:41 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46551 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab2DEOAe (ORCPT
+	id S1753613Ab2DEODI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:03:08 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42177 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752594Ab2DEODG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:00:34 -0400
-Date: Thu, 5 Apr 2012 07:00:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
-        pascal.chapperon@wanadoo.fr
-Subject: Re: RCU related performance regression in 3.3
-Message-ID: <20120405140006.GB27672@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120404152726.GB16299@zod.bos.redhat.com>
- <20120404213633.GI2302@linux.vnet.ibm.com>
- <20120405123759.GE1963@zod.bos.redhat.com>
+	Thu, 5 Apr 2012 10:03:06 -0400
+Date: Thu, 5 Apr 2012 10:03:05 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@amd.com>
+cc: Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+In-Reply-To: <20120405083245.GA19508@localhost.amd.com>
+Message-ID: <Pine.LNX.4.44L0.1204051000450.1361-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120405123759.GE1963@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040514-7408-0000-0000-000003FE0085
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 05, 2012 at 08:37:59AM -0400, Josh Boyer wrote:
-> On Wed, Apr 04, 2012 at 02:36:33PM -0700, Paul E. McKenney wrote:
-> > On Wed, Apr 04, 2012 at 11:27:27AM -0400, Josh Boyer wrote:
-> > > Hi Paul,
-> > > 
-> > > We've had a few reports of some boot slowdowns with the 3.3 rebase we
-> > > did in Fedora 16.  One of our users volunteered to bisect a vanilla
-> > > kernel and wound up at "rcu: Permit dyntick-idle with callbacks pending
-> > > (commit 7cb924990)".  You can find more details in the bug [1], but it's
-> > > been reported on both physical hardware and in virtual machines.
-> > > 
-> > > Have you seen anything like this in your testing?  Given the user used a
-> > > vanilla 3.3 kernel, I'm wondering if there is a targetted fix that might
-> > > be backported.  If so, it would be good to get that headed to the 3.3.y
-> > > stable tree.
-> > > 
-> > > josh
-> > > 
-> > > [1] https://bugzilla.redhat.com/show_bug.cgi?id=806548
-> > 
-> > I will look into this.  In the meantime, does setting
-> > CONFIG_RCU_FAST_NO_HZ=n get rid of the slowdowns?
+On Thu, 5 Apr 2012, Aaron Lu wrote:
+
+> Hi,
 > 
-> Seems so.  Pascal tried 3.4-rc1 with and without that set and found that
-> disabling it lead to consistent timings.  He put his findings in the
-> bug, and I've also now CC'd him.
+> On Thu, Apr 05, 2012 at 02:00:57PM +0800, Lin Ming wrote:
+> > >
+> > > Another thing to consider is, user might want to eject the tray by
+> > > software like the
+> > > eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
+> > > thinking how to do this correctly.
+> > 
+> > Assume eject /dev/sr0 is implemented as:
+> > 
+> > int fd = open("/dev/sr0", ...)
+> > ioctl(fd, CDROMEJECT)
+> > 
+> 
+> Indeed, it is implemented as this :-)
+> 
+> > We may need to resume ODD in the ioctl handler(scsi_cmd_ioctl).
+> > 
+> 
+> I prefer we do this in sr_block_ioctl.
+> Suppose the ODD is now runtime suspended and received an ioctl:
+> if the ioctl's cmd is CDROMEJECT, resume it.
+> For other cases, return an error code like EPERM.
+> When done, according to the result of ioctl: if success, leave it resumed;
+> if failed, put it back to sleep.
 
-Thank you for the info!  Is the performance problem limited to boot time,
-or are there performance problems when the system is up and running?
+Alternatively, you may want to do the runtime resume in sr_open and 
+sr_block_open and the suspend in the corresponding release routines.  
+It's up to you.
 
-							Thanx, Paul
+Alan Stern
 
