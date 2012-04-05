@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab2DEEJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 00:09:07 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39000 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab2DEEJF (ORCPT
+	id S1752846Ab2DEEP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 00:15:59 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:36993
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751978Ab2DEEP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 00:09:05 -0400
-Message-ID: <1333598938.10597.10.camel@phoenix>
-Subject: [PATCH] regulator: da9052: Remove unneeded devm_kfree calls
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Thu, 05 Apr 2012 12:08:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 5 Apr 2012 00:15:58 -0400
+X-SpamScore: -6
+X-BigFish: VPS-6(zz9371I542Mzz1202hzz8275bh8275dhz2dh2a8h668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 5 Apr 2012 00:15:59 -0400
+Subject: RE: [PATCH 1/6] regulator: ad5398: Constify regulator_desc
+Thread-Topic: [PATCH 1/6] regulator: ad5398: Constify regulator_desc
+Thread-Index: Ac0S4C/9JucumqQkTdWWJX3C2q5/3QAAo0cw
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16F25B9528F@NWD2CMBX1.ad.analog.com>
+References: <1333598216.10597.3.camel@phoenix>
+In-Reply-To: <1333598216.10597.3.camel@phoenix>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q354GRC2024046
+
+Acked-by: Sonic Zhang <sonic.zhang@analog.com>
+
+-----Original Message-----
+From: Axel Lin [mailto:axel.lin@gmail.com]
+Sent: Thursday, April 05, 2012 11:57 AM
+To: linux-kernel@vger.kernel.org
+Cc: Zhang, Sonic; Liam Girdwood; Mark Brown
+Subject: [PATCH 1/6] regulator: ad5398: Constify regulator_desc
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/da9052-regulator.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ drivers/regulator/ad5398.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index 7eb7293..83e489f 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -406,7 +406,6 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
- 	struct da9052_regulator *regulator;
- 	struct da9052 *da9052;
- 	struct da9052_pdata *pdata;
--	int ret;
- 
- 	regulator = devm_kzalloc(&pdev->dev, sizeof(struct da9052_regulator),
- 				 GFP_KERNEL);
-@@ -421,8 +420,7 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
- 					      pdev->id);
- 	if (regulator->info == NULL) {
- 		dev_err(&pdev->dev, "invalid regulator ID specified\n");
--		ret = -EINVAL;
--		goto err;
-+		return -EINVAL;
- 	}
- 	regulator->rdev = regulator_register(&regulator->info->reg_desc,
- 					     &pdev->dev,
-@@ -431,16 +429,12 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
- 	if (IS_ERR(regulator->rdev)) {
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
- 			regulator->info->reg_desc.name);
--		ret = PTR_ERR(regulator->rdev);
--		goto err;
-+		return PTR_ERR(regulator->rdev);
- 	}
- 
- 	platform_set_drvdata(pdev, regulator);
- 
- 	return 0;
--err:
--	devm_kfree(&pdev->dev, regulator);
--	return ret;
- }
- 
- static int __devexit da9052_regulator_remove(struct platform_device *pdev)
-@@ -448,8 +442,6 @@ static int __devexit da9052_regulator_remove(struct platform_device *pdev)
- 	struct da9052_regulator *regulator = platform_get_drvdata(pdev);
- 
- 	regulator_unregister(regulator->rdev);
--	devm_kfree(&pdev->dev, regulator);
--
- 	return 0;
- }
- 
--- 
+diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
+index 7d51793..9ba69c4 100644
+--- a/drivers/regulator/ad5398.c
++++ b/drivers/regulator/ad5398.c
+@@ -184,7 +184,7 @@ static struct regulator_ops ad5398_ops = {
+        .is_enabled = ad5398_is_enabled,
+ };
+
+-static struct regulator_desc ad5398_reg = {
++static const struct regulator_desc ad5398_reg = {
+        .name = "isink",
+        .id = 0,
+        .ops = &ad5398_ops,
+--
 1.7.5.4
 
 
 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
