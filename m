@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab2DERTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 13:19:04 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:54798
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755204Ab2DERSx (ORCPT
+	id S1755445Ab2DERTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 13:19:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52173 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092Ab2DERTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 13:18:53 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M20O38-02-721-02
-X-M-MSG: 
-Date: Thu, 5 Apr 2012 19:18:45 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf tools: Use sw counter only if hw pmu is not
- detected
-Message-ID: <20120405171844.GO16322@erda.amd.com>
-References: <1333643188-26895-1-git-send-email-robert.richter@amd.com>
- <1333643188-26895-5-git-send-email-robert.richter@amd.com>
- <4F7DCF58.8020601@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F7DCF58.8020601@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Thu, 5 Apr 2012 13:19:19 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] spi: use module_pci_driver
+To: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        spi-devel-general@lists.sourceforge.net
+In-Reply-To: <1333549772.5856.3.camel@phoenix>
+References: <1333549772.5856.3.camel@phoenix>
+Date: Thu, 05 Apr 2012 10:19:16 -0700
+Message-Id: <20120405171916.134173E044B@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.04.12 10:59:04, David Ahern wrote:
-> On 4/5/12 10:26 AM, Robert Richter wrote:
-> > Use cpu-clock-tick sw counter for cpu-cycles only if there is no hw
-> > pmu available. This is the case if the syscall reports ENOENT. In
-> > other cases (e.g. invalid attributes) we don't want the sw counter to
-> > be used.
+On Wed, 04 Apr 2012 22:29:32 +0800, Axel Lin <axel.lin@gmail.com> wrote:
+> This patch converts the drivers in drivers/spi/* to use module_pci_driver()
+> macro which makes the code smaller and a bit simpler.
 > 
-> Isn't the invalid attributes case handled by the
-> '} else if (err == EINVAL) {'
-> case before this switch is done?
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Yes, but it does not jump out the code path. It is only doing some
-diagnostics and retries the syscall with some modified attributes or
-so.
+Applied, thanks.
 
-I had have the case what a syscall failed due to invalid attributes
-and then the sw counter was setup. I got odd results and I needed some
-time debugging this to realize what was going on.
+g.
 
--Robert
+> ---
+>  drivers/spi/spi-dw-pci.c     |   13 +------------
+>  drivers/spi/spi-pxa2xx-pci.c |   12 +-----------
+>  2 files changed, 2 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-dw-pci.c b/drivers/spi/spi-dw-pci.c
+> index 14f7cc9..ff81abb 100644
+> --- a/drivers/spi/spi-dw-pci.c
+> +++ b/drivers/spi/spi-dw-pci.c
+> @@ -164,18 +164,7 @@ static struct pci_driver dw_spi_driver = {
+>  	.resume	=	spi_resume,
+>  };
+>  
+> -static int __init mrst_spi_init(void)
+> -{
+> -	return pci_register_driver(&dw_spi_driver);
+> -}
+> -
+> -static void __exit mrst_spi_exit(void)
+> -{
+> -	pci_unregister_driver(&dw_spi_driver);
+> -}
+> -
+> -module_init(mrst_spi_init);
+> -module_exit(mrst_spi_exit);
+> +module_pci_driver(dw_spi_driver);
+>  
+>  MODULE_AUTHOR("Feng Tang <feng.tang@intel.com>");
+>  MODULE_DESCRIPTION("PCI interface driver for DW SPI Core");
+> diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
+> index 3fb44af..9f6ba34 100644
+> --- a/drivers/spi/spi-pxa2xx-pci.c
+> +++ b/drivers/spi/spi-pxa2xx-pci.c
+> @@ -164,17 +164,7 @@ static struct pci_driver ce4100_spi_driver = {
+>  	.remove         = __devexit_p(ce4100_spi_remove),
+>  };
+>  
+> -static int __init ce4100_spi_init(void)
+> -{
+> -	return pci_register_driver(&ce4100_spi_driver);
+> -}
+> -module_init(ce4100_spi_init);
+> -
+> -static void __exit ce4100_spi_exit(void)
+> -{
+> -	pci_unregister_driver(&ce4100_spi_driver);
+> -}
+> -module_exit(ce4100_spi_exit);
+> +module_pci_driver(ce4100_spi_driver);
+>  
+>  MODULE_DESCRIPTION("CE4100 PCI-SPI glue code for PXA's driver");
+>  MODULE_LICENSE("GPL v2");
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
