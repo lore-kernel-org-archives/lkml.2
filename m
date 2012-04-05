@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab2DEQ7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:59:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43676 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab2DEQ7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:59:09 -0400
-Message-ID: <4F7DCF58.8020601@gmail.com>
-Date: Thu, 05 Apr 2012 10:59:04 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1753543Ab2DERE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 13:04:57 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:22526 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751746Ab2DERE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 13:04:56 -0400
+Subject: [PATCH] SUNRPC: register PipeFS file system after pernet sybsystem
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davej@redhat.com,
+        davem@davemloft.net, devel@openvz.org
+Date: Thu, 05 Apr 2012 21:04:37 +0400
+Message-ID: <20120405170405.15055.85431.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf tools: Use sw counter only if hw pmu is not
- detected
-References: <1333643188-26895-1-git-send-email-robert.richter@amd.com> <1333643188-26895-5-git-send-email-robert.richter@amd.com>
-In-Reply-To: <1333643188-26895-5-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/5/12 10:26 AM, Robert Richter wrote:
-> Use cpu-clock-tick sw counter for cpu-cycles only if there is no hw
-> pmu available. This is the case if the syscall reports ENOENT. In
-> other cases (e.g. invalid attributes) we don't want the sw counter to
-> be used.
+PipeFS superblock creation routine relays on SUNRPC pernet data presense, which
+is created on register_pernet_subsys() call in SUNRPC module init function.
+Registering of PipeFS filesystem prior to registering of per-net subsystem
+leads to races (mount of PipeFS can dereference uninitialized data).
 
-Isn't the invalid attributes case handled by the
-'} else if (err == EINVAL) {'
-case before this switch is done?
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-David
+---
+ net/sunrpc/sunrpc_syms.c |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
-
->
-> Signed-off-by: Robert Richter<robert.richter@amd.com>
-> ---
->   tools/perf/builtin-record.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index be4e1ee..10b1f1f 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -245,7 +245,7 @@ try_again:
->   			 * based cpu-clock-tick sw counter, which
->   			 * is always available even if no PMU support:
->   			 */
-> -			if (attr->type == PERF_TYPE_HARDWARE
-> +			if (err == ENOENT&&  attr->type == PERF_TYPE_HARDWARE
->   					&&  attr->config == PERF_COUNT_HW_CPU_CYCLES) {
->
->   				if (verbose)
+diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
+index 8adfc88..3d6498a 100644
+--- a/net/sunrpc/sunrpc_syms.c
++++ b/net/sunrpc/sunrpc_syms.c
+@@ -75,20 +75,21 @@ static struct pernet_operations sunrpc_net_ops = {
+ static int __init
+ init_sunrpc(void)
+ {
+-	int err = register_rpc_pipefs();
++	int err = rpc_init_mempool();
+ 	if (err)
+ 		goto out;
+-	err = rpc_init_mempool();
+-	if (err)
+-		goto out2;
+ 	err = rpcauth_init_module();
+ 	if (err)
+-		goto out3;
++		goto out2;
+ 
+ 	cache_initialize();
+ 
+ 	err = register_pernet_subsys(&sunrpc_net_ops);
+ 	if (err)
++		goto out3;
++
++	err = register_rpc_pipefs();
++	if (err)
+ 		goto out4;
+ #ifdef RPC_DEBUG
+ 	rpc_register_sysctl();
+@@ -98,11 +99,11 @@ init_sunrpc(void)
+ 	return 0;
+ 
+ out4:
+-	rpcauth_remove_module();
++	unregister_pernet_subsys(&sunrpc_net_ops);
+ out3:
+-	rpc_destroy_mempool();
++	rpcauth_remove_module();
+ out2:
+-	unregister_rpc_pipefs();
++	rpc_destroy_mempool();
+ out:
+ 	return err;
+ }
 
