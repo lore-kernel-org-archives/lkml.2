@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab2DEAbq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 20:31:46 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37602 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753898Ab2DEAbo (ORCPT
+	id S1757478Ab2DEAdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 20:33:21 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51369 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab2DEAdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 20:31:44 -0400
-X-Sasl-enc: Zo+ENQgdqUNyqXDUIxWt4gRVBKqlylQvceH2sFNL6yyo 1333585904
-Date: Wed, 4 Apr 2012 17:31:42 -0700
-From: Greg Kroah-Hartmann <greg@kroah.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] printk: support structured and multi-facility log
- messages
-Message-ID: <20120405003142.GA27595@kroah.com>
-References: <1333569554.864.3.camel@mop>
- <20120404210507.GA1716@kroah.com>
- <CAPXgP13mvFNphitrtXnsj+c3+GYvSPU=2-HgtKbHGhmz-CE68g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP13mvFNphitrtXnsj+c3+GYvSPU=2-HgtKbHGhmz-CE68g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Apr 2012 20:33:20 -0400
+Date: Wed, 04 Apr 2012 20:33:13 -0400 (EDT)
+Message-Id: <20120404.203313.756996430678321892.davem@davemloft.net>
+To: joe@perches.com
+Cc: jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] vxge: Convert macro to inline function
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1333579075.23520.19.camel@joe2Laptop>
+References: <1333491271.2695.20.camel@joe2Laptop>
+	<20120403.181830.799733266830291210.davem@davemloft.net>
+	<1333579075.23520.19.camel@joe2Laptop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 17:33:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 11:14:25PM +0200, Kay Sievers wrote:
-> On Wed, Apr 4, 2012 at 23:05, Greg Kroah-Hartmann <greg@kroah.com> wrote:
-> > On Wed, Apr 04, 2012 at 09:59:14PM +0200, Kay Sievers wrote:
+From: Joe Perches <joe@perches.com>
+Date: Wed, 04 Apr 2012 15:37:55 -0700
+
+> On Tue, 2012-04-03 at 18:18 -0400, David Miller wrote:
+>> From: Joe Perches <joe@perches.com>
+>> Date: Tue, 03 Apr 2012 15:14:31 -0700
+>> > Convert the macro to inline function to check the arguments.
+>> > Signed-off-by: Joe Perches <joe@perches.com>
+>> > ---
+>> >> Longer term I'd much rather see this turned into an inline
+>> >> function with proper type checking etc.
+>> > Something like this?
+>> Yep.
 > 
-> >> - Output of dev_printk() is reliably machine-readable now. In addition
-> >>   to the printed plain text message, it creates a log dictionary with the
-> >>   following properties:
-> >>     SUBSYSTEM=     - the driver-core subsytem name
-> >>     DEVICE=
-> >>       b12:8        - block dev_t
-> >>       c127:3       - char dev_t
-> >>       n8           - netdev ifindex
-> >>       +sound:card0 - subsystem:devname
-> >
-> > I like this a lot, thanks for doing this.
-> >
-> > Is there somewhere in Documentation/ABI that we can document this
-> > interface so that people know what it is, what is defined, and how to
-> > use it?
-> 
-> It's the notation udev uses to identify its devices internally. I just
-> added the above description to the source code so far. If we agree on
-> that, or some other scheme, we should definitely copy that into the
-> ABI docs. Along with a description of the semantics of the chardev
-> regarding open() poll() and seek().
+> I did sign the patch.
+> I was intending that you could apply it.
 
-Ok, that sounds good.  I like the description, and implementation, so I
-have no objections to this patch, I'd be glad to queue it up through my
-tree to get testing in linux-next now if you want.
-
-> >> - Support for multiple concurrent readers of /dev/kmsg, with read(),
-> >>   seek(), poll() support. Output of message sequence numbers, to allow
-> >>   userspace log consumers to reliably reconnect and reconstruct their
-> >>   state at any given time. After open("/dev/kmsg"), read() always
-> >>   returns *all* buffered records. If only future messages should be
-> >>   read, SEEK_END can be used. In case records get overwritten while
-> >>   /dev/kmsg is held open, or records get faster overwritten than they
-> >>   are read, the next read() will return -EPIPE and the current reading
-> >>   position gets updated to the next available record. The passed
-> >>   sequence numbers allow the log consumer to calculate the amount of
-> >>   lost messages.
-> >
-> > I just noticed that 'tail -f' doesn't seem to work on /dev/kmsg, should
-> > it?  Or does it need to do something else to get "just the new ones"?
-> 
-> Yeah, 'tail' might not work, it expects a regular file. This is a
-> chardev and it has not the regular file semantics which 'tail'
-> expects; 'cat' should work fine. 'Real' tools will just use poll() to
-> know when to get new messages out of the file descriptor.
-
-Ah, you are right, I forgot about the "real file" stuff with tail, the
-device node never gets updated with a timestamp.
-
-thanks,
-
-greg k-h
+Ok, I see now, applied.  Thanks Joe.
