@@ -1,152 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab2DEO7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:59:24 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60434 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab2DEO6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:58:38 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 01/34] vfs: split do_lookup()
-Date: Thu,  5 Apr 2012 16:58:27 +0200
-Message-Id: <1333637940-31884-2-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
-References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
+	id S1754861Ab2DEPJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:09:04 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56393 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754115Ab2DEPI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 11:08:59 -0400
+Message-ID: <4F7DB53D.9070508@freebox.fr>
+Date: Thu, 05 Apr 2012 17:07:41 +0200
+From: Florian Fainelli <ffainelli@freebox.fr>
+Organization: Freebox
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Caching issues with tmpfs?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Hi Hugh,
 
-Split do_lookup() into two functions:
+I am encountering a very weird and serious issue with tmpfs, which I 
+have seen both in 2.6.39 and 3.2.13. The issue is the following:
 
-  lookup_fast() - does cached lookup without i_mutex
-  lookup_slow() - does lookup with i_mutex
+1) I read a file from a NAND device back to /tmp/bar
+2) /tmp/bar is loopback mounted to /tmp/bar_mount/
+3) when I list the contents of /tmp/bar_mount I see only half of my 
+files, and using hexdump on /tmp/bar shows that the cramfs header is 
+correct and contains all, which rules out the cramfs issue
+4) if I move /tmp/bar to /tmp/bar.move and loopback mount /tmp/bar.move 
+to /tmp/bar_mount, I now see all the files present
 
-Both follow managed dentries.
+I have compared the md5sums of the cramfs file before mounting, after 
+mounting, before moving, after moving, they are all the same. Also, the 
+loopback mount does not yiel when mounting the cramfs file, which rules 
+out its bad integrity.
 
-The new functions are needed by atomic_open.
+the /tmp directory is mounted with the defaults attributes (rw,relatime).
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/namei.c |   59 +++++++++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 45 insertions(+), 14 deletions(-)
+My system is a x86 Atom-based System-on-a-Chip and should not suffer 
+from the CPU data cache aliasing issue mentioned here: 
+http://lkml.indiana.edu/hypermail/linux/kernel/1202.0/00090.html
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 1898198..338410a 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1138,8 +1138,8 @@ static struct dentry *__lookup_hash(struct qstr *name,
-  *  small and for now I'd prefer to have fast path as straight as possible.
-  *  It _is_ time-critical.
-  */
--static int do_lookup(struct nameidata *nd, struct qstr *name,
--			struct path *path, struct inode **inode)
-+static int lookup_fast(struct nameidata *nd, struct qstr *name,
-+		       struct path *path, struct inode **inode)
- {
- 	struct vfsmount *mnt = nd->path.mnt;
- 	struct dentry *dentry, *parent = nd->path.dentry;
-@@ -1208,7 +1208,7 @@ unlazy:
- 			goto need_lookup;
- 		}
- 	}
--done:
-+
- 	path->mnt = mnt;
- 	path->dentry = dentry;
- 	err = follow_managed(path, nd->flags);
-@@ -1222,6 +1222,17 @@ done:
- 	return 0;
- 
- need_lookup:
-+	return 1;
-+}
-+
-+/* Fast lookup failed, do it the slow way */
-+static int lookup_slow(struct nameidata *nd, struct qstr *name,
-+		       struct path *path)
-+{
-+	struct dentry *dentry, *parent;
-+	int err;
-+
-+	parent = nd->path.dentry;
- 	BUG_ON(nd->inode != parent->d_inode);
- 
- 	mutex_lock(&parent->d_inode->i_mutex);
-@@ -1229,7 +1240,16 @@ need_lookup:
- 	mutex_unlock(&parent->d_inode->i_mutex);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
--	goto done;
-+	path->mnt = nd->path.mnt;
-+	path->dentry = dentry;
-+	err = follow_managed(path, nd->flags);
-+	if (unlikely(err < 0)) {
-+		path_put_conditional(path, nd);
-+		return err;
-+	}
-+	if (err)
-+		nd->flags |= LOOKUP_JUMPED;
-+	return 0;
- }
- 
- static inline int may_lookup(struct nameidata *nd)
-@@ -1301,21 +1321,26 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
- 	 */
- 	if (unlikely(type != LAST_NORM))
- 		return handle_dots(nd, type);
--	err = do_lookup(nd, name, path, &inode);
-+	err = lookup_fast(nd, name, path, &inode);
- 	if (unlikely(err)) {
--		terminate_walk(nd);
--		return err;
--	}
--	if (!inode) {
--		path_to_nameidata(path, nd);
--		terminate_walk(nd);
--		return -ENOENT;
-+		if (err < 0)
-+			goto out_err;
-+
-+		err = lookup_slow(nd, name, path);
-+		if (err < 0)
-+			goto out_err;
-+
-+		inode = path->dentry->d_inode;
- 	}
-+	err = -ENOENT;
-+	if (!inode)
-+		goto out_path_put;
-+
- 	if (should_follow_link(inode, follow)) {
- 		if (nd->flags & LOOKUP_RCU) {
- 			if (unlikely(unlazy_walk(nd, path->dentry))) {
--				terminate_walk(nd);
--				return -ECHILD;
-+				err = -ECHILD;
-+				goto out_err;
- 			}
- 		}
- 		BUG_ON(inode != path->dentry->d_inode);
-@@ -1324,6 +1349,12 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
- 	path_to_nameidata(path, nd);
- 	nd->inode = inode;
- 	return 0;
-+
-+out_path_put:
-+	path_to_nameidata(path, nd);
-+out_err:
-+	terminate_walk(nd);
-+	return err;
- }
- 
- /*
--- 
-1.7.7
+I backported this patch however, and it does not make any difference as 
+expected.
 
+This behavior has been observed on several devices.
+
+I will try to provide you with a test case to reproduce the issue, 
+meanwhile any hints are appreciated :)
+
+Thanks!
+--
+Florian
