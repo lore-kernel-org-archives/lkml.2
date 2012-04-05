@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab2DERxz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 13:53:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50676 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab2DERxy (ORCPT
+	id S1755535Ab2DERzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 13:55:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46938 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab2DERzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 13:53:54 -0400
+	Thu, 5 Apr 2012 13:55:03 -0400
+Message-ID: <4F7DDC6C.90304@gmail.com>
+Date: Fri, 06 Apr 2012 01:54:52 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
-References: <1333569554.864.3.camel@mop> <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 5 Apr 2012 10:53:27 -0700
-X-Google-Sender-Auth: YBHhRn9406Wx7eJzv03jbIAt6Q0
-Message-ID: <CA+55aFxdvzhGOyA6SN-TcSvuKGyTAUWuDXEiVkpGPEBAZ7uHsg@mail.gmail.com>
-Subject: Re: [PATCH] printk: support structured and multi-facility log messages
-To: Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 08/13] KVM: MMU: fask check whether page is writable
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F742A74.1050304@linux.vnet.ibm.com> <4F7879A1.2020301@redhat.com>
+In-Reply-To: <4F7879A1.2020301@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 5, 2012 at 10:09 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> If you want to escape something, you escape NUL and special characters
-> using the standard *text* escaping mechanisms, not using some random
-> hodge-podge that you just made up.
+Hi Avi,
 
-Btw, we could certainly add more support for escaping into vsnprintf() itself.
+Thanks very much for your review!
 
-For example, we already do all those nice helpers for converting
-different forms of common binary data into ascii: "%pU" for uuid's,
-'%pS' for symbol addresses etc.
+Sorry for the delay reply since i was on vacation.
 
-If there really are cases where people want small blobs of data and it
-would make sense, we could easily do "%.*pQ" for "quoted blob" or
-whatever, where the precision is obviously the size of the blob (so
-"%.4pQ" would be a quoted four-byte entity.
+On 04/01/2012 11:52 PM, Avi Kivity wrote:
 
-We could also extend on the current '%pm', which was really designed
-for mac-addresses, but the format is actually just a hex sequence. We
-could extend that too to just take the precision into account, and
-just default to a six-byte mac address. But we could trivially make
-"%.16pm" print out a 16-byte hex string instead.
+> On 03/29/2012 11:25 AM, Xiao Guangrong wrote:
+>> Using PTE_LIST_WRITE_PROTECT bit in rmap store the write-protect status to
+>> avoid unnecessary shadow page walking
+>>
+>> Also if no shadow page is indirect, the page is write-free
+>>
+>>
+>> @@ -2262,6 +2291,9 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+>>  	}
+>>  	if (need_unsync)
+>>  		kvm_unsync_pages(vcpu, gfn);
+>> +
+>> +	*rmap &= ~PTE_LIST_WRITE_PROTECT;
+>> +
+>>
+> 
+> So what are the rules for PTE_LIST_WRITE_PROTECT?  Is is a cache for the
+> mmu_need_write_protect?
+> 
+> I'd like to understand it, I guess it can be set while write protection
+> is unneeded, and cleared on the next check?
+> 
 
-I would also be very open to having some auto-quoting support for
-'%s': it might even be something we could enable by default. So that
-if you print out strings that contain special characters (including
-'\n' etc), we could make sure that vsnprintf() actually quotes them.
-We don't have to follow the POSIX rules for things, after all.
 
-So I'm very open to making it easier to use ASCII.
+Yes, it is used as a cache for mmu_need_write_protect.
 
-I'm *very* closed to making any kernel logging facility use binary
-data. If you want binary data, go somewhere else. Seriously.
+When the gfn is protected by sync sp or read-only host page we set this bit,
+and it is be cleared when the sp become unsync or host page becomes writable.
 
-                  Linus
+> Maybe split into two functions, one the normal mmu_need_write_protect
+> (but renamed) and a new mmu_need_write_protect(), with locked and
+> unlocked variants, calling the old one.
+> 
+
+
+Okay, i will split it by introducing a new function named mmu_unsync_gfn_sp
+which checks whether sp can become unsync and unsync sp if it is allowed under
+the protection of mmu-lock.
+
