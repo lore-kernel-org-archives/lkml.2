@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab2DEQFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:05:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54563 "EHLO comal.ext.ti.com"
+	id S1754917Ab2DEQEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:04:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36323 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754760Ab2DEQFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:05:08 -0400
+	id S1753190Ab2DEQEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 12:04:40 -0400
 From: Afzal Mohammed <afzal@ti.com>
 To: <tony@atomide.com>, <khilman@ti.com>, <linux@arm.linux.org.uk>,
         <dwmw2@infradead.org>, <sameo@linux.intel.com>,
@@ -15,9 +15,9 @@ To: <tony@atomide.com>, <khilman@ti.com>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: Afzal Mohammed <afzal@ti.com>
-Subject: [TMP] OMAP3EVM: Test gpmc nand & smsc911x
-Date: Thu, 5 Apr 2012 21:17:19 +0530
-Message-ID: <bb95fec60401f7cf6ac77200a12baf3fc83852f5.1333640054.git.afzal@ti.com>
+Subject: [PATCH v3 5/9] ARM: OMAP2+: gpmc-smsc911x: gpmc driver information
+Date: Thu, 5 Apr 2012 21:16:46 +0530
+Message-ID: <90d8bfc447f4d9173f6ffee93ff8b56c473161ea.1333640054.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <cover.1333640054.git.afzal@ti.com>
 References: <cover.1333640054.git.afzal@ti.com>
@@ -27,173 +27,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+gpmc has been converted to driver. And all gpmc related
+configuration would be done by gpmc driver. Provide
+gpmc driver with sufficient information so that it can
+configure.
+
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- arch/arm/mach-omap2/board-omap3evm.c |   95 +++++++++++++++++++++++++++++++++-
- 1 file changed, 94 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/gpmc-smsc911x.c             |   59 ++++++++++++-----------
+ arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |    9 +++-
+ 2 files changed, 39 insertions(+), 29 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-index 49df127..60938af 100644
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@ -23,6 +23,7 @@
- #include <linux/input/matrix_keypad.h>
- #include <linux/leds.h>
- #include <linux/interrupt.h>
-+#include <linux/mtd/nand.h>
- 
- #include <linux/spi/spi.h>
- #include <linux/spi/ads7846.h>
-@@ -41,6 +42,7 @@
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- 
-+#include <plat/nand.h>
- #include <plat/board.h>
- #include <plat/usb.h>
- #include "common.h"
-@@ -52,6 +54,7 @@
- #include "sdram-micron-mt46h32m32lf-6.h"
- #include "hsmmc.h"
- #include "common-board-devices.h"
-+#include "board-flash.h"
- 
- #define OMAP3_EVM_TS_GPIO	175
- #define OMAP3_EVM_EHCI_VBUS	22
-@@ -102,6 +105,36 @@ static void __init omap3_evm_get_revision(void)
- 	}
- }
- 
-+static struct gpmc_device_pdata *gpmc_data_array[3];
-+static struct gpmc_device_pdata **gpmc_data_cur = gpmc_data_array;
-+
-+static struct gpmc_pdata gpmc_data = {
-+	.device_pdata = gpmc_data_array,
-+};
-+
-+static struct resource gpmc_resources[] = {
-+	{
-+		.start = OMAP34XX_GPMC_BASE,
-+		.end   = OMAP34XX_GPMC_BASE + SZ_4K - 1,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = INT_34XX_GPMC_IRQ,
-+		.end   = INT_34XX_GPMC_IRQ,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device gpmc_device = {
-+	.name		= "omap-gpmc",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(gpmc_resources),
-+	.resource	= gpmc_resources,
-+	.dev	= {
-+		.platform_data = &gpmc_data,
-+	}
-+};
-+
- #if defined(CONFIG_SMSC911X) || defined(CONFIG_SMSC911X_MODULE)
+diff --git a/arch/arm/mach-omap2/gpmc-smsc911x.c b/arch/arm/mach-omap2/gpmc-smsc911x.c
+index b6c77be..52192a9 100644
+--- a/arch/arm/mach-omap2/gpmc-smsc911x.c
++++ b/arch/arm/mach-omap2/gpmc-smsc911x.c
+@@ -24,13 +24,8 @@
+ #include <plat/gpmc.h>
  #include <plat/gpmc-smsc911x.h>
  
-@@ -114,6 +147,8 @@ static struct omap_smsc911x_platform_data smsc911x_cfg = {
- 
- static inline void __init omap3evm_init_smsc911x(void)
- {
-+	struct gpmc_device_pdata *gpmc_smsc911x_info;
-+
- 	/* Configure ethernet controller reset gpio */
- 	if (cpu_is_omap3430()) {
- 		if (get_omap3_evm_rev() == OMAP3EVM_BOARD_GEN_1)
-@@ -122,7 +157,11 @@ static inline void __init omap3evm_init_smsc911x(void)
- 			smsc911x_cfg.gpio_reset = OMAP3EVM_GEN2_ETHR_GPIO_RST;
- 	}
- 
--	gpmc_smsc911x_init(&smsc911x_cfg);
-+	gpmc_smsc911x_info = gpmc_smsc911x_init(&smsc911x_cfg);
-+	if (gpmc_smsc911x_info)
-+		*gpmc_data_cur++ = gpmc_smsc911x_info;
-+	else
-+		pr_err("error: unable to initilaize gpmc smsc911x\n");
- }
- 
- #else
-@@ -523,6 +562,41 @@ static struct usbhs_omap_board_data usbhs_bdata __initdata = {
- 	.reset_gpio_port[2]  = -EINVAL
+-static struct resource gpmc_smsc911x_resources[] = {
+-	[0] = {
+-		.flags		= IORESOURCE_MEM,
+-	},
+-	[1] = {
+-		.flags		= IORESOURCE_IRQ | IORESOURCE_IRQ_LOWLEVEL,
+-	},
++static struct resource gpmc_smsc911x_resources = {
++	.flags		= IORESOURCE_IRQ | IORESOURCE_IRQ_LOWLEVEL,
  };
  
-+/*
-+ * NAND
-+ */
-+static struct mtd_partition omap3_evm_nand_partitions[] = {
-+	/* All the partition sizes are listed in terms of NAND block size */
-+	{
-+		.name		= "X-Loader-NAND",
-+		.offset		= 0,
-+		.size		= 4 * (64 * 2048),
-+		.mask_flags	= MTD_WRITEABLE,	/* force read-only */
-+	},
-+	{
-+		.name		= "U-Boot-NAND",
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x80000 */
-+		.size		= 10 * (64 * 2048),
-+		.mask_flags	= MTD_WRITEABLE,	/* force read-only */
-+	},
-+	{
-+		.name		= "Boot Env-NAND",
-+
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x1c0000 */
-+		.size		= 6 * (64 * 2048),
-+	},
-+	{
-+		.name		= "Kernel-NAND",
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x280000 */
-+		.size		= 40 * (64 * 2048),
-+	},
-+	{
-+		.name		= "File System - NAND",
-+		.size		= MTDPART_SIZ_FULL,
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x780000 */
-+	},
-+};
-+
- #ifdef CONFIG_OMAP_MUX
- static struct omap_board_mux omap35x_board_mux[] __initdata = {
- 	OMAP3_MUX(SYS_NIRQ, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP |
-@@ -630,6 +704,8 @@ static struct regulator_consumer_supply dummy_supplies[] = {
- 
- static void __init omap3_evm_init(void)
+ static struct smsc911x_platform_config gpmc_smsc911x_config = {
+@@ -44,26 +39,42 @@ static struct smsc911x_platform_config gpmc_smsc911x_config = {
+  * assume that pin multiplexing is done in the board-*.c file,
+  * or in the bootloader.
+  */
+-void __init gpmc_smsc911x_init(struct omap_smsc911x_platform_data *gpmc_cfg)
++__init struct gpmc_device_pdata *
++gpmc_smsc911x_init(struct omap_smsc911x_platform_data *gpmc_cfg)
  {
-+	struct omap_nand_platform_data *nand_data;
-+
- 	omap3_evm_get_revision();
- 	regulator_register_fixed(0, dummy_supplies, ARRAY_SIZE(dummy_supplies));
+-	struct platform_device *pdev;
+-	unsigned long cs_mem_base;
+ 	int ret;
++	struct gpmc_device_pdata *gpmc_pdev;
++	struct gpmc_cs_data *gpmc_cs;
  
-@@ -681,6 +757,23 @@ static void __init omap3_evm_init(void)
- 	omap3evm_init_smsc911x();
- 	omap3_evm_display_init();
- 	omap3_evm_wl12xx_init();
-+	/* NAND */
-+	nand_data = omap_nand_init(omap3_evm_nand_partitions,
-+			ARRAY_SIZE(omap3_evm_nand_partitions),
-+			0, NAND_BUSWIDTH_16, nand_default_timings);
-+/*	nand_data->xfer_type = NAND_OMAP_PREFETCH_IRQ;
-+ */	if (nand_data != NULL) {
-+		*gpmc_data_cur = gpmc_nand_init(nand_data);
-+		(*gpmc_data_cur++)->is_nand = true;
-+	} else
-+		pr_err("omap_nand_init() failed\n");
+-	if (gpmc_cs_request(gpmc_cfg->cs, SZ_16M, &cs_mem_base) < 0) {
+-		pr_err("Failed to request GPMC mem region\n");
+-		return;
++	gpmc_pdev = kzalloc(sizeof(*gpmc_pdev), GFP_KERNEL);
++	if (gpmc_pdev == NULL)
++		return gpmc_pdev;
 +
++	gpmc_cs = kzalloc(sizeof(*gpmc_cs), GFP_KERNEL);
++	if (gpmc_pdev == NULL) {
++		kfree(gpmc_pdev);
++		return NULL;
+ 	}
+ 
+-	gpmc_smsc911x_resources[0].start = cs_mem_base + 0x0;
+-	gpmc_smsc911x_resources[0].end = cs_mem_base + 0xff;
++	gpmc_pdev->cs_data = gpmc_cs;
++	gpmc_pdev->num_cs = 1;
++	gpmc_pdev->name = "smsc911x";
++	gpmc_pdev->id = gpmc_cfg->id;
++	gpmc_pdev->pdata = &gpmc_smsc911x_config;
++	gpmc_pdev->pdata_size = sizeof(gpmc_smsc911x_config);
 +
-+	gpmc_data.fclk_period = gpmc_get_fclk_period();
-+	gpmc_data.irq_start = OMAP_GPMC_IRQ_BASE;
-+	gpmc_data.num_irq = OMAP_GPMC_NR_IRQS;
++	gpmc_cs->cs = gpmc_cfg->cs;
++	gpmc_cs->mem_size = 0xff;
 +
-+	platform_device_register(&gpmc_device);
++	gpmc_pdev->per_res = &gpmc_smsc911x_resources;
++	gpmc_pdev->num_per_res = 1;
+ 
+ 	if (gpio_request_one(gpmc_cfg->gpio_irq, GPIOF_IN, "smsc911x irq")) {
+ 		pr_err("Failed to request IRQ GPIO%d\n", gpmc_cfg->gpio_irq);
+ 		goto free1;
+ 	}
+ 
+-	gpmc_smsc911x_resources[1].start = gpio_to_irq(gpmc_cfg->gpio_irq);
++	gpmc_smsc911x_resources.start = gpio_to_irq(gpmc_cfg->gpio_irq);
+ 
+ 	if (gpio_is_valid(gpmc_cfg->gpio_reset)) {
+ 		ret = gpio_request_one(gpmc_cfg->gpio_reset,
+@@ -81,21 +92,15 @@ void __init gpmc_smsc911x_init(struct omap_smsc911x_platform_data *gpmc_cfg)
+ 
+ 	gpmc_smsc911x_config.flags = gpmc_cfg->flags ? : SMSC911X_USE_16BIT;
+ 
+-	pdev = platform_device_register_resndata(NULL, "smsc911x", gpmc_cfg->id,
+-		 gpmc_smsc911x_resources, ARRAY_SIZE(gpmc_smsc911x_resources),
+-		 &gpmc_smsc911x_config, sizeof(gpmc_smsc911x_config));
+-	if (!pdev) {
+-		pr_err("Unable to register platform device\n");
+-		gpio_free(gpmc_cfg->gpio_reset);
+-		goto free2;
+-	}
+-
+-	return;
++	return gpmc_pdev;
+ 
+ free2:
+ 	gpio_free(gpmc_cfg->gpio_irq);
+ free1:
+-	gpmc_cs_free(gpmc_cfg->cs);
++	kfree(gpmc_cs);
++	kfree(gpmc_pdev);
+ 
+ 	pr_err("Could not initialize smsc911x device\n");
++
++	return NULL;
+ }
+diff --git a/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h b/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+index ea6c9c8..66dc7f1 100644
+--- a/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
++++ b/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+@@ -11,6 +11,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include<plat/gpmc.h>
++
+ #ifndef __ASM_ARCH_OMAP_GPMC_SMSC911X_H__
+ 
+ struct omap_smsc911x_platform_data {
+@@ -23,12 +25,15 @@ struct omap_smsc911x_platform_data {
+ 
+ #if defined(CONFIG_SMSC911X) || defined(CONFIG_SMSC911X_MODULE)
+ 
+-extern void gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d);
++extern struct gpmc_device_pdata *
++gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d);
+ 
+ #else
+ 
+-static inline void gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d)
++static inline struct gpmc_device_pdata *
++gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d)
+ {
++	return NULL;
  }
  
- MACHINE_START(OMAP3EVM, "OMAP3 EVM")
+ #endif
 -- 
 1.7.9.3
 
