@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2DEMct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 08:32:49 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43553 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab2DEMcs convert rfc822-to-8bit (ORCPT
+	id S1752807Ab2DEMdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 08:33:12 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:40841 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab2DEMdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 08:32:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F7D8F16.9090904@redhat.com>
-References: <CA+1xoqeqyFT0eHS2k+vskPFQ-5gJ_Uq1HVsq2DA2sS1uN9C0vw@mail.gmail.com>
- <4F7D8F16.9090904@redhat.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Thu, 5 Apr 2012 14:32:27 +0200
-Message-ID: <CA+1xoqeeagx=OwV2XFQYb=ATOGtW0Zpyx6BOcVbu3hg+eiMqSA@mail.gmail.com>
-Subject: Re: CPU softlockup due to smp_call_function()
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Apr 2012 08:33:10 -0400
+Message-ID: <1333629184.3494.12.camel@jlt3.sipsolutions.net>
+Subject: Re: [PATCH 4/4] compat: add some tracing backport work
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>
+Cc: "Luis R. Rodriguez" <mcgrof@frijolero.org>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        lf_driver_backport@lists.linux-foundation.org
+Date: Thu, 05 Apr 2012 14:33:04 +0200
+In-Reply-To: <20120328100027.GA4420@bombadil.infradead.org> (sfid-20120328_120100_045553_52796B2A)
+References: <1332214021-9716-1-git-send-email-mcgrof@frijolero.org>
+	 <1332214021-9716-5-git-send-email-mcgrof@frijolero.org>
+	 <1332245766.3329.14.camel@jlt3.sipsolutions.net>
+	 <CAB=NE6XyDDfzu71K-1ecMQ+F-0Z1iTN4OKCUjJ+E3yxvydks0Q@mail.gmail.com>
+	 <CAB=NE6XXd-T5B37Cc_eCwnWHRk-_UVn0JY0mQjzMQcK+ZcLuWQ@mail.gmail.com>
+	 <1332751768.3511.3.camel@jlt3.sipsolutions.net>
+	 <20120326125822.GA11929@bombadil.infradead.org>
+	 <20120328100027.GA4420@bombadil.infradead.org>
+	 (sfid-20120328_120100_045553_52796B2A)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 5, 2012 at 2:24 PM, Avi Kivity <avi@redhat.com> wrote:
-> On 04/04/2012 11:12 PM, Sasha Levin wrote:
->> Hi all,
->>
->> I've starting seeing soft lockups resulting from smp_call_function()
->> calls. I've attached two different backtraces of this happening with
->> different code paths.
->>
->> This is running inside a KVM guest with the trinity fuzzer, using
->> today's linux-next kernel.
->>
->> [ 6540.134009] BUG: soft lockup - CPU#0 stuck for 22s! [kworker/u:1:38]
->> [ 6540.134048] irq event stamp: 286811770
->> [ 6540.134048] hardirqs last  enabled at (286811769):
->> [<ffffffff82669e74>] restore_args+0x0/0x30
->> [ 6540.134048] hardirqs last disabled at (286811770):
->> [<ffffffff8266b3ea>] apic_timer_interrupt+0x6a/0x80
->> [ 6540.134048] softirqs last  enabled at (286811768):
->> [<ffffffff810b746e>] __do_softirq+0x16e/0x190
->> [ 6540.134048] softirqs last disabled at (286811749):
->> [<ffffffff8266bdec>] call_softirq+0x1c/0x30
->> [ 6540.134048] CPU 0
->> [ 6540.134048] Pid: 38, comm: kworker/u:1 Tainted: G        W
->> 3.4.0-rc1-next-20120404-sasha-dirty #72
->> [ 6540.134048] RIP: 0010:[<ffffffff8111f30e>]  [<ffffffff8111f30e>]
->> smp_call_function_many+0x27e/0x2a0
->>
->
-> This cpu is waiting for some other cpu to process a function (likely
-> rps_trigger_softirq(), from the trace).  Can you get a backtrace on all
-> cpus when this happens?
->
-> It would be good to enhance smp_call_function_*() to do this
-> automatically when it happens - it's spinning there anyway, so it might
-> as well count the iterations and NMI the lagging cpu if it waits for too
-> long.
+On Wed, 2012-03-28 at 06:00 -0400, Luis R. Rodriguez wrote:
 
-What do you think about modifying the softlockup detector to NMI all
-CPUs if it's going to panic because it detected a lockup?
+> I've managed to backport tracing it seems, even when CONFIG_TRACEPOINTS
+> is enabled.
+
+Nope, you've managed to completely kill tracing.
+
+
+> +#undef __DECLARE_TRACE
+> +#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
+> +	static inline void trace_##name(proto)				\
+> +	{ }								\
+> +	static inline void trace_##name##_rcuidle(proto)		\
+> +	{ }								\
+> +	static inline int						\
+> +	register_trace_##name(void (*probe)(proto))			\
+> +	{								\
+> +		return -ENOSYS;						\
+> +	}								\
+> +	static inline void						\
+> +	unregister_trace_##name(void (*probe)(proto))			\
+> +	{								\
+> +		return -ENOSYS;						\
+> +	}								\
+> +	static inline void check_trace_callback_type_##name(void (*cb)(data_proto)) \
+> +	{								\
+> +	}
+
+All of this simply completely kills tracing. Worse, the tracepoints get
+registered, but their trace_##name functions do nothing, so you can
+think that they're there, but they never record data ...
+
+The old way was much better. Can we just let 2.6.24 and the other
+ancients die in peace?
+
+johannes
+
