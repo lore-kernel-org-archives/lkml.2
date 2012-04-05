@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2DENtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 09:49:49 -0400
+	id S1753363Ab2DENtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 09:49:47 -0400
 Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:38342 "EHLO
 	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753041Ab2DENtn (ORCPT
+	by vger.kernel.org with ESMTP id S1753048Ab2DENtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Apr 2012 09:49:43 -0400
 X-Greylist: delayed 1206 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Apr 2012 09:49:40 EDT
-Message-ID: <1333632616.4159.13.camel@localhost>
-Subject: [PATCH 3/6] sound/pci/hda: fix record volume controls of CX20459
- ("Venice")
+Message-ID: <1333632577.4159.9.camel@localhost>
+Subject: [PATCH 0/6] sound/pci/hda: CX20549 cleanup/fixes
 From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-To: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Date: Thu, 05 Apr 2012 15:30:16 +0200
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Thu, 05 Apr 2012 15:29:37 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
@@ -24,79 +23,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "input converter" widget of the CX20459 has only one input amplifier,
-expose that one as "Capture Volume/Capture Switch". The actual record
-source selection is already exposed through the separately installed
-input mux.
+This series of patches fixes recording on a Gigabyte W551N laptop that
+seems to be identical to the BenW R55E. The Audio Codec uses the same
+subsystem ID, which is assigned to Quanta. The Gigabyte laptop is based
+on the Quanta TW3 ODM.
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 7d92aac..bd7e7ce 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -798,10 +798,8 @@ static void cxt5045_hp_unsol_event(struct hda_codec *codec,
- }
- 
- static const struct snd_kcontrol_new cxt5045_mixers[] = {
--	HDA_CODEC_VOLUME("Internal Mic Capture Volume", 0x1a, 0x01, HDA_INPUT),
--	HDA_CODEC_MUTE("Internal Mic Capture Switch", 0x1a, 0x01, HDA_INPUT),
--	HDA_CODEC_VOLUME("Mic Capture Volume", 0x1a, 0x02, HDA_INPUT),
--	HDA_CODEC_MUTE("Mic Capture Switch", 0x1a, 0x02, HDA_INPUT),
-+	HDA_CODEC_VOLUME("Capture Volume", 0x1a, 0x00, HDA_INPUT),
-+	HDA_CODEC_MUTE("Capture Switch", 0x1a, 0x0, HDA_INPUT),
- 	HDA_CODEC_VOLUME("PCM Playback Volume", 0x17, 0x0, HDA_INPUT),
- 	HDA_CODEC_MUTE("PCM Playback Switch", 0x17, 0x0, HDA_INPUT),
- 	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x17, 0x1, HDA_INPUT),
-@@ -822,27 +820,18 @@ static const struct snd_kcontrol_new cxt5045_mixers[] = {
- };
- 
- static const struct snd_kcontrol_new cxt5045_benq_mixers[] = {
--	HDA_CODEC_VOLUME("CD Capture Volume", 0x1a, 0x04, HDA_INPUT),
--	HDA_CODEC_MUTE("CD Capture Switch", 0x1a, 0x04, HDA_INPUT),
- 	HDA_CODEC_VOLUME("CD Playback Volume", 0x17, 0x4, HDA_INPUT),
- 	HDA_CODEC_MUTE("CD Playback Switch", 0x17, 0x4, HDA_INPUT),
- 
--	HDA_CODEC_VOLUME("Line In Capture Volume", 0x1a, 0x03, HDA_INPUT),
--	HDA_CODEC_MUTE("Line In Capture Switch", 0x1a, 0x03, HDA_INPUT),
- 	HDA_CODEC_VOLUME("Line In Playback Volume", 0x17, 0x3, HDA_INPUT),
- 	HDA_CODEC_MUTE("Line In Playback Switch", 0x17, 0x3, HDA_INPUT),
- 
--	HDA_CODEC_VOLUME("Mixer Capture Volume", 0x1a, 0x0, HDA_INPUT),
--	HDA_CODEC_MUTE("Mixer Capture Switch", 0x1a, 0x0, HDA_INPUT),
--
- 	{}
- };
- 
- static const struct snd_kcontrol_new cxt5045_mixers_hp530[] = {
--	HDA_CODEC_VOLUME("Internal Mic Capture Volume", 0x1a, 0x02, HDA_INPUT),
--	HDA_CODEC_MUTE("Internal Mic Capture Switch", 0x1a, 0x02, HDA_INPUT),
--	HDA_CODEC_VOLUME("Mic Capture Volume", 0x1a, 0x01, HDA_INPUT),
--	HDA_CODEC_MUTE("Mic Capture Switch", 0x1a, 0x01, HDA_INPUT),
-+	HDA_CODEC_VOLUME("Capture Volume", 0x1a, 0x00, HDA_INPUT),
-+	HDA_CODEC_MUTE("Capture Switch", 0x1a, 0x0, HDA_INPUT),
- 	HDA_CODEC_VOLUME("PCM Playback Volume", 0x17, 0x0, HDA_INPUT),
- 	HDA_CODEC_MUTE("PCM Playback Switch", 0x17, 0x0, HDA_INPUT),
- 	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x17, 0x2, HDA_INPUT),
-@@ -978,16 +967,8 @@ static const struct snd_kcontrol_new cxt5045_test_mixer[] = {
- 		.put = conexant_mux_enum_put,
- 	},
- 	/* Audio input controls */
--	HDA_CODEC_VOLUME("Input-1 Volume", 0x1a, 0x0, HDA_INPUT),
--	HDA_CODEC_MUTE("Input-1 Switch", 0x1a, 0x0, HDA_INPUT),
--	HDA_CODEC_VOLUME("Input-2 Volume", 0x1a, 0x1, HDA_INPUT),
--	HDA_CODEC_MUTE("Input-2 Switch", 0x1a, 0x1, HDA_INPUT),
--	HDA_CODEC_VOLUME("Input-3 Volume", 0x1a, 0x2, HDA_INPUT),
--	HDA_CODEC_MUTE("Input-3 Switch", 0x1a, 0x2, HDA_INPUT),
--	HDA_CODEC_VOLUME("Input-4 Volume", 0x1a, 0x3, HDA_INPUT),
--	HDA_CODEC_MUTE("Input-4 Switch", 0x1a, 0x3, HDA_INPUT),
--	HDA_CODEC_VOLUME("Input-5 Volume", 0x1a, 0x4, HDA_INPUT),
--	HDA_CODEC_MUTE("Input-5 Switch", 0x1a, 0x4, HDA_INPUT),
-+	HDA_CODEC_VOLUME("Capture Volume", 0x1a, 0x0, HDA_INPUT),
-+	HDA_CODEC_MUTE("Capture Switch", 0x1a, 0x0, HDA_INPUT),
- 	{ } /* end */
- };
- 
--- 
-1.7.9.1
-
+(for the whole series)
+Signed-Off-By: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 
 
