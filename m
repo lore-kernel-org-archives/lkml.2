@@ -1,84 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab2DEVha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 17:37:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53770 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2DEVhI (ORCPT
+	id S1755778Ab2DEVh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 17:37:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26919 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab2DEVhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 17:37:08 -0400
-Date: Thu, 5 Apr 2012 14:37:04 -0700
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mike Galbraith <mgalbraith@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
-Message-ID: <20120405213704.GA29517@google.com>
-References: <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com>
- <1333601231.7783.31.camel@marge.simpson.net>
- <alpine.DEB.2.00.1204042157530.31186@chino.kir.corp.google.com>
- <1333604949.7783.76.camel@marge.simpson.net>
- <alpine.DEB.2.00.1204042303510.7035@chino.kir.corp.google.com>
- <1333608177.7783.106.camel@marge.simpson.net>
- <alpine.DEB.2.00.1204042344090.8991@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1204050011550.9466@chino.kir.corp.google.com>
- <20120405160829.GA12854@google.com>
- <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 5 Apr 2012 17:37:54 -0400
+X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=AiqSj1rLNt4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=t7CeM3EgAAAA:8 a=ROx7o4ws8x0wP-P9KhEA:9 a=aTnr4cTN6RDifRPnQZgA:7 a=QEXdDO2ut3YA:10 a=2e6ZYRoF4I4A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 3/3] trace-cmd: setting plugin to 'nop' clears data
+ before its recorded
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mark Asselstine <mark.asselstine@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1333653586-3379-4-git-send-email-mark.asselstine@windriver.com>
+References: <1333653586-3379-1-git-send-email-mark.asselstine@windriver.com>
+	 <1333653586-3379-4-git-send-email-mark.asselstine@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Apr 2012 17:37:46 -0400
+Message-ID: <1333661866.4595.9.camel@acer.local.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, David.
+On Thu, 2012-04-05 at 15:19 -0400, Mark Asselstine wrote:
 
-On Thu, Apr 05, 2012 at 02:26:34PM -0700, David Rientjes wrote:
-> Yeah, I know a valid use case, and I'm surprised you don't.
+Hi Mark,
 
-Yeah, I'm pretty good at surprising people that way.
+Thanks for the updates.
 
-> Google is moving in a direction where nothing will be assigned to the root 
-> memcg.  We already have a seperate memcg for accounting of memory 
-> allocated by the kernel, i.e. memory not accounted toward any user job.  
-> We will be doing this more aggressively in the future once we have setup 
-> memcg hierarchies to differentiate the memory usage of the kernel 
-> including workqueues created by kthreadd and have complete coverage of 
-> memory accounting such as slab and memory allocated directly from 
-> __get_free_pages().  We don't want anything in the root memcg itself.
-
-Ambitious and I'm not even sure that's even possible without fallback
-default group.  There just are things which are system-wide.  What's
-wrong with using root cgroup for that?
-
-> It's also possible to attach kthreadd to the cpuacct cgroup for similar 
-> accounting.  The idea is that not all cgroups impose limits, either for 
-> memcg (where memory.limit_in_bytes == ULONG_MAX) or cpuacct, but rather 
-> purely for accounting.
+> commit e09a5db1a929ab668c273b87c4f0a32b81e1c21a
+> [trace-cmd: Add trace-cmd record --date option]
 > 
-> For cpusets and the cpu cgroup, I completely agree with disallowing 
-> kthreadd and that's why I've passed along these patches.  However, it's 
-> not necessary (or even preferred for our usecase) to restrict kthreadd 
-> from being attached to all cgroups.  Yes, it's a global resource.  We want 
-> to account for the memory of that global resource.
+> moved the call to disable_all() in trace_record() from after record_data()
+> to before it. disable_all() sets 'nop' in 'current_tracer' which has the
+> side affect of clearing 'trace', thus all the latency tracer reports are
+> empty/useless. By moving set_plugin() out of disable_all() and rather
+> calling it after record_data() we still achieve the desired goals of
+> commit e09a5db1a9 while fixing latency tracing reports.
+> 
+> Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+> ---
+>  trace-record.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/trace-record.c b/trace-record.c
+> index 1c56fa9..6887874 100644
+> --- a/trace-record.c
+> +++ b/trace-record.c
+> @@ -897,11 +897,10 @@ static void disable_tracing(void)
+>  	write_tracing_on(0);
+>  }
+>  
+> -static void disable_all(void)
+> +static void disable_all_but_plugin(void)
 
-Unfortunately, mainline cgroup is moving towards single hierarchy -
-well, that's the plan anyway - and in that light ->can_attach() is
-essentially broken and will thus be grdually phased out.  From the
-look of the current users, I don't think it's gonna be hard.  cpu
-cgroup would have to learn to ignore tasks with special scheduling
-class and the blkcg silliness needs to go away but that seems to be
-it.
+Hmm, I don't really care for this name. Maybe it would be better to have
+this take a parameter called "plugins", and if it is set, then you
+disable plugins, otherwise you don't. This keeps it a single function
+and not two different ones where one is slightly different than the
+other. That is usually only done when a function is used by lots of
+other areas and it is just simpler to make another function do something
+slightly different and have the original call it. But this isn't used
+much, so just changing the way it works, I think would be better.
 
-So, hmmm, how about just using root cgroup for the fallback?
+Also, and this has nothing to do with you or your patches, I simply hate
+the fact that I called these plugins. They should have been called
+"tracers" but I think I'm stuck with it. The term now is ambiguous as it
+means both a tracer (as it does here) and it means actual plugins that
+you can load into trace-cmd itself.
 
-Thanks.
+>  {
+>  	disable_tracing();
+>  
+> -	set_plugin("nop");
+>  	reset_events();
+>  
+>  	/* Force close and reset of ftrace pid file */
+> @@ -911,6 +910,12 @@ static void disable_all(void)
+>  	clear_trace();
+>  }
+>  
+> +static void disable_all(void)
+> +{
+> +	disable_all_but_plugin();
+> +	set_plugin("nop");
+> +}
+> +
+>  static void
+>  update_sched_event(struct event_list **event, const char *file,
+>  		   const char *pid_filter, const char *field_filter)
+> @@ -2227,7 +2232,7 @@ void trace_record (int argc, char **argv)
+>  	}
+>  
+>  	if (!keep)
+> -		disable_all();
+> +		disable_all_but_plugin();
+>  
+>  	printf("Kernel buffer statistics:\n"
+>  	       "  Note: \"entries\" are the entries left in the kernel ring buffer and are not\n"
+> @@ -2245,6 +2250,8 @@ void trace_record (int argc, char **argv)
+>  
+>  	record_data(date2ts);
+>  	delete_thread_data();
+> +	if (!keep)
+> +		set_plugin("nop");
+>  
+>  	if (keep)
+>  		exit(0);
 
--- 
-tejun
+I think the above would have been better if you did:
+
+	if (keep)
+		exit(0);
+	else
+		set_plugin(nop);
+
+-- Steve
+
+
