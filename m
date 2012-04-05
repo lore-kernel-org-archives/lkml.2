@@ -1,90 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab2DEDue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 23:50:34 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:48262 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab2DEDud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 23:50:33 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] [SCSI] mpt2sas: fix double mutex lock in NON_BLOCKING state
-Date: Wed,  4 Apr 2012 20:50:05 -0700
-Message-Id: <1333597805-22540-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757004Ab2DED5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 23:57:03 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38345 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab2DED5B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 23:57:01 -0400
+Message-ID: <1333598216.10597.3.camel@phoenix>
+Subject: [PATCH 1/6] regulator: ad5398: Constify regulator_desc
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sonic Zhang <sonic.zhang@analog.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 05 Apr 2012 11:56:56 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If state is NON_BLOCKING and mutex_trylock is succeed, 
-the control flow goes to mutex_lock_interruptible() that is a deadlock.
-
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_ctl.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
+ drivers/regulator/ad5398.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-index 1c6d2b4..9bd7ffc 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -648,8 +648,10 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPTER *ioc,
+diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
+index 7d51793..9ba69c4 100644
+--- a/drivers/regulator/ad5398.c
++++ b/drivers/regulator/ad5398.c
+@@ -184,7 +184,7 @@ static struct regulator_ops ad5398_ops = {
+ 	.is_enabled = ad5398_is_enabled,
+ };
  
- 	issue_reset = 0;
- 
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 
-@@ -1587,8 +1589,10 @@ _ctl_diag_register(void __user *arg, enum block_state state)
- 	if (_ctl_verify_adapter(karg.hdr.ioc_number, &ioc) == -1 || !ioc)
- 		return -ENODEV;
- 
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 	rc = _ctl_diag_register_2(ioc, &karg);
-@@ -1932,8 +1936,10 @@ _ctl_diag_release(void __user *arg, enum block_state state)
- 		return 0;
- 	}
- 
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 
-@@ -2033,8 +2039,10 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
- 	}
- 	/* Get a free request frame and save the message context.
- 	*/
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 
+-static struct regulator_desc ad5398_reg = {
++static const struct regulator_desc ad5398_reg = {
+ 	.name = "isink",
+ 	.id = 0,
+ 	.ops = &ad5398_ops,
 -- 
-1.7.1
+1.7.5.4
+
+
 
