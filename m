@@ -1,127 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2DEVoE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 17:44:04 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:40028 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755735Ab2DEVoA (ORCPT
+	id S1755995Ab2DEVo6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 17:44:58 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41891 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409Ab2DEVoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 17:44:00 -0400
-Date: Thu, 5 Apr 2012 10:39:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: CPU Hotplug rework
-Message-ID: <20120405173918.GC8194@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4F674649.2000300@linux.vnet.ibm.com>
- <4F67474A.20707@linux.vnet.ibm.com>
+	Thu, 5 Apr 2012 17:44:55 -0400
+Date: Thu, 5 Apr 2012 14:44:47 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120405214447.GC7761@count0.beaverton.ibm.com>
+References: <20120331091049.19373.28994.stgit@zurg>
+ <20120331092929.19920.54540.stgit@zurg>
+ <20120331201324.GA17565@redhat.com>
+ <20120402230423.GB32299@count0.beaverton.ibm.com>
+ <4F7A863C.5020407@openvz.org>
+ <20120403181631.GD32299@count0.beaverton.ibm.com>
+ <20120403193204.GE3370@moon>
+ <20120405202904.GB7761@count0.beaverton.ibm.com>
+ <4F7E08EB.5070600@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F67474A.20707@linux.vnet.ibm.com>
+In-Reply-To: <4F7E08EB.5070600@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040521-3352-0000-0000-000003D7C86C
+x-cbid: 12040521-7282-0000-0000-000007F9ACC0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 19, 2012 at 08:18:42PM +0530, Srivatsa S. Bhat wrote:
-> On 03/19/2012 08:14 PM, Srivatsa S. Bhat wrote:
+On Fri, Apr 06, 2012 at 01:04:43AM +0400, Konstantin Khlebnikov wrote:
+> Matt Helsley wrote:
+> >On Tue, Apr 03, 2012 at 11:32:04PM +0400, Cyrill Gorcunov wrote:
+> >>On Tue, Apr 03, 2012 at 11:16:31AM -0700, Matt Helsley wrote:
+> >>>On Tue, Apr 03, 2012 at 09:10:20AM +0400, Konstantin Khlebnikov wrote:
+> >>>>Matt Helsley wrote:
+> >>>>>On Sat, Mar 31, 2012 at 10:13:24PM +0200, Oleg Nesterov wrote:
+> >>>>>>On 03/31, Konstantin Khlebnikov wrote:
+> >>>>>>>
+> >>>>>>>comment from v2.6.25-6245-g925d1c4 ("procfs task exe symlink"),
+> >>>>>>>where all this stuff was introduced:
+> >>>>>>>
+> >>>>>>>>...
+> >>>>>>>>This avoids pinning the mounted filesystem.
+> >>>>>>>
+> >>>>>>>So, this logic is hooked into every file mmap/unmmap and vma split/merge just to
+> >>>>>>>fix some hypothetical pinning fs from umounting by mm which already unmapped all
+> >>>>>>>its executable files, but still alive. Does anyone know any real world example?
+> >>>>>>
+> >>>>>>This is the question to Matt.
+> >>>>>
+> >>>>>This is where I got the scenario:
+> >>>>>
+> >>>>>https://lkml.org/lkml/2007/7/12/398
+> >>>>
+> >>>>Cyrill Gogcunov's patch "c/r: prctl: add ability to set new mm_struct::exe_file"
+> >>>>gives userspace ability to unpin vfsmount explicitly.
+> >>>
+> >>>Doesn't that break the semantics of the kernel ABI?
+> >>
+> >>Which one? exe_file can be changed iif there is no MAP_EXECUTABLE left.
+> >>Still, once assigned (via this prctl) the mm_struct::exe_file can't be changed
+> >>again, until program exit.
+> >
+> >The prctl() interface itself is fine as it stands now.
+> >
+> >As far as I can tell Konstantin is proposing that we remove the unusual
+> >counter that tracks the number of mappings of the exe_file and require
+> >userspace use the prctl() to drop the last reference. That's what I think
+> >will break the ABI because after that change you *must* change userspace
+> >code to use the prctl(). It's an ABI change because the same sequence of
+> >system calls with the same input bits produces different behavior.
 > 
-> > Hi,
-> > 
-> > There had been some discussion on CPU Hotplug redesign/rework
-> > some time ago, but it was buried under a thread with a different
-> > subject.
-> > (http://thread.gmane.org/gmane.linux.kernel/1246208/focus=1246404)
-> > 
-> > So I am opening a new thread with an appropriate subject to discuss
-> > what needs to be done and how to go about it, as part of the rework.
-> > 
-> > Peter Zijlstra and Paul McKenney had come up with TODO lists for the
-> > rework, and here are their extracts from the previous discussion:
+> But common software does not require this at all. I did not found real examples,
+> only hypothesis by Al Viro: https://lkml.org/lkml/2007/7/12/398
+> libhugetlbfs isn't good example too, the man proc says: /proc/[pid]/exe is alive until
+> main thread is alive, but in case libhugetlbfs /proc/[pid]/exe disappears too early.
 
-Finally getting around to looking at this in more detail...
+*shrug*
 
-> Additional things that I would like to add to the list:
-> 
-> 1. Fix issues with CPU Hotplug callback registration. Currently there
->    is no totally-race-free way to register callbacks and do setup
->    for already online cpus.
-> 
->    I had posted an incomplete patchset some time ago regarding this,
->    which gives an idea of the direction I had in mind.
->    http://thread.gmane.org/gmane.linux.kernel/1258880/focus=15826
+Where did you look for real examples? chroot? pivot_root? various initrd
+systems? Which versions?
 
-Another approach is to have the registration function return the
-CPU mask corresponding to the instant at which registration occurred,
-perhaps via an additional function argument that points to a
-cpumask_var_t that can be NULL if you don't care.  Then you can
-do setup for the CPUs indicated in the mask.
+This sort of argument brings up classic questions. How do we know when
+to stop looking given the incredible amount of obscure code that's out
+there -- most of which we're unlikely to even be aware of? Even if we
+only look at "popular" distros how far back do we go? etc.
 
-Or am I missing the race you had in mind?  Or is the point to make
-sure that the notifiers execute in order?
+Perhaps before going through all that effort it would be better to
+verify that removing that code impacts performance enough to care. Do
+you have numbers? If the numbers aren't there then why bother with
+exhaustive and exhausting code searches?
 
-> 2. There is a mismatch between the code and the documentation around
->    the difference between [un/register]_hotcpu_notifier and
->    [un/register]_cpu_notifier. And I remember seeing several places in
->    the code that uses them inconsistently. Not terribly important, but
->    good to fix it up while we are at it.
+>
+> Also I would not call it ABI, this corner-case isn't documented, I'm afraid only few
+> people in the world knows about it =)
 
-The following lead me to believe that they were the same:
+I don't think the definition of an ABI is whether there's documentation
+for it. It's whether the interface is used or not. At least that's the
+impression I've gotten from reading Linus' rants over the years.
 
-#define register_hotcpu_notifier(nb)    register_cpu_notifier(nb)
-#define unregister_hotcpu_notifier(nb)  unregister_cpu_notifier(nb)
+I think of the ABI as bits input versus behavior (including bits) out. If
+the input bits remain the same the qualitative behavior should remain the
+same unless there is a bug. Here, roughly speaking, the input bits are the
+arguments passed to a sequence of one or more munmap() calls followed by a
+umount(). The output is a 0 return value from the umount. Your proposal
+would change that output value to -1 -- different bits and different
+behavior.
 
-What am I missing here?
-
-> 3. There was another thread where stuff related to CPU hotplug had been
->    discussed. It had exposed some new challenges to CPU hotplug, if we
->    were to support asynchronous smp booting.
-> 
->    http://thread.gmane.org/gmane.linux.kernel/1246209/focus=48535
->    http://thread.gmane.org/gmane.linux.kernel/1246209/focus=48542
->    http://thread.gmane.org/gmane.linux.kernel/1246209/focus=1253241
->    http://thread.gmane.org/gmane.linux.kernel/1246209/focus=1253267
-
-Good points!  ;-)
-
-> 4. Because the current CPU offline code depends on stop_machine(), every
->    online CPU must cooperate with the offline event. This means, whenever
->    we do a preempt_disable(), it ensures not only that that particular
->    CPU won't go offline, but also that *any* CPU cannot go offline. This
->    is more like a side-effect of using stop_machine().
-> 
->    So when trying to move over to stop_one_cpu(), we have to carefully audit
->    places where preempt_disable() has been used in that manner (ie.,
->    preempt_disable used as a light-weight and non-blocking form of
->    get_online_cpus()). Because when we move to stop_one_cpu() to do CPU offline,
->    a preempt disabled section will prevent only that particular CPU from
->    going offline.
-> 
->    I haven't audited preempt_disable() calls yet, but one such use was there
->    in brlocks (include/linux/lglock.h) until quite recently.
-
-I was thinking in terms of the offline code path doing a synchronize_sched()
-to allow preempt_disable() to retain a reasonable approximation of its
-current semantics.  This would require a pair of CPU masks, one for code
-using CPU-based primitives (e.g., sending IPIs) and another for code
-implementing those primitives.
-
-Or is there some situation that makes this approach fail?
-
-							Thanx, Paul
+Cheers,
+	-Matt Helsley
 
