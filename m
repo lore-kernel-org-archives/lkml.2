@@ -1,171 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab2DEGix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 02:38:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46524 "EHLO comal.ext.ti.com"
+	id S932409Ab2DEGnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 02:43:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60256 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976Ab2DEGiv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 02:38:51 -0400
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: Michael Williamson <michael.williamson@criticallink.com>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] arm: da850: change ASYNC/PLL0_SYSCLK3 clock rate with
- DVFS
-Thread-Topic: [PATCH] arm: da850: change ASYNC/PLL0_SYSCLK3 clock rate with
- DVFS
-Thread-Index: AQHNEZxbnXVZz1rLpECqmQ135zCG0paIxX2AgAFjM6A=
-Date: Thu, 5 Apr 2012 06:38:39 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC317A4A97@DBDE01.ent.ti.com>
-References: <1333458083-29753-1-git-send-email-prakash.pm@ti.com>
- <4F7B030B.4080900@criticallink.com>
-In-Reply-To: <4F7B030B.4080900@criticallink.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753160Ab2DEGnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 02:43:02 -0400
+Message-ID: <1333608177.7783.106.camel@marge.simpson.net>
+Subject: Re: [patch] cgroups: disallow attaching kthreadd
+From: Mike Galbraith <mgalbraith@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Date: Thu, 05 Apr 2012 08:42:57 +0200
+In-Reply-To: <alpine.DEB.2.00.1204042303510.7035@chino.kir.corp.google.com>
+References: <1333475906.7439.7.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com>
+	 <1333535915.7188.18.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com>
+	 <1333542649.7188.40.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204041414220.26086@chino.kir.corp.google.com>
+	 <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <1333601231.7783.31.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204042157530.31186@chino.kir.corp.google.com>
+	 <1333604949.7783.76.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1204042303510.7035@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2012-04-04 at 23:07 -0700, David Rientjes wrote: 
+> On Thu, 5 Apr 2012, Mike Galbraith wrote:
+> 
+> > I submitted that, and it didn't fly.  I like the generic exclusion
+> > better, so I submit that for consideration.
+> > 
+> 
+> [+akpm]
+> 
+> The last time we went through this, it was left after Andrew had fixed it 
+> up when the cpusets version was merged in -mm without any disagreement 
+> from Peter who was cc'd and that version was acked both by myself and Paul 
+> Menage at https://lkml.org/lkml/2011/12/14/402.  Andrew dropped it and 
+> asked for a repost since there was some on-going scheduler work going on 
+> in linux-next that caused that version not to apply.  No follow-up was 
+> ever offered.
 
-On Tue, Apr 03, 2012 at 19:32:51, Michael Williamson wrote:
-> On 4/3/2012 9:01 AM, Manjunathappa, Prakash wrote:
-> 
-> > Clock for EMIF is derived from ASYNC clock domain(PLL0_SYSCLK3) and was
-> > configured with fixed divider as there was no significant performance
-> > degradation with existing NAND/NOR EMIF devices if it is not
-> > reconfigured accordingly at different OPPs.
-> >
-> > On systems where devices other than NAND/NOR are interfaced through
-> > EMIF, such performance degradation may not be desirable. So change the
-> > PLL0_SYSCLK3 output frequency for different OPPs by re-configuring
-> > the divider value.
-> >
-> > Configured values are as per rates specified in OMAP-L138 Data sheet
-> > (http://www.ti.com/lit/ds/symlink/omap-l138.pdf, Table 5-5).
-> >
-> > Patch addresses concerns raised in below thread of Linux-DaVinci-community:
-> > http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg22535.html
-> >
-> > Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> > ---
-> >  arch/arm/mach-davinci/da850.c |   37 +++++++++++++++++++++++++++++++++++--
-> >  1 files changed, 35 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-> > index b44dc84..7e98ed7 100644
-> > --- a/arch/arm/mach-davinci/da850.c
-> > +++ b/arch/arm/mach-davinci/da850.c
-> > @@ -49,6 +49,7 @@
-> >  static int da850_set_armrate(struct clk *clk, unsigned long rate);
-> >  static int da850_round_armrate(struct clk *clk, unsigned long rate);
-> >  static int da850_set_pll0rate(struct clk *clk, unsigned long armrate);
-> > +static int da850_set_sysclk3_rate(struct clk *clk, unsigned long rate);
-> >  
-> >  static struct pll_data pll0_data = {
-> >  	.num		= 1,
-> > @@ -88,8 +89,8 @@ static struct clk pll0_sysclk3 = {
-> >  	.parent		= &pll0_clk,
-> >  	.flags		= CLK_PLL,
-> >  	.div_reg	= PLLDIV3,
-> > -	.set_rate	= davinci_set_sysclk_rate,
-> > -	.maxrate	= 100000000,
-> > +	.set_rate	= da850_set_sysclk3_rate,
-> 
-> 
-> 
-> da850_set_pll0_sysclk3_rate ?
-> (there is a pll1_sysclk3 as well)
-> 
+Hm, I thought I did that.
 
-Ok, I will rename it as  .
+> Why have we now gone in a completely different direction again?
 
-> > +	.maxrate	= 148000000,
-> >  };
-> >  
-> >  static struct clk pll0_sysclk4 = {
-> > @@ -1004,6 +1005,33 @@ static int da850_set_pll0rate(struct clk *clk, unsigned long index)
-> >  
-> >  	return 0;
-> >  }
-> > +
-> > +static int da850_set_sysclk3_rate(struct clk *clk, unsigned long rate)
-> > +{
-> > +	struct clk *arm_clk;
-> > +	unsigned long sys_clk3_rate = 148000000;
-> 
-> 
-> 
-> why not sys_clk3_rate = rate? or just use rate?
-> 
+I already said that after Peter griped and suggested global, I thought
+about it, and liked that better.  The submitted patchlet can either fly
+or die.  It's not a big deal.
 
-Answered below.
+If I need a reason to like global better, posix like: the user shall not
+fool around with my "mom" vs a wishy washy comedy variant of same ;-)
 
-> > +	int ret;
-> > +
-> > +	arm_clk = clk_get(NULL, "arm");
-> > +	if (WARN(IS_ERR(arm_clk), "Unable to get ARM clock\n"))
-> > +		return PTR_ERR(arm_clk);
-> > +
-> > +	/* Set EMIF clock based on OPPs */
-> > +	switch (clk_get_rate(arm_clk)) {
-> > +	case 200000000:
-> > +		sys_clk3_rate = 75000000;
-> 
-> 
-> what if the requested rate is lower than 75 MHz?
-> 
+-Mike
 
-Neither EMIF driver or EMIF devices(NAND/NOR driver) does set rate, is only set via
-cpu_freq driver whenever OPPs change. 
-
-> > +		break;
-> > +	case 96000000:
-> > +		sys_clk3_rate = 50000000;
-> > +		break;
-> > +	}
-> > +
-> > +	ret = davinci_set_sysclk_rate(clk, sys_clk3_rate);
-> > +	if (WARN_ON(ret))
-> > +		return ret;
-> > +
-> > +	return 0;
-> > +}
-> 
-> 
-> 
-> This routine is ignoring the requested rate passed in.  At 300 MHz OPP,
-> you are going to configure it for 148 MHz instead of 100 MHz (the
-> current implementation).  I would think that this rate should
-> be controllable by platform initialization code unless it needs limiting
-> based on specification.  What if someone wants to run the EMIFA
-> slower than 148 MHz?
-> 
-> There are platforms that would like to keep the EMIFA rate at a relatively
-> fixed / stable value of, e.g., 100 MHz or as close to that value as possible
-> at any OPP above 300 MHz.  This patch does not appear support that.
-> 
-
-As mentioned in commit message, patch is prepared to address below issues:
-1) Fixing PLL0_SYSCLK3 rate at 100MHz leads to performance degradation on non
- NAND/NOR devices on EMIF.
-2) 100MHz rate is de-spec configuration at OPPs < 300MHz, as mentioned in OMAP-L138
- Data sheet (http://www.ti.com/lit/ds/symlink/omap-l138.pdf, Table 5-5)
-
-To support platforms requiring fixed clock rate, as suggested by you we can have
-rate coming from platform file which can be configured via Kconfig option.
-
-I will submit next version of patch which takes care of this.
-
-Thanks,
-Prakash
