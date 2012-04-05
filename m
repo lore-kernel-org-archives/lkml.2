@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab2DESIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 14:08:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56904 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753322Ab2DESIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 14:08:41 -0400
-Date: Thu, 5 Apr 2012 13:13:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120405171321.GF23999@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120405163854.GE12854@google.com>
+	id S1755601Ab2DESPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 14:15:15 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:49551 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab2DESPN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 14:15:13 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6670"; a="179247927"
+Date: Thu, 5 Apr 2012 11:15:09 -0700
+From: David Brown <davidb@codeaurora.org>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Point-to-point bus in device tree
+Message-ID: <20120405181509.GA28693@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120405163854.GE12854@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 05, 2012 at 09:38:54AM -0700, Tejun Heo wrote:
-> Hey, Vivek.
-> 
-> On Wed, Apr 04, 2012 at 11:49:09AM -0700, Tejun Heo wrote:
-> > > I am not sure what are you trying to say here. But primarily blk-throttle
-> > > will throttle read and direct IO. Buffered writes will go to root cgroup
-> > > which is typically unthrottled.
-> > 
-> > Ooh, my bad then.  Anyways, then the same applies to blk-throttle.
-> > Our current implementation essentially collapses at the face of
-> > write-heavy workload.
-> 
-> I went through the code and couldn't find where blk-throttle is
-> discriminating async IOs.  Were you saying that blk-throttle currently
-> doesn't throttle because those IOs aren't associated with the dirtying
-> task?
+Some MSM SoCs have a small serial-type "bus" that is used to
+communicate with the PMIC devices.  This interface is always
+point-to-point.  I'm doing a device-tree conversion of the driver that
+Ken Heitke posted last year <https://lkml.org/lkml/2011/2/17/503>.
 
-Yes that's what I meant. Currently most of the async IO will come from
-flusher thread which is in root cgroup. So all the async IO will be in
-root group and we typically keep root group unthrottled. Sorry for the
-confusion here.
+A naive conversion to device tree, would result in something like
+this:
 
-> If so, note that it's different from cfq which explicitly
-> assigns all async IOs when choosing cfqq even if we fix tagging.
+	qcom,ssbi@500000 {
+		compatible = "qcom,ssbi";
+		reg = <0x500000 0x1000>;
+		qcom,controller-type = "ssbi";
 
-Yes. So if we can properly account for submitter, and for blk-throttle,
-async IO will go in right cgroup. Unlike CFQ, there is no hard coded logic
-to keep async IO in a particular group. It is just a matter of getting
-the right cgroup information.
+		qcom,pmic8058@0 {
+			reg = <0x0 0x01>;
+			...
+		}
+	}
 
-Thanks
-Vivek
+There would end up being an extraneous register for the device on the
+other end (there are no addresses), and there would need to be code in
+the ssbi driver to traverse this small tree to find these nodes.
+
+Another approach would be to make the pmic driver the actual device,
+and just have it use the ssbi code as a library.  Something like:
+
+	qcom,pmic8058@500000 {
+		compatible = "qcom,pmic8058";
+		reg = <0x500000 0x1000>;
+		qcom,ssbi-type = "ssbi";
+		...
+	}
+
+This is a lot cleaner, takes less code, but doesn't technically
+represent how the hardware is really structured.
+
+Does anyone have strong (or weak) feelings about this?
+
+Thanks,
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
