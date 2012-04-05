@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab2DEQoD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 12:44:03 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62744 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab2DEQoB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 12:44:01 -0400
-Date: Thu, 5 Apr 2012 09:43:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Chris Wright <chrisw@sous-sol.org>,
-        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
-Message-ID: <20120405164354.GC16546@kroah.com>
-References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
- <20120403165320.GG19952@sequoia.sous-sol.org>
- <20120403170708.GC2477@pengutronix.de>
- <20120403171112.GH19952@sequoia.sous-sol.org>
- <20120403171736.GD2477@pengutronix.de>
- <CAMSQXEHpjD7LWQkKWJOU=9eFYqsaJi-xHFTxexQr7yoKiCG7HQ@mail.gmail.com>
- <20120404075956.GB9073@pengutronix.de>
- <CAMSQXEHxaJpmjpOz_VL54bs1W9x3kCJKGoeTCmBpZva_hSTVsw@mail.gmail.com>
+	id S1755365Ab2DEQpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 12:45:08 -0400
+Received: from nm2-vm0.bullet.mail.ird.yahoo.com ([77.238.189.199]:46057 "HELO
+	nm2-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752169Ab2DEQpG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 12:45:06 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 536265.83786.bm@omp1014.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=c/Pq9I2Sj9aI+EFyDurGICDqbCNyP9qbMLEDoDGEzS6shyoQkfXMursfWw6+OgMtzqfYb2sOkzdc2/Gz7ZpGS22bloP+nLevd35Qy+Rju8uDFGXT21PVtLnaf6Z2MQlXSzWQHwys1q9Z85RZ17qs3kpqnfzSqfgpYHvE8zX3RaE=;
+X-YMail-OSG: dokZbV4VM1mVcWIFi6wmUDbWZklsXvSp9mWmAsScN_otfgv
+ mCPc6cJIOso3ifTy41T62L2qODT4nEmhVkjHK2D91G1mHiQI5b0rCan7Gy6V
+ _IpAQ0oQxjhlrdwtnExfIZgEZOxgoDm__65TfBj0NB1LL7Y.tteyuf68vpri
+ 1bMmkMQ0L5WWTEkpUvi7BvnKa9gGUJz_9L7VA8zcCqCLnHTYZ0qR_LDyDAIb
+ mbe1wG46xYZh91G532SHfQbY554YJXkv.CohneOuI1Y1qHLpM_Us251GEYkp
+ ak1RJI6P2v0Q6qf.BDsZIVTVJNao04x8Z8YLo5b9QM01sVN2nksJoQMrQXIH
+ HZkDk5SkUN5KpJinJr4.vCh71thprUw1XXjRY8Ojk7Gvs1hJ0zBGHbi9qaPK
+ 3SvzdodDc7D_rJ2pzxQ8nh0zLVgO7ZYxHJpeyyQCzfHE-
+X-Mailer: YahooMailClassic/15.0.5 YahooMailWebService/0.8.117.340979
+Message-ID: <1333644304.97070.YahooMailClassic@web29013.mail.ird.yahoo.com>
+Date: Thu, 5 Apr 2012 17:45:04 +0100 (BST)
+From: Paul Parsons <lost.distance@yahoo.com>
+Subject: [PATCH 3/3] mfd: asic3: Add PCMCIA/CF support
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, philipp.zabel@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMSQXEHxaJpmjpOz_VL54bs1W9x3kCJKGoeTCmBpZva_hSTVsw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 05, 2012 at 05:11:13PM +0200, Ivo Sieben wrote:
-> Hi
-> 
-> Op 4 april 2012 09:59 heeft Wolfram Sang <w.sang@pengutronix.de> het
-> volgende geschreven:
-> >
-> > Yes. This is a useful extension and there will be boards using it.
-> >
-> > Thanks,
-> >
-> >   Wolfram
-> 
-> OK, thanks
-> 
-> @Greg:
-> Can this patch be picked up in your tree?
-> Or should it be picked up by Wolfram at24 support?
+This patch is part of a set which adds PCMCIA/CF support for the hx4700.
+This patch adds asic3_set_register() calls to:
+1. Enable the PCMCIA/CF in asic3_probe().
+2. Disable the PCMCIA/CF in asic3_remove().
 
-I'll be glad to take it, but I don't seem to be able to find the
-original patch anywhere, can someone bounce it to me?
+Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+Cc: Philipp Zabel <philipp.zabel@gmail.com>
+---
+ drivers/mfd/asic3.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-thanks,
+diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
+index 1895cf9..0c083e7 100644
+--- a/drivers/mfd/asic3.c
++++ b/drivers/mfd/asic3.c
+@@ -998,6 +998,9 @@ static int __init asic3_probe(struct platform_device *pdev)
+ 
+ 	asic3_mfd_probe(pdev, pdata, mem);
+ 
++	asic3_set_register(asic, ASIC3_OFFSET(EXTCF, SELECT),
++		(ASIC3_EXTCF_CF0_BUF_EN|ASIC3_EXTCF_CF0_PWAIT_EN), 1);
++
+ 	dev_info(asic->dev, "ASIC3 Core driver\n");
+ 
+ 	return 0;
+@@ -1019,6 +1022,9 @@ static int __devexit asic3_remove(struct platform_device *pdev)
+ 	int ret;
+ 	struct asic3 *asic = platform_get_drvdata(pdev);
+ 
++	asic3_set_register(asic, ASIC3_OFFSET(EXTCF, SELECT),
++		(ASIC3_EXTCF_CF0_BUF_EN|ASIC3_EXTCF_CF0_PWAIT_EN), 0);
++
+ 	asic3_mfd_remove(pdev);
+ 
+ 	ret = asic3_gpio_remove(pdev);
+-- 
+1.7.3.4
 
-greg k-h
