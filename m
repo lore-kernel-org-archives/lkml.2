@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2DESHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 14:07:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34499 "EHLO mx1.redhat.com"
+	id S1755579Ab2DESIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 14:08:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab2DESHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 14:07:02 -0400
-Date: Thu, 5 Apr 2012 14:06:14 -0400
-From: Andy Gospodarek <gospo@redhat.com>
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: netdev@vger.kernel.org, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] bonding: properly unset current_arp_slave on slave
- link up
-Message-ID: <20120405180614.GB11165@quad.redhat.com>
-References: <20120405134743.GB16870@darkmag.usersys.redhat.com>
+	id S1753322Ab2DESIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 14:08:41 -0400
+Date: Thu, 5 Apr 2012 13:13:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120405171321.GF23999@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120405163854.GE12854@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120405134743.GB16870@darkmag.usersys.redhat.com>
+In-Reply-To: <20120405163854.GE12854@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 05, 2012 at 03:47:43PM +0200, Veaceslav Falico wrote:
-> When a slave comes up, we're unsetting the current_arp_slave without
-> removing active flags from it, which can lead to situations where we have
-> more than one slave with active flags in active-backup mode.
+On Thu, Apr 05, 2012 at 09:38:54AM -0700, Tejun Heo wrote:
+> Hey, Vivek.
 > 
-> To avoid this situation we must remove the active flags from a slave before
-> removing it as a current_arp_slave.
+> On Wed, Apr 04, 2012 at 11:49:09AM -0700, Tejun Heo wrote:
+> > > I am not sure what are you trying to say here. But primarily blk-throttle
+> > > will throttle read and direct IO. Buffered writes will go to root cgroup
+> > > which is typically unthrottled.
+> > 
+> > Ooh, my bad then.  Anyways, then the same applies to blk-throttle.
+> > Our current implementation essentially collapses at the face of
+> > write-heavy workload.
 > 
-> Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-> 
+> I went through the code and couldn't find where blk-throttle is
+> discriminating async IOs.  Were you saying that blk-throttle currently
+> doesn't throttle because those IOs aren't associated with the dirtying
+> task?
 
-Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
+Yes that's what I meant. Currently most of the async IO will come from
+flusher thread which is in root cgroup. So all the async IO will be in
+root group and we typically keep root group unthrottled. Sorry for the
+confusion here.
 
+> If so, note that it's different from cfq which explicitly
+> assigns all async IOs when choosing cfqq even if we fix tagging.
+
+Yes. So if we can properly account for submitter, and for blk-throttle,
+async IO will go in right cgroup. Unlike CFQ, there is no hard coded logic
+to keep async IO in a particular group. It is just a matter of getting
+the right cgroup information.
+
+Thanks
+Vivek
