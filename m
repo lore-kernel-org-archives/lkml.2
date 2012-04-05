@@ -1,126 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab2DEO7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:59:49 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49884 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab2DEO6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:58:55 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 11/34] vfs: split __dentry_open()
-Date: Thu,  5 Apr 2012 16:58:37 +0200
-Message-Id: <1333637940-31884-12-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
-References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
+	id S1754626Ab2DEPEA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:04:00 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42688 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab2DEPD6 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 5 Apr 2012 11:03:58 -0400
+Message-Id: <4F7DD0B4020000780007CBF0@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 05 Apr 2012 16:04:52 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Jens Axboe" <axboe@kernel.dk>, "xen-devel" <xen-devel@lists.xen.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] xen-blkfront: module exit handling adjustments
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+The blkdev major must be released upon exit, or else the module can't
+attach to devices using the same majors upon being loaded again. Also
+avoid leaking the minor tracking bitmap.
 
-Split __dentry_open() into two functions:
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-  do_dentry_open() - does most of the actual work, doesn't put file on failure
-  open_check_o_direct() - after a successful open, checks direct_IO method
-
-This will allow i_op->atomic_open to do just the file initialization and leave
-the direct_IO checking to the VFS.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/internal.h |    1 +
- fs/open.c     |   47 +++++++++++++++++++++++++++++++++--------------
- 2 files changed, 34 insertions(+), 14 deletions(-)
+ drivers/block/xen-blkfront.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/internal.h b/fs/internal.h
-index 9962c59..4d69fdd 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -100,6 +100,7 @@ extern struct file *do_file_open_root(struct dentry *, struct vfsmount *,
+--- 3.4-rc1/drivers/block/xen-blkfront.c
++++ 3.4-rc1-xen-blkfront-exit-cleanup/drivers/block/xen-blkfront.c
+@@ -1497,7 +1497,9 @@ module_init(xlblk_init);
  
- extern long do_handle_open(int mountdirfd,
- 			   struct file_handle __user *ufh, int open_flag);
-+extern int open_check_o_direct(struct file *f);
- 
- /*
-  * inode.c
-diff --git a/fs/open.c b/fs/open.c
-index 5720854..971b474 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -644,10 +644,23 @@ static inline int __get_file_write_access(struct inode *inode,
- 	return error;
- }
- 
--static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
--					struct file *f,
--					int (*open)(struct inode *, struct file *),
--					const struct cred *cred)
-+int open_check_o_direct(struct file *f)
-+{
-+	/* NB: we're sure to have correct a_ops only after f_op->open */
-+	if (f->f_flags & O_DIRECT) {
-+		if (!f->f_mapping->a_ops ||
-+		    ((!f->f_mapping->a_ops->direct_IO) &&
-+		    (!f->f_mapping->a_ops->get_xip_mem))) {
-+			return -EINVAL;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static struct file *do_dentry_open(struct dentry *dentry, struct vfsmount *mnt,
-+				   struct file *f,
-+				   int (*open)(struct inode *, struct file *),
-+				   const struct cred *cred)
+ static void __exit xlblk_exit(void)
  {
- 	static const struct file_operations empty_fops = {};
- 	struct inode *inode;
-@@ -703,16 +716,6 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
- 
- 	file_ra_state_init(&f->f_ra, f->f_mapping->host->i_mapping);
- 
--	/* NB: we're sure to have correct a_ops only after f_op->open */
--	if (f->f_flags & O_DIRECT) {
--		if (!f->f_mapping->a_ops ||
--		    ((!f->f_mapping->a_ops->direct_IO) &&
--		    (!f->f_mapping->a_ops->get_xip_mem))) {
--			fput(f);
--			f = ERR_PTR(-EINVAL);
--		}
--	}
--
- 	return f;
- 
- cleanup_all:
-@@ -740,6 +743,22 @@ cleanup_file:
- 	return ERR_PTR(error);
+-	return xenbus_unregister_driver(&blkfront_driver);
++	xenbus_unregister_driver(&blkfront_driver);
++	unregister_blkdev(XENVBD_MAJOR, DEV_NAME);
++	kfree(minors);
  }
+ module_exit(xlblk_exit);
  
-+static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
-+				struct file *f,
-+				int (*open)(struct inode *, struct file *),
-+				const struct cred *cred)
-+{
-+	struct file *res = do_dentry_open(dentry, mnt, f, open, cred);
-+	if (!IS_ERR(res)) {
-+		int error = open_check_o_direct(f);
-+		if (error) {
-+			fput(res);
-+			res = ERR_PTR(error);
-+		}
-+	}
-+	return res;
-+}
-+
- /**
-  * lookup_instantiate_filp - instantiates the open intent filp
-  * @nd: pointer to nameidata
--- 
-1.7.7
+
+
 
