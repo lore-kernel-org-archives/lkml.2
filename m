@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab2DEAdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 20:33:21 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51369 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab2DEAdU (ORCPT
+	id S1757498Ab2DEAdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 20:33:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56824 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757211Ab2DEAdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 20:33:20 -0400
-Date: Wed, 04 Apr 2012 20:33:13 -0400 (EDT)
-Message-Id: <20120404.203313.756996430678321892.davem@davemloft.net>
-To: joe@perches.com
-Cc: jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] vxge: Convert macro to inline function
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1333579075.23520.19.camel@joe2Laptop>
-References: <1333491271.2695.20.camel@joe2Laptop>
-	<20120403.181830.799733266830291210.davem@davemloft.net>
-	<1333579075.23520.19.camel@joe2Laptop>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 17:33:16 -0700 (PDT)
+	Wed, 4 Apr 2012 20:33:23 -0400
+X-Sasl-enc: 7u0ZdFbYiZTLlwYxlCoxvD+FVq/pX6aK8HyrCrRyoEBQ 1333586003
+Date: Wed, 4 Apr 2012 17:33:21 -0700
+From: Greg Kroah-Hartmann <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] printk: support structured and multi-facility log
+ messages
+Message-ID: <20120405003321.GB27595@kroah.com>
+References: <1333569554.864.3.camel@mop>
+ <1333583480.23520.37.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333583480.23520.37.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Wed, 04 Apr 2012 15:37:55 -0700
-
-> On Tue, 2012-04-03 at 18:18 -0400, David Miller wrote:
->> From: Joe Perches <joe@perches.com>
->> Date: Tue, 03 Apr 2012 15:14:31 -0700
->> > Convert the macro to inline function to check the arguments.
->> > Signed-off-by: Joe Perches <joe@perches.com>
->> > ---
->> >> Longer term I'd much rather see this turned into an inline
->> >> function with proper type checking etc.
->> > Something like this?
->> Yep.
+On Wed, Apr 04, 2012 at 04:51:20PM -0700, Joe Perches wrote:
+> On Wed, 2012-04-04 at 21:59 +0200, Kay Sievers wrote:
+> > From: Kay Sievers <kay@vrfy.org>
+> > Subject: printk: support structured and multi-facility log messages
+> []
+> > This patch extends printk() to be able to attach arbitrary key/value
+> > pairs to logged messages,
 > 
-> I did sign the patch.
-> I was intending that you could apply it.
+> How does it do that?
 
-Ok, I see now, applied.  Thanks Joe.
+The implementation doesn't show that?
+
+> []
+> 
+> > - Records consume almost the same amount, sometimes less memory than
+> >   the traditional byte stream buffer (if printk_time is enabled). The record
+> >   header is 16 bytes long, plus some padding bytes at the end if needed.
+> >   The byte-stream buffer needed 3 chars for the syslog prefix, 15 char for
+> >   the timestamp and a newline.
+> 
+> I suggest using lzo on the string portion.
+
+As the used overall size is pretty much the same, that doesn't really
+seem necessary to me.
+
+thanks,
+
+greg k-h
