@@ -1,56 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab2DES43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 14:56:29 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:58074 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab2DES41 (ORCPT
+	id S1755794Ab2DES6a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 14:58:30 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:54400 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab2DES63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 14:56:27 -0400
-Message-ID: <1333652183.3494.21.camel@jlt3.sipsolutions.net>
-Subject: Re: [3.4-rc1][Regression][network wireless] 'task xxxx blocked for
- more than 120 seconds' after resume
-From: Johannes Berg <johannes@sipsolutions.net>
-To: maciej.rutecki@gmail.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Thu, 05 Apr 2012 20:56:23 +0200
-In-Reply-To: <201204052037.37497.maciej.rutecki@gmail.com> (sfid-20120405_203812_209408_5261E33E)
-References: <201204022157.05598.maciej.rutecki@gmail.com>
-	 <1333440469.3574.0.camel@jlt3.sipsolutions.net>
-	 <20120405103254.GE2378@redhat.com>
-	 <201204052037.37497.maciej.rutecki@gmail.com>
-	 (sfid-20120405_203812_209408_5261E33E)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 5 Apr 2012 14:58:29 -0400
+From: mathieu.poirier@linaro.org
+To: airlied@linux.ie
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mathieu.poirier@linaro.org
+Subject: [PATCH] drm/radeon: replace udelay with mdelay for long timeouts
+Date: Thu,  5 Apr 2012 12:58:22 -0600
+Message-Id: <1333652302-14929-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-05 at 20:37 +0200, Maciej Rutecki wrote:
-> On czwartek, 5 kwietnia 2012 o 12:32:54 Stanislaw Gruszka wrote:
-> > On Tue, Apr 03, 2012 at 10:07:49AM +0200, Johannes Berg wrote:
-> > > -ilw
-> > > +netdev
-> > > 
-> > > I have no idea what this could be, but I'm almost certain it's not
-> > > caused by our wireless driver. Looks more like rtl8169 is to blame.
-> > 
-> > I'm not sure. Looks like there is deadlock or infinite loop in process
-> > that holds rtnl lock. This can be wireless driver, wired driver or
-> > generic network code bug.
-> > 
-> > Maciej, please recompile with CONFIG_LOCKDEP and check if it will not
-> > find any deadlock. If not, when problem will happen please do
-> 
-> Did you mean "CONFIG_LOCKDEP_SUPPORT"?
+From: Arnd Bergmann <arnd@arndb.de>
 
-No, _SUPPORT means you could enable CONFIG_LOCKDEP, but we would like to
-see this with CONFIG_LOCKDEP enabled.
+Some architectures require that delays longer than a few
+miliseconds are called through mdelay. This was triggered
+on ARM randconfig builds.
 
-johannes
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/gpu/drm/radeon/r100.c                   |    2 +-
+ drivers/gpu/drm/radeon/r600.c                   |    2 +-
+ drivers/gpu/drm/radeon/r600_cp.c                |    6 ++--
+ drivers/gpu/drm/radeon/radeon_clocks.c          |   24 +++++++++++-----------
+ drivers/gpu/drm/radeon/radeon_combios.c         |    8 +++---
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |   12 +++++-----
+ 6 files changed, 27 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index 81801c1..fe33d35 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -2553,7 +2553,7 @@ static void r100_pll_errata_after_data(struct radeon_device *rdev)
+ 	 * or the chip could hang on a subsequent access
+ 	 */
+ 	if (rdev->pll_errata & CHIP_ERRATA_PLL_DELAY) {
+-		udelay(5000);
++		mdelay(5);
+ 	}
+ 
+ 	/* This function is required to workaround a hardware bug in some (all?)
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index 391bd26..de71243 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2839,7 +2839,7 @@ void r600_rlc_stop(struct radeon_device *rdev)
+ 		/* r7xx asics need to soft reset RLC before halting */
+ 		WREG32(SRBM_SOFT_RESET, SOFT_RESET_RLC);
+ 		RREG32(SRBM_SOFT_RESET);
+-		udelay(15000);
++		mdelay(15);
+ 		WREG32(SRBM_SOFT_RESET, 0);
+ 		RREG32(SRBM_SOFT_RESET);
+ 	}
+diff --git a/drivers/gpu/drm/radeon/r600_cp.c b/drivers/gpu/drm/radeon/r600_cp.c
+index 84c5462..75ed17c 100644
+--- a/drivers/gpu/drm/radeon/r600_cp.c
++++ b/drivers/gpu/drm/radeon/r600_cp.c
+@@ -407,7 +407,7 @@ static void r600_cp_load_microcode(drm_radeon_private_t *dev_priv)
+ 
+ 	RADEON_WRITE(R600_GRBM_SOFT_RESET, R600_SOFT_RESET_CP);
+ 	RADEON_READ(R600_GRBM_SOFT_RESET);
+-	DRM_UDELAY(15000);
++	mdelay(15);
+ 	RADEON_WRITE(R600_GRBM_SOFT_RESET, 0);
+ 
+ 	fw_data = (const __be32 *)dev_priv->me_fw->data;
+@@ -500,7 +500,7 @@ static void r700_cp_load_microcode(drm_radeon_private_t *dev_priv)
+ 
+ 	RADEON_WRITE(R600_GRBM_SOFT_RESET, R600_SOFT_RESET_CP);
+ 	RADEON_READ(R600_GRBM_SOFT_RESET);
+-	DRM_UDELAY(15000);
++	mdelay(15);
+ 	RADEON_WRITE(R600_GRBM_SOFT_RESET, 0);
+ 
+ 	fw_data = (const __be32 *)dev_priv->pfp_fw->data;
+@@ -1797,7 +1797,7 @@ static void r600_cp_init_ring_buffer(struct drm_device *dev,
+ 
+ 	RADEON_WRITE(R600_GRBM_SOFT_RESET, R600_SOFT_RESET_CP);
+ 	RADEON_READ(R600_GRBM_SOFT_RESET);
+-	DRM_UDELAY(15000);
++	mdelay(15);
+ 	RADEON_WRITE(R600_GRBM_SOFT_RESET, 0);
+ 
+ 
+diff --git a/drivers/gpu/drm/radeon/radeon_clocks.c b/drivers/gpu/drm/radeon/radeon_clocks.c
+index 6ae0c75..9c6b29a 100644
+--- a/drivers/gpu/drm/radeon/radeon_clocks.c
++++ b/drivers/gpu/drm/radeon/radeon_clocks.c
+@@ -633,7 +633,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 				tmp &= ~(R300_SCLK_FORCE_VAP);
+ 				tmp |= RADEON_SCLK_FORCE_CP;
+ 				WREG32_PLL(RADEON_SCLK_CNTL, tmp);
+-				udelay(15000);
++				mdelay(15);
+ 
+ 				tmp = RREG32_PLL(R300_SCLK_CNTL2);
+ 				tmp &= ~(R300_SCLK_FORCE_TCL |
+@@ -651,12 +651,12 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 			tmp |= (RADEON_ENGIN_DYNCLK_MODE |
+ 				(0x01 << RADEON_ACTIVE_HILO_LAT_SHIFT));
+ 			WREG32_PLL(RADEON_CLK_PWRMGT_CNTL, tmp);
+-			udelay(15000);
++			mdelay(15);
+ 
+ 			tmp = RREG32_PLL(RADEON_CLK_PIN_CNTL);
+ 			tmp |= RADEON_SCLK_DYN_START_CNTL;
+ 			WREG32_PLL(RADEON_CLK_PIN_CNTL, tmp);
+-			udelay(15000);
++			mdelay(15);
+ 
+ 			/* When DRI is enabled, setting DYN_STOP_LAT to zero can cause some R200
+ 			   to lockup randomly, leave them as set by BIOS.
+@@ -696,7 +696,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 					tmp |= RADEON_SCLK_MORE_FORCEON;
+ 				}
+ 				WREG32_PLL(RADEON_SCLK_MORE_CNTL, tmp);
+-				udelay(15000);
++				mdelay(15);
+ 			}
+ 
+ 			/* RV200::A11 A12, RV250::A11 A12 */
+@@ -709,7 +709,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 				tmp |= RADEON_TCL_BYPASS_DISABLE;
+ 				WREG32_PLL(RADEON_PLL_PWRMGT_CNTL, tmp);
+ 			}
+-			udelay(15000);
++			mdelay(15);
+ 
+ 			/*enable dynamic mode for display clocks (PIXCLK and PIX2CLK) */
+ 			tmp = RREG32_PLL(RADEON_PIXCLKS_CNTL);
+@@ -722,14 +722,14 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 				RADEON_PIXCLK_TMDS_ALWAYS_ONb);
+ 
+ 			WREG32_PLL(RADEON_PIXCLKS_CNTL, tmp);
+-			udelay(15000);
++			mdelay(15);
+ 
+ 			tmp = RREG32_PLL(RADEON_VCLK_ECP_CNTL);
+ 			tmp |= (RADEON_PIXCLK_ALWAYS_ONb |
+ 				RADEON_PIXCLK_DAC_ALWAYS_ONb);
+ 
+ 			WREG32_PLL(RADEON_VCLK_ECP_CNTL, tmp);
+-			udelay(15000);
++			mdelay(15);
+ 		}
+ 	} else {
+ 		/* Turn everything OFF (ForceON to everything) */
+@@ -861,7 +861,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 			}
+ 			WREG32_PLL(RADEON_SCLK_CNTL, tmp);
+ 
+-			udelay(16000);
++			mdelay(16);
+ 
+ 			if ((rdev->family == CHIP_R300) ||
+ 			    (rdev->family == CHIP_R350)) {
+@@ -870,7 +870,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 					R300_SCLK_FORCE_GA |
+ 					R300_SCLK_FORCE_CBA);
+ 				WREG32_PLL(R300_SCLK_CNTL2, tmp);
+-				udelay(16000);
++				mdelay(16);
+ 			}
+ 
+ 			if (rdev->flags & RADEON_IS_IGP) {
+@@ -878,7 +878,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 				tmp &= ~(RADEON_FORCEON_MCLKA |
+ 					 RADEON_FORCEON_YCLKA);
+ 				WREG32_PLL(RADEON_MCLK_CNTL, tmp);
+-				udelay(16000);
++				mdelay(16);
+ 			}
+ 
+ 			if ((rdev->family == CHIP_RV200) ||
+@@ -887,7 +887,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 				tmp = RREG32_PLL(RADEON_SCLK_MORE_CNTL);
+ 				tmp |= RADEON_SCLK_MORE_FORCEON;
+ 				WREG32_PLL(RADEON_SCLK_MORE_CNTL, tmp);
+-				udelay(16000);
++				mdelay(16);
+ 			}
+ 
+ 			tmp = RREG32_PLL(RADEON_PIXCLKS_CNTL);
+@@ -900,7 +900,7 @@ void radeon_legacy_set_clock_gating(struct radeon_device *rdev, int enable)
+ 				 RADEON_PIXCLK_TMDS_ALWAYS_ONb);
+ 
+ 			WREG32_PLL(RADEON_PIXCLKS_CNTL, tmp);
+-			udelay(16000);
++			mdelay(16);
+ 
+ 			tmp = RREG32_PLL(RADEON_VCLK_ECP_CNTL);
+ 			tmp &= ~(RADEON_PIXCLK_ALWAYS_ONb |
+diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
+index 81fc100..2cad9fd 100644
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -2845,7 +2845,7 @@ bool radeon_combios_external_tmds_setup(struct drm_encoder *encoder)
+ 					case 4:
+ 						val = RBIOS16(index);
+ 						index += 2;
+-						udelay(val * 1000);
++						mdelay(val);
+ 						break;
+ 					case 6:
+ 						slave_addr = id & 0xff;
+@@ -3044,7 +3044,7 @@ static void combios_parse_pll_table(struct drm_device *dev, uint16_t offset)
+ 					udelay(150);
+ 					break;
+ 				case 2:
+-					udelay(1000);
++					mdelay(1);
+ 					break;
+ 				case 3:
+ 					while (tmp--) {
+@@ -3075,13 +3075,13 @@ static void combios_parse_pll_table(struct drm_device *dev, uint16_t offset)
+ 						/*mclk_cntl |= 0x00001111;*//* ??? */
+ 						WREG32_PLL(RADEON_MCLK_CNTL,
+ 							   mclk_cntl);
+-						udelay(10000);
++						mdelay(10);
+ #endif
+ 						WREG32_PLL
+ 						    (RADEON_CLK_PWRMGT_CNTL,
+ 						     tmp &
+ 						     ~RADEON_CG_NO1_DEBUG_0);
+-						udelay(10000);
++						mdelay(10);
+ 					}
+ 					break;
+ 				default:
+diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+index 2f46e0c..42db254 100644
+--- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+@@ -88,7 +88,7 @@ static void radeon_legacy_lvds_update(struct drm_encoder *encoder, int mode)
+ 		lvds_pll_cntl = RREG32(RADEON_LVDS_PLL_CNTL);
+ 		lvds_pll_cntl |= RADEON_LVDS_PLL_EN;
+ 		WREG32(RADEON_LVDS_PLL_CNTL, lvds_pll_cntl);
+-		udelay(1000);
++		mdelay(1);
+ 
+ 		lvds_pll_cntl = RREG32(RADEON_LVDS_PLL_CNTL);
+ 		lvds_pll_cntl &= ~RADEON_LVDS_PLL_RESET;
+@@ -101,7 +101,7 @@ static void radeon_legacy_lvds_update(struct drm_encoder *encoder, int mode)
+ 				  (backlight_level << RADEON_LVDS_BL_MOD_LEVEL_SHIFT));
+ 		if (is_mac)
+ 			lvds_gen_cntl |= RADEON_LVDS_BL_MOD_EN;
+-		udelay(panel_pwr_delay * 1000);
++		mdelay(panel_pwr_delay);
+ 		WREG32(RADEON_LVDS_GEN_CNTL, lvds_gen_cntl);
+ 		break;
+ 	case DRM_MODE_DPMS_STANDBY:
+@@ -118,10 +118,10 @@ static void radeon_legacy_lvds_update(struct drm_encoder *encoder, int mode)
+ 			WREG32(RADEON_LVDS_GEN_CNTL, lvds_gen_cntl);
+ 			lvds_gen_cntl &= ~(RADEON_LVDS_ON | RADEON_LVDS_BLON | RADEON_LVDS_EN | RADEON_LVDS_DIGON);
+ 		}
+-		udelay(panel_pwr_delay * 1000);
++		mdelay(panel_pwr_delay);
+ 		WREG32(RADEON_LVDS_GEN_CNTL, lvds_gen_cntl);
+ 		WREG32_PLL(RADEON_PIXCLKS_CNTL, pixclks_cntl);
+-		udelay(panel_pwr_delay * 1000);
++		mdelay(panel_pwr_delay);
+ 		break;
+ 	}
+ 
+@@ -656,7 +656,7 @@ static enum drm_connector_status radeon_legacy_primary_dac_detect(struct drm_enc
+ 
+ 	WREG32(RADEON_DAC_MACRO_CNTL, tmp);
+ 
+-	udelay(2000);
++	mdelay(2);
+ 
+ 	if (RREG32(RADEON_DAC_CNTL) & RADEON_DAC_CMP_OUTPUT)
+ 		found = connector_status_connected;
+@@ -1499,7 +1499,7 @@ static enum drm_connector_status radeon_legacy_tv_dac_detect(struct drm_encoder
+ 	tmp = dac_cntl2 | RADEON_DAC2_DAC2_CLK_SEL | RADEON_DAC2_CMP_EN;
+ 	WREG32(RADEON_DAC_CNTL2, tmp);
+ 
+-	udelay(10000);
++	mdelay(10);
+ 
+ 	if (ASIC_IS_R300(rdev)) {
+ 		if (RREG32(RADEON_DAC_CNTL2) & RADEON_DAC2_CMP_OUT_B)
+-- 
+1.7.5.4
 
