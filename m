@@ -1,232 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab2DECx2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 22:53:28 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:40299 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab2DECx0 (ORCPT
+	id S932393Ab2DEC4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 22:56:51 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:38985
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932230Ab2DEC4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 22:53:26 -0400
-Date: Wed, 4 Apr 2012 22:53:20 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-next@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <lethal@linux-sh.org>
-Subject: linux-next: triage for April 4, 2012
-Message-ID: <20120405025320.GA12153@windriver.com>
+	Wed, 4 Apr 2012 22:56:49 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(zz1432N98dK4015Izz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1ZK66-01-0W4-02
+X-M-MSG: 
+Date: Thu, 5 Apr 2012 10:56:09 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Len Brown <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Andiry Xu <andiry.xu@amd.com>,
+        Alex He <alex.he@amd.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Message-ID: <20120405025609.GA5208@localhost.amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
+ <20120401055603.GA11505@localhost.amd.com>
+ <1333261737.2939.84.camel@minggr>
+ <201204010923.18330.rjw@sisk.pl>
+ <1333593080.11327.22.camel@minggr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <1333593080.11327.22.camel@minggr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 05 Apr 2012 02:56:19.0314 (UTC) FILETIME=[ACFCF520:01CD12D7]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems arch=cris got revitalized; all the defconfigs are OK now.
+Hi,
 
-	http://marc.info/?l=linux-kernel&m=133345265304853&w=2
+On Thu, Apr 05, 2012 at 10:31:20AM +0800, Lin Ming wrote:
+> > 
+> > The only situation where a device can be put into ACPI D3_hot (which is not
+> > the same as PCI D3_hot, mind you) is when:
+> > 
+> > (1) There is _PR3 listing some of the device's power resources as "on".
+> > (2) The power resources listed by the _PR3 as "off" are turned off and the
+> >     power resources listed by the _PR3 as "on" are left in the "on" state.
+> 
+> I don't understand item (2):
+> 
+> If the power resource is listed as "off", which means it's already
+> turned off. Then why should it be turned off again?
 
-Looking at the error spew from allyes/modconfig it may be
-unreasonable for these to ever work on cris.  Going back to Jan
-2009 shows nothing but fails.  But there might be stuff in there
-that can be fixed -- e.g. the kgdb error looks fixable.
+Rafael,
+I think you misunderstand the meaning of _PR3.
+The _PR3 will evaluate a list of power resources, not two lists(one "on"
+list and one "off" list), as illustrated by Ming below.
 
-------------
+And for a device to be put to D3 hot, it should:
+1 execuate _PS3 first if available
+2 turn on all the power resources referenced by _PR3
 
-New breakage since last report:
-	<none>
+And for a device to be put to D3 cold, it should:
+1 execute _PS3 first if available
+2 turn off power resources referenced by _PRx, where x is the previous
+state number of the device. Say if the device is put to D3 cold from D0,
+the x would be 0.
 
-Randconfig fails that may or may not be new (by their very nature):
-	i386: hpet.c: undefined ref to `arch_setup_hpet_msi' `destroy_irq'
-		http://kisskb.ellerman.id.au/kisskb/buildresult/6035160/
-	powerpc: asm/mpic_msgr.h: implicit decl 'get_hard_smp_processor_id'
-		http://kisskb.ellerman.id.au/kisskb/buildresult/6035238/
+Is this correct?
 
-Builds that are fixed since last report:
-	ARM:collie_defconfig
-	cris: all fixed, but yesconfig allmodconfig.
-	
-Note: The randconfig fails are only listed once and not tracked
-in the below listing.
+Thank,
+Aaron
 
-I'm also not tracking the kallsyms extra pass stuff on ARM on
-a per board basis anymore.  It has nothing to do with the board.
-Why? See:  http://marc.info/?l=linux-next&m=133267456809502
-
-            ------------------------------------------------
-
-Latest results at:
-	http://kisskb.ellerman.id.au/kisskb/branch/9/
-
-Failures as of April 4th, 2012:
-===============================
-
-AM33:asb2303_defconfig,asb2364_defconfig
-	when:	Mar 15
-	why:	cc1: error: unrecognized command line option '-mmem-funcs'
-	status:	Possible fix from TonyB sent for review.
-	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
-----------------
-
-ARM:tct_hammer_defconfig,s3c2410_defconfig
-	when:	Apr 1
-	why:	missing "common.h"
-	status:	fix pending, borkage probably masked by other global borkage.
-	fix:
-	ref:	http://marc.info/?l=linux-next&m=133349249421262&w=2
-
-ARM:netx_defconfig,pnx4008_defconfig 
-	when:	Mar 14
-	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
-	ref:	https://lkml.org/lkml/2012/3/13/670
-
-ARM:ixp4xx_defconfig
-	when:	Oct 26
-	why:	gpio.h: implicit declaration of function '__gpio_get_value'
-	status:	fixed (Imre Kaloz) - but possibly needs rework?
-	fix:	https://lkml.org/lkml/2012/2/8/288
-	ref:	https://lkml.org/lkml/2012/2/8/287
-
-ARM:raumfeld_defconfig
-	when:	Nov 23
-	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
-	status:	perhaps broken since 2010?  See ref below.
-	fix:	
-	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
-
-ARM:arm-allnoconfig
-	when:	forever
-	why:	not supported
-	status:	nothing pending, but patches accepted
-	fix:	n/a
-	ref:	https://lkml.org/lkml/2009/4/30/105
-	ref:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081218.html
-----------------
-
-AVR32:allnoconfig
-	when:	May 26 2010, 20:49
-	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
-	status:
-	fix:
-	ref:
----------------
-
-bfin: 50% of builds
-	when:	Mar 31
-	why:	"Error: pcrel too far BFD_RELOC_BFIN_10" from kernel/time/timekeeping.c
-	status:	unknown, binutils issue?
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5981475/
----------------
-
-cris:allyesconfig,allmodconfig
-	when:	Apr 3
-	why:	too many to list here
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035250/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035249/
-----------------
-
-frv:defconfig
-	when:	Mar 15
-	why:	undefined reference to `pci_cardbus_resource_alignment'
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6030067/
-----------------
-
-ia64:defconfig
-	when:	Apr 2
-	why:	processor_idle.c: implicit declaration of function 'halt'
-	status:	bisected (PaulG) - fix pending from Len
-	fix:	
-	ref:	http://marc.info/?l=linux-ia64&m=133346998813009&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6029643/
-----------------
-
-h8300:defconfig
-	when:	Mar 15
-	why:	time.c: implicit declaration of function 'get_irq_regs'
-	why:	also seems gcc suffers an ICE
-	status:	ICE bug lodged with gcc folks (TonyB)
-	fix:
-	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
-----------------
-
-m32r:m32700ut.smp_defconfig
-	when:	Mar 15
-	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
-	status:
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
-----------------
-
-m68k:allmodconfig
-	when:	Mar 16
-	why:	persistent_ram.c: implicit declaration of 'memblock_reserve'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884324/
-	ref:	http://www.spinics.net/lists/linux-next/msg19343.html
-----------------
-
-mips:allmodconfig
-	when:
-	why:	driver_pci_host.c: implicit declaration of function 'pcibios_enable_device'
-	status: one of many fixes mips needs...
-	fix:	http://marc.info/?l=linux-wireless&m=133272031621916&w=2
-	ref:	http://patchwork.ozlabs.org/patch/148614/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5807000/
-----------------
-
-parisc:allmodconfig
-	when:
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-
-parisc64:a500_defconfig 
-	when:
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	fix:
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-powerpc:allyesconfig
-	when:	May 18 2009, 22:11
-	why:	fat ass kernel with everything simply won't link
-	status:	need to fix build config to ignore the final link
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
-------------------
-
-sh4:***all-builds***
-	when:	Feb 24, 17:38
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	fixes apparently in sh tree; needed in linux-next
-	fix:
-	ref:	http://marc.info/?l=linux-next&m=133341117224552&w=2
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-um:um-defconfig
-	when:	Sep 16 2010, 01:28
-	why:	os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared
-	status:	clearly broken forever, so does anyone care?
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/target/2979/
-Cc: 
-Bcc: 
-Subject: sdf
-Reply-To: 
+> 
+> Let's see an example
+> 
+> Assume a device "dev0" depends on 5 power resources:
+> 
+> pr1, pr2, pr3, pr4, pr5
+> 
+> _PR3 lists 3 power resources: pr3, pr4, pr5
+> 
+> Device(dev0)
+> {
+> 	Name(_PR3, Package (0x03)
+> 	{
+> 		pr3,
+> 		pr4,
+> 		pr5
+> 	})
+> }
+> 
+> If dev0 is put into ACPI D3_hot and pr1 and pr2 are not referenced by
+> other devices, then it requires:
+> 
+> - pr1 and pr2 are off
+> - pr3, pr4 and pr5 are on
+> 
+> right?
+> 
+> Thanks,
+> Lin Ming
+> 
+> 
+> 
 
