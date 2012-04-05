@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab2DEXIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:08:47 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60944 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab2DEXIq (ORCPT
+	id S1756187Ab2DEXNL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:13:11 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:44102 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab2DEXNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:08:46 -0400
-Date: Thu, 05 Apr 2012 19:08:38 -0400 (EDT)
-Message-Id: <20120405.190838.33439049975921271.davem@davemloft.net>
-To: vfalico@redhat.com
-Cc: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] bonding: properly unset current_arp_slave on slave
- link up
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120405134743.GB16870@darkmag.usersys.redhat.com>
-References: <20120405134743.GB16870@darkmag.usersys.redhat.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 05 Apr 2012 16:08:41 -0700 (PDT)
+	Thu, 5 Apr 2012 19:13:09 -0400
+Date: Thu, 5 Apr 2012 16:13:06 -0700
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mike Galbraith <mgalbraith@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
+Message-ID: <20120405231306.GF29517@google.com>
+References: <alpine.DEB.2.00.1204042344090.8991@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1204050011550.9466@chino.kir.corp.google.com>
+ <20120405160829.GA12854@google.com>
+ <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com>
+ <20120405213704.GA29517@google.com>
+ <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com>
+ <20120405222400.GC29517@google.com>
+ <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com>
+ <20120405225854.GE29517@google.com>
+ <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Veaceslav Falico <vfalico@redhat.com>
-Date: Thu, 5 Apr 2012 15:47:43 +0200
+Hey, David.
 
-> When a slave comes up, we're unsetting the current_arp_slave without
-> removing active flags from it, which can lead to situations where we have
-> more than one slave with active flags in active-backup mode.
+On Thu, Apr 05, 2012 at 04:05:43PM -0700, David Rientjes wrote:
+> The cgroups of interest here, cpusets and cpu, which have restrictions for 
+> PF_THREAD_BOUND threads is disjoint from memcg and cpuacct, which I'm 
+> saying it's useful for.  There's no requirement to mount them all.  But if 
+> you do try to do memory accounting in the presence of cpusets, though, it 
+> should be restricted.
 > 
-> To avoid this situation we must remove the active flags from a slave before
-> removing it as a current_arp_slave.
-> 
-> Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+> We could still move to a single hierarchy, though, if we introduced a 
+> change to allow PF_THREAD_BOUND to attach to both cpusets and cpu iff 
+> its bound cpu is allowed and then do -EINVAL if its changed while still 
+> attached.
 
-Applied, thanks.
+Yeah, making the affected controllers to deal with them somehow
+definitely is an option and will probably have to be chosen for some
+other cases too (e.g. rt tasks).  I still feel lukewarm about the
+ability to put kthreadd to !root cgroup tho.  I mean, for any kind of
+sane accounting, forked kthreads would have to be further classified
+and where kthreadd lives and fork happens wouldn't matter all that
+much.  It feels like we're fussing over stuff which isn't that
+significant either way.
+
+Thanks.
+
+-- 
+tejun
