@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab2DEIdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 04:33:47 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:12235
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751819Ab2DEIdl (ORCPT
+	id S1753139Ab2DEIgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 04:36:06 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49827 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab2DEIgD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 04:33:41 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M1ZZRQ-02-143-02
-X-M-MSG: 
-Date: Thu, 5 Apr 2012 16:32:45 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, Zhang Rui <rui.zhang@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-Message-ID: <20120405083245.GA19508@localhost.amd.com>
-References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
- <Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
- <CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
- <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
- <CAF1ivSZ6cZ0G9uYSRsz=h0iTYarb1kx=k6_UOqCuBX+0OMOXSw@mail.gmail.com>
+	Thu, 5 Apr 2012 04:36:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAF1ivSZ6cZ0G9uYSRsz=h0iTYarb1kx=k6_UOqCuBX+0OMOXSw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 05 Apr 2012 08:33:20.0051 (UTC) FILETIME=[C17C9030:01CD1306]
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120405080820.GB17658@merkur.ravnborg.org>
+References: <1333569554.864.3.camel@mop> <1333583480.23520.37.camel@joe2Laptop>
+ <20120405003321.GB27595@kroah.com> <1333586419.23520.52.camel@joe2Laptop>
+ <CAPXgP11qdyccftPPA9LSRKVb-Xnf8BzP+deUmTzHnuVxoTQKog@mail.gmail.com> <20120405080820.GB17658@merkur.ravnborg.org>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 5 Apr 2012 10:35:42 +0200
+Message-ID: <CAPXgP13+UjRsG_LBMd_KbqS=1p_7XA0TaPeXnWQUSdq1tYvW_Q@mail.gmail.com>
+Subject: Re: [PATCH] printk: support structured and multi-facility log messages
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Joe Perches <joe@perches.com>, Greg Kroah-Hartmann <greg@kroah.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Apr 5, 2012 at 10:08, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> >
+>> > How are arbitrary key/value pairs attached
+>> > in a printk?
+>>
+>> There are 120 lines in the changelog, and a 100 lines large comment
+>> block in the source code, and another 50 lines spread over the code,
+>> and the hexdump examples in it, and all that? Even without looking at
+>> a single line of code, it should be explained from different
+>> viewpoints more than once.
+>
+> color me blind - but I could not find any example of how I specify
+> key/value pairs when I use printk().
+>
+> I could find lots of internal information - that parts looks to
+> be extensively documented - good.
+>
+> But how I as a user specify this I failed to find.
+> Today I do:
+>
+>    printk(KERN_ERR "foobar is bad");
+>
+> But how is that extended to include the key/value pairs?
 
-On Thu, Apr 05, 2012 at 02:00:57PM +0800, Lin Ming wrote:
-> >
-> > Another thing to consider is, user might want to eject the tray by
-> > software like the
-> > eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
-> > thinking how to do this correctly.
-> 
-> Assume eject /dev/sr0 is implemented as:
-> 
-> int fd = open("/dev/sr0", ...)
-> ioctl(fd, CDROMEJECT)
-> 
+The use of structured data is mainly focused on subsystem specific
+users. Like the block layer or the network stack could invent a bunch
+of well-defined set of properties, and wrap the emission of these up
+in some common subsystem logging functions for their drivers to use.
+They would reflect common log events, meaningful in the context of a
+specific subsystem.
 
-Indeed, it is implemented as this :-)
+Think of it more like the model how we handle properties in uevents,
+it's a similar approach.
 
-> We may need to resume ODD in the ioctl handler(scsi_cmd_ioctl).
-> 
+This is not so much intended to convert the (almost random) language
+in slightly better (random) key/value pairs. Userpace, which is the
+only reason to add that stuff in the first place, will need to know
+how to make sense out of the passed values, so in the future, we will
+need some kind of coordination per subsystem here.
 
-I prefer we do this in sr_block_ioctl.
-Suppose the ODD is now runtime suspended and received an ioctl:
-if the ioctl's cmd is CDROMEJECT, resume it.
-For other cases, return an error code like EPERM.
-When done, according to the result of ioctl: if success, leave it resumed;
-if failed, put it back to sleep.
+For the current simple example in the patch, look where DEVICE= and
+SUBSYSTEM= are passed through dev_printk() -> vprintk_emit() ->
+log_store(), and then read through /dev/kmsg.
 
-Something like this:
+The output looks like something like this:
+  http://people.freedesktop.org/~kay/dev-kmsg.txt
 
-diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-index 5fc97d2..aa6e920 100644
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -45,6 +45,7 @@
- #include <linux/blkdev.h>
- #include <linux/mutex.h>
- #include <linux/slab.h>
-+#include <linux/pm_runtime.h>
- #include <asm/uaccess.h>
- 
- #include <scsi/scsi.h>
-@@ -538,10 +539,21 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
-        struct scsi_cd *cd = scsi_cd(bdev->bd_disk);
-        struct scsi_device *sdev = cd->device;
-        void __user *argp = (void __user *)arg;
--       int ret;
-+       int ret, rpm_resumed = 0;
- 
-        mutex_lock(&sr_mutex);
- 
-+       if (pm_runtime_suspended(&sdev->sdev_gendev)) {
-+               if (cmd == CDROMEJECT) {
-+                       scsi_autopm_get_device(sdev);
-+                       rpm_resumed = 1;
-+               }
-+               else {
-+                       ret = -EPERM;
-+                       goto out;
-+               }
-+       }
-+
-        /*
-         * Send SCSI addressing ioctls directly to mid level, send other
-         * ioctls to cdrom/block level.
-@@ -570,6 +582,9 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
-        ret = scsi_ioctl(sdev, cmd, argp);
- 
- out:
-+       if (rpm_resumed && ret)
-+               scsi_autopm_put_device(sdev);
-+
-        mutex_unlock(&sr_mutex);
-        return ret;
- }
-
-Does this work?
-
--Aaron
-
-
+Kay
