@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab2DEEG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 00:06:56 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:41196 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab2DEEGz (ORCPT
+	id S1752755Ab2DEEJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 00:09:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39000 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2DEEJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 00:06:55 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Message-Id: <smp-call-function-lockup-1@mdm.bga.com>
-In-Reply-To: <CA+1xoqeqyFT0eHS2k+vskPFQ-5gJ_Uq1HVsq2DA2sS1uN9C0vw@mail.gmail.com>
-References: <CA+1xoqeqyFT0eHS2k+vskPFQ-5gJ_Uq1HVsq2DA2sS1uN9C0vw@mail.gmail.com>
-Subject: CPU softlockup due to smp_call_function()
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        Dave Jones <davej@redhat.com>, <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
-Date: Wed, 04 Apr 2012 23:06:54 -0500
-X-Originating-IP: 71.22.127.106
+	Thu, 5 Apr 2012 00:09:05 -0400
+Message-ID: <1333598938.10597.10.camel@phoenix>
+Subject: [PATCH] regulator: da9052: Remove unneeded devm_kfree calls
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Thu, 05 Apr 2012 12:08:58 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/da9052-regulator.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-On Wed, 4 Apr 2012 about 22:12:36 +0200, Sasha Levin wrote:
-> I've starting seeing soft lockups resulting from smp_call_function()
-> calls. I've attached two different backtraces of this happening with
-> different code paths.
-> 
-> This is running inside a KVM guest with the trinity fuzzer, using
-> today's linux-next kernel.
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
+index 7eb7293..83e489f 100644
+--- a/drivers/regulator/da9052-regulator.c
++++ b/drivers/regulator/da9052-regulator.c
+@@ -406,7 +406,6 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
+ 	struct da9052_regulator *regulator;
+ 	struct da9052 *da9052;
+ 	struct da9052_pdata *pdata;
+-	int ret;
+ 
+ 	regulator = devm_kzalloc(&pdev->dev, sizeof(struct da9052_regulator),
+ 				 GFP_KERNEL);
+@@ -421,8 +420,7 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
+ 					      pdev->id);
+ 	if (regulator->info == NULL) {
+ 		dev_err(&pdev->dev, "invalid regulator ID specified\n");
+-		ret = -EINVAL;
+-		goto err;
++		return -EINVAL;
+ 	}
+ 	regulator->rdev = regulator_register(&regulator->info->reg_desc,
+ 					     &pdev->dev,
+@@ -431,16 +429,12 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
+ 	if (IS_ERR(regulator->rdev)) {
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 			regulator->info->reg_desc.name);
+-		ret = PTR_ERR(regulator->rdev);
+-		goto err;
++		return PTR_ERR(regulator->rdev);
+ 	}
+ 
+ 	platform_set_drvdata(pdev, regulator);
+ 
+ 	return 0;
+-err:
+-	devm_kfree(&pdev->dev, regulator);
+-	return ret;
+ }
+ 
+ static int __devexit da9052_regulator_remove(struct platform_device *pdev)
+@@ -448,8 +442,6 @@ static int __devexit da9052_regulator_remove(struct platform_device *pdev)
+ 	struct da9052_regulator *regulator = platform_get_drvdata(pdev);
+ 
+ 	regulator_unregister(regulator->rdev);
+-	devm_kfree(&pdev->dev, regulator);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
 
-Hi Sasha.
 
-You have two different call sites (arch/x86/mm/pageattr.c
-cpa_flush_range and net/core/dev.c netdev_run_todo), and both use
-call on_each_cpu with wait=1.
 
-I tried a few options but can't get close enough to your compiled
-length of 2a0 to know if the code is spinning on the first
-csd_lock_wait in csd_lock or in the second csd_lock_wait after the
-call to arch_send_call_function_ipi_mask (aka smp_ops + 0x44 in my
-x86_64 compile).  Please check your disassembly and report.
-
-If its the first lock, then the current stack is an innocent victim.
-In either case we need to find what the cpu(s) holding up the reporting
-cpus call function data (cfd_data per_cpu var) is(are) doing.
-
-Since interrupts are on, we could read the time at entry (even jiffies)
-and report both the function and mask of cpus that have not processed
-the cpus entry if the elapsed time has exceeded some threshold.
-
-I described the call flow of smp_call_function_many and outlined some
-debug sanity checks that could be added at [1] if you suspect the function
-list is getting corrupted.
-
-Let me know if you need help creating this debug code.
-
-[1] https://lkml.org/lkml/2012/1/13/308
-
-milton
