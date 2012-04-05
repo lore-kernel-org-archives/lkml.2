@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab2DEEBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 00:01:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52563 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab2DEEBq (ORCPT
+	id S1752359Ab2DEECn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 00:02:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48786 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2DEECm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 00:01:46 -0400
-Date: Wed, 04 Apr 2012 23:59:33 -0400 (EDT)
-Message-Id: <20120404.235933.350585244341009071.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, deepak.sikri@st.com,
-        shiraz.hashim@st.com, vikas.manocha@st.com, peppe.cavallaro@st.com
-Subject: Re: linux-next: build failure after merge of the final tree
- (net-next tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120405132515.e61465875407a452c1a6f78e@canb.auug.org.au>
-References: <20120405132515.e61465875407a452c1a6f78e@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 5 Apr 2012 00:02:42 -0400
+Message-ID: <1333598556.10597.8.camel@phoenix>
+Subject: [PATCH 6/6] regulator: pcf50633: Constify regulator_desc
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 05 Apr 2012 12:02:36 +0800
+In-Reply-To: <1333598216.10597.3.camel@phoenix>
+References: <1333598216.10597.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 20:59:38 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 5 Apr 2012 13:25:15 +1000
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/pcf50633-regulator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: In function 'stmmac_probe_config_dt':
-> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c:53:7: error: 'struct plat_stmmacenet_data' has no member named 'pbl'
-> 
-> Caused by commit 8327eb65e795 ("stmmac: re-work the internal GMAC DMA
-> platf parameters").  Clearly I am missing something, because I can't see
-> how that patch is correct since nothing ever assigns to the new dma_cfg
-> pointer but it is dereferenced.
-> 
-> I have added this patch to make it build today, but it is obviously not
-> correct.
+diff --git a/drivers/regulator/pcf50633-regulator.c b/drivers/regulator/pcf50633-regulator.c
+index b62f4c8..43163f1 100644
+--- a/drivers/regulator/pcf50633-regulator.c
++++ b/drivers/regulator/pcf50633-regulator.c
+@@ -267,7 +267,7 @@ static struct regulator_ops pcf50633_regulator_ops = {
+ 	.is_enabled = pcf50633_regulator_is_enabled,
+ };
+ 
+-static struct regulator_desc regulators[] = {
++static const struct regulator_desc regulators[] = {
+ 	[PCF50633_REGULATOR_AUTO] =
+ 		PCF50633_REGULATOR("auto", PCF50633_REGULATOR_AUTO, 128),
+ 	[PCF50633_REGULATOR_DOWN1] =
+-- 
+1.7.5.4
 
-Sorry Stephen.
 
-Giuseppe don't submit patches to me that don't even compile.
 
-Please submit a proper fix to me for this _now_.
