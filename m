@@ -1,143 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab2DELnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 07:43:06 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3328 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab2DELnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 07:43:04 -0400
-Message-ID: <4F7D8524.8030709@parallels.com>
-Date: Thu, 05 Apr 2012 15:42:28 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "serge.hallyn@canonical.com" <serge.hallyn@canonical.com>,
-        "criu@openvz.org" <criu@openvz.org>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Linux API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH 2/2] IPC: message queue stealing feature introduced
-References: <20120215163203.27978.52494.stgit@localhost6.localdomain6> <20120215165439.27978.43513.stgit@localhost6.localdomain6> <20120404161224.dea67733.akpm@linux-foundation.org> <CAKgNAkjpWpHR9Ww0JzZqsACktXzsm9r8=k6e7CJF_9+5cWdJBQ@mail.gmail.com>
-In-Reply-To: <CAKgNAkjpWpHR9Ww0JzZqsACktXzsm9r8=k6e7CJF_9+5cWdJBQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751880Ab2DELpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 07:45:00 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58980 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751218Ab2DELo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 07:44:59 -0400
+Message-ID: <1333626298.23520.107.camel@joe2Laptop>
+Subject: Re: [PATCH] printk: support structured and multi-facility log
+ messages
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Greg Kroah-Hartmann <greg@kroah.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Apr 2012 04:44:58 -0700
+In-Reply-To: <CAPXgP13+UjRsG_LBMd_KbqS=1p_7XA0TaPeXnWQUSdq1tYvW_Q@mail.gmail.com>
+References: <1333569554.864.3.camel@mop>
+	 <1333583480.23520.37.camel@joe2Laptop> <20120405003321.GB27595@kroah.com>
+	 <1333586419.23520.52.camel@joe2Laptop>
+	 <CAPXgP11qdyccftPPA9LSRKVb-Xnf8BzP+deUmTzHnuVxoTQKog@mail.gmail.com>
+	 <20120405080820.GB17658@merkur.ravnborg.org>
+	 <CAPXgP13+UjRsG_LBMd_KbqS=1p_7XA0TaPeXnWQUSdq1tYvW_Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-05.04.2012 03:50, Michael Kerrisk (man-pages) пишет:
-> On Thu, Apr 5, 2012 at 11:12 AM, Andrew Morton
-> <akpm@linux-foundation.org>  wrote:
->> On Wed, 15 Feb 2012 20:54:39 +0400
->> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
->
-> Stanislav,
->
-> Luckily, Andrew added me to CC. However, as noted in
-> Documentation/SubmitChecklist, all patches that change the ABI/API
-> should CC linux-api@vger.kernel.org. Please do that for the future.
-> (CC added for this thread.)
->
+On Thu, 2012-04-05 at 10:35 +0200, Kay Sievers wrote:
+> The use of structured data is mainly focused on subsystem specific
+> users. Like the block layer or the network stack could invent a bunch
+> of well-defined set of properties, and wrap the emission of these up
+> in some common subsystem logging functions for their drivers to use.
+> They would reflect common log events, meaningful in the context of a
+> specific subsystem.
 
-Yep, sure. Next time I'll do that. Sorry.
+I think this is generally less useful that you do.
 
->>> v2:
->>> 1) compat functions added.
->>> 2) message slot size in array is now aligned by struct msgbuf_a.
->>> 3) check for enough free space in buffer before message copying added.
->>> 4) if MSG_STEAL flag is set, then do_msgrcv() returns number of bytes written
->>> to buffer.
->
-> By the way, why the name "MSG_STEAL"? At first glance, it sounds like
-> that means we're taking messages that belong to someone else. But I
-> gather you are in fact just flushing all messages from a queue. So I
-> more intuitive name seems to be in order (MSG_READ_ALL,
-> MSG_FLUSH_ALL?).
->
+> Think of it more like the model how we handle properties in uevents,
+> it's a similar approach.
+> 
+> This is not so much intended to convert the (almost random) language
+> in slightly better (random) key/value pairs.
 
-Nice to know, that it sounds to you exactly like it is desired to. I.e. this 
-flag was designed to take messages that belong to someone else without any 
-trace, visible to the owner of the messages.
-But (like you mentioned in following letter) MSG_PEEK_ALL sound better to me. 
-Thus I'll replace MSG_STEAL with MSG_PEEK_ALL, if you don't mind.
+I think you should highlight this in the changelog.
+People _will_ use it that way anyway.
 
->>> 5) flag MSG_NOERROR is ignored if MSG_STEAL flag is set.
->
-> Would it not be better to return an error if MSG_NOERROR is specified?
->
+> Userpace, which is the
+> only reason to add that stuff in the first place, will need to know
+> how to make sense out of the passed values, so in the future, we will
+> need some kind of coordination per subsystem here.
 
-I don't think so. IOW, error can be returned in this case, but I don't see any 
-practical reason for this. If you do - please share.
+I think you should separate your patch a bit.
 
->>> This patch is required for checkpoint/restore in userspace.
->>> IOW, c/r requires some way to get all pending IPC messages without deleting
->>> them for the queue (checkpoint can fail and in this case tasks will be resumed,
->>> so queue have to be valid).
->>> To achive this, new operation flag MSG_STEAL for sys_msgrcv() system call
->>> introduced.
->>> If this flag is set, then passed struct msgbuf pointer will be used for storing
->>> array of structures:
->>>
->>> struct msgbuf_a {
->>>        long mtype;         /* type of message */
->>>        int msize;          /* size of message */
->>>        char mtext[0];      /* message text */
->>> };
->
-> So, I'm not clear on how things look here. We get back array like this:
->
-> [0]                     [1]                     [2]
-> | mtype | msize | mtext | mtype | msize | mtext | ...
->
-> How do I calculate the offset of element 1 of the array? I assume it
-> can't be just
-> (&item[0].mtext + msize), since there'll be alignment issues to deal
-> with, so that there are padding bytes after each mtext. In that case,
-> msize on its own seems insufficient (since there is no null-terminator
-> in msize).
->
+Don't call it an extension to printk(), it's
+hardly that, printk() is a function call that emits
+stuff.  The printk subsystem does a lot more.
 
-This is easy. You can be sure, that struct msgbuf_a is aligned by sizeof(struct 
-msgbuf_a). And since you know the size of this structure and length of data 
-segment, then offset of any element of the queue can be calculated like this:
+perhaps:
 
-addr_N+1 = addr_N +
-round_up(sizeof(struct msgbuf_a) + msize, sizeof(struct msgbuf_a));
+changes for printk_emit()
+changes for dev_printk
+changes for devkmsg_
 
->>> each of which will be followed by corresponding message data.
->>>
->>
->> I'd be a bit more comfortable if there was some sign that other c/r
->> developers have reviewed and tested this and have successfully used it
->> in c/r operation testing?
->
-> Indeed, do you have a userspace test program that you could post?
->
 
-Yes, sure. I'll add it to the patch set.
-But please not, that this test (in it's current state) can be executed only as a 
-part of out CRIU test suit.
-So you won't be able to execute it as is.
-
->> We've been trying to isolate the c/r-specific functions inside #ifdef
->> CONFIG_CHECKPOINT_RESTORE, but this patch doesn't do that.  I have been
->> encouraging this isolation so that people who aren't using c/r don't
->> have to carry the overhead it adds and so that we can more easily hunt
->> down and remove everything if the entire c/r project doesn't work out
->> successfully.
->>
->> This patch modifies the sys_msgrcv() API and so we should update the
->> manpage for that syscall.  Please work with Michael on this.
->
-> Yes please.
->
-
-Sure. What do you want me to do?
-
--- 
-Best regards,
-Stanislav Kinsbursky
