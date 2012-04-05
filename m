@@ -1,112 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab2DEIb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 04:31:29 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35667 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab2DEIb0 (ORCPT
+	id S1753113Ab2DEIdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 04:33:47 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:12235
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751819Ab2DEIdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 04:31:26 -0400
-Message-ID: <4F7D5859.5050106@openvz.org>
-Date: Thu, 05 Apr 2012 12:31:21 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Thu, 5 Apr 2012 04:33:41 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M1ZZRQ-02-143-02
+X-M-MSG: 
+Date: Thu, 5 Apr 2012 16:32:45 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
+Message-ID: <20120405083245.GA19508@localhost.amd.com>
+References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
+ <Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
+ <CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
+ <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
+ <CAF1ivSZ6cZ0G9uYSRsz=h0iTYarb1kx=k6_UOqCuBX+0OMOXSw@mail.gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC] mm: account VMA before forced-COW via /proc/pid/mem
-References: <20120402153631.5101.44091.stgit@zurg> <20120403143752.GA5150@redhat.com> <4F7C1B67.6030300@openvz.org> <20120404154148.GA7105@redhat.com>
-In-Reply-To: <20120404154148.GA7105@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAF1ivSZ6cZ0G9uYSRsz=h0iTYarb1kx=k6_UOqCuBX+0OMOXSw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 05 Apr 2012 08:33:20.0051 (UTC) FILETIME=[C17C9030:01CD1306]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov wrote:
-> On 04/04, Konstantin Khlebnikov wrote:
->>
->> Oleg Nesterov wrote:
->>> On 04/02, Konstantin Khlebnikov wrote:
->>>>
->>>> Currently kernel does not account read-only private mappings into memory commitment.
->>>> But these mappings can be force-COW-ed in get_user_pages().
->>>
->>> Heh. tail -n3 Documentation/vm/overcommit-accounting
->>> may be you should update it then.
->>
->> I just wonder how fragile this accounting...
->
-> I meant, this patch could also remove this "TODO" from the docs.
+Hi,
 
-Actually I dug into this code for killing VM_ACCOUNT vma flag.
-Currently we cannot do this only because asymmetry in mprotect_fixup():
-it account vma on read-only -> writable conversion, but keep on backward operation.
-Probably we can kill this asymmetry, and after that we can recognize accountable vma
-by its others flags state, so we don't need special VM_ACCOUNT for this.
+On Thu, Apr 05, 2012 at 02:00:57PM +0800, Lin Ming wrote:
+> >
+> > Another thing to consider is, user might want to eject the tray by
+> > software like the
+> > eject /dev/sr0 command or some UI mouse clicks against the cdrom icon. I'm still
+> > thinking how to do this correctly.
+> 
+> Assume eject /dev/sr0 is implemented as:
+> 
+> int fd = open("/dev/sr0", ...)
+> ioctl(fd, CDROMEJECT)
+> 
 
->
->>> Can't really comment the patch, this is not my area. Still,
->>>
->>>> +	down_write(&mm->mmap_sem);
->>>> +	*pvma = vma = find_vma(mm, addr);
->>>> +	if (vma&&   vma->vm_start<= addr) {
->>>> +		ret = vma->vm_end - addr;
->>>> +		if ((vma->vm_flags&   (VM_ACCOUNT | VM_NORESERVE | VM_SHARED |
->>>> +				VM_HUGETLB | VM_MAYWRITE)) == VM_MAYWRITE) {
->>>> +			if (!security_vm_enough_memory_mm(mm, vma_pages(vma)))
->>>
->>> Oooooh, the whole vma. Say, gdb installs the single breakpoint into
->>> the huge .text mapping...
->>
->> We cannot split vma right there, this will be really weird. =)
->
-> Sure, I understand why you did it this way.
->
->>> I am not sure, but probably you want to check at least VM_IO/PFNMAP
->>> as well. We do not want to charge this memory and retry with FOLL_FORCE
->>> before vm_ops->access(). Say, /dev/mem
->>
->> No, VM_IO/PFNMAP aren't affect accounting, there is VM_NORESERVE for this.
->
-> You misunderstood. Again, I can be wrong, but.
->
-> Suppose the task mmmaps /dev/mem (for example). This vma doesn't have
-> VM_NORESERVE (but it has VM_IO).
->
-> gup() fails correctly with or without FOLL_FORCE, we should fallback
-> to vma_ops->access().
+Indeed, it is implemented as this :-)
 
-Yes, seems so. Maybe we should use ->access() before get_user_pages().
+> We may need to resume ODD in the ioctl handler(scsi_cmd_ioctl).
+> 
 
->
-> However. With your patch __access_remote_vm() tries gup() without
-> FOLL_FORCE first and wrongly assumes that it fails because it neeeds
-> FOLL_FORCE and we are going to force-cow.
->
-> So __account_vma() adds VM_ACCOUNT before (unnecessary) retry, and
-> this is unnecessary too and wrong.
->
->>> Hmm. OTOH, if I am right then mprotect_fixup() should be fixed??
->>
->> mprotect_fixup() does not account area if it already accounted, so all ok.
->
-> No, I meant another thing. But yes, I think I was wrong, mprotect_fixup()
-> is fine.
->
->>> We drop ->mmap_sem... Say, the task does mremap() in between and
->>> len == 2 * PAGE_SIZE. Then, for example, copy_to_user_page() can
->>> write to the same page twice. Perhaps not a problem in practice,
->>> I dunno.
->>
->> I have an old unfinished patch which implements upgrade_read() for rw-semaphore =)
->
-> Interesting ;)
+I prefer we do this in sr_block_ioctl.
+Suppose the ODD is now runtime suspended and received an ioctl:
+if the ioctl's cmd is CDROMEJECT, resume it.
+For other cases, return an error code like EPERM.
+When done, according to the result of ioctl: if success, leave it resumed;
+if failed, put it back to sleep.
 
-Yeah, after upgrade_read() we cannot remove vmas, but we can add new and change existing.
+Something like this:
 
->
+diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+index 5fc97d2..aa6e920 100644
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -45,6 +45,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/pm_runtime.h>
+ #include <asm/uaccess.h>
+ 
+ #include <scsi/scsi.h>
+@@ -538,10 +539,21 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+        struct scsi_cd *cd = scsi_cd(bdev->bd_disk);
+        struct scsi_device *sdev = cd->device;
+        void __user *argp = (void __user *)arg;
+-       int ret;
++       int ret, rpm_resumed = 0;
+ 
+        mutex_lock(&sr_mutex);
+ 
++       if (pm_runtime_suspended(&sdev->sdev_gendev)) {
++               if (cmd == CDROMEJECT) {
++                       scsi_autopm_get_device(sdev);
++                       rpm_resumed = 1;
++               }
++               else {
++                       ret = -EPERM;
++                       goto out;
++               }
++       }
++
+        /*
+         * Send SCSI addressing ioctls directly to mid level, send other
+         * ioctls to cdrom/block level.
+@@ -570,6 +582,9 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+        ret = scsi_ioctl(sdev, cmd, argp);
+ 
+ out:
++       if (rpm_resumed && ret)
++               scsi_autopm_put_device(sdev);
++
+        mutex_unlock(&sr_mutex);
+        return ret;
+ }
+
+Does this work?
+
+-Aaron
+
+
