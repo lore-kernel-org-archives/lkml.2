@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab2DEPAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:00:07 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60434 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab2DEO7M (ORCPT
+	id S1754828Ab2DEPAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:00:00 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49884 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab2DEO7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:59:12 -0400
+	Thu, 5 Apr 2012 10:59:06 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, mszeredi@suse.cz
-Subject: [PATCH 21/34] vfs: lookup_open(): expand lookup_hash()
-Date: Thu,  5 Apr 2012 16:58:47 +0200
-Message-Id: <1333637940-31884-22-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 18/34] vfs: do_last(): separate O_CREAT specific code
+Date: Thu,  5 Apr 2012 16:58:44 +0200
+Message-Id: <1333637940-31884-19-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
 References: <1333637940-31884-1-git-send-email-miklos@szeredi.hu>
@@ -23,44 +23,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Copy __lookup_hash() into lookup_open().  The next patch will insert the atomic
-open call just before the real lookup.
+Check O_CREAT on the slow lookup paths where necessary.  This allows the rest to
+be shared with plain open.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+ fs/namei.c |   33 +++++++++++++++++----------------
+ 1 files changed, 17 insertions(+), 16 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 426b544..4815607 100644
+index 47bff57..f89827a 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2231,14 +2231,24 @@ static struct file *lookup_open(struct nameidata *nd, struct path *path,
- 				int *want_write, bool *created)
- {
- 	struct dentry *dir = nd->path.dentry;
-+	struct inode *dir_inode = dir->d_inode;
- 	struct dentry *dentry;
- 	int error;
-+	bool need_lookup;
+@@ -2296,22 +2296,23 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 			inode = path->dentry->d_inode;
+ 		}
+ 		goto finish_lookup;
+-	}
+-
+-	/* create side of things */
+-	/*
+-	 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED has been
+-	 * cleared when we got to the last component we are about to look up
+-	 */
+-	error = complete_walk(nd);
+-	if (error)
+-		return ERR_PTR(error);
++	} else {
++		/* create side of things */
++		/*
++		 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED
++		 * has been cleared when we got to the last component we are
++		 * about to look up
++		 */
++		error = complete_walk(nd);
++		if (error)
++			return ERR_PTR(error);
  
- 	*created = false;
--	dentry = lookup_hash(nd);
-+	dentry = lookup_dcache(&nd->last, dir, nd, &need_lookup);
- 	if (IS_ERR(dentry))
- 		return ERR_CAST(dentry);
- 
-+	if (need_lookup) {
-+		BUG_ON(dentry->d_inode);
-+
-+		dentry = lookup_real(dir_inode, dentry, nd);
-+		if (IS_ERR(dentry))
-+			return ERR_CAST(dentry);
+-	audit_inode(pathname, dir);
+-	error = -EISDIR;
+-	/* trailing slashes? */
+-	if (nd->last.name[nd->last.len])
+-		goto exit;
++		audit_inode(pathname, dir);
++		error = -EISDIR;
++		/* trailing slashes? */
++		if (nd->last.name[nd->last.len])
++			goto exit;
 +	}
-+
+ 
+ retry_lookup:
+ 	mutex_lock(&dir->d_inode->i_mutex);
+@@ -2327,7 +2328,7 @@ retry_lookup:
+ 	path->mnt = nd->path.mnt;
+ 
  	/* Negative dentry, just create the file */
- 	if (!dentry->d_inode && (op->open_flag & O_CREAT)) {
+-	if (!dentry->d_inode) {
++	if (!dentry->d_inode && (open_flag & O_CREAT)) {
  		umode_t mode = op->mode;
+ 		if (!IS_POSIXACL(dir->d_inode))
+ 			mode &= ~current_umask();
 -- 
 1.7.7
 
