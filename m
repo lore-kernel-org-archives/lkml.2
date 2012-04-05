@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2DECb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 22:31:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57217 "EHLO mga09.intel.com"
+	id S1756672Ab2DECiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 22:38:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36832 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756637Ab2DECbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 22:31:24 -0400
+	id S1752238Ab2DECiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 22:38:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="128845859"
+   d="scan'208";a="128847548"
 Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
 From: Lin Ming <ming.m.lin@intel.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -21,8 +21,8 @@ References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
 	 <20120401055603.GA11505@localhost.amd.com>
 	 <1333261737.2939.84.camel@minggr>  <201204010923.18330.rjw@sisk.pl>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Apr 2012 10:31:20 +0800
-Message-ID: <1333593080.11327.22.camel@minggr>
+Date: Thu, 05 Apr 2012 10:38:17 +0800
+Message-ID: <1333593497.11327.25.camel@minggr>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
@@ -116,36 +116,13 @@ On Sun, 2012-04-01 at 09:23 +0200, Rafael J. Wysocki wrote:
 > (2) The power resources listed by the _PR3 as "off" are turned off and the
 >     power resources listed by the _PR3 as "on" are left in the "on" state.
 
-I don't understand item (2):
+(1) and (2) seems conflict.
 
-If the power resource is listed as "off", which means it's already
-turned off. Then why should it be turned off again?
+(1) means all power resources listed in _PR3 are "on", but
+(2) means some power resources listed in _PR3 are "off" and others are
+"on"
 
-Let's see an example
-
-Assume a device "dev0" depends on 5 power resources:
-
-pr1, pr2, pr3, pr4, pr5
-
-_PR3 lists 3 power resources: pr3, pr4, pr5
-
-Device(dev0)
-{
-	Name(_PR3, Package (0x03)
-	{
-		pr3,
-		pr4,
-		pr5
-	})
-}
-
-If dev0 is put into ACPI D3_hot and pr1 and pr2 are not referenced by
-other devices, then it requires:
-
-- pr1 and pr2 are off
-- pr3, pr4 and pr5 are on
-
-right?
+Is my understanding correct?
 
 Thanks,
 Lin Ming
