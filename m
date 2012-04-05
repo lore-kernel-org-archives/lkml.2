@@ -1,195 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab2DEUsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 16:48:21 -0400
-Received: from 90-46-11-204.rar.beartech.net ([204.11.46.90]:1584 "EHLO
-	exchsrvr.taosinc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753080Ab2DEUsT convert rfc822-to-8bit (ORCPT
+	id S1756154Ab2DEUxM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 16:53:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42165 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab2DEUxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 16:48:19 -0400
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Thu, 5 Apr 2012 16:53:10 -0400
+Date: Fri, 6 Apr 2012 00:53:04 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+Message-ID: <20120405205304.GL8718@moon>
+References: <20120331091049.19373.28994.stgit@zurg>
+ <20120331092929.19920.54540.stgit@zurg>
+ <20120331201324.GA17565@redhat.com>
+ <20120402230423.GB32299@count0.beaverton.ibm.com>
+ <4F7A863C.5020407@openvz.org>
+ <20120403181631.GD32299@count0.beaverton.ibm.com>
+ <20120403193204.GE3370@moon>
+ <20120405202904.GB7761@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: tsl2x7x driver Sampling frequency
-Date: Thu, 5 Apr 2012 15:54:08 -0500
-Message-ID: <B4B07CCC7B7A084E989CF9386538EA1D01255E9B@exchsrvr.taosinc.com>
-In-Reply-To: <4F7C82A6.80706@cam.ac.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: tsl2x7x driver Sampling frequency
-Thread-Index: Ac0Sh/SeGow1oxr2RhiJKeSlOoy5HQA5jJWQ
-References: <B4B07CCC7B7A084E989CF9386538EA1D0120B9AB@exchsrvr.taosinc.com> <4F7C82A6.80706@cam.ac.uk>
-From: "Jon Brenner" <jbrenner@TAOSinc.com>
-To: "Jonathan Cameron" <jic23@cam.ac.uk>
-Cc: <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <dg77.kim@samsung.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120405202904.GB7761@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathon,
-So are you saying that I should change (remove) the sampling_frequency
-ABI, and implement 2 new (to this driver) ABIs called:
-in_intensity0_thresh_period, and in_proximity0_thresh_period?
+On Thu, Apr 05, 2012 at 01:29:04PM -0700, Matt Helsley wrote:
+...
+> > > Doesn't that break the semantics of the kernel ABI?
+> > 
+> > Which one? exe_file can be changed iif there is no MAP_EXECUTABLE left.
+> > Still, once assigned (via this prctl) the mm_struct::exe_file can't be changed
+> > again, until program exit.
+> 
+> The prctl() interface itself is fine as it stands now.
+> 
+> As far as I can tell Konstantin is proposing that we remove the unusual
+> counter that tracks the number of mappings of the exe_file and require
+> userspace use the prctl() to drop the last reference. That's what I think
+> will break the ABI because after that change you *must* change userspace
+> code to use the prctl(). It's an ABI change because the same sequence of
+> system calls with the same input bits produces different behavior.
 
-Since the minimum H/W filter time (based on an minimum ALS or Prox
-integration resolution) we're working with here is 2.7ms, and a maximum
-filter time of  up to 162ms (60 out of range * 2.7), the value is
-adjusted in milliseconds  (Khz).
-Is this acceptable?
+Hi Matt, I see what you mean (I misread your email at first, sorry).
+Sure it's impossible to patch already existing programs (and btw, this
+prctl code actually won't help a program to drop symlink completely
+and live without it then, because old one will gone but new one
+will be assigned) so personally I can't answer here on Konstantin's
+behalf, but I guess the main question is -- which programs use this
+'drop-all-MAP_EXECUTABLE' feature?
 
-What about _thresh_period_available?
-
-I guess I could simply use the simple computed value of [ X = Atime *
-Integration] and display the values from minimum up to [60 * X] - but
-that seems kind of silly.
-Could simply a min and a max period be presented?
-
-Caveat:  A or P integration times could be changed 'post' selection of
-the _thresh_period which would of course then impact the _thresh_period.
-
-Oh what a tangled web..
-
-Jon
-
-> -----Original Message-----
-> From: Jonathan Cameron [mailto:jic23@cam.ac.uk]
-> Sent: Wednesday, April 04, 2012 12:20 PM
-> To: Jon Brenner
-> Cc: jic23@kernel.org; linux-iio@vger.kernel.org;
-linux-kernel@vger.kernel.org;
-> dg77.kim@samsung.com
-> Subject: Re: tsl2x7x driver Sampling frequency
-> 
-> On 04/04/2012 05:40 PM, Jon Brenner wrote:
-> > Jonathon,
-> >
-> > You wrote;
-> > <snip>
-> > Units don't look right for sampling frequency.  Sorry, but that's an
-> > abi
-> >
-> > issue so even if it is
-> > fiddly to do the conversion to Hz it needs to be done.
-> > </snip>
-> >
-> > Need some help here.
-> > In the tsl2x7x driver sampling frequency is being used for setting
-> > "persistence register".
-> > It's actually a H/W filter.
-> Gah, you mentioned this before and I meant to look back at the
-previous times
-> we have hit this particular type of control (it's pretty common!)
-> 
-> > Here is an abstract from the data sheet:
-> > --
-> > Persistence Register (0x0C)
-> > The persistence register controls the filtering interrupt
-capabilities
-> > of the device. Configurable filtering is provided to allow
-interrupts
-> > to be generated after each ADC integration cycle or if the ADC
-> > integration has produced a result that is outside of the values
-> > specified by threshold register for some specified amount of time.
-> > Separate filtering is provided for proximity and ALS functions. ALS
-> > interrupts are generated using C0DATA.
-> > --
-> > The value provided here by the ABI is actually the number of
-> > 'consecutive values out of range'.
-> >
-> > The H/W takes care of counting the consecutive values out of range
-and
-> > issues and interrupt when reached.
-> >
-> > The timing (or frequency) of these out of range values are based on
-> > the ALS or Prox integration time (determined by that respective
-setting).
-> > That being the case a fixed table of sampling "frequencies" cannot
-be
-> > reasonably defined - as the frequency can vary widely, based on
-other
-> > settings.
-> >
-> > So the register really is set to the desired number of 'values out
-of
-> > range'.
-> > To add another slight twist, the value (number of out of range)
-> > increases by 1 until 5, then by 5 until 60 - with the caveat that a
-> > value of 0 generates an interrupt every ALS or Prox integration
-cycle .
-> >
-> > Since the sysfs-bus-iio doc contained a close match with respect to
-> > the
-> > operation:
-> > Description:
-> > 		Some devices have internal clocks.  This parameter sets
-the
-> > 		resulting sampling frequency.  In many devices this
-> > 		parameter has an effect on input filters etc rather than
-> > 		simply controlling when the input is sampled.  As this
-> > 		effects datardy triggers, hardware buffers and the sysfs
-> > 		direct access interfaces, it may be found in any of the
-> > 		relevant directories.  If it effects all of the above
-> > 		then it is to be found in the base device directory.
-> >
-> > Thus we used "sampling_frequency" - but now I am wondering if it
-> > should be something else.
-> >
-> > If this is better suited for a different ABI please tell me what
-that
-> > would be.
-> I'd argue this should really be sampling frequency anyway.  It's
-actually a
-> common enough thing to see.
-> I was sure we'd hit this before and indeed we did with the
-> tmd277711 driver back in 2010 (hit the mailing list archives for that
-one).
-> Dongguen Kim was the author (cc'd).  Actually grep shows that my own
-sca3000
-> driver has this too (it's been a while!)
-> 
-> It's actually made it through in the abi docs for all sorts of event
-types though I
-> think the only correct user is the sca3000 accelerometer.
-> Description is...
-> 	Period of time (in seconds) for which the condition must be
-> 	met before an event is generated. If direction is not
-> 	specified then this period applies to both directions.
-> 
-> I know it is annoying that this parameter in side the device is very
-heavily
-> dependent on other controls (often the case with this sort of
-> thing) but to have a remotely consistent interface we have to define a
-standard
-> unit.  Hence the 'right' way to handle this is to have a cached value
-in seconds
-> and then work out the nearest possible setting when ever anything else
-that
-> effects it is changed. Fiddly, but we are playing this game all over
-the place in
-> other drivers.
-> 
-> So here you are going to have
-> 
-> in_intensity0_thresh_period and in_proximity0_thresh_period
-> 
-> Both probably taking values as INT_PLUS_MICRO.
-> 
-> Note that we have other filters controls for events such as hysterisis
-which is
-> common on raw adc's.
-> 
-> 
-> Jonathan
-> >
-> > Please help!
-> >
-> > Jon
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-iio"
-> > in the body of a message to majordomo@vger.kernel.org More majordomo
-> > info at  http://vger.kernel.org/majordomo-info.html
-
+	Cyrill
