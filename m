@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab2DEO30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 10:29:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33408 "EHLO mx2.suse.de"
+	id S1753269Ab2DEOaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 10:30:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33448 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638Ab2DEO3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 10:29:25 -0400
-Date: Thu, 05 Apr 2012 16:29:24 +0200
-Message-ID: <s5hhawyfe0r.wl%tiwai@suse.de>
+	id S1752779Ab2DEOaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 10:30:04 -0400
+Date: Thu, 05 Apr 2012 16:30:03 +0200
+Message-ID: <s5hfwcifdzo.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] sound/pci/hda: Rename capture sources of CX20549 to match common conventions
-In-Reply-To: <1333632606.4159.12.camel@localhost>
-References: <1333632606.4159.12.camel@localhost>
+Subject: Re: [PATCH 3/6] sound/pci/hda: fix record volume controls of CX20459 ("Venice")
+In-Reply-To: <1333632616.4159.13.camel@localhost>
+References: <1333632616.4159.13.camel@localhost>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,37 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 05 Apr 2012 15:30:06 +0200,
+At Thu, 05 Apr 2012 15:30:16 +0200,
 Michael Karcher wrote:
 > 
+> The "input converter" widget of the CX20459 has only one input amplifier,
+> expose that one as "Capture Volume/Capture Switch". The actual record
+> source selection is already exposed through the separately installed
+> input mux.
+> 
 > diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-> index 8c6523b..7d92aac 100644
+> index 7d92aac..bd7e7ce 100644
 > --- a/sound/pci/hda/patch_conexant.c
 > +++ b/sound/pci/hda/patch_conexant.c
-> @@ -687,18 +687,18 @@ static const struct hda_channel_mode cxt5045_modes[1] = {
->  static const struct hda_input_mux cxt5045_capture_source = {
->  	.num_items = 2,
->  	.items = {
-> -		{ "IntMic", 0x1 },
-> -		{ "ExtMic", 0x2 },
-> +		{ "Internal Mic", 0x1 },
-> +		{ "Mic", 0x2 },
->  	}
+> @@ -798,10 +798,8 @@ static void cxt5045_hp_unsol_event(struct hda_codec *codec,
+>  }
+>  
+>  static const struct snd_kcontrol_new cxt5045_mixers[] = {
+> -	HDA_CODEC_VOLUME("Internal Mic Capture Volume", 0x1a, 0x01, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Internal Mic Capture Switch", 0x1a, 0x01, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Mic Capture Volume", 0x1a, 0x02, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mic Capture Switch", 0x1a, 0x02, HDA_INPUT),
+> +	HDA_CODEC_VOLUME("Capture Volume", 0x1a, 0x00, HDA_INPUT),
+> +	HDA_CODEC_MUTE("Capture Switch", 0x1a, 0x0, HDA_INPUT),
+>  	HDA_CODEC_VOLUME("PCM Playback Volume", 0x17, 0x0, HDA_INPUT),
+>  	HDA_CODEC_MUTE("PCM Playback Switch", 0x17, 0x0, HDA_INPUT),
+>  	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x17, 0x1, HDA_INPUT),
+> @@ -822,27 +820,18 @@ static const struct snd_kcontrol_new cxt5045_mixers[] = {
 >  };
 >  
->  static const struct hda_input_mux cxt5045_capture_source_benq = {
->  	.num_items = 5,
->  	.items = {
-> -		{ "IntMic", 0x1 },
-> -		{ "ExtMic", 0x2 },
-> -		{ "LineIn", 0x3 },
->  		{ "CD",     0x4 },
-> +		{ "Internal Mic", 0x1 },
-> +		{ "Mic", 0x2 },
-> +		{ "Line In", 0x3 },
+>  static const struct snd_kcontrol_new cxt5045_benq_mixers[] = {
+> -	HDA_CODEC_VOLUME("CD Capture Volume", 0x1a, 0x04, HDA_INPUT),
+> -	HDA_CODEC_MUTE("CD Capture Switch", 0x1a, 0x04, HDA_INPUT),
+>  	HDA_CODEC_VOLUME("CD Playback Volume", 0x17, 0x4, HDA_INPUT),
+>  	HDA_CODEC_MUTE("CD Playback Switch", 0x17, 0x4, HDA_INPUT),
+>  
+> -	HDA_CODEC_VOLUME("Line In Capture Volume", 0x1a, 0x03, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Line In Capture Switch", 0x1a, 0x03, HDA_INPUT),
+>  	HDA_CODEC_VOLUME("Line In Playback Volume", 0x17, 0x3, HDA_INPUT),
+>  	HDA_CODEC_MUTE("Line In Playback Switch", 0x17, 0x3, HDA_INPUT),
+>  
+> -	HDA_CODEC_VOLUME("Mixer Capture Volume", 0x1a, 0x0, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mixer Capture Switch", 0x1a, 0x0, HDA_INPUT),
+> -
+>  	{}
+>  };
+>  
+>  static const struct snd_kcontrol_new cxt5045_mixers_hp530[] = {
+> -	HDA_CODEC_VOLUME("Internal Mic Capture Volume", 0x1a, 0x02, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Internal Mic Capture Switch", 0x1a, 0x02, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Mic Capture Volume", 0x1a, 0x01, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mic Capture Switch", 0x1a, 0x01, HDA_INPUT),
+> +	HDA_CODEC_VOLUME("Capture Volume", 0x1a, 0x00, HDA_INPUT),
+> +	HDA_CODEC_MUTE("Capture Switch", 0x1a, 0x0, HDA_INPUT),
+>  	HDA_CODEC_VOLUME("PCM Playback Volume", 0x17, 0x0, HDA_INPUT),
+>  	HDA_CODEC_MUTE("PCM Playback Switch", 0x17, 0x0, HDA_INPUT),
+>  	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x17, 0x2, HDA_INPUT),
+> @@ -978,16 +967,8 @@ static const struct snd_kcontrol_new cxt5045_test_mixer[] = {
+>  		.put = conexant_mux_enum_put,
+>  	},
+>  	/* Audio input controls */
+> -	HDA_CODEC_VOLUME("Input-1 Volume", 0x1a, 0x0, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Input-1 Switch", 0x1a, 0x0, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Input-2 Volume", 0x1a, 0x1, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Input-2 Switch", 0x1a, 0x1, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Input-3 Volume", 0x1a, 0x2, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Input-3 Switch", 0x1a, 0x2, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Input-4 Volume", 0x1a, 0x3, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Input-4 Switch", 0x1a, 0x3, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Input-5 Volume", 0x1a, 0x4, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Input-5 Switch", 0x1a, 0x4, HDA_INPUT),
+> +	HDA_CODEC_VOLUME("Capture Volume", 0x1a, 0x0, HDA_INPUT),
+> +	HDA_CODEC_MUTE("Capture Switch", 0x1a, 0x0, HDA_INPUT),
+>  	{ } /* end */
+>  };
 
-This could be simply "Line".
-Other than that, looks good.
+Looks good.
 
 
 Takashi
