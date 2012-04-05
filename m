@@ -1,168 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab2DEBMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 21:12:46 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:59574 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab2DEBMp convert rfc822-to-8bit (ORCPT
+	id S1757537Ab2DEBPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 21:15:32 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51604 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab2DEBPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 21:12:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F78BF08.2090709@suse.cz>
-References: <1331603857.3436.24.camel@minggr>
-	<4F78BF08.2090709@suse.cz>
-Date: Thu, 5 Apr 2012 09:12:44 +0800
-X-Google-Sender-Auth: PsHewdsvi8D1HHJ7GGzeg28B4Jg
-Message-ID: <CAF1ivSajbUnP05qVz8SaSmQ4XSxhT75qp5yGCGfa1TDk6T9V9g@mail.gmail.com>
-Subject: Re: [PATCH v2] libata: disable runtime pm for hotpluggable port
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
-        cwillu@cwillu.com, jackdachef@gmail.com,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Apr 2012 21:15:31 -0400
+Date: Wed, 04 Apr 2012 21:15:06 -0400 (EDT)
+Message-Id: <20120404.211506.929057223227809703.davem@davemloft.net>
+To: msink@trikom.ru
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        broonie@opensource.wolfsonmicro.com, msink@permonline.ru
+Subject: Re: [PATCH v8 0/2] Ethernet drivers for WIZnet chips
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1333540660-30551-1-git-send-email-msink@trikom.ru>
+References: <1333524216-23488-1-git-send-email-msink@permonline.ru>
+	<1333540660-30551-1-git-send-email-msink@trikom.ru>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Apr 2012 18:15:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q351FdZi023372
 
-On Mon, Apr 2, 2012 at 4:48 AM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 03/13/2012 02:57 AM, Lin Ming wrote:
->> Currently, hotplug doesn't work if port is already runtime suspended.
->> For now, we simply disable runtime pm for hotpluggable port.
->> Later, we should add runtime pm support for hotpluggable port too.
->>
->> Bug report:
->> https://lkml.org/lkml/2012/2/19/70
->>
->> v2:
->> - Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
->>
->> TODO: add similar hotpluggable port check for controllers other than
->> AHCI.
->
-> Any updates on this? The patches which introduced the bug are in -rc1
-> now. Unlike this patch.
+From: Mike Sinkovsky <msink@trikom.ru>
+Date: Wed,  4 Apr 2012 17:57:38 +0600
 
-Jeff,
+> From: Mike Sinkovsky <msink@permonline.ru>
+> 
+> Based on original driver from chip manufacturer, but nearly full rewite.
+> Tested and used in production with Blackfin BF531 embedded processor.
+> 
+> Signed-off-by: Mike Sinkovsky <msink@permonline.ru>
 
-Any concern to apply this patch?
+I don't see the appropriate changes in your patches to make
+sure that drivers/net/ethernet/{Kconfig,Makefile} consider
+and traverse down into the wiznet/ subdirectory.
 
-Regards,
-Lin Ming
+Furthermore, once that is fixed these drivers generate warnings
+when built:
 
->
->> Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
->> Reported-and-tested-by: cwillu@cwillu.com
->> Reported-and-tested-by: jackdachef@gmail.com
->> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
->> ---
->> †drivers/ata/ahci.c † † † † † † | † †3 +++
->> †drivers/ata/ahci.h † † † † † † | † †3 +++
->> †drivers/ata/libahci.c † † † † †| † 20 ++++++++++++++++++++
->> †drivers/ata/libata-transport.c | † †6 ++++--
->> †include/linux/libata.h † † † † | † †2 ++
->> †5 files changed, 32 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
->> index d07bf03..02e93ff 100644
->> --- a/drivers/ata/ahci.c
->> +++ b/drivers/ata/ahci.c
->> @@ -1145,6 +1145,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
->> † † † if (hpriv->cap & HOST_CAP_PMP)
->> † † † † † † † pi.flags |= ATA_FLAG_PMP;
->>
->> + † † if (hpriv->cap & HOST_CAP_SXS)
->> + † † † † † † pi.flags |= ATA_FLAG_EXTERNAL;
->> +
->> † † † ahci_set_em_messages(hpriv, &pi);
->>
->> † † † if (ahci_broken_system_poweroff(pdev)) {
->> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
->> index b175000..92f7172 100644
->> --- a/drivers/ata/ahci.h
->> +++ b/drivers/ata/ahci.h
->> @@ -172,6 +172,9 @@ enum {
->> † † † PORT_CMD_ALPE † † † † † = (1 << 26), /* Aggressive Link PM enable */
->> † † † PORT_CMD_ATAPI † † † † †= (1 << 24), /* Device is ATAPI */
->> † † † PORT_CMD_FBSCP † † † † †= (1 << 22), /* FBS Capable Port */
->> + † † PORT_CMD_ESP † † † † † †= (1 << 21), /* External SATA Port */
->> + † † PORT_CMD_MPSP † † † † † = (1 << 19), /* Mechanical Presence Switch Attached to Port */
->> + † † PORT_CMD_HPCP † † † † † = (1 << 18), /* Hot Plug Capable Port */
->> † † † PORT_CMD_PMP † † † † † †= (1 << 17), /* PMP attached */
->> † † † PORT_CMD_LIST_ON † † † †= (1 << 15), /* cmd list DMA engine running */
->> † † † PORT_CMD_FIS_ON † † † † = (1 << 14), /* FIS DMA engine running */
->> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
->> index a72bfd0..7d72d3c 100644
->> --- a/drivers/ata/libahci.c
->> +++ b/drivers/ata/libahci.c
->> @@ -1097,6 +1097,23 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
->> † † † writel(1 << port_no, mmio + HOST_IRQ_STAT);
->> †}
->>
->> +static bool ahci_port_pluggable(struct ata_port *ap)
->> +{
->> + † † void __iomem *port_mmio = ahci_port_base(ap);
->> + † † u32 cmd;
->> +
->> + † † cmd = readl(port_mmio + PORT_CMD);
->> +
->> + † † if ((ap->flags & ATA_FLAG_EXTERNAL) &&
->> + † † † † (cmd & PORT_CMD_ESP))
->> + † † † † † † return true;
->> +
->> + † † if (cmd & (PORT_CMD_MPSP | PORT_CMD_HPCP))
->> + † † † † † † return true;
->> +
->> + † † return false;
->> +}
->> +
->> †void ahci_init_controller(struct ata_host *host)
->> †{
->> † † † struct ahci_host_priv *hpriv = host->private_data;
->> @@ -1112,6 +1129,9 @@ void ahci_init_controller(struct ata_host *host)
->> † † † † † † † if (ata_port_is_dummy(ap))
->> † † † † † † † † † † † continue;
->>
->> + † † † † † † if (ahci_port_pluggable(ap))
->> + † † † † † † † † † † ap->flags |= ATA_FLAG_PLUGGABLE;
->> +
->> † † † † † † † ahci_port_init(host->dev, ap, i, mmio, port_mmio);
->> † † † }
->>
->> diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
->> index 74aaee3..a7166b9 100644
->> --- a/drivers/ata/libata-transport.c
->> +++ b/drivers/ata/libata-transport.c
->> @@ -292,8 +292,10 @@ int ata_tport_add(struct device *parent,
->> † † † }
->>
->> † † † device_enable_async_suspend(dev);
->> - † † pm_runtime_set_active(dev);
->> - † † pm_runtime_enable(dev);
->> + † † if (!(ap->flags & ATA_FLAG_PLUGGABLE)) {
->> + † † † † † † pm_runtime_set_active(dev);
->> + † † † † † † pm_runtime_enable(dev);
->> + † † }
->>
->> † † † transport_add_device(dev);
->> † † † transport_configure_device(dev);
->> diff --git a/include/linux/libata.h b/include/linux/libata.h
->> index cafc09a..f46961d 100644
->> --- a/include/linux/libata.h
->> +++ b/include/linux/libata.h
->> @@ -187,6 +187,8 @@ enum {
->> † † † ATA_FLAG_SLAVE_POSS † † = (1 << 0), /* host supports slave dev */
->> † † † † † † † † † † † † † † † † † † † † † /* (doesn't imply presence) */
->> † † † ATA_FLAG_SATA † † † † † = (1 << 1),
->> + † † ATA_FLAG_EXTERNAL † † † = (1 << 2), /* Controller supports external SATA */
->> + † † ATA_FLAG_PLUGGABLE † † †= (1 << 3), /* Port is hotpluggable */
->> † † † ATA_FLAG_NO_ATAPI † † † = (1 << 6), /* No ATAPI support */
->> † † † ATA_FLAG_PIO_DMA † † † †= (1 << 7), /* PIO cmds via DMA */
->> † † † ATA_FLAG_PIO_LBA48 † † †= (1 << 8), /* Host DMA engine is LBA28 only */
->>
-> --
-> js
-> suse labs
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: initialization from incompatible pointer type [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: (near initialization for °w5300_pm_ops.suspend¢) [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: initialization from incompatible pointer type [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: (near initialization for °w5300_pm_ops.resume¢) [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: initialization from incompatible pointer type [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: (near initialization for °w5300_pm_ops.freeze¢) [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: initialization from incompatible pointer type [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: (near initialization for °w5300_pm_ops.thaw¢) [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: initialization from incompatible pointer type [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: (near initialization for °w5300_pm_ops.poweroff¢) [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: initialization from incompatible pointer type [enabled by default]
+drivers/net/ethernet/wiznet/w5300.c:708:8: warning: (near initialization for °w5300_pm_ops.restore¢) [enabled by default]
+
+It seems that the arguments and return types for these operations have
+changed since you worked on these patches, but this should be easy
+to fix up.
+
+Please cure these two issues and I'll happily put these new drivers
+into net-next, and meanwhile you can continue to work with Eric
+Dumazet to correct the TX flow control and locking issues.
+
+Thanks.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
