@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab2DEKvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 06:51:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57497 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2DEKvL (ORCPT
+	id S1754744Ab2DEKvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 06:51:37 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:46011 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab2DEKvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 06:51:11 -0400
-Date: Thu, 5 Apr 2012 11:53:22 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Shankarmurthy, Akshay" <akshay.s@ti.com>
-Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] serial: 8250: Add cpufreq support
-Message-ID: <20120405115322.15e6088c@pyramind.ukuu.org.uk>
-In-Reply-To: <6F6B80BD2E18844D97BB4B51FE3705C831790EA0@DBDE01.ent.ti.com>
-References: <1333433022-5455-1-git-send-email-akshay.s@ti.com>
-	<20120403105530.7fa3bce7@pyramind.ukuu.org.uk>
-	<6F6B80BD2E18844D97BB4B51FE3705C831790EA0@DBDE01.ent.ti.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Apr 2012 06:51:36 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+	<1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
+	<m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+	<20120402202848.1EB833E02A7@localhost> <m2y5qdow0v.fsf@igel.home>
+	<20120404154020.40C513E09D5@localhost>
+X-Yow: Hello, GORRY-O!!  I'm a GENIUS from HARVARD!!
+Date: Thu, 05 Apr 2012 12:51:27 +0200
+In-Reply-To: <20120404154020.40C513E09D5@localhost> (Grant Likely's message of
+	"Wed, 04 Apr 2012 08:40:20 -0700")
+Message-ID: <m21uo2v4cw.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Apr 2012 10:40:55 +0000
-"Shankarmurthy, Akshay" <akshay.s@ti.com> wrote:
+Grant Likely <grant.likely@secretlab.ca> writes:
 
-> Hi,
-> 
-> On Tue, Apr 03, 2012 at 15:25:30, Alan Cox wrote:
-> > > This patch was submitted 2 years ago but didn't make it to the mainline. Now i am reposting it.
-> > 
-> > Can you fix it instead of just reposting it ?
-> > 
-> > 
-> > > +#ifdef CONFIG_CPU_FREQ
-> > > +static int serial8250_cpufreq_transition(struct notifier_block *nb,
-> > > +					     unsigned long val, void *data)
-> > > +{
-> > > +	struct uart_8250_port *p;
-> > > +	struct uart_port *uport;
-> > 
-> > What is your locking model ?
-> > 
-> 
-> I will have a look at this and add the lock if necessary.
+> I bet it is NR_IRQS related.  You have SPARSE_IRQ enabled, which means
+> the maximum number of irq_descs is IRQ_BITMAP_BITS (NR_IRQS + 8192).
 
-At the very least you need reference counts held on the tty struct and to
-allow for the tty having vanished under you.
+The actual definition uses NR_IRQS + 8196.  Guess that's a typo.  (Does
+it really make sense to add NR_IRQS here?)
 
-> > 
-> > > +static inline void serial8250_cpufreq_deregister(struct uart_8250_port *p)
-> > 
-> > unregister
-> 
-> Ok. I will change it.
-> 
-> > 
-> > > +		ret = serial8250_cpufreq_register(uart);
-> > > +		if (ret < 0)
-> > > +			printk(KERN_ERR "Failed to add cpufreq notifier\n");
-> > 
-> > Why do this for devices that don't care.
-> 
-> This is taken care in the code. If the device's frequency doesn't change after the
-> change in the cpu frequency then it doesn't go for execution of the function "serial8250_set_termios".
+> diff --git a/arch/powerpc/include/asm/irq.h b/arch/powerpc/include/asm/irq.h
+> index cf417e51..9edf499 100644
+> --- a/arch/powerpc/include/asm/irq.h
+> +++ b/arch/powerpc/include/asm/irq.h
+> @@ -20,7 +20,7 @@
+>  
+>  /* Define a way to iterate across irqs. */
+>  #define for_each_irq(i) \
+> -       for ((i) = 0; (i) < NR_IRQS; ++(i))
+> +       for ((i) = 0; (i) < nr_irqs; ++(i))
 
-But you still call each function and walk the list for each port on each
-CPU transition. There are people with 128 ports in their systems and the
-cpu frequency change is latency critical.
+There are exactly two uses of for_each_irq, one is related to cpu
+hotplug, the other to kexec, so that cannot make any difference.
 
-Nothing should even be getting registered in such cases.
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
