@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab2DEGtg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 02:49:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33271 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2DEGte (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 02:49:34 -0400
-Date: Wed, 4 Apr 2012 23:49:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mike Galbraith <mgalbraith@suse.de>
-cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch] cgroups: disallow attaching kthreadd
-In-Reply-To: <1333608177.7783.106.camel@marge.simpson.net>
-Message-ID: <alpine.DEB.2.00.1204042344090.8991@chino.kir.corp.google.com>
-References: <1333475906.7439.7.camel@marge.simpson.net> <alpine.DEB.2.00.1204040008040.5356@chino.kir.corp.google.com> <1333535915.7188.18.camel@marge.simpson.net> <alpine.DEB.2.00.1204040419450.23137@chino.kir.corp.google.com> <1333542649.7188.40.camel@marge.simpson.net>
- <alpine.DEB.2.00.1204041414220.26086@chino.kir.corp.google.com> <20120404230922.GC2173@dhcp-172-17-108-109.mtv.corp.google.com> <1333601231.7783.31.camel@marge.simpson.net> <alpine.DEB.2.00.1204042157530.31186@chino.kir.corp.google.com>
- <1333604949.7783.76.camel@marge.simpson.net> <alpine.DEB.2.00.1204042303510.7035@chino.kir.corp.google.com> <1333608177.7783.106.camel@marge.simpson.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753173Ab2DEGxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 02:53:10 -0400
+Received: from csmtp3.one.com ([91.198.169.23]:23127 "EHLO csmtp3.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898Ab2DEGxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 02:53:08 -0400
+Date: Thu, 5 Apr 2012 08:53:49 +0200
+From: Eric Andersson <eric.andersson@unixphere.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
+        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
+        stefan.nilsson@unixphere.com, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCHv3 3/3] misc: add support for bmp18x chips to the bmp085
+ driver
+Message-ID: <20120405065349.GA7346@skinner.xfiles.lan>
+References: <1333568759-13536-1-git-send-email-eric.andersson@unixphere.com>
+ <1333568759-13536-4-git-send-email-eric.andersson@unixphere.com>
+ <20120404195532.GB10787@opensource.wolfsonmicro.com>
+ <201204042000.34160.arnd@arndb.de>
+ <20120404201116.GC10787@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404201116.GC10787@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Apr 2012, Mike Galbraith wrote:
+Hi,
 
-> > The last time we went through this, it was left after Andrew had fixed it 
-> > up when the cpusets version was merged in -mm without any disagreement 
-> > from Peter who was cc'd and that version was acked both by myself and Paul 
-> > Menage at https://lkml.org/lkml/2011/12/14/402.  Andrew dropped it and 
-> > asked for a repost since there was some on-going scheduler work going on 
-> > in linux-next that caused that version not to apply.  No follow-up was 
-> > ever offered.
+Thanks for the review guys!
+
+On 21:11 Wed 04 Apr     , Mark Brown wrote:
+> On Wed, Apr 04, 2012 at 08:00:33PM +0000, Arnd Bergmann wrote:
+> > On Wednesday 04 April 2012, Mark Brown wrote:
+> > > > +static const struct of_device_id bmp085_of_match[] = {
+> > > > +     { .compatible = "bosch-sensortec,bmp085", },
 > 
-> Hm, I thought I did that.
+> > > Traditionally the stock ticker symbol would be used.
 > 
-
-There's no reply from you to Andrew's email unless it was private.
-
-> > Why have we now gone in a completely different direction again?
+> > I though about commenting on that as well, but since Bosch is a foundation
+> > and not publically traded, that would be hard to accomplish. Is there
+> > an official fallback for companies that don't have a stock ticker symbol?
 > 
-> I already said that after Peter griped and suggested global, I thought
-> about it, and liked that better.
+> Guess we should ask the DT people...  I mostly just noticed that the
+> name appeared somewhat verbose - perhaps just plain "bosch" if there's
+> not a better abbrevation?
 
-I think you're taking Peter's questions as a nack.  He asked a question, I 
-answered it.  He didn't participate in the thread after October 20.  
-Andrew's email to you asking for a new version is December 14 with these 
-lines:
+If there are no further objections let's go with "bosch". I'll prepare a
+new patch-set ASAP.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Paul Menage <paul@paulmenage.org>
-Cc: Tejun Heo <htejun@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+-- 
+Best regards,
+ Eric
 
-He's been cc'd the whole time.  Looking through the lengthy emails, he 
-never actually nack'd _any_ version of this patch.  He asked why not do it 
-for all cgroups.  That's it.
-
-If cpusets is a cgroup, why would he nack a patch that does it for cpusets 
-that addresses a cpusets problem if he was asking to do it for _all_ 
-cgroups including cpusets?
-
-> The submitted patchlet can either fly
-> or die.  It's not a big deal.
-> 
-
-I'm hoping you will take this bug more seriously.
+http://www.unixphere.com
