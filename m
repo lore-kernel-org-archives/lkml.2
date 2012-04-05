@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2DEMdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 08:33:12 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:40841 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab2DEMdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 08:33:10 -0400
-Message-ID: <1333629184.3494.12.camel@jlt3.sipsolutions.net>
-Subject: Re: [PATCH 4/4] compat: add some tracing backport work
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>
-Cc: "Luis R. Rodriguez" <mcgrof@frijolero.org>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        lf_driver_backport@lists.linux-foundation.org
-Date: Thu, 05 Apr 2012 14:33:04 +0200
-In-Reply-To: <20120328100027.GA4420@bombadil.infradead.org> (sfid-20120328_120100_045553_52796B2A)
-References: <1332214021-9716-1-git-send-email-mcgrof@frijolero.org>
-	 <1332214021-9716-5-git-send-email-mcgrof@frijolero.org>
-	 <1332245766.3329.14.camel@jlt3.sipsolutions.net>
-	 <CAB=NE6XyDDfzu71K-1ecMQ+F-0Z1iTN4OKCUjJ+E3yxvydks0Q@mail.gmail.com>
-	 <CAB=NE6XXd-T5B37Cc_eCwnWHRk-_UVn0JY0mQjzMQcK+ZcLuWQ@mail.gmail.com>
-	 <1332751768.3511.3.camel@jlt3.sipsolutions.net>
-	 <20120326125822.GA11929@bombadil.infradead.org>
-	 <20120328100027.GA4420@bombadil.infradead.org>
-	 (sfid-20120328_120100_045553_52796B2A)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752725Ab2DEMiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 08:38:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62676 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab2DEMiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 08:38:04 -0400
+Date: Thu, 5 Apr 2012 08:37:59 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
+        pascal.chapperon@wanadoo.fr
+Subject: Re: RCU related performance regression in 3.3
+Message-ID: <20120405123759.GE1963@zod.bos.redhat.com>
+References: <20120404152726.GB16299@zod.bos.redhat.com>
+ <20120404213633.GI2302@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404213633.GI2302@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-28 at 06:00 -0400, Luis R. Rodriguez wrote:
+On Wed, Apr 04, 2012 at 02:36:33PM -0700, Paul E. McKenney wrote:
+> On Wed, Apr 04, 2012 at 11:27:27AM -0400, Josh Boyer wrote:
+> > Hi Paul,
+> > 
+> > We've had a few reports of some boot slowdowns with the 3.3 rebase we
+> > did in Fedora 16.  One of our users volunteered to bisect a vanilla
+> > kernel and wound up at "rcu: Permit dyntick-idle with callbacks pending
+> > (commit 7cb924990)".  You can find more details in the bug [1], but it's
+> > been reported on both physical hardware and in virtual machines.
+> > 
+> > Have you seen anything like this in your testing?  Given the user used a
+> > vanilla 3.3 kernel, I'm wondering if there is a targetted fix that might
+> > be backported.  If so, it would be good to get that headed to the 3.3.y
+> > stable tree.
+> > 
+> > josh
+> > 
+> > [1] https://bugzilla.redhat.com/show_bug.cgi?id=806548
+> 
+> I will look into this.  In the meantime, does setting
+> CONFIG_RCU_FAST_NO_HZ=n get rid of the slowdowns?
 
-> I've managed to backport tracing it seems, even when CONFIG_TRACEPOINTS
-> is enabled.
+Seems so.  Pascal tried 3.4-rc1 with and without that set and found that
+disabling it lead to consistent timings.  He put his findings in the
+bug, and I've also now CC'd him.
 
-Nope, you've managed to completely kill tracing.
-
-
-> +#undef __DECLARE_TRACE
-> +#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
-> +	static inline void trace_##name(proto)				\
-> +	{ }								\
-> +	static inline void trace_##name##_rcuidle(proto)		\
-> +	{ }								\
-> +	static inline int						\
-> +	register_trace_##name(void (*probe)(proto))			\
-> +	{								\
-> +		return -ENOSYS;						\
-> +	}								\
-> +	static inline void						\
-> +	unregister_trace_##name(void (*probe)(proto))			\
-> +	{								\
-> +		return -ENOSYS;						\
-> +	}								\
-> +	static inline void check_trace_callback_type_##name(void (*cb)(data_proto)) \
-> +	{								\
-> +	}
-
-All of this simply completely kills tracing. Worse, the tracepoints get
-registered, but their trace_##name functions do nothing, so you can
-think that they're there, but they never record data ...
-
-The old way was much better. Can we just let 2.6.24 and the other
-ancients die in peace?
-
-johannes
-
+josh
