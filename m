@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab2DEIIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 04:08:25 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:19049 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab2DEIIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 04:08:22 -0400
-Date: Thu, 5 Apr 2012 10:08:20 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Joe Perches <joe@perches.com>, Greg Kroah-Hartmann <greg@kroah.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] printk: support structured and multi-facility log
-	messages
-Message-ID: <20120405080820.GB17658@merkur.ravnborg.org>
-References: <1333569554.864.3.camel@mop> <1333583480.23520.37.camel@joe2Laptop> <20120405003321.GB27595@kroah.com> <1333586419.23520.52.camel@joe2Laptop> <CAPXgP11qdyccftPPA9LSRKVb-Xnf8BzP+deUmTzHnuVxoTQKog@mail.gmail.com>
+	id S1752210Ab2DEIMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 04:12:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27200 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539Ab2DEIMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 04:12:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127369620"
+Date: Thu, 5 Apr 2012 11:13:03 +0300
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: ranjith kumar <ranjithproxy@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: regarding transfer of files through bluetooth, WIFI and WIFI
+ direct
+Message-ID: <20120405081255.GC804@aemeltch-MOBL1>
+References: <CAG9fbzaEzPMn6uBmobR2C+Hd6rjxRMNQpQBLhr7S1wnEQRTZNw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPXgP11qdyccftPPA9LSRKVb-Xnf8BzP+deUmTzHnuVxoTQKog@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAG9fbzaEzPMn6uBmobR2C+Hd6rjxRMNQpQBLhr7S1wnEQRTZNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > How are arbitrary key/value pairs attached
-> > in a printk?
+Hi,
+
+On Thu, Apr 05, 2012 at 01:35:01PM +0530, ranjith kumar wrote:
+> Hi,
+> I want to transfer image files  through bluetooth between two computers.
+> Which profile I have to use?
 > 
-> There are 120 lines in the changelog, and a 100 lines large comment
-> block in the source code, and another 50 lines spread over the code,
-> and the hexdump examples in it, and all that? Even without looking at
-> a single line of code, it should be explained from different
-> viewpoints more than once.
+> I dont know much about "Basic Imaging Profile".
+> But the thing is that I cant use Basic image profile.
+> 
+> So what profile I have to use for transfer of files? Can I use OBEX
+> profile for that?
 
-color me blind - but I could not find any example of how I specify
-key/value pairs when I use printk().
+Yes you can. This shall be supported in your distro.
 
-I could find lots of internal information - that parts looks to
-be extensively documented - good.
+> Also want transfer video files through WIFI and WIFI direct.
 
-But how I as a user specify this I failed to find.
-Today I do:
+Check this out:
 
-    printk(KERN_ERR "foobar is bad");
+http://wireless.kernel.org/en/developers/p2p/howto
 
-But how is that extended to include the key/value pairs?
+Best regards 
+Andrei Emeltchenko 
 
-
-	Sam
