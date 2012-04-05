@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab2DEX3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:29:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54149 "EHLO
+	id S1756666Ab2DEX3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:29:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54153 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab2DEX3H (ORCPT
+	with ESMTP id S1756557Ab2DEX3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:29:07 -0400
+	Thu, 5 Apr 2012 19:29:12 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sorin Dumitru <dumitru.sorin87@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/5] perf hists browser: Fix NULL deref in hists browsing code
-Date: Thu,  5 Apr 2012 20:28:51 -0300
-Message-Id: <1333668532-3624-5-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 0/5] perf/urgent fixes
+Date: Thu,  5 Apr 2012 20:28:47 -0300
+Message-Id: <1333668532-3624-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1333668532-3624-1-git-send-email-acme@infradead.org>
-References: <1333668532-3624-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+Hi Ingo,
 
-If there's an event with no samples in data file, the perf report
-command can segfault after entering the event details menu.
+	Please consider pulling,
 
-Following steps reproduce the issue:
+- Arnaldo
 
- # ./perf record -e syscalls:sys_enter_kexec_load,syscalls:sys_enter_mmap ls
- # ./perf report
- # enter '0 syscalls:sys_enter_kexec_load' menu
- # pres ENTER twice
+The following changes since commit 7b78f13603c6fcb64e020a0bbe31a651ea2b657b:
 
-Above steps are valid assuming ls wont run kexec.. ;)
+  perf tools: Fix getrusage() related build failure on glibc trunk (2012-04-04 11:59:00 +0200)
 
-The check for sellection to be NULL is missing. The fix makes sure it's
-being check. Above steps now endup with menu being displayed allowing
-'Exit' as the only option.
+are available in the git repository at:
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1333570898-10505-2-git-send-email-jolsa@redhat.com
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+
+for you to fetch changes up to 31d68e7b66f168e623902e194af1e52b8cf75d71:
+
+  perf annotate: Validate addr in symbol__inc_addr_samples (2012-04-05 19:51:14 -0300)
+
+----------------------------------------------------------------
+Fixes for perf/urgent
+
+. Fix annotation histograms decay: We were decaying just the entries on the
+  objdump lines, i.e. the first byte of an instruction, leading to percentage
+  errors when samples happened in the other bytes of instructions. Affects
+  only live annotation.
+
+. Use most recent map for an histogram, avoiding underflow problems in
+  annotation histograms. Fix from David Miller
+
+. Add validation in 'perf top' for the underflow problems mentioned in the
+  previous fix. Present information to the user when such thing happens and
+  ask for reporting to lkml.
+
+. Fix the hists browser when there are multiple events in a perf.data file but
+  one of them has no samples. Fix from Jiri Olsa
+
+. Add intel_idle to the list of idle routines to skip in perf top.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
+
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (3):
+      perf top: Add intel_idle to the skip list
+      perf annotate: Fix hist decay
+      perf annotate: Validate addr in symbol__inc_addr_samples
+
+David Miller (1):
+      perf hists: Catch and handle out-of-date hist entry maps.
+
+Jiri Olsa (1):
+      perf hists browser: Fix NULL deref in hists browsing code
+
+ tools/perf/builtin-top.c            |   36 ++++++++++++++++++++++++++++++++++-
+ tools/perf/util/annotate.c          |   16 ++++++----------
+ tools/perf/util/hist.c              |   12 ++++++++++++
+ tools/perf/util/map.c               |    1 +
+ tools/perf/util/map.h               |    1 +
  tools/perf/util/ui/browsers/hists.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index d7a1c4afe..2f83e5d 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -125,6 +125,9 @@ static int callchain__count_rows(struct rb_root *chain)
- 
- static bool map_symbol__toggle_fold(struct map_symbol *self)
- {
-+	if (!self)
-+		return false;
-+
- 	if (!self->has_children)
- 		return false;
- 
--- 
-1.7.9.2.358.g22243
-
+ 6 files changed, 58 insertions(+), 11 deletions(-)
