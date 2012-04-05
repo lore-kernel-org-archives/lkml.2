@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab2DEPYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:24:48 -0400
-Received: from linux-sh.org ([111.68.239.195]:41901 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752226Ab2DEPYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 11:24:46 -0400
-Date: Fri, 6 Apr 2012 00:24:43 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh updates for 3.4-rc1
-Message-ID: <20120405152443.GE23761@linux-sh.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+	id S1754123Ab2DEP0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:26:13 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:42558 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab2DEP0M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 11:26:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120405150516.GA27223@gmail.com>
+References: <1333569554.864.3.camel@mop> <20120405150516.GA27223@gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 5 Apr 2012 17:25:51 +0200
+Message-ID: <CAPXgP116dUAG61Fa34BsUitH+t=zMy3krLDQofZ9=LFBTCp5KA@mail.gmail.com>
+Subject: Re: [PATCH] printk: support structured and multi-facility log messages
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f52b69f86e27903d6896ed5fa7cd280fec8de532:
+On Thu, Apr 5, 2012 at 17:05, Ingo Molnar <mingo@kernel.org> wrote:
+> * Kay Sievers <kay@vrfy.org> wrote:
 
-  Merge tag 'sh-for-linus' of git://github.com/pmundt/linux-sh (2012-03-30 00:09:17 -0700)
+>> - Record-based stream instead of the traditional byte stream
+>>   buffer. All records carry a 64 bit timestamp, the syslog facility
+>>   and priority in the record header.
 
-are available in the git repository at:
+> Hm, this seems to be a conceptual duplication of the console
+> tracepoint that include/trace/events/printk.h already offers.
 
-  git://github.com/pmundt/linux-sh.git sh-for-linus
+General purpose kernel logging should not depend on _optional_
+facilities mainly intended for debugging and profiling. This is stuff
+that should be used on every box out there, very much much unlike
+tracing.
 
-Paul Mundt (6):
-      sh: fix up fallout from system.h disintegration.
-      sh: dwarf unwinder depends on SHcompact.
-      sh: dma: Fix up device attribute mismatch from sysdev fallout.
-      sh: vsyscall: Fix up .eh_frame generation.
-      serial: sh-sci: use serial_port_in/out vs sci_in/out.
-      Merge branches 'sh/urgent', 'sh/vsyscall' and 'common/serial-rework' into sh-latest
+I can understand that you propose the trace things, but I'm not
+convinced that tracing is the same as system logging, or it will ever
+become it.
 
-Shimoda, Yoshihiro (1):
-      sh: fix clock-sh7757 for the latest sh_mobile_sdhi driver
+Tracing is either duplicating everything in the kmsg buffer, or it
+will possibly provide dangling pointers into it. Both doesn't sound
+too convincing. If printk_time is used, you can even store more
+messages in the same buffer as today.
 
- arch/sh/Kconfig.debug                        |    1 +
- arch/sh/boards/board-sh7785lcr.c             |    1 +
- arch/sh/boards/mach-hp6xx/pm.c               |    1 +
- arch/sh/drivers/dma/dma-sysfs.c              |    2 +-
- arch/sh/kernel/cpu/fpu.c                     |    1 +
- arch/sh/kernel/cpu/sh2a/fpu.c                |    1 +
- arch/sh/kernel/cpu/sh4/fpu.c                 |    1 +
- arch/sh/kernel/cpu/sh4a/clock-sh7757.c       |    2 +-
- arch/sh/kernel/cpu/shmobile/pm.c             |    1 +
- arch/sh/kernel/idle.c                        |    2 +-
- arch/sh/kernel/kgdb.c                        |    1 +
- arch/sh/kernel/process_32.c                  |    1 +
- arch/sh/kernel/smp.c                         |    1 +
- arch/sh/kernel/vsyscall/vsyscall-sigreturn.S |   35 ++++++
- arch/sh/kernel/vsyscall/vsyscall-trapa.S     |   23 ++--
- arch/sh/mm/cache-sh4.c                       |    1 +
- arch/sh/mm/flush-sh4.c                       |    1 +
- arch/sh/mm/sram.c                            |    1 +
- drivers/tty/serial/sh-sci.c                  |  167 +++++++++++++-------------
- drivers/tty/serial/sh-sci.h                  |    8 +-
- 20 files changed, 147 insertions(+), 105 deletions(-)
+The added code is less than 100 lines, if you remove the export to
+/dev/kmsg. We get what we are looking for basically for free, without
+to mandate any additional subsystem to built into the kernel/.
+
+I doubt we can here talk about "yet another logging"; it is exactly
+the intention _not _ to have another copy of the same data, like
+tracing would introduce. This is just an improved version of the good
+old kmsg buffer without really changing its interface.
+
+Kay
