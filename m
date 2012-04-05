@@ -1,118 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab2DEPLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 11:11:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19651 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754881Ab2DEPLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 11:11:19 -0400
-Date: Thu, 5 Apr 2012 11:10:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120405151026.GB23999@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404183528.GJ12676@redhat.com>
- <20120404214228.GA6471@localhost>
+	id S1754658Ab2DEPLO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 11:11:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38806 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab2DEPLN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 11:11:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120404214228.GA6471@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120404075956.GB9073@pengutronix.de>
+References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
+	<20120403165320.GG19952@sequoia.sous-sol.org>
+	<20120403170708.GC2477@pengutronix.de>
+	<20120403171112.GH19952@sequoia.sous-sol.org>
+	<20120403171736.GD2477@pengutronix.de>
+	<CAMSQXEHpjD7LWQkKWJOU=9eFYqsaJi-xHFTxexQr7yoKiCG7HQ@mail.gmail.com>
+	<20120404075956.GB9073@pengutronix.de>
+Date: Thu, 5 Apr 2012 17:11:13 +0200
+Message-ID: <CAMSQXEHxaJpmjpOz_VL54bs1W9x3kCJKGoeTCmBpZva_hSTVsw@mail.gmail.com>
+Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: gregkh@linuxfoundation.org, Wolfram Sang <w.sang@pengutronix.de>
+Cc: Chris Wright <chrisw@sous-sol.org>, linux-kernel@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 02:42:28PM -0700, Fengguang Wu wrote:
-> On Wed, Apr 04, 2012 at 02:35:29PM -0400, Vivek Goyal wrote:
-> > On Wed, Apr 04, 2012 at 10:51:24AM -0700, Fengguang Wu wrote:
-> > 
-> > [..]
-> > > The sweet split point would be for balance_dirty_pages() to do cgroup
-> > > aware buffered write throttling and leave other IOs to the current
-> > > blkcg. For this to work well as a total solution for end users, I hope
-> > > we can cooperate and figure out ways for the two throttling entities
-> > > to work well with each other.
-> > 
-> > Throttling read + direct IO, higher up has few issues too. Users will
-> 
-> Yeah I have a bit worry about high layer throttling, too.
-> Anyway here are the ideas.
-> 
-> > not like that a task got blocked as it tried to submit a read from a
-> > throttled group.
-> 
-> That's not the same issue I worried about :) Throttling is about
-> inserting small sleep/waits into selected points. For reads, the ideal
-> sleep point is immediately after readahead IO is summited, at the end
-> of __do_page_cache_readahead(). The same should be applicable to
-> direct IO.
+Hi
 
-But after a read the process might want to process the read data and
-do something else altogether. So throttling the process after completing
-the read is not the best thing.
+Op 4 april 2012 09:59 heeft Wolfram Sang <w.sang@pengutronix.de> het
+volgende geschreven:
+>
+> Yes. This is a useful extension and there will be boards using it.
+>
+> Thanks,
+>
+>   Wolfram
 
-> 
-> > Current async behavior works well where we queue up the
-> > bio from the task in throttled group and let task do other things. Same
-> > is true for AIO where we would not like to block in bio submission.
-> 
-> For AIO, we'll need to delay the IO completion notification or status
-> update, which may involve computing some delay time and delay the
-> calls to io_complete() with the help of some delayed work queue. There
-> may be more issues to deal with as I didn't look into aio.c carefully.
+OK, thanks
 
-I don't know but delaying compltion notifications sounds odd to me. So
-you don't throttle while submitting requests. That does not help with
-pressure on request queue as process can dump whole bunch of IO without
-waiting for completion?
+@Greg:
+Can this patch be picked up in your tree?
+Or should it be picked up by Wolfram at24 support?
 
-What I like better that AIO is allowed to submit bunch of IO till it
-hits the nr_requests limit on request queue and then it is blocked as
-request queue is too busy and not enough request descriptors are free.
-
-> 
-> The thing worried me is that in the proportional throttling case, the
-> high level throttling works on the *estimated* task_ratelimit =
-> disk_bandwidth / N, where N is the number of read IO tasks. When N
-> suddenly changes from 2 to 1, it may take 1 second for the estimated
-> task_ratelimit to adapt from disk_bandwidth/2 up to disk_bandwidth,
-> during which time the disk won't get 100% utilized because of the
-> temporally over-throttling of the remaining IO task.
-
-I thought we were only considering the case of absolute throttling in
-higher layers. Proportional IO will continue to be in CFQ. I don't think
-we need to push proportional IO in higher layers.
-
-> 
-> This is not a problem when throttling at the block/cfq layer, since it
-> has the full information of pending requests and should not depend on
-> such estimations.
-
-CFQ does not even look at pending requests. It just maintains bunch
-of IO queues and selects one queue to dispatch IO from based on its
-weight. So proportional IO comes very naturally to CFQ.
-
-> 
-> The workaround I can think of, is to put the throttled task into a wait
-> queue, and let block layer wake up the waiters when the IO queue runs
-> empty. This should be able to avoid most disk idle time.
-
-Again, I am not convinced that proportional IO should go in higher layers.
-
-For fast devices we are already suffering from queue locking overhead and
-Jens seems to have patches for multi queue. Now by trying to implement
-something at higher layer, that locking overhead will show up there too
-and we will end up doing something similar to multi queue there and it
-is not desirable.
-
-Thanks
-Vivek
+Regards,
+Ivo Sieben
