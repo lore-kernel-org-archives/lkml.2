@@ -1,136 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2DECiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Apr 2012 22:38:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36832 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab2DECiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Apr 2012 22:38:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="128847548"
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lu@amd.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-In-Reply-To: <201204010923.18330.rjw@sisk.pl>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com>
-	 <20120401055603.GA11505@localhost.amd.com>
-	 <1333261737.2939.84.camel@minggr>  <201204010923.18330.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Apr 2012 10:38:17 +0800
-Message-ID: <1333593497.11327.25.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1756726Ab2DECqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Apr 2012 22:46:49 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35792 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752488Ab2DECqr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Apr 2012 22:46:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120403095754.a70f38eb70766580843debc7@canb.auug.org.au>
+References: <1333312727-11428-1-git-send-email-paul.gortmaker@windriver.com>
+	<1333312727-11428-8-git-send-email-paul.gortmaker@windriver.com>
+	<20120402010048.GA21647@linux-sh.org>
+	<4F79ECD9.6000108@windriver.com>
+	<20120403095754.a70f38eb70766580843debc7@canb.auug.org.au>
+Date: Wed, 4 Apr 2012 22:46:45 -0400
+Message-ID: <CAP=VYLr5jEzxee_QQk463YNZGAr_gwr2N9RWwZRbTu4iaMK2vg@mail.gmail.com>
+Subject: Re: [PATCH 07/11] sh: fix several build failures from system.h fallout
+From: Paul Gortmaker <paul.gortmaker@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Mundt <lethal@linux-sh.org>, dhowells@redhat.com,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-01 at 09:23 +0200, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> Sorry for the delayed response, I've been travelling recently.
-> 
-> On Sunday, April 01, 2012, Lin Ming wrote:
-> > On Sun, 2012-04-01 at 13:56 +0800, Aaron Lu wrote:
-> > > Hi,
-> > > 
-> > > On Sun, Apr 01, 2012 at 01:27:33PM +0800, Lin Ming wrote:
-> > > > > -		if (device->power.states[state].flags.explicit_set) {
-> > > > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
-> > > > > +		if (state == ACPI_STATE_D3_COLD) {
-> > > > > +			explicit_set = (ps - 1)->flags.explicit_set;
-> > > > > +			object_name[3] -= 1;
-> > > > > +		}
-> > > > 
-> > > > I'm not sure whether this works or not.
-> > > > 
-> > > > From ACPI spec,
-> > > > 
-> > > > _PS3 "is used to put the specific device into its D3hot or D3 state"
-> > > > 
-> > > > D3 neither means D3hot nor D3cold. It's an old term before D3hot and
-> > > > D3cold were introduced.
-> > > I guess D3 has to mean something, right? :-)
-> 
-> Well, not necessarily.
-> 
-> The problem is what state the _PS3 method puts the device into: D3_hot or
-> D3_cold.
-> 
-> Unfortunately, as far as I can say, ACPI 4.0 didn't specify any "official"
-> mapping between the "old" D3 and the "new" D3_{hod|cold} states, so we need to
-> figure out something.  In my opinion, the only reasonable approach is to
-> assume that the state _PS3 puts the device into is always D3_cold, becuase
-> _PS3 may remove power completely from the device.  It may not do that, but
-> we _must_ assume it does that in general.
-> 
-> > > Here is the problem, there is no _PR3 in AMD's implementation, just _PS3.
-> > > And since _S0W evaluates 4, I've to put this device into D3 cold state
-> > > with _PS3.
-> > > 
-> > > And the ACPI does have some words like:
-> > > 
-> > > ------
-> > > Platform/drivers must assume that the device will have power completely
-> > > removed when the device is place into â€œD3â€ via _PS3
-> 
-> Exactly.  What it means is basically "always reinitialize the device from
-> scratch if you have run _PS3 on it".  And that's what we should do.
-> 
-> > > ------
-> > > 
-> > > This is in section 7.2.11: _PR3.
-> > > 
-> > > > 
-> > > > Another problem:
-> > > > 
-> > > > With your patch, both D3hot and D3cold will evaluate _PS3, right?
-> > > > 
-> > > Yes.
-> > > 
-> > > > Will it have problem on AMD platform if you try to put ODD into D3hot
-> > > > state? _PS3 is evaluated, so it actually enters D3Cold state.
-> > > 
-> > > There is no D3 hot support for this device(from the firmware's
-> > > perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
-> > > _PS3).
-> > 
-> > But this is the generic code. We can't only consider some special
-> > device.
-> > 
-> > Maybe we need some flag to tell which D3 state _PS3 is used for.
-> 
-> No, please.  As I said above, we need to reinitialize devices that _PS3 was
-> executed on, which is equivalent to saying that those devices were put into
-> D3_cold.
-> 
-> The only situation where a device can be put into ACPI D3_hot (which is not
-> the same as PCI D3_hot, mind you) is when:
-> 
-> (1) There is _PR3 listing some of the device's power resources as "on".
-> (2) The power resources listed by the _PR3 as "off" are turned off and the
->     power resources listed by the _PR3 as "on" are left in the "on" state.
-
-(1) and (2) seems conflict.
-
-(1) means all power resources listed in _PR3 are "on", but
-(2) means some power resources listed in _PR3 are "off" and others are
-"on"
-
-Is my understanding correct?
-
-Thanks,
-Lin Ming
-
-> 
-> Our generic code should reflect that.
-> 
-> Thanks,
-> Rafael
-
-
+On Mon, Apr 2, 2012 at 7:57 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Mon, 2 Apr 2012 14:15:53 -0400 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+>>
+>> On 12-04-01 09:00 PM, Paul Mundt wrote:
+>>
+>> > There's still more, but they've alreadly all been fixed up in my tree.
+>>
+>> OK, I can drop this one.  Is that tree part of linux-next?
+>
+> I used to have sh-current and sh trees (and rmobile-current and rmobile)
+> trees in linux-next, but they have not been resurrected since the
+> kernel.org problems last year ...
+>
+> They were all branches of
+> git://git.kernel.org/pub/scm/linux/kernel/git/lethal/sh-2.6.git which is
+> still listed in MAINTAINERS but does not exist :-(
+>
+> Paul M, to you have an alternate place I can fetch from?
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
