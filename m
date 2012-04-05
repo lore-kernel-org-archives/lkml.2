@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab2DESge (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 14:36:34 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:50369 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640Ab2DESgd (ORCPT
+	id S1755741Ab2DESho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 14:37:44 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34726 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308Ab2DEShm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 14:36:33 -0400
-Message-ID: <4F7DE60B.5000904@windriver.com>
-Date: Thu, 5 Apr 2012 14:35:55 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 5 Apr 2012 14:37:42 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: [3.4-rc1][Regression][network wireless] 'task xxxx blocked for more than 120 seconds' after resume
+Date: Thu, 5 Apr 2012 20:37:37 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc1; KDE/4.7.4; x86_64; ; )
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-wireless@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+References: <201204022157.05598.maciej.rutecki@gmail.com> <1333440469.3574.0.camel@jlt3.sipsolutions.net> <20120405103254.GE2378@redhat.com>
+In-Reply-To: <20120405103254.GE2378@redhat.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Fabio Estevam <festevam@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <linux@arm.linux.org.uk>,
-        <sam@ravnborg.org>, Fabio Estevam <fabio.estevam@freescale.com>,
-        <kernel@pengutronix.de>
-Subject: Re: [PATCH v2] compiler.h: Include <linux/bug.h> to avoid build breakage
- with ARRAY_SIZE()
-References: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com> <1330650922-24143-1-git-send-email-festevam@gmail.com> <CAP=VYLpd5EFmD+8Yo_jm-9N7O5zkLTsTwGjgmxG4u_G6t=4fag@mail.gmail.com> <4F50D78A.1020209@windriver.com> <20120404142924.GA15647@pengutronix.de>
-In-Reply-To: <20120404142924.GA15647@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204052037.37497.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-04-04 10:29 AM, Uwe Kleine-König wrote:
-> Hello,
+On czwartek, 5 kwietnia 2012 o 12:32:54 Stanislaw Gruszka wrote:
+> On Tue, Apr 03, 2012 at 10:07:49AM +0200, Johannes Berg wrote:
+> > -ilw
+> > +netdev
+> > 
+> > I have no idea what this could be, but I'm almost certain it's not
+> > caused by our wireless driver. Looks more like rtl8169 is to blame.
 > 
-> On Fri, Mar 02, 2012 at 09:22:02AM -0500, Paul Gortmaker wrote:
->> On 12-03-01 10:13 PM, Fabio Estevam wrote:
->>> On Thu, Mar 1, 2012 at 11:49 PM, Paul Gortmaker
->>> <paul.gortmaker@windriver.com> wrote:
->>>
->>>> Thanks, but no.
->>>>
->>>> You missed the whole point of my previous comments -- that being
->>>> that we don't want to just jam headers into always-used headers.
->>>
->>> Yes, it is not clear for me how to fix this build error. I got
->>> different feedbacks from you, Russell and Sam.
->>
->> Understood, there was some discussion there.  Anyways it is already
->> dealt with in yesterday's linux-next tree, so you won't have the
->> build failure anymore.
-> I hit that same problem in an not yet mainlined source file. A simple
-> file containing only:
+> I'm not sure. Looks like there is deadlock or infinite loop in process
+> that holds rtnl lock. This can be wireless driver, wired driver or
+> generic network code bug.
+> 
+> Maciej, please recompile with CONFIG_LOCKDEP and check if it will not
+> find any deadlock. If not, when problem will happen please do
 
-A quick check shows about 15000 instances in mainline.  Even if 1% of
-those were blowing up, I'd expect a full mailbox.
+Did you mean "CONFIG_LOCKDEP_SUPPORT"?
+
+$ cat /boot/config-3.4.0-rc1 | grep CONFIG_LOCKDEP
+CONFIG_LOCKDEP_SUPPORT=y
 
 > 
-> 	#include <linux/kernel.h>
+> echo w > /proc/sysrq-trigger
+> dmesg -c > dmesg1.txt
+
+http://mrutecki.pl/download/kernel/3.4-rc1/netdev_resume/dmesg1.txt
+
+> echo t > /proc/sysrq-trigger
+> dmesg > dmesg2.txt
+
+http://mrutecki.pl/download/kernel/3.4-rc1/netdev_resume/dmesg2.txt
+
 > 
-> 	int array[3];
+> and provide those files.
 > 
-> 	int func(void)
-> 	{
-> 		return ARRAY_SIZE(array);
-
-Well, ARRAY_SIZE is just a convenient macro that uses BUG content.
-Hiding it behind a name doesn't change the fact that you've
-implicitly decided to use bug.h content.  Maybe you really don't
-want to be using it.  Maybe we should have:
-
---------------------------------------
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -43,6 +43,7 @@
- #define PTR_ALIGN(p, a)                ((typeof(p))ALIGN((unsigned long)(p), (a)))
- #define IS_ALIGNED(x, a)               (((x) & ((typeof(x))(a) - 1)) == 0)
- 
-+#define __ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
- #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
- 
- /*
-------------------------------------
-
-and give people a choice?
-
-Don't get me wrong.  I'm not all extremist about this.  If it turns
-out that it seems to cause way too much grief, and someone like Andrew
-says "Yeah, lets put #include <linux/bug.h> back in kernel.h" then I
-won't hesitate to do that.  But given that code currently in mainline
-isn't blowing up all over, I wasn't yet convinced we needed to do that.
-
-Paul.
-
-> 	}
+> Additionally there are also lot in dmesg:
 > 
-> fails to build on top of v3.4-rc1. Am I right that you saying "you won't
-> have the build failure anymore" means that each of these is now needed
-> to be fixed individually by adding
+>  netlink: 140 bytes leftover after parsing attributes.
 > 
-> 	#include <linux/bug.h>
-> 
-> ? Otherwise it's not fixed for me.
+> This need to be investigated as well. Perhaps you could modify error
+> message, to show what netlink messages/attributes are processed.
 > 
 > Thanks
-> Uwe
-> 
+> Stanislaw
+
+BTW. From tomorrow till Tuesday I'll be on vacation, so until then I could 
+respond to the e-mails.
+
+Regards
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
