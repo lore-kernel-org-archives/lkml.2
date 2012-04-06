@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2DFHDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 03:03:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58859 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2DFHDN (ORCPT
+	id S1754361Ab2DFHDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 03:03:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50423 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab2DFHDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 03:03:13 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Girdwood, Liam" <lrg@ti.com>
-Subject: RE: [PATCH 6/6] regulator: tps65217: Constify regulator_desc
-Thread-Topic: [PATCH 6/6] regulator: tps65217: Constify regulator_desc
-Thread-Index: AQHNE4yufYGoOaX/qk2JVb6/Cm89qZaNXmtw
-Date: Fri, 6 Apr 2012 07:03:07 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC1317E141F@DBDE01.ent.ti.com>
-References: <1333671867.2777.2.camel@phoenix>
- <1333672311.2777.9.camel@phoenix>
-In-Reply-To: <1333672311.2777.9.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.31]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Fri, 6 Apr 2012 03:03:22 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6671"; a="177115380"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/3] timer: Move debugobjects.h include to timer.c
+Date: Fri,  6 Apr 2012 00:03:16 -0700
+Message-Id: <1333695798-2917-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
+In-Reply-To: <1333695798-2917-1-git-send-email-sboyd@codeaurora.org>
+References: <1333695798-2917-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3673OJH032382
 
-Hi Axel Lin,
+There is no usage of debugobjects structures in timer.h so move
+the include to timer.c. This avoids an include file circular
+dependency if timer.h includes debugobjects.h which includes
+jump_label.h (in a later patch) which includes workqueue.h which
+includes timer.h.
 
-It's completely missed from my side, thanks for the patch
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
 
-ACK: AnilKumar Ch <anilkumar@ti.com>
+This should be good to apply regardless of the rest of this series.
 
-On Fri, Apr 06, 2012 at 06:01:51, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/tps65217-regulator.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
-> index e39521b..80fad2d 100644
-> --- a/drivers/regulator/tps65217-regulator.c
-> +++ b/drivers/regulator/tps65217-regulator.c
-> @@ -312,7 +312,7 @@ static struct regulator_ops tps65217_pmic_ldo1_ops = {
->  	.list_voltage		= tps65217_pmic_list_voltage,
->  };
->  
-> -static struct regulator_desc regulators[] = {
-> +static const struct regulator_desc regulators[] = {
->  	TPS65217_REGULATOR("DCDC1", TPS65217_DCDC_1, tps65217_pmic_ops, 64),
->  	TPS65217_REGULATOR("DCDC2", TPS65217_DCDC_2, tps65217_pmic_ops, 64),
->  	TPS65217_REGULATOR("DCDC3", TPS65217_DCDC_3, tps65217_pmic_ops, 64),
-> -- 
-> 1.7.5.4
-> 
-> 
-> 
-> 
+ include/linux/timer.h |    1 -
+ kernel/timer.c        |    1 +
+ 2 files changed, 1 insertion(+), 1 deletion(-)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index 6abd913..d7848ab 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -4,7 +4,6 @@
+ #include <linux/list.h>
+ #include <linux/ktime.h>
+ #include <linux/stddef.h>
+-#include <linux/debugobjects.h>
+ #include <linux/stringify.h>
+ 
+ struct tvec_base;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index a297ffc..aa0841c 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -40,6 +40,7 @@
+ #include <linux/irq_work.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
++#include <linux/debugobjects.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/unistd.h>
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
