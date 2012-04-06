@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab2DFA50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 20:57:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28235 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967Ab2DFA50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 20:57:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127694843"
-Subject: Re: [PATCH_V2 1/2] fix the bug that printk can't support
- printk(KERN_LEVEL)
-From: "he, bo" <bo.he@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: akpm@linux-foundation.org, mingo@elte.hu, rusty@rustcorp.com.au,
-        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-        william.douglas@intel.com, yanmin_zhang@linux.intel.com
-In-Reply-To: <1332725787.2359.27.camel@hebo>
-References: <1332493027.2359.5.camel@hebo> <1332493269.2359.9.camel@hebo>
-	 <20120323122208.GB13920@gmail.com>  <1332725787.2359.27.camel@hebo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Apr 2012 08:57:34 +0800
-Message-ID: <1333673854.2171.3.camel@hebo>
+	id S1756936Ab2DFBBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 21:01:19 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:33381 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756788Ab2DFBBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 21:01:17 -0400
+Date: Thu, 05 Apr 2012 21:01:13 -0400 (EDT)
+Message-Id: <20120405.210113.1089032911004787990.davem@davemloft.net>
+To: luto@mit.edu
+Cc: drepper@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: sendmmsg: put_user vs __put_user
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F7E3561.8000803@mit.edu>
+References: <CAOPLpQf2bmj+i_zYtsS8JNzTDuBxCO5ByNRRqwv0kxaDBFdezg@mail.gmail.com>
+	<20120330.205120.2221145622131588797.davem@davemloft.net>
+	<4F7E3561.8000803@mit.edu>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 05 Apr 2012 18:01:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-26 at 09:36 +0800, he, bo wrote:
-> From: he bo <bo.he@intel.com>
+From: Andy Lutomirski <luto@mit.edu>
+Date: Thu, 05 Apr 2012 17:14:25 -0700
+
+> On 03/30/2012 05:51 PM, David Miller wrote:
+>> From: Ulrich Drepper <drepper@gmail.com>
+>> Date: Fri, 30 Mar 2012 09:36:11 -0400
+>> 
+>>> Shouldn't the compat code in the sendmmsg implementation use the same
+>>> code as the normal code?  In which case you probably want something
+>>> like this:
+>> 
+>> Compat processes are not able to generate virtual addresses anywhere
+>> near the range where the kernel resides, so the address range
+>> verification done by put_user() is completely superfluous and
+>> therefore not necessary.  The normal exception handling done by the
+>> access is completely sufficient.
 > 
-> Usually, there is a special scenario that developer wants to
-> call printk to just set up a log level (might be transferred
-> here as a parameter from upper level), then, later calling
-> of printk prints out real string with the same log level
-> continuously.
-> 
-> Current function vprintk has an issue to support this capability.
-> When the whole string in one calling to printk is just a log level,
-> it ignores it.
-> 
-> Signed-off-by: he, bo <bo.he@intel.com>
-> Reviewed-by: Zhang, Yanmin <yanmin.zhang@intel.com>
-> ---
->  kernel/printk.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-Ingo,
+> I disagree.  The following exploit causes a bogus page fault to a kernel
+> address.  I think this isn't exploitable right now on x86-64 because the
+> page fault handler fixes it up, but I wouldn't be surprised if this
+> crashes or at least warns on some architecture.  (Actually trashing
+> kernel memory is probably impossible with this on x86-64 chips because
+> this can only overrun user space by four bytes, and there's a giant gap
+> of impossible addresses above user space in x86-64.
 
-What's your opinion about the 2 patches? The 1st patch fixes an issue
-and 2nd patch enhances dump_stack with log level.
+I can guarentee this doesn't do anything on sparc64 either because
+userspace is completely segregated from kernel space in a way that
+every single foo_user() call cannot access kernel space no matter
+what address it can trick into being passed there.
 
-https://lkml.org/lkml/2012/3/25/152
-https://lkml.org/lkml/2012/3/25/153
-
-Thanks,
-Bo
-
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index b663c2c..473afdb 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -909,7 +909,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
->  	 * Copy the output into log_buf. If the caller didn't provide
->  	 * the appropriate log prefix, we insert them here
->  	 */
-> -	for (; *p; p++) {
-> +	for (; plen || *p; p++) {
->  		if (new_text_line) {
->  			new_text_line = 0;
->  
-> @@ -920,6 +920,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
->  				for (i = 0; i < plen; i++)
->  					emit_log_char(printk_buf[i]);
->  				printed_len += plen;
-> +				plen = 0;
->  			} else {
->  				/* Add log prefix */
->  				emit_log_char('<');
-> @@ -946,10 +947,10 @@ asmlinkage int vprintk(const char *fmt, va_list args)
->  				printed_len += tlen;
->  			}
->  
-> -			if (!*p)
-> -				break;
->  		}
->  
-> +		if (!*p)
-> +			break;
->  		emit_log_char(*p);
->  		if (*p == '\n')
->  			new_text_line = 1;
-
-
+I still really don't see an issue with this, sorry.
