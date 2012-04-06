@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab2DFLsR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 07:48:17 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33147 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab2DFLsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 07:48:16 -0400
-Date: Fri, 6 Apr 2012 13:48:12 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 04/15] events: Update tools/lib/traceevent to work with
- perf
-Message-ID: <20120406114812.GE30425@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Steven Rostedt <srostedt@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
-	Namhyung Kim <namhyung.kim@lge.com>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
- <1333666086-6517-5-git-send-email-fweisbec@gmail.com>
+	id S1756739Ab2DFLvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 07:51:17 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:43360 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab2DFLvQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 07:51:16 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+	<1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
+	<m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+	<20120402202848.1EB833E02A7@localhost>
+	<20120402215524.GM24211@n2100.arm.linux.org.uk>
+	<1333406005.30734.61.camel@pasglop>
+	<20120402225223.GN24211@n2100.arm.linux.org.uk>
+	<1333409927.30734.62.camel@pasglop>
+X-Yow: What UNIVERSE is this, please??
+Date: Fri, 06 Apr 2012 13:51:14 +0200
+In-Reply-To: <1333409927.30734.62.camel@pasglop> (Benjamin Herrenschmidt's
+	message of "Tue, 03 Apr 2012 09:38:47 +1000")
+Message-ID: <m24nsx9iz1.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1333666086-6517-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 06, 2012 at 12:47:55AM +0200, Frederic Weisbecker wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Some of the util functions of libtraceevent.a conflict with perf,
-> such as die(), warning() and others. Move them into event-util.h
+Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
 
-Minor: judging by the patch below, you mean "event-utils.h" here.
+> Ok. Doesn't matter anyway, this shouldn't be the problem in this
+> specific case. IE. we shouldn't be setting that interrupt to NONE.
 
-> that is not included by the perf tools.
-> 
-> Also, as perf compiles with 'bool' the filter_arg->bool needs to
-> be renamed to filter_arg->boolean.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arun Sharma <asharma@fb.com>
-> Cc: Namhyung Kim <namhyung.kim@lge.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  tools/lib/traceevent/event-parse.c  |    1 +
->  tools/lib/traceevent/event-parse.h  |   20 +++-----------------
->  tools/lib/traceevent/event-utils.h  |   16 ++++++++++++++++
->  tools/lib/traceevent/parse-filter.c |   32 ++++++++++++++++----------------
->  tools/lib/traceevent/trace-seq.c    |    1 +
->  5 files changed, 37 insertions(+), 33 deletions(-)
-> 
-> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-> index 47a3227..3ce75b5 100644
-> --- a/tools/lib/traceevent/event-parse.c
-> +++ b/tools/lib/traceevent/event-parse.c
-> @@ -33,6 +33,7 @@
->  #include <errno.h>
->  
->  #include "event-parse.h"
-> +#include "event-utils.h"
+After removinge the call to irq_set_irq_type in mpic_host_map the irq
+problem disappears.
 
-	     ^^^^^^^^^^^^^
+Instead of the irq_set_irq_type(,NONE) calls from mpic_host_map I see
+corresponding irq_set_irq_type(,LEVEL_LOW) calls now.
+
+Andreas.
 
 -- 
-Regards/Gruss,
-    Boris.
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
