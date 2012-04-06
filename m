@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2DFJSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 05:18:08 -0400
-Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:28952 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab2DFJSG convert rfc822-to-8bit (ORCPT
+	id S1755537Ab2DFJSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 05:18:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36528 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752822Ab2DFJSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 05:18:06 -0400
-Date: Fri, 6 Apr 2012 11:18:03 +0200 (CEST)
-From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
-Reply-To: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-Message-ID: <588810225.17969.1333703883646.JavaMail.www@wwinf1g24>
-In-Reply-To: <20120405143918.GE27672@linux.vnet.ibm.com>
-References: <20120404152726.GB16299@zod.bos.redhat.com>
- <20120404213633.GI2302@linux.vnet.ibm.com>
- <20120405123759.GE1963@zod.bos.redhat.com>
- <20120405140006.GB27672@linux.vnet.ibm.com>
- <1838583439.163624.1333635333132.JavaMail.www@wwinf1m19>
- <20120405143918.GE27672@linux.vnet.ibm.com>
-Subject: Re: RCU related performance regression in 3.3
+	Fri, 6 Apr 2012 05:18:10 -0400
+Date: Fri, 6 Apr 2012 10:18:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] regmap: fix compilation when !CONFIG_DEBUG_FS
+Message-ID: <20120406091805.GG3172@opensource.wolfsonmicro.com>
+References: <1333688960-24402-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [80.12.110.201]
-X-WUM-FROM: |~|
-X-WUM-TO: |~|
-X-WUM-CC: |~||~||~|
-X-WUM-REPLYTO: |~|
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2NLGdgz3UMHa/lqP"
+Content-Disposition: inline
+In-Reply-To: <1333688960-24402-1-git-send-email-swarren@wwwdotorg.org>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Message du 05/04/12 16:40
-> De : "Paul E. McKenney" 
-> A : "Pascal CHAPPERON" 
-> Copie à : "Josh Boyer" , linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-> Objet : Re: RCU related performance regression in 3.3
-> 
-> On Thu, Apr 05, 2012 at 04:15:33PM +0200, Pascal CHAPPERON wrote:
-> > Hello,
-> > 
-> > I didn't notice any significant slowdown while the system is up and running. 
-A full kernel compilation (make -j 16) takes 14mn with both 3.2.10 and 3.3.0.
-> 
-> OK, so the natural approach is to disable CONFIG_RCU_FAST_NO_HZ at
-> boot time. Unfortunately, you appear to need it to remain disabled
-> through at least filesystem mounting, which if I understand correctly
-> happens long after system_state gets set to SYSTEM_RUNNING.
-> 
-In fact, I need it to remain disable until all the systemd units are completed. 
-Some units, such as NetworkManager can take longer time to complete with
-RCU_FAST_NO_HZ enabled.
-And i need it to be disabled at shutdown, as umounting cgroups, sysfs, etc.
-plus old-root mounting can take one plain second for each umounting.
 
-> If RCU has some way to find out when init is complete, I can easily
-> make it so that CONFIG_RCU_FAST_NO_HZ optimizes for speed during boot
-> and energy efficiency during runtime.
-> 
-I said that I didn't noticed significant slowdown during runtime, but my
-laptop usage is basic. Some specific tasks similar to systemd may 
-perhaps be impacted by this feature.
-I can test a task/program that could stress RCU_FAST_NO_HZ if any ?
+--2NLGdgz3UMHa/lqP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> One thing I could easily do would be to provide a sysfs parameter or
-> some such that allows the boot process to enable energy-efficiency
-> mode at runtime. I would much prefer to make this automatic, though.
-> 
-So the feature is disabled until you trigger a sysfs parameter, and can be
-disabled before shutdown ? It would be fair, at least for hardware like my
-own.
+On Thu, Apr 05, 2012 at 11:09:20PM -0600, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>=20
+> Commit 79c64d5 "regmap: allow regmap instances to be named" changed the
+> prototype of regmap_debugfs_init, but didn't update the dummy inline used
+> when !CONFIG_DEBUGFS. Fix this.
 
-> Other thoughts?
-> 
-Do you think that the culprit is a buggy hardware in my laptop, or the 
-number of cpu/threads ?
+Applied, thanks.
 
-> Thanx, Paul
-> 
+--2NLGdgz3UMHa/lqP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Resent in plain text because rejected. Sorry, i forgot the rules.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Pascal
+iQIcBAEBAgAGBQJPfrNUAAoJEBus8iNuMP3dnIUP/iL/pwld7iEV1c4/KgY/kdsJ
+MjOlZjuxvrSYgx6xV0d4PfXeyJJVSJMFMOGSBGwdz0gSpeoFbNhx2IKJeyARsrXs
+Jj+Y1jC7PQi6KKDUSf6zytpeuBPzQPw4+eR2ia44Jk2NutkBoQ2wRRlSn/OLq8Bf
+DDU27C02YYZqC5n8oRpee4mfVrPFURs7ZGWEADfcCVeHuDZmH47CgHeGDPor5EG5
+JhrY6rLNviq2gl+XXVm9viK4TtFsDGJECwvjeCIw/h6irFtnOzbpJqCUKiBzAv2n
+CImIsPHmv/NJ8hvpux1RqGtJ+nf1Z3tOUx9vkTtVfZLYgcCT0NxLZiNQGWQkqD18
+aLcAzNB551i6x1NubeurZymtdrpWuxJ1aSx7I4tzi4R6TYSjS8Q8gg1Ho2LxxtbY
+FMgnzp0KiIXXgrLBGCwn1H8Nyv9mZA262bph5r5TV0fxzeIw7/KoPKT6bLLKgVKP
+hne/9K7K5Crh0jj5B5arbUjufH8hpp72hDgPlZQingEtcbJHsAASmCVbhHZViwby
+uI2gq2ZScJzXjHLXoKjbeXAMlmXti0OJSuHDd6TrDvkIiprC/+CBqDoalZDRW+r0
+1/jOIOV8yGuy09uTi1+X4f9k8X7QjkZB8l57WyKhqI1FVNA+FSbo0NVCx1QPFE2C
+NJiq6ZuJBgue2tlAP6L0
+=GeAP
+-----END PGP SIGNATURE-----
+
+--2NLGdgz3UMHa/lqP--
