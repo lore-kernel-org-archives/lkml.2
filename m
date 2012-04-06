@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab2DFAgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 20:36:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55917 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab2DFAgG convert rfc822-to-8bit (ORCPT
+	id S1756828Ab2DFAgP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 20:36:15 -0400
+Received: from forward18.mail.yandex.net ([95.108.253.143]:54381 "EHLO
+	forward18.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756469Ab2DFAgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 20:36:06 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 5 Apr 2012 17:36:02 -0700
-Subject: Question about the regulator driver
-Thread-Topic: Question about the regulator driver
-Thread-Index: Ac0TjT7FICmcGCFIQH62GHhQ0W1Stw==
-Message-ID: <B567DBAB974C0544994013492B949F8E38135B639C@EXMAIL03.scwf.nsc.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Apr 2012 20:36:10 -0400
+X-Greylist: delayed 407 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Apr 2012 20:36:10 EDT
+From: Alexey Ivanov <rbtz@yandex-team.ru>
+To: linux-kernel@vger.kernel.org
+Subject: mapped pagecache pages vs unmapped pages
 MIME-Version: 1.0
+Message-Id: <37371333672160@webcorp7.yandex-team.ru>
+Date: Fri, 06 Apr 2012 04:29:20 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+In progress of migration from FreeBSD to Linux and we found some strange behavior: periodically running tasks (like rsync/p2p deployment) evict mapped pages from memory.
 
-I have a question about the regulator driver design.
+>From my little research I've found following lkml thread:
+https://lkml.org/lkml/2008/6/11/278
+And more precisely this commit: https://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4f98a2fee8acdb4ac84545df98cccecfd130f8db
+which along with splitting LRU into "anon" and "file" removed support of reclaim_mapped.
 
-There is a mfd device including charger and regulator functions.
+Is there a knob to prioritize mapped memory over unmapped (without modifying all apps to use O_DIRECT/fadvise/madvise or mlocking our data in memory) or at least some way to change proportion of Active(file)/Inactive(file)?
 
-For supporting DCDC(or BUCK) and LDO functions, the regulator driver is used.
-(like setting voltage, current limit and so on)
-On the other hand, the charger module is registered as the power supply class driver.
-
-But charging termination voltage and charging current can be configurable in the charger operation.
-In that case, is it common to add regulator_ops for the charger ?
-Or is it better that charging parameters are set only in the power supply driver ?
-
-I'd like to have your opinion.
-
-Thanks & BR
-Milo -
-
+-- 
+Sincerely,
+Alexey Ivanov
