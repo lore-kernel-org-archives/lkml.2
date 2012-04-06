@@ -1,54 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab2DFPLa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 11:11:30 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:52507 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab2DFPL3 (ORCPT
+	id S1757411Ab2DFPNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 11:13:04 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48785 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753870Ab2DFPNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 11:11:29 -0400
+	Fri, 6 Apr 2012 11:13:02 -0400
+Date: Fri, 6 Apr 2012 11:13:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: host: tegra: re-arranging ehci functions
+In-Reply-To: <1333685418-20801-1-git-send-email-vbyravarasu@nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1204061112440.1392-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CAJL_eks9Z62pRsdFH_xE5=RSX7QLqKFtCBifUzH5F2vkhYuGLA@mail.gmail.com>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-	<CAJL_eks9Z62pRsdFH_xE5=RSX7QLqKFtCBifUzH5F2vkhYuGLA@mail.gmail.com>
-Date: Fri, 6 Apr 2012 17:11:29 +0200
-Message-ID: <CAFTL4hyr+Oy4MEityw6PY3u11MhziSFLg=OB5yh6XFJwWD3QAw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 00/15] tools: Unify perf and trace-cmd trace event
- format parsing v2
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Sharp <dhsharp@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Michael Rubin <mrubin@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/6 David Sharp <dhsharp@google.com>:
-> On Thu, Apr 5, 2012 at 3:47 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>
->> Hi,
->>
->> So this is a new iteration of the libtracevent library, basically a
->> rebase of https://lkml.org/lkml/2011/8/5/299 against latest progresses
->> (latest tip/perf/core + tip/perf/urgent).
->>
->> This library unifies the trace events parsing code between perf and
->> trace-cmd. I initially took this parsing code from trace-cmd to make
->> perf able to display trace-events and play with their contents.
->
-> Hi Frederic. Thanks for taking this on.
->
-> Could you consider adding these patches to this set?
-> https://lkml.org/lkml/2011/3/21/335
+On Fri, 6 Apr 2012, Venu Byravarasu wrote:
 
-Oh sure! I'll catch up with the commits I missed in trace-cmd.
+> Re-arranged EHCI generic and tegra specific functions
+> into two separate groups for more readability.
+> 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 
-Thanks!
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
