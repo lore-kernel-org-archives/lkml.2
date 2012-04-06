@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2DFAat (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 20:30:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62303 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab2DFAas (ORCPT
+	id S1756920Ab2DFAbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 20:31:09 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:13566 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756300Ab2DFAbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 20:30:48 -0400
-Message-ID: <1333672242.2777.8.camel@phoenix>
-Subject: [PATCH 5/6] regulator: tps6105x: Constify regulator_desc
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Fri, 06 Apr 2012 08:30:42 +0800
-In-Reply-To: <1333671867.2777.2.camel@phoenix>
-References: <1333671867.2777.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 5 Apr 2012 20:31:07 -0400
+X-AuditID: cbfee61a-b7c49ae0000061d4-ad-4f7e39461b94
+Message-id: <4F7E3945.6000800@samsung.com>
+Date: Fri, 06 Apr 2012 09:31:01 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pm@vger.kernel.org,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [RESEND PATCH v2 0/2] power_supply: update Charger-Manager
+References: <4F72FF0F.3000107@samsung.com>
+In-reply-to: <4F72FF0F.3000107@samsung.com>
+X-Forwarded-Message-Id: <4F72FF0F.3000107@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps6105x-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Initially, the main role of Charger-Manager is to monitor battery health
+while the system is in suspend-to-RAM.
 
-diff --git a/drivers/regulator/tps6105x-regulator.c b/drivers/regulator/tps6105x-regulator.c
-index d9278da..3b78897 100644
---- a/drivers/regulator/tps6105x-regulator.c
-+++ b/drivers/regulator/tps6105x-regulator.c
-@@ -123,7 +123,7 @@ static struct regulator_ops tps6105x_regulator_ops = {
- 	.list_voltage	= tps6105x_regulator_list_voltage,
- };
- 
--static struct regulator_desc tps6105x_regulator_desc = {
-+static const struct regulator_desc tps6105x_regulator_desc = {
- 	.name		= "tps6105x-boost",
- 	.ops		= &tps6105x_regulator_ops,
- 	.type		= REGULATOR_VOLTAGE,
--- 
-1.7.5.4
+This patchset updates the initial Charger-Manager to poll the battery state
+in normal state and provide function for in-kernel use.
 
+As Mr. Kim Donggeun leaved the company as personal reason, I follow up of
+this patchset. So I replied about your comment based on following link
+last week.
+- https://lkml.org/lkml/2012/2/29/506
+- https://lkml.org/lkml/2012/2/29/524
+- https://lkml.org/lkml/2012/3/4/137
 
+The following patch url are replies which was posted on last week.
+Re: power_supply: Charger-Manager: poll battery health in normal state
+- https://lkml.org/lkml/2012/3/19/733
+Re: power_supply: Charger-Manager: provide function for in-kernel use
+- http://comments.gmane.org/gmane.linux.kernel/1270020
 
+v2
+- Code clean according to comment of Rafael J. Wysocki
+- Use Power management wakeup interface for waking up the system
+  from sleep when event is happended
+- Cancle work/delayed_work in remove function
+
+Donggeun Kim (2):
+  power_supply: Charger-Manager: poll battery health in normal state
+  power_supply: Charger-Manager: provide function for in-kernel use
+
+ Documentation/power/charger-manager.txt |   41 +++-
+ drivers/power/charger-manager.c         |  391
++++++++++++++++++++++++++++++++
+ include/linux/power/charger-manager.h   |   49 ++++-
+ 3 files changed, 471 insertions(+), 10 deletions(-)
