@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab2DFUcX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:32:23 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:60758 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932437Ab2DFUcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:32:22 -0400
-Message-ID: <4F7F52BD.7060906@candelatech.com>
-Date: Fri, 06 Apr 2012 13:31:57 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1758020Ab2DFUdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:33:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46016 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754492Ab2DFUdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 16:33:35 -0400
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1659.5090305@zytor.com> <20120406201601.GA3310@p183.telecom.by>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120406201601.GA3310@p183.telecom.by>
 MIME-Version: 1.0
-To: Mohammed Shafi <shafi.wireless@gmail.com>
-CC: Michael Leun <lkml20120218@newton.leun.net>, casteyde.christian@free.fr,
-        Kelly Anderson <kelly@silka.with-linux.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>
-Subject: Re: [ath9k-devel] 3.3.1 ath9k regression
-References: <4F7A8EB7.4060200@silka.with-linux.com> <4F7A923D.5000002@candelatech.com> <CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com> <4F7A9D5C.8040402@silka.with-linux.com> <CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com> <4F7AAAD9.2040307@silka.with-linux.com> <CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com> <CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com> <4F7AB6FE.3080009@silka.with-linux.com> <20120403200306.0afbb48b@xenia.leun.net> <CAD2nsn2k3mKMm3gK=fXqDYcOeKBwkyqGz9RWz1KOe=6=CDyhHA@mail.gmail.com> <CAD2nsn1AshPTYd-FcydV-5HpiXPb0FfqLQPTqFYyw3kJX+fXEA@mail.gmail.com> <20120404235104.682cfad3@xenia.leun.net> <4F7DE3A4.1040705@candelatech.com> <CAD2nsn16AozFF2QhiY063-48bKiXdyQLmSqJLLHPpsZ3H3JtHQ@mail.gmail.com>
-In-Reply-To: <CAD2nsn16AozFF2QhiY063-48bKiXdyQLmSqJLLHPpsZ3H3JtHQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] nextfd(2)
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 06 Apr 2012 13:33:19 -0700
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        torvalds@linux-foundation.org, drepper@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Message-ID: <180e9441-edd7-4a47-a307-eb3a8da45457@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2012 10:11 PM, Mohammed Shafi wrote:
-> Hi Ben,
+What is unreliable about it?  This is starting to be ridiculous.  As far as automounting /proc is concerned, this does not seem to be a significant problem with current userspace.
+
+Alexey Dobriyan <adobriyan@gmail.com> wrote:
+
+>On Fri, Apr 06, 2012 at 09:14:17AM -0700, H. Peter Anvin wrote:
+>> On 04/06/2012 02:54 AM, Alexey Dobriyan wrote:
+>> > 
+>> > I agree, this particular changelog may be somewhat out of line.
+>> > 
+>> > But I find it little hypocritical that kernel developers add
+>CONFIG_PROC_FS,
+>> > fix compilation problems associated with it, do not mount proc by
+>default,
+>> > do not mark it unmountable somehow and
+>> > then say procless setups aren't worth it.
+>> > 
+>> 
+>> Aren't worth *optimizing for*.  But yes, CONFIG_PROC_FS is pretty
+>much a
+>> historic relic at this point, and probably should just be dropped.
 >
-> On Thu, Apr 5, 2012 at 11:55 PM, Ben Greear<greearb@candelatech.com>  wrote:
->> I see the regression on my WPEA-127N systems as well.
->>
->> With the patch applied to 3.3.1, I see never ending stream of
->> auth timeouts (this log is watching 'iw event' output)
->>
->> power-management is OFF on my system, and using nohwcrypt,
->> in case that matters.
-
-> i think its best for me try to download the 3.3.1 stable kernel and
-> see if this issue happens,
-> i am going to start it now, Ben does this happens with  latest
-> wireless testing tree?
-> its quite weird 3.4-rc1 works as some user reported and while 3.3.1 does not.
-> i will try to come with some suggestion patches
-
-I have not tried wireless-testing lately...sort of been waiting for
-it to sync with upstream and become active again before going to the
-effort.
-
-But, I'll try it out soon if you have no luck reproducing the
-problem on 3.3.1.
-
-Thanks,
-Ben
-
+>What to do with automounting /proc so it availablility would match
+>syscall availability?
+>
+>> > Without proc knowledge about fdtable is gathered linearly and still
+>unreliable.
+>> > With nextfd(2), even procful environments could lose several
+>failure branches.
+>> 
+>> What?  Please explain how on Earth this would "lose several failure
+>> branches."
+>
+>closefrom(3) written via nextfd(2) loop is reliable and doesn't fail.
+>closefrom(3) written via /proc/self/fd is reliable and can fail
+>(including ENOMEM).
+>closefrom(3) written via close(fd++) is unreliable.
+>
+>If programmer adds nextfd(2) loop before any closefrom(3) code
+>he currently uses, there will be less failures.
 
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
