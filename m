@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab2DFUdh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:33:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46016 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754492Ab2DFUdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:33:35 -0400
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1659.5090305@zytor.com> <20120406201601.GA3310@p183.telecom.by>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120406201601.GA3310@p183.telecom.by>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] nextfd(2)
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 06 Apr 2012 13:33:19 -0700
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Message-ID: <180e9441-edd7-4a47-a307-eb3a8da45457@email.android.com>
+	id S1758030Ab2DFUfE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:35:04 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:41584 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757490Ab2DFUfB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 16:35:01 -0400
+Subject: Re: [PATCH 1/2] drm/i915: fix integer overflow in i915_gem_execbuffer2()
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <1333741246_275838@CP5-2952>
+Date: Fri, 6 Apr 2012 16:34:58 -0400
+Cc: Keith Packard <keithp@keithp.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <18784666-9A03-48C2-87DA-BEC78D79C993@gmail.com>
+References: <1333717099-32679-1-git-send-email-xi.wang@gmail.com> <1333719431_271283@CP5-2952> <B6B08A4C-2FEA-4C08-AB2F-4A99FB8D3786@gmail.com> <1333720475_271533@CP5-2952> <5065822E-8C69-442E-A59C-98D6C27B289D@gmail.com> <1333723480_272185@CP5-2952> <507CC69B-BD9C-421B-9107-B3284BEB116E@gmail.com> <1333741246_275838@CP5-2952>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is unreliable about it?  This is starting to be ridiculous.  As far as automounting /proc is concerned, this does not seem to be a significant problem with current userspace.
-
-Alexey Dobriyan <adobriyan@gmail.com> wrote:
-
->On Fri, Apr 06, 2012 at 09:14:17AM -0700, H. Peter Anvin wrote:
->> On 04/06/2012 02:54 AM, Alexey Dobriyan wrote:
->> > 
->> > I agree, this particular changelog may be somewhat out of line.
->> > 
->> > But I find it little hypocritical that kernel developers add
->CONFIG_PROC_FS,
->> > fix compilation problems associated with it, do not mount proc by
->default,
->> > do not mark it unmountable somehow and
->> > then say procless setups aren't worth it.
->> > 
+On Apr 6, 2012, at 3:40 PM, Chris Wilson wrote:
+> On Fri, 6 Apr 2012 14:17:41 -0400, Xi Wang <xi.wang@gmail.com> wrote:
 >> 
->> Aren't worth *optimizing for*.  But yes, CONFIG_PROC_FS is pretty
->much a
->> historic relic at this point, and probably should just be dropped.
->
->What to do with automounting /proc so it availablility would match
->syscall availability?
->
->> > Without proc knowledge about fdtable is gathered linearly and still
->unreliable.
->> > With nextfd(2), even procful environments could lose several
->failure branches.
->> 
->> What?  Please explain how on Earth this would "lose several failure
->> branches."
->
->closefrom(3) written via nextfd(2) loop is reliable and doesn't fail.
->closefrom(3) written via /proc/self/fd is reliable and can fail
->(including ENOMEM).
->closefrom(3) written via close(fd++) is unreliable.
->
->If programmer adds nextfd(2) loop before any closefrom(3) code
->he currently uses, there will be less failures.
+>> Why an attempt to vmalloc?  The overflow check in drm_malloc_ab()
+>> will simply return NULL and fail the ioctl with -ENOMEM.
+> 
+> It's an invalid value for the ioctl and should be treated as such, not
+> making ENOMEM more ambiguous.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+We could copy and paste the overflow check so as to return -EINVAL.
+I just doubt how much that would help --- you can find existing usages
+in other functions, for example, in i915_gem_execbuffer():
+
+  /* Copy in the exec list from userland */
+  exec_list = drm_malloc_ab(sizeof(*exec_list), args->buffer_count);
+  exec2_list = drm_malloc_ab(sizeof(*exec2_list), args->buffer_count);
+  if (exec_list == NULL || exec2_list == NULL) {
+          DRM_DEBUG("Failed to allocate exec list for %d buffers\n",
+                    args->buffer_count);
+          drm_free_large(exec_list);
+          drm_free_large(exec2_list);
+          return -ENOMEM;
+  }
+
+Should we fix all these as well by repeating the checks and returning
+-EINVAL?  I am worried about the code bloat / readability price you
+would pay for getting a different error code.
+
+BTW, I've also seen code using E2BIG.  Any documented guideline?
+
+- xi
+
