@@ -1,203 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab2DFAh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 20:37:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33042 "EHLO mga11.intel.com"
+	id S1756864Ab2DFA50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 20:57:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28235 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756652Ab2DFAhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 20:37:55 -0400
+	id S1752967Ab2DFA50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 20:57:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="138272968"
-Date: Thu, 5 Apr 2012 17:32:54 -0700
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120406003254.GA15158@localhost>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404183528.GJ12676@redhat.com>
- <20120404214228.GA6471@localhost>
- <20120405151026.GB23999@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120405151026.GB23999@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="127694843"
+Subject: Re: [PATCH_V2 1/2] fix the bug that printk can't support
+ printk(KERN_LEVEL)
+From: "he, bo" <bo.he@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, mingo@elte.hu, rusty@rustcorp.com.au,
+        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        william.douglas@intel.com, yanmin_zhang@linux.intel.com
+In-Reply-To: <1332725787.2359.27.camel@hebo>
+References: <1332493027.2359.5.camel@hebo> <1332493269.2359.9.camel@hebo>
+	 <20120323122208.GB13920@gmail.com>  <1332725787.2359.27.camel@hebo>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Apr 2012 08:57:34 +0800
+Message-ID: <1333673854.2171.3.camel@hebo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek,
-
-I totally agree that direct IOs can be best handled in block/cfq layers.
-
-On Thu, Apr 05, 2012 at 11:10:26AM -0400, Vivek Goyal wrote:
-> On Wed, Apr 04, 2012 at 02:42:28PM -0700, Fengguang Wu wrote:
-> > On Wed, Apr 04, 2012 at 02:35:29PM -0400, Vivek Goyal wrote:
-> > > On Wed, Apr 04, 2012 at 10:51:24AM -0700, Fengguang Wu wrote:
-> > > 
-> > > [..]
-> > > > The sweet split point would be for balance_dirty_pages() to do cgroup
-> > > > aware buffered write throttling and leave other IOs to the current
-> > > > blkcg. For this to work well as a total solution for end users, I hope
-> > > > we can cooperate and figure out ways for the two throttling entities
-> > > > to work well with each other.
-> > > 
-> > > Throttling read + direct IO, higher up has few issues too. Users will
-> > 
-> > Yeah I have a bit worry about high layer throttling, too.
-> > Anyway here are the ideas.
-> > 
-> > > not like that a task got blocked as it tried to submit a read from a
-> > > throttled group.
-> > 
-> > That's not the same issue I worried about :) Throttling is about
-> > inserting small sleep/waits into selected points. For reads, the ideal
-> > sleep point is immediately after readahead IO is summited, at the end
-> > of __do_page_cache_readahead(). The same should be applicable to
-> > direct IO.
+On Mon, 2012-03-26 at 09:36 +0800, he, bo wrote:
+> From: he bo <bo.he@intel.com>
 > 
-> But after a read the process might want to process the read data and
-> do something else altogether. So throttling the process after completing
-> the read is not the best thing.
-
-__do_page_cache_readahead() returns immediately after queuing the read
-IOs. It may block occasionally on metadata IO but not data IO.
-
-> > > Current async behavior works well where we queue up the
-> > > bio from the task in throttled group and let task do other things. Same
-> > > is true for AIO where we would not like to block in bio submission.
-> > 
-> > For AIO, we'll need to delay the IO completion notification or status
-> > update, which may involve computing some delay time and delay the
-> > calls to io_complete() with the help of some delayed work queue. There
-> > may be more issues to deal with as I didn't look into aio.c carefully.
+> Usually, there is a special scenario that developer wants to
+> call printk to just set up a log level (might be transferred
+> here as a parameter from upper level), then, later calling
+> of printk prints out real string with the same log level
+> continuously.
 > 
-> I don't know but delaying compltion notifications sounds odd to me. So
-> you don't throttle while submitting requests. That does not help with
-> pressure on request queue as process can dump whole bunch of IO without
-> waiting for completion?
+> Current function vprintk has an issue to support this capability.
+> When the whole string in one calling to printk is just a log level,
+> it ignores it.
 > 
-> What I like better that AIO is allowed to submit bunch of IO till it
-> hits the nr_requests limit on request queue and then it is blocked as
-> request queue is too busy and not enough request descriptors are free.
+> Signed-off-by: he, bo <bo.he@intel.com>
+> Reviewed-by: Zhang, Yanmin <yanmin.zhang@intel.com>
+> ---
+>  kernel/printk.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+Ingo,
 
-You are right. Throttling direct IO and AIO in high layer has the
-problem of added delays and less queue fullness. I suspect it may also
-lead to extra cfq anticipatory idling and disk idles. And it won't be
-able to deal with ioprio. All in all there are lots of problems actually.
+What's your opinion about the 2 patches? The 1st patch fixes an issue
+and 2nd patch enhances dump_stack with log level.
 
-> > The thing worried me is that in the proportional throttling case, the
-> > high level throttling works on the *estimated* task_ratelimit =
-> > disk_bandwidth / N, where N is the number of read IO tasks. When N
-> > suddenly changes from 2 to 1, it may take 1 second for the estimated
-> > task_ratelimit to adapt from disk_bandwidth/2 up to disk_bandwidth,
-> > during which time the disk won't get 100% utilized because of the
-> > temporally over-throttling of the remaining IO task.
-> 
-> I thought we were only considering the case of absolute throttling in
-> higher layers. Proportional IO will continue to be in CFQ. I don't think
-> we need to push proportional IO in higher layers.
-
-Agreed for direct IO.
-
-As for buffered writes, I'm seriously considering the possibility of
-doing proportional IO control in balance_dirty_pages().
-
-I'd take this as the central problem of this thread. If the CFQ
-proportional IO controller can do its work well for direct IOs and
-leave the buffered writes to the balance_dirty_pages() proportional IO
-controller, it would result in a simple and efficient "feedback" system
-(comparing to the "push back" idea).
-
-I don't really know about any real use cases. However it seems to me
-(and perhaps Jan Kara) the most user friendly and manageable IO
-controller interfaces would allow the user to divide disk time (no
-matter it's used for reads or writes, direct or buffered IOs) among
-the cgroups. Then allow each cgroup to further split up disk time (or
-bps/iops) to different types of IO.
-
-For simplicity, let's assume only direct/buffered writes are happening
-and the user configures 3 blkio cgroups A, B, C with equal split of
-disk time and equal direct:buffered splits inside each cgroup.
-
-In the case of
-
-        A:      1 direct write dd + 1 buffered write dd
-        B:      1 direct write dd
-        C:      1 buffered write dd
-
-The dd tasks should ideally be throttled to
-
-        A.direct:       1/6 disk time
-        A.buffered:     1/6 disk time
-        B.direct:       1/3 disk time
-        C.buffered:     1/3 disk time
-
-So is it possible for the proportional block IO controller to throttle
-direct IOs to
-
-        A.direct:       1/6 disk time
-        B.direct:       1/3 disk time
-
-and leave the remaining 1/2 disk time to buffered writes from the
-flusher thread?
-
-Then I promise that balance_dirty_pages() will be able to throttle the
-buffered writes to:
-
-        A.buffered:     1/6 disk time
-        C.buffered:     1/3 disk time
-
-thanks to the fact that the balance_dirty_pages() throttling algorithm
-is pretty adaptive. It will be able to work well with the blkio
-throttling to achieve the throttling goals.
-
-In the above case,
-
-        equal split of disk time == equal split of write bandwidth
-
-since all cgroups run the same type of workload.
-balance_dirty_pages() will be able to work in that
-cooperative way after adding some direct IO rate accounting.
-
-In order to deal with mixed random/sequential workloads,
-balance_dirty_pages() will also need some disk time stats feedback.
-It will then throttle the dirtiers so that the disk time goals are
-matched in long run.
-
-> > This is not a problem when throttling at the block/cfq layer, since it
-> > has the full information of pending requests and should not depend on
-> > such estimations.
-> 
-> CFQ does not even look at pending requests. It just maintains bunch
-> of IO queues and selects one queue to dispatch IO from based on its
-> weight. So proportional IO comes very naturally to CFQ.
-
-Sure. Nice work!
-
-> > 
-> > The workaround I can think of, is to put the throttled task into a wait
-> > queue, and let block layer wake up the waiters when the IO queue runs
-> > empty. This should be able to avoid most disk idle time.
-> 
-> Again, I am not convinced that proportional IO should go in higher layers.
-> 
-> For fast devices we are already suffering from queue locking overhead and
-> Jens seems to have patches for multi queue. Now by trying to implement
-> something at higher layer, that locking overhead will show up there too
-> and we will end up doing something similar to multi queue there and it
-> is not desirable.
-
-Sure, yeah it's a hack. I was not really happy with it.
+https://lkml.org/lkml/2012/3/25/152
+https://lkml.org/lkml/2012/3/25/153
 
 Thanks,
-Fengguang
+Bo
+
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index b663c2c..473afdb 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -909,7 +909,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+>  	 * Copy the output into log_buf. If the caller didn't provide
+>  	 * the appropriate log prefix, we insert them here
+>  	 */
+> -	for (; *p; p++) {
+> +	for (; plen || *p; p++) {
+>  		if (new_text_line) {
+>  			new_text_line = 0;
+>  
+> @@ -920,6 +920,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+>  				for (i = 0; i < plen; i++)
+>  					emit_log_char(printk_buf[i]);
+>  				printed_len += plen;
+> +				plen = 0;
+>  			} else {
+>  				/* Add log prefix */
+>  				emit_log_char('<');
+> @@ -946,10 +947,10 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+>  				printed_len += tlen;
+>  			}
+>  
+> -			if (!*p)
+> -				break;
+>  		}
+>  
+> +		if (!*p)
+> +			break;
+>  		emit_log_char(*p);
+>  		if (*p == '\n')
+>  			new_text_line = 1;
+
+
