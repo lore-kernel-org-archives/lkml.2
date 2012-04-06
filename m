@@ -1,70 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2DFRdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 13:33:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35220 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753909Ab2DFRdD (ORCPT
+	id S1757544Ab2DFRfL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 13:35:11 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40405 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284Ab2DFRfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 13:33:03 -0400
-Date: Fri, 6 Apr 2012 18:32:59 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT 2/2] regulator: Convert rc5t583 to set_voltage
-Message-ID: <20120406173258.GM19424@opensource.wolfsonmicro.com>
-References: <1333605888.18055.1.camel@phoenix>
- <1333606056.18055.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VB1oQhYtJt8uuzk+"
-Content-Disposition: inline
-In-Reply-To: <1333606056.18055.3.camel@phoenix>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Apr 2012 13:35:09 -0400
+Date: Fri, 06 Apr 2012 13:35:06 -0400 (EDT)
+Message-Id: <20120406.133506.1594249325711664105.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 06 Apr 2012 10:35:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---VB1oQhYtJt8uuzk+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+1) Fix inaccuracies in network driver interface documentation, from
+   Ben Hutchings.
 
-On Thu, Apr 05, 2012 at 02:07:36PM +0800, Axel Lin wrote:
-> Not every regulator driver should implement set_voltage_sel callback.
-> See commit e8eef82
-> "regulator: Provide a selector based set_voltage_sel() operation".
->=20
-> For rc5t583, the regulator voltage can be mapped onto selector values wit=
-h a
-> simple calculation, thus implement set_voltage is better than set_voltage=
-_sel.
+2) Fix handling of negative offsets in BPF JITs, from Jan Seiffert.
 
-Applied, thanks.
+3) Compile warning, locking, and refcounting fixes in netfilter's
+   xt_CT, from Pablo Neira Ayuso.
 
---VB1oQhYtJt8uuzk+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+4) phonet sendmsg needs to validate user length just like any
+   other datagram protocol, fix from Sasha Levin.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+5) Ipv6 multicast code uses wrong loop index, from RongQing Li.
 
-iQIcBAEBAgAGBQJPfyiwAAoJEBus8iNuMP3do3cP/3eFg/m4RtiuxHsv161nK08f
-vgHbgfaZXZ6BO2N2BSWnwBjd5sU0urPPAB4TJXozoQ50PL8lc3VUAuPJt3WAri8S
-XsqpQlhaE8D8lHST8MM4pvFShibWppKENJBmFhWSmqlcJwZ3PGNZWwqs6mequXzD
-Vj8iVKIV0JoisU26MglZiwsuP1WNtgTrSgEEoWzoY9GY39FpJbHbgKbHqH5++ze3
-v2SMUgyeSfKSGwHE7M6fNdQ65i7jo1R6LX4jyo6R//ZdmYFjnA1+fIeh1PnKDlxe
-hMWQWNKBjB1W7cQ7nE0zbC7rD+84iIL+ByDOoU8sS0pCxndMiuFTO0RN1wzps5DF
-T6ZuFJWrqUGTXnggLrKKHUj2ttK5q4WQh6r+Ys7IktcxX1kKumqTWrJ3gMSyTuDf
-Tx/uzw3macGJBwZdJVMPWdGiV0uuWvFiwtf8BhvBPQWDDZ3aZBFvYDYDhdkM9Rpr
-UNPpUnRQsY7kW2CJPtNlwkqWJIIxPzuB8oYkstVmzYRH0veoYxnQkYgiQt+7enMn
-gSM93aS0toELJtp3V3HNC1nX0SfmOVqOeFbP5UVT2deaDTsMAA/4m928P3NsuV19
-P+nqWy0IltH0mFHAo54WR1yw1+Iea8SlzmddaJN3sGCW+rBhSgeA0BG2nBRcsXqd
-Rt6PCdNxKD1gbJdfZjBI
-=1fL6
------END PGP SIGNATURE-----
+6) Link handling and firmware fixes in bnx2x driver from Yaniv
+   Rosner and Yuval Mintz.
 
---VB1oQhYtJt8uuzk+--
+7) mlx4 erroneously allocates 4 pages at a time, regardless of page
+   size, fix from Thadeu Lima de Souza Cascardo.
+
+8) SCTP socket option wasn't extended in a backwards compatible
+   way, fix from Thomas Graf.
+
+9) Add missing address change event emissions to bonding, from
+   Shlomo Pongratz.
+
+10) /proc/net/dev regressed because it uses a private offset to
+    track where we are in the hash table, but this doesn't
+    track the offset pullback that the seq_file code does
+    resulting in some entries being missed in large dumps.
+
+    Fix from Eric Dumazet.
+
+11) do_tcp_sendpage() unloads the send queue way too fast, because
+    it invokes tcp_push() when it shouldn't.  Let the natural sequence
+    generated by the splice paths, and the assosciated MSG_MORE
+    settings, guide the tcp_push() calls.
+
+    Otherwise what goes out of TCP is spaghetti and doesn't batch
+    effectively into GSO/TSO clusters.
+
+    From Eric Dumazet.
+
+12) Once we put a SKB into either the netlink receiver's queue
+    or a socket error queue, it can be consumed and freed up,
+    therefore we cannot touch it after queueing it like that.
+
+    Fixes from Eric Dumazet.
+
+13) PPP has this annoying behavior in that for every transmit
+    call it immediately stops the TX queue, then calls down
+    into the next layer to transmit the PPP frame.
+
+    But if that next layer can take it immediately, it just
+    un-stops the TX queue right before returning from the
+    transmit method.
+
+    Besides being useless work, it makes several facilities
+    unusable, in particular things like the equalizers.  Well
+    behaved devices should only stop the TX queue when they
+    really are full, and in PPP's case when it gets backlogged
+    to the downstream device.
+
+    David Woodhouse therefore fixed PPP to not stop the TX
+    queue until it's downstream can't take data any more.
+
+14) IFF_UNICAST_FLT got accidently lost in some recent stmmac
+    driver changes, re-add.  From Marc Kleine-Budde.
+
+15) Fix link flaps in ixgbe, from Eric W. Multanen.
+
+16) Descriptor writeback fixes in e1000e from Matthew Vick.
+
+Please pull, thanks a lot!
+
+The following changes since commit 314489bd4c7780fde6a069783d5128f6cef52919:
+
+  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2012-04-05 22:13:39 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Artem Savkov (1):
+      r8169: enable napi on resume.
+
+Ben Hutchings (6):
+      ethtool: Remove exception to the requirement of holding RTNL lock
+      doc, net: Remove obsolete reference to dev->poll
+      doc, net: Update documentation of synchronisation for TX multiqueue
+      doc, net: Update netdev operation names
+      doc, net: Remove instruction to set net_device::trans_start
+      doc, net: Update ndo_start_xmit return type and values
+
+Bruce Allan (1):
+      e1000e: prevent oops when adapter is being closed and reset simultaneously
+
+David S. Miller (2):
+      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
+      Merge branch 'master' of git://1984.lsi.us.es/net
+
+David Woodhouse (1):
+      ppp: Don't stop and restart queue on every TX packet
+
+Eric Dumazet (5):
+      net: fix /proc/net/dev regression
+      tcp: allow splice() to build full TSO packets
+      tcp: tcp_sendpages() should call tcp_push() once
+      netlink: fix races after skb queueing
+      net: fix a race in sock_queue_err_skb()
+
+Fernando Luis Vazquez Cao (1):
+      TCP: update ip_local_port_range documentation
+
+Jan Beulich (1):
+      netfilter: xt_LOG: don't use xchg() for simple assignment
+
+Jan Engelhardt (1):
+      netfilter: ipset: avoid use of kernel-only types
+
+Jan Seiffert (2):
+      bpf jit: Make the filter.c::__load_pointer helper non-static for the jits
+      bpf jit: Let the x86 jit handle negative offsets
+
+Marc Kleine-Budde (1):
+      stmmac: re-add IFF_UNICAST_FLT for dwmac1000
+
+Matthew Vick (1):
+      e1000e: Guarantee descriptor writeback flush success.
+
+Multanen, Eric W (1):
+      ixgbe: driver fix for link flap
+
+Pablo Neira Ayuso (4):
+      netfilter: xt_CT: remove a compile warning
+      netfilter: xt_CT: allocation has to be GFP_ATOMIC under rcu_read_lock section
+      netfilter: xt_CT: fix missing put timeout object in error path
+      netfilter: nf_conntrack: fix count leak in error path of __nf_conntrack_alloc
+
+RongQing.Li (1):
+      ipv6: fix array index in ip6_mc_add_src()
+
+Sasha Levin (1):
+      phonet: Check input from user before allocating
+
+Shlomo Pongratz (2):
+      net/bonding: emit address change event also in bond_release
+      net/bonding: correctly proxy slave neigh param setup ndo function
+
+Srinivas Kandagatla (1):
+      phy:icplus:fix Auto Power Saving in ip101a_config_init.
+
+Thadeu Lima de Souza Cascardo (1):
+      mlx4: allocate just enough pages instead of always 4 pages
+
+Thomas Graf (1):
+      sctp: Allow struct sctp_event_subscribe to grow without breaking binaries
+
+Veaceslav Falico (1):
+      bonding: properly unset current_arp_slave on slave link up
+
+Yaniv Rosner (10):
+      bnx2x: PFC fix
+      bnx2x: Fix BCM57810-KR FC
+      bnx2x: Fix BCM57810-KR AN speed transition
+      bnx2x: Fix BCM578x0-SFI pre-emphasis settings
+      bnx2x: Restore 1G LED on BCM57712+BCM8727 designs.
+      bnx2x: Fix link issue for BCM8727 boards.
+      bnx2x: Fix BCM84833 PHY FW version presentation
+      bnx2x: Clear BCM84833 LED after fan failure
+      bnx2x: Fix BCM57711+BCM84823 link issue
+      bnx2x: Clear MDC/MDIO warning message
+
+Yuval Mintz (1):
+      bnx2x: correction to firmware interface
+
+stephen hemminger (2):
+      sky2: copy received packets on inefficient unaligned architecture
+      MAINTAINERS: update for Marvell Ethernet drivers
+
+ Documentation/networking/driver.txt                |   31 ++--
+ Documentation/networking/ip-sysctl.txt             |   11 +-
+ Documentation/networking/netdevices.txt            |   25 ++--
+ MAINTAINERS                                        |   19 +--
+ arch/x86/net/bpf_jit.S                             |  122 +++++++++++----
+ arch/x86/net/bpf_jit_comp.c                        |   41 +++--
+ drivers/net/bonding/bond_main.c                    |   60 ++++++-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c    |    1 -
+ .../net/ethernet/broadcom/bnx2x/bnx2x_fw_defs.h    |  110 +++++++-------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c   |  147 +++++++++++++----
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_reg.h    |    8 +
+ drivers/net/ethernet/intel/e1000e/e1000.h          |    6 +
+ drivers/net/ethernet/intel/e1000e/netdev.c         |   26 +++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_nl.c    |  164 ++++++++++----------
+ drivers/net/ethernet/marvell/sky2.c                |   13 ++-
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h       |    5 +-
+ drivers/net/ethernet/realtek/r8169.c               |    3 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |    6 +-
+ drivers/net/phy/icplus.c                           |    3 +-
+ drivers/net/ppp/ppp_generic.c                      |   14 +-
+ fs/splice.c                                        |    5 +-
+ include/linux/ethtool.h                            |    3 +-
+ include/linux/netdevice.h                          |    2 -
+ include/linux/netfilter/xt_set.h                   |    4 +-
+ include/linux/socket.h                             |    2 +-
+ include/net/netfilter/xt_log.h                     |    2 +-
+ net/core/dev.c                                     |   58 ++------
+ net/core/dev_addr_lists.c                          |    3 +-
+ net/core/filter.c                                  |    9 +-
+ net/core/skbuff.c                                  |    4 +-
+ net/ipv4/tcp.c                                     |    2 +-
+ net/ipv6/mcast.c                                   |    2 +-
+ net/netfilter/nf_conntrack_core.c                  |    1 +
+ net/netfilter/xt_CT.c                              |   28 +++-
+ net/netlink/af_netlink.c                           |   24 ++--
+ net/phonet/pep.c                                   |    3 +
+ net/sctp/socket.c                                  |    5 +-
+ net/socket.c                                       |    6 +-
+ 38 files changed, 602 insertions(+), 376 deletions(-)
