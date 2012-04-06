@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab2DFOpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 10:45:09 -0400
+	id S1757447Ab2DFOpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 10:45:07 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:51628 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757383Ab2DFOor (ORCPT
+	with ESMTP id S1757382Ab2DFOoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 10:44:47 -0400
+	Fri, 6 Apr 2012 10:44:46 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 3/3] gpio: langwell: clear IRQ edge detect registers at init
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: linus.walleij@stericsson.com,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-In-Reply-To: <1333617317-28437-3-git-send-email-mika.westerberg@linux.intel.com>
-References: <1333617317-28437-1-git-send-email-mika.westerberg@linux.intel.com> <1333617317-28437-3-git-send-email-mika.westerberg@linux.intel.com>
-Date: Thu, 05 Apr 2012 21:39:49 -0700
-Message-Id: <20120406043949.BDE543E0E10@localhost>
+Subject: Re: [PATCH V1 2/2] mfd: rc5t583: Initialize gpio during initialization.
+To: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@stericsson.com,
+        sameo@linux.intel.com, ldewangan@nvidia.com
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1333544671-24549-3-git-send-email-ldewangan@nvidia.com>
+References: <1333544671-24549-1-git-send-email-ldewangan@nvidia.com> <1333544671-24549-3-git-send-email-ldewangan@nvidia.com>
+Date: Thu, 05 Apr 2012 21:57:45 -0700
+Message-Id: <20120406045745.20B393E0EDF@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  5 Apr 2012 12:15:17 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
-> The boot firmware might leave the registers configured causing interrupts
-> to happen even when no handler for them is yet registered. Fix this by
-> clearing the IRQ edge detect registers at init.
+On Wed,  4 Apr 2012 18:34:31 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> Initializing gpios of the device RICOH's PMIC RC5T583
+> during device initialization. This device support 8 gpios
+> which can be access through gpio library.
 > 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>  drivers/mfd/Kconfig   |    1 +
+>  drivers/mfd/rc5t583.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 29f463c..7155d5f 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -864,6 +864,7 @@ config MFD_RC5T583
+>  	depends on I2C=y && GENERIC_HARDIRQS
+>  	select MFD_CORE
+>  	select REGMAP_I2C
+> +	select GPIO_RC5T583
 
-Applied, thanks
+Don't select a symbol like this.  It gets enabled unconditionally even
+if the GPIO_RC5T583 dependencies aren't met.
+
+>  	help
+>  	  Select this option to get support for the RICOH583 Power
+>  	  Management system device.
+> diff --git a/drivers/mfd/rc5t583.c b/drivers/mfd/rc5t583.c
+> index 99ef944..a0c9e61 100644
+> --- a/drivers/mfd/rc5t583.c
+> +++ b/drivers/mfd/rc5t583.c
+> @@ -331,6 +331,7 @@ static int __devinit rc5t583_i2c_probe(struct i2c_client *i2c,
+>  		goto err_add_devs;
+>  	}
+>  
+> +	rc5t583_gpio_init(rc5t583, pdata);
+
+This looks wrong.  If you're going to do it this way, then just put
+the GPIO bits directly into the driver and don't bother with the
+separate file at all.  The point of mfd is to split up a driver and
+allow each of the sub functions to be probed separately by the driver
+model (and loaded as separate modules)
+
+This looks wrong.  If you're going to do it this way, then just put
+the GPIO bits directly into the driver and don't bother with the
+separate file at all.  The point of mfd is to split up a driver and
+allow each of the sub functions to be probed separately by the driver
+model, and be loaded as separate modules.
 
 g.
-
-> ---
->  drivers/gpio/gpio-langwell.c |   21 +++++++++++++++++++++
->  1 files changed, 21 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-> index bc15ae3..52f00d3 100644
-> --- a/drivers/gpio/gpio-langwell.c
-> +++ b/drivers/gpio/gpio-langwell.c
-> @@ -263,6 +263,24 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
->  	chip->irq_eoi(data);
->  }
->  
-> +static void lnw_irq_init_hw(struct lnw_gpio *lnw)
-> +{
-> +	void __iomem *reg;
-> +	unsigned base;
-> +
-> +	for (base = 0; base < lnw->chip.ngpio; base += 32) {
-> +		/* Clear the rising-edge detect register */
-> +		reg = gpio_reg(&lnw->chip, base, GRER);
-> +		writel(0, reg);
-> +		/* Clear the falling-edge detect register */
-> +		reg = gpio_reg(&lnw->chip, base, GFER);
-> +		writel(0, reg);
-> +		/* Clear the edge detect status register */
-> +		reg = gpio_reg(&lnw->chip, base, GEDR);
-> +		writel(~0, reg);
-> +	}
-> +}
-> +
->  #ifdef CONFIG_PM
->  static int lnw_gpio_runtime_resume(struct device *dev)
->  {
-> @@ -371,6 +389,9 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
->  		dev_err(&pdev->dev, "langwell gpiochip_add error %d\n", retval);
->  		goto err4;
->  	}
-> +
-> +	lnw_irq_init_hw(lnw);
-> +
->  	irq_set_handler_data(pdev->irq, lnw);
->  	irq_set_chained_handler(pdev->irq, lnw_irq_handler);
->  	for (i = 0; i < lnw->chip.ngpio; i++) {
-> -- 
-> 1.7.9.1
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
