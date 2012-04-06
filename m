@@ -1,165 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab2DFIBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 04:01:43 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:55822
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754533Ab2DFIBl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 04:01:41 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz1432N98dK4015I179dNzz1202hzzz2dh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M21SYJ-02-1XB-02
-X-M-MSG: 
-Date: Sat, 7 Apr 2012 00:01:27 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, Zhang Rui <rui.zhang@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v3 7/7] [SCSI] sr: adds Zero-power ODD support
-Message-ID: <20120406160126.GA4835@localhost.amd.com>
-References: <1332915722-15963-8-git-send-email-ming.m.lin@intel.com>
- <Pine.LNX.4.44L0.1203281023380.1599-100000@iolanthe.rowland.org>
- <CAF1ivSahEvZ9+5gcNHiJGaJtwO94fT9XYEOkT2YH-Ej11==h+w@mail.gmail.com>
- <CAOzJMDRajsjHwCC66XB6Mv-Deuy-wD4GiZbeuEqCQePSLw-Xxw@mail.gmail.com>
- <CAF1ivSZ6cZ0G9uYSRsz=h0iTYarb1kx=k6_UOqCuBX+0OMOXSw@mail.gmail.com>
- <20120405083245.GA19508@localhost.amd.com>
- <CAF1ivSaAm4pTTKpjipYZxfvCrPhxnpH6WtxpDoaHFhC5kwA5Lw@mail.gmail.com>
+	id S1754752Ab2DFIQo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 04:16:44 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42160 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab2DFIQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 04:16:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <CAF1ivSaAm4pTTKpjipYZxfvCrPhxnpH6WtxpDoaHFhC5kwA5Lw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 06 Apr 2012 08:01:26.0099 (UTC) FILETIME=[77186A30:01CD13CB]
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120405164354.GC16546@kroah.com>
+References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
+	<20120403165320.GG19952@sequoia.sous-sol.org>
+	<20120403170708.GC2477@pengutronix.de>
+	<20120403171112.GH19952@sequoia.sous-sol.org>
+	<20120403171736.GD2477@pengutronix.de>
+	<CAMSQXEHpjD7LWQkKWJOU=9eFYqsaJi-xHFTxexQr7yoKiCG7HQ@mail.gmail.com>
+	<20120404075956.GB9073@pengutronix.de>
+	<CAMSQXEHxaJpmjpOz_VL54bs1W9x3kCJKGoeTCmBpZva_hSTVsw@mail.gmail.com>
+	<20120405164354.GC16546@kroah.com>
+Date: Fri, 6 Apr 2012 10:16:40 +0200
+X-Google-Sender-Auth: BnXn8SByY48d-812isr-nATdSdE
+Message-ID: <CANqCtQJjzkANJQMd8E9XKvOyk_FLCm1ER=VznrQ+cAerGbO0zQ@mail.gmail.com>
+Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
+From: Remy Bohmer <linux@bohmer.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ivo Sieben <meltedpianoman@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Chris Wright <chrisw@sous-sol.org>, linux-kernel@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: multipart/mixed; boundary=f46d0442811eb7139604bcfe46df
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--f46d0442811eb7139604bcfe46df
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Fri, Apr 06, 2012 at 02:10:31PM +0800, Lin Ming wrote:
-> >
-> > I prefer we do this in sr_block_ioctl.
-> > Suppose the ODD is now runtime suspended and received an ioctl:
-> > if the ioctl's cmd is CDROMEJECT, resume it.
-> > For other cases, return an error code like EPERM.
-> > When done, according to the result of ioctl: if success, leave it resumed;
-> > if failed, put it back to sleep.
-> >
-> > Something like this:
-> >
-> > diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-> > index 5fc97d2..aa6e920 100644
-> > --- a/drivers/scsi/sr.c
-> > +++ b/drivers/scsi/sr.c
-> > @@ -45,6 +45,7 @@
-> >  #include <linux/blkdev.h>
-> >  #include <linux/mutex.h>
-> >  #include <linux/slab.h>
-> > +#include <linux/pm_runtime.h>
-> >  #include <asm/uaccess.h>
-> >
-> >  #include <scsi/scsi.h>
-> > @@ -538,10 +539,21 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
-> >        struct scsi_cd *cd = scsi_cd(bdev->bd_disk);
-> >        struct scsi_device *sdev = cd->device;
-> >        void __user *argp = (void __user *)arg;
-> > -       int ret;
-> > +       int ret, rpm_resumed = 0;
-> >
-> >        mutex_lock(&sr_mutex);
-> >
-> > +       if (pm_runtime_suspended(&sdev->sdev_gendev)) {
-> > +               if (cmd == CDROMEJECT) {
-> > +                       scsi_autopm_get_device(sdev);
-> > +                       rpm_resumed = 1;
-> > +               }
-> > +               else {
-> > +                       ret = -EPERM;
-> > +                       goto out;
-> > +               }
-> > +       }
-> > +
-> >        /*
-> >         * Send SCSI addressing ioctls directly to mid level, send other
-> >         * ioctls to cdrom/block level.
-> > @@ -570,6 +582,9 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
-> >        ret = scsi_ioctl(sdev, cmd, argp);
-> >
-> >  out:
-> > +       if (rpm_resumed && ret)
-> > +               scsi_autopm_put_device(sdev);
-> > +
-> >        mutex_unlock(&sr_mutex);
-> >        return ret;
-> >  }
-> >
-> > Does this work?
-> 
-> I have tested this patch.
-> Unfortunately, this does not work.
-> 
-> int fd = open("/dev/sr0", ...)
-> ioctl(fd, COMMAND)
-> 
-> Actually, the open() code path requires CDROM to be in active state, for example
-> 
-> sr_block_open
->   cdrom_open
->     open_for_data
->        cdo->drive_status
->          scsi_test_unit_ready
->            scsi_execute_req
-> 
-Hmm... This is not the case on my Linux box.
-eject will use O_NONBLOCK when open, which would results in the
-following code path:
-sr_block_open
-  cdrom_open
-    cdi->ops->open(sr_open)
-      done
+Hi Greg,
 
-Maybe your eject is old and doesn't use the O_NONBLOCK flag?
-If it is the case, then we may need to avoid this solution since we
-can't depend on the user space tools.
+2012/4/5 Greg KH <gregkh@linuxfoundation.org>:
+> On Thu, Apr 05, 2012 at 05:11:13PM +0200, Ivo Sieben wrote:
+>> @Greg:
+>> Can this patch be picked up in your tree?
+>> Or should it be picked up by Wolfram at24 support?
+>
+> I'll be glad to take it, but I don't seem to be able to find the
+> original patch anywhere, can someone bounce it to me?
 
-> I'm thinking 3 solutions.
-> 
-> Solution 1:
-> sr_block_open() always return failure in ZPODD state.
-> But "eject /dev/sr0" won't work in this solution.
-> 
-Right, so, not an option.
+Since Ivo is a few days off, I do not expect him to answer before next Tuesday.
+So, I attached the latest version (=v3) of his patch to this mail. I
+attached it to keep the author/owner information to Ivo.
 
-> Solution 2:
-> sr_block_open() always return success in ZPODD state.
-> Then we have to insert ODD status check in many entries accessing it.
-> For example, sr_drive_status(), sr_check_events(),  sr_lock_door() etc.
-> And only runtime resume ODD for some special case, for example,
-> CDROMEJECT ioctl.
-Sounds like pretty complicated :-)
+Is this acceptable for you Greg?
 
-> 
-> Solution 3:
-> Runtime resume ODD in sr_block_open(), as Alan suggested.
-> But the big problem is userspace will open ODD every seconds, so ODD
-> is frequently
-> resumed and we lose the expected power savings from ZPODD.
-Yes, the udisks-daemon will constantly open the ODD's block device,
-dunno why it would do this, need to check its code later.
+Kind regards,
 
-Another problem I can think of doing suspend/resume in open/release is,
-it's not that easy to determine if we should suspend the ODD in release
-function. We may need to do some extra house keeping to achieve this
-based on information like if the door is open and/or if there is media
-inside, etc.
+Remy
 
-Thanks,
-Aaron
+--f46d0442811eb7139604bcfe46df
+Content-Type: application/octet-stream; name="ivo.patch"
+Content-Disposition: attachment; filename="ivo.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h0oyk2810
 
+RnJvbToJSXZvIFNpZWJlbiA8bWVsdGVkcGlhbm9tYW5AZ21haWwuY29tPgpUbzoJPGxpbnV4LWtl
+cm5lbEB2Z2VyLmtlcm5lbC5vcmc+LAoJV29sZnJhbSBTYW5nIDx3LnNhbmdAcGVuZ3V0cm9uaXgu
+ZGU+LAoJSmVhbiBEZWx2YXJlIDxraGFsaUBsaW51eC1mci5vcmc+LAoJS2V2aW4gSGlsbWFuIDxr
+aGlsbWFuQGRlZXByb290c3lzdGVtcy5jb20+LAoJQ2hyaXMgV3JpZ2h0IDxjaHJpc3dAc291cy1z
+b2wub3JnPgpDQzoJSXZvIFNpZWJlbiA8bWVsdGVkcGlhbm9tYW5AZ21haWwuY29tPgpTdWJqZWN0
+OiBbUEFUQ0gtdjNdIFN1cHBvcnQgTTk1MDQwIFNQSSBFRVBST00KRGF0ZToJVHVlLCAzIEFwciAy
+MDEyIDA4OjI1OjAyICswMjAwCgpVcGRhdGVkIHRoZSBnZW5lcmljIFNQSSBFRVBST00gZHJpdmVy
+IEFUMjUgZm9yIHN1cHBvcnQgb2YgYW4gYWRkaXRpb25hbCBhZGRyZXNzCmJpdCBpbiB0aGUgaW5z
+dHJ1Y3Rpb24gYnl0ZS4gQ2VydGFpbiBFRVBST01TIGhhdmUgYSBzaXplIHRoYXQgaXMgbGFyZ2Vy
+IHRoYW4gdGhlCm51bWJlciBvZiBhZGRyZXNzIGJ5dGVzIHdvdWxkIGFsbG93IChlLmcuIGxpa2Ug
+TTk1MDQwIGZyb20gU1QgdGhhdCBoYXMgNTEyIEJ5dGUKc2l6ZSBidXQgdXNlcyBvbmx5IG9uZSBh
+ZGRyZXNzIGJ5dGUgKEEwIHRvIEE3KSBmb3IgYWRkcmVzc2luZy4pIEZvciB0aGUgZXh0cmEKYWRk
+cmVzcyBiaXQgKEE4LCBBMTYgb3IgQTI0KSBiaXQgMyBvZiB0aGUgaW5zdHJ1Y3Rpb24gYnl0ZSBp
+cyB1c2VkLiBUaGlzCmluc3RydWN0aW9uIGJpdCBpcyBub3JtYWxseSBkZWZpbmVkIGFzIGRvbid0
+IGNhcmUgZm9yIG90aGVyIEFUMjUgbGlrZSBjaGlwcy4KClNpZ25lZC1vZmYtYnk6IEl2byBTaWVi
+ZW4gPG1lbHRlZHBpYW5vbWFuQGdtYWlsLmNvbT4KLS0tCnYzOiBQcm9jZXNzZWQgcmV2aWV3IGNv
+bW1lbnRzIGZyb20gV29sZnJhbSBTYW5nOiBubyBhZGRpdGlvbmFsIGFkZHJlc3Nfb2Zmc2V0Cmlz
+IGNhbGN1bGF0ZWQgZHVyaW5nIHRoZSBwcm9iZSwgYnV0IGR1cmluZyB0aGUgcmVhZC93cml0ZSB0
+aGUgZmxhZyBpcyBjaGVja2VkCmFuZCB0aGUgZXh0cmEgYWRkcmVzcyBiaXQgb2Zmc2V0IGlzIGNh
+bGN1bGF0ZWQgcnVudGltZS4KCiBkcml2ZXJzL21pc2MvZWVwcm9tL2F0MjUuYyB8ICAgMTkgKysr
+KysrKysrKysrKysrKy0tLQogaW5jbHVkZS9saW51eC9zcGkvZWVwcm9tLmggfCAgIDEwICsrKysr
+KysrKysKIDIgZmlsZXMgY2hhbmdlZCwgMjYgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkK
+CmRpZmYgLS1naXQgYS9kcml2ZXJzL21pc2MvZWVwcm9tL2F0MjUuYyBiL2RyaXZlcnMvbWlzYy9l
+ZXByb20vYXQyNS5jCmluZGV4IGM2MjdlNDEuLjBkMjcyYzYgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
+bWlzYy9lZXByb20vYXQyNS5jCisrKyBiL2RyaXZlcnMvbWlzYy9lZXByb20vYXQyNS5jCkBAIC01
+MCw2ICs1MCw3IEBAIHN0cnVjdCBhdDI1X2RhdGEgewogI2RlZmluZQlBVDI1X1NSX0JQMQkweDA4
+CiAjZGVmaW5lCUFUMjVfU1JfV1BFTgkweDgwCQkvKiB3cml0ZXByb3RlY3QgZW5hYmxlICovCiAK
+KyNkZWZpbmUJQVQyNV9JTlNUUl9CSVQzCTB4MDgJCS8qIEFkZGl0aW9uYWwgYWRkcmVzcyBiaXQg
+aW4gaW5zdHIgKi8KIAogI2RlZmluZSBFRV9NQVhBRERSTEVOCTMJCS8qIDI0IGJpdCBhZGRyZXNz
+ZXMsIHVwIHRvIDIgTUJ5dGVzICovCiAKQEAgLTc1LDYgKzc2LDcgQEAgYXQyNV9lZV9yZWFkKAog
+CXNzaXplX3QJCQlzdGF0dXM7CiAJc3RydWN0IHNwaV90cmFuc2Zlcgl0WzJdOwogCXN0cnVjdCBz
+cGlfbWVzc2FnZQltOworCXU4CQkJaW5zdHI7CiAKIAlpZiAodW5saWtlbHkob2Zmc2V0ID49IGF0
+MjUtPmJpbi5zaXplKSkKIAkJcmV0dXJuIDA7CkBAIC04NCw3ICs4NiwxMiBAQCBhdDI1X2VlX3Jl
+YWQoCiAJCXJldHVybiBjb3VudDsKIAogCWNwID0gY29tbWFuZDsKLQkqY3ArKyA9IEFUMjVfUkVB
+RDsKKworCWluc3RyID0gQVQyNV9SRUFEOworCWlmIChhdDI1LT5jaGlwLmZsYWdzICYgRUVfSU5T
+VFJfQklUM19JU19BRERSKQorCQlpZiAob2Zmc2V0ID49ICgxVSA8PCAoYXQyNS0+YWRkcmxlbiAq
+IDgpKSkKKwkJCWluc3RyIHw9IEFUMjVfSU5TVFJfQklUMzsKKwkqY3ArKyA9IGluc3RyOwogCiAJ
+LyogOC8xNi8yNC1iaXQgYWRkcmVzcyBpcyB3cml0dGVuIE1TQiBmaXJzdCAqLwogCXN3aXRjaCAo
+YXQyNS0+YWRkcmxlbikgewpAQCAtMTY3LDE0ICsxNzQsMTQgQEAgYXQyNV9lZV93cml0ZShzdHJ1
+Y3QgYXQyNV9kYXRhICphdDI1LCBjb25zdCBjaGFyICpidWYsIGxvZmZfdCBvZmYsCiAJLyogRm9y
+IHdyaXRlLCByb2xsb3ZlciBpcyB3aXRoaW4gdGhlIHBhZ2UgLi4uIHNvIHdlIHdyaXRlIGF0CiAJ
+ICogbW9zdCBvbmUgcGFnZSwgdGhlbiBtYW51YWxseSByb2xsIG92ZXIgdG8gdGhlIG5leHQgcGFn
+ZS4KIAkgKi8KLQlib3VuY2VbMF0gPSBBVDI1X1dSSVRFOwogCW11dGV4X2xvY2soJmF0MjUtPmxv
+Y2spOwogCWRvIHsKIAkJdW5zaWduZWQgbG9uZwl0aW1lb3V0LCByZXRyaWVzOwogCQl1bnNpZ25l
+ZAlzZWdtZW50OwogCQl1bnNpZ25lZAlvZmZzZXQgPSAodW5zaWduZWQpIG9mZjsKLQkJdTgJCSpj
+cCA9IGJvdW5jZSArIDE7CisJCXU4CQkqY3AgPSBib3VuY2U7CiAJCWludAkJc3I7CisJCXU4CQlp
+bnN0cjsKIAogCQkqY3AgPSBBVDI1X1dSRU47CiAJCXN0YXR1cyA9IHNwaV93cml0ZShhdDI1LT5z
+cGksIGNwLCAxKTsKQEAgLTE4NCw2ICsxOTEsMTIgQEAgYXQyNV9lZV93cml0ZShzdHJ1Y3QgYXQy
+NV9kYXRhICphdDI1LCBjb25zdCBjaGFyICpidWYsIGxvZmZfdCBvZmYsCiAJCQlicmVhazsKIAkJ
+fQogCisJCWluc3RyID0gQVQyNV9XUklURTsKKwkJaWYgKGF0MjUtPmNoaXAuZmxhZ3MgJiBFRV9J
+TlNUUl9CSVQzX0lTX0FERFIpCisJCQlpZiAob2Zmc2V0ID49ICgxVSA8PCAoYXQyNS0+YWRkcmxl
+biAqIDgpKSkKKwkJCQlpbnN0ciB8PSBBVDI1X0lOU1RSX0JJVDM7CisJCSpjcCsrID0gaW5zdHI7
+CisKIAkJLyogOC8xNi8yNC1iaXQgYWRkcmVzcyBpcyB3cml0dGVuIE1TQiBmaXJzdCAqLwogCQlz
+d2l0Y2ggKGF0MjUtPmFkZHJsZW4pIHsKIAkJZGVmYXVsdDoJLyogY2FzZSAzICovCmRpZmYgLS1n
+aXQgYS9pbmNsdWRlL2xpbnV4L3NwaS9lZXByb20uaCBiL2luY2x1ZGUvbGludXgvc3BpL2VlcHJv
+bS5oCmluZGV4IDMwNmU3YjEuLjQwM2UwMDcgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvc3Bp
+L2VlcHJvbS5oCisrKyBiL2luY2x1ZGUvbGludXgvc3BpL2VlcHJvbS5oCkBAIC0yMCw2ICsyMCwx
+NiBAQCBzdHJ1Y3Qgc3BpX2VlcHJvbSB7CiAjZGVmaW5lCUVFX0FERFIzCTB4MDAwNAkJCS8qIDI0
+IGJpdCBhZGRycyAqLwogI2RlZmluZQlFRV9SRUFET05MWQkweDAwMDgJCQkvKiBkaXNhbGxvdyB3
+cml0ZXMgKi8KIAorCS8qCisJICogQ2VydGFpbiBFRVBST01TIGhhdmUgYSBzaXplIHRoYXQgaXMg
+bGFyZ2VyIHRoYW4gdGhlIG51bWJlciBvZiBhZGRyZXNzCisJICogYnl0ZXMgd291bGQgYWxsb3cg
+KGUuZy4gbGlrZSBNOTUwNDAgZnJvbSBTVCB0aGF0IGhhcyA1MTIgQnl0ZSBzaXplCisJICogYnV0
+IHVzZXMgb25seSBvbmUgYWRkcmVzcyBieXRlIChBMCB0byBBNykgZm9yIGFkZHJlc3NpbmcuKSBG
+b3IKKwkgKiB0aGUgZXh0cmEgYWRkcmVzcyBiaXQgKEE4LCBBMTYgb3IgQTI0KSBiaXQgMyBvZiB0
+aGUgaW5zdHJ1Y3Rpb24gYnl0ZQorCSAqIGlzIHVzZWQuIFRoaXMgaW5zdHJ1Y3Rpb24gYml0IGlz
+IG5vcm1hbGx5IGRlZmluZWQgYXMgZG9uJ3QgY2FyZSBmb3IKKwkgKiBvdGhlciBBVDI1IGxpa2Ug
+Y2hpcHMuCisJICovCisjZGVmaW5lIEVFX0lOU1RSX0JJVDNfSVNfQUREUgkweDAwMTAKKwogCS8q
+IGZvciBleHBvcnRpbmcgdGhpcyBjaGlwJ3MgZGF0YSB0byBvdGhlciBrZXJuZWwgY29kZSAqLwog
+CXZvaWQgKCpzZXR1cCkoc3RydWN0IG1lbW9yeV9hY2Nlc3NvciAqbWVtLCB2b2lkICpjb250ZXh0
+KTsKIAl2b2lkICpjb250ZXh0OwotLSAKMS43LjAuNAo=
+--f46d0442811eb7139604bcfe46df--
