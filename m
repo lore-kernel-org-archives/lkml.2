@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab2DFLfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 07:35:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42375 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab2DFLfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 07:35:06 -0400
-Date: Fri, 6 Apr 2012 04:34:43 -0700
-From: tip-bot for Neal Cardwell <ncardwell@google.com>
-Message-ID: <tip-6f103929f8979d2638e58d7f7fda0beefcb8ee7e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, ncardwell@google.com,
-        hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, ncardwell@google.com,
-        bsegall@google.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1332875377-23014-1-git-send-email-ncardwell@google.com>
-References: <1332875377-23014-1-git-send-email-ncardwell@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] nohz:
-  Fix stale jiffies update in tick_nohz_restart()
-Git-Commit-ID: 6f103929f8979d2638e58d7f7fda0beefcb8ee7e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756546Ab2DFLgV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 07:36:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56000 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753094Ab2DFLgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 07:36:20 -0400
+Date: Fri, 6 Apr 2012 13:36:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 01/15] perf: Separate out trace-cmd parse-events from
+ perf files
+Message-ID: <20120406113615.GB30425@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Steven Rostedt <srostedt@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+	Namhyung Kim <namhyung.kim@lge.com>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <1333666086-6517-2-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Apr 2012 04:34:53 -0700 (PDT)
+In-Reply-To: <1333666086-6517-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6f103929f8979d2638e58d7f7fda0beefcb8ee7e
-Gitweb:     http://git.kernel.org/tip/6f103929f8979d2638e58d7f7fda0beefcb8ee7e
-Author:     Neal Cardwell <ncardwell@google.com>
-AuthorDate: Tue, 27 Mar 2012 15:09:37 -0400
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 6 Apr 2012 13:24:17 +0200
+On Fri, Apr 06, 2012 at 12:47:52AM +0200, Frederic Weisbecker wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> Move the trace-event-parse.c code that originally came from trace-cmd into
+> their own files. The new file will be called trace-parse-events.c, as
+> the name of trace-cmd's file was parse-events.c too, but it conflicted
+> with the parse-events.c file in perf that parses the command line.
+> 
+> This tries to update the code with mimimal changes.
+> 
+> Perf specific code stays in the trace-event-parse.[ch] files and
+> the common parsing code is now in trace-parse-events.c and
+> trace-parse-events.h.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arun Sharma <asharma@fb.com>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  tools/perf/Makefile                  |    2 +
+>  tools/perf/util/trace-event-parse.c  | 3135 ----------------------------------
+>  tools/perf/util/trace-event.h        |  275 +---
+>  tools/perf/util/trace-parse-events.c | 3125 +++++++++++++++++++++++++++++++++
+>  tools/perf/util/trace-parse-events.h |  273 +++
+>  5 files changed, 3405 insertions(+), 3405 deletions(-)
+>  create mode 100644 tools/perf/util/trace-parse-events.c
+>  create mode 100644 tools/perf/util/trace-parse-events.h
 
-nohz: Fix stale jiffies update in tick_nohz_restart()
+Err, maybe I'm missing something but why this additional step? I mean,
+you could do:
 
-Fix tick_nohz_restart() to not use a stale ktime_t "now" value when
-calling tick_do_update_jiffies64(now).
+patch 1: Add libtraceevent.a from trace-cmd
+patch 2: Fixup perf so that it is ready to be switched to the new lib (specific
+		wrappers, etc)
+patch 3: switch it to libtraceevent.a
 
-If we reach this point in the loop it means that we crossed a tick
-boundary since we grabbed the "now" timestamp, so at this point "now"
-refers to a time in the old jiffy, so using the old value for "now" is
-incorrect, and is likely to give us a stale jiffies value.
+Only three patches, right?
 
-In particular, the first time through the loop the
-tick_do_update_jiffies64(now) call is always a no-op, since the
-caller, tick_nohz_restart_sched_tick(), will have already called
-tick_do_update_jiffies64(now) with that "now" value.
-
-Note that tick_nohz_stop_sched_tick() already uses the correct
-approach: when we notice we cross a jiffy boundary, grab a new
-timestamp with ktime_get(), and *then* update jiffies.
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Ben Segall <bsegall@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1332875377-23014-1-git-send-email-ncardwell@google.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-sched.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3526038..6a3a5b9 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -534,9 +534,9 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
- 				hrtimer_get_expires(&ts->sched_timer), 0))
- 				break;
- 		}
--		/* Update jiffies and reread time */
--		tick_do_update_jiffies64(now);
-+		/* Reread time and update jiffies */
- 		now = ktime_get();
-+		tick_do_update_jiffies64(now);
- 	}
- }
- 
+-- 
+Regards/Gruss,
+    Boris.
