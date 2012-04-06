@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab2DFQ4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 12:56:23 -0400
-Received: from nbd.name ([46.4.11.11]:46509 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756543Ab2DFQ4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 12:56:21 -0400
-Message-ID: <4F7F2033.4000005@openwrt.org>
-Date: Fri, 06 Apr 2012 18:56:19 +0200
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1756958Ab2DFQ7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 12:59:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53315 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756550Ab2DFQ7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 12:59:14 -0400
+Message-ID: <4F7F20DE.3040009@gmail.com>
+Date: Fri, 06 Apr 2012 11:59:10 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        Mohammed Shafi <shafi.wireless@gmail.com>,
-        Linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Linux-netdev <netdev@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com> <4F6751B2.1030809@openwrt.org> <4F681B78.9000207@gmail.com> <CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com> <4F68235C.5090701@gmail.com> <CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com> <4F682555.3020502@gmail.com> <20328.16366.166909.255035@gargle.gargle.HOWL> <4F6FA388.9080408@gmail.com> <20337.9030.686697.228453@gargle.gargle.HOWL> <4F7F1C74.7080009@gmail.com>
-In-Reply-To: <4F7F1C74.7080009@gmail.com>
-X-Enigmail-Version: 1.4
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/1] Renaming AMBA to PRIMECELL
+References: <cover.1333663714.git.rubini@gnudd.com>
+In-Reply-To: <cover.1333663714.git.rubini@gnudd.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-06 6:40 PM, Justin P. Mattock wrote:
-> On 03/26/2012 07:17 PM, Sujith Manoharan wrote:
->> Justin P. Mattock wrote:
->>> I would have to say this patch above does get rid of this crash I was
->>> seeing. as a quick test I simply connect to a WPA network, then connect
->>> to an open network going back and forth triggers this freeze for me
->>> after applying this I am able to toggle back and forth without a freeze.
->>
->> Thanks for verifying.
->>
->> Sujith
->>
+On 04/05/2012 05:21 PM, Alessandro Rubini wrote:
+> The only patch in this series renames CONFIG_ARM_AMBA to
+> CONFIG_ARM_PRIMECELL in Kconfig and the only source file with
+> #ifdef.
 > 
+> I compile-tested on the following defconfigs: "integrator realview
+> versatile vexpress bcmring ep93xx lpc32xx u300 u8500 nhk8815 spear3xx
+> spear6xx", diffing the stderr of the two compilations.
 > 
->  From going through the warning message I was playing around and am 
-> looking at: AH_UNPLUGGED .. seems if I remove this from the code I have 
-> not seen this warning message.
-> is there something wrong with AH_UNPLUGGED = 0x2 ?
-> is this the wrong address(0x2)?
+> While this patch is self-contained and works, there are other
+> open points. I think only 4- below is worth doing, but I need
+> confirmation before doing that.
 > 
-> the patch that I was using is:
+> 1- drivers/of/platform.c still has "amba" in its names. Worse, it has
+> "amba-bus" in its device tree compatibility list (and some drivers
+> have it too). I think this should stay.
 > 
->  From ea8a7d6ecf8b0706f3f0521cd22cc359b20b9373 Mon Sep 17 00:00:00 2001
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
-> Date: Sun, 25 Mar 2012 21:53:31 -0700
-> Subject: [PATCH] ath_test
+> 2- Actually, grepping for "amba" or "AMBA" finds a lot of related
+> code. Some uses are correct and some are not.  I don't think an
+> audit here is worth the effort; users will adapt over time, only
+> where it makes sense and only when otherwise touching the code.
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 3- Should drivers/amba/bus.c  be renamed to drivers/primecell/bus.c
+> or drivers/amba/primecell.c (I think the former but I'm not sure
+> it's the bext name anyways)
 > 
-> ---
->   drivers/net/wireless/ath/ath9k/recv.c |    3 +--
->   1 files changed, 1 insertions(+), 2 deletions(-)
+> 4- Should linux/amba/bus.h be renamed to linux/primecell/bus.h or
+> linux/amba/primecell.h? (I think the former, leaving the old
+> name around for a while, so out-of-tree drivers are happy
+> and #warn'ed about the change.
 > 
-> diff --git a/drivers/net/wireless/ath/ath9k/recv.c 
-> b/drivers/net/wireless/ath/ath9k/recv.c
-> index f4ae3ba..d887cee 100644
-> --- a/drivers/net/wireless/ath/ath9k/recv.c
-> +++ b/drivers/net/wireless/ath/ath9k/recv.c
-> @@ -523,8 +523,7 @@ bool ath_stoprecv(struct ath_softc *sc)
->   		sc->rx.rxlink = NULL;
->   	spin_unlock_bh(&sc->rx.rxbuflock);
+> /alessandro
 > 
-> -	if (!(ah->ah_flags & AH_UNPLUGGED) &&
-> -	    unlikely(!stopped)) {
-> +	if (!(ah->ah_flags) && unlikely(!stopped)) {
-That patch is completely messed up - before showing the warning, it
-checks if ah_flags is set to 0, which will never happen with most
-devices. You're simply making the warning impossible to trigger.
 
-- Felix
+While I agree this is a more correct name, I think this is pointless
+churn and as you highlight above incomplete. What's the reasoning for
+this other than rmk suggested it?
+
+Rob
+
+> 
+> 
+> Alessandro Rubini (1):
+>   ARM: Rename CONFIG_ARM_AMBA to CONFIG_ARM_PRIMECELL
+> 
+>  arch/arm/Kconfig                  |   36 ++++++++++++++++++++++--------------
+>  arch/arm/Kconfig.debug            |    2 +-
+>  arch/arm/mach-exynos/Kconfig      |    4 ++--
+>  arch/arm/mach-mxs/devices/Kconfig |    2 +-
+>  arch/arm/mach-netx/Kconfig        |    4 ++--
+>  arch/arm/mach-omap2/Kconfig       |    2 +-
+>  arch/arm/plat-samsung/Kconfig     |    2 +-
+>  drivers/Makefile                  |    2 +-
+>  drivers/dma/Kconfig               |    4 ++--
+>  drivers/gpio/Kconfig              |    2 +-
+>  drivers/input/serio/Kconfig       |    2 +-
+>  drivers/mmc/host/Kconfig          |    2 +-
+>  drivers/of/platform.c             |   10 +++++-----
+>  drivers/rtc/Kconfig               |    4 ++--
+>  drivers/spi/Kconfig               |    2 +-
+>  drivers/tty/serial/Kconfig        |    4 ++--
+>  drivers/video/Kconfig             |    2 +-
+>  drivers/watchdog/Kconfig          |    2 +-
+>  sound/arm/Kconfig                 |    2 +-
+>  19 files changed, 49 insertions(+), 41 deletions(-)
+> 
+
