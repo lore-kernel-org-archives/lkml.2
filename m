@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2DFHEB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 03:04:01 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50423 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab2DFHDW (ORCPT
+	id S1754322Ab2DFHLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 03:11:12 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:35927 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752484Ab2DFHLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 03:03:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6671"; a="177115381"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [RFC/PATCH 2/3] init: Initialize jump_labels before early parameters
-Date: Fri,  6 Apr 2012 00:03:17 -0700
-Message-Id: <1333695798-2917-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
-In-Reply-To: <1333695798-2917-1-git-send-email-sboyd@codeaurora.org>
-References: <1333695798-2917-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 6 Apr 2012 03:11:10 -0400
+Message-ID: <4F7E96B9.9060907@st.com>
+Date: Fri, 06 Apr 2012 09:09:45 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, deepak.sikri@st.com,
+        shiraz.hashim@st.com, vikas.manocha@st.com
+Subject: Re: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+References: <20120405132515.e61465875407a452c1a6f78e@canb.auug.org.au> <20120404.235933.350585244341009071.davem@davemloft.net>
+In-Reply-To: <20120404.235933.350585244341009071.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to use jump_labels in the debug_objects code so that when
-debug_objects aren't enabled by default we can skip debug_object
-code. Move the jump_label initialization before the early
-parameter parsing so that debug_objects code can enable and
-disable itself according to kernel command line parameters.
+On 4/5/2012 5:59 AM, David Miller wrote:
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 5 Apr 2012 13:25:15 +1000
+> 
+>> After merging the final tree, today's linux-next build (powerpc
+>> allyesconfig) failed like this:
+>>
+>> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: In function 'stmmac_probe_config_dt':
+>> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c:53:7: error: 'struct plat_stmmacenet_data' has no member named 'pbl'
+>>
+>> Caused by commit 8327eb65e795 ("stmmac: re-work the internal GMAC DMA
+>> platf parameters").  Clearly I am missing something, because I can't see
+>> how that patch is correct since nothing ever assigns to the new dma_cfg
+>> pointer but it is dereferenced.
+>>
+>> I have added this patch to make it build today, but it is obviously not
+>> correct.
+> 
+> Sorry Stephen.
+> 
+> Giuseppe don't submit patches to me that don't even compile.
+> 
+> Please submit a proper fix to me for this _now_.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
+Sorry Dave!
+I don't know what happened (I believed to test all).
+I'm sending you the patches soon!!!
 
-This also opens the window to using static keys for pr_debug().
-I tried and wound up in circular dependency hell.
+Peppe
 
- init/main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/init/main.c b/init/main.c
-index ff49a6d..39a3092 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -502,14 +502,14 @@ asmlinkage void __init start_kernel(void)
- 	build_all_zonelists(NULL);
- 	page_alloc_init();
- 
-+	jump_label_init();
-+
- 	printk(KERN_NOTICE "Kernel command line: %s\n", boot_command_line);
- 	parse_early_param();
- 	parse_args("Booting kernel", static_command_line, __start___param,
- 		   __stop___param - __start___param,
- 		   &unknown_bootoption);
- 
--	jump_label_init();
--
- 	/*
- 	 * These use large bootmem allocations and must precede
- 	 * kmem_cache_init()
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
