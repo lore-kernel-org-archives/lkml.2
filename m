@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab2DFDIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 23:08:04 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63937 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab2DFDIC (ORCPT
+	id S1753161Ab2DFD0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 23:26:39 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7415 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab2DFD0i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 23:08:02 -0400
+	Thu, 5 Apr 2012 23:26:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 05 Apr 2012 20:26:37 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 6 Apr 2012 08:56:33 +0530
+Subject: RE: [PATCH] usb: host: tegra: re-arranging ehci functions
+Thread-Topic: [PATCH] usb: host: tegra: re-arranging ehci functions
+Thread-Index: Ac0TNU6M8oZlHXi/ScycPQa1bWSiOwAb35uw
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DD3E26DB5@BGMAIL02.nvidia.com>
+References: <1333605536-5792-1-git-send-email-vbyravarasu@nvidia.com>
+ <Pine.LNX.4.44L0.1204051004350.1361-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1204051004350.1361-100000@iolanthe.rowland.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-In-Reply-To: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-From: David Sharp <dhsharp@google.com>
-Date: Thu, 5 Apr 2012 20:07:40 -0700
-Message-ID: <CAJL_eks9Z62pRsdFH_xE5=RSX7QLqKFtCBifUzH5F2vkhYuGLA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 00/15] tools: Unify perf and trace-cmd trace event
- format parsing v2
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Michael Rubin <mrubin@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 5, 2012 at 3:47 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
-> Hi,
->
-> So this is a new iteration of the libtracevent library, basically a
-> rebase of https://lkml.org/lkml/2011/8/5/299 against latest progresses
-> (latest tip/perf/core + tip/perf/urgent).
->
-> This library unifies the trace events parsing code between perf and
-> trace-cmd. I initially took this parsing code from trace-cmd to make
-> perf able to display trace-events and play with their contents.
+> >  	.flags			= HCD_USB2 | HCD_MEMORY,
+> >
+> > -	.reset			= tegra_ehci_setup,
+> > -	.irq			= ehci_irq,
 
-Hi Frederic. Thanks for taking this on.
+> > -
+> > +
+> > +	/* modified ehci functions for tegra */
+> > +	.reset			= tegra_ehci_setup,
+> > +	.irq			= tegra_ehci_irq,
+> 
+> What happened here?  This patch is supposed to rearrange the entries,
+> not change them.
+Thanks Alan, for catching my mistake.
+Will fix it and push a new patch.
 
-Could you consider adding these patches to this set?
-https://lkml.org/lkml/2011/3/21/335
+> > +	.hub_control		= tegra_ehci_hub_control,
+> > +	.urb_enqueue		= tegra_ehci_urb_enqueue,
+> 
+> Same here.
+Will fix and push the patch.
+
+> >  #ifdef CONFIG_PM
+> >  	.bus_suspend		= tegra_ehci_bus_suspend,
+> >  	.bus_resume		= tegra_ehci_bus_resume,
+> >  #endif
+> > -	.relinquish_port	= ehci_relinquish_port,
+> > -	.port_handed_over	= ehci_port_handed_over,
+> >  };
+> 
+> Alan Stern
+Thanks,
+Venu
