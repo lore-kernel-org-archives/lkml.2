@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab2DFJHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 05:07:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34964 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755410Ab2DFJHb (ORCPT
+	id S1755561Ab2DFJHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 05:07:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37339 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab2DFJHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 05:07:31 -0400
-Date: Fri, 6 Apr 2012 10:07:28 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/6] regulator: max1586: Constify regulator_desc
-Message-ID: <20120406090728.GF3172@opensource.wolfsonmicro.com>
-References: <1333671867.2777.2.camel@phoenix>
+	Fri, 6 Apr 2012 05:07:42 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WlEyl6ow+jlIgNUh"
-Content-Disposition: inline
-In-Reply-To: <1333671867.2777.2.camel@phoenix>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120405231942.GB7715@verge.net.au>
+References: <1333668273-8873-1-git-send-email-levinsasha928@gmail.com> <20120405231942.GB7715@verge.net.au>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 6 Apr 2012 11:07:21 +0200
+Message-ID: <CA+1xoqcS2+F+Nz_akXNQ7k+nuHkJjXYG6d=faMZ6xx1CW=RtPA@mail.gmail.com>
+Subject: Re: [PATCH] netfilter: ipvs: Verify that IP_VS protocol has been registered
+To: Simon Horman <horms@verge.net.au>
+Cc: wensong@linux-vs.org, ja@ssi.bg, kaber@trash.net, davem@davemloft.net,
+        davej@redhat.com, netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 6, 2012 at 1:19 AM, Simon Horman <horms@verge.net.au> wrote:
+> On Thu, Apr 05, 2012 at 07:24:33PM -0400, Sasha Levin wrote:
+>> The registration of a protocol might fail, there were no checks
+>> and all registrations were assumed to be correct. This lead to
+>> NULL ptr dereferences when apps tried registering.
+>
+> Thanks, I will queue up this fix.
+>
+> Do you have a real-world example of this failing, if so it
+> might be worth pushing your change into stable.
 
---WlEyl6ow+jlIgNUh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Fri, Apr 06, 2012 at 08:24:27AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-Applied all, thanks.
-
---WlEyl6ow+jlIgNUh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPfrJJAAoJEBus8iNuMP3dXvEP/R0wHCs5wp/LSRfCQLzsb65+
-3SSw6YwLWnn74A0lxZZbjujNhAG1zxf8tZ4vbn0iyR6BYrNZkM7vafoh3Xs941Ki
-Kf43FWZ8hiONxurOdyRsr4nGTsFnKjKgG7a3Ox3UPE5PrIKQCW36s4usXL8OnaSV
-Gdd9OQZUC73qv3Ngxl73crcBydg3SMbz3fzAB+yxxjoahrevyl+vLB7dx4BIBL/9
-jGp/dexDPyBhh3uUeQcBXpn8T47jARsRCxNA9nnSDotJNBYlsKEZth/KHqD4kKVG
-Avvyvy7W+qFF+X3iNx5UgYjRBWxmINp/a5ixWn3Pn7sCoO8X0xp/nwJda3m8WO0+
-s7+FtzrA603Madsvn/BzWsM9l5GnshxxVbnbcqD4wkZfA9sXlhE6ea7lnRaPv3L8
-0RvA6bdaCSLiiAEpT6wd3fHVDfKLyKPIwXwnqbycYe+5OvDNVAQwcKfy0df3RNbu
-Z7mVxn0SsxqvxyMGbWnxaZyAe/eOmjny56rM2RAZBnddN29Xs4obBFBPlOpUqGdk
-yrFf74O221uAyNbU+IJXT+5uKu+ZypN/iPtnHNM38PWlX5pDkmugBQ4aej78jc7x
-ZeHTtvhYkIuyAtPjWTckkqdz+aT6rTv0RIpuo8tMYyfZVQGdrfCWIAKAYA5BLNcS
-dCb3gLgVAh1t0/YzUsOq
-=hBtE
------END PGP SIGNATURE-----
-
---WlEyl6ow+jlIgNUh--
+The scenario is a failed allocation in register_ip_vs_proto_netns(),
+which can happen in real world cases as well.
