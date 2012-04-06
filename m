@@ -1,106 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749Ab2DFSvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 14:51:51 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:59438 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757704Ab2DFSvq (ORCPT
+	id S1757865Ab2DFSwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 14:52:54 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:44280 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757697Ab2DFSvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 14:51:46 -0400
+	Fri, 6 Apr 2012 14:51:50 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
         dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
         akpm@linux-foundation.org, hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V5 09/14] memcg: track resource index in cftype private
-Date: Sat,  7 Apr 2012 00:20:55 +0530
-Message-Id: <1333738260-1329-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V5 11/14] hugetlbfs: Add a list for tracking in-use HugeTLB pages
+Date: Sat,  7 Apr 2012 00:20:57 +0530
+Message-Id: <1333738260-1329-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
 In-Reply-To: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12040618-2000-0000-0000-0000070C0167
+x-cbid: 12040618-8878-0000-0000-000001F7D2ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-This helps in using same memcg callbacks for non reclaim resource
-control files.
+hugepage_activelist will be used to track currently used HugeTLB pages.
+We need to find the in-use HugeTLB pages to support memcg removal.
+On memcg removal we update the page's memory cgroup to point to
+parent cgroup.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- mm/memcontrol.c |   27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ include/linux/hugetlb.h |    1 +
+ mm/hugetlb.c            |   12 +++++++-----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0a1f776..3bb3b42 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -381,9 +381,14 @@ enum charge_type {
- #define _MEM			(0)
- #define _MEMSWAP		(1)
- #define _OOM_TYPE		(2)
--#define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
--#define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
--#define MEMFILE_ATTR(val)	((val) & 0xffff)
-+#define _MEMHUGETLB		(3)
-+
-+/*  0 ... val ...16.... x...24...idx...32*/
-+#define __MEMFILE_PRIVATE(idx, x, val)	(((idx) << 24) | ((x) << 16) | (val))
-+#define MEMFILE_PRIVATE(x, val)		__MEMFILE_PRIVATE(0, x, val)
-+#define MEMFILE_TYPE(val)		(((val) >> 16) & 0xff)
-+#define MEMFILE_IDX(val)		(((val) >> 24) & 0xff)
-+#define MEMFILE_ATTR(val)		((val) & 0xffff)
- /* Used for OOM nofiier */
- #define OOM_CONTROL		(0)
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index d008342..6bf6afc 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -200,6 +200,7 @@ struct hstate {
+ 	unsigned long resv_huge_pages;
+ 	unsigned long surplus_huge_pages;
+ 	unsigned long nr_overcommit_huge_pages;
++	struct list_head hugepage_activelist;
+ 	struct list_head hugepage_freelists[MAX_NUMNODES];
+ 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+ 	unsigned int free_huge_pages_node[MAX_NUMNODES];
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 340e575..8a520b5 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -512,7 +512,7 @@ void copy_huge_page(struct page *dst, struct page *src)
+ static void enqueue_huge_page(struct hstate *h, struct page *page)
+ {
+ 	int nid = page_to_nid(page);
+-	list_add(&page->lru, &h->hugepage_freelists[nid]);
++	list_move(&page->lru, &h->hugepage_freelists[nid]);
+ 	h->free_huge_pages++;
+ 	h->free_huge_pages_node[nid]++;
+ }
+@@ -524,7 +524,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
+ 	if (list_empty(&h->hugepage_freelists[nid]))
+ 		return NULL;
+ 	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
+-	list_del(&page->lru);
++	list_move(&page->lru, &h->hugepage_activelist);
+ 	set_page_refcounted(page);
+ 	h->free_huge_pages--;
+ 	h->free_huge_pages_node[nid]--;
+@@ -628,12 +628,13 @@ static void free_huge_page(struct page *page)
+ 	page->mapping = NULL;
+ 	BUG_ON(page_count(page));
+ 	BUG_ON(page_mapcount(page));
+-	INIT_LIST_HEAD(&page->lru);
  
-@@ -4003,7 +4008,7 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 	char str[64];
- 	u64 val;
--	int type, name, len;
-+	int type, name, len, idx;
+ 	mem_cgroup_hugetlb_uncharge_page(hstate_index(h),
+ 					 pages_per_huge_page(h), page);
+ 	spin_lock(&hugetlb_lock);
+ 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
++		/* remove the page from active list */
++		list_del(&page->lru);
+ 		update_and_free_page(h, page);
+ 		h->surplus_huge_pages--;
+ 		h->surplus_huge_pages_node[nid]--;
+@@ -646,6 +647,7 @@ static void free_huge_page(struct page *page)
  
- 	type = MEMFILE_TYPE(cft->private);
- 	name = MEMFILE_ATTR(cft->private);
-@@ -4024,6 +4029,10 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
- 		else
- 			val = res_counter_read_u64(&memcg->memsw, name);
- 		break;
-+	case _MEMHUGETLB:
-+		idx = MEMFILE_IDX(cft->private);
-+		val = res_counter_read_u64(&memcg->hugepage[idx], name);
-+		break;
- 	default:
- 		BUG();
- 	}
-@@ -4061,7 +4070,10 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+ {
++	INIT_LIST_HEAD(&page->lru);
+ 	set_compound_page_dtor(page, free_huge_page);
+ 	spin_lock(&hugetlb_lock);
+ 	h->nr_huge_pages++;
+@@ -894,6 +896,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 
+ 	spin_lock(&hugetlb_lock);
+ 	if (page) {
++		INIT_LIST_HEAD(&page->lru);
+ 		r_nid = page_to_nid(page);
+ 		set_compound_page_dtor(page, free_huge_page);
+ 		/*
+@@ -998,7 +1001,6 @@ retry:
+ 	list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
+ 		if ((--needed) < 0)
  			break;
- 		if (type == _MEM)
- 			ret = mem_cgroup_resize_limit(memcg, val);
--		else
-+		else if (type == _MEMHUGETLB) {
-+			int idx = MEMFILE_IDX(cft->private);
-+			ret = res_counter_set_limit(&memcg->hugepage[idx], val);
-+		} else
- 			ret = mem_cgroup_resize_memsw_limit(memcg, val);
- 		break;
- 	case RES_SOFT_LIMIT:
-@@ -4127,7 +4139,10 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
- 	case RES_MAX_USAGE:
- 		if (type == _MEM)
- 			res_counter_reset_max(&memcg->res);
--		else
-+		else if (type == _MEMHUGETLB) {
-+			int idx = MEMFILE_IDX(event);
-+			res_counter_reset_max(&memcg->hugepage[idx]);
-+		} else
- 			res_counter_reset_max(&memcg->memsw);
- 		break;
- 	case RES_FAILCNT:
+-		list_del(&page->lru);
+ 		/*
+ 		 * This page is now managed by the hugetlb allocator and has
+ 		 * no users -- drop the buddy allocator's reference.
+@@ -1013,7 +1015,6 @@ free:
+ 	/* Free unnecessary surplus pages to the buddy allocator */
+ 	if (!list_empty(&surplus_list)) {
+ 		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
+-			list_del(&page->lru);
+ 			put_page(page);
+ 		}
+ 	}
+@@ -1927,6 +1928,7 @@ void __init hugetlb_add_hstate(unsigned order)
+ 	h->free_huge_pages = 0;
+ 	for (i = 0; i < MAX_NUMNODES; ++i)
+ 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
++	INIT_LIST_HEAD(&h->hugepage_activelist);
+ 	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
+ 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+ 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
 -- 
 1.7.10.rc3.3.g19a6c
 
