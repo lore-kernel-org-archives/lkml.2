@@ -1,123 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab2DFSyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 14:54:31 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49881 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757398Ab2DFSvd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 14:51:33 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V5 03/14] hugetlbfs: Add an inline helper for finding hstate index
-Date: Sat,  7 Apr 2012 00:20:49 +0530
-Message-Id: <1333738260-1329-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
-In-Reply-To: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12040618-4790-0000-0000-0000021A8822
+	id S1757321Ab2DFS5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 14:57:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19494 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754249Ab2DFS5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 14:57:51 -0400
+Message-ID: <4F7F3CA9.1030500@redhat.com>
+Date: Fri, 06 Apr 2012 14:57:45 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Ying Han <yinghan@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V8] Eliminate task stack trace duplication
+References: <1333737920-17555-1-git-send-email-yinghan@google.com>
+In-Reply-To: <1333737920-17555-1-git-send-email-yinghan@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+On 04/06/2012 02:45 PM, Ying Han wrote:
+> The problem with small dmesg ring buffer like 512k is that only limited number
+> of task traces will be logged. Sometimes we lose important information only
+> because of too many duplicated stack traces. This problem occurs when dumping
+> lots of stacks in a single operation, such as sysrq-T.
+>
+> This patch tries to reduce the duplication of task stack trace in the dump
+> message by hashing the task stack. The hashtable is a 32k pre-allocated buffer
+> during bootup. Each time if we find the identical task trace in the task stack,
+> we dump only the pid of the task which has the task trace dumped. So it is easy
+> to back track to the full stack with the pid.
 
-Add an inline helper and use it in the code.
+> Signed-off-by: Ying Han<yinghan@google.com>
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- include/linux/hugetlb.h |    6 ++++++
- mm/hugetlb.c            |   18 ++++++++++--------
- 2 files changed, 16 insertions(+), 8 deletions(-)
+Acked-by: Rik van Riel <riel@redhat.com>
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 000837e..876457e 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -294,6 +294,11 @@ static inline unsigned hstate_index_to_shift(unsigned index)
- 	return hstates[index].order + PAGE_SHIFT;
- }
- 
-+static inline int hstate_index(struct hstate *h)
-+{
-+	return h - hstates;
-+}
-+
- #else
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -312,6 +317,7 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
- 	return 1;
- }
- #define hstate_index_to_shift(index) 0
-+#define hstate_index(h) 0
- #endif
- 
- #endif /* _LINUX_HUGETLB_H */
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 5a472a5..d94c987 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1646,7 +1646,7 @@ static int hugetlb_sysfs_add_hstate(struct hstate *h, struct kobject *parent,
- 				    struct attribute_group *hstate_attr_group)
- {
- 	int retval;
--	int hi = h - hstates;
-+	int hi = hstate_index(h);
- 
- 	hstate_kobjs[hi] = kobject_create_and_add(h->name, parent);
- 	if (!hstate_kobjs[hi])
-@@ -1741,11 +1741,13 @@ void hugetlb_unregister_node(struct node *node)
- 	if (!nhs->hugepages_kobj)
- 		return;		/* no hstate attributes */
- 
--	for_each_hstate(h)
--		if (nhs->hstate_kobjs[h - hstates]) {
--			kobject_put(nhs->hstate_kobjs[h - hstates]);
--			nhs->hstate_kobjs[h - hstates] = NULL;
-+	for_each_hstate(h) {
-+		int idx = hstate_index(h);
-+		if (nhs->hstate_kobjs[idx]) {
-+			kobject_put(nhs->hstate_kobjs[idx]);
-+			nhs->hstate_kobjs[idx] = NULL;
- 		}
-+	}
- 
- 	kobject_put(nhs->hugepages_kobj);
- 	nhs->hugepages_kobj = NULL;
-@@ -1848,7 +1850,7 @@ static void __exit hugetlb_exit(void)
- 	hugetlb_unregister_all_nodes();
- 
- 	for_each_hstate(h) {
--		kobject_put(hstate_kobjs[h - hstates]);
-+		kobject_put(hstate_kobjs[hstate_index(h)]);
- 	}
- 
- 	kobject_put(hugepages_kobj);
-@@ -2678,7 +2680,7 @@ retry:
- 		 */
- 		if (unlikely(PageHWPoison(page))) {
- 			ret = VM_FAULT_HWPOISON |
--			      VM_FAULT_SET_HINDEX(h - hstates);
-+				VM_FAULT_SET_HINDEX(hstate_index(h));
- 			goto backout_unlocked;
- 		}
- 	}
-@@ -2751,7 +2753,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE |
--			       VM_FAULT_SET_HINDEX(h - hstates);
-+				VM_FAULT_SET_HINDEX(hstate_index(h));
- 	}
- 
- 	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
 -- 
-1.7.10.rc3.3.g19a6c
-
+All rights reversed
