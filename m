@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab2DFTF3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 15:05:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36654 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757473Ab2DFTFX (ORCPT
+	id S1757626Ab2DFTO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 15:14:58 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:37658 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab2DFTOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 15:05:23 -0400
-Date: Fri, 6 Apr 2012 12:05:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Liu Yu" <liuyums@bwstor.com.cn>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: Wrong use of MAX_JIFFY_OFFSET?
-Message-Id: <20120406120521.1a6dcd1b.akpm@linux-foundation.org>
-In-Reply-To: <006001cd0cb2$20f547b0$62dfd710$@com.cn>
-References: <006001cd0cb2$20f547b0$62dfd710$@com.cn>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Apr 2012 15:14:55 -0400
+Date: Fri, 6 Apr 2012 12:14:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@linux.intel.com
+Subject: Re: [PATCH 0/6] rework quirks for the "kt" serial port
+Message-ID: <20120406191451.GA14211@kroah.com>
+References: <20120406184346.21744.18004.stgit@dwillia2-linux.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120406184346.21744.18004.stgit@dwillia2-linux.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012 15:12:24 +0800
-"Liu Yu" <liuyums@bwstor.com.cn> wrote:
-
-> Hi guys,
+On Fri, Apr 06, 2012 at 11:44:22AM -0700, Dan Williams wrote:
+> The kt serial port intermittently reports unreliable data in its IIR
+> register and needs to reset fifos to stay in sync with firmware when the
+> device is reset.
 > 
-> I saw a couple of places in current kernel have this kind of code:
-> 
-> > static inline unsigned int elapsed_jiffies_msecs(unsigned long start)
-> > {
-> >         unsigned long end = jiffies;
-> >
-> >         if (end >= start)
-> >                return jiffies_to_msecs(end - start);
-> >
-> >         return jiffies_to_msecs(end + (MAX_JIFFY_OFFSET - start) + 1);
-> > }
-> 
-> As you know, jiffies has a type of unsigned long, so if we know which is the
-> end and
-> which is the start, then (end - start) can simply figure out how much
-> jiffies flies,
-> without worry about the overflow.
-> 
-> Look at the code above, assume that there is just an overflow happening on
-> jiffies: end=0 and start=~0UL.
-> Since end < start, then the return value of the function is
-> jiffies_to_msecs(MAX_JIFFY_OFFSET+2).
-> But shouldn't the correct value be jiffies_to_msecs(1)?
-> 
-> could someone tell me that am I missing anything?
+> The IIR fixes that went into 3.3 were not complete so patch 3 replaces
+> them with an explicit way to turn on UART_BUG_THRE (i.e. the "I don't
+> trust my iir" flag).
 > 
 
-Seems right.  The code should be
+So the first 3 patches should go into 3.4 (and 3.3-stable) kernels,
+right?
 
-static inline unsigned long elapsed_jiffies_msecs(unsigned long start)
-{
-	return jiffies_to_msecs(jiffies - start);
-}
+> A new fix for resetting the fifos on device reset is patch 5.  Alan
+> asked to make this a new quirk rather than add more workarounds to the
+> core (patch 4).
 
-Note the return type.  jiffies_to_msecs() currently returns unsigned
-int.  I think it should return unsigned long.  Even then, it can still
-overflow with valid inputs on HZ=100 32-bit machines.
+These can wait for 3.5?
 
+> Patch 6 is an untested RFC / RFT from anyone that has a serial
+> suspend/resume use case with an 'init' quirk that has resources that
+> need de-allocation at 'exit'.
+
+And I'll hold off on this one entirely for now, right?
+
+greg k-h
