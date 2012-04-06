@@ -1,187 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758314Ab2DFXRZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 19:17:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38172 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab2DFXRW (ORCPT
+	id S1758302Ab2DFXXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 19:23:46 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46178 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab2DFXXo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 19:17:22 -0400
-Date: Fri, 6 Apr 2012 16:17:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rpurdie@rpsys.net, florianSchandinat@gmx.de,
-        devicetree-discuss@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, kgene.kim@samsung.com, jg1.han@samsung.com,
-        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
-        augulis.darius@gmail.com, ben-linux@fluff.org, lars@metafoo.de,
-        patches@linaro.org
-Subject: Re: [PATCH v3 1/2] backlight: lcd: add driver for raster-type lcd's
- with gpio controlled panel reset
-Message-Id: <20120406161720.cf464c39.akpm@linux-foundation.org>
-In-Reply-To: <1332751600-11371-2-git-send-email-thomas.abraham@linaro.org>
-References: <1332751600-11371-1-git-send-email-thomas.abraham@linaro.org>
-	<1332751600-11371-2-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Apr 2012 19:23:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1333726296-3817-1-git-send-email-jiang.liu@huawei.com>
+References: <1333726296-3817-1-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 6 Apr 2012 17:23:22 -0600
+Message-ID: <CAErSpo7KdaYt0tVpBW5vXmc7RXRgnbaOe7JTNmb5xp4vZMsK3w@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix a device reference count leakage issue in pci_dev_present()
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Cc: rpurdie@rpsys.net, florianSchandinat@gmx.de, devicetree-discuss@lists.ozlabs.org, linux-fbdev@vger.kernel.org, linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca, rob.herring@calxeda.com, kgene.kim@samsung.com, jg1.han@samsung.com, broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com, augulis.darius@gmail.com, ben-linux@fluff.org, lars@metafoo.de, patches@linaro.org
-
-Poor me.  When someone sends a patch like this, I need to go and hunt
-down everyone's real names to nicely add them to the changelog's Cc:
-list.  I prefer that you do this ;)
-
-You can add Cc:'s to the changelog yourself, of course.  Often that
-works out better than having me try to work out who might be
-interested in the patch.
-
-On Mon, 26 Mar 2012 14:16:39 +0530
-Thomas Abraham <thomas.abraham@linaro.org> wrote:
-
-> Add a lcd panel driver for simple raster-type lcd's which uses a gpio
-> controlled panel reset. The driver controls the nRESET line of the panel
-> using a gpio connected from the host system. The Vcc supply to the panel
-> is (optionally) controlled using a voltage regulator. This driver excludes
-> support for lcd panels that use a serial command interface or direct
-> memory mapped IO interface.
-> 
+On Fri, Apr 6, 2012 at 9:31 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> Function pci_get_dev_by_id() will hold a reference count on the pci device
+> returned, so pci_dev_present() should release the corresponding reference
+> count to avoid memory leakage.
 >
-> ...
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  drivers/pci/search.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
 >
-> +struct lcd_pwrctrl {
-> +	struct device		*dev;
-> +	struct lcd_device	*lcd;
-> +	struct lcd_pwrctrl_data	*pdata;
-> +	struct regulator	*regulator;
-> +	unsigned int		power;
-> +	bool			suspended;
-> +	bool			pwr_en;
-
-Generally kernel code will avoid these unpronounceable abbreviations. 
-So we do
-
-pwr -> power
-en -> enable
-ctrl -> control
-
-etc.  It results in longer identifiers, but the code is more readable
-and, more importantly, more *rememberable*.  
-
-> +};
+> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> index 9d75dc8..b572730 100644
+> --- a/drivers/pci/search.c
+> +++ b/drivers/pci/search.c
+> @@ -338,13 +338,13 @@ int pci_dev_present(const struct pci_device_id *ids)
+>        WARN_ON(in_interrupt());
+>        while (ids->vendor || ids->subvendor || ids->class_mask) {
+>                found = pci_get_dev_by_id(ids, NULL);
+> -               if (found)
+> -                       goto exit;
+> +               if (found) {
+> +                       pci_dev_put(found);
+> +                       return 1;
+> +               }
+>                ids++;
+>        }
+> -exit:
+> -       if (found)
+> -               return 1;
 > +
-> +static int lcd_pwrctrl_get_power(struct lcd_device *lcd)
-> +{
-> +	struct lcd_pwrctrl *lp = lcd_get_data(lcd);
-> +	return lp->power;
-> +}
-> +
-> +static int lcd_pwrctrl_set_power(struct lcd_device *lcd, int power)
+>        return 0;
+>  }
+>  EXPORT_SYMBOL(pci_dev_present);
 
-See, shouldn't that have been lcd_pwrctrl_set_pwr?
+This might be the right thing to do, but I'd like to understand what's
+going on, so let's talk about it a bit first.
 
-If we avoid the abbreviations, such issues do not arise.
+I agree, there appears to be a leak here.  Or at least, the fact that
+we keep a reference when a device is found doesn't match the comment.
+What problem are you seeing from this leak?
 
-> +{
-> +	struct lcd_pwrctrl *lp = lcd_get_data(lcd);
-> +	struct lcd_pwrctrl_data *pd = lp->pdata;
-> +	bool lcd_enable;
-> +	int lcd_reset, ret = 0;
-> +
-> +	lcd_enable = (power == FB_BLANK_POWERDOWN || lp->suspended) ? 0 : 1;
+There are not many callers, and most appear to be one-time things done
+at boot, looking for built-in devices known to be defective.  These
+devices won't be removable, so the leak shouldn't be causing
+hot-remove issues.
 
-This isn't how to use `bool'.  We can use
+IMO, this is a bogus interface that leads to poor code, and I don't
+want to encourage its use.  For device defect workarounds, I think
+it'd be better to use PCI quirks to catch the defective device.  Some
+chipset defects affect all downstream devices, and a quirk could make
+the defect visible to all the drivers, not just the ones that use
+pci_dev_present().  For example, look at tg3_write_reorder_chipsets
+and tg3_dma_wait_state_chipsets.  Those aren't for tg3 bugs, they're
+for chipset bugs that might affect other devices, too.  But right now,
+that knowledge is buried in the tg3 driver.
 
-	lcd_enable = (power == FB_BLANK_POWERDOWN) || lp->suspended;
-
-
-> +	lcd_reset = (pd->invert) ? !lcd_enable : lcd_enable;
-> +
-> +	if (lp->pwr_en == lcd_enable)
-> +		return 0;
-> +
-> +	if (!IS_ERR_OR_NULL(lp->regulator)) {
-> +		if (lcd_enable) {
-> +			if (regulator_enable(lp->regulator)) {
-> +				dev_info(lp->dev, "regulator enable failed\n");
-> +				ret = -EPERM;
-> +			}
-> +		} else {
-> +			if (regulator_disable(lp->regulator)) {
-> +				dev_info(lp->dev, "regulator disable failed\n");
-> +				ret = -EPERM;
-> +			}
-> +		}
-> +	}
-> +
-> +	gpio_direction_output(lp->pdata->gpio, lcd_reset);
-> +	lp->power = power;
-> +	lp->pwr_en = lcd_enable;
-
-Again, this could have been any of
-
-	lp->[power|pwr] = [power|pwr];
-	lp->[power|pwr]_[en|enable] = lcd_[en|enable];
-
-zillions of combinations!  If we just avoid the abbreviations, there is
-only one combination.
-
-> +	return ret;
-> +}
-> +
->
-> ...
->
-> +static int __devinit lcd_pwrctrl_probe(struct platform_device *pdev)
-> +{
-> +	struct lcd_pwrctrl *lp;
-> +	struct lcd_pwrctrl_data *pdata = pdev->dev.platform_data;
-> +	struct device *dev = &pdev->dev;
-> +	int err;
-> +
-> +#ifdef CONFIG_OF
-> +	if (dev->of_node) {
-> +		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +		if (!pdata) {
-> +			dev_err(dev, "memory allocation for pdata failed\n");
-> +			return -ENOMEM;
-> +		}
-> +		lcd_pwrctrl_parse_dt(dev, pdata);
-> +	}
-> +#endif
-> +
-> +	if (!pdata) {
-> +		dev_err(dev, "platform data not available\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	lp = devm_kzalloc(dev, sizeof(struct lcd_pwrctrl), GFP_KERNEL);
-
-Nit: I prefer sizeof(*lp) here, so I don't have to scroll back and
-check the type of lp.
-
-> +	if (!lp) {
-> +		dev_err(dev, "memory allocation failed for private data\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	err = gpio_request(pdata->gpio, "LCD-nRESET");
-> +	if (err) {
-> +		dev_err(dev, "gpio [%d] request failed\n", pdata->gpio);
-> +		return err;
-> +	}
-> +
->
-> ...
->
-
-The code looks OK to me, but I do think the naming decisions should be
-revisited, please.
-
+Bjorn
