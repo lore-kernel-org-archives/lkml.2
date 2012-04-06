@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab2DFLRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 07:17:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38283 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab2DFLRH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 07:17:07 -0400
-Date: Fri, 6 Apr 2012 13:17:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andreas Schwab <schwab@linux-m68k.org>
-cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
- irq_alloc_desc() instead
-In-Reply-To: <m2r4w1akz4.fsf@igel.home>
-Message-ID: <alpine.LFD.2.02.1204061315040.2542@ionos>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca> <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home> <20120402202848.1EB833E02A7@localhost> <m2y5qdow0v.fsf@igel.home>
- <20120404154020.40C513E09D5@localhost> <m2r4w1akz4.fsf@igel.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756431Ab2DFLYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 07:24:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46327 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752779Ab2DFLYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 07:24:47 -0400
+Date: Fri, 6 Apr 2012 13:24:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <julia@diku.dk>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 08/15] perf/events: Correct size given to memset
+Message-ID: <20120406112441.GA30425@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>, Julia Lawall <julia@diku.dk>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+	Namhyung Kim <namhyung.kim@lge.com>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <1333666086-6517-9-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1333666086-6517-9-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012, Andreas Schwab wrote:
-
-> Grant Likely <grant.likely@secretlab.ca> writes:
+On Fri, Apr 06, 2012 at 12:47:59AM +0200, Frederic Weisbecker wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> > Can you attach console output logs for each of configs above and also
-> > with NR_IRQS=128?  That might give me some clues as to which specific
-> > code is causing the issues.
+> This is a forward port of commit 5660ce34241ab
+> perf tools: Correct size given to memset
+> written by Julia Lawall and forward ported by Steven Rostedt.
 > 
-> It really looks like the issue starts when irq_expand_nr_irqs is called
-> the first time to make nr_irqs bigger than NR_IRQS.
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arun Sharma <asharma@fb.com>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  tools/lib/traceevent/event-parse.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index f012395..16da20c 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -2076,7 +2076,7 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+>  			goto out_free;
+>  
+>  		field = malloc_or_die(sizeof(*field));
+> -		memset(field, 0, sizeof(field));
+> +		memset(field, 0, sizeof(*field));
 
-And it looks like the irqdomain code is the real culprit.
+This one is already upstream, you can drop it: 5660ce34241ab
 
-void irq_set_virq_count(unsigned int count)
-{
-        pr_debug("irq: Trying to set virq count to %d\n", count);
-
-        BUG_ON(count < NUM_ISA_INTERRUPTS);
-        if (count < NR_IRQS)
-                irq_virq_count = count;
-}
-
-That looks simply wrong.....
-
-s/NR_IRQS/nr_irqs/ should do the trick.
-
-Thanks,
-
-	tglx
+-- 
+Regards/Gruss,
+    Boris.
