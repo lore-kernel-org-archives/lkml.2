@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab2DFHTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 03:19:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39621 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab2DFHPM (ORCPT
+	id S1754342Ab2DFHb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 03:31:26 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:46277 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752008Ab2DFHbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 03:15:12 -0400
-From: Juri Lelli <juri.lelli@gmail.com>
-To: peterz@infradead.org, tglx@linutronix.de
-Cc: mingo@redhat.com, rostedt@goodmis.org, cfriesen@nortel.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com
-Subject: [PATCH 01/16] sched: add sched_class->task_dead.
-Date: Fri,  6 Apr 2012 09:14:26 +0200
-Message-Id: <1333696481-3433-2-git-send-email-juri.lelli@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	Fri, 6 Apr 2012 03:31:24 -0400
+Message-ID: <4F7E9B7A.2080807@st.com>
+Date: Fri, 06 Apr 2012 09:30:02 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, deepak.sikri@st.com,
+        shiraz.hashim@st.com, vikas.manocha@st.com
+Subject: Re: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+References: <20120405132515.e61465875407a452c1a6f78e@canb.auug.org.au> <20120404.235933.350585244341009071.davem@davemloft.net> <4F7E96B9.9060907@st.com>
+In-Reply-To: <4F7E96B9.9060907@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Faggioli <raistlin@linux.it>
+On 4/6/2012 9:09 AM, Giuseppe CAVALLARO wrote:
+> On 4/5/2012 5:59 AM, David Miller wrote:
+>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date: Thu, 5 Apr 2012 13:25:15 +1000
+>>
+>>> After merging the final tree, today's linux-next build (powerpc
+>>> allyesconfig) failed like this:
+>>>
+>>> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: In function 'stmmac_probe_config_dt':
+>>> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c:53:7: error: 'struct plat_stmmacenet_data' has no member named 'pbl'
+>>>
+>>> Caused by commit 8327eb65e795 ("stmmac: re-work the internal GMAC DMA
+>>> platf parameters").  Clearly I am missing something, because I can't see
+>>> how that patch is correct since nothing ever assigns to the new dma_cfg
+>>> pointer but it is dereferenced.
+>>>
+>>> I have added this patch to make it build today, but it is obviously not
+>>> correct.
+>>
+>> Sorry Stephen.
+>>
+>> Giuseppe don't submit patches to me that don't even compile.
+>>
+>> Please submit a proper fix to me for this _now_.
+> 
+> Sorry Dave!
+> I don't know what happened (I believed to test all).
+> I'm sending you the patches soon!!!
 
-Add a new function to the scheduling class interface. It is called
-at the end of a context switch, if the prev task is in TASK_DEAD state.
+Please Stephen,
+can you test it on your kernel. I didn't build when CONFIG_OF is enable.
+I tested on ARM/SH/x86 but never with CONFIG_OF on.
+The problem was due to the hard-coded values adding with devicetree support.
 
-It might be useful for the scheduling classes that want to be notified
-when one of their task dies, e.g. to perform some cleanup actions.
+Sorry for this problem, next time I'll build also on OF.
 
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
----
- include/linux/sched.h |    1 +
- kernel/sched.c        |    3 +++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+I had also done a grep in all the arch to verify the ARCH that used the
+pbl/fixed_burst/burst_len fields :-(. These have been moved in a
+separate structure.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1f6b11a..ddfc4dc 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1116,6 +1116,7 @@ struct sched_class {
- 	void (*set_curr_task) (struct rq *rq);
- 	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
- 	void (*task_fork) (struct task_struct *p);
-+	void (*task_dead) (struct task_struct *p);
- 
- 	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
- 	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 1cc706d..4c8d1c3 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3219,6 +3219,9 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	if (mm)
- 		mmdrop_delayed(mm);
- 	if (unlikely(prev_state == TASK_DEAD)) {
-+		if (prev->sched_class->task_dead)
-+			prev->sched_class->task_dead(prev);
-+
- 		/*
- 		 * Remove function-return probe instances associated with this
- 		 * task and put them back on the free list.
--- 
-1.7.5.4
+Let me know if the patch is ok.
+Peppe
+
+> 
+> Peppe
+> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
