@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab2DFVci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:32:38 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54687 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2DFVce (ORCPT
+	id S1757526Ab2DFVe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:34:27 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:20511 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab2DFVe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:32:34 -0400
+	Fri, 6 Apr 2012 17:34:26 -0400
+Message-ID: <4F7F615B.80305@micron.com>
+Date: Fri, 6 Apr 2012 14:34:19 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7E7dHWxKgA7-pSCuUCrxEqY1H55Kxg_sF_OLbdx=pkT4g@mail.gmail.com>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
- <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406124921.5754e941.akpm@linux-foundation.org>
- <CAE6n16m3v4BghY7GGwHCy2t-7-vmRpyOV6swap9GrMQnmGLroA@mail.gmail.com>
- <CAObL_7GzsJ+EW94oYG+EzcRqYyH2EPTyFgTgo6zmSz1yxEe-xw@mail.gmail.com>
- <CAE6n16=5fEBYP37R3XDFWL_8YOk7MH6T_CbuX3sZCpngD=v=rg@mail.gmail.com> <CAObL_7E7dHWxKgA7-pSCuUCrxEqY1H55Kxg_sF_OLbdx=pkT4g@mail.gmail.com>
-From: Markus Gutschke <markus@chromium.org>
-Date: Fri, 6 Apr 2012 14:32:09 -0700
-X-Google-Sender-Auth: GUTbQhE0g3PhnvBac0MwJjykWKQ
-Message-ID: <CAE6n16m+Z242wHZUR07RFJcou4-J=fYtokBb4wXHSXPPad7ffQ@mail.gmail.com>
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Greg KH <greg@kroah.com>
+CC: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 2/5] mtip32xx: Add new sysfs entry 'status' and fix restart
+ port
+References: <4F7E07DC.50909@micron.com> <20120406011037.GA25892@kroah.com> <4F7F322B.6060805@micron.com>
+In-Reply-To: <4F7F322B.6060805@micron.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.000.1038-18810.005
+X-TM-AS-Result: No--15.123300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 14:15, Andrew Lutomirski <luto@mit.edu> wrote:
-> Agreed, but I'm talking about something totally different: if I can
-> use CLONE_NEWPID, then I can send an unexpected pid with SCM_CREDS.
-> The SCM_CREDS receive code should remap pids.
+On 4/6/2012 11:12 AM, Asai Thambi S P wrote:
 
-Yes, I know. It's broken. And so is the view of the /proc filesystem
-when inside a pid namespace. And things behave funny if you don't set
-up a new "init" process inside of the pid namespace. And I am sure, a
-few other things are broken that we just haven't run into.
-
-CLONE_NEWPID is tricky. I can understand, if you want to fix it first.
-Looking forward to seeing some patches in the future; please cc me, if
-you want feedback from an actual user of this code.
-
-The SCM_CREDS issue is the most serious one of the above, but it
-doesn't bother me personally, as I would just set up my sandbox policy
-to disallow all of SCM_CREDS (*). But that obviously not a good excuse
-for leaving a kernel bug around.
-
-Overall, I like both NO_NEW_PRIVS and BPF filters for seccomp though;
-they are a great way to reduce the attack surface of the kernel.
-Kernel bugs become a lot less of a headache, if I have a way to filter
-out the buggy parts of the kernel. It isn't a panacea, but it's a
-great new tool to harden applications.
+> On 4/5/2012 6:10 PM, Greg KH wrote:
+> 
+>> On Thu, Apr 05, 2012 at 02:00:12PM -0700, Asai Thambi S P wrote:
+>>>
+>>> * Add support for detecting the following device status
+>>> 	- write protect
+>>> 	- over temp (thermal shutdown)
+>>> * New sysfs entry 'status' created for this device,  possible values - online, write_protect, thermal_shutdown
+>>
+>> All new (and existing) sysfs files must be documented in
+>> Documentation/ABI/ please do so for these new ones when you add them to
+>> the kernel.
+> 
+> 
+> I was not aware of this. Thanks. I will a add new file for mtip32xx driver.
+> 
 
 
-Markus
+Greg,
 
+The sysfs entry for the disk is 
+/sys/block/rssda -> ../devices/pci0000:00/0000:00:01.0/0000:01:00.0/block/rssda
 
-*) this is currently difficult to filter SCM_CREDS, if we still want
-to allow SCM_RIGHTS. See my earlier complaint about sendmsg().
-Currently, filtering of sendmsg() probably requires the use of a
-helper process.
+Should I use /sys/block/<disk>/<entry> or
+/sys/devices/.../block/<disk>/entry> in the doc file?
+
+--
+Regards,
+Asai Thambi
