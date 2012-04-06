@@ -1,101 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870Ab2DFTem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 15:34:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36793 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845Ab2DFTek (ORCPT
+	id S1757877Ab2DFTft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 15:35:49 -0400
+Received: from void.printf.net ([89.145.121.20]:47891 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755017Ab2DFTfs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 15:34:40 -0400
-Date: Fri, 6 Apr 2012 12:34:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC PATCH 0/2] Removal of lumpy reclaim
-Message-Id: <20120406123439.d2ba8920.akpm@linux-foundation.org>
-In-Reply-To: <1332950783-31662-1-git-send-email-mgorman@suse.de>
-References: <1332950783-31662-1-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Apr 2012 15:35:48 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 3.4-rc2
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Fri, 06 Apr 2012 15:35:34 -0400
+Message-ID: <87mx6o3b7d.fsf@laptop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012 17:06:21 +0100
-Mel Gorman <mgorman@suse.de> wrote:
+Hi Linus,
 
-> (cc'ing active people in the thread "[patch 68/92] mm: forbid lumpy-reclaim
-> in shrink_active_list()")
-> 
-> In the interest of keeping my fingers from the flames at LSF/MM, I'm
-> releasing an RFC for lumpy reclaim removal.
+Please pull from:
 
-I grabbed them, thanks.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
->
-> ...
->
-> MMTests Statistics: vmstat
-> Page Ins                                     5426648     2840348     2695120
-> Page Outs                                    7206376     7854516     7860408
-> Swap Ins                                       36799           0           0
-> Swap Outs                                      76903           4           0
-> Direct pages scanned                           31981       43749      160647
-> Kswapd pages scanned                        26658682     1285341     1195956
-> Kswapd pages reclaimed                       2248583     1271621     1178420
-> Direct pages reclaimed                          6397       14416       94093
-> Kswapd efficiency                                 8%         98%         98%
-> Kswapd velocity                            22134.225    1127.205    1051.316
-> Direct efficiency                                20%         32%         58%
-> Direct velocity                               26.553      38.367     141.218
-> Percentage direct scans                           0%          3%         11%
-> Page writes by reclaim                       6530481           4           0
-> Page writes file                             6453578           0           0
-> Page writes anon                               76903           4           0
-> Page reclaim immediate                        256742       17832       61576
-> Page rescued immediate                             0           0           0
-> Slabs scanned                                1073152      971776      975872
-> Direct inode steals                                0      196279      205178
-> Kswapd inode steals                           139260       70390       64323
-> Kswapd skipped wait                            21711           1           0
-> THP fault alloc                                    1         126         143
-> THP collapse alloc                               324         294         224
-> THP splits                                        32           8          10
-> THP fault fallback                                 0           0           0
-> THP collapse fail                                  5           6           7
-> Compaction stalls                                364        1312        1324
-> Compaction success                               255         343         366
-> Compaction failures                              109         969         958
-> Compaction pages moved                        265107     3952630     4489215
-> Compaction move failure                         7493       26038       24739
->
-> ...
->
-> Success rates are completely hosed for 3.4-rc1 which is almost certainly
-> due to [fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. I
-> expected this would happen for kswapd and impair allocation success rates
-> (https://lkml.org/lkml/2012/1/25/166) but I did not anticipate this much
-> a difference: 95% less scanning, 43% less reclaim by kswapd
-> 
-> In comparison, reclaim/compaction is not aggressive and gives up easily
-> which is the intended behaviour. hugetlbfs uses __GFP_REPEAT and would be
-> much more aggressive about reclaim/compaction than THP allocations are. The
-> stress test above is allocating like neither THP or hugetlbfs but is much
-> closer to THP.
+to receive MMC fixes for 3.4-rc2.  I've signed an "mmc-fixes-for-3.4-rc2"
+tag.  There are no merge conflicts, and the patches have been tested in
+linux-next.  Thanks.
 
-We seem to be thrashing around a bit with the performance, and we
-aren't tracking this closely enough.
+The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
 
-What is kswapd efficiency?  pages-relclaimed/pages-scanned?  Why did it
-increase so much?  Are pages which were reclaimed via prune_icache_sb()
-included?  If so, they can make a real mess of the scanning efficiency
-metric.
+  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
 
-The increase in PGINODESTEAL is remarkable.  It seems to largely be a
-transfer from kswapd inode stealing.  Bad from a latency POV, at least.
-What would cause this change?
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+
+for you to fetch changes up to 3bdc9ba892d6a294d16e9e6e0c4041926aa3d58c:
+
+  mmc: use really long write timeout to deal with crappy cards (2012-04-05 20:32:34 -0400)
+
+----------------------------------------------------------------
+MMC fixes for 3.4-rc2:
+ The major fixes here are:
+  * Disable use of MSI in sdhci-pci, which caused multiple chipsets to
+    stop working in 3.4-rc1.  I'll wait to turn this on again until we
+    have a chipset whitelist for it.
+  * Fix a libertas SDIO powered-resume regression introduced in 3.3;
+    thanks to Neil Brown and Rafael Wysocki for this fix.
+  * Fix module reloading on omap_hsmmc.
+  * Stop trusting the spec/card's specified maximum data timeout length,
+    and use three seconds instead.  Previously we used 300ms.
+
+ Also cleanups and fixes for s3c, atmel, sh_mmcif and omap_hsmmc.
+
+----------------------------------------------------------------
+Al Cooper (1):
+      mmc: Prevent 1.8V switch for SD hosts that don't support UHS modes.
+
+Alf Høgemark (1):
+      mmc: sdhci-dove: Fix compile error by including module.h
+
+Balaji T K (3):
+      mmc: omap_hsmmc: use runtime put sync in probe error patch
+      mmc: omap_hsmmc: context save after enabling runtime pm
+      mmc: omap_hsmmc: fix module re-insertion
+
+Chris Ball (2):
+      Revert "mmc: sdhci-pci: add quirks for broken MSI on O2Micro controllers"
+      Revert "mmc: sdhci-pci: Add MSI support"
+
+Felipe Balbi (3):
+      mmc: omap_hsmmc: trivial cleanups
+      mmc: omap_hsmmc: make it behave well as a module
+      mmc: omap_hsmmc: convert to module_platform_driver
+
+Julia Lawall (1):
+      mmc: sdhci-s3c: use devm_ functions
+
+Ludovic Desroches (3):
+      mmc: atmel-mci: correct data timeout computation
+      mmc: atmel-mci: r/w proof capability only available since v2xx
+      mmc: atmel-mci: add support for odd clock dividers
+
+Manuel Lauss (1):
+      mmc: sdhci-pci: add quirks for broken MSI on O2Micro controllers
+
+Mark Brown (2):
+      mmc: sdhci-s3c: Use CONFIG_PM_SLEEP to ifdef system suspend
+      mmc: sdhci-s3c: Enable runtime power management
+
+Paul Walmsley (1):
+      mmc: use really long write timeout to deal with crappy cards
+
+Rafael J. Wysocki (1):
+      mmc: sdio: Use empty system suspend/resume callbacks at the bus level
+
+Simon Horman (3):
+      mmc: sh_mmcif: double clock speed
+      mmc: sh_mmcif: mmc->f_max should be half of the bus clock
+      mmc: sh_mmcif: Simplify calculation of mmc->f_min
+
+Subhash Jadavani (2):
+      mmc: bus: print bus speed mode of UHS-I card
+      mmc: core: fix power class selection
+
+Thomas Abraham (3):
+      mmc: sdhci-s3c: Remove usage of clk_type member in platform data
+      mmc: sdhci-s3c: derive transfer width host cap from max_width in platdata
+      mmc: sdhci-s3c: Keep a copy of platform data and use it
+
+Ulf Hansson (1):
+      mmc: block: Remove use of mmc_blk_set_blksize
+
+ drivers/mmc/card/block.c          |   27 +------
+ drivers/mmc/core/bus.c            |   17 +++-
+ drivers/mmc/core/core.c           |   10 ++-
+ drivers/mmc/core/mmc.c            |   30 ++++---
+ drivers/mmc/core/sdio_bus.c       |   12 ++-
+ drivers/mmc/host/atmel-mci-regs.h |    1 +
+ drivers/mmc/host/atmel-mci.c      |   55 ++++++++----
+ drivers/mmc/host/omap_hsmmc.c     |  181 ++++++++++++++++---------------------
+ drivers/mmc/host/sdhci-dove.c     |    1 +
+ drivers/mmc/host/sdhci-pci.c      |    6 --
+ drivers/mmc/host/sdhci-s3c.c      |  159 +++++++++++++++++++++++++-------
+ drivers/mmc/host/sdhci.c          |    5 +-
+ drivers/mmc/host/sh_mmcif.c       |   13 +--
+ 13 files changed, 299 insertions(+), 218 deletions(-)
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
