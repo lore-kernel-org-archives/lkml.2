@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab2DFTt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 15:49:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37126 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757671Ab2DFTtY (ORCPT
+	id S1757920Ab2DFTtp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 15:49:45 -0400
+Received: from mga06.intel.com ([134.134.136.21]:7035 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757764Ab2DFTtm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 15:49:24 -0400
-Date: Fri, 6 Apr 2012 12:49:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        jmorris@namei.org, Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent
- execve from granting privs
-Message-Id: <20120406124921.5754e941.akpm@linux-foundation.org>
-In-Reply-To: <1333051320-30872-2-git-send-email-wad@chromium.org>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	<1333051320-30872-2-git-send-email-wad@chromium.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Apr 2012 15:49:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120406191451.GA14211@kroah.com>
+References: <20120406184346.21744.18004.stgit@dwillia2-linux.jf.intel.com>
+	<20120406191451.GA14211@kroah.com>
+Date: Fri, 6 Apr 2012 12:49:39 -0700
+Message-ID: <CABE8wwuLjqF1um8eJMap+6f_L3_upJL1VkQrxRfHXn-6R1Kuwg@mail.gmail.com>
+Subject: Re: [PATCH 0/6] rework quirks for the "kt" serial port
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012 15:01:46 -0500
-Will Drewry <wad@chromium.org> wrote:
+On Fri, Apr 6, 2012 at 12:14 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Apr 06, 2012 at 11:44:22AM -0700, Dan Williams wrote:
+>> The kt serial port intermittently reports unreliable data in its IIR
+>> register and needs to reset fifos to stay in sync with firmware when the
+>> device is reset.
+>>
+>> The IIR fixes that went into 3.3 were not complete so patch 3 replaces
+>> them with an explicit way to turn on UART_BUG_THRE (i.e. the "I don't
+>> trust my iir" flag).
+>>
+>
+> So the first 3 patches should go into 3.4 (and 3.3-stable) kernels,
+> right?
 
-> From: Andy Lutomirski <luto@amacapital.net>
-> 
-> With this set, a lot of dangerous operations (chroot, unshare, etc)
-> become a lot less dangerous because there is no possibility of
-> subverting privileged binaries.
-> 
-> This patch completely breaks apparmor.  Someone who understands (and
-> uses) apparmor should fix it or at least give me a hint.
+Yes, since this fixes the workaround that went into 3.3 properly and
+addresses a regression.
 
-So [patch 2/15] fixes all this up?
+>> A new fix for resetting the fifos on device reset is patch 5.  Alan
+>> asked to make this a new quirk rather than add more workarounds to the
+>> core (patch 4).
+>
+> These can wait for 3.5?
 
-I guess we should join the two patches into one, to avoid a silly
-breakage window.  That means that John loses a brownie point, but we
-can mention him in the changelog, include his signed-off-by:
+I think they can wait especially because of the cross tree changes.
 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> Patch 6 is an untested RFC / RFT from anyone that has a serial
+>> suspend/resume use case with an 'init' quirk that has resources that
+>> need de-allocation at 'exit'.
+>
+> And I'll hold off on this one entirely for now, right?
 
-Several of these patches are missing your signed-off-by:.  They should
-all have your SOB, because you sent them. 
-Documentation/SubmittingPatches explains this.
+Yeah, if anyone runs into a similar problem with serial suspend /
+resume they may want to take a look at this patch.  But for now I
+don't have a valid test case for it.
 
-I'm trying to find a way to merge all this code without reviewing it ;)
-Alas, this is against my rules.  Given the length of time for which
-this patchset has been floating around, I'm a little surprised by the
-lack of acked-by's and reviewed-by's.  Have you been gathering them all
-up?  Are the networking guys all happy about this patchset?
-
-
+--
+Dan
