@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab2DFQhx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 12:37:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51536 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589Ab2DFQhw (ORCPT
+	id S1754916Ab2DFQkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 12:40:31 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58082 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab2DFQk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 12:37:52 -0400
-Message-ID: <4F7F1BDD.4070205@gmail.com>
-Date: Fri, 06 Apr 2012 09:37:49 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Fri, 6 Apr 2012 12:40:29 -0400
+Message-ID: <4F7F1C74.7080009@gmail.com>
+Date: Fri, 06 Apr 2012 09:40:20 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
-References: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com> <4F7E64E4.3080509@gmail.com>
-In-Reply-To: <4F7E64E4.3080509@gmail.com>
+To: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>,
+        Linux-wireless <linux-wireless@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org> <4F61F551.5010608@gmail.com> <4F639851.5080500@gmail.com> <4F674616.8080103@gmail.com> <CAD2nsn3xpkGenrK50YmE5D7Odg3sBEek5zKcLZF6MAm69p5RJg@mail.gmail.com> <4F674FF5.2060406@gmail.com> <4F6751B2.1030809@openwrt.org> <4F681B78.9000207@gmail.com> <CAD2nsn0d-3edYGH8u+v5mhrUZBMsznDNRDkDHE-tErG8uGk84Q@mail.gmail.com> <4F68235C.5090701@gmail.com> <CAD2nsn0toAjyWw48J7oREES0=x6D72hMntP+WpAjHmR5drd-tQ@mail.gmail.com> <4F682555.3020502@gmail.com> <20328.16366.166909.255035@gargle.gargle.HOWL> <4F6FA388.9080408@gmail.com> <20337.9030.686697.228453@gargle.gargle.HOWL>
+In-Reply-To: <20337.9030.686697.228453@gargle.gargle.HOWL>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob,
-
-What the he*%? ...
-
-
-On 04/05/2012 08:37 PM, Rob Herring wrote:
-> On 04/05/2012 06:52 PM, David Daney wrote:
->> From: David Daney<david.daney@cavium.com>
->>
->> In commit 4bbdd45a (irq_domain/powerpc: eliminate irq_map; use
->> irq_alloc_desc() instead) code was added that ignores error returns
->> from irq_alloc_desc_from() by (silently) casting the return value to
->> unsigned.  The negitive value error return now suddenly looks like a
->> valid irq number.
->>
->> Commits cc79ca69 (irq_domain: Move irq_domain code from powerpc to
->> kernel/irq) and 1bc04f2c (irq_domain: Add support for base irq and
->> hwirq in legacy mappings) move this code to its current location in
-
-That would be commits:
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=4bbdd45afdae208a7c4ade89cf602f89a6397cff
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=cc79ca691c292e9fd44f589c7940b9654e22f2f6
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=1bc04f2cf8c2a1feadbd994f50c40bb145bf2989
-
->> irqdomain.c
->>
->> The result of all of this is a null pointer dereference OOPS if one of
->> the error cases is hit.
->>
->> The fix: Don't cast away the negativeness of the return value and then
->> check for errors.
->>
->> Signed-off-by: David Daney<david.daney@cavium.com>
->> ---
->>   kernel/irq/irqdomain.c |   11 ++++++-----
->>   1 files changed, 6 insertions(+), 5 deletions(-)
->>
->> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
->> index af48e59..9d3e3ae 100644
->> --- a/kernel/irq/irqdomain.c
->> +++ b/kernel/irq/irqdomain.c
->> @@ -351,6 +351,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
->>   				irq_hw_number_t hwirq)
->>   {
->>   	unsigned int virq, hint;
->> +	int irq;
->>
->>   	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
->>
->> @@ -380,14 +381,14 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
->>   	hint = hwirq % irq_virq_count;
->>   	if (hint == 0)
->>   		hint++;
->> -	virq = irq_alloc_desc_from(hint, 0);
+On 03/26/2012 07:17 PM, Sujith Manoharan wrote:
+> Justin P. Mattock wrote:
+>> I would have to say this patch above does get rid of this crash I was
+>> seeing. as a quick test I simply connect to a WPA network, then connect
+>> to an open network going back and forth triggers this freeze for me
+>> after applying this I am able to toggle back and forth without a freeze.
 >
-> You are not looking at mainline. hint was removed in later versions, and
-> the referenced commit ids don't exist.
-
-Please look at Linus' tree before making incorrect statements about 
-whether or not code exists on the 'mainline'
-
-The current kernel.org tree contains the bug and will cause anything 
-using irq_create_mapping() to crash in a semi-random manner.
-
-David Daney
-
+> Thanks for verifying.
 >
-> Rob
->
->> -	if (!virq)
->> -		virq = irq_alloc_desc_from(1, 0);
->> -	if (!virq) {
->> +	irq = irq_alloc_desc_from(hint, 0);
->> +	if (irq<= 0)
->> +		irq = irq_alloc_desc_from(1, 0);
->> +	if (irq<= 0) {
->>   		pr_debug("irq: ->  virq allocation failed\n");
->>   		return 0;
->>   	}
->> -
->> +	virq = irq;
->>   	if (irq_setup_virq(domain, virq, hwirq)) {
->>   		if (domain->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
->>   			irq_free_desc(virq);
->
+> Sujith
 >
 
+
+ From going through the warning message I was playing around and am 
+looking at: AH_UNPLUGGED .. seems if I remove this from the code I have 
+not seen this warning message.
+is there something wrong with AH_UNPLUGGED = 0x2 ?
+is this the wrong address(0x2)?
+
+the patch that I was using is:
+
+ From ea8a7d6ecf8b0706f3f0521cd22cc359b20b9373 Mon Sep 17 00:00:00 2001
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+Date: Sun, 25 Mar 2012 21:53:31 -0700
+Subject: [PATCH] ath_test
+
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+  drivers/net/wireless/ath/ath9k/recv.c |    3 +--
+  1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/recv.c 
+b/drivers/net/wireless/ath/ath9k/recv.c
+index f4ae3ba..d887cee 100644
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -523,8 +523,7 @@ bool ath_stoprecv(struct ath_softc *sc)
+  		sc->rx.rxlink = NULL;
+  	spin_unlock_bh(&sc->rx.rxbuflock);
+
+-	if (!(ah->ah_flags & AH_UNPLUGGED) &&
+-	    unlikely(!stopped)) {
++	if (!(ah->ah_flags) && unlikely(!stopped)) {
+  		ath_err(ath9k_hw_common(sc->sc_ah),
+  			"Could not stop RX, we could be "
+  			"confusing the DMA engine when we start RX up\n");
+-- 
+1.7.5.4
+
+
+let me know what you think!
+
+Justin P. Mattock
