@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175Ab2DFM1j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 08:27:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22713 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756745Ab2DFM1i (ORCPT
+	id S1757188Ab2DFMhu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 08:37:50 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:50816 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754945Ab2DFMht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 08:27:38 -0400
-X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_wMjfnNRlC0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=xIuciQta6A9dcMw8-aMA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH 08/15] perf/events: Correct size given to memset
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Julia Lawall <julia@diku.dk>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-In-Reply-To: <20120406120021.GF30425@liondog.tnic>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-	 <1333666086-6517-9-git-send-email-fweisbec@gmail.com>
-	 <20120406112441.GA30425@liondog.tnic> <20120406120021.GF30425@liondog.tnic>
+	Fri, 6 Apr 2012 08:37:49 -0400
+Message-ID: <1333715863.17459.4.camel@phoenix>
+Subject: [PATCH] gpio: Fix uninitialized variable bit in adp5588_irq_handler
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Date: Fri, 06 Apr 2012 20:37:43 +0800
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Apr 2012 08:27:26 -0400
-Message-ID: <1333715246.23090.3.camel@pippen.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 14:00 +0200, Borislav Petkov wrote:
+The variable 'bit' is uninitialized in the first iteration of for loop. Fix it.
 
-> > This one is already upstream, you can drop it: 5660ce34241ab
-> 
-> Uf, nevermind, you're forward-porting those.
-> 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/gpio-adp5588.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yeah, I worked hard to keep the "author" of the original fixes done in
-perf.
+diff --git a/drivers/gpio/gpio-adp5588.c b/drivers/gpio/gpio-adp5588.c
+index 9ad1703..ae5d7f1 100644
+--- a/drivers/gpio/gpio-adp5588.c
++++ b/drivers/gpio/gpio-adp5588.c
+@@ -252,7 +252,7 @@ static irqreturn_t adp5588_irq_handler(int irq, void *devid)
+ 		if (ret < 0)
+ 			memset(dev->irq_stat, 0, ARRAY_SIZE(dev->irq_stat));
+ 
+-		for (bank = 0; bank <= ADP5588_BANK(ADP5588_MAXGPIO);
++		for (bank = 0, bit = 0; bank <= ADP5588_BANK(ADP5588_MAXGPIO);
+ 			bank++, bit = 0) {
+ 			pending = dev->irq_stat[bank] & dev->irq_mask[bank];
+ 
+-- 
+1.7.5.4
 
--- Steve
 
 
