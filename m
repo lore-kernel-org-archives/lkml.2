@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab2DFJL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 05:11:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52819 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab2DFJL4 (ORCPT
+	id S1755437Ab2DFJOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 05:14:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45808 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab2DFJOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 05:11:56 -0400
-Message-ID: <1333703506.3957.1.camel@phoenix>
-Subject: [PATCH] gpio: Update GPIO_PCA953X Kconfig entry to include more
- supported devices
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Date: Fri, 06 Apr 2012 17:11:46 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Fri, 6 Apr 2012 05:14:49 -0400
+Message-ID: <4F7EB406.5020703@linaro.org>
+Date: Fri, 06 Apr 2012 13:14:46 +0400
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-man@vger.kernel.org
+Subject: Re: [RFC PATCH] hrtimers: system-wide and per-task hrtimer slacks
+References: <1329724172-27690-1-git-send-email-dmitry.antipov@linaro.org> <20120404171013.ac08575d.akpm@linux-foundation.org>
+In-Reply-To: <20120404171013.ac08575d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the supported devices for gpio-pca953x driver.
+On 04/05/2012 04:10 AM, Andrew Morton wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/gpio/Kconfig |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+> Well..  there are some back-incompatibilities here.
+> prctl(PR_SET_TIMERSLACK, -1) used to restore current's slack setting to
+> whatever-we-inherited-at-fork, but that has been removed.  What are the
+> implications of this, and did we need to do it?
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index e03653d..b35ac52 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -243,7 +243,7 @@ config GPIO_MC9S08DZ60
- 	  Select this to enable the MC9S08DZ60 GPIO driver
- 
- config GPIO_PCA953X
--	tristate "PCA953x, PCA955x, TCA64xx, and MAX7310 I/O ports"
-+	tristate "PCA953x, PCA955x, PCA957x, TCA64xx, and MAX7310 I/O ports"
- 	depends on I2C
- 	help
- 	  Say yes here to provide access to several register-oriented
-@@ -252,10 +252,11 @@ config GPIO_PCA953X
- 
- 	  4 bits:	pca9536, pca9537
- 
--	  8 bits:	max7310, pca9534, pca9538, pca9554, pca9557,
--	  		tca6408
-+	  8 bits:	max7310, max7315, pca6107, pca9534, pca9538, pca9554,
-+			pca9556, pca9557, pca9574, tca6408
- 
--	  16 bits:	pca9535, pca9539, pca9555, tca6416
-+	  16 bits:	max7312, max7313, pca9535, pca9539, pca9555, pca9575,
-+			tca6416
- 
- config GPIO_PCA953X_IRQ
- 	bool "Interrupt controller support for PCA953x"
--- 
-1.7.5.4
+It seems you're looking at the previous version of this patch
+(http://lkml.org/lkml/2012/2/20/55). Latest proposal is
+http://lwn.net/Articles/484162/, which defines PR_SET_TIMERSLACK
+action as:
+...
+case PR_SET_TIMERSLACK:
+         if (arg2 <= 0)
+                 current->timer_slack_ns =
+                         default_timer_slack_ns;
+         else if (arg2 <= HRTIMER_MAX_SLACK)
+                 current->timer_slack_ns = arg2;
+         else
+                 error = -EINVAL;
+         break;
+...
 
+> If we do make changes in this area then the prctl manpage should be
+> updated, please.  And if
+> http://www.spinics.net/lists/linux-man/msg01149.html represents the
+> current state of that manpage then it should be updated anyway - that
+> entry doesn't say anything about the (arg2<= 0) case.
+
+I sent a patch for man pages too, it should be one of the recent posts
+at http://www.spinics.net/lists/linux-man/index.html.
+
+Dmitry
 
 
