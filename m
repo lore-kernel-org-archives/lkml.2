@@ -1,54 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab2DFQO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 12:14:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44130 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab2DFQO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 12:14:27 -0400
-Message-ID: <4F7F1659.5090305@zytor.com>
-Date: Fri, 06 Apr 2012 09:14:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753439Ab2DFQQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 12:16:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50289 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab2DFQQf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 12:16:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Minchan Kim <minchan@kernel.org>
+Subject: Re: swap on eMMC and other flash
+Date: Fri, 6 Apr 2012 16:16:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linaro-kernel@lists.linaro.org, android-kernel@googlegroups.com,
+        linux-mm@kvack.org, "Luca Porzio (lporzio)" <lporzio@micron.com>,
+        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
+        Saugata Das <saugata.das@linaro.org>,
+        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
+        Hyojin Jeong <syr.jeong@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+References: <201203301744.16762.arnd@arndb.de> <CAEwNFnA2GeOayw2sJ_KXv4qOdC50_Nt2KoK796YmQF+YV1GiEA@mail.gmail.com>
+In-Reply-To: <CAEwNFnA2GeOayw2sJ_KXv4qOdC50_Nt2KoK796YmQF+YV1GiEA@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] nextfd(2)
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
-In-Reply-To: <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201204061616.11716.arnd@arndb.de>
+X-Provags-ID: V02:K0:bmolxOsY211trAhrAobbUFzhMihNkvKPfrITwpJEWYL
+ y/Ako3xtUfpD9Nin51Maymuuvq6lX+EYjOShYocsHsQLcMKO0U
+ W0EavnNRvjHP1t+znAZkEtgLeQoMNGk/s0/i4DTCVvH6F1ShM2
+ HiJKr9CeLwW2EApoY8IHmr1hvdrnCwcE+GwcfgTweW9ZHd8Bkb
+ GFC8SoWZOn/Dd1qX4UVM+znl8268ecOWtDWgD3vZZLYoQmigpE
+ 8FH5JDK8e1yuGp7D4TaqKo5HLIxnTN2aQY3FvakFd1ejWeSOOF
+ x8YVNkPbDqz6641KpNmW3bnERlLkPeGa9KIy+Gnsd3SlPZ0DqB
+ 1V0/cqDDZno39XzwKmsY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2012 02:54 AM, Alexey Dobriyan wrote:
+On Friday 06 April 2012, Minchan Kim wrote:
+> On Sat, Mar 31, 2012 at 2:44 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 > 
-> I agree, this particular changelog may be somewhat out of line.
+> > We've had a discussion in the Linaro storage team (Saugata, Venkat and me,
+> > with Luca joining in on the discussion) about swapping to flash based media
+> > such as eMMC. This is a summary of what we found and what we think should
+> > be done. If people agree that this is a good idea, we can start working
+> > on it.
+> >
+> > The basic problem is that Linux without swap is sort of crippled and some
+> > things either don't work at all (hibernate) or not as efficient as they
+> > should (e.g. tmpfs). At the same time, the swap code seems to be rather
+> > inappropriate for the algorithms used in most flash media today, causing
+> > system performance to suffer drastically, and wearing out the flash
+> > hardware
+> > much faster than necessary. In order to change that, we would be
+> > implementing the following changes:
+> >
+> > 1) Try to swap out multiple pages at once, in a single write request. My
+> > reading of the current code is that we always send pages one by one to
+> > the swap device, while most flash devices have an optimum write size of
+> > 32 or 64 kb and some require an alignment of more than a page. Ideally
+> > we would try to write an aligned 64 kb block all the time. Writing aligned
+> > 64 kb chunks often gives us ten times the throughput of linear 4kb writes,
+> > and going beyond 64 kb usually does not give any better performance.
+> >
 > 
-> But I find it little hypocritical that kernel developers add CONFIG_PROC_FS,
-> fix compilation problems associated with it, do not mount proc by default,
-> do not mark it unmountable somehow and
-> then say procless setups aren't worth it.
+> It does make sense.
+> I think we can batch will-be-swapped-out pages in shrink_page_list if they
+> are located by contiguous swap slots.
+
+But would that guarantee that all writes are the same size? While writing
+larger chunks would generally be helpful, in order to guarantee that we
+the drive doesn't do any garbage collection, we would have to do all writes
+in aligned chunks. It would probably be enough to do this in 8kb or
+16kb units for most devices over the next few years, but implementing it
+for 64kb should be the same amount of work and will get us a little bit
+further.
+
+I'm not sure what we would do when there are less than 64kb available
+for pageout on the inactive list. The two choices I can think of are
+either not writing anything, or wasting the swap slots and filling
+up the data with zeroes.
+
+> > 2) Make variable sized swap clusters. Right now, the swap space is
+> > organized in clusters of 256 pages (1MB), which is less than the typical
+> > erase block size of 4 or 8 MB. We should try to make the swap cluster
+> > aligned to erase blocks and have the size match to avoid garbage collection
+> > in the drive. The cluster size would typically be set by mkswap as a new
+> > option and interpreted at swapon time.
+> >
 > 
+> If we can find such big contiguous swap slots easily, it would be good.
+> But I am not sure how often we can get such big slots. And maybe we have to
+> improve search method for getting such big empty cluster.
 
-Aren't worth *optimizing for*.  But yes, CONFIG_PROC_FS is pretty much a
-historic relic at this point, and probably should just be dropped.
+As long as there are clusters available, we should try to find them. When
+free space is too fragmented to find any unused cluster, we can pick one
+that has very little data in it, so that we reduce the time it takes to
+GC that erase block in the drive. While we could theoretically do active
+garbage collection of swap data in the kernel, it won't get more efficient
+than the GC inside of the drive. If we do this, it unfortunately means that
+we can't just send a discard for the entire erase block.
 
-> Without proc knowledge about fdtable is gathered linearly and still unreliable.
-> With nextfd(2), even procful environments could lose several failure branches.
-
-What?  Please explain how on Earth this would "lose several failure
-branches."
-
-New system calls are not something that should be added lightly...
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+	Arnd
