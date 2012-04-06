@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171Ab2DFVOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:14:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754592Ab2DFVOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:14:49 -0400
-Message-ID: <4F7F5CC1.3080107@redhat.com>
-Date: Fri, 06 Apr 2012 17:14:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S932478Ab2DFVPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:15:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55707 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754592Ab2DFVPm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 17:15:42 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: fix page-faults detection in swap-token logic
-References: <20110827083201.21854.56111.stgit@zurg> <20110829160637.bfc86e63.akpm@linux-foundation.org>
-In-Reply-To: <20110829160637.bfc86e63.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE6n16=5fEBYP37R3XDFWL_8YOk7MH6T_CbuX3sZCpngD=v=rg@mail.gmail.com>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+ <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406124921.5754e941.akpm@linux-foundation.org>
+ <CAE6n16m3v4BghY7GGwHCy2t-7-vmRpyOV6swap9GrMQnmGLroA@mail.gmail.com>
+ <CAObL_7GzsJ+EW94oYG+EzcRqYyH2EPTyFgTgo6zmSz1yxEe-xw@mail.gmail.com> <CAE6n16=5fEBYP37R3XDFWL_8YOk7MH6T_CbuX3sZCpngD=v=rg@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 6 Apr 2012 14:15:19 -0700
+X-Google-Sender-Auth: khnVPdbkttiMvFKvv03OuAe_v-A
+Message-ID: <CAObL_7E7dHWxKgA7-pSCuUCrxEqY1H55Kxg_sF_OLbdx=pkT4g@mail.gmail.com>
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+To: Markus Gutschke <markus@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2011 07:06 PM, Andrew Morton wrote:
-> On Sat, 27 Aug 2011 12:32:01 +0300
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+On Fri, Apr 6, 2012 at 2:04 PM, Markus Gutschke <markus@chromium.org> wrote:
+> On Fri, Apr 6, 2012 at 13:54, Andrew Lutomirski <luto@mit.edu> wrote:
+>> (FWIW, I think that CLONE_NEWPID interacts badly with unix socket
+>> credentials and should be fixed as a prerequisite for making it easier
+>> to access.)
 >
->> After commit v2.6.36-5896-gd065bd8 "mm: retry page fault when blocking on disk transfer"
->> we usually wait in page-faults without mmap_sem held, so all swap-token logic was broken,
->> because it based on using rwsem_is_locked(&mm->mmap_sem) as sign of in progress page-faults.
+> sendmsg() is a big hair ball. And yes, I have all sorts of things on
+> my wish list that touch sendmsg(). I don't think, I'll get them
+> fullfilled anytime soon, though:
 >
-> If I'm interpreting this correctly, the thrash-handling logic has been
-> effectively disabled for a year and nobody noticed.
+>  - sendmsg() does lots of different things: sending on unconnected
+> sockets, sending file descriptors, sending unix decriptors, and
+> plain-old sending data. These operations have very different security
+> properties and implications. It would be awesome if BPF filters could
+> filter these different types of operations selectively.
 >
->> This patch adds to mm_struct atomic counter of in progress page-faults for mm with swap-token.
+>  - ancillary data is a cool concept in general. We should use it more.
+> If I could send a memory mapping from one process to another, that
+> would solve so many problems. But I know, I am dreaming; I don't
+> expect to see this feature any time soon.
 >
-> We desperately need to delete some code from mm/.  This seems like a
-> great candidate.  Someone prove me wrong?
 
-You are absolutely right.  The swap token code broke without
-anyone noticing, and there is no good way to integrate it with
-cgroups naturalization...
+Agreed, but I'm talking about something totally different: if I can
+use CLONE_NEWPID, then I can send an unexpected pid with SCM_CREDS.
+The SCM_CREDS receive code should remap pids.
 
-I'll send a patch to remove the swap token code.
-
--- 
-All rights reversed
+--Andy
