@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab2DFNeo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 09:34:44 -0400
-Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:48770 "EHLO
+	id S1757273Ab2DFNe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 09:34:27 -0400
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:52761 "EHLO
 	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757327Ab2DFNel (ORCPT
+	by vger.kernel.org with ESMTP id S1753843Ab2DFNeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 09:34:41 -0400
+	Fri, 6 Apr 2012 09:34:25 -0400
 From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 To: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
         David Henningsson <david.henningsson@canonical.com>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] ALSA: hda - clean up CX20549 test mixer setup
-Date: Fri,  6 Apr 2012 15:34:20 +0200
-Message-Id: <1333719260-14504-7-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+Subject: [PATCH 1/6] ALSA: hda - Fix proc output for ADC amp values of CX20549
+Date: Fri,  6 Apr 2012 15:34:15 +0200
+Message-Id: <1333719260-14504-2-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1333719260-14504-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
 References: <s5hk41ufe2j.wl%tiwai@suse.de>
@@ -23,92 +25,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-name pins consistently (MIC1/LINE1/HP-OUT/CD) on all controls
-affecting those pins.
-
-remove duplicate SET_AMP_GAIN_MUTE to 0x17/index 0 and 0x17/index 1
-
-really select MIC1, not Mixer out for recording
-
-"Mixer out" for recording is not a "pin", adjust comment
+The CX20549 has only one single input amp on it's input converter
+widget. Fix printing of values in the codec file in /proc/asound.
 
 Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 ---
- sound/pci/hda/patch_conexant.c |   38 +++++++++++++++++---------------------
- 1 files changed, 17 insertions(+), 21 deletions(-)
+ sound/pci/hda/hda_codec.h      |    3 +++
+ sound/pci/hda/hda_proc.c       |   13 ++++++++++---
+ sound/pci/hda/patch_conexant.c |    8 ++++----
+ 3 files changed, 17 insertions(+), 7 deletions(-)
 
+diff --git a/sound/pci/hda/hda_codec.h b/sound/pci/hda/hda_codec.h
+index 9a9f372..56b4f74 100644
+--- a/sound/pci/hda/hda_codec.h
++++ b/sound/pci/hda/hda_codec.h
+@@ -851,6 +851,9 @@ struct hda_codec {
+ 	unsigned int pin_amp_workaround:1; /* pin out-amp takes index
+ 					    * (e.g. Conexant codecs)
+ 					    */
++	unsigned int single_adc_amp:1; /* adc in-amp takes no index
++					* (e.g. CX20549 codec)
++					*/
+ 	unsigned int no_sticky_stream:1; /* no sticky-PCM stream assignment */
+ 	unsigned int pins_shutup:1;	/* pins are shut up */
+ 	unsigned int no_trigger_sense:1; /* don't trigger at pin-sensing */
+diff --git a/sound/pci/hda/hda_proc.c b/sound/pci/hda/hda_proc.c
+index 254ab52..8c1715a 100644
+--- a/sound/pci/hda/hda_proc.c
++++ b/sound/pci/hda/hda_proc.c
+@@ -651,9 +651,16 @@ static void print_codec_info(struct snd_info_entry *entry,
+ 			snd_iprintf(buffer, "  Amp-In caps: ");
+ 			print_amp_caps(buffer, codec, nid, HDA_INPUT);
+ 			snd_iprintf(buffer, "  Amp-In vals: ");
+-			print_amp_vals(buffer, codec, nid, HDA_INPUT,
+-				       wid_caps & AC_WCAP_STEREO,
+-				       wid_type == AC_WID_PIN ? 1 : conn_len);
++			if (wid_type == AC_WID_PIN ||
++			    (codec->single_adc_amp &&
++			     wid_type == AC_WID_AUD_IN))
++                                print_amp_vals(buffer, codec, nid, HDA_INPUT,
++                                               wid_caps & AC_WCAP_STEREO,
++                                               1);
++                        else
++                                print_amp_vals(buffer, codec, nid, HDA_INPUT,
++                                               wid_caps & AC_WCAP_STEREO,
++                                               conn_len);
+ 		}
+ 		if (wid_caps & AC_WCAP_OUT_AMP) {
+ 			snd_iprintf(buffer, "  Amp-Out caps: ");
 diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 8fe9f9d..a36488d 100644
+index 8c6523b..60890ef 100644
 --- a/sound/pci/hda/patch_conexant.c
 +++ b/sound/pci/hda/patch_conexant.c
-@@ -930,10 +930,10 @@ static const struct snd_kcontrol_new cxt5045_test_mixer[] = {
- 	/* Output controls */
- 	HDA_CODEC_VOLUME("Speaker Playback Volume", 0x10, 0x0, HDA_OUTPUT),
- 	HDA_CODEC_MUTE("Speaker Playback Switch", 0x10, 0x0, HDA_OUTPUT),
--	HDA_CODEC_VOLUME("Node 11 Playback Volume", 0x11, 0x0, HDA_OUTPUT),
--	HDA_CODEC_MUTE("Node 11 Playback Switch", 0x11, 0x0, HDA_OUTPUT),
--	HDA_CODEC_VOLUME("Node 12 Playback Volume", 0x12, 0x0, HDA_OUTPUT),
--	HDA_CODEC_MUTE("Node 12 Playback Switch", 0x12, 0x0, HDA_OUTPUT),
-+	HDA_CODEC_VOLUME("HP-OUT Playback Volume", 0x11, 0x0, HDA_OUTPUT),
-+	HDA_CODEC_MUTE("HP-OUT Playback Switch", 0x11, 0x0, HDA_OUTPUT),
-+	HDA_CODEC_VOLUME("LINE1 Playback Volume", 0x12, 0x0, HDA_OUTPUT),
-+	HDA_CODEC_MUTE("LINE1 Playback Switch", 0x12, 0x0, HDA_OUTPUT),
- 	
- 	/* Modes for retasking pin widgets */
- 	CXT_PIN_MODE("HP-OUT pin mode", 0x11, CXT_PIN_DIR_INOUT),
-@@ -944,16 +944,16 @@ static const struct snd_kcontrol_new cxt5045_test_mixer[] = {
+@@ -141,7 +141,6 @@ struct conexant_spec {
+ 	unsigned int hp_laptop:1;
+ 	unsigned int asus:1;
+ 	unsigned int pin_eapd_ctrls:1;
+-	unsigned int single_adc_amp:1;
  
- 	/* Loopback mixer controls */
+ 	unsigned int adc_switching:1;
  
--	HDA_CODEC_VOLUME("Mixer-1 Volume", 0x17, 0x0, HDA_INPUT),
--	HDA_CODEC_MUTE("Mixer-1 Switch", 0x17, 0x0, HDA_INPUT),
--	HDA_CODEC_VOLUME("Mixer-2 Volume", 0x17, 0x1, HDA_INPUT),
--	HDA_CODEC_MUTE("Mixer-2 Switch", 0x17, 0x1, HDA_INPUT),
--	HDA_CODEC_VOLUME("Mixer-3 Volume", 0x17, 0x2, HDA_INPUT),
--	HDA_CODEC_MUTE("Mixer-3 Switch", 0x17, 0x2, HDA_INPUT),
--	HDA_CODEC_VOLUME("Mixer-4 Volume", 0x17, 0x3, HDA_INPUT),
--	HDA_CODEC_MUTE("Mixer-4 Switch", 0x17, 0x3, HDA_INPUT),
--	HDA_CODEC_VOLUME("Mixer-5 Volume", 0x17, 0x4, HDA_INPUT),
--	HDA_CODEC_MUTE("Mixer-5 Switch", 0x17, 0x4, HDA_INPUT),
-+	HDA_CODEC_VOLUME("PCM Volume", 0x17, 0x0, HDA_INPUT),
-+	HDA_CODEC_MUTE("PCM Switch", 0x17, 0x0, HDA_INPUT),
-+	HDA_CODEC_VOLUME("MIC1 pin Volume", 0x17, 0x1, HDA_INPUT),
-+	HDA_CODEC_MUTE("MIC1 pin Switch", 0x17, 0x1, HDA_INPUT),
-+	HDA_CODEC_VOLUME("LINE1 pin Volume", 0x17, 0x2, HDA_INPUT),
-+	HDA_CODEC_MUTE("LINE1 pin Switch", 0x17, 0x2, HDA_INPUT),
-+	HDA_CODEC_VOLUME("HP-OUT pin Volume", 0x17, 0x3, HDA_INPUT),
-+	HDA_CODEC_MUTE("HP-OUT pin Switch", 0x17, 0x3, HDA_INPUT),
-+	HDA_CODEC_VOLUME("CD pin Volume", 0x17, 0x4, HDA_INPUT),
-+	HDA_CODEC_MUTE("CD pin Switch", 0x17, 0x4, HDA_INPUT),
- 	{
- 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
- 		.name = "Input Source",
-@@ -985,10 +985,6 @@ static const struct hda_verb cxt5045_test_init_verbs[] = {
- 	{0x13, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
- 	{0x18, AC_VERB_SET_DIGI_CONVERT_1, 0},
+@@ -1111,6 +1110,7 @@ static int patch_cxt5045(struct hda_codec *codec)
+ 		return -ENOMEM;
+ 	codec->spec = spec;
+ 	codec->pin_amp_workaround = 1;
++	codec->single_adc_amp = 1;
  
--	/* Start with output sum widgets muted and their output gains at min */
--	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(0)},
--	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)},
--
- 	/* Unmute retasking pin widget output buffers since the default
- 	 * state appears to be output.  As the pin mode is changed by the
- 	 * user the pin mode control will take care of enabling the pin's
-@@ -1003,11 +999,11 @@ static const struct hda_verb cxt5045_test_init_verbs[] = {
- 	/* Set ADC connection select to match default mixer setting (mic1
- 	 * pin)
- 	 */
--	{0x1a, AC_VERB_SET_CONNECT_SEL, 0x00},
--	{0x17, AC_VERB_SET_CONNECT_SEL, 0x00},
-+	{0x1a, AC_VERB_SET_CONNECT_SEL, 0x01},
-+	{0x17, AC_VERB_SET_CONNECT_SEL, 0x01},
+ 	spec->multiout.max_channels = 2;
+ 	spec->multiout.num_dacs = ARRAY_SIZE(cxt5045_dac_nids);
+@@ -4220,7 +4220,7 @@ static int cx_auto_add_capture_volume(struct hda_codec *codec, hda_nid_t nid,
+ 		int idx = get_input_connection(codec, adc_nid, nid);
+ 		if (idx < 0)
+ 			continue;
+-		if (spec->single_adc_amp)
++		if (codec->single_adc_amp)
+ 			idx = 0;
+ 		return cx_auto_add_volume_idx(codec, label, pfx,
+ 					      cidx, adc_nid, HDA_INPUT, idx);
+@@ -4275,7 +4275,7 @@ static int cx_auto_build_input_controls(struct hda_codec *codec)
+ 		if (cidx < 0)
+ 			continue;
+ 		input_conn[i] = spec->imux_info[i].adc;
+-		if (!spec->single_adc_amp)
++		if (!codec->single_adc_amp)
+ 			input_conn[i] |= cidx << 8;
+ 		if (i > 0 && input_conn[i] != input_conn[0])
+ 			multi_connection = 1;
+@@ -4470,7 +4470,7 @@ static int patch_conexant_auto(struct hda_codec *codec)
  
- 	/* Mute all inputs to mixer widget (even unconnected ones) */
--	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(0)}, /* Mixer pin */
-+	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(0)}, /* Mixer */
- 	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)}, /* Mic1 pin */
- 	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(2)}, /* Line pin */
- 	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(3)}, /* HP pin */
+ 	switch (codec->vendor_id) {
+ 	case 0x14f15045:
+-		spec->single_adc_amp = 1;
++		codec->single_adc_amp = 1;
+ 		break;
+ 	case 0x14f15051:
+ 		add_cx5051_fake_mutes(codec);
 -- 
 1.7.9.1
 
