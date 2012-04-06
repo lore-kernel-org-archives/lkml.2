@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab2DFUbf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:31:35 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63897 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757941Ab2DFUbe (ORCPT
+	id S932453Ab2DFUcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:32:23 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:60758 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932437Ab2DFUcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:31:34 -0400
-Date: Fri, 6 Apr 2012 13:31:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC PATCH 0/2] Removal of lumpy reclaim
-In-Reply-To: <20120406123439.d2ba8920.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1204061316580.3057@eggly.anvils>
-References: <1332950783-31662-1-git-send-email-mgorman@suse.de> <20120406123439.d2ba8920.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 6 Apr 2012 16:32:22 -0400
+Message-ID: <4F7F52BD.7060906@candelatech.com>
+Date: Fri, 06 Apr 2012 13:31:57 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mohammed Shafi <shafi.wireless@gmail.com>
+CC: Michael Leun <lkml20120218@newton.leun.net>, casteyde.christian@free.fr,
+        Kelly Anderson <kelly@silka.with-linux.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>
+Subject: Re: [ath9k-devel] 3.3.1 ath9k regression
+References: <4F7A8EB7.4060200@silka.with-linux.com> <4F7A923D.5000002@candelatech.com> <CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com> <4F7A9D5C.8040402@silka.with-linux.com> <CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com> <4F7AAAD9.2040307@silka.with-linux.com> <CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com> <CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com> <4F7AB6FE.3080009@silka.with-linux.com> <20120403200306.0afbb48b@xenia.leun.net> <CAD2nsn2k3mKMm3gK=fXqDYcOeKBwkyqGz9RWz1KOe=6=CDyhHA@mail.gmail.com> <CAD2nsn1AshPTYd-FcydV-5HpiXPb0FfqLQPTqFYyw3kJX+fXEA@mail.gmail.com> <20120404235104.682cfad3@xenia.leun.net> <4F7DE3A4.1040705@candelatech.com> <CAD2nsn16AozFF2QhiY063-48bKiXdyQLmSqJLLHPpsZ3H3JtHQ@mail.gmail.com>
+In-Reply-To: <CAD2nsn16AozFF2QhiY063-48bKiXdyQLmSqJLLHPpsZ3H3JtHQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012, Andrew Morton wrote:
-> On Wed, 28 Mar 2012 17:06:21 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > (cc'ing active people in the thread "[patch 68/92] mm: forbid lumpy-reclaim
-> > in shrink_active_list()")
-> > 
-> > In the interest of keeping my fingers from the flames at LSF/MM, I'm
-> > releasing an RFC for lumpy reclaim removal.
-> 
-> I grabbed them, thanks.
+On 04/05/2012 10:11 PM, Mohammed Shafi wrote:
+> Hi Ben,
+>
+> On Thu, Apr 5, 2012 at 11:55 PM, Ben Greear<greearb@candelatech.com>  wrote:
+>> I see the regression on my WPEA-127N systems as well.
+>>
+>> With the patch applied to 3.3.1, I see never ending stream of
+>> auth timeouts (this log is watching 'iw event' output)
+>>
+>> power-management is OFF on my system, and using nohwcrypt,
+>> in case that matters.
 
-I do have a concern with this: I was expecting lumpy reclaim to be
-replaced by compaction, and indeed it is when CONFIG_COMPACTION=y.
-But when CONFIG_COMPACTION is not set, we're back to 2.6.22 in
-relying upon blind chance to provide order>0 pages.
+> i think its best for me try to download the 3.3.1 stable kernel and
+> see if this issue happens,
+> i am going to start it now, Ben does this happens with  latest
+> wireless testing tree?
+> its quite weird 3.4-rc1 works as some user reported and while 3.3.1 does not.
+> i will try to come with some suggestion patches
 
-Hugh
+I have not tried wireless-testing lately...sort of been waiting for
+it to sync with upstream and become active again before going to the
+effort.
+
+But, I'll try it out soon if you have no luck reproducing the
+problem on 3.3.1.
+
+Thanks,
+Ben
+
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
