@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab2DFEwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 00:52:46 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55628 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab2DFEwp (ORCPT
+	id S1752706Ab2DFFJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 01:09:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49375 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab2DFFJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 00:52:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANudz+uhw4LZ4EoDvp_eC2K23=Qm_ACPpM8TRq5p0t9=idKcSg@mail.gmail.com>
-References: <CANudz+uhw4LZ4EoDvp_eC2K23=Qm_ACPpM8TRq5p0t9=idKcSg@mail.gmail.com>
-From: Mulyadi Santosa <mulyadi.santosa@gmail.com>
-Date: Fri, 6 Apr 2012 11:52:03 +0700
-Message-ID: <CAGdaadbywdKu_8H5+MLMz_Sp_VC+JoUaw0-w-EiOqMGkTA30DA@mail.gmail.com>
-Subject: Re: Some questions about high memory
-To: loody <miloody@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Apr 2012 01:09:26 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] regmap: fix compilation when !CONFIG_DEBUG_FS
+Date: Thu,  5 Apr 2012 23:09:20 -0600
+Message-Id: <1333688960-24402-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.5.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi...
+From: Stephen Warren <swarren@nvidia.com>
 
-On Fri, Apr 6, 2012 at 09:19, loody <miloody@gmail.com> wrote:
-> hi all:
-> I am trying to write a driver for my block device which dma support
-> high memory copying.
-> I have register my device as "blk_bounce_any".
-> But my driver cannot see block layer pass high memory to me so far.
+Commit 79c64d5 "regmap: allow regmap instances to be named" changed the
+prototype of regmap_debugfs_init, but didn't update the dummy inline used
+when !CONFIG_DEBUGFS. Fix this.
 
-perhaps because you need to kmap them first?
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/base/regmap/internal.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-BTW, is it 32 bit or 64 bit Linux kernel?
-
-> Is there any user/kernel test program which will purposely send high
-> memory for driver to use?
-> or is there any flag when opening a file in user mode that will use high memory?
-
-I recheck mmap and mmap manual page and I found none of such flag
-
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 9bc1d27..99b28ff 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -116,7 +116,7 @@ extern void regmap_debugfs_init(struct regmap *map, const char *name);
+ extern void regmap_debugfs_exit(struct regmap *map);
+ #else
+ static inline void regmap_debugfs_initcall(void) { }
+-static inline void regmap_debugfs_init(struct regmap *map) { }
++static inline void regmap_debugfs_init(struct regmap *map, const char *name) { }
+ static inline void regmap_debugfs_exit(struct regmap *map) { }
+ #endif
+ 
 -- 
-regards,
+1.7.5.4
 
-Mulyadi Santosa
-Freelance Linux trainer and consultant
-
-blog: the-hydra.blogspot.com
-training: mulyaditraining.blogspot.com
