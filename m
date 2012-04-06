@@ -1,1365 +1,1225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab2DFNBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 09:01:32 -0400
-Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:53591 "EHLO
-	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754823Ab2DFNB3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 09:01:29 -0400
-Message-ID: <1333717307.4159.28.camel@localhost>
-Subject: Re: [PATCH 0/6] sound/pci/hda: CX20549 cleanup/fixes
-From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 06 Apr 2012 15:01:47 +0200
-In-Reply-To: <s5hk41ufe2j.wl%tiwai@suse.de>
-References: <1333632577.4159.9.camel@localhost>
-	 <s5hlimafe4q.wl%tiwai@suse.de> <s5hk41ufe2j.wl%tiwai@suse.de>
-Content-Type: multipart/mixed; boundary="=-E6Xar5x1Rr9EoJJZuZe7"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-Originating-IP: 87.123.69.53
+	id S932183Ab2DFNWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 09:22:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37727 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756653Ab2DFNWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 09:22:07 -0400
+Date: Fri, 6 Apr 2012 15:21:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 02/15] tools/events: Add files to create libtraceevent.a
+Message-ID: <20120406132158.GG30425@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Steven Rostedt <srostedt@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+	Namhyung Kim <namhyung.kim@lge.com>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <1333666086-6517-3-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1333666086-6517-3-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-E6Xar5x1Rr9EoJJZuZe7
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-On Thu, 2012-04-05 at 16:28 +0200, Takashi Iwai wrote:
-> BTW, did you try model=auto option to enable the auto-parser?
-> If it doesn't work well for you, let me know.
-
-I tried the model=auto option, too. It works mostly, but the mixer node
-seems to not be utilized correctly/at all. The capture source list does
-not contain "mixer" anymore, and there are no playback controls for
-Internal Mic/Mic/Line. The Capture setup seems to be built correctly
-(except for the missing mixer). The auto setup adds two extra input
-devices for jack sense.
-
-> In anyway, give alsa-info.sh output (run with --no-upload option) for
-> better checks.
-
-alsa-info for the revised patch-set (mailed soon) with and without
-model=auto is attached. Information I consider irrelevant (non-sound
-modules and dmesg context not relating to sound) has been edited out.
-
-BTW: I seem to have encountered an ALSA user-space bug: The codec
-provides a "master capture switch", i.e. the "mute" of the adc in amp.
-It also provides a "capture source selection enum", i.e. the "Connection
-Select" of the adc widget. The enum provides mutually exclusive capture
-sources that have no volume control, whilst the master capture switch is
-coupled with the capture volume control, and should not be related to
-the source enumeration. But if I play around with capture sources in
-alsamixer, the "Capture Switch" is turned off as soon as I switch the
-source from the first item in the Mux list to something else.
-
-This happens with both the patched hard-coded "BenQ" configuration and
-the auto configuration.
-
-Regards,
-  Michael Karcher
-
-
---=-E6Xar5x1Rr9EoJJZuZe7
-Content-Description: 
-Content-Disposition: attachment; filename="alsa-info-auto.txt"
-Content-Type: text/plain; name="alsa-info-auto.txt"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-upload=true&script=true&cardinfo=
-!!################################
-!!ALSA Information Script v 0.4.60
-!!################################
-
-!!Script ran on: Fri Apr  6 12:31:13 UTC 2012
-
-
-!!Linux Distribution
-!!------------------
-
-Debian GNU/Linux wheezy/sid \n \l
-
-
-!!DMI Information
-!!---------------
-
-Manufacturer:      GIGABYTE
-Product Name:      W551
-Product Version:   Not Applicable
-
-
-!!Kernel Information
-!!------------------
-
-Kernel release:    3.3.0-trunk-amd64
-Operating System:  GNU/Linux
-Architecture:      x86_64
-Processor:         unknown
-SMP Enabled:       Yes
-
-
-!!ALSA Version
-!!------------
-
-Driver version:     1.0.24
-Library version:    1.0.25
-Utilities version:  1.0.25
-
-
-!!Loaded ALSA modules
-!!-------------------
-
-snd_hda_intel
-
-
-!!Sound Servers on this system
-!!----------------------------
-
-Pulseaudio:
-      Installed - Yes (/usr/bin/pulseaudio)
-      Running - No
-
-ESound Daemon:
-      Installed - Yes (/usr/bin/esd)
-      Running - No
-
-
-!!Soundcards recognised by ALSA
-!!-----------------------------
-
- 0 [Intel          ]: HDA-Intel - HDA Intel
-                      HDA Intel at 0xde300000 irq 46
-
-
-!!PCI Soundcards installed in the system
-!!--------------------------------------
-
-00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 02)
-
-
-!!Advanced information - PCI Vendor/Device/Subsystem ID's
-!!--------------------------------------------------------
-
-00:1b.0 0403: 8086:27d8 (rev 02)
-	Subsystem: 152d:0753
-
-
-!!Loaded sound module options
-!!--------------------------
-
-!!Module: snd_hda_intel
-	align_buffer_size : Y
-	bdl_pos_adj : 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	beep_mode : 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	enable : Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y
-	enable_msi : -1
-	id : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
-	index : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	model : auto,(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
-	patch : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
-	position_fix : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	power_save : 0
-	power_save_controller : Y
-	probe_mask : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	probe_only : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	single_cmd : N
-	snoop : Y
-
-
-!!HDA-Intel Codec information
-!!---------------------------
---startcollapse--
-
-Codec: Conexant CX20549 (Venice)
-Address: 0
-AFG Function Id: 0x1 (unsol 0)
-MFG Function Id: 0x2 (unsol 1)
-Vendor Id: 0x14f15045
-Subsystem Id: 0x152d0753
-Revision Id: 0x100100
-Modem Function Group: 0x2
-Default PCM:
-    rates [0x140]: 48000 96000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-GPIO: io=0, o=0, i=0, unsolicited=0, wake=0
-Node 0x10 [Pin Complex] wcaps 0x40058d: Stereo Amp-Out
-  Control: name="Master Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Control: name="Master Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Amp-Out caps: ofs=0x2b, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-Out vals:  [0x80 0x80]
-  Pincap 0x00010014: OUT EAPD Detect
-  EAPD 0x2: EAPD
-  Pin Default 0x951701f0: [Fixed] Speaker at Int Top
-    Conn = Analog, Color = Unknown
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 2
-     0x19* 0x17
-Node 0x11 [Pin Complex] wcaps 0x40058d: Stereo Amp-Out
-  Control: name="Line Jack", index=0, device=0
-  Amp-Out caps: ofs=0x2b, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-Out vals:  [0x26 0x26]
-  Pincap 0x0000113c: IN OUT HP Detect
-    Vref caps: HIZ 80
-  Pin Default 0x02813011: [Jack] Line In at Ext Front
-    Conn = 1/8, Color = Blue
-    DefAssociation = 0x1, Sequence = 0x1
-  Pin-ctls: 0x20: IN VREF_HIZ
-  Unsolicited: tag=02, enabled=1
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 2
-     0x19 0x17*
-Node 0x12 [Pin Complex] wcaps 0x40058d: Stereo Amp-Out
-  Control: name="Mic Jack", index=0, device=0
-  Amp-Out caps: ofs=0x2b, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-Out vals:  [0xab 0xab]
-  Pincap 0x0000113c: IN OUT HP Detect
-    Vref caps: HIZ 80
-  Pin Default 0x02a19010: [Jack] Mic at Ext Front
-    Conn = 1/8, Color = Pink
-    DefAssociation = 0x1, Sequence = 0x0
-  Pin-ctls: 0x24: IN VREF_80
-  Unsolicited: tag=01, enabled=1
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 2
-     0x19* 0x17
-Node 0x13 [Pin Complex] wcaps 0x400301: Stereo Digital
-  Pincap 0x00000010: OUT
-  Pin Default 0x22454130: [Jack] SPDIF Out at Sep Front
-    Conn = Optical, Color = Green
-    DefAssociation = 0x3, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Connection: 1
-     0x18
-Node 0x14 [Pin Complex] wcaps 0x400081: Stereo
-  Pincap 0x00001124: IN Detect
-    Vref caps: HIZ 80
-  Pin Default 0x95a7011e: [Fixed] Mic at Int Top
-    Conn = Analog, Color = Unknown
-    DefAssociation = 0x1, Sequence = 0xe
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x24: IN VREF_80
-  Unsolicited: tag=00, enabled=0
-Node 0x15 [Pin Complex] wcaps 0x400001: Stereo
-  Pincap 0x00000020: IN
-  Pin Default 0x400001f0: [N/A] Line Out at Ext N/A
-    Conn = Unknown, Color = Unknown
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x00:
-Node 0x16 [Beep Generator Widget] wcaps 0x70000c: Mono Amp-Out
-  Control: name="Beep Playback Volume", index=0, device=0
-    ControlAmp: chs=1, dir=Out, idx=0, ofs=0
-  Control: name="Beep Playback Switch", index=0, device=0
-    ControlAmp: chs=1, dir=Out, idx=0, ofs=0
-  Amp-Out caps: ofs=0x07, nsteps=0x07, stepsize=0x0b, mute=1
-  Amp-Out vals:  [0x06]
-Node 0x17 [Audio Mixer] wcaps 0x20050b: Stereo Amp-In
-  Amp-In caps: ofs=0x14, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-In vals:  [0x94 0x94] [0x94 0x94] [0x94 0x94] [0x94 0x94] [0x94 0x94]
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 5
-     0x19 0x14 0x12 0x11 0x15
-Node 0x18 [Audio Output] wcaps 0x211: Stereo Digital
-  Control: name="IEC958 Playback Con Mask", index=0, device=0
-  Control: name="IEC958 Playback Pro Mask", index=0, device=0
-  Control: name="IEC958 Playback Default", index=0, device=0
-  Control: name="IEC958 Playback Switch", index=0, device=0
-  Control: name="IEC958 Default PCM Playback Switch", index=0, device=0
-  Device: name="Conexant Digital", type="SPDIF", device=1
-  Converter: stream=0, channel=0
-  Digital:
-  Digital category: 0x0
-  PCM:
-    rates [0x40]: 48000
-    bits [0x6]: 16 20
-    formats [0x5]: PCM AC3
-Node 0x19 [Audio Output] wcaps 0xc11: Stereo R/L
-  Device: name="CONEXANT Analog", type="Audio", device=0
-  Converter: stream=0, channel=0
-  PCM:
-    rates [0x540]: 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-Node 0x1a [Audio Input] wcaps 0x100d0b: Stereo Amp-In R/L
-  Control: name="Capture Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Control: name="Capture Switch", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Device: name="CONEXANT Analog", type="Audio", device=0
-  Amp-In caps: ofs=0x00, nsteps=0x17, stepsize=0x05, mute=1
-  Amp-In vals:  [0x80 0x80]
-  Converter: stream=0, channel=0
-  SDI-Select: 0
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 5
-     0x17 0x14 0x12* 0x11 0x15
-Node 0x1b [Vendor Defined Widget] wcaps 0xf00000: Mono
---endcollapse--
-
-
-!!ALSA Device nodes
-!!-----------------
-
-crw-rw---T  1 root audio 116,  6 Apr  6 14:30 /dev/snd/controlC0
-crw-rw---T  1 root audio 116,  5 Apr  6 14:30 /dev/snd/hwC0D0
-crw-rw---T  1 root audio 116,  4 Apr  6 14:30 /dev/snd/pcmC0D0c
-crw-rw---T  1 root audio 116,  3 Apr  6 14:30 /dev/snd/pcmC0D0p
-crw-rw---T  1 root audio 116,  2 Apr  6 14:30 /dev/snd/pcmC0D1p
-crw-rw---T+ 1 root audio 116,  1 Apr  5 10:25 /dev/snd/seq
-crw-rw---T+ 1 root audio 116, 33 Apr  5 10:25 /dev/snd/timer
-
-/dev/snd/by-path:
-total 0
-drwxr-xr-x 2 root root  60 Apr  6 14:30 .
-drwxr-xr-x 3 root root 200 Apr  6 14:30 ..
-lrwxrwxrwx 1 root root  12 Apr  6 14:30 pci-0000:00:1b.0 -> ../controlC0
-
-
-!!Aplay/Arecord output
-!!------------
-
-APLAY
-
-**** List of PLAYBACK Hardware Devices ****
-card 0: Intel [HDA Intel], device 0: CONEXANT Analog [CONEXANT Analog]
-  Subdevices: 0/1
-  Subdevice #0: subdevice #0
-card 0: Intel [HDA Intel], device 1: Conexant Digital [Conexant Digital]
-  Subdevices: 1/1
-  Subdevice #0: subdevice #0
-
-ARECORD
-
-**** List of CAPTURE Hardware Devices ****
-card 0: Intel [HDA Intel], device 0: CONEXANT Analog [CONEXANT Analog]
-  Subdevices: 0/1
-  Subdevice #0: subdevice #0
-
-!!Amixer output
-!!-------------
-
-!!-------Mixer controls for card 0 [Intel]
-
-Card hw:0 'Intel'/'HDA Intel at 0xde300000 irq 46'
-  Mixer name	: 'Conexant CX20549 (Venice)'
-  Components	: 'HDA:14f15045,152d0753,00100100'
-  Controls      : 15
-  Simple ctrls  : 9
-Simple mixer control 'Master',0
-  Capabilities: pvolume pswitch penum
-  Playback channels: Front Left - Front Right
-  Limits: Playback 0 - 43
-  Mono:
-  Front Left: Playback 15 [35%] [-42.00dB] [on]
-  Front Right: Playback 15 [35%] [-42.00dB] [on]
-Simple mixer control 'PCM',0
-  Capabilities: pvolume penum
-  Playback channels: Front Left - Front Right
-  Limits: Playback 0 - 255
-  Mono:
-  Front Left: Playback 255 [100%] [0.00dB]
-  Front Right: Playback 255 [100%] [0.00dB]
-Simple mixer control 'Line',0
-  Capabilities: cswitch cswitch-joined cswitch-exclusive penum
-  Capture exclusive group: 0
-  Capture channels: Mono
-  Mono: Capture [off]
-Simple mixer control 'Mic',0
-  Capabilities: cswitch cswitch-joined cswitch-exclusive penum
-  Capture exclusive group: 0
-  Capture channels: Mono
-  Mono: Capture [on]
-Simple mixer control 'IEC958',0
-  Capabilities: pswitch pswitch-joined penum
-  Playback channels: Mono
-  Mono: Playback [on]
-Simple mixer control 'IEC958 Default PCM',0
-  Capabilities: pswitch pswitch-joined penum
-  Playback channels: Mono
-  Mono: Playback [on]
-Simple mixer control 'Beep',0
-  Capabilities: pvolume pvolume-joined pswitch pswitch-joined penum
-  Playback channels: Mono
-  Limits: Playback 0 - 7
-  Mono: Playback 6 [86%] [-3.00dB] [on]
-Simple mixer control 'Capture',0
-  Capabilities: cvolume cswitch penum
-  Capture channels: Front Left - Front Right
-  Limits: Capture 0 - 23
-  Front Left: Capture 23 [100%] [34.50dB] [off]
-  Front Right: Capture 23 [100%] [34.50dB] [off]
-Simple mixer control 'Internal Mic',0
-  Capabilities: cswitch cswitch-joined cswitch-exclusive penum
-  Capture exclusive group: 0
-  Capture channels: Mono
-  Mono: Capture [off]
-
-
-!!Alsactl output
-!!-------------
-
---startcollapse--
-state.Intel {
-	control.1 {
-		iface MIXER
-		name 'Master Playback Volume'
-		value.0 15
-		value.1 15
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 43'
-			dbmin -6450
-			dbmax 0
-			dbvalue.0 -4200
-			dbvalue.1 -4200
-		}
-	}
-	control.2 {
-		iface MIXER
-		name 'Master Playback Switch'
-		value.0 true
-		value.1 true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 2
-		}
-	}
-	control.3 {
-		iface MIXER
-		name 'Capture Volume'
-		value.0 23
-		value.1 23
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 23'
-			dbmin 0
-			dbmax 3450
-			dbvalue.0 3450
-			dbvalue.1 3450
-		}
-	}
-	control.4 {
-		iface MIXER
-		name 'Capture Switch'
-		value.0 false
-		value.1 false
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 2
-		}
-	}
-	control.5 {
-		iface MIXER
-		name 'Capture Source'
-		value Mic
-		comment {
-			access 'read write'
-			type ENUMERATED
-			count 1
-			item.0 Mic
-			item.1 'Internal Mic'
-			item.2 Line
-		}
-	}
-	control.6 {
-		iface MIXER
-		name 'IEC958 Playback Con Mask'
-		value '0fff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-		comment {
-			access read
-			type IEC958
-			count 1
-		}
-	}
-	control.7 {
-		iface MIXER
-		name 'IEC958 Playback Pro Mask'
-		value '0f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-		comment {
-			access read
-			type IEC958
-			count 1
-		}
-	}
-	control.8 {
-		iface MIXER
-		name 'IEC958 Playback Default'
-		value '0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-		comment {
-			access 'read write'
-			type IEC958
-			count 1
-		}
-	}
-	control.9 {
-		iface MIXER
-		name 'IEC958 Playback Switch'
-		value true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.10 {
-		iface MIXER
-		name 'IEC958 Default PCM Playback Switch'
-		value true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.11 {
-		iface MIXER
-		name 'Beep Playback Volume'
-		value 6
-		comment {
-			access 'read write'
-			type INTEGER
-			count 1
-			range '0 - 7'
-			dbmin -2100
-			dbmax 0
-			dbvalue.0 -300
-		}
-	}
-	control.12 {
-		iface MIXER
-		name 'Beep Playback Switch'
-		value true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.13 {
-		iface CARD
-		name 'Mic Jack'
-		value false
-		comment {
-			access read
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.14 {
-		iface CARD
-		name 'Line Jack'
-		value false
-		comment {
-			access read
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.15 {
-		iface MIXER
-		name 'PCM Playback Volume'
-		value.0 255
-		value.1 255
-		comment {
-			access 'read write user'
-			type INTEGER
-			count 2
-			range '0 - 255'
-			tlv '0000000100000008ffffec1400000014'
-			dbmin -5100
-			dbmax 0
-			dbvalue.0 0
-			dbvalue.1 0
-		}
-	}
-}
---endcollapse--
-
-
-!!All Loaded Modules
-!!------------------
-
-Module
-(limited to sound modules)
-snd_hda_intel
-snd_hda_codec_conexant
-snd_hda_codec
-snd_hwdep
-snd_hrtimer
-snd_pcm_oss
-snd_mixer_oss
-snd_pcm
-snd_page_alloc
-snd_seq_midi
-snd_seq_midi_event
-snd_rawmidi
-snd_seq
-snd_seq_device
-snd_timer
-snd
-soundcore
-
-
-!!Sysfs Files
-!!-----------
-
-/sys/class/sound/hwC0D0/init_pin_configs:
-0x10 0x951701f0
-0x11 0x02813011
-0x12 0x02a19010
-0x13 0x22454130
-0x14 0x95a7011e
-0x15 0x400001f0
-
-/sys/class/sound/hwC0D0/driver_pin_configs:
-
-/sys/class/sound/hwC0D0/user_pin_configs:
-
-/sys/class/sound/hwC0D0/init_verbs:
-
-
-!!ALSA/HDA dmesg
-!!------------------
-
-(irrelevant context removed)
-[    8.617779] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[    8.727179] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input8
---
-[13552.526261] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
---
-[16815.941187] hda-intel: IRQ timing workaround is activated for card #0. Suggest a bigger bdl_pos_adj.
-[21013.152341] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[21013.191274] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input12
-[21855.192698] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[21855.226590] hda_codec: CX20549 (Venice): BIOS auto-probing.
-[21855.227567] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input13
-[21855.228977] input: HDA Intel Line as /devices/pci0000:00/0000:00:1b.0/sound/card0/input14
-[21855.231842] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input15
-
-
-
---=-E6Xar5x1Rr9EoJJZuZe7
-Content-Description: 
-Content-Disposition: attachment; filename="alsa-info-patched.txt"
-Content-Type: text/plain; name="alsa-info-patched.txt"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-upload=true&script=true&cardinfo=
-!!################################
-!!ALSA Information Script v 0.4.60
-!!################################
-
-!!Script ran on: Fri Apr  6 12:25:42 UTC 2012
-
-
-!!Linux Distribution
-!!------------------
-
-Debian GNU/Linux wheezy/sid \n \l
-
-
-!!DMI Information
-!!---------------
-
-Manufacturer:      GIGABYTE
-Product Name:      W551
-Product Version:   Not Applicable
-
-
-!!Kernel Information
-!!------------------
-
-Kernel release:    3.3.0-trunk-amd64
-Operating System:  GNU/Linux
-Architecture:      x86_64
-Processor:         unknown
-SMP Enabled:       Yes
-
-
-!!ALSA Version
-!!------------
-
-Driver version:     1.0.24
-Library version:    1.0.25
-Utilities version:  1.0.25
-
-
-!!Loaded ALSA modules
-!!-------------------
-
-snd_hda_intel
-
-
-!!Sound Servers on this system
-!!----------------------------
-
-Pulseaudio:
-      Installed - Yes (/usr/bin/pulseaudio)
-      Running - Yes
-
-ESound Daemon:
-      Installed - Yes (/usr/bin/esd)
-      Running - No
-
-
-!!Soundcards recognised by ALSA
-!!-----------------------------
-
- 0 [Intel          ]: HDA-Intel - HDA Intel
-                      HDA Intel at 0xde300000 irq 46
-
-
-!!PCI Soundcards installed in the system
-!!--------------------------------------
-
-00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 02)
-05:01.2 Mass storage controller: Texas Instruments 5-in-1 Multimedia Card Reader (SD/MMC/MS/MS PRO/xD)
-
-
-!!Advanced information - PCI Vendor/Device/Subsystem ID's
-!!--------------------------------------------------------
-
-00:1b.0 0403: 8086:27d8 (rev 02)
-	Subsystem: 152d:0753
-
-
-!!Loaded sound module options
-!!--------------------------
-
-!!Module: snd_hda_intel
-	align_buffer_size : Y
-	bdl_pos_adj : 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	beep_mode : 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	enable : Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y
-	enable_msi : -1
-	id : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
-	index : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	model : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
-	patch : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
-	position_fix : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	power_save : 0
-	power_save_controller : Y
-	probe_mask : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	probe_only : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	single_cmd : N
-	snoop : Y
-
-
-!!HDA-Intel Codec information
-!!---------------------------
---startcollapse--
-
-Codec: Conexant CX20549 (Venice)
-Address: 0
-AFG Function Id: 0x1 (unsol 0)
-MFG Function Id: 0x2 (unsol 1)
-Vendor Id: 0x14f15045
-Subsystem Id: 0x152d0753
-Revision Id: 0x100100
-Modem Function Group: 0x2
-Default PCM:
-    rates [0x140]: 48000 96000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-GPIO: io=0, o=0, i=0, unsolicited=0, wake=0
-Node 0x10 [Pin Complex] wcaps 0x40058d: Stereo Amp-Out
-  Amp-Out caps: ofs=0x2b, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-Out vals:  [0x26 0x26]
-  Pincap 0x00010014: OUT EAPD Detect
-  EAPD 0x2: EAPD
-  Pin Default 0x951701f0: [Fixed] Speaker at Int Top
-    Conn = Analog, Color = Unknown
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 2
-     0x19 0x17*
-Node 0x11 [Pin Complex] wcaps 0x40058d: Stereo Amp-Out
-  Amp-Out caps: ofs=0x2b, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-Out vals:  [0x26 0x26]
-  Pincap 0x0000113c: IN OUT HP Detect
-    Vref caps: HIZ 80
-  Pin Default 0x02813011: [Jack] Line In at Ext Front
-    Conn = 1/8, Color = Blue
-    DefAssociation = 0x1, Sequence = 0x1
-  Pin-ctls: 0x20: IN VREF_HIZ
-  Unsolicited: tag=00, enabled=0
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 2
-     0x19 0x17*
-Node 0x12 [Pin Complex] wcaps 0x40058d: Stereo Amp-Out
-  Amp-Out caps: ofs=0x2b, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-Out vals:  [0xab 0xab]
-  Pincap 0x0000113c: IN OUT HP Detect
-    Vref caps: HIZ 80
-  Pin Default 0x02a19010: [Jack] Mic at Ext Front
-    Conn = 1/8, Color = Pink
-    DefAssociation = 0x1, Sequence = 0x0
-  Pin-ctls: 0x24: IN VREF_80
-  Unsolicited: tag=00, enabled=0
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 2
-     0x19* 0x17
-Node 0x13 [Pin Complex] wcaps 0x400301: Stereo Digital
-  Pincap 0x00000010: OUT
-  Pin Default 0x22454130: [Jack] SPDIF Out at Sep Front
-    Conn = Optical, Color = Green
-    DefAssociation = 0x3, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Connection: 1
-     0x18
-Node 0x14 [Pin Complex] wcaps 0x400081: Stereo
-  Pincap 0x00001124: IN Detect
-    Vref caps: HIZ 80
-  Pin Default 0x95a7011e: [Fixed] Mic at Int Top
-    Conn = Analog, Color = Unknown
-    DefAssociation = 0x1, Sequence = 0xe
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x24: IN VREF_80
-  Unsolicited: tag=00, enabled=0
-Node 0x15 [Pin Complex] wcaps 0x400001: Stereo
-  Pincap 0x00000020: IN
-  Pin Default 0x400001f0: [N/A] Line Out at Ext N/A
-    Conn = Unknown, Color = Unknown
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x00:
-Node 0x16 [Beep Generator Widget] wcaps 0x70000c: Mono Amp-Out
-  Control: name="Beep Playback Volume", index=0, device=0
-    ControlAmp: chs=1, dir=Out, idx=0, ofs=0
-  Control: name="Beep Playback Switch", index=0, device=0
-    ControlAmp: chs=1, dir=Out, idx=0, ofs=0
-  Amp-Out caps: ofs=0x07, nsteps=0x07, stepsize=0x0b, mute=1
-  Amp-Out vals:  [0x06]
-Node 0x17 [Audio Mixer] wcaps 0x20050b: Stereo Amp-In
-  Control: name="PCM Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Control: name="PCM Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Control: name="Internal Mic Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=1, ofs=0
-  Control: name="Internal Mic Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=1, ofs=0
-  Control: name="Mic Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=2, ofs=0
-  Control: name="Mic Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=2, ofs=0
-  Control: name="Line Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=3, ofs=0
-  Control: name="Line Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=3, ofs=0
-  Amp-In caps: ofs=0x14, nsteps=0x2b, stepsize=0x05, mute=1
-  Amp-In vals:  [0x14 0x14] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80]
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 5
-     0x19 0x14 0x12 0x11 0x15
-Node 0x18 [Audio Output] wcaps 0x211: Stereo Digital
-  Control: name="IEC958 Playback Con Mask", index=0, device=0
-  Control: name="IEC958 Playback Pro Mask", index=0, device=0
-  Control: name="IEC958 Playback Default", index=0, device=0
-  Control: name="IEC958 Playback Switch", index=0, device=0
-  Control: name="IEC958 Default PCM Playback Switch", index=0, device=0
-  Device: name="Conexant Digital", type="SPDIF", device=1
-  Converter: stream=8, channel=0
-  Digital: Enabled
-  Digital category: 0x0
-  PCM:
-    rates [0x40]: 48000
-    bits [0x6]: 16 20
-    formats [0x5]: PCM AC3
-Node 0x19 [Audio Output] wcaps 0xc11: Stereo R/L
-  Device: name="CONEXANT Analog", type="Audio", device=0
-  Converter: stream=8, channel=0
-  PCM:
-    rates [0x540]: 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-Node 0x1a [Audio Input] wcaps 0x100d0b: Stereo Amp-In R/L
-  Control: name="Capture Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Control: name="Capture Switch", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Device: name="CONEXANT Analog", type="Audio", device=0
-  Amp-In caps: ofs=0x00, nsteps=0x17, stepsize=0x05, mute=1
-  Amp-In vals:  [0x97 0x97]
-  Converter: stream=4, channel=0
-  SDI-Select: 0
-  Power states:  D0 D1 D2 D3
-  Power: setting=D0, actual=D0
-  Connection: 5
-     0x17* 0x14 0x12 0x11 0x15
-Node 0x1b [Vendor Defined Widget] wcaps 0xf00000: Mono
---endcollapse--
-
-
-!!ALSA Device nodes
-!!-----------------
-
-crw-rw---T+ 1 root audio 116,  6 Apr  6 14:16 /dev/snd/controlC0
-crw-rw---T+ 1 root audio 116,  5 Apr  6 14:16 /dev/snd/hwC0D0
-crw-rw---T+ 1 root audio 116,  4 Apr  6 14:17 /dev/snd/pcmC0D0c
-crw-rw---T+ 1 root audio 116,  3 Apr  6 14:17 /dev/snd/pcmC0D0p
-crw-rw---T+ 1 root audio 116,  2 Apr  6 14:17 /dev/snd/pcmC0D1p
-crw-rw---T+ 1 root audio 116,  1 Apr  5 10:25 /dev/snd/seq
-crw-rw---T+ 1 root audio 116, 33 Apr  5 10:25 /dev/snd/timer
-
-/dev/snd/by-path:
-total 0
-drwxr-xr-x 2 root root  60 Apr  6 14:16 .
-drwxr-xr-x 3 root root 200 Apr  6 14:16 ..
-lrwxrwxrwx 1 root root  12 Apr  6 14:16 pci-0000:00:1b.0 -> ../controlC0
-
-
-!!Aplay/Arecord output
-!!------------
-
-APLAY
-
-**** List of PLAYBACK Hardware Devices ****
-card 0: Intel [HDA Intel], device 0: CONEXANT Analog [CONEXANT Analog]
-  Subdevices: 1/1
-  Subdevice #0: subdevice #0
-card 0: Intel [HDA Intel], device 1: Conexant Digital [Conexant Digital]
-  Subdevices: 1/1
-  Subdevice #0: subdevice #0
-
-ARECORD
-
-**** List of CAPTURE Hardware Devices ****
-card 0: Intel [HDA Intel], device 0: CONEXANT Analog [CONEXANT Analog]
-  Subdevices: 1/1
-  Subdevice #0: subdevice #0
-
-!!Amixer output
-!!-------------
-
-!!-------Mixer controls for card 0 [Intel]
-
-Card hw:0 'Intel'/'HDA Intel at 0xde300000 irq 46'
-  Mixer name	: 'Conexant CX20549 (Venice)'
-  Components	: 'HDA:14f15045,152d0753,00100100'
-  Controls      : 20
-  Simple ctrls  : 10
-Simple mixer control 'Master',0
-  Capabilities: pvolume pswitch pswitch-joined penum
-  Playback channels: Front Left - Front Right
-  Limits: Playback 0 - 43
-  Mono:
-  Front Left: Playback 38 [88%] [-7.50dB] [on]
-  Front Right: Playback 38 [88%] [-7.50dB] [on]
-Simple mixer control 'PCM',0
-  Capabilities: pvolume pswitch penum
-  Playback channels: Front Left - Front Right
-  Limits: Playback 0 - 43
-  Mono:
-  Front Left: Playback 20 [47%] [0.00dB] [on]
-  Front Right: Playback 20 [47%] [0.00dB] [on]
-Simple mixer control 'Line',0
-  Capabilities: pvolume pswitch cswitch cswitch-joined cswitch-exclusive penum
-  Capture exclusive group: 0
-  Playback channels: Front Left - Front Right
-  Capture channels: Mono
-  Limits: Playback 0 - 43
-  Mono: Capture [off]
-  Front Left: Playback 0 [0%] [-30.00dB] [off]
-  Front Right: Playback 0 [0%] [-30.00dB] [off]
-Simple mixer control 'Mic',0
-  Capabilities: pvolume pswitch cswitch cswitch-joined cswitch-exclusive penum
-  Capture exclusive group: 0
-  Playback channels: Front Left - Front Right
-  Capture channels: Mono
-  Limits: Playback 0 - 43
-  Mono: Capture [off]
-  Front Left: Playback 0 [0%] [-30.00dB] [off]
-  Front Right: Playback 0 [0%] [-30.00dB] [off]
-Simple mixer control 'IEC958',0
-  Capabilities: pswitch pswitch-joined penum
-  Playback channels: Mono
-  Mono: Playback [on]
-Simple mixer control 'IEC958 Default PCM',0
-  Capabilities: pswitch pswitch-joined penum
-  Playback channels: Mono
-  Mono: Playback [on]
-Simple mixer control 'Beep',0
-  Capabilities: pvolume pvolume-joined pswitch pswitch-joined penum
-  Playback channels: Mono
-  Limits: Playback 0 - 7
-  Mono: Playback 6 [86%] [-3.00dB] [on]
-Simple mixer control 'Capture',0
-  Capabilities: cvolume cswitch penum
-  Capture channels: Front Left - Front Right
-  Limits: Capture 0 - 23
-  Front Left: Capture 23 [100%] [34.50dB] [off]
-  Front Right: Capture 23 [100%] [34.50dB] [off]
-Simple mixer control 'Mixer',0
-  Capabilities: cswitch cswitch-joined cswitch-exclusive penum
-  Capture exclusive group: 0
-  Capture channels: Mono
-  Mono: Capture [on]
-Simple mixer control 'Internal Mic',0
-  Capabilities: pvolume pswitch cswitch cswitch-joined cswitch-exclusive penum
-  Capture exclusive group: 0
-  Playback channels: Front Left - Front Right
-  Capture channels: Mono
-  Limits: Playback 0 - 43
-  Mono: Capture [off]
-  Front Left: Playback 0 [0%] [-30.00dB] [off]
-  Front Right: Playback 0 [0%] [-30.00dB] [off]
-
-
-!!Alsactl output
-!!-------------
-
---startcollapse--
-state.Intel {
-	control.1 {
-		iface MIXER
-		name 'Capture Volume'
-		value.0 23
-		value.1 23
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 23'
-			dbmin 0
-			dbmax 3450
-			dbvalue.0 3450
-			dbvalue.1 3450
-		}
-	}
-	control.2 {
-		iface MIXER
-		name 'Capture Switch'
-		value.0 false
-		value.1 false
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 2
-		}
-	}
-	control.3 {
-		iface MIXER
-		name 'PCM Playback Volume'
-		value.0 20
-		value.1 20
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 43'
-			dbmin -3000
-			dbmax 3450
-			dbvalue.0 0
-			dbvalue.1 0
-		}
-	}
-	control.4 {
-		iface MIXER
-		name 'PCM Playback Switch'
-		value.0 true
-		value.1 true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 2
-		}
-	}
-	control.5 {
-		iface MIXER
-		name 'Internal Mic Playback Volume'
-		value.0 0
-		value.1 0
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 43'
-			dbmin -3000
-			dbmax 3450
-			dbvalue.0 -3000
-			dbvalue.1 -3000
-		}
-	}
-	control.6 {
-		iface MIXER
-		name 'Internal Mic Playback Switch'
-		value.0 false
-		value.1 false
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 2
-		}
-	}
-	control.7 {
-		iface MIXER
-		name 'Mic Playback Volume'
-		value.0 0
-		value.1 0
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 43'
-			dbmin -3000
-			dbmax 3450
-			dbvalue.0 -3000
-			dbvalue.1 -3000
-		}
-	}
-	control.8 {
-		iface MIXER
-		name 'Mic Playback Switch'
-		value.0 false
-		value.1 false
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 2
-		}
-	}
-	control.9 {
-		iface MIXER
-		name 'Master Playback Volume'
-		value.0 38
-		value.1 38
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 43'
-			dbmin -6450
-			dbmax 0
-			dbvalue.0 -750
-			dbvalue.1 -750
-		}
-	}
-	control.10 {
-		iface MIXER
-		name 'Master Playback Switch'
-		value true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.11 {
-		iface MIXER
-		name 'Line Playback Volume'
-		value.0 0
-		value.1 0
-		comment {
-			access 'read write'
-			type INTEGER
-			count 2
-			range '0 - 43'
-			dbmin -3000
-			dbmax 3450
-			dbvalue.0 -3000
-			dbvalue.1 -3000
-		}
-	}
-	control.12 {
-		iface MIXER
-		name 'Line Playback Switch'
-		value.0 false
-		value.1 false
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 2
-		}
-	}
-	control.13 {
-		iface MIXER
-		name 'IEC958 Playback Con Mask'
-		value '0fff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-		comment {
-			access read
-			type IEC958
-			count 1
-		}
-	}
-	control.14 {
-		iface MIXER
-		name 'IEC958 Playback Pro Mask'
-		value '0f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-		comment {
-			access read
-			type IEC958
-			count 1
-		}
-	}
-	control.15 {
-		iface MIXER
-		name 'IEC958 Playback Default'
-		value '0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-		comment {
-			access 'read write'
-			type IEC958
-			count 1
-		}
-	}
-	control.16 {
-		iface MIXER
-		name 'IEC958 Playback Switch'
-		value true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.17 {
-		iface MIXER
-		name 'IEC958 Default PCM Playback Switch'
-		value true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 1
-		}
-	}
-	control.18 {
-		iface MIXER
-		name 'Capture Source'
-		value Mixer
-		comment {
-			access 'read write'
-			type ENUMERATED
-			count 1
-			item.0 'Internal Mic'
-			item.1 Mic
-			item.2 Line
-			item.3 Mixer
-		}
-	}
-	control.19 {
-		iface MIXER
-		name 'Beep Playback Volume'
-		value 6
-		comment {
-			access 'read write'
-			type INTEGER
-			count 1
-			range '0 - 7'
-			dbmin -2100
-			dbmax 0
-			dbvalue.0 -300
-		}
-	}
-	control.20 {
-		iface MIXER
-		name 'Beep Playback Switch'
-		value true
-		comment {
-			access 'read write'
-			type BOOLEAN
-			count 1
-		}
-	}
-}
---endcollapse--
-
-
-!!All Loaded Modules
-!!------------------
-
-Module
-(limited to sound modules)
-snd_hda_codec_conexant
-snd_hda_intel
-snd_hda_codec
-snd_hwdep
-snd_hrtimer
-snd_pcm_oss
-snd_mixer_oss
-snd_pcm
-snd_page_alloc
-snd_seq_midi
-snd_seq_midi_event
-snd_rawmidi
-snd_seq
-snd_seq_device
-snd_timer
-snd
-soundcore
-
-
-!!Sysfs Files
-!!-----------
-
-/sys/class/sound/hwC0D0/init_pin_configs:
-0x10 0x951701f0
-0x11 0x02813011
-0x12 0x02a19010
-0x13 0x22454130
-0x14 0x95a7011e
-0x15 0x400001f0
-
-/sys/class/sound/hwC0D0/driver_pin_configs:
-
-/sys/class/sound/hwC0D0/user_pin_configs:
-
-/sys/class/sound/hwC0D0/init_verbs:
-
-
-!!ALSA/HDA dmesg
-!!------------------
-
-(irrelevant context removed)
-[    8.617779] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[    8.727179] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input8
---
-[13552.526261] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
---
-[16815.941187] hda-intel: IRQ timing workaround is activated for card #0. Suggest a bigger bdl_pos_adj.
-[21013.152341] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[21013.191274] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input12
-
-
-
---=-E6Xar5x1Rr9EoJJZuZe7--
-
+On Fri, Apr 06, 2012 at 12:47:53AM +0200, Frederic Weisbecker wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> Copy over the files from trace-cmd to the Linux tools directory
+> such that applications like perf and latencytrace can use the
+> more advanced parsing code.
+> 
+> Because some of the file names of perf conflict with trace-cmd file
+> names, the trace-cmd files have been renamed as follows:
+> 
+>  parse-events.c ==> event-parse.c
+>  parse-events.h ==> event-parse.h
+>  utils.h        ==> event-utils.h
+> 
+> The files have been updated to handle the changes to the header files
+> but other than that, they are identical to what was in the trace-cmd
+> repository. The history of these files, including authorship is
+> available at the git repo:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+> 
+> The Makefile was also copied over, but most of it was removed to
+> focus on the parse-events code first. The parts of the Makefile for
+> the plugins have also been removed, but will be added back when the
+> plugin code is copied over as well. But that may be in its own
+> separate directory.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arun Sharma <asharma@fb.com>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+
+<snip>
+
+Btw, running this through checkpatch generates a load of warnings/errors
+and some of them actually could be worth fixing...
+
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> new file mode 100644
+> index 0000000..47a3227
+> --- /dev/null
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -0,0 +1,4971 @@
+> +/*
+> + * Copyright (C) 2009, 2010 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU Lesser General Public
+> + * License as published by the Free Software Foundation;
+> + * version 2.1 of the License (not later!)
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU Lesser General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU Lesser General Public
+> + * License along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *
+> + *  The parts for function graph printing was taken and modified from the
+> + *  Linux Kernel that were written by
+> + *    - Copyright (C) 2009  Frederic Weisbecker,
+> + *  Frederic Weisbecker gave his permission to relicense the code to
+> + *  the Lesser General Public License.
+> + */
+> +#define _GNU_SOURCE
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include <string.h>
+> +#include <stdarg.h>
+> +#include <ctype.h>
+> +#include <errno.h>
+> +
+> +#include "event-parse.h"
+> +
+> +static const char *input_buf;
+> +static unsigned long long input_buf_ptr;
+> +static unsigned long long input_buf_siz;
+> +
+> +static int show_warning = 1;
+> +
+> +#define do_warning(fmt, ...)				\
+> +	do {						\
+> +		if (show_warning)			\
+> +			warning(fmt, ##__VA_ARGS__);	\
+> +	} while (0)
+> +
+
+Yeah, the name "do_warning" is awkward. Can we call it emit_warning or
+_warning or whatever?
+
+> +static void init_input_buf(const char *buf, unsigned long long size)
+> +{
+> +	input_buf = buf;
+> +	input_buf_siz = size;
+> +	input_buf_ptr = 0;
+> +}
+> +
+> +const char *pevent_get_input_buf(void)
+> +{
+> +	return input_buf;
+> +}
+> +
+> +unsigned long long pevent_get_input_buf_ptr(void)
+> +{
+> +	return input_buf_ptr;
+> +}
+> +
+> +struct event_handler {
+> +	struct event_handler		*next;
+> +	int				id;
+> +	const char			*sys_name;
+> +	const char			*event_name;
+> +	pevent_event_handler_func	func;
+> +	void				*context;
+> +};
+> +
+> +struct pevent_func_params {
+> +	struct pevent_func_params	*next;
+> +	enum pevent_func_arg_type	type;
+> +};
+> +
+> +struct pevent_function_handler {
+> +	struct pevent_function_handler	*next;
+> +	enum pevent_func_arg_type	ret_type;
+> +	char				*name;
+> +	pevent_func_handler		func;
+> +	struct pevent_func_params	*params;
+> +	int				nr_args;
+> +};
+> +
+> +static unsigned long long
+> +process_defined_func(struct trace_seq *s, void *data, int size,
+> +		     struct event_format *event, struct print_arg *arg);
+> +
+> +static void free_func_handle(struct pevent_function_handler *func);
+> +
+> +/**
+
+I see you're using kernel-doc style comments. Is this aimed at providing
+documentation for this library? If so, good idea!
+
+> + * pevent_buffer_init - init buffer for parsing
+> + * @buf: buffer to parse
+> + * @size: the size of the buffer
+> + *
+> + * For use with pevent_read_token(), this initializes the internal
+> + * buffer that pevent_read_token() will parse.
+> + */
+> +void pevent_buffer_init(const char *buf, unsigned long long size)
+> +{
+> +	init_input_buf(buf, size);
+> +}
+
+Can't we unify pevent_buffer_init and init_input_buf()? I mean, it is
+useless to have that kind of indirection.
+
+In general, is "pevent" the prefix for this library's functions which
+are getting exported to users?
+
+> +
+> +void breakpoint(void)
+> +{
+> +	static int x;
+> +	x++;
+> +}
+
+This looks like a debugging leftover since it is not used anywhere...?
+
+> +
+> +struct print_arg *alloc_arg(void)
+> +{
+> +	struct print_arg *arg;
+> +
+> +	arg = malloc_or_die(sizeof(*arg));
+> +	if (!arg)
+> +		return NULL;
+> +	memset(arg, 0, sizeof(*arg));
+> +
+> +	return arg;
+> +}
+> +
+> +struct cmdline {
+> +	char *comm;
+> +	int pid;
+> +};
+> +
+> +static int cmdline_cmp(const void *a, const void *b)
+> +{
+> +	const struct cmdline *ca = a;
+> +	const struct cmdline *cb = b;
+> +
+> +	if (ca->pid < cb->pid)
+> +		return -1;
+> +	if (ca->pid > cb->pid)
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +struct cmdline_list {
+> +	struct cmdline_list	*next;
+> +	char			*comm;
+> +	int			pid;
+> +};
+> +
+> +static int cmdline_init(struct pevent *pevent)
+> +{
+> +	struct cmdline_list *cmdlist = pevent->cmdlist;
+> +	struct cmdline_list *item;
+> +	struct cmdline *cmdlines;
+> +	int i;
+> +
+> +	cmdlines = malloc_or_die(sizeof(*cmdlines) * pevent->cmdline_count);
+> +
+> +	i = 0;
+> +	while (cmdlist) {
+> +		cmdlines[i].pid = cmdlist->pid;
+> +		cmdlines[i].comm = cmdlist->comm;
+> +		i++;
+> +		item = cmdlist;
+> +		cmdlist = cmdlist->next;
+> +		free(item);
+> +	}
+> +
+> +	qsort(cmdlines, pevent->cmdline_count, sizeof(*cmdlines), cmdline_cmp);
+> +
+> +	pevent->cmdlines = cmdlines;
+> +	pevent->cmdlist = NULL;
+> +
+> +	return 0;
+> +}
+> +
+> +static char *find_cmdline(struct pevent *pevent, int pid)
+> +{
+> +	const struct cmdline *comm;
+> +	struct cmdline key;
+> +
+> +	if (!pid)
+> +		return "<idle>";
+> +
+> +	if (!pevent->cmdlines)
+> +		cmdline_init(pevent);
+> +
+> +	key.pid = pid;
+> +
+> +	comm = bsearch(&key, pevent->cmdlines, pevent->cmdline_count,
+> +		       sizeof(*pevent->cmdlines), cmdline_cmp);
+> +
+> +	if (comm)
+> +		return comm->comm;
+> +	return "<...>";
+> +}
+> +
+> +/**
+> + * pevent_pid_is_registered - return if a pid has a cmdline registered
+> + * @pevent: handle for the pevent
+> + * @pid: The pid to check if it has a cmdline registered with.
+> + *
+> + * Returns 1 if the pid has a cmdline mapped to it
+> + * 0 otherwise.
+> + */
+> +int pevent_pid_is_registered(struct pevent *pevent, int pid)
+> +{
+> +	const struct cmdline *comm;
+> +	struct cmdline key;
+> +
+> +	if (!pid)
+> +		return 1;
+> +
+> +	if (!pevent->cmdlines)
+> +		cmdline_init(pevent);
+> +
+> +	key.pid = pid;
+> +
+> +	comm = bsearch(&key, pevent->cmdlines, pevent->cmdline_count,
+> +		       sizeof(*pevent->cmdlines), cmdline_cmp);
+> +
+> +	if (comm)
+> +		return 1;
+> +	return 0;
+> +}
+
+This one looks almost identical to find_cmdline() above, maybe unify?
+
+> +
+> +/*
+> + * If the command lines have been converted to an array, then
+> + * we must add this pid. This is much slower than when cmdlines
+> + * are added before the array is initialized.
+> + */
+> +static int add_new_comm(struct pevent *pevent, const char *comm, int pid)
+> +{
+> +	struct cmdline *cmdlines = pevent->cmdlines;
+> +	const struct cmdline *cmdline;
+> +	struct cmdline key;
+> +
+> +	if (!pid)
+> +		return 0;
+> +
+> +	/* avoid duplicates */
+> +	key.pid = pid;
+> +
+> +	cmdline = bsearch(&key, pevent->cmdlines, pevent->cmdline_count,
+> +		       sizeof(*pevent->cmdlines), cmdline_cmp);
+> +	if (cmdline) {
+> +		errno = EEXIST;
+> +		return -1;
+> +	}
+> +
+> +	cmdlines = realloc(cmdlines, sizeof(*cmdlines) * (pevent->cmdline_count + 1));
+> +	if (!cmdlines) {
+> +		errno = ENOMEM;
+> +		return -1;
+> +	}
+> +
+> +	cmdlines[pevent->cmdline_count].pid = pid;
+> +	cmdlines[pevent->cmdline_count].comm = strdup(comm);
+> +	if (!cmdlines[pevent->cmdline_count].comm)
+> +		die("malloc comm");
+> +		
+
+extraneous whitespace
+
+> +	if (cmdlines[pevent->cmdline_count].comm)
+> +		pevent->cmdline_count++;
+> +
+> +	qsort(cmdlines, pevent->cmdline_count, sizeof(*cmdlines), cmdline_cmp);
+> +	pevent->cmdlines = cmdlines;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * pevent_register_comm - register a pid / comm mapping
+> + * @pevent: handle for the pevent
+> + * @comm: the command line to register
+> + * @pid: the pid to map the command line to
+> + *
+> + * This adds a mapping to search for command line names with
+> + * a given pid. The comm is duplicated.
+> + */
+> +int pevent_register_comm(struct pevent *pevent, const char *comm, int pid)
+> +{
+> +	struct cmdline_list *item;
+> +
+> +	if (pevent->cmdlines)
+> +		return add_new_comm(pevent, comm, pid);
+> +
+> +	item = malloc_or_die(sizeof(*item));
+> +	item->comm = strdup(comm);
+> +	if (!item->comm)
+> +		die("malloc comm");
+> +	item->pid = pid;
+> +	item->next = pevent->cmdlist;
+> +
+> +	pevent->cmdlist = item;
+> +	pevent->cmdline_count++;
+> +
+> +	return 0;
+> +}
+> +
+> +struct func_map {
+> +	unsigned long long		addr;
+> +	char				*func;
+> +	char				*mod;
+> +};
+> +
+> +struct func_list {
+> +	struct func_list	*next;
+> +	unsigned long long	addr;
+> +	char			*func;
+> +	char			*mod;
+> +};
+> +
+> +static int func_cmp(const void *a, const void *b)
+> +{
+> +	const struct func_map *fa = a;
+> +	const struct func_map *fb = b;
+> +
+> +	if (fa->addr < fb->addr)
+> +		return -1;
+> +	if (fa->addr > fb->addr)
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * We are searching for a record in between, not an exact
+> + * match.
+> + */
+> +static int func_bcmp(const void *a, const void *b)
+> +{
+> +	const struct func_map *fa = a;
+> +	const struct func_map *fb = b;
+> +
+> +	if ((fa->addr == fb->addr) ||
+> +
+
+superfluous newline?
+
+> +	    (fa->addr > fb->addr &&
+> +	     fa->addr < (fb+1)->addr))
+> +		return 0;
+> +
+> +	if (fa->addr < fb->addr)
+> +		return -1;
+> +
+> +	return 1;
+> +}
+> +
+> +static int func_map_init(struct pevent *pevent)
+> +{
+> +	struct func_list *funclist;
+> +	struct func_list *item;
+> +	struct func_map *func_map;
+> +	int i;
+> +
+> +	func_map = malloc_or_die(sizeof(*func_map) * (pevent->func_count + 1));
+> +	funclist = pevent->funclist;
+> +
+> +	i = 0;
+> +	while (funclist) {
+> +		func_map[i].func = funclist->func;
+> +		func_map[i].addr = funclist->addr;
+> +		func_map[i].mod = funclist->mod;
+> +		i++;
+> +		item = funclist;
+> +		funclist = funclist->next;
+> +		free(item);
+> +	}
+> +
+> +	qsort(func_map, pevent->func_count, sizeof(*func_map), func_cmp);
+> +
+> +	/*
+> +	 * Add a special record at the end.
+> +	 */
+> +	func_map[pevent->func_count].func = NULL;
+> +	func_map[pevent->func_count].addr = 0;
+> +	func_map[pevent->func_count].mod = NULL;
+> +
+> +	pevent->func_map = func_map;
+> +	pevent->funclist = NULL;
+> +
+> +	return 0;
+> +}
+> +
+> +static struct func_map *
+> +find_func(struct pevent *pevent, unsigned long long addr)
+> +{
+> +	struct func_map *func;
+> +	struct func_map key;
+> +
+> +	if (!pevent->func_map)
+> +		func_map_init(pevent);
+> +
+> +	key.addr = addr;
+> +
+> +	func = bsearch(&key, pevent->func_map, pevent->func_count,
+> +		       sizeof(*pevent->func_map), func_bcmp);
+> +
+> +	return func;
+
+Simply do:
+
+	return bsearch(&key, ...);
+
+> +}
+> +
+> +/**
+> + * pevent_find_function - find a function by a given address
+> + * @pevent: handle for the pevent
+> + * @addr: the address to find the function with
+> + *
+> + * Returns a pointer to the function stored that has the given
+> + * address. Note, the address does not have to be exact, it
+> + * will select the function that would contain the address.
+> + */
+> +const char *pevent_find_function(struct pevent *pevent, unsigned long long addr)
+> +{
+> +	struct func_map *map;
+> +
+> +	map = find_func(pevent, addr);
+> +	if (!map)
+> +		return NULL;
+> +
+> +	return map->func;
+> +}
+> +
+> +/**
+> + * pevent_find_function_address - find a function address by a given address
+> + * @pevent: handle for the pevent
+> + * @addr: the address to find the function with
+> + *
+> + * Returns the address the function starts at. This can be used in
+> + * conjunction with pevent_find_function to print both the function
+> + * name and the function offset.
+> + */
+> +unsigned long long
+> +pevent_find_function_address(struct pevent *pevent, unsigned long long addr)
+> +{
+> +	struct func_map *map;
+> +
+> +	map = find_func(pevent, addr);
+> +	if (!map)
+> +		return 0;
+> +
+> +	return map->addr;
+> +}
+> +
+> +/**
+> + * pevent_register_function - register a function with a given address
+> + * @pevent: handle for the pevent
+> + * @function: the function name to register
+> + * @addr: the address the function starts at
+> + * @mod: the kernel module the function may be in (NULL for none)
+> + *
+> + * This registers a function name with an address and module.
+> + * The @func passed in is duplicated.
+> + */
+> +int pevent_register_function(struct pevent *pevent, char *func,
+> +			     unsigned long long addr, char *mod)
+> +{
+> +	struct func_list *item;
+> +
+> +	item = malloc_or_die(sizeof(*item));
+> +
+> +	item->next = pevent->funclist;
+> +	item->func = strdup(func);
+> +	if (mod)
+> +		item->mod = strdup(mod);
+> +	else
+> +		item->mod = NULL;
+> +	item->addr = addr;
+> +
+> +	pevent->funclist = item;
+> +
+> +	pevent->func_count++;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * pevent_print_funcs - print out the stored functions
+> + * @pevent: handle for the pevent
+> + *
+> + * This prints out the stored functions.
+> + */
+> +void pevent_print_funcs(struct pevent *pevent)
+> +{
+> +	int i;
+> +
+> +	if (!pevent->func_map)
+> +		func_map_init(pevent);
+> +
+> +	for (i = 0; i < (int)pevent->func_count; i++) {
+
+simply declare i as "unsigned int" and you don't need the cast here.
+
+> +		printf("%016llx %s",
+> +		       pevent->func_map[i].addr,
+> +		       pevent->func_map[i].func);
+> +		if (pevent->func_map[i].mod)
+> +			printf(" [%s]\n", pevent->func_map[i].mod);
+> +		else
+> +			printf("\n");
+> +	}
+> +}
+> +
+> +struct printk_map {
+> +	unsigned long long		addr;
+> +	char				*printk;
+> +};
+> +
+> +struct printk_list {
+> +	struct printk_list	*next;
+> +	unsigned long long	addr;
+> +	char			*printk;
+> +};
+> +
+> +static int printk_cmp(const void *a, const void *b)
+> +{
+> +	const struct func_map *fa = a;
+> +	const struct func_map *fb = b;
+> +
+> +	if (fa->addr < fb->addr)
+> +		return -1;
+> +	if (fa->addr > fb->addr)
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +static void printk_map_init(struct pevent *pevent)
+> +{
+> +	struct printk_list *printklist;
+> +	struct printk_list *item;
+> +	struct printk_map *printk_map;
+> +	int i;
+> +
+> +	printk_map = malloc_or_die(sizeof(*printk_map) * (pevent->printk_count + 1));
+> +
+> +	printklist = pevent->printklist;
+> +
+> +	i = 0;
+> +	while (printklist) {
+> +		printk_map[i].printk = printklist->printk;
+> +		printk_map[i].addr = printklist->addr;
+> +		i++;
+> +		item = printklist;
+> +		printklist = printklist->next;
+> +		free(item);
+> +	}
+> +
+> +	qsort(printk_map, pevent->printk_count, sizeof(*printk_map), printk_cmp);
+> +
+> +	pevent->printk_map = printk_map;
+> +	pevent->printklist = NULL;
+> +}
+> +
+> +static struct printk_map *
+> +find_printk(struct pevent *pevent, unsigned long long addr)
+> +{
+> +	struct printk_map *printk;
+> +	struct printk_map key;
+> +
+> +	if (!pevent->printk_map)
+> +		printk_map_init(pevent);
+
+You could pull those existence tests in the _init function above, i.e:
+
+static void printk_map_init(struct pevent *pevent)
+{
+	if (pevent->printk_map)
+		return;
+
+so that you can keep the init details to the init functions. Ditto for
+the remaining _init(..) calls.
+
+> +
+> +	key.addr = addr;
+> +
+> +	printk = bsearch(&key, pevent->printk_map, pevent->printk_count,
+> +			 sizeof(*pevent->printk_map), printk_cmp);
+> +
+> +	return printk;
+> +}
+> +
+> +/**
+> + * pevent_register_print_string - register a string by its address
+> + * @pevent: handle for the pevent
+> + * @fmt: the string format to register
+> + * @addr: the address the string was located at
+> + *
+> + * This registers a string by the address it was stored in the kernel.
+> + * The @fmt passed in is duplicated.
+> + */
+> +int pevent_register_print_string(struct pevent *pevent, char *fmt,
+> +				 unsigned long long addr)
+> +{
+> +	struct printk_list *item;
+> +
+> +	item = malloc_or_die(sizeof(*item));
+> +
+> +	item->next = pevent->printklist;
+> +	pevent->printklist = item;
+> +	item->printk = strdup(fmt);
+> +	item->addr = addr;
+> +
+> +	pevent->printk_count++;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * pevent_print_printk - print out the stored strings
+> + * @pevent: handle for the pevent
+> + *
+> + * This prints the string formats that were stored.
+> + */
+> +void pevent_print_printk(struct pevent *pevent)
+> +{
+> +	int i;
+> +
+> +	if (!pevent->printk_map)
+> +		printk_map_init(pevent);
+
+ditto.
+
+> +
+> +	for (i = 0; i < (int)pevent->printk_count; i++) {
+
+ditto for making i an unsigned int.
+
+> +		printf("%016llx %s\n",
+> +		       pevent->printk_map[i].addr,
+> +		       pevent->printk_map[i].printk);
+> +	}
+> +}
+> +
+> +static struct event_format *alloc_event(void)
+> +{
+> +	struct event_format *event;
+> +
+> +	event = malloc_or_die(sizeof(*event));
+> +	memset(event, 0, sizeof(*event));
+
+perf (or tools/) probably needs a zalloc_or_die which memset's the ptr
+to 0 - this'll save a bunch of code.
+
+> +
+> +	return event;
+> +}
+> +
+> +static void add_event(struct pevent *pevent, struct event_format *event)
+> +{
+> +	int i;
+> +
+> +	if (!pevent->events)
+> +		pevent->events = malloc_or_die(sizeof(event));
+> +	else
+> +		pevent->events =
+> +			realloc(pevent->events, sizeof(event) *
+> +				(pevent->nr_events + 1));
+> +	if (!pevent->events)
+> +		die("Can not allocate events");
+> +
+> +	for (i = 0; i < pevent->nr_events; i++) {
+> +		if (pevent->events[i]->id > event->id)
+> +			break;
+> +	}
+> +	if (i < pevent->nr_events)
+> +		memmove(&pevent->events[i + 1],
+> +			&pevent->events[i],
+> +			sizeof(event) * (pevent->nr_events - i));
+> +
+> +	pevent->events[i] = event;
+> +	pevent->nr_events++;
+> +
+> +	event->pevent = pevent;
+> +}
+> +
+> +static int event_item_type(enum event_type type)
+> +{
+> +	switch (type) {
+> +	case EVENT_ITEM ... EVENT_SQUOTE:
+> +		return 1;
+> +	case EVENT_ERROR ... EVENT_DELIM:
+> +	default:
+> +		return 0;
+> +	}
+> +}
+> +
+> +static void free_flag_sym(struct print_flag_sym *fsym)
+> +{
+> +	struct print_flag_sym *next;
+> +
+> +	while (fsym) {
+> +		next = fsym->next;
+> +		free(fsym->value);
+> +		free(fsym->str);
+> +		free(fsym);
+> +		fsym = next;
+> +	}
+> +}
+> +
+> +static void free_arg(struct print_arg *arg)
+> +{
+> +	struct print_arg *farg;
+> +
+> +	if (!arg)
+> +		return;
+> +
+> +	switch (arg->type) {
+> +	case PRINT_ATOM:
+> +		free(arg->atom.atom);
+> +		break;
+> +	case PRINT_FIELD:
+> +		free(arg->field.name);
+> +		break;
+> +	case PRINT_FLAGS:
+> +		free_arg(arg->flags.field);
+> +		free(arg->flags.delim);
+> +		free_flag_sym(arg->flags.flags);
+> +		break;
+> +	case PRINT_SYMBOL:
+> +		free_arg(arg->symbol.field);
+> +		free_flag_sym(arg->symbol.symbols);
+> +		break;
+> +	case PRINT_TYPE:
+> +		free(arg->typecast.type);
+> +		free_arg(arg->typecast.item);
+> +		break;
+> +	case PRINT_STRING:
+> +	case PRINT_BSTRING:
+> +		free(arg->string.string);
+> +		break;
+> +	case PRINT_DYNAMIC_ARRAY:
+> +		free(arg->dynarray.index);
+> +		break;
+> +	case PRINT_OP:
+> +		free(arg->op.op);
+> +		free_arg(arg->op.left);
+> +		free_arg(arg->op.right);
+> +		break;
+> +	case PRINT_FUNC:
+> +		while (arg->func.args) {
+> +			farg = arg->func.args;
+> +			arg->func.args = farg->next;
+> +			free_arg(farg);
+> +		}
+> +		break;
+> +
+> +	case PRINT_NULL:
+> +	default:
+> +		break;
+> +	}
+> +
+> +	free(arg);
+> +}
+> +
+> +static enum event_type get_type(int ch)
+> +{
+> +	if (ch == '\n')
+> +		return EVENT_NEWLINE;
+> +	if (isspace(ch))
+> +		return EVENT_SPACE;
+> +	if (isalnum(ch) || ch == '_')
+> +		return EVENT_ITEM;
+> +	if (ch == '\'')
+> +		return EVENT_SQUOTE;
+> +	if (ch == '"')
+> +		return EVENT_DQUOTE;
+> +	if (!isprint(ch))
+> +		return EVENT_NONE;
+> +	if (ch == '(' || ch == ')' || ch == ',')
+> +		return EVENT_DELIM;
+> +
+> +	return EVENT_OP;
+> +}
+> +
+> +static int __read_char(void)
+> +{
+> +	if (input_buf_ptr >= input_buf_siz)
+> +		return -1;
+> +
+> +	return input_buf[input_buf_ptr++];
+> +}
+> +
+> +static int __peek_char(void)
+> +{
+> +	if (input_buf_ptr >= input_buf_siz)
+> +		return -1;
+> +
+> +	return input_buf[input_buf_ptr];
+> +}
+> +
+> +/**
+> + * pevent_peek_char - peek at the next character that will be read
+> + *
+> + * Returns the next character read, or -1 if end of buffer.
+> + */
+> +int pevent_peek_char(void)
+> +{
+> +	return __peek_char();
+> +}
+> +
+> +static enum event_type force_token(const char *str, char **tok);
+> +
+> +static enum event_type __read_token(char **tok)
+> +{
+> +	char buf[BUFSIZ];
+> +	int ch, last_ch, quote_ch, next_ch;
+> +	int i = 0;
+> +	int tok_size = 0;
+> +	enum event_type type;
+> +
+> +	*tok = NULL;
+> +
+> +
+> +	ch = __read_char();
+> +	if (ch < 0)
+> +		return EVENT_NONE;
+> +
+> +	type = get_type(ch);
+> +	if (type == EVENT_NONE)
+> +		return type;
+> +
+> +	buf[i++] = ch;
+> +
+> +	switch (type) {
+> +	case EVENT_NEWLINE:
+> +	case EVENT_DELIM:
+> +		*tok = malloc_or_die(2);
+> +		(*tok)[0] = ch;
+> +		(*tok)[1] = 0;
+> +		return type;
+> +
+> +	case EVENT_OP:
+> +		switch (ch) {
+> +		case '-':
+> +			next_ch = __peek_char();
+> +			if (next_ch == '>') {
+> +				buf[i++] = __read_char();
+> +				break;
+> +			}
+> +			/* fall through */
+> +		case '+':
+> +		case '|':
+> +		case '&':
+> +		case '>':
+> +		case '<':
+> +			last_ch = ch;
+> +			ch = __peek_char();
+> +			if (ch != last_ch)
+> +				goto test_equal;
+> +			buf[i++] = __read_char();
+> +			switch (last_ch) {
+> +			case '>':
+> +			case '<':
+> +				goto test_equal;
+> +			default:
+> +				break;
+> +			}
+> +			break;
+> +		case '!':
+> +		case '=':
+> +			goto test_equal;
+> +		default: /* what should we do instead? */
+> +			break;
+> +		}
+> +		buf[i] = 0;
+> +		*tok = strdup(buf);
+> +		return type;
+> +
+> + test_equal:
+> +		ch = __peek_char();
+> +		if (ch == '=')
+> +			buf[i++] = __read_char();
+> +		goto out;
+> +
+> +	case EVENT_DQUOTE:
+> +	case EVENT_SQUOTE:
+> +		/* don't keep quotes */
+> +		i--;
+> +		quote_ch = ch;
+> +		last_ch = 0;
+> + concat:
+> +		do {
+> +			if (i == (BUFSIZ - 1)) {
+> +				buf[i] = 0;
+> +				if (*tok) {
+> +					*tok = realloc(*tok, tok_size + BUFSIZ);
+> +					if (!*tok)
+> +						return EVENT_NONE;
+> +					strcat(*tok, buf);
+> +				} else
+> +					*tok = strdup(buf);
+> +
+> +				if (!*tok)
+> +					return EVENT_NONE;
+> +				tok_size += BUFSIZ;
+> +				i = 0;
+> +			}
+> +			last_ch = ch;
+> +			ch = __read_char();
+> +			buf[i++] = ch;
+> +			/* the '\' '\' will cancel itself */
+> +			if (ch == '\\' && last_ch == '\\')
+> +				last_ch = 0;
+> +		} while (ch != quote_ch || last_ch == '\\');
+> +		/* remove the last quote */
+> +		i--;
+> +
+> +		/*
+> +		 * For strings (double quotes) check the next token.
+> +		 * If it is another string, concatinate the two.
+> +		 */
+> +		if (type == EVENT_DQUOTE) {
+> +			unsigned long long save_input_buf_ptr = input_buf_ptr;
+> +
+> +			do {
+> +				ch = __read_char();
+> +			} while (isspace(ch));
+> +			if (ch == '"')
+> +				goto concat;
+> +			input_buf_ptr = save_input_buf_ptr;
+> +		}
+> +
+> +		goto out;
+> +
+> +	case EVENT_ERROR ... EVENT_SPACE:
+> +	case EVENT_ITEM:
+> +	default:
+> +		break;
+> +	}
+> +
+> +	while (get_type(__peek_char()) == type) {
+> +		if (i == (BUFSIZ - 1)) {
+> +			buf[i] = 0;
+> +			if (*tok) {
+> +				*tok = realloc(*tok, tok_size + BUFSIZ);
+> +				if (!*tok)
+> +					return EVENT_NONE;
+> +				strcat(*tok, buf);
+> +			} else
+> +				*tok = strdup(buf);
+> +
+> +			if (!*tok)
+> +				return EVENT_NONE;
+> +			tok_size += BUFSIZ;
+> +			i = 0;
+> +		}
+> +		ch = __read_char();
+> +		buf[i++] = ch;
+> +	}
+> +
+> + out:
+> +	buf[i] = 0;
+> +	if (*tok) {
+> +		*tok = realloc(*tok, tok_size + i);
+> +		if (!*tok)
+> +			return EVENT_NONE;
+> +		strcat(*tok, buf);
+> +	} else
+> +		*tok = strdup(buf);
+> +	if (!*tok)
+> +		return EVENT_NONE;
+> +
+> +	if (type == EVENT_ITEM) {
+> +		/*
+> +		 * Older versions of the kernel has a bug that
+> +		 * creates invalid symbols and will break the mac80211
+> +		 * parsing. This is a work around to that bug.
+> +		 *
+> +		 * See Linux kernel commit:
+> +		 *  811cb50baf63461ce0bdb234927046131fc7fa8b
+> +		 */
+> +		if (strcmp(*tok, "LOCAL_PR_FMT") == 0) {
+> +			free(*tok);
+> +			*tok = NULL;
+> +			return force_token("\"\%s\" ", tok);
+> +		} else if (strcmp(*tok, "STA_PR_FMT") == 0) {
+> +			free(*tok);
+> +			*tok = NULL;
+> +			return force_token("\" sta:%pM\" ", tok);
+> +		} else if (strcmp(*tok, "VIF_PR_FMT") == 0) {
+> +			free(*tok);
+> +			*tok = NULL;
+> +			return force_token("\" vif:%p(%d)\" ", tok);
+> +		}
+> +	}
+> +
+> +	return type;
+> +}
+> +
+> +static enum event_type force_token(const char *str, char **tok)
+> +{
+> +	const char *save_input_buf;
+> +	unsigned long long save_input_buf_ptr;
+> +	unsigned long long save_input_buf_siz;
+> +	enum event_type type;
+> +	
+
+Superfluous \t
+
+> +	/* save off the current input pointers */
+> +	save_input_buf = input_buf;
+> +	save_input_buf_ptr = input_buf_ptr;
+> +	save_input_buf_siz = input_buf_siz;
+> +
+> +	init_input_buf(str, strlen(str));
+> +
+> +	type = __read_token(tok);
+> +
+> +	/* reset back to original token */
+> +	input_buf = save_input_buf;
+> +	input_buf_ptr = save_input_buf_ptr;
+> +	input_buf_siz = save_input_buf_siz;
+> +
+> +	return type;
+> +}
+> +
+> +static void free_token(char *tok)
+> +{
+> +	if (tok)
+> +		free(tok);
+> +}
+
+According to MALLOC(3), free() can stomach NULL ptrs: "If ptr is NULL,
+no operation is performed."
+
+> +
+> +static enum event_type read_token(char **tok)
+> +{
+> +	enum event_type type;
+> +
+> +	for (;;) {
+> +		type = __read_token(tok);
+> +		if (type != EVENT_SPACE)
+> +			return type;
+> +
+> +		free_token(*tok);
+> +	}
+> +
+> +	/* not reached */
+> +	*tok = NULL;
+> +	return EVENT_NONE;
+> +}
+> +
+> +/**
+> + * pevent_read_token - access to utilites to use the pevent parser
+> + * @tok: The token to return
+> + *
+> + * This will parse tokens from the string given by
+> + * pevent_init_data().
+> + *
+> + * Returns the token type.
+> + */
+> +enum event_type pevent_read_token(char **tok)
+> +{
+> +	return read_token(tok);
+> +}
+
+Same here: can't we remove all those wrappers and have the library
+routines be called "pevent_" or whatever and all users of the library
+simply call them?
+
+> +
+> +/**
+> + * pevent_free_token - free a token returned by pevent_read_token
+> + * @token: the token to free
+> + */
+> +void pevent_free_token(char *token)
+> +{
+> +	free_token(token);
+> +}
+
+Ditto.
+
+> +
+> +/* no newline */
+
+Please elaborate. Ah, event type cannot be NEWLINE additionally... Well,
+if that enum event_type were bits, you could unify this function with
+the read_token() above.
+
+> +static enum event_type read_token_item(char **tok)
+> +{
+> +	enum event_type type;
+> +
+> +	for (;;) {
+> +		type = __read_token(tok);
+> +		if (type != EVENT_SPACE && type != EVENT_NEWLINE)
+> +			return type;
+> +		free_token(*tok);
+> +		*tok = NULL;
+> +	}
+> +
+> +	/* not reached */
+> +	*tok = NULL;
+> +	return EVENT_NONE;
+> +}
+
+Ok, enough for today. I'll review the rest only if you really want me to
+:-).
+
+-- 
+Regards/Gruss,
+    Boris.
