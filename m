@@ -1,181 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab2DFW2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 18:28:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46645 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab2DFW2K (ORCPT
+	id S1758284Ab2DFW2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 18:28:17 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47620 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab2DFW2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 18:28:10 -0400
-Date: Fri, 6 Apr 2012 18:23:29 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: ming.m.lin@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: ACPI: Move module parameter gts and bfs to sleep.c
-Message-ID: <20120406222329.GA19837@phenom.dumpdata.com>
+	Fri, 6 Apr 2012 18:28:14 -0400
+Message-ID: <4F7F6DF9.5010902@gmail.com>
+Date: Sat, 07 Apr 2012 00:28:09 +0200
+From: Mircea Gherzan <mgherzan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090209.4F7F6DF9.0099,ss=1,re=0.000,fgs=0
+To: Jan Seiffert <kaffeemonster@googlemail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [REGRESSION][PATCH v1] bpf jit: Let the arm jit handle negative
+ memory references
+References: <4F75CA89.4010709@googlemail.com> <4F7F3C7D.1040007@googlemail.com>
+In-Reply-To: <4F7F3C7D.1040007@googlemail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Lin,
+Hi,
 
-I was wondering if you are OK with exporting the wake_sleep_flags
-function so that other callers of acpi_enter_sleep (which are
-outside the sleep.c) could use it?
+Am 06.04.2012 20:57, schrieb Jan Seiffert:
+> The arm jit has the same problem as the other two jits.
+> It only tests for negative absolute memory references, and if it sees
+> one bails out to let the interpreter handle the filter program.
+> 
+> But this fails if the X register contains a negative memory reference
+> and is used for an indirect load.
 
-Specifically this patch
-http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=blobdiff;f=include/xen/acpi.h;h=ebaabbbe91877cc9d7188254463b4a591f6bb81d;hp=48a9c0171b658904b33a82df0d4aa31fe8b8ed81;hb=331a7ed09457ca7b6c31170c5d59a09e6f1e02c2;hpb=68504cdd16c26735078f65a0bdc8eeb9f0c493ea
+I don't think that there's any use case for negative values in X. In
+both the original BPF design and in the LSF interpreter, A and X are
+considered unsigned. The role of X is mainly to allow variable length
+headers (load the length -> unsigned).
 
-[which I was hoping to post for v3.5]
-.. which in 3.3 would call acpi_enter_sleep_state without
-trouble but with 3.4 it needs a parameter.
+"Negative" K values are permitted for ancillary data loads based on the
+fact that we're not going to see 2GB packets any time soon.
 
-This little patch (compile tested, but not actually run):
+Mircea
 
-commit 8f9f29819fa71de17e2e6f38fc50c4156dc3dada
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Fri Apr 6 17:53:51 2012 -0400
+> This is only caught at runtime, where the filter will always drop
+> the packet.
+> Filter which work fine with the interpreter do not work with the jit.
+> 
+> So this patch tries to fix it for the arm jit.
+> 
+> First we add the prototype of bpf_internal_load_pointer_neg_helper to
+> filter.h, since the arm jit has no assembler component, instead it has
+> to be used from C.
+> 
+> Then the helper functions are prepared to either handle known positive
+> offsets, known negative offsets, or any offset and test at runtime.
+> 
+> Finally the compiler is modified to emit calls to the right function,
+> depending if either the offset is known, or not.
+> 
+> This fixes the case of a negative X register and allows to lift
+> the restriction that bpf programs with negative offsets can't
+> be jited.
+> 
+> Signed-off-by: Jan Seiffert <kaffeemonster@googlemail.com>
+> ---
+> The arm jit structure is a little bit different then the other jits, esp.
+> it does not use assembler load helper. So i had to put the prototype for
+> bpf_internal_load_pointer_neg_helper somewhere.
+> 
+> This is a v1 to keep the ball rolling.
+> 
+> Testing would also be cool, -ENOHARDWARE.
+>  
+>  arch/arm/net/bpf_jit_32.c |  149 ++++++++++++++++++++++++++++++++-------------
+>  include/linux/filter.h    |    6 ++
+>  net/core/filter.c         |    4 +
+>  3 files changed, 117 insertions(+), 42 deletions(-)
+> 
+> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+> index 62135849..19d60af 100644
+> --- a/arch/arm/net/bpf_jit_32.c
+> +++ b/arch/arm/net/bpf_jit_32.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/slab.h>
+>  #include <asm/cacheflush.h>
+>  #include <asm/hwcap.h>
+> +#include <asm/unaligned.h>
+>  
+>  #include "bpf_jit_32.h"
+>  
+> @@ -71,7 +72,7 @@ struct jit_ctx {
+>  
+>  int bpf_jit_enable __read_mostly;
+>  
+> -static u64 jit_get_skb_b(struct sk_buff *skb, unsigned offset)
+> +static u64 jit_get_skb_b_pos(struct sk_buff *skb, unsigned offset)
+>  {
+>  	u8 ret;
+>  	int err;
+> @@ -81,7 +82,7 @@ static u64 jit_get_skb_b(struct sk_buff *skb, unsigned offset)
+>  	return (u64)err << 32 | ret;
+>  }
+>  
+> -static u64 jit_get_skb_h(struct sk_buff *skb, unsigned offset)
+> +static u64 jit_get_skb_h_pos(struct sk_buff *skb, unsigned offset)
+>  {
+>  	u16 ret;
+>  	int err;
+> @@ -91,7 +92,7 @@ static u64 jit_get_skb_h(struct sk_buff *skb, unsigned offset)
+>  	return (u64)err << 32 | ntohs(ret);
+>  }
+>  
+> -static u64 jit_get_skb_w(struct sk_buff *skb, unsigned offset)
+> +static u64 jit_get_skb_w_pos(struct sk_buff *skb, unsigned offset)
+>  {
+>  	u32 ret;
+>  	int err;
+> @@ -101,6 +102,60 @@ static u64 jit_get_skb_w(struct sk_buff *skb, unsigned offset)
+>  	return (u64)err << 32 | ntohl(ret);
+>  }
+>  
+> +static u64 jit_get_skb_b_neg(struct sk_buff *skb, unsigned offset)
+> +{
+> +	u8 *ptr;
+> +
+> +	ptr = bpf_internal_load_pointer_neg_helper(skb, offset, 1);
+> +	if (!ptr)
+> +		return (u64)1 << 32;
+> +	return *ptr;
+> +}
+> +
+> +static u64 jit_get_skb_h_neg(struct sk_buff *skb, unsigned offset)
+> +{
+> +	u16 *ptr;
+> +
+> +	ptr = bpf_internal_load_pointer_neg_helper(skb, offset, 2);
+> +	if (!ptr)
+> +		return (u64)1 << 32;
+> +	return get_unaligned_be16(ptr);
+> +}
+> +
+> +static u64 jit_get_skb_w_neg(struct sk_buff *skb, unsigned offset)
+> +{
+> +	u32 *ptr;
+> +
+> +	ptr = bpf_internal_load_pointer_neg_helper(skb, offset, 4);
+> +	if (!ptr)
+> +		return (u64)1 << 32;
+> +	return get_unaligned_be32(ptr);
+> +}
+> +
+> +static u64 jit_get_skb_b_any(struct sk_buff *skb, unsigned offset)
+> +{
+> +	if ((int)offset >= 0)
+> +		return jit_get_skb_b_pos(skb, offset);
+> +	else
+> +		return jit_get_skb_b_neg(skb, offset);
+> +}
+> +
+> +static u64 jit_get_skb_h_any(struct sk_buff *skb, unsigned offset)
+> +{
+> +	if ((int)offset >= 0)
+> +		return jit_get_skb_h_pos(skb, offset);
+> +	else
+> +		return jit_get_skb_h_neg(skb, offset);
+> +}
+> +
+> +static u64 jit_get_skb_w_any(struct sk_buff *skb, unsigned offset)
+> +{
+> +	if ((int)offset >= 0)
+> +		return jit_get_skb_w_pos(skb, offset);
+> +	else
+> +		return jit_get_skb_w_neg(skb, offset);
+> +}
+> +
+>  /*
+>   * Wrapper that handles both OABI and EABI and assures Thumb2 interworking
+>   * (where the assembly routines like __aeabi_uidiv could cause problems).
+> @@ -458,7 +513,10 @@ static inline void update_on_xread(struct jit_ctx *ctx)
+>  
+>  static int build_body(struct jit_ctx *ctx)
+>  {
+> -	void *load_func[] = {jit_get_skb_b, jit_get_skb_h, jit_get_skb_w};
+> +	void *load_func_any[] = {jit_get_skb_b_any, jit_get_skb_h_any, jit_get_skb_w_any};
+> +	void *load_func_pos[] = {jit_get_skb_b_pos, jit_get_skb_h_pos, jit_get_skb_w_pos};
+> +	void *load_func_neg[] = {jit_get_skb_b_neg, jit_get_skb_h_neg, jit_get_skb_w_neg};
+> +	void **load_func;
+>  	const struct sk_filter *prog = ctx->skf;
+>  	const struct sock_filter *inst;
+>  	unsigned i, load_order, off, condt;
+> @@ -498,36 +556,38 @@ static int build_body(struct jit_ctx *ctx)
+>  		case BPF_S_LD_B_ABS:
+>  			load_order = 0;
+>  load:
+> -			/* the interpreter will deal with the negative K */
+> -			if ((int)k < 0)
+> -				return -ENOTSUPP;
+>  			emit_mov_i(r_off, k, ctx);
+> -load_common:
+> -			ctx->seen |= SEEN_DATA | SEEN_CALL;
+> -
+> -			if (load_order > 0) {
+> -				emit(ARM_SUB_I(r_scratch, r_skb_hl,
+> -					       1 << load_order), ctx);
+> -				emit(ARM_CMP_R(r_scratch, r_off), ctx);
+> -				condt = ARM_COND_HS;
+> -			} else {
+> -				emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
+> -				condt = ARM_COND_HI;
+> -			}
+>  
+> -			_emit(condt, ARM_ADD_R(r_scratch, r_off, r_skb_data),
+> -			      ctx);
+> -
+> -			if (load_order == 0)
+> -				_emit(condt, ARM_LDRB_I(r_A, r_scratch, 0),
+> +			/* deal with negative K */
+> +			if (k >= 0) {
+> +				load_func = load_func_pos;
+> +				if (load_order > 0) {
+> +					emit(ARM_SUB_I(r_scratch, r_skb_hl,
+> +						       1 << load_order), ctx);
+> +					emit(ARM_CMP_R(r_scratch, r_off), ctx);
+> +					condt = ARM_COND_HS;
+> +				} else {
+> +					emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
+> +					condt = ARM_COND_HI;
+> +				}
+> +
+> +				_emit(condt, ARM_ADD_R(r_scratch, r_off, r_skb_data),
+>  				      ctx);
+> -			else if (load_order == 1)
+> -				emit_load_be16(condt, r_A, r_scratch, ctx);
+> -			else if (load_order == 2)
+> -				emit_load_be32(condt, r_A, r_scratch, ctx);
+>  
+> -			_emit(condt, ARM_B(b_imm(i + 1, ctx)), ctx);
+> +				if (load_order == 0)
+> +					_emit(condt, ARM_LDRB_I(r_A, r_scratch, 0),
+> +					      ctx);
+> +				else if (load_order == 1)
+> +					emit_load_be16(condt, r_A, r_scratch, ctx);
+> +				else if (load_order == 2)
+> +					emit_load_be32(condt, r_A, r_scratch, ctx);
+>  
+> +				_emit(condt, ARM_B(b_imm(i + 1, ctx)), ctx);
+> +			} else {
+> +				load_func = load_func_neg;
+> +			}
+> +load_common:
+> +			ctx->seen |= SEEN_DATA | SEEN_CALL;
+>  			/* the slowpath */
+>  			emit_mov_i(ARM_R3, (u32)load_func[load_order], ctx);
+>  			emit(ARM_MOV_R(ARM_R0, r_skb), ctx);
+> @@ -547,7 +607,9 @@ load_common:
+>  		case BPF_S_LD_B_IND:
+>  			load_order = 0;
+>  load_ind:
+> +			load_func = load_func_any;
+>  			OP_IMM3(ARM_ADD, r_off, r_X, k, ctx);
+> +			load_func = load_func_any;
+>  			goto load_common;
+>  		case BPF_S_LDX_IMM:
+>  			ctx->seen |= SEEN_X;
+> @@ -565,25 +627,28 @@ load_ind:
+>  		case BPF_S_LDX_B_MSH:
+>  			/* x = ((*(frame + k)) & 0xf) << 2; */
+>  			ctx->seen |= SEEN_X | SEEN_DATA | SEEN_CALL;
+> -			/* the interpreter should deal with the negative K */
+> -			if (k < 0)
+> -				return -1;
+>  			/* offset in r1: we might have to take the slow path */
+>  			emit_mov_i(r_off, k, ctx);
+> -			emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
+> +			/* deal with negative K */
+> +			if (k >= 0) {
+> +				load_func = load_func_pos;
+> +				emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
+>  
+> -			/* load in r0: common with the slowpath */
+> -			_emit(ARM_COND_HI, ARM_LDRB_R(ARM_R0, r_skb_data,
+> -						      ARM_R1), ctx);
+> -			/*
+> -			 * emit_mov_i() might generate one or two instructions,
+> -			 * the same holds for emit_blx_r()
+> -			 */
+> -			_emit(ARM_COND_HI, ARM_B(b_imm(i + 1, ctx) - 2), ctx);
+> +				/* load in r0: common with the slowpath */
+> +				_emit(ARM_COND_HI, ARM_LDRB_R(ARM_R0, r_skb_data,
+> +							      ARM_R1), ctx);
+> +				/*
+> +				 * emit_mov_i() might generate one or two instructions,
+> +				 * the same holds for emit_blx_r()
+> +				 */
+> +				_emit(ARM_COND_HI, ARM_B(b_imm(i + 1, ctx) - 2), ctx);
+> +			} else {
+> +				load_func = load_func_neg;
+> +			}
+>  
+>  			emit(ARM_MOV_R(ARM_R0, r_skb), ctx);
+>  			/* r_off is r1 */
+> -			emit_mov_i(ARM_R3, (u32)jit_get_skb_b, ctx);
+> +			emit_mov_i(ARM_R3, (u32)load_func[0], ctx);
+>  			emit_blx_r(ARM_R3, ctx);
+>  			/* check the return value of skb_copy_bits */
+>  			emit(ARM_CMP_I(ARM_R1, 0), ctx);
+> diff --git a/include/linux/filter.h b/include/linux/filter.h
+> index 8eeb205..78cd56d 100644
+> --- a/include/linux/filter.h
+> +++ b/include/linux/filter.h
+> @@ -161,6 +161,12 @@ extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
+>  extern void bpf_jit_compile(struct sk_filter *fp);
+>  extern void bpf_jit_free(struct sk_filter *fp);
+>  #define SK_RUN_FILTER(FILTER, SKB) (*FILTER->bpf_func)(SKB, FILTER->insns)
+> +/*
+> + * Only Exported for the bpf jit load helper.
+> + * Do not call from anywhere else!
+> + */
+> +extern void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb,
+> +		int k, unsigned int size);
+>  #else
+>  static inline void bpf_jit_compile(struct sk_filter *fp)
+>  {
+> diff --git a/net/core/filter.c b/net/core/filter.c
+> index 6f755cc..9cbaecb 100644
+> --- a/net/core/filter.c
+> +++ b/net/core/filter.c
+> @@ -42,6 +42,10 @@
+>  /* No hurry in this branch
+>   *
+>   * Exported for the bpf jit load helper.
+> + *
+> + * CAUTION ! :
+> + * If its prototype is ever changed, check arch/{*}/net/{*}.S files,
+> + * since it is called from BPF assembly code.
+>   */
+>  void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
+>  {
+> 
 
-    ACPI: Convert wake_sleep_flags to a value instead of function.
-    
-    With commit a2ef5c4fd44ce3922435139393b89f2cce47f576
-    "ACPI: Move module parameter gts and bfs to sleep.c" the wake_sleep_flags
-    is required when calling acpi_enter_sleep_state, which means
-    that if there are functions outside the sleep.c code they
-    can't get get the wake_sleep_flags values.
-    
-    This converts the function in to a exported value and converts
-    the module config operands to a function.
-    
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
-index 4d3feb5..f84e9cd 100644
---- a/arch/x86/kernel/acpi/sleep.h
-+++ b/arch/x86/kernel/acpi/sleep.h
-@@ -9,6 +9,8 @@ extern long saved_magic;
- 
- extern int wakeup_pmode_return;
- 
-+extern unsigned wake_sleep_flags;
-+
- extern unsigned long acpi_copy_wakeup_routine(unsigned long);
- extern void wakeup_long64(void);
- 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index 6a8d4d3..dcee73a 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -28,23 +28,23 @@
- #include "internal.h"
- #include "sleep.h"
- 
-+u8 wake_sleep_flags = ACPI_NO_OPTIONAL_METHODS;
- static unsigned int gts, bfs;
--module_param(gts, uint, 0644);
--module_param(bfs, uint, 0644);
--MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
--MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
--
--static u8 wake_sleep_flags(void)
-+static int set_param_wake_flag(const char *val, struct kernel_param *kp)
- {
--	u8 flags = ACPI_NO_OPTIONAL_METHODS;
-+	int ret = param_set_int(val, kp);
- 
- 	if (gts)
--		flags |= ACPI_EXECUTE_GTS;
-+		wake_sleep_flags |= ACPI_EXECUTE_GTS;
- 	if (bfs)
--		flags |= ACPI_EXECUTE_BFS;
-+		wake_sleep_flags |= ACPI_EXECUTE_BFS;
- 
--	return flags;
-+	return ret;
- }
-+module_param_call(gts, set_param_wake_flag, param_get_int, &gts, 0644);
-+module_param_call(bfs, set_param_wake_flag, param_get_int, &bfs, 0644);
-+MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
-+MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
- 
- static u8 sleep_states[ACPI_S_STATE_COUNT];
- 
-@@ -263,7 +263,6 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- {
- 	acpi_status status = AE_OK;
- 	u32 acpi_state = acpi_target_sleep_state;
--	u8 flags = wake_sleep_flags();
- 	int error;
- 
- 	ACPI_FLUSH_CPU_CACHE();
-@@ -271,7 +270,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- 	switch (acpi_state) {
- 	case ACPI_STATE_S1:
- 		barrier();
--		status = acpi_enter_sleep_state(acpi_state, flags);
-+		status = acpi_enter_sleep_state(acpi_state, wake_sleep_flags);
- 		break;
- 
- 	case ACPI_STATE_S3:
-@@ -288,7 +287,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- 	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
- 
- 	/* Reprogram control registers and execute _BFS */
--	acpi_leave_sleep_state_prep(acpi_state, flags);
-+	acpi_leave_sleep_state_prep(acpi_state, wake_sleep_flags);
- 
- 	/* ACPI 3.0 specs (P62) says that it's the responsibility
- 	 * of the OSPM to clear the status bit [ implying that the
-@@ -552,30 +551,27 @@ static int acpi_hibernation_begin(void)
- 
- static int acpi_hibernation_enter(void)
- {
--	u8 flags = wake_sleep_flags();
- 	acpi_status status = AE_OK;
- 
- 	ACPI_FLUSH_CPU_CACHE();
- 
- 	/* This shouldn't return.  If it returns, we have a problem */
--	status = acpi_enter_sleep_state(ACPI_STATE_S4, flags);
-+	status = acpi_enter_sleep_state(ACPI_STATE_S4, wake_sleep_flags);
- 	/* Reprogram control registers and execute _BFS */
--	acpi_leave_sleep_state_prep(ACPI_STATE_S4, flags);
-+	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
- 
- 	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
- }
- 
- static void acpi_hibernation_leave(void)
- {
--	u8 flags = wake_sleep_flags();
--
- 	/*
- 	 * If ACPI is not enabled by the BIOS and the boot kernel, we need to
- 	 * enable it here.
- 	 */
- 	acpi_enable();
- 	/* Reprogram control registers and execute _BFS */
--	acpi_leave_sleep_state_prep(ACPI_STATE_S4, flags);
-+	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
- 	/* Check the hardware signature */
- 	if (facs && s4_hardware_signature != facs->hardware_signature) {
- 		printk(KERN_EMERG "ACPI: Hardware changed while hibernated, "
-@@ -830,12 +826,10 @@ static void acpi_power_off_prepare(void)
- 
- static void acpi_power_off(void)
- {
--	u8 flags = wake_sleep_flags();
--
- 	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
- 	printk(KERN_DEBUG "%s called\n", __func__);
- 	local_irq_disable();
--	acpi_enter_sleep_state(ACPI_STATE_S5, flags);
-+	acpi_enter_sleep_state(ACPI_STATE_S5, wake_sleep_flags);
- }
- 
- /*
+-- 
+Mircea
