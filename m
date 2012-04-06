@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab2DFBKm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 21:10:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41518 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757012Ab2DFBKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 21:10:41 -0400
-X-Sasl-enc: BCVSadN7v1OunYEf3gGzPyXjfnUFKDyzPBYJbYELjKsM 1333674639
-Date: Thu, 5 Apr 2012 18:10:37 -0700
-From: Greg KH <greg@kroah.com>
-To: Asai Thambi S P <asamymuthupa@micron.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 2/5] mtip32xx: Add new sysfs entry 'status' and fix
- restart port
-Message-ID: <20120406011037.GA25892@kroah.com>
-References: <4F7E07DC.50909@micron.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7E07DC.50909@micron.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757002Ab2DFBMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 21:12:50 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51545 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752758Ab2DFBMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 21:12:49 -0400
+Message-ID: <1333674768.23520.123.camel@joe2Laptop>
+Subject: Re: [PATCH] printk: support structured and multi-facility log
+ messages
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>
+Date: Thu, 05 Apr 2012 18:12:48 -0700
+In-Reply-To: <1333655231.725.27.camel@mop>
+References: <1333569554.864.3.camel@mop>
+	 <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
+	 <1333655231.725.27.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 05, 2012 at 02:00:12PM -0700, Asai Thambi S P wrote:
+On Thu, 2012-04-05 at 21:47 +0200, Kay Sievers wrote:
+
+> Better?
 > 
-> * Add support for detecting the following device status
-> 	- write protect
-> 	- over temp (thermal shutdown)
-> * New sysfs entry 'status' created for this device,  possible values - online, write_protect, thermal_shutdown
+>   [root@mop ~]# cat /dev/kmsg
+[]
+>   6,5,0; BIOS-e820: 00000000000f0000 - 0000000000100000 (reserved)
+>   6,6,0; BIOS-e820: 0000000000100000 - 000000001fffd000 (usable)
+>   6 ,7,0; BIOS-e820: 000000001fffd000 - 0000000020000000 (reserved)
 
-All new (and existing) sysfs files must be documented in
-Documentation/ABI/ please do so for these new ones when you add them to
-the kernel.
+Not really, why the space between the 6 and the comma?
 
-thanks,
+> This patch extends printk() to be able to attach arbitrary key/value
+> pairs to logged messages,
 
-greg k-h
+Bad commit changelog.
+
+It does not extend printk().  printk() is a function call.
+
+It extends the message logging subsystem to include the
+printk_emit() and vprintk_emit() functions, which can
+add decidedly not arbitrary key/value pairs, but some
+additional subsystem specific information.
+
+> - Output of dev_printk() is reliably machine-readable now.
+
+No, it's not.
+
+An output header simply contains additional
+structured information.  The message portion
+can still be arbitrary gobbledygook.
+
+I still think this should be 3 patches not 1.
+
+
