@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab2DFXfs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 19:35:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51977 "EHLO
+	id S1758368Ab2DFXh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 19:37:59 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63567 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab2DFXfq (ORCPT
+	with ESMTP id S1752848Ab2DFXh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 19:35:46 -0400
-Date: Fri, 6 Apr 2012 16:35:29 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Chris Metcalf <cmetcalf@tilera.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] hugetlb: fix race condition in hugetlb_fault()
-In-Reply-To: <20120406162618.3307a9bd.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1204061631160.3820@eggly.anvils>
-References: <201203302018.q2UKIFH5020745@farm-0012.internal.tilera.com> <CAJd=RBCoLNB+iRX1shKGAwSbE8PsZXyk9e3inPTREcm2kk3nXA@mail.gmail.com> <201203311339.q2VDdJMD006254@farm-0012.internal.tilera.com> <CAJd=RBBWx7uZcw=_oA06RVunPAGeFcJ7LY=RwFCyB_BreJb_kg@mail.gmail.com>
- <4F7887A5.3060700@tilera.com> <20120406152305.59408e35.akpm@linux-foundation.org> <alpine.LSU.2.00.1204061601370.3637@eggly.anvils> <20120406162618.3307a9bd.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 6 Apr 2012 19:37:58 -0400
+Date: Fri, 6 Apr 2012 16:37:55 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT pull] timer updates for 3.4-rc
+In-Reply-To: <alpine.LFD.2.02.1204070131010.2542@ionos>
+Message-ID: <alpine.DEB.2.00.1204061636260.32765@chino.kir.corp.google.com>
+References: <alpine.LFD.2.02.1204070131010.2542@ionos>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012, Andrew Morton wrote:
-> On Fri, 6 Apr 2012 16:10:13 -0700 (PDT)
-> Hugh Dickins <hughd@google.com> wrote:
-> > 
-> > The resulting patch is okay; but let's reassure Chris that his
-> > original patch was better, before he conceded to make the get_page
-> > and put_page unconditional, and added unnecessary detail of the race.
-> > 
-> 
-> Yes, the v1 patch was better.  No reason was given for changing it?
+On Sat, 7 Apr 2012, Thomas Gleixner wrote:
 
-I think Chris was aiming to be a model citizen, and followed review
-suggestions that he would actually have done better to resist.
+> diff --git a/kernel/itimer.c b/kernel/itimer.c
+> index 22000c3..c70369a 100644
+> --- a/kernel/itimer.c
+> +++ b/kernel/itimer.c
+> @@ -284,8 +284,11 @@ SYSCALL_DEFINE3(setitimer, int, which, struct itimerval __user *, value,
+>  	if (value) {
+>  		if(copy_from_user(&set_buffer, value, sizeof(set_buffer)))
+>  			return -EFAULT;
+> -	} else
+> +	} else {
+>  		memset((char *) &set_buffer, 0, sizeof(set_buffer));
+> +		WARN_ONCE(1, "setitimer: new_value pointer is NULL."
+> +			  " Misfeature support will be removed\n");
+> +	}
+>  
+>  	error = do_setitimer(which, &set_buffer, ovalue ? &get_buffer : NULL);
+>  	if (error || !ovalue)
 
-Hugh
+When I tried doing this for the deprecated /proc/pid/oom_adj there was a 
+complaint that WARN_ONCE() screws up log parsing scripts that think there 
+is a kernel issue so I had to change it to printk_once() and include 
+get_task_comm(current) and current->pid.  See
+http://lkml.indiana.edu/hypermail/linux/kernel/1108.0/00446.html
