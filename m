@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab2DFItY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 04:49:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42396 "EHLO
+	id S1755072Ab2DFIvU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 04:51:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42403 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754735Ab2DFItX (ORCPT
+	by vger.kernel.org with ESMTP id S1752822Ab2DFIvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 04:49:23 -0400
-Date: Fri, 6 Apr 2012 09:49:19 +0100
+	Fri, 6 Apr 2012 04:51:19 -0400
+Date: Fri, 6 Apr 2012 09:51:15 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Liam Girdwood <lrg@ti.com>
 Subject: Re: [PATCH] regulator: rc5t583: Simplify RC5T583_REG macro
-Message-ID: <20120406084919.GC3172@opensource.wolfsonmicro.com>
+Message-ID: <20120406085115.GD3172@opensource.wolfsonmicro.com>
 References: <1333670496.2777.0.camel@phoenix>
+ <4F7E8030.80000@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kfjH4zxOES6UT95V"
+	protocol="application/pgp-signature"; boundary="jCrbxBqMcLqd4mOl"
 Content-Disposition: inline
-In-Reply-To: <1333670496.2777.0.camel@phoenix>
+In-Reply-To: <4F7E8030.80000@nvidia.com>
 X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,40 +29,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---kfjH4zxOES6UT95V
+--jCrbxBqMcLqd4mOl
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Apr 06, 2012 at 08:01:36AM +0800, Axel Lin wrote:
-> Simplify RC5T583_REG macro by removing _vout_reg and _ds_reg parameters.
->=20
-> The naming for vout_reg and deepsleep_reg can be replaced by:
-> .vout_reg       =3D RC5T583_REG_##_id##DAC,
-> .deepsleep_reg  =3D RC5T583_REG_##_id##DAC_DS,
+On Fri, Apr 06, 2012 at 11:03:36AM +0530, Laxman Dewangan wrote:
 
-Applied, thanks.
+> I thought of doing this on my first patch and then thought that
+> table should have all configuration picture rather than deriving
+> from few parameters.
+> If this is a good way then I will take care for my next PMIC driver
+> development.
 
---kfjH4zxOES6UT95V
+This way is good - if you look at for example the wm831x driver where
+there's a bunch of regulators with the same register layout replicated
+in different places in the chip all it does is specify the base for the
+block when defining a regulator.
+
+--jCrbxBqMcLqd4mOl
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPfq39AAoJEBus8iNuMP3d9OwP/iaqFalL/lyrb8LDWvBuW3BP
-KX86I65xPZOcvW0YDnvHffd6AVdDS1nMJowkCIUKnqOx1oDrSY1cxwC0M2ws1iqF
-S4lQT9Y2A90dkOzQbitawCnPiqKLE6MlAAMlgfJyL3xZ4ZuEi64z6uM/RkI6I9jg
-IxZYttzvicBXsbquLLBZ+N6qG1wIHGMtEAwZlR83fmYAwi1Tko8Bz7HUpqPpJSwt
-WoNr6T4cRkwZ8/lDqPhZvunzF58KbyeNgFfYkUVsy/j65x6p3RLG2Mwd9be9v5el
-KMAqZsa2GfPR+PtXF0tn6Lr1BJx95WIJVGZMOZzw543y/z/ahVyTSsw5WDk41ZZ2
-LJRS8VIO25jx8wwW+mMqfpiYldVZ+UbfWBYN/T6kiW5QDDqGesPfljfoFvCdzdJk
-W7/Q7+sfcw4fYnr/Rj+AoN/E7DTwcWa/8riEFXie09JvGFZJrqAx5a+AFr2quFXT
-VgWPKyeZT7VlXHpBqZwoQWdwkJ/UPlyRoKhDJFxlkibkk2S/cTPr6bAALivKzmJZ
-sXb9DXrOKA1sTijUaNHIV3JoGTAWGJx7JbGerFSsN/9Iht9vaUDA5ezUceAtqF4q
-6x+dQdTojwnAG2BZ6UEyE2lnRtk25FpCq+jtnG3uRrDdJHgos7kqvA3Eq2zib7j0
-0TM3gW1IZDH2Fv4Gp9p3
-=bH2v
+iQIcBAEBAgAGBQJPfq58AAoJEBus8iNuMP3dgxAP/iUzZYWYBRmur875VNV4Ovla
+XkW4bibRycR8mGQFUdSeKG/fZQji5E7N0j+23KhgW038vNkG4++n98XfGmkX7i5O
+yiTWllo1sTbcD961IzqIvVXwLlgTky7eI/s59G63S60oMIbb39SQ/rFUAQt4Dy4R
+RplzEed68X1XAY8ZkZnzd9+s4SMYrBjua94wwVLvW1w7t03ZH0F00RLOmk0Hh9js
+cGtTNxk2v4K6egpSTugZS/hEAih7dLgzhznvecZhZ29O9vLJhaQZqFnLqS/2zbs5
+k6kakActcRuRKGEjO0eAX6qq8wyWM2Kd+ARIhkzwnb3N7/PKeO9UGhv3yDn8suL7
+5j4VJp54qkk7+UlF0uxwdyxlY86Hh+ZciA3S40YIWCuv0KSKkLrmTpmkuIfxPgOr
+X/z4bcGRA0hVuQaWWLYOvyyzhfHUNOT6xE1hsAkuf0bBx8T6LxZOvA8VwbdeTPWz
+oX2eEsAKc+AbTXnYcd24lPYk52IVT5h40zNdBFrhYYQUj7V+Rj/GgUPVjOm1TlPB
+lsISj5amB4f+BvPqxpsJrajmY2TG1z6CChMGwmbaQjr6G1OKjQSu182MegWZVyaV
+9lOYgXM6/QLGJYt2t50MHa0O7od77OWjmjzg9bHOdl0oAIyvDzV92qblS5fRnOu/
+YyUbSbvAkQXf7/GpRRwm
+=18uG
 -----END PGP SIGNATURE-----
 
---kfjH4zxOES6UT95V--
+--jCrbxBqMcLqd4mOl--
