@@ -1,65 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab2DFUiN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:38:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63697 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2DFUiJ convert rfc822-to-8bit (ORCPT
+	id S1758038Ab2DFUou (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:44:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51392 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757595Ab2DFUos convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:38:09 -0400
+	Fri, 6 Apr 2012 16:44:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120406142824.61d8ca3b@lwn.net>
+In-Reply-To: <20120406132330.457a05cf.akpm@linux-foundation.org>
 References: <1333051320-30872-1-git-send-email-wad@chromium.org>
- <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406125517.77133b4e.akpm@linux-foundation.org>
- <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com> <20120406142824.61d8ca3b@lwn.net>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 6 Apr 2012 13:37:46 -0700
-X-Google-Sender-Auth: F7HyC7-AUhPie8IVcLQkdPLurf0
-Message-ID: <CAObL_7GGS-veaVUhEphhO69Rh08eT3683W9LJx2f9twLi2RW7A@mail.gmail.com>
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
+	<1333051320-30872-9-git-send-email-wad@chromium.org>
+	<20120406132330.457a05cf.akpm@linux-foundation.org>
+Date: Fri, 6 Apr 2012 13:44:43 -0700
+X-Google-Sender-Auth: cVKVMeu41gsGahCZLTRmIe3intc
+Message-ID: <CAGXu5jJVDLzCOyCo-q6+pF-_3v4Ws8jBzYXwac419uv2QQS0mA@mail.gmail.com>
+Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
+        jmorris@namei.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 1:28 PM, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Fri, 6 Apr 2012 13:01:17 -0700
-> Andrew Lutomirski <luto@mit.edu> wrote:
+On Fri, Apr 6, 2012 at 1:23 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 29 Mar 2012 15:01:53 -0500
+> Will Drewry <wad@chromium.org> wrote:
 >
->> This has been bugging me for awhile.  Is there any interest in moving
->> the manpages into the kernel source tree?  Then there could be a
->> general requirement that new APIs get documented when they're written.
+>> [This patch depends on luto@mit.edu's no_new_privs patch:
+>>    https://lkml.org/lkml/2012/1/30/264
+>>  included in this series for ease of consumption.
+>> ]
+>>
+>> This patch adds support for seccomp mode 2.  Mode 2 introduces the
+>> ability for unprivileged processes to install system call filtering
+>> policy expressed in terms of a Berkeley Packet Filter (BPF) program.
+>> This program will be evaluated in the kernel for each system call
+>> the task makes and computes a result based on data in the format
+>> of struct seccomp_data.
+>> ...
+>> +static void seccomp_filter_log_failure(int syscall)
+>> +{
+>> +     int compat = 0;
+>> +#ifdef CONFIG_COMPAT
+>> +     compat = is_compat_task();
+>> +#endif
 >
-> Man page (or other documentation) requirements for patch acceptance are a
-> regular kernel summit feature.  People seem to think it's a good idea, but
-> actual enforcement of such requirements always seems to be lacking.  Lots
-> of people have kind of given up trying.  I don't really see that adding
-> the man pages to the tree would help, but I could be wrong...
+> hm, I'm surprised that we don't have a zero-returning implementation of
+> is_compat_task() when CONFIG_COMPAT=n.  Seems silly.  Blames Arnd.
+
+There is, but this chunk of the patch is removed later on in the
+series. We could just drop seccomp_filter_log_failure and it's single
+call entirely and depend on the later enhancement to add the logging
+that is desired.
+
+>> +static long seccomp_attach_filter(struct sock_fprog *fprog)
+>> +{
+>> +     struct seccomp_filter *filter;
+>> +     unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
+>> +     unsigned long total_insns = fprog->len;
+>> +     long ret;
+>> +
+>> +     if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
+>> +             return -EINVAL;
+>> +
+>> +     for (filter = current->seccomp.filter; filter; filter = filter->prev)
+>> +             total_insns += filter->len + 4;  /* include a 4 instr penalty */
 >
+> So tasks don't share filters?  We copy them by value at fork?  Do we do
+> this at vfork() too?
 
-If it's in the source, then I can send it with git format-patch.  If
-it's out of tree, I have to find the tree, clone the tree, figure out
-how to submit, and send separate emails.  And then whoever checks that
-I documented it has to figure out where I sent it and how to read it
-and then try to decide which documentation submission matches which
-patch submission.
+The filter chain is shared (and refcounted).
 
-(Also, if it's in-tree, then I can build the docs from a kernel tree
-and have the latest ones.  That could be nice.)
+>> +     if (total_insns > MAX_INSNS_PER_PATH)
+>> +             return -ENOMEM;
+>> +
+>> +     /*
+>> +      * Installing a seccomp filter requires that the task have
+>> +      * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
+>> +      * This avoids scenarios where unprivileged tasks can affect the
+>> +      * behavior of privileged children.
+>> +      */
+>> +     if (!current->no_new_privs &&
+>> +         security_capable_noaudit(current_cred(), current_user_ns(),
+>> +                                  CAP_SYS_ADMIN) != 0)
+>> +             return -EACCES;
+>> +
+>> +     /* Allocate a new seccomp_filter */
+>> +     filter = kzalloc(sizeof(struct seccomp_filter) + fp_size, GFP_KERNEL);
+>
+> I think this gives userspace an easy way of causing page allocation
+> failure warnings, by permitting large kmalloc() attempts.  Add
+> __GFP_NOWARN?
 
---Andy
+This is likely mitigated by the MAX_INSNS_PER_PATH check above, but,
+yeah, there's no harm in adding __GFP_NOWARN.
+
+>> +/* put_seccomp_filter - decrements the ref count of tsk->seccomp.filter */
+>> +void put_seccomp_filter(struct task_struct *tsk)
+>> +{
+>> +     struct seccomp_filter *orig = tsk->seccomp.filter;
+>> +     /* Clean up single-reference branches iteratively. */
+>> +     while (orig && atomic_dec_and_test(&orig->usage)) {
+>> +             struct seccomp_filter *freeme = orig;
+>> +             orig = orig->prev;
+>> +             kfree(freeme);
+>> +     }
+>> +}
+>
+> So if one of the filters in the list has an elevated refcount, we bail
+> out on the remainder of the list.  Seems odd.
+
+This so that every filter in the list doesn't need to have their
+refcount raised. As long as the counting up matching the counting
+down, it's fine. This allows for process trees branching the filter
+list at different times still being safe. IIUC, this code was based on
+how namespace refcounting is handled. I spent some time proving to
+myself that it was correctly refcounted a while back. More eyes is
+better, of course. :)
+
+-Kees
+
+-- 
+Kees Cook
+ChromeOS Security
