@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab2DFVRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:17:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37072 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755281Ab2DFVRl (ORCPT
+	id S1758132Ab2DFVTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:19:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37620 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753619Ab2DFVTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:17:41 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 1/2] regmap: mmio: convert some error returns to BUG()
-Date: Fri,  6 Apr 2012 15:17:32 -0600
-Message-Id: <1333747053-6846-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Fri, 6 Apr 2012 17:19:39 -0400
+Date: Fri, 6 Apr 2012 14:19:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        jmorris@namei.org
+Subject: Re: [PATCH v17 10/15] seccomp: add SECCOMP_RET_ERRNO
+Message-Id: <20120406141936.25d68860.akpm@linux-foundation.org>
+In-Reply-To: <1333051320-30872-11-git-send-email-wad@chromium.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-11-git-send-email-wad@chromium.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Thu, 29 Mar 2012 15:01:55 -0500
+Will Drewry <wad@chromium.org> wrote:
 
-Some of the error conditions detected by regmap_mmio_*() are pure internal
-errors, rather than user-/client-triggerable conditions. Convert these to
-BUG().
+> This change adds the SECCOMP_RET_ERRNO as a valid return value from a
+> seccomp filter.  Additionally, it makes the first use of the lower
+> 16-bits for storing a filter-supplied errno.  16-bits is more than
+> enough for the errno-base.h calls.
+> 
+> Returning errors instead of immediately terminating processes that
+> violate seccomp policy allow for broader use of this functionality
+> for kernel attack surface reduction.  For example, a linux container
+> could maintain a whitelist of pre-existing system calls but drop
+> all new ones with errnos.  This would keep a logically static attack
+> surface while providing errnos that may allow for graceful failure
+> without the downside of do_exit() on a bad call.
+> 
+>
+> ...
+>
+> @@ -64,11 +65,17 @@ struct seccomp {
+>  	struct seccomp_filter *filter;
+>  };
+>  
+> -extern void __secure_computing(int);
+> -static inline void secure_computing(int this_syscall)
+> +/*
+> + * Direct callers to __secure_computing should be updated as
+> + * CONFIG_HAVE_ARCH_SECCOMP_FILTER propagates.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/base/regmap/regmap-mmio.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+Are there any such callers?  There's one I see in arm, but it's called
+from assembly code.
 
-diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
-index 1a7b5ee..ffa0e85 100644
---- a/drivers/base/regmap/regmap-mmio.c
-+++ b/drivers/base/regmap/regmap-mmio.c
-@@ -35,8 +35,8 @@ static int regmap_mmio_gather_write(void *context,
- 	struct regmap_mmio_context *ctx = context;
- 	u32 offset;
- 
--	if (reg_size != 4)
--		return -EIO;
-+	BUG_ON(reg_size != 4);
-+
- 	if (val_size % ctx->val_bytes)
- 		return -EIO;
- 
-@@ -60,7 +60,7 @@ static int regmap_mmio_gather_write(void *context,
- #endif
- 		default:
- 			/* Should be caught by regmap_mmio_check_config */
--			return -EIO;
-+			BUG();
- 		}
- 		val_size -= ctx->val_bytes;
- 		val += ctx->val_bytes;
-@@ -72,8 +72,8 @@ static int regmap_mmio_gather_write(void *context,
- 
- static int regmap_mmio_write(void *context, const void *data, size_t count)
- {
--	if (count < 4)
--		return -EIO;
-+	BUG_ON(count < 4);
-+
- 	return regmap_mmio_gather_write(context, data, 4, data + 4, count - 4);
- }
- 
-@@ -84,8 +84,8 @@ static int regmap_mmio_read(void *context,
- 	struct regmap_mmio_context *ctx = context;
- 	u32 offset;
- 
--	if (reg_size != 4)
--		return -EIO;
-+	BUG_ON(reg_size != 4);
-+
- 	if (val_size % ctx->val_bytes)
- 		return -EIO;
- 
-@@ -109,7 +109,7 @@ static int regmap_mmio_read(void *context,
- #endif
- 		default:
- 			/* Should be caught by regmap_mmio_check_config */
--			return -EIO;
-+			BUG();
- 		}
- 		val_size -= ctx->val_bytes;
- 		val += ctx->val_bytes;
--- 
-1.7.0.4
+> + */
+> +extern void __secure_computing(int) __deprecated;
+> +extern int __secure_computing_int(int);
+> +static inline int secure_computing(int this_syscall)
+>  {
+>  	if (unlikely(test_thread_flag(TIF_SECCOMP)))
+> -		__secure_computing(this_syscall);
+> +		return  __secure_computing_int(this_syscall);
+> +	return 0;
+>  }
+>  
+> ...
+>
+>  void __secure_computing(int this_syscall)
+>  {
+> +	/* Filter calls should never use this function. */
+> +	BUG_ON(current->seccomp.mode == SECCOMP_MODE_FILTER);
+> +	__secure_computing_int(this_syscall);
+> +}
+> +
+> +int __secure_computing_int(int this_syscall)
+
+What the heck does "_int" mean here?  I read it as "integer" but
+perhaps it's shorthand for "internal".  Give us a better name, please. 
+Or a code comment.
+
+> +{
+>  	int mode = current->seccomp.mode;
+>  	int exit_sig = 0;
+>  	int *syscall;
+> +	u32 ret = SECCOMP_RET_KILL;
+> +	int data;
+>  
+>  	switch (mode) {
+>  	case SECCOMP_MODE_STRICT:
 
