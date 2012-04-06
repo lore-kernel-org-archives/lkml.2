@@ -1,174 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab2DGBbx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 21:31:53 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:52659 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab2DGBbw (ORCPT
+	id S1757425Ab2DGBv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 21:51:58 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34724 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755261Ab2DGBvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 21:31:52 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Eric Van Hensbergen <ericvh@gmail.com>, Dave Jones <davej@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
-        Remi Denis-Courmont <remi.denis-courmont@nokia.com>
-References: <1333664446.3538.12.camel@lappy>
-	<m1aa2pwxap.fsf@fess.ebiederm.org>
-	<CA+1xoqdi4QOhRJvBA64pxiN3EphhThjPkf4eLRkYM8jxcJjh=w@mail.gmail.com>
-	<m1mx6otk85.fsf@fess.ebiederm.org>
-	<m1aa2otjf4.fsf_-_@fess.ebiederm.org>
-Date: Fri, 06 Apr 2012 18:35:39 -0700
-In-Reply-To: <m1aa2otjf4.fsf_-_@fess.ebiederm.org> (Eric W. Biederman's
-	message of "Fri, 06 Apr 2012 18:33:35 -0700")
-Message-ID: <m162dctjbo.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18hpscUc/x9X092yXuJ04B6QaN24oyAwH0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Miller <davem@davemloft.net>
-X-Spam-Relay-Country: **
-Subject: [PATCH 2/2] phonet: Sort out initiailziation and cleanup code.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 6 Apr 2012 21:51:51 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: use module_pci_driver
+To: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: "Hans J. Koch" <hjk@linutronix.de>,
+        "Tomoya MORINAGA tomoya.rohm"@gmail.com, Michael Buesch <m@bues.ch>,
+        Linus Walleij <linus.walleij@stericsson.com>
+In-Reply-To: <1333714410.17459.2.camel@phoenix>
+References: <1333714410.17459.2.camel@phoenix>
+Date: Fri, 06 Apr 2012 15:45:45 -0700
+Message-Id: <20120406224545.989443E0DD8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 06 Apr 2012 20:13:30 +0800, Axel Lin <axel.lin@gmail.com> wrote:
+> This patch converts the drivers in drivers/gpio/* to use module_pci_driver()
+> macro which makes the code smaller and a bit simpler.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Michael Buesch <m@bues.ch>
+> Cc: Hans J. Koch <hjk@linutronix.de>
+> Cc: Tomoya MORINAGA tomoya.rohm@gmail.com
 
-Recently an oops was reported in phonet if there was a failure during
-network namespace creation.
+Applied, thanks
 
-[  163.733755] ------------[ cut here ]------------
-[  163.734501] kernel BUG at include/net/netns/generic.h:45!
-[  163.734501] invalid opcode: 0000 [#1] PREEMPT SMP
-[  163.734501] CPU 2
-[  163.734501] Pid: 19145, comm: trinity Tainted: G        W 3.4.0-rc1-next-20120405-sasha-dirty #57
-[  163.734501] RIP: 0010:[<ffffffff824d6062>]  [<ffffffff824d6062>] phonet_pernet+0x182/0x1a0
-[  163.734501] RSP: 0018:ffff8800674d5ca8  EFLAGS: 00010246
-[  163.734501] RAX: 000000003fffffff RBX: 0000000000000000 RCX: ffff8800678c88d8
-[  163.734501] RDX: 00000000003f4000 RSI: ffff8800678c8910 RDI: 0000000000000282
-[  163.734501] RBP: ffff8800674d5cc8 R08: 0000000000000000 R09: 0000000000000000
-[  163.734501] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880068bec920
-[  163.734501] R13: ffffffff836b90c0 R14: 0000000000000000 R15: 0000000000000000
-[  163.734501] FS:  00007f055e8de700(0000) GS:ffff88007d000000(0000) knlGS:0000000000000000
-[  163.734501] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  163.734501] CR2: 00007f055e6bb518 CR3: 0000000070c16000 CR4: 00000000000406e0
-[  163.734501] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  163.734501] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  163.734501] Process trinity (pid: 19145, threadinfo ffff8800674d4000, task ffff8800678c8000)
-[  163.734501] Stack:
-[  163.734501]  ffffffff824d5f00 ffffffff810e2ec1 ffff880067ae0000 00000000ffffffd4
-[  163.734501]  ffff8800674d5cf8 ffffffff824d667a ffff880067ae0000 00000000ffffffd4
-[  163.734501]  ffffffff836b90c0 0000000000000000 ffff8800674d5d18 ffffffff824d707d
-[  163.734501] Call Trace:
-[  163.734501]  [<ffffffff824d5f00>] ? phonet_pernet+0x20/0x1a0
-[  163.734501]  [<ffffffff810e2ec1>] ? get_parent_ip+0x11/0x50
-[  163.734501]  [<ffffffff824d667a>] phonet_device_destroy+0x1a/0x100
-[  163.734501]  [<ffffffff824d707d>] phonet_device_notify+0x3d/0x50
-[  163.734501]  [<ffffffff810dd96e>] notifier_call_chain+0xee/0x130
-[  163.734501]  [<ffffffff810dd9d1>] raw_notifier_call_chain+0x11/0x20
-[  163.734501]  [<ffffffff821cce12>] call_netdevice_notifiers+0x52/0x60
-[  163.734501]  [<ffffffff821cd235>] rollback_registered_many+0x185/0x270
-[  163.734501]  [<ffffffff821cd334>] unregister_netdevice_many+0x14/0x60
-[  163.734501]  [<ffffffff823123e3>] ipip_exit_net+0x1b3/0x1d0
-[  163.734501]  [<ffffffff82312230>] ? ipip_rcv+0x420/0x420
-[  163.734501]  [<ffffffff821c8515>] ops_exit_list+0x35/0x70
-[  163.734501]  [<ffffffff821c911b>] setup_net+0xab/0xe0
-[  163.734501]  [<ffffffff821c9416>] copy_net_ns+0x76/0x100
-[  163.734501]  [<ffffffff810dc92b>] create_new_namespaces+0xfb/0x190
-[  163.734501]  [<ffffffff810dca21>] unshare_nsproxy_namespaces+0x61/0x80
-[  163.734501]  [<ffffffff810afd1f>] sys_unshare+0xff/0x290
-[  163.734501]  [<ffffffff8187622e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[  163.734501]  [<ffffffff82665539>] system_call_fastpath+0x16/0x1b
-[  163.734501] Code: e0 c3 fe 66 0f 1f 44 00 00 48 c7 c2 40 60 4d 82 be 01 00 00 00 48 c7 c7 80 d1 23 83 e8 48 2a c4 fe e8 73 06 c8 fe 48 85 db 75 0e <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 83 c4 10 48 89 d8
-[  163.734501] RIP  [<ffffffff824d6062>] phonet_pernet+0x182/0x1a0
-[  163.734501]  RSP <ffff8800674d5ca8>
-[  163.861289] ---[ end trace fb5615826c548066 ]---
+g.
 
-After investigation it turns out there were two issues.
-1) Phonet was not implementing network devices but was using register_pernet_device
-   instead of register_pernet_subsys.
+> ---
+>  drivers/gpio/gpio-bt8xx.c     |   12 +-----------
+>  drivers/gpio/gpio-ml-ioh.c    |   12 +-----------
+>  drivers/gpio/gpio-pch.c       |   12 +-----------
+>  drivers/gpio/gpio-sodaville.c |   12 +-----------
+>  4 files changed, 4 insertions(+), 44 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-bt8xx.c b/drivers/gpio/gpio-bt8xx.c
+> index 5ca4098..e4cc7eb 100644
+> --- a/drivers/gpio/gpio-bt8xx.c
+> +++ b/drivers/gpio/gpio-bt8xx.c
+> @@ -328,17 +328,7 @@ static struct pci_driver bt8xxgpio_pci_driver = {
+>  	.resume		= bt8xxgpio_resume,
+>  };
+>  
+> -static int __init bt8xxgpio_init(void)
+> -{
+> -	return pci_register_driver(&bt8xxgpio_pci_driver);
+> -}
+> -module_init(bt8xxgpio_init)
+> -
+> -static void __exit bt8xxgpio_exit(void)
+> -{
+> -	pci_unregister_driver(&bt8xxgpio_pci_driver);
+> -}
+> -module_exit(bt8xxgpio_exit)
+> +module_pci_driver(bt8xxgpio_pci_driver);
+>  
+>  MODULE_LICENSE("GPL");
+>  MODULE_AUTHOR("Michael Buesch");
+> diff --git a/drivers/gpio/gpio-ml-ioh.c b/drivers/gpio/gpio-ml-ioh.c
+> index f0febe5..db01f15 100644
+> --- a/drivers/gpio/gpio-ml-ioh.c
+> +++ b/drivers/gpio/gpio-ml-ioh.c
+> @@ -611,17 +611,7 @@ static struct pci_driver ioh_gpio_driver = {
+>  	.resume = ioh_gpio_resume
+>  };
+>  
+> -static int __init ioh_gpio_pci_init(void)
+> -{
+> -	return pci_register_driver(&ioh_gpio_driver);
+> -}
+> -module_init(ioh_gpio_pci_init);
+> -
+> -static void __exit ioh_gpio_pci_exit(void)
+> -{
+> -	pci_unregister_driver(&ioh_gpio_driver);
+> -}
+> -module_exit(ioh_gpio_pci_exit);
+> +module_pci_driver(ioh_gpio_driver);
+>  
+>  MODULE_DESCRIPTION("OKI SEMICONDUCTOR ML-IOH series GPIO Driver");
+>  MODULE_LICENSE("GPL");
+> diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+> index e8729cc..a05fdb6 100644
+> --- a/drivers/gpio/gpio-pch.c
+> +++ b/drivers/gpio/gpio-pch.c
+> @@ -539,17 +539,7 @@ static struct pci_driver pch_gpio_driver = {
+>  	.resume = pch_gpio_resume
+>  };
+>  
+> -static int __init pch_gpio_pci_init(void)
+> -{
+> -	return pci_register_driver(&pch_gpio_driver);
+> -}
+> -module_init(pch_gpio_pci_init);
+> -
+> -static void __exit pch_gpio_pci_exit(void)
+> -{
+> -	pci_unregister_driver(&pch_gpio_driver);
+> -}
+> -module_exit(pch_gpio_pci_exit);
+> +module_pci_driver(pch_gpio_driver);
+>  
+>  MODULE_DESCRIPTION("PCH GPIO PCI Driver");
+>  MODULE_LICENSE("GPL");
+> diff --git a/drivers/gpio/gpio-sodaville.c b/drivers/gpio/gpio-sodaville.c
+> index 031e5d2..820209c 100644
+> --- a/drivers/gpio/gpio-sodaville.c
+> +++ b/drivers/gpio/gpio-sodaville.c
+> @@ -282,17 +282,7 @@ static struct pci_driver sdv_gpio_driver = {
+>  	.remove = sdv_gpio_remove,
+>  };
+>  
+> -static int __init sdv_gpio_init(void)
+> -{
+> -	return pci_register_driver(&sdv_gpio_driver);
+> -}
+> -module_init(sdv_gpio_init);
+> -
+> -static void __exit sdv_gpio_exit(void)
+> -{
+> -	pci_unregister_driver(&sdv_gpio_driver);
+> -}
+> -module_exit(sdv_gpio_exit);
+> +module_pci_driver(sdv_gpio_driver);
+>  
+>  MODULE_AUTHOR("Hans J. Koch <hjk@linutronix.de>");
+>  MODULE_DESCRIPTION("GPIO interface for Intel Sodaville SoCs");
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
 
-   This was allowing there to be cases when phonenet was not initialized and
-   the phonet net_generic was not set for a network namespace when network
-   device events were being reported on the netdevice_notifier for a network
-   namespace leading to the oops above.
-
-2) phonet_exit_net was implementing a confusing and special case of handling all
-   network devices from going away that it was hard to see was correct, and would
-   only occur when the phonet module was removed.
-
-   Now that unregister_netdevice_notifier has been modified to synthesize unregistration
-   events for the network devices that are extant when called this confusing special
-   case in phonet_exit_net is no longer needed.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- net/phonet/pn_dev.c |   21 ++-------------------
- 1 files changed, 2 insertions(+), 19 deletions(-)
-
-diff --git a/net/phonet/pn_dev.c b/net/phonet/pn_dev.c
-index 9b9a85e..bf5cf69 100644
---- a/net/phonet/pn_dev.c
-+++ b/net/phonet/pn_dev.c
-@@ -331,23 +331,6 @@ static int __net_init phonet_init_net(struct net *net)
- 
- static void __net_exit phonet_exit_net(struct net *net)
- {
--	struct phonet_net *pnn = phonet_pernet(net);
--	struct net_device *dev;
--	unsigned i;
--
--	rtnl_lock();
--	for_each_netdev(net, dev)
--		phonet_device_destroy(dev);
--
--	for (i = 0; i < 64; i++) {
--		dev = pnn->routes.table[i];
--		if (dev) {
--			rtm_phonet_notify(RTM_DELROUTE, dev, i);
--			dev_put(dev);
--		}
--	}
--	rtnl_unlock();
--
- 	proc_net_remove(net, "phonet");
- }
- 
-@@ -361,7 +344,7 @@ static struct pernet_operations phonet_net_ops = {
- /* Initialize Phonet devices list */
- int __init phonet_device_init(void)
- {
--	int err = register_pernet_device(&phonet_net_ops);
-+	int err = register_pernet_subsys(&phonet_net_ops);
- 	if (err)
- 		return err;
- 
-@@ -377,7 +360,7 @@ void phonet_device_exit(void)
- {
- 	rtnl_unregister_all(PF_PHONET);
- 	unregister_netdevice_notifier(&phonet_device_notifier);
--	unregister_pernet_device(&phonet_net_ops);
-+	unregister_pernet_subsys(&phonet_net_ops);
- 	proc_net_remove(&init_net, "pnresource");
- }
- 
 -- 
-1.7.2.5
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
