@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab2DFS3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 14:29:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52303 "EHLO mga01.intel.com"
+	id S1754139Ab2DFSeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 14:34:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38762 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab2DFS25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 14:28:57 -0400
+	id S1752154Ab2DFSeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 14:34:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="138591154"
-Subject: [PATCH 0/6] rework quirks for the "kt" serial port
+   d="scan'208";a="138592926"
+Subject: [PATCH 1/6] Revert "serial/8250_pci: init-quirk msi support for kt
+ serial controller"
 To: gregkh@linuxfoundation.org
 From: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        alan@linux.intel.com
-Date: Fri, 06 Apr 2012 11:44:22 -0700
-Message-ID: <20120406184346.21744.18004.stgit@dwillia2-linux.jf.intel.com>
+Cc: Sudhakar Mamillapalli <sudhakar@fb.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, linux-serial@vger.kernel.org,
+        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@linux.intel.com>
+Date: Fri, 06 Apr 2012 11:49:37 -0700
+Message-ID: <20120406184934.22088.63056.stgit@dwillia2-linux.jf.intel.com>
+In-Reply-To: <20120406184346.21744.18004.stgit@dwillia2-linux.jf.intel.com>
+References: <20120406184346.21744.18004.stgit@dwillia2-linux.jf.intel.com>
 User-Agent: StGit/0.16-1-g7004
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,47 +28,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kt serial port intermittently reports unreliable data in its IIR
-register and needs to reset fifos to stay in sync with firmware when the
-device is reset.
+This reverts commit e86ff4a63c9fdd875ba8492577cd1ad2252f525c.
 
-The IIR fixes that went into 3.3 were not complete so patch 3 replaces
-them with an explicit way to turn on UART_BUG_THRE (i.e. the "I don't
-trust my iir" flag).
+This tried to enforce the semantics of one interrupt per iir read of the
+THRE (transmit-hold empty) status, but events from other sources
+(particularly modem status) defeat this guarantee.
 
-A new fix for resetting the fifos on device reset is patch 5.  Alan
-asked to make this a new quirk rather than add more workarounds to the
-core (patch 4).
+This change also broke 8250_pci suspend/resume support as
+pciserial_resume_ports() re-runs .init() quirks, but does not run
+.exit() quirks in pciserial_suspend_ports() leading to reports like:
 
-Patch 6 is an untested RFC / RFT from anyone that has a serial
-suspend/resume use case with an 'init' quirk that has resources that
-need de-allocation at 'exit'.
+  sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:16.3/msi_irqs'
 
---
-Dan
+...and a subsequent crash.  The mismatch of init/exit at suspend/resume
+seems like a bug in its own right.
 
+[stable: 3.3.x]
+Cc: <stable@vger.kernel.org>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Sudhakar Mamillapalli <sudhakar@fb.com>
+Reported-by: Nhan H Mai <nhan.h.mai@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/tty/serial/8250/8250_pci.c |   14 --------------
+ 1 files changed, 0 insertions(+), 14 deletions(-)
 
-Dan Williams (5):
-      Revert "serial/8250_pci: init-quirk msi support for kt serial controller"
-      Revert "serial/8250_pci: setup-quirk workaround for the kt serial controller"
-      serial/8250_pci: add a "force background timer" flag and use it for the "kt" serial port
-      tegra, serial8250: add ->handle_break() uart_port op
-      serial/8250_pci: fix suspend/resume vs init/exit quirks
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index da2b0b0..1d4ccf8 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1118,18 +1118,6 @@ pci_xr17c154_setup(struct serial_private *priv,
+ 	return pci_default_setup(priv, board, port, idx);
+ }
+ 
+-static int try_enable_msi(struct pci_dev *dev)
+-{
+-	/* use msi if available, but fallback to legacy otherwise */
+-	pci_enable_msi(dev);
+-	return 0;
+-}
+-
+-static void disable_msi(struct pci_dev *dev)
+-{
+-	pci_disable_msi(dev);
+-}
+-
+ #define PCI_VENDOR_ID_SBSMODULARIO	0x124B
+ #define PCI_SUBVENDOR_ID_SBSMODULARIO	0x124B
+ #define PCI_DEVICE_ID_OCTPRO		0x0001
+@@ -1249,9 +1237,7 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
+ 		.device		= PCI_DEVICE_ID_INTEL_PATSBURG_KT,
+ 		.subvendor	= PCI_ANY_ID,
+ 		.subdevice	= PCI_ANY_ID,
+-		.init		= try_enable_msi,
+ 		.setup		= kt_serial_setup,
+-		.exit		= disable_msi,
+ 	},
+ 	/*
+ 	 * ITE
 
-Sudhakar Mamillapalli (1):
-      serial/8250_pci: Clear FIFOs for Intel ME Serial Over Lan device on BI
-
-
- arch/arm/mach-tegra/board-harmony.c   |    1 +
- arch/arm/mach-tegra/board-paz00.c     |    2 +
- arch/arm/mach-tegra/board-seaboard.c  |    1 +
- arch/arm/mach-tegra/board-trimslice.c |    1 +
- arch/arm/mach-tegra/devices.c         |   18 ++++++++++
- arch/arm/mach-tegra/devices.h         |    2 +
- drivers/tty/serial/8250/8250.c        |   56 ++++++++++--------------------
- drivers/tty/serial/8250/8250.h        |    2 +
- drivers/tty/serial/8250/8250_pci.c    |   61 +++++++++++++++++++++++++--------
- include/linux/serial_8250.h           |    1 +
- include/linux/serial_core.h           |    7 +++-
- 11 files changed, 99 insertions(+), 53 deletions(-)
