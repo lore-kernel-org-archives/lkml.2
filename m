@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2DFIdX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 04:33:23 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49439 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab2DFIdV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 04:33:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyT7vCjr0-3qdz_0oNVZ+a3K8A7F7aGVVzYtNdUkovp1Q@mail.gmail.com>
-References: <1333692989-9230-1-git-send-email-kernelfans@gmail.com>
-	<CA+55aFyT7vCjr0-3qdz_0oNVZ+a3K8A7F7aGVVzYtNdUkovp1Q@mail.gmail.com>
-Date: Fri, 6 Apr 2012 16:33:20 +0800
-Message-ID: <CAFgQCTuxwHDJaR-6NPoFdvQVMQqB3BAtrq2e_HQ0DM8=yL9jLQ@mail.gmail.com>
-Subject: Re: [PATCH] pid: remove redundant condition
-From: Liu ping fan <kernelfans@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754861Ab2DFIeO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 04:34:14 -0400
+Received: from mail0.unitn.it ([193.205.206.51]:34543 "EHLO mail0.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751588Ab2DFIeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 04:34:12 -0400
+X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Apr 2012 04:34:12 EDT
+Subject: Re: [RFC][PATCH 00/16] sched: SCHED_DEADLINE v4
+From: Luca Abeni <luca.abeni@unitn.it>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, cfriesen@nortel.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com,
+        Tadeus Prastowo <tadeus.prastowo@rwth-aachen.de>
+In-Reply-To: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain
+Date: Fri, 06 Apr 2012 10:25:51 +0200
+Message-Id: <1333700751.6646.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 2:26 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Apr 5, 2012 at 11:16 PM, Liu Ping Fan <kernelfans@gmail.com> wrote:
->> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
->>
->> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
->> ---
->>  kernel/pid.c |    3 +--
->>  1 files changed, 1 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/pid.c b/kernel/pid.c
->> index 9f08dfa..e4ca244 100644
->> --- a/kernel/pid.c
->> +++ b/kernel/pid.c
->> @@ -248,8 +248,7 @@ void put_pid(struct pid *pid)
->>                return;
->>
->>        ns = pid->numbers[pid->level].ns;
->> -       if ((atomic_read(&pid->count) == 1) ||
->> -            atomic_dec_and_test(&pid->count)) {
->> +       if (atomic_dec_and_test(&pid->count) {
->>                kmem_cache_free(ns->pid_cachep, pid);
->>                put_pid_ns(ns);
->>        }
->
-> No, this isn't necessarily redundant.
->
-> The atomic_dec_and_test() instruction can be very expensive. So if
-Oh, got it, thanks.
+Hi all,
 
-Regards,
-pingfan
-> count was 1 before, we're the last user, and we can free it without
-> the expensive atomic_dec_and_test().
->
-> However, if we are *not* the last user, then we can race with another
-> user decrementing the count, so now we need to use the expensive
-> version.
->
-> Now, whether that special case is really worth it or not, I don't
-> know. But it's not redundant.
->
->                    Linus
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+> Hello everyone,
+> 
+> This is the take 4 for the SCHED_DEADLINE patchset.
+[...]
+> Still missing/incomplete:
+>   - (c)group based bandwidth management, and maybe scheduling. It seems
+>     some more discussion on what precisely we want is *really* needed
+>     for this point;
+>   - bandwidth inheritance (to replace deadline/priority inheritance).
+>     What's in the patchset is just very few more than a simple
+>     placeholder. More discussion on the right way to go is needed here.
+>     Some work has already been done, but it is still not ready for
+>     submission.
+About BWI... A student of mine (added in cc) implemented a prototypal
+bandwidth inheritance (based on an old version of SCHED_DEADLINE). It is
+here:
+https://github.com/eus/cbs_inheritance
+(Tadeus, please correct me if I pointed to the wrong repository).
+
+It is not for inclusion yet (it is based on an old version, it is UP
+only, and it probably needs some cleanups), but it worked fine in our
+tests. Note that in this patch the BWI mechanism is not bound to
+rtmutexes, but inheritance is controlled through 2 syscalls (because we
+used BWI for client/server interactions).
+Anyway, I hope that the BWI code developed by Tadeus can be useful (or
+can be directly re-used) for implementing BWI in SCHED_DEADLINE.
+
+BTW, happy Easter to everyone!
+
+				Luca
+
