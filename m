@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412Ab2DFU22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:28:28 -0400
-Received: from tex.lwn.net ([70.33.254.29]:50909 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062Ab2DFU21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:28:27 -0400
-Date: Fri, 6 Apr 2012 14:28:24 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent
- execve from granting privs
-Message-ID: <20120406142824.61d8ca3b@lwn.net>
-In-Reply-To: <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	<1333051320-30872-2-git-send-email-wad@chromium.org>
-	<20120406125517.77133b4e.akpm@linux-foundation.org>
-	<CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S932431Ab2DFUbf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:31:35 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63897 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757941Ab2DFUbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 16:31:34 -0400
+Date: Fri, 6 Apr 2012 13:31:14 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC PATCH 0/2] Removal of lumpy reclaim
+In-Reply-To: <20120406123439.d2ba8920.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1204061316580.3057@eggly.anvils>
+References: <1332950783-31662-1-git-send-email-mgorman@suse.de> <20120406123439.d2ba8920.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012 13:01:17 -0700
-Andrew Lutomirski <luto@mit.edu> wrote:
+On Fri, 6 Apr 2012, Andrew Morton wrote:
+> On Wed, 28 Mar 2012 17:06:21 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > (cc'ing active people in the thread "[patch 68/92] mm: forbid lumpy-reclaim
+> > in shrink_active_list()")
+> > 
+> > In the interest of keeping my fingers from the flames at LSF/MM, I'm
+> > releasing an RFC for lumpy reclaim removal.
+> 
+> I grabbed them, thanks.
 
-> This has been bugging me for awhile.  Is there any interest in moving
-> the manpages into the kernel source tree?  Then there could be a
-> general requirement that new APIs get documented when they're written.
+I do have a concern with this: I was expecting lumpy reclaim to be
+replaced by compaction, and indeed it is when CONFIG_COMPACTION=y.
+But when CONFIG_COMPACTION is not set, we're back to 2.6.22 in
+relying upon blind chance to provide order>0 pages.
 
-Man page (or other documentation) requirements for patch acceptance are a
-regular kernel summit feature.  People seem to think it's a good idea, but
-actual enforcement of such requirements always seems to be lacking.  Lots
-of people have kind of given up trying.  I don't really see that adding
-the man pages to the tree would help, but I could be wrong...
-
-jon
+Hugh
