@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab2DFOpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 10:45:03 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51628 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757327Ab2DFOol (ORCPT
+	id S1757361Ab2DFOtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 10:49:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33592 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754364Ab2DFOtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 10:44:41 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] gpio: langwell: use devm_* helpers to simplify probe
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: linus.walleij@stericsson.com,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-In-Reply-To: <1333617317-28437-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1333617317-28437-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Thu, 05 Apr 2012 21:26:03 -0700
-Message-Id: <20120406042603.5F0953E03FF@localhost>
+	Fri, 6 Apr 2012 10:49:20 -0400
+Date: Fri, 6 Apr 2012 15:49:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] gpiolib: Implement devm_gpio_request_one()
+Message-ID: <20120406144917.GE19424@opensource.wolfsonmicro.com>
+References: <1333552489-27694-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1333552489-27694-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20120406044832.7C80D3E0ED5@localhost>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AsxXAMtlQ5JHofzM"
+Content-Disposition: inline
+In-Reply-To: <20120406044832.7C80D3E0ED5@localhost>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  5 Apr 2012 12:15:15 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
-> Use devm_* helper functions where possible to make the error handling in
-> the probe function simpler.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Applied, thanks.
+--AsxXAMtlQ5JHofzM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-g.
+On Thu, Apr 05, 2012 at 09:48:32PM -0700, Grant Likely wrote:
 
-> ---
->  drivers/gpio/gpio-langwell.c |   18 +++++++-----------
->  1 files changed, 7 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-> index 00692e8..0bea41b 100644
-> --- a/drivers/gpio/gpio-langwell.c
-> +++ b/drivers/gpio/gpio-langwell.c
-> @@ -309,7 +309,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
->  
->  	retval = pci_enable_device(pdev);
->  	if (retval)
-> -		goto done;
-> +		return retval;
->  
->  	retval = pci_request_regions(pdev, "langwell_gpio");
->  	if (retval) {
-> @@ -331,18 +331,18 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
->  	/* get the register base from bar0 */
->  	start = pci_resource_start(pdev, 0);
->  	len = pci_resource_len(pdev, 0);
-> -	base = ioremap_nocache(start, len);
-> +	base = devm_ioremap_nocache(&pdev->dev, start, len);
->  	if (!base) {
->  		dev_err(&pdev->dev, "error mapping bar0\n");
->  		retval = -EFAULT;
->  		goto err3;
->  	}
->  
-> -	lnw = kzalloc(sizeof(struct lnw_gpio), GFP_KERNEL);
-> +	lnw = devm_kzalloc(&pdev->dev, sizeof(struct lnw_gpio), GFP_KERNEL);
->  	if (!lnw) {
->  		dev_err(&pdev->dev, "can't allocate langwell_gpio chip data\n");
->  		retval = -ENOMEM;
-> -		goto err4;
-> +		goto err3;
->  	}
->  	lnw->reg_base = base;
->  	lnw->irq_base = irq_base;
-> @@ -361,7 +361,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
->  	retval = gpiochip_add(&lnw->chip);
->  	if (retval) {
->  		dev_err(&pdev->dev, "langwell gpiochip_add error %d\n", retval);
-> -		goto err5;
-> +		goto err3;
->  	}
->  	irq_set_handler_data(pdev->irq, lnw);
->  	irq_set_chained_handler(pdev->irq, lnw_irq_handler);
-> @@ -376,16 +376,12 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
->  	pm_runtime_put_noidle(&pdev->dev);
->  	pm_runtime_allow(&pdev->dev);
->  
-> -	goto done;
-> -err5:
-> -	kfree(lnw);
-> -err4:
-> -	iounmap(base);
-> +	return 0;
-> +
->  err3:
->  	pci_release_regions(pdev);
->  err2:
->  	pci_disable_device(pdev);
-> -done:
->  	return retval;
->  }
->  
-> -- 
-> 1.7.9.1
-> 
+> Can we make devm_gpio_request a static inline wrapper around
+> devm_gpio_request_one() with the flags field set to '0'?  I don't liek
+> the duplication of this function.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+> Similarily, gpio_request() should actually be a static inline around
+> gpio_request_one() instead of the other way around as it is currently
+> written.
+
+Yeah, I couldn't understand why the non-managed functions were written
+in this way so I followed the same pattern when I added the managed one
+assuming that the original code was sane.
+
+--AsxXAMtlQ5JHofzM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPfwJkAAoJEBus8iNuMP3dWqMP/R1pImDgO20RMeoQsayvqV+D
+qXJRGurNYGvMMECBeeiOjW/oZwGpwWLzNv5ugfobNMBjMnW/pxmHqfsJipIjqnDj
+dRuD8JEiruzYCkf/qXQ2RPd87kH/6/Kn/EwM08ROgX1OH2VLJqZ2uhV3DhATpelI
+rBCbDFY+lrmsroxn3NtNdhmndcVUu0pfEohFBl1qHGm6AaD9+R8RBrwmupJIZFo5
+blRdQZLeGCTIlIxdDAbCV2cEUK0MZCEdH9Oq8GwmVBrTwKPIUyfDbppnb1Q6E6oP
+JUZp1e48wM2H/1SuWqSz3dd8QPfEJSRfc0WVu2Inb+mOsGDy4xFZh2TDzilkfkD1
+MbKp/yjBDk913ni3+1FRzX0KbegAALFOrjRP0zWOR/K+q8pL8GYV5N9iFn0PhC4s
+TuEC6RjJPAi7YhjqKGi1sc1f3JqGHxe6+vnBZNAv6MVRlZAbpKuAu7EM9hBHHx0T
+j1NIaRXEUiseo9XU6cBkm6PYZxaS4huP17sPqQrmxvCu93GmHWizRViaBfA9f6ab
+jr7swB9oNyNTD951G2Cy7rkhc5sNEos4em0NKp0qDUq9FtUxPAtIBAV0CQcXJtfQ
+w7Bfp39Q3R4LS6avZM+/Jw7lA2t7KBT1ZdXhRXqGA86I0ly0ILDJ9TNbXvOO/GCU
+icHtgqJZ6qWDQ/5Hk2fi
+=wRqP
+-----END PGP SIGNATURE-----
+
+--AsxXAMtlQ5JHofzM--
