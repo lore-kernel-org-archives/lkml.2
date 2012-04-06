@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab2DFFiv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 01:38:51 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4845 "EHLO
+	id S1753297Ab2DFFng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 01:43:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5163 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab2DFFiu (ORCPT
+	with ESMTP id S1752742Ab2DFFnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 01:38:50 -0400
+	Fri, 6 Apr 2012 01:43:35 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 05 Apr 2012 22:38:50 -0700
+	by hqnvupgp06.nvidia.com on Thu, 05 Apr 2012 22:43:31 -0700
+Message-ID: <4F7E8030.80000@nvidia.com>
+Date: Fri, 6 Apr 2012 11:03:36 +0530
 From: Laxman Dewangan <ldewangan@nvidia.com>
-To: lrg@ti.com, broonie@opensource.wolfsonmicro.com, paul.gortmaker@gmail.com
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] regulator: rc5t583: Correct MODULE LICENSE to GPL v2
-Date: Fri,  6 Apr 2012 10:58:33 +0530
-Message-Id: <1333690113-8341-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] regulator: rc5t583: Simplify RC5T583_REG macro
+References: <1333670496.2777.0.camel@phoenix>
+In-Reply-To: <1333670496.2777.0.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing build issue reported by Paul Gortmaker:
+On Friday 06 April 2012 05:31 AM, Axel Lin wrote:
+> Simplify RC5T583_REG macro by removing _vout_reg and _ds_reg parameters.
+>
+> The naming for vout_reg and deepsleep_reg can be replaced by:
+> .vout_reg       = RC5T583_REG_##_id##DAC,
+> .deepsleep_reg  = RC5T583_REG_##_id##DAC_DS,
+>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> ---
 
-It appears this breaks linux-next allmodconfig build, because it
-uses an uppercase V in the v2 of its MODULE_LICENSE.
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-FATAL: modpost: GPL-incompatible module rc5t583-regulator.ko uses
-GPL-only symbol 'platform_driver_unregister'
-make[2]: *** [__modpost] Error 1
+I thought of doing this on my first patch and then thought that table 
+should have all configuration picture rather than deriving  from few 
+parameters.
+If this is a good way then I will take care for my next PMIC driver 
+development.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/regulator/rc5t583-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
-index 578bd5d..442106a 100755
---- a/drivers/regulator/rc5t583-regulator.c
-+++ b/drivers/regulator/rc5t583-regulator.c
-@@ -361,4 +361,4 @@ module_exit(rc5t583_regulator_exit);
- MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
- MODULE_DESCRIPTION("RC5T583 regulator driver");
- MODULE_ALIAS("platform:rc5t583-regulator");
--MODULE_LICENSE("GPL V2");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.1.1
-
+Thanks,
+Laxman
