@@ -1,122 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab2DFPul (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 11:50:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42356 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab2DFPuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 11:50:39 -0400
-Message-ID: <4F7F10C5.1050901@gmail.com>
-Date: Fri, 06 Apr 2012 23:50:29 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1757483Ab2DFPvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 11:51:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50075 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754168Ab2DFPvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 11:51:14 -0400
+Date: Fri, 6 Apr 2012 17:51:09 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 03/15] perf: Build libtraceevent.a
+Message-ID: <20120406155109.GA2693@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Steven Rostedt <srostedt@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+	Namhyung Kim <namhyung.kim@lge.com>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <1333666086-6517-4-git-send-email-fweisbec@gmail.com>
+ <20120406114502.GD30425@liondog.tnic>
+ <CAFTL4hzvy1wgm8e7_h2S6Fa_A+QybUsssetLaWyUu3tB5a2m1w@mail.gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH -v3 40/47] PCI: Add pci bus removal through /sys/.../pci_bus/.../remove
-References: <1332135996-13860-1-git-send-email-yinghai@kernel.org> <1332135996-13860-41-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1332135996-13860-41-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFTL4hzvy1wgm8e7_h2S6Fa_A+QybUsssetLaWyUu3tB5a2m1w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
-	I found many other drivers assume that a pci bus won't disappear if
-the corresponding PCI bridge device still exists. The sysfs interface proposed
-here breaks that assumption and may cause many access-after-free issues.
-So what's the purpose of this interface? Should we remove this interface or
-enhance other drivers to avoid invalid memory access issues?
-	Thanks!
-	Gerry
- 
-On 03/19/2012 01:46 PM, Yinghai Lu wrote:
-> it supports both pci root bus and pci bus under pci bridge.
+On Fri, Apr 06, 2012 at 05:26:35PM +0200, Frederic Weisbecker wrote:
+> 2012/4/6 Borislav Petkov <bp@alien8.de>:
+> > On Fri, Apr 06, 2012 at 12:47:54AM +0200, Frederic Weisbecker wrote:
+> >> From: Steven Rostedt <srostedt@redhat.com>
+> >>
+> >> Have building perf also build libtraceevent.a. Currently, perf does
+> >> not use the code within libtraceevent.a, but it soon will.
+> >>
+> >> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> >> Cc: Ingo Molnar <mingo@kernel.org>
+> >> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >> Cc: Peter Zijlstra <peterz@infradead.org>
+> >> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> >> Cc: Steven Rostedt <rostedt@goodmis.org>
+> >> Cc: Borislav Petkov <bp@alien8.de>
+> >> Cc: Jiri Olsa <jolsa@redhat.com>
+> >> Cc: Arun Sharma <asharma@fb.com>
+> >> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> >> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> >> ---
+> >>  tools/perf/Makefile |   11 ++++++++++-
+> >>  1 files changed, 10 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> >> index 6f93a99..8e60e51 100644
+> >> --- a/tools/perf/Makefile
+> >> +++ b/tools/perf/Makefile
+> >> @@ -1,5 +1,6 @@
+> >>  ifeq ("$(origin O)", "command line")
+> >>       OUTPUT := $(O)/
+> >> +     COMMAND_O := O=$(O)
+> >>  endif
+> >>
+> >>  # The default target of this Makefile is...
+> >> @@ -211,6 +212,9 @@ $(OUTPUT)python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+> >>
+> >>  SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+> >>
+> >> +EVENT_PARSE_DIR = ../lib/traceevent/
+> >> +LIBTRACEEVENT = $(OUTPUT)$(EVENT_PARSE_DIR)libtraceevent.a
+> >> +
+> >>  #
+> >>  # Single 'perf' binary right now:
+> >>  #
+> >> @@ -335,6 +339,7 @@ LIB_H += util/cpumap.h
+> >>  LIB_H += util/top.h
+> >>  LIB_H += $(ARCH_INCLUDE)
+> >>  LIB_H += util/cgroup.h
+> >> +LIB_H += $(EVENT_PARSE_DIR)event-parse.h
+> >>
+> >>  LIB_OBJS += $(OUTPUT)util/abspath.o
+> >>  LIB_OBJS += $(OUTPUT)util/alias.o
+> >> @@ -741,7 +746,7 @@ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+> >>               '-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+> >>               $(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
+> >>
+> >> -$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+> >> +$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(LIBTRACEEVENT)
+> >>       $(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
+> >>                 $(BUILTIN_OBJS) $(LIBS) -o $@
+> >>
+> >> @@ -847,6 +852,10 @@ $(sort $(dir $(DIRECTORY_DEPS))):
+> >>  $(LIB_FILE): $(LIB_OBJS)
+> >>       $(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
+> >>
+> >> +# libparsevent.a
+> >> +$(LIBTRACEEVENT):
+> >> +     make -C $(EVENT_PARSE_DIR) $(COMMAND_O) libtraceevent.a
+> >> +
+> >
+> > With a toplevel Makefile in tools/, this should be made into its own
+> > target residing in tools/lib/traceevent/Makefile and a perf build should
+> > be dependent on it instead of adding a perf-specific libtraceevent
+> > target here.
 > 
-> -v2: Change to three returns way in dev_bus_remove_store.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-doc@vger.kernel.org
-> ---
->  Documentation/ABI/testing/sysfs-bus-pci |    8 ++++++++
->  drivers/pci/pci-sysfs.c                 |   30 ++++++++++++++++++++++++++++++
->  2 files changed, 38 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
-> index 95f0f37..22392de 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-pci
-> +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> @@ -92,6 +92,14 @@ Description:
->  		hot-remove the PCI device and any of its children.
->  		Depends on CONFIG_HOTPLUG.
->  
-> +What:		/sys/bus/pci/devices/.../pci_bus/.../remove
-> +Date:		March 2012
-> +Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
-> +Description:
-> +		Writing a non-zero value to this attribute will
-> +		hot-remove the PCI bus and any of its children.
-> +		Depends on CONFIG_HOTPLUG.
-> +
->  What:		/sys/bus/pci/devices/.../pci_bus/.../rescan
->  Date:		May 2011
->  Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index d33a1bc..afba77b 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -391,6 +391,35 @@ remove_store(struct device *dev, struct device_attribute *dummy,
->  	return count;
->  }
->  
-> +static void bus_remove_callback(struct device *dev)
-> +{
-> +	struct pci_bus *bus = to_pci_bus(dev);
-> +
-> +	mutex_lock(&pci_remove_rescan_mutex);
-> +	pci_stop_and_remove_bus(bus);
-> +	mutex_unlock(&pci_remove_rescan_mutex);
-> +}
-> +static ssize_t
-> +dev_bus_remove_store(struct device *dev, struct device_attribute *attr,
-> +		 const char *buf, size_t count)
-> +{
-> +	int err;
-> +	unsigned long val;
-> +
-> +	if (kstrtoul(buf, 0, &val) < 0)
-> +		return -EINVAL;
-> +
-> +	if (!val)
-> +		return count;
-> +
-> +	err = device_schedule_callback(dev, bus_remove_callback);
-> +
-> +	if (err)
-> +		return err;
-> +
-> +	return count;
-> +}
-> +
->  static void bus_rescan_callback(struct device *dev)
->  {
->  	struct pci_bus *bus = to_pci_bus(dev);
-> @@ -450,6 +479,7 @@ struct device_attribute pci_dev_attrs[] = {
->  struct device_attribute pcibus_dev_attrs[] = {
->  #ifdef CONFIG_HOTPLUG
->  	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_bus_rescan_store),
-> +	__ATTR(remove, (S_IWUSR|S_IWGRP), NULL, dev_bus_remove_store),
->  #endif
->  	__ATTR(cpuaffinity, S_IRUGO, pci_bus_show_cpumaskaffinity, NULL),
->  	__ATTR(cpulistaffinity, S_IRUGO, pci_bus_show_cpulistaffinity, NULL),
+> Not sure what you mean. The libtraceevent makefile is standalone and
+> perf is dependant on it.
+> What am I missing?
 
+Right, what I meant was to add the $(LIBTRACEEVENT): target above to the
+toplevel Makefile so that when you're in the kernel source tree, you do
+
+$ make tools/perf
+
+it has a target $(LIBTRACEEVENT) dependent on it in the toplevel
+Makefile instead of perf's Makefile to avoid duplication. Then, when
+perf is rebuilt, it simply links with this lib. IOW, not have the "make
+-C" call in perf's Makefile but in the toplevel Makefile because other
+tools will want to use libtraceevent.a too and link against it.
+
+Oh well, the toplevel Makefile patches aren't upstream either so we're
+wasting cycles here, I'll fix that up when the times comes.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
