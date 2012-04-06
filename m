@@ -1,139 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab2DFRce (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 13:32:34 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39888 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706Ab2DFRcd (ORCPT
+	id S932203Ab2DFRdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 13:33:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35220 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753909Ab2DFRdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 13:32:33 -0400
-Message-ID: <4F7F28AD.4050109@gmail.com>
-Date: Fri, 06 Apr 2012 12:32:29 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Fri, 6 Apr 2012 13:33:03 -0400
+Date: Fri, 6 Apr 2012 18:32:59 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT 2/2] regulator: Convert rc5t583 to set_voltage
+Message-ID: <20120406173258.GM19424@opensource.wolfsonmicro.com>
+References: <1333605888.18055.1.camel@phoenix>
+ <1333606056.18055.3.camel@phoenix>
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
-References: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com> <4F7E64E4.3080509@gmail.com> <4F7F1BDD.4070205@gmail.com>
-In-Reply-To: <4F7F1BDD.4070205@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VB1oQhYtJt8uuzk+"
+Content-Disposition: inline
+In-Reply-To: <1333606056.18055.3.camel@phoenix>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2012 11:37 AM, David Daney wrote:
-> Rob,
-> 
-> What the he*%? ...
-> 
-> 
-> On 04/05/2012 08:37 PM, Rob Herring wrote:
->> On 04/05/2012 06:52 PM, David Daney wrote:
->>> From: David Daney<david.daney@cavium.com>
->>>
->>> In commit 4bbdd45a (irq_domain/powerpc: eliminate irq_map; use
->>> irq_alloc_desc() instead) code was added that ignores error returns
->>> from irq_alloc_desc_from() by (silently) casting the return value to
->>> unsigned.  The negitive value error return now suddenly looks like a
->>> valid irq number.
->>>
->>> Commits cc79ca69 (irq_domain: Move irq_domain code from powerpc to
->>> kernel/irq) and 1bc04f2c (irq_domain: Add support for base irq and
->>> hwirq in legacy mappings) move this code to its current location in
-> 
-> That would be commits:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=4bbdd45afdae208a7c4ade89cf602f89a6397cff
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=cc79ca691c292e9fd44f589c7940b9654e22f2f6
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=1bc04f2cf8c2a1feadbd994f50c40bb145bf2989
-> 
-> 
->>> irqdomain.c
->>>
->>> The result of all of this is a null pointer dereference OOPS if one of
->>> the error cases is hit.
->>>
->>> The fix: Don't cast away the negativeness of the return value and then
->>> check for errors.
->>>
->>> Signed-off-by: David Daney<david.daney@cavium.com>
->>> ---
->>>   kernel/irq/irqdomain.c |   11 ++++++-----
->>>   1 files changed, 6 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
->>> index af48e59..9d3e3ae 100644
->>> --- a/kernel/irq/irqdomain.c
->>> +++ b/kernel/irq/irqdomain.c
->>> @@ -351,6 +351,7 @@ unsigned int irq_create_mapping(struct irq_domain
->>> *domain,
->>>                   irq_hw_number_t hwirq)
->>>   {
->>>       unsigned int virq, hint;
->>> +    int irq;
->>>
->>>       pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
->>>
->>> @@ -380,14 +381,14 @@ unsigned int irq_create_mapping(struct
->>> irq_domain *domain,
->>>       hint = hwirq % irq_virq_count;
->>>       if (hint == 0)
->>>           hint++;
->>> -    virq = irq_alloc_desc_from(hint, 0);
->>
->> You are not looking at mainline. hint was removed in later versions, and
->> the referenced commit ids don't exist.
-> 
-> Please look at Linus' tree before making incorrect statements about
-> whether or not code exists on the 'mainline'
-> 
-> The current kernel.org tree contains the bug and will cause anything
-> using irq_create_mapping() to crash in a semi-random manner.
-> 
 
-Doh, evidently I need git training... Sorry about that. I was looking at
-a 3.2 branch even though I did check that. Plus I was remembering Grant
-removed some of the hint code in later versions of the irq domain code.
+--VB1oQhYtJt8uuzk+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My only comment is perhaps the pr_debug should be an error msg unless
-you get an error message already. Otherwise, FWIW:
+On Thu, Apr 05, 2012 at 02:07:36PM +0800, Axel Lin wrote:
+> Not every regulator driver should implement set_voltage_sel callback.
+> See commit e8eef82
+> "regulator: Provide a selector based set_voltage_sel() operation".
+>=20
+> For rc5t583, the regulator voltage can be mapped onto selector values wit=
+h a
+> simple calculation, thus implement set_voltage is better than set_voltage=
+_sel.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Applied, thanks.
 
-Off to find my brain,
-Rob
+--VB1oQhYtJt8uuzk+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> David Daney
-> 
->>
->> Rob
->>
->>> -    if (!virq)
->>> -        virq = irq_alloc_desc_from(1, 0);
->>> -    if (!virq) {
->>> +    irq = irq_alloc_desc_from(hint, 0);
->>> +    if (irq<= 0)
->>> +        irq = irq_alloc_desc_from(1, 0);
->>> +    if (irq<= 0) {
->>>           pr_debug("irq: ->  virq allocation failed\n");
->>>           return 0;
->>>       }
->>> -
->>> +    virq = irq;
->>>       if (irq_setup_virq(domain, virq, hwirq)) {
->>>           if (domain->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
->>>               irq_free_desc(virq);
->>
->>
-> 
+iQIcBAEBAgAGBQJPfyiwAAoJEBus8iNuMP3do3cP/3eFg/m4RtiuxHsv161nK08f
+vgHbgfaZXZ6BO2N2BSWnwBjd5sU0urPPAB4TJXozoQ50PL8lc3VUAuPJt3WAri8S
+XsqpQlhaE8D8lHST8MM4pvFShibWppKENJBmFhWSmqlcJwZ3PGNZWwqs6mequXzD
+Vj8iVKIV0JoisU26MglZiwsuP1WNtgTrSgEEoWzoY9GY39FpJbHbgKbHqH5++ze3
+v2SMUgyeSfKSGwHE7M6fNdQ65i7jo1R6LX4jyo6R//ZdmYFjnA1+fIeh1PnKDlxe
+hMWQWNKBjB1W7cQ7nE0zbC7rD+84iIL+ByDOoU8sS0pCxndMiuFTO0RN1wzps5DF
+T6ZuFJWrqUGTXnggLrKKHUj2ttK5q4WQh6r+Ys7IktcxX1kKumqTWrJ3gMSyTuDf
+Tx/uzw3macGJBwZdJVMPWdGiV0uuWvFiwtf8BhvBPQWDDZ3aZBFvYDYDhdkM9Rpr
+UNPpUnRQsY7kW2CJPtNlwkqWJIIxPzuB8oYkstVmzYRH0veoYxnQkYgiQt+7enMn
+gSM93aS0toELJtp3V3HNC1nX0SfmOVqOeFbP5UVT2deaDTsMAA/4m928P3NsuV19
+P+nqWy0IltH0mFHAo54WR1yw1+Iea8SlzmddaJN3sGCW+rBhSgeA0BG2nBRcsXqd
+Rt6PCdNxKD1gbJdfZjBI
+=1fL6
+-----END PGP SIGNATURE-----
 
+--VB1oQhYtJt8uuzk+--
