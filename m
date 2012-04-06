@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab2DFV2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:28:32 -0400
-Received: from mga06.intel.com ([134.134.136.21]:35726 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755146Ab2DFV2b (ORCPT
+	id S1758224Ab2DFV2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:28:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37686 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab2DFV2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:28:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F7F59B2.4090400@wwwdotorg.org>
-References: <20120406184346.21744.18004.stgit@dwillia2-linux.jf.intel.com>
-	<20120406184956.22088.85217.stgit@dwillia2-linux.jf.intel.com>
-	<4F7F59B2.4090400@wwwdotorg.org>
-Date: Fri, 6 Apr 2012 14:28:28 -0700
-Message-ID: <CABE8wws23LSLBxz34LYuyYtXMCG+-YTShhojXdeVkfiOvHWseQ@mail.gmail.com>
-Subject: Re: [PATCH 4/6] tegra, serial8250: add ->handle_break() uart_port op
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        alan@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Apr 2012 17:28:49 -0400
+Date: Fri, 6 Apr 2012 14:28:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Morris <jmorris@namei.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v17 00/15] seccomp_filter: BPF-based syscall filtering
+Message-Id: <20120406142846.fd8dea70.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LRH.2.02.1203301010310.11201@tundra.namei.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<alpine.LRH.2.02.1203301010310.11201@tundra.namei.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 2:01 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 04/06/2012 12:49 PM, Dan Williams wrote:
->> The "KT" serial port has another use case for a "received break" quirk,
->> so before adding another special case to the 8250 core take this
->> opportunity to push such quirks out of the core and into a uart_port op.
->
-> This doesn't seem quite right. Why do the board files have to set up
-> this .handle_break function; they're already setting .type=PORT_TEGRA,
-> which should be enough to drive the setup of any required quirks.
+On Fri, 30 Mar 2012 10:11:32 +1100 (EST)
+James Morris <jmorris@namei.org> wrote:
 
-Because struct serial8250_config does not convey any uart_port ops.
+> On Thu, 29 Mar 2012, Will Drewry wrote:
+> 
+> > Please see prior revisions for a detailed discussion of this patch
+> > series.
+> > 
+> > This series is a rebase on to:
+> >   b5174fa3a7f4f8f150bfa3b917c92608953dfa0f
+> > with very minor changes due to rebasing and tweaks noticed by a few
+> > initial users.  (I will rebase again for v3.4-rc1 when that time comes.)
+> 
+> I've offered to take this via my tree -- if anyone else wants to merge it 
+> via theirs instead, holler.
 
-> If plat_serial8250_port must contain this field, then
-> drivers/tty/serial/of_serial.c needs a similar change so that this all
-> works when booting using device tree.
->
-> I'm not sure what the implication is of moving the call to clr_fifo()
-> into uart_handle_break(). What's the benefit of one location over the other?
+OK by me, especially if it means that you'll carefully (re)review it!  I
+had some minor quibbles with v17.
 
-This was the location where the core was already doing it's break
-handling, so it made sense to check here if the device had any quirks
-to run.  There shouldn't be any implications because the core was
-already doing clear_rx_fifo() immediately before calling
-uart_handle_break.  Here is the relevant hunk with a bit more context:
-
-@@ -1399,34 +1378,24 @@ serial8250_rx_chars(struct uart_8250_port *up,
-unsigned char lsr)
-                         */
-                        ch = 0;
-
-                flag = TTY_NORMAL;
-                up->port.icount.rx++;
-
-                lsr |= up->lsr_saved_flags;
-                up->lsr_saved_flags = 0;
-
-                if (unlikely(lsr & UART_LSR_BRK_ERROR_BITS)) {
--                       /*
--                        * For statistics only
--                        */
-                        if (lsr & UART_LSR_BI) {
-                                lsr &= ~(UART_LSR_FE | UART_LSR_PE);
-                                up->port.icount.brk++;
-                                /*
--                                * If tegra port then clear the rx fifo to
--                                * accept another break/character.
--                                */
--                               if (up->port.type == PORT_TEGRA)
--                                       clear_rx_fifo(up);
--
--                               /*
-                                 * We do the SysRQ and SAK checking
-                                 * here because otherwise the break
-                                 * may get masked by ignore_status_mask
-                                 * or read_status_mask.
-                                 */
-                                if (uart_handle_break(&up->port))
-                                        goto ignore_char;
-                        } else if (lsr & UART_LSR_PE)
-                                up->port.icount.parity++;
-                        else if (lsr & UART_LSR_FE)
-
-> If the callback function is to no longer live in 8250.c itself,
-> arch/arm/mach-tegra/devices.c isn't logically a good place to put it,
-> and that file will be going away once we get rid of all the board files
-> and move solely to device tree.
-
-Can you help me with an incremental patch to fix this up?  I can
-muddle my way through Tegra internals, but I already missed the
-of_serial.c hook.
-
---
-Dan
+It would be good if Oleg could take a look at the signal changes, if he
+has not yet done so?
