@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab2DFIs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 04:48:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42389 "EHLO
+	id S1755081Ab2DFItY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 04:49:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42396 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752005Ab2DFIs1 (ORCPT
+	by vger.kernel.org with ESMTP id S1754735Ab2DFItX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 04:48:27 -0400
-Date: Fri, 6 Apr 2012 09:48:25 +0100
+	Fri, 6 Apr 2012 04:49:23 -0400
+Date: Fri, 6 Apr 2012 09:49:19 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH RFT] regulator: Convert twl4030ldo_set_voltage to
- set_voltage_sel
-Message-ID: <20120406084824.GA3582@opensource.wolfsonmicro.com>
-References: <1332725406.7078.3.camel@phoenix>
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: rc5t583: Simplify RC5T583_REG macro
+Message-ID: <20120406084919.GC3172@opensource.wolfsonmicro.com>
+References: <1333670496.2777.0.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+	protocol="application/pgp-signature"; boundary="kfjH4zxOES6UT95V"
 Content-Disposition: inline
-In-Reply-To: <1332725406.7078.3.camel@phoenix>
-X-Cookie: You have a truly strong individuality.
+In-Reply-To: <1333670496.2777.0.camel@phoenix>
+X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---XsQoSWH+UP9D9v3l
+--kfjH4zxOES6UT95V
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Mar 26, 2012 at 09:30:06AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Fri, Apr 06, 2012 at 08:01:36AM +0800, Axel Lin wrote:
+> Simplify RC5T583_REG macro by removing _vout_reg and _ds_reg parameters.
+>=20
+> The naming for vout_reg and deepsleep_reg can be replaced by:
+> .vout_reg       =3D RC5T583_REG_##_id##DAC,
+> .deepsleep_reg  =3D RC5T583_REG_##_id##DAC_DS,
 
 Applied, thanks.
 
---XsQoSWH+UP9D9v3l
+--kfjH4zxOES6UT95V
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPfq3RAAoJEBus8iNuMP3di/MP/iqoeC4ioYNgQONmH5uME+CY
-INZ2v7DVWZtuotqbfqjJFE/kLxmcg2KTPazDJb331d5l8VbgQ+bGOSrKznmJTwfi
-ph5XbM7m/9plSw1I+vqBGNXRgjfaOCQ5jDDLkWk0lduymb5Lji0qB21HX4b6r+wQ
-NBPQG615n0NX5h7IX2gFOr6AmLzQPrZdvBP3R2R2ilHl0F98H0/LrOmrYyolEywK
-ZCcObHpMBV0du7Y2E0PGbFY5dMoBwJl9I/61CeXAl6VjOmy7UAIMUZFQUSsJcAo/
-sD/aMlVdGtUzu5Re7kMdSaOzFy/xTxY5XfE10AorZq0tRRk4MfxZUQ2vqDFMt/Rb
-qeR08EhIygsI6Al+II6mHrttiXJuzbeoDXEQ7AfFHMOy7VU4iamEzW3XLcZV1X35
-CTVJdUnpsANiCGy4aqbQnvRkwp5upDCrFHNYlp0sQMMFEtDlAm2L2bJ/v7+9C8FJ
-rFBJVCeI90BYLq4Oa78WPlvVZj3GeGpfyobdfUg/l305M65XbOppF/DTNIqlnpnH
-bYyDfR0HHDc/sXagRsliiKIZTpKAalt6XuvIq3o0k9vbuYRzCyO2JlPryotjAhuG
-KGp53B9WIW5cliaS7M/2oblJCq3mJsV0tYWCm8Vq1pySjkRSluLYhcVlWFiZEZ/2
-bmXUs7+9t3JqcUu3Q+W0
-=Kg0k
+iQIcBAEBAgAGBQJPfq39AAoJEBus8iNuMP3d9OwP/iaqFalL/lyrb8LDWvBuW3BP
+KX86I65xPZOcvW0YDnvHffd6AVdDS1nMJowkCIUKnqOx1oDrSY1cxwC0M2ws1iqF
+S4lQT9Y2A90dkOzQbitawCnPiqKLE6MlAAMlgfJyL3xZ4ZuEi64z6uM/RkI6I9jg
+IxZYttzvicBXsbquLLBZ+N6qG1wIHGMtEAwZlR83fmYAwi1Tko8Bz7HUpqPpJSwt
+WoNr6T4cRkwZ8/lDqPhZvunzF58KbyeNgFfYkUVsy/j65x6p3RLG2Mwd9be9v5el
+KMAqZsa2GfPR+PtXF0tn6Lr1BJx95WIJVGZMOZzw543y/z/ahVyTSsw5WDk41ZZ2
+LJRS8VIO25jx8wwW+mMqfpiYldVZ+UbfWBYN/T6kiW5QDDqGesPfljfoFvCdzdJk
+W7/Q7+sfcw4fYnr/Rj+AoN/E7DTwcWa/8riEFXie09JvGFZJrqAx5a+AFr2quFXT
+VgWPKyeZT7VlXHpBqZwoQWdwkJ/UPlyRoKhDJFxlkibkk2S/cTPr6bAALivKzmJZ
+sXb9DXrOKA1sTijUaNHIV3JoGTAWGJx7JbGerFSsN/9Iht9vaUDA5ezUceAtqF4q
+6x+dQdTojwnAG2BZ6UEyE2lnRtk25FpCq+jtnG3uRrDdJHgos7kqvA3Eq2zib7j0
+0TM3gW1IZDH2Fv4Gp9p3
+=bH2v
 -----END PGP SIGNATURE-----
 
---XsQoSWH+UP9D9v3l--
+--kfjH4zxOES6UT95V--
