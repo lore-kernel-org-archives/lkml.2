@@ -1,293 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab2DFAAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 20:00:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59222 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756548Ab2DEX75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:59:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85890062"
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Pallipadi Venkatesh <venki@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: [v3 VM_PAT PATCH 2/3] x86, pat: separate the pfn attribute tracking for remap_pfn_range and vm_insert_pfn
-Date: Thu,  5 Apr 2012 17:01:34 -0700
-Message-Id: <1333670495-7016-3-git-send-email-suresh.b.siddha@intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1333670495-7016-1-git-send-email-suresh.b.siddha@intel.com>
-References: <4F7D8860.3040008@openvz.org>
- <1333670495-7016-1-git-send-email-suresh.b.siddha@intel.com>
+	id S1756788Ab2DFABr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 20:01:47 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:36376 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab2DFABp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 20:01:45 -0400
+Message-ID: <1333670496.2777.0.camel@phoenix>
+Subject: [PATCH] regulator: rc5t583: Simplify RC5T583_REG macro
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 06 Apr 2012 08:01:36 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With PAT enabled, vm_insert_pfn() looks up the existing pfn memory attribute
-and uses it. Expectation is that the driver reserves the memory attributes
-for the pfn before calling vm_insert_pfn().
+Simplify RC5T583_REG macro by removing _vout_reg and _ds_reg parameters.
 
-remap_pfn_range() (when called for the whole vma) will setup a
-new attribute (based on the prot argument) for the specified pfn range. This
-addresses the legacy usage which typically calls remap_pfn_range() with
-a desired memory attribute. For ranges smaller than the vma size (which
-is typically not the case), remap_pfn_range() will use the
-existing memory attribute for the pfn range.
+The naming for vout_reg and deepsleep_reg can be replaced by:
+.vout_reg       = RC5T583_REG_##_id##DAC,
+.deepsleep_reg  = RC5T583_REG_##_id##DAC_DS,
 
-Expose two different API's for these different behaviors.
-track_pfn_insert() for tracking the pfn attribute set by
-vm_insert_pfn() and track_pfn_remap() for the remap_pfn_range().
-
-This cleanup also prepares the ground for the track/untrack pfn vma routines
-to take over the ownership of setting PAT specific vm_flag in the 'vma'.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/x86/mm/pat.c             |   43 +++++++++++++++++++++++--------
- include/asm-generic/pgtable.h |   55 +++++++++++++++++++++++-----------------
- mm/memory.c                   |   13 +++------
- 3 files changed, 69 insertions(+), 42 deletions(-)
+ drivers/regulator/rc5t583-regulator.c |   50 ++++++++++++---------------------
+ 1 files changed, 18 insertions(+), 32 deletions(-)
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 24c3f95..d0553bf 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -652,13 +652,13 @@ static void free_pfn_range(u64 paddr, unsigned long size)
+diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
+index 578bd5d..fcb9cc7 100644
+--- a/drivers/regulator/rc5t583-regulator.c
++++ b/drivers/regulator/rc5t583-regulator.c
+@@ -196,16 +196,16 @@ static struct regulator_ops rc5t583_ops = {
+ 	.set_voltage_time_sel	= rc5t583_set_voltage_time_sel,
+ };
+ 
+-#define RC5T583_REG(_id, _en_reg, _en_bit, _disc_reg, _disc_bit, _vout_reg,  \
+-		_vout_mask, _ds_reg, _min_mv, _max_mv, _step_uV, _enable_mv) \
++#define RC5T583_REG(_id, _en_reg, _en_bit, _disc_reg, _disc_bit, \
++		_vout_mask, _min_mv, _max_mv, _step_uV, _enable_mv) \
+ {								\
+ 	.reg_en_reg	= RC5T583_REG_##_en_reg,		\
+ 	.en_bit		= _en_bit,				\
+ 	.reg_disc_reg	= RC5T583_REG_##_disc_reg,		\
+ 	.disc_bit	= _disc_bit,				\
+-	.vout_reg	= RC5T583_REG_##_vout_reg,		\
++	.vout_reg	= RC5T583_REG_##_id##DAC,		\
+ 	.vout_mask	= _vout_mask,				\
+-	.deepsleep_reg	= RC5T583_REG_##_ds_reg,		\
++	.deepsleep_reg	= RC5T583_REG_##_id##DAC_DS,		\
+ 	.min_uV		= _min_mv * 1000,			\
+ 	.max_uV		= _max_mv * 1000,			\
+ 	.step_uV	= _step_uV,				\
+@@ -223,34 +223,20 @@ static struct regulator_ops rc5t583_ops = {
  }
  
- /*
-- * track_pfn_vma_copy is called when vma that is covering the pfnmap gets
-+ * track_pfn_copy is called when vma that is covering the pfnmap gets
-  * copied through copy_page_range().
-  *
-  * If the vma has a linear pfn mapping for the entire range, we get the prot
-  * from pte and reserve the entire vma range with single reserve_pfn_range call.
-  */
--int track_pfn_vma_copy(struct vm_area_struct *vma)
-+int track_pfn_copy(struct vm_area_struct *vma)
- {
- 	resource_size_t paddr;
- 	unsigned long prot;
-@@ -682,17 +682,15 @@ int track_pfn_vma_copy(struct vm_area_struct *vma)
- }
+ static struct rc5t583_regulator_info rc5t583_reg_info[RC5T583_REGULATOR_MAX] = {
+-	RC5T583_REG(DC0, DC0CTL, 0, DC0CTL, 1, DC0DAC, 0x7F, DC0DAC_DS,
+-			700, 1500, 12500, 4),
+-	RC5T583_REG(DC1, DC1CTL, 0, DC1CTL, 1, DC1DAC, 0x7F, DC1DAC_DS,
+-			700, 1500, 12500, 14),
+-	RC5T583_REG(DC2, DC2CTL, 0, DC2CTL, 1, DC2DAC, 0x7F, DC2DAC_DS,
+-			900, 2400, 12500, 14),
+-	RC5T583_REG(DC3, DC3CTL, 0, DC3CTL, 1, DC3DAC, 0x7F, DC3DAC_DS,
+-			900, 2400, 12500, 14),
+-	RC5T583_REG(LDO0, LDOEN2, 0, LDODIS2, 0, LDO0DAC, 0x7F, LDO0DAC_DS,
+-			900, 3400, 25000, 160),
+-	RC5T583_REG(LDO1, LDOEN2, 1, LDODIS2, 1, LDO1DAC, 0x7F, LDO1DAC_DS,
+-			900, 3400, 25000, 160),
+-	RC5T583_REG(LDO2, LDOEN2, 2, LDODIS2, 2, LDO2DAC, 0x7F, LDO2DAC_DS,
+-			900, 3400, 25000, 160),
+-	RC5T583_REG(LDO3, LDOEN2, 3, LDODIS2, 3, LDO3DAC, 0x7F, LDO3DAC_DS,
+-			900, 3400, 25000, 160),
+-	RC5T583_REG(LDO4, LDOEN2, 4, LDODIS2, 4, LDO4DAC, 0x3F, LDO4DAC_DS,
+-			750, 1500, 12500, 133),
+-	RC5T583_REG(LDO5, LDOEN2, 5, LDODIS2, 5, LDO5DAC, 0x7F, LDO5DAC_DS,
+-			900, 3400, 25000, 267),
+-	RC5T583_REG(LDO6, LDOEN2, 6, LDODIS2, 6, LDO6DAC, 0x7F, LDO6DAC_DS,
+-			900, 3400, 25000, 133),
+-	RC5T583_REG(LDO7, LDOEN2, 7, LDODIS2, 7, LDO7DAC, 0x7F, LDO7DAC_DS,
+-			900, 3400, 25000, 233),
+-	RC5T583_REG(LDO8, LDOEN1, 0, LDODIS1, 0, LDO8DAC, 0x7F, LDO8DAC_DS,
+-			900, 3400, 25000, 233),
+-	RC5T583_REG(LDO9, LDOEN1, 1, LDODIS1, 1, LDO9DAC, 0x7F, LDO9DAC_DS,
+-			900, 3400, 25000, 133),
++	RC5T583_REG(DC0, DC0CTL, 0, DC0CTL, 1, 0x7F, 700, 1500, 12500, 4),
++	RC5T583_REG(DC1, DC1CTL, 0, DC1CTL, 1, 0x7F, 700, 1500, 12500, 14),
++	RC5T583_REG(DC2, DC2CTL, 0, DC2CTL, 1, 0x7F, 900, 2400, 12500, 14),
++	RC5T583_REG(DC3, DC3CTL, 0, DC3CTL, 1, 0x7F, 900, 2400, 12500, 14),
++	RC5T583_REG(LDO0, LDOEN2, 0, LDODIS2, 0, 0x7F, 900, 3400, 25000, 160),
++	RC5T583_REG(LDO1, LDOEN2, 1, LDODIS2, 1, 0x7F, 900, 3400, 25000, 160),
++	RC5T583_REG(LDO2, LDOEN2, 2, LDODIS2, 2, 0x7F, 900, 3400, 25000, 160),
++	RC5T583_REG(LDO3, LDOEN2, 3, LDODIS2, 3, 0x7F, 900, 3400, 25000, 160),
++	RC5T583_REG(LDO4, LDOEN2, 4, LDODIS2, 4, 0x3F, 750, 1500, 12500, 133),
++	RC5T583_REG(LDO5, LDOEN2, 5, LDODIS2, 5, 0x7F, 900, 3400, 25000, 267),
++	RC5T583_REG(LDO6, LDOEN2, 6, LDODIS2, 6, 0x7F, 900, 3400, 25000, 133),
++	RC5T583_REG(LDO7, LDOEN2, 7, LDODIS2, 7, 0x7F, 900, 3400, 25000, 233),
++	RC5T583_REG(LDO8, LDOEN1, 0, LDODIS1, 0, 0x7F, 900, 3400, 25000, 233),
++	RC5T583_REG(LDO9, LDOEN1, 1, LDODIS1, 1, 0x7F, 900, 3400, 25000, 133),
+ };
  
- /*
-- * track_pfn_vma_new is called when a _new_ pfn mapping is being established
-- * for physical range indicated by pfn and size.
-- *
-  * prot is passed in as a parameter for the new mapping. If the vma has a
-  * linear pfn mapping for the entire range reserve the entire vma range with
-  * single reserve_pfn_range call.
-  */
--int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
--			unsigned long pfn, unsigned long size)
-+int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
-+		    unsigned long pfn, unsigned long size)
- {
- 	unsigned long flags;
-+	int i;
- 
- 	/* reserve the whole chunk starting from pfn */
- 	if (is_linear_pfn_mapping(vma))
-@@ -701,7 +699,30 @@ int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
- 	if (!pat_enabled)
- 		return 0;
- 
--	/* for vm_insert_pfn and friends, we set prot based on lookup */
-+	/*
-+	 * for anything smaller than the vma size, we set prot based
-+	 * on the lookup.
-+	 */
-+	flags = lookup_memtype(pfn << PAGE_SHIFT);
-+	for (i = 1; i < size / PAGE_SIZE; i++)
-+		if (flags != lookup_memtype((pfn + i) << PAGE_SHIFT))
-+			return -EINVAL;
-+	
-+	*prot = __pgprot((pgprot_val(vma->vm_page_prot) & (~_PAGE_CACHE_MASK)) |
-+			 flags);
-+
-+	return 0;
-+}
-+
-+int track_pfn_insert(struct vm_area_struct *vma, pgprot_t *prot,
-+		     unsigned long pfn)
-+{
-+	unsigned long flags;
-+
-+	if (!pat_enabled)
-+		return 0;
-+
-+	/* we set prot based on lookup */
- 	flags = lookup_memtype(pfn << PAGE_SHIFT);
- 	*prot = __pgprot((pgprot_val(vma->vm_page_prot) & (~_PAGE_CACHE_MASK)) |
- 			 flags);
-@@ -710,12 +731,12 @@ int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
- }
- 
- /*
-- * untrack_pfn_vma is called while unmapping a pfnmap for a region.
-+ * untrack_pfn is called while unmapping a pfnmap for a region.
-  * untrack can be called for a specific region indicated by pfn and size or
-  * can be for the entire vma (in which case pfn, size are zero).
-  */
--void untrack_pfn_vma(struct vm_area_struct *vma, unsigned long pfn,
--			unsigned long size)
-+void untrack_pfn(struct vm_area_struct *vma, unsigned long pfn,
-+		 unsigned long size)
- {
- 	resource_size_t paddr;
- 	unsigned long prot;
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 125c54e..a877649 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -382,48 +382,57 @@ static inline void ptep_modify_prot_commit(struct mm_struct *mm,
- 
- #ifndef __HAVE_PFNMAP_TRACKING
- /*
-- * Interface that can be used by architecture code to keep track of
-- * memory type of pfn mappings (remap_pfn_range, vm_insert_pfn)
-- *
-- * track_pfn_vma_new is called when a _new_ pfn mapping is being established
-- * for physical range indicated by pfn and size.
-+ * Interfaces that can be used by architecture code to keep track of
-+ * memory type of pfn mappings specified by the remap_pfn_range,
-+ * vm_insert_pfn.
-+ */
-+
-+/*
-+ * track_pfn_remap is called when a _new_ pfn mapping is being established
-+ * by remap_pfn_range() for physical range indicated by pfn and size.
-  */
--static inline int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
--					unsigned long pfn, unsigned long size)
-+static inline int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
-+				  unsigned long pfn, unsigned long size)
- {
- 	return 0;
- }
- 
- /*
-- * Interface that can be used by architecture code to keep track of
-- * memory type of pfn mappings (remap_pfn_range, vm_insert_pfn)
-- *
-- * track_pfn_vma_copy is called when vma that is covering the pfnmap gets
-+ * track_pfn_insert is called when a _new_ single pfn is established
-+ * by vm_insert_pfn().
-+ */
-+static inline int track_pfn_insert(struct vm_area_struct *vma, pgprot_t *prot,
-+				   unsigned long pfn)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * track_pfn_copy is called when vma that is covering the pfnmap gets
-  * copied through copy_page_range().
-  */
--static inline int track_pfn_vma_copy(struct vm_area_struct *vma)
-+static inline int track_pfn_copy(struct vm_area_struct *vma)
- {
- 	return 0;
- }
- 
- /*
-- * Interface that can be used by architecture code to keep track of
-- * memory type of pfn mappings (remap_pfn_range, vm_insert_pfn)
-- *
-  * untrack_pfn_vma is called while unmapping a pfnmap for a region.
-  * untrack can be called for a specific region indicated by pfn and size or
-- * can be for the entire vma (in which case size can be zero).
-+ * can be for the entire vma (in which case pfn, size are zero).
-  */
--static inline void untrack_pfn_vma(struct vm_area_struct *vma,
--					unsigned long pfn, unsigned long size)
-+static inline void untrack_pfn(struct vm_area_struct *vma,
-+			       unsigned long pfn, unsigned long size)
- {
- }
- #else
--extern int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
--				unsigned long pfn, unsigned long size);
--extern int track_pfn_vma_copy(struct vm_area_struct *vma);
--extern void untrack_pfn_vma(struct vm_area_struct *vma, unsigned long pfn,
--				unsigned long size);
-+extern int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
-+			   unsigned long pfn, unsigned long size);
-+extern int track_pfn_insert(struct vm_area_struct *vma, pgprot_t *prot,
-+			    unsigned long pfn);
-+extern int track_pfn_copy(struct vm_area_struct *vma);
-+extern void untrack_pfn(struct vm_area_struct *vma, unsigned long pfn,
-+			unsigned long size);
- #endif
- 
- #ifdef CONFIG_MMU
-diff --git a/mm/memory.c b/mm/memory.c
-index 6105f47..4cdcf53 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1056,7 +1056,7 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		 * We do not free on error cases below as remove_vma
- 		 * gets called on error from higher level routine
- 		 */
--		ret = track_pfn_vma_copy(vma);
-+		ret = track_pfn_copy(vma);
- 		if (ret)
- 			return ret;
- 	}
-@@ -1311,7 +1311,7 @@ static void unmap_single_vma(struct mmu_gather *tlb,
- 		*nr_accounted += (end - start) >> PAGE_SHIFT;
- 
- 	if (unlikely(is_pfn_mapping(vma)))
--		untrack_pfn_vma(vma, 0, 0);
-+		untrack_pfn(vma, 0, 0);
- 
- 	if (start != end) {
- 		if (unlikely(is_vm_hugetlb_page(vma))) {
-@@ -2145,14 +2145,11 @@ int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
- 
- 	if (addr < vma->vm_start || addr >= vma->vm_end)
- 		return -EFAULT;
--	if (track_pfn_vma_new(vma, &pgprot, pfn, PAGE_SIZE))
-+	if (track_pfn_insert(vma, &pgprot, pfn))
- 		return -EINVAL;
- 
- 	ret = insert_pfn(vma, addr, pfn, pgprot);
- 
--	if (ret)
--		untrack_pfn_vma(vma, pfn, PAGE_SIZE);
--
- 	return ret;
- }
- EXPORT_SYMBOL(vm_insert_pfn);
-@@ -2294,7 +2291,7 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
- 
- 	vma->vm_flags |= VM_IO | VM_RESERVED | VM_PFNMAP;
- 
--	err = track_pfn_vma_new(vma, &prot, pfn, PAGE_ALIGN(size));
-+	err = track_pfn_remap(vma, &prot, pfn, PAGE_ALIGN(size));
- 	if (err) {
- 		/*
- 		 * To indicate that track_pfn related cleanup is not
-@@ -2318,7 +2315,7 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
- 	} while (pgd++, addr = next, addr != end);
- 
- 	if (err)
--		untrack_pfn_vma(vma, pfn, PAGE_ALIGN(size));
-+		untrack_pfn(vma, pfn, PAGE_ALIGN(size));
- 
- 	return err;
- }
+ static int __devinit rc5t583_regulator_probe(struct platform_device *pdev)
 -- 
-1.7.6.5
+1.7.5.4
+
+
 
