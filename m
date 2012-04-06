@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab2DFBBT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 21:01:19 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33381 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756788Ab2DFBBR (ORCPT
+	id S1756989Ab2DFBCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 21:02:09 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45412 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab2DFBCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 21:01:17 -0400
-Date: Thu, 05 Apr 2012 21:01:13 -0400 (EDT)
-Message-Id: <20120405.210113.1089032911004787990.davem@davemloft.net>
-To: luto@mit.edu
-Cc: drepper@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: sendmmsg: put_user vs __put_user
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F7E3561.8000803@mit.edu>
-References: <CAOPLpQf2bmj+i_zYtsS8JNzTDuBxCO5ByNRRqwv0kxaDBFdezg@mail.gmail.com>
-	<20120330.205120.2221145622131588797.davem@davemloft.net>
-	<4F7E3561.8000803@mit.edu>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 05 Apr 2012 18:01:15 -0700 (PDT)
+	Thu, 5 Apr 2012 21:02:07 -0400
+Date: Thu, 5 Apr 2012 22:01:59 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: Re: [PATCH] Revert "Bluetooth: Always enable management interface"
+Message-ID: <20120406010159.GA2981@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@intel.com>
+References: <1332983958-2734-1-git-send-email-keithp@keithp.com>
+ <20120329022839.GA26111@joana>
+ <86r4wct9q7.fsf@sumi.keithp.com>
+ <20120330065456.GA9173@joana>
+ <86wr5takat.fsf@sumi.keithp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86wr5takat.fsf@sumi.keithp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@mit.edu>
-Date: Thu, 05 Apr 2012 17:14:25 -0700
+Hi Keith,
 
-> On 03/30/2012 05:51 PM, David Miller wrote:
->> From: Ulrich Drepper <drepper@gmail.com>
->> Date: Fri, 30 Mar 2012 09:36:11 -0400
->> 
->>> Shouldn't the compat code in the sendmmsg implementation use the same
->>> code as the normal code?  In which case you probably want something
->>> like this:
->> 
->> Compat processes are not able to generate virtual addresses anywhere
->> near the range where the kernel resides, so the address range
->> verification done by put_user() is completely superfluous and
->> therefore not necessary.  The normal exception handling done by the
->> access is completely sufficient.
+* Keith Packard <keithp@keithp.com> [2012-04-05 15:24:58 -0700]:
+
+> <#part sign=pgpmime>
+> On Fri, 30 Mar 2012 03:54:56 -0300, Gustavo Padovan <gustavo@padovan.org> wrote:
 > 
-> I disagree.  The following exploit causes a bogus page fault to a kernel
-> address.  I think this isn't exploitable right now on x86-64 because the
-> page fault handler fixes it up, but I wouldn't be surprised if this
-> crashes or at least warns on some architecture.  (Actually trashing
-> kernel memory is probably impossible with this on x86-64 chips because
-> this can only overrun user space by four bytes, and there's a giant gap
-> of impossible addresses above user space in x86-64.
+> > Can you try the following patch? It should fix the compatibility
+> > problem you had.
+> 
+> Yes, the kernel with that patch (without the revert) works now.
 
-I can guarentee this doesn't do anything on sparc64 either because
-userspace is completely segregated from kernel space in a way that
-every single foo_user() call cannot access kernel space no matter
-what address it can trick into being passed there.
+Thanks for testing, I will push this to mainline ASAP.
 
-I still really don't see an issue with this, sorry.
+	Gustavo
