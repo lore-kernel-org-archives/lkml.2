@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab2DFETQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 00:19:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56190 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab2DFETP (ORCPT
+	id S1752282Ab2DFEg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 00:36:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59803 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab2DFEgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 00:19:15 -0400
-Message-ID: <4F7E6EBE.50501@kernel.dk>
-Date: Thu, 05 Apr 2012 22:19:10 -0600
-From: Jens Axboe <axboe@kernel.dk>
+	Fri, 6 Apr 2012 00:36:11 -0400
+Message-ID: <4F7E72B3.8000604@openvz.org>
+Date: Fri, 06 Apr 2012 08:36:03 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-To: Tao Guo <glorioustao@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        neilb@suse.de, axboe@fusionio.com
-Subject: Re: [PATCH] umem: fix up unplugging.
-References: <1325254651-15379-1-git-send-email-glorioustao@gmail.com> <20120404144656.7b2a06ec.akpm@linux-foundation.org> <CAAV8rn+T7FM7bG+Q6fyoUrVtzOkYOx94Nh87Rg12UqCdk9HhWQ@mail.gmail.com> <4F7CD6C9.4060509@kernel.dk> <CAAV8rn+s__Uap1_nx8w4USGtAsg0Y=cbo_mUyCWnX2EFNzH3Eg@mail.gmail.com> <4F7E3011.4090803@kernel.dk> <CAAV8rnKuYoyNjhpPSLk4XJiwG7XYL11pUfdNx1Jn9mNji-9+Mw@mail.gmail.com>
-In-Reply-To: <CAAV8rnKuYoyNjhpPSLk4XJiwG7XYL11pUfdNx1Jn9mNji-9+Mw@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Matt Helsley <matthltc@us.ibm.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 6/7] mm: kill vma flag VM_EXECUTABLE
+References: <20120331091049.19373.28994.stgit@zurg> <20120331092929.19920.54540.stgit@zurg> <20120331201324.GA17565@redhat.com> <20120402230423.GB32299@count0.beaverton.ibm.com> <4F7A863C.5020407@openvz.org> <20120403181631.GD32299@count0.beaverton.ibm.com> <20120403193204.GE3370@moon> <20120405202904.GB7761@count0.beaverton.ibm.com> <4F7E08EB.5070600@openvz.org> <20120405214447.GC7761@count0.beaverton.ibm.com> <CA+55aFzH=nTAxxqMpQKJAVFOEngwkArmufqe_Mq5hyLR_9Vfqw@mail.gmail.com>
+In-Reply-To: <CA+55aFzH=nTAxxqMpQKJAVFOEngwkArmufqe_Mq5hyLR_9Vfqw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-05 22:09, Tao Guo wrote:
-> On Thu, Apr 5, 2012 at 4:51 PM, Jens Axboe <axboe@kernel.dk> wrote:
->> On 2012-04-04 17:58, Tao Guo wrote:
->>> On Wed, Apr 4, 2012 at 4:18 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>> On 2012-04-04 16:20, Tao Guo wrote:
->>>>> Hi Andrew,
->>>>>
->>>>> Thanks for your reply.
->>>>>
->>>>> Yes, without this patch the umem driver just doesn't work.
->>>>> It is a bug introduced by commit 7eaceaccab5f40bbfda044629a6298616aeaed50.
->>>>> In that patch, Jens removed the whole mm_unplug_device() function,
->>>>> which used to be
->>>>> the trigger to make umem start to work.
->>>>
->>>> Hmm indeed, that's isn't terribly useful. Why aren't we just calling
->>>> activate_card() on addition of a bio?
->>>>
->>> It is the original design idea, the umem driver also wants to do batch
->>> IO the same as
->>> hard disk drive to fully utilize the IO bandwidth.
+Linus Torvalds wrote:
+> On Thu, Apr 5, 2012 at 2:44 PM, Matt Helsley<matthltc@us.ibm.com>  wrote:
 >>
->> Sure, just wondering whether the benefits have been tested. But yes, it
->> certainly makes sense.
->>
->> Your patch looks buggy, though. What if the card is currently plugged on
->> another tasks plug list? You seem to assume that it can only be plugged
->> once.
-> No, it will register in its own plug callback list successfully, so
-> the unplug functions
-> will be called separately(twice the same).
+>> I don't think the definition of an ABI is whether there's documentation
+>> for it. It's whether the interface is used or not. At least that's the
+>> impression I've gotten from reading Linus' rants over the years.
+>
+> Yes.
+>
+> That said, I *do* have some very dim memory of us having had real
+> issues with the /proc/<pid>/exe thing and having regressions due to
+> holding refcounts to executables that were a.out binaries and not
+> demand-loaded. And people wanting to unmount filesystems despite the
+> binaries being live.
+>
+> That said, I suspect that whatever issues we used to have with that
+> are pretty long gone. I don't think people use non-mmap'ed binaries
+> any more. So I think we can try it and see. And revert if somebody
+> actually notices and has problems.
 
-So the code loops through the current plug, checking if it's already on
-that list. If not, then it adds it. But what if it's on another plug
-list? The above loop could be done with just a
+Instead of tracking count of vma with VM_EXECUTABLE bit we can track
+count of vma with vma->vm_file == mm->exe_file, this will be nearly
+the same behaviour. This was in early version of my patch, but I prefer
+to go deeper. So, we can revert it without introducing VM_EXECUTABLE again.
 
-        if (!list_empty(&card->plug_cb.list))
-                ...
-
-instead. Right now you could have !list_empty(&card->plug_cb.list) but
-still add it to a different list.
-
--- 
-Jens Axboe
+>
+>                      Linus
 
