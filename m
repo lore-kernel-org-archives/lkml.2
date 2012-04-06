@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab2DFBbB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 21:31:01 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:23832 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab2DFBa7 (ORCPT
+	id S1757099Ab2DFBb1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 21:31:27 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50588 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756857Ab2DFBb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 21:30:59 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6671"; a="179363514"
-Message-ID: <4F7E4752.4020007@codeaurora.org>
-Date: Thu, 05 Apr 2012 18:30:58 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Thu, 5 Apr 2012 21:31:26 -0400
 MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH 2/2] clk: Move init fields from clk to clk_hw
-References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com> <1332214706-675-1-git-send-email-skannan@codeaurora.org> <1332214706-675-2-git-send-email-skannan@codeaurora.org> <20120320072018.GC32469@S2101-09.ap.freescale.net> <cbd6490459b9fd68875fec4a7c7de073.squirrel@www.codeaurora.org> <20120320094031.GI3852@pengutronix.de> <20120320141811.GF32469@S2101-09.ap.freescale.net> <20120320181050.GN3852@pengutronix.de> <4F68E34A.70207@codeaurora.org> <20120320231242.GP3852@pengutronix.de> <CAJOA=zOGTW7OqACWgJQW6HSPLVev+apdNhv4vNXjHTcp=7N+uQ@mail.gmail.com> <4F694484.1030706@codeaurora.org> <4F714397.6080608@codeaurora.org> <CAJOA=zOq=kYfZUEnnQT_D4w=Kpp5n7R=k9oOCrxF59P5W-nw-w@mail.gmail.com>
-In-Reply-To: <CAJOA=zOq=kYfZUEnnQT_D4w=Kpp5n7R=k9oOCrxF59P5W-nw-w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1333674768.23520.123.camel@joe2Laptop>
+References: <1333569554.864.3.camel@mop> <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
+ <1333655231.725.27.camel@mop> <1333674768.23520.123.camel@joe2Laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 5 Apr 2012 18:31:04 -0700
+X-Google-Sender-Auth: r23aJlsDdosSpBlY10nKYFCR50s
+Message-ID: <CA+55aFyE41U9OPr7mrAA2ZJKuQ2jvH-KmusUNyfYbH8tOm6yiQ@mail.gmail.com>
+Subject: Re: [PATCH] printk: support structured and multi-facility log messages
+To: Joe Perches <joe@perches.com>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartmann <greg@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2012 11:49 AM, Turquette, Mike wrote:
-> On Mon, Mar 26, 2012 at 9:35 PM, Saravana Kannan<skannan@codeaurora.org>  wrote:
->> Mike,
->>
->> (*nudge*) (*nudge*)
+On Thu, Apr 5, 2012 at 6:12 PM, Joe Perches <joe@perches.com> wrote:
 >
-> Hi Saravana,
->
-> I spent some time mulling over the ideas this weekend and I agree that
-> we have 3 types of data, so having the three structs makes some sense.
->   I'm checking this patch out more earnestly today.
+> I still think this should be 3 patches not 1.
 
-(*nudge*) (*nudge*) again :-)
+I do agree that that would be lovely. That patch is really hard to
+read, and it would be helpful if some of it was split up a bit. For
+example, separating out the "move log buffer to be packetized"
+(without actually doing the new things) from for the "introduce new
+interfaces" would be quite nice.
 
-Sorry to keep nudging you on this often. The longer we wait for this, 
-the more churn it will cause later on. That's why I'm being persistent 
-on this. Also, once this goes in, I can start working on upstreaming MSM 
-clock support.
+In fact, I think I could merge something that does the packetization
+early, if it is fairly obvious that it doesn't do anything else. Just
+making the dmesg ASCII timestamp be something that is a "read buffer"
+time thing rather than "generate printk" time thing would be nice, and
+I think the sequence numbers can be useful even with all the old
+interfaces.
 
-Thanks,
-Saravana
+So if somebody wants to help with things like that, and try to turn
+this into a more gradual thing, I think we could merge at least some
+initial parts of this patch even for 3.4.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Anybody interested?
+
+                  Linus
+
+PS looking some more at the patch, it has some more obvious insanities
+in it. Doing "SUBSYSTEM=(NULL subsystem)" is clearly just insane. If
+you don't have a subsystem, you shouldn't have that key/value pair -
+saying you have a NULL subsystem is just crazy. Details like this
+would possibly stand out a bit more if it wasn't one big patch.
