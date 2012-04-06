@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757875Ab2DFTky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 15:40:54 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:52493 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755111Ab2DFTkx (ORCPT
+	id S1757901Ab2DFTt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 15:49:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37126 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757671Ab2DFTtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 15:40:53 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 1/2] drm/i915: fix integer overflow in i915_gem_execbuffer2()
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Keith Packard <keithp@keithp.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-In-Reply-To: <507CC69B-BD9C-421B-9107-B3284BEB116E@gmail.com>
-References: <1333717099-32679-1-git-send-email-xi.wang@gmail.com> <1333719431_271283@CP5-2952> <B6B08A4C-2FEA-4C08-AB2F-4A99FB8D3786@gmail.com> <1333720475_271533@CP5-2952> <5065822E-8C69-442E-A59C-98D6C27B289D@gmail.com> <1333723480_272185@CP5-2952> <507CC69B-BD9C-421B-9107-B3284BEB116E@gmail.com>
-Date: Fri, 06 Apr 2012 20:40:12 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1333741246_275838@CP5-2952>
+	Fri, 6 Apr 2012 15:49:24 -0400
+Date: Fri, 6 Apr 2012 12:49:21 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        jmorris@namei.org, Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent
+ execve from granting privs
+Message-Id: <20120406124921.5754e941.akpm@linux-foundation.org>
+In-Reply-To: <1333051320-30872-2-git-send-email-wad@chromium.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-2-git-send-email-wad@chromium.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012 14:17:41 -0400, Xi Wang <xi.wang@gmail.com> wrote:
-> On Apr 6, 2012, at 10:44 AM, Chris Wilson wrote:
-> 
-> > That I agreed with, I just disagree with how you chose to handle it.
-> > Rather than continue on and attempt to vmalloc a large array we should
-> > just fail the ioctl with EINVAL.
-> 
-> Why an attempt to vmalloc?  The overflow check in drm_malloc_ab()
-> will simply return NULL and fail the ioctl with -ENOMEM.
+On Thu, 29 Mar 2012 15:01:46 -0500
+Will Drewry <wad@chromium.org> wrote:
 
-It's an invalid value for the ioctl and should be treated as such, not
-making ENOMEM more ambiguous.
--Chris
+> From: Andy Lutomirski <luto@amacapital.net>
+> 
+> With this set, a lot of dangerous operations (chroot, unshare, etc)
+> become a lot less dangerous because there is no possibility of
+> subverting privileged binaries.
+> 
+> This patch completely breaks apparmor.  Someone who understands (and
+> uses) apparmor should fix it or at least give me a hint.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+So [patch 2/15] fixes all this up?
+
+I guess we should join the two patches into one, to avoid a silly
+breakage window.  That means that John loses a brownie point, but we
+can mention him in the changelog, include his signed-off-by:
+
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+
+Several of these patches are missing your signed-off-by:.  They should
+all have your SOB, because you sent them. 
+Documentation/SubmittingPatches explains this.
+
+I'm trying to find a way to merge all this code without reviewing it ;)
+Alas, this is against my rules.  Given the length of time for which
+this patchset has been floating around, I'm a little surprised by the
+lack of acked-by's and reviewed-by's.  Have you been gathering them all
+up?  Are the networking guys all happy about this patchset?
+
+
