@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab2DFNct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 09:32:49 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43506 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757256Ab2DFNcq (ORCPT
+	id S932255Ab2DFNeQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 09:34:16 -0400
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:49760 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753843Ab2DFNeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 09:32:46 -0400
-From: Xi Wang <xi.wang@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>
-Subject: [PATCH 2/2] [media] v4l2-ctrls: fix integer overflow in try_set_ext_ctrls()
-Date: Fri,  6 Apr 2012 09:32:37 -0400
-Message-Id: <1333719157-31240-2-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333719157-31240-1-git-send-email-xi.wang@gmail.com>
-References: <1333719157-31240-1-git-send-email-xi.wang@gmail.com>
+	Fri, 6 Apr 2012 09:34:15 -0400
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] ALSA: hda - CX20549 cleanup/fixes
+Date: Fri,  6 Apr 2012 15:34:14 +0200
+Message-Id: <1333719260-14504-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <s5hk41ufe2j.wl%tiwai@suse.de>
+References: <s5hk41ufe2j.wl%tiwai@suse.de>
+X-Originating-IP: 87.123.69.53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A large cs->count from userspace may overflow the allocation size,
-leading to memory corruption.  try_set_ext_ctrls() can be reached
-from subdev_do_ioctl() or __video_do_ioctl().
+This is the revised patch series for the CX20549 (and related stuff)
 
-Use kmalloc_array() to avoid the overflow.
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
----
- drivers/media/video/v4l2-ctrls.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
-index f355fd5..6f38a5d 100644
---- a/drivers/media/video/v4l2-ctrls.c
-+++ b/drivers/media/video/v4l2-ctrls.c
-@@ -2219,7 +2219,8 @@ static int try_set_ext_ctrls(struct v4l2_fh *fh, struct v4l2_ctrl_handler *hdl,
- 		return class_check(hdl, cs->ctrl_class);
- 
- 	if (cs->count > ARRAY_SIZE(helper)) {
--		helpers = kmalloc(sizeof(helper[0]) * cs->count, GFP_KERNEL);
-+		helpers = kmalloc_array(cs->count, sizeof(helper[0]),
-+					GFP_KERNEL);
- 		if (!helpers)
- 			return -ENOMEM;
- 	}
--- 
-1.7.5.4
+Changes:
+ Patch 1/6:
+  - spec->single_adc_amp has been moved to codec->single_adc_amp
+    to fix printing in /proc.
+ Patch 2/6: 
+  - "Line In" has been changed to "Line".
+  - This change has also been performed on the Mixer Labels.
+ Patch 4/6:
+  - .num_items has been adjusted, too.
+  - A comment about physical testing has been added to the commit message.
+ Patch 5/6:
+  - pin_amp_workaround is not set for CX20549 in auto-setup, too
 
