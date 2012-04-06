@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab2DFRUg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 13:20:36 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42468 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab2DFRUe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 13:20:34 -0400
+	id S1757544Ab2DFRWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 13:22:14 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:62384 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753152Ab2DFRWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 13:22:12 -0400
+Date: Fri, 6 Apr 2012 19:21:40 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: robherring2@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/1] Renaming AMBA to PRIMECELL
+Message-ID: <20120406172140.GA16326@mail.gnudd.com>
 MIME-Version: 1.0
-In-Reply-To: <20120405165148.GA2595@zambezi.lan>
-References: <1333570774-26462-1-git-send-email-bobbypowers@gmail.com>
-	<1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
-	<CAArOQ2Vc35VnbTCAZigTGZ3pL-f8mAtA9Ugpdjo5S=M7Ujpeiw@mail.gmail.com>
-	<20120405165148.GA2595@zambezi.lan>
-Date: Fri, 6 Apr 2012 12:20:33 -0500
-Message-ID: <CAKcLGm86PNyGZStE79Jg9nWygiCaz=fOt6uvOaMA57gnOYo6MA@mail.gmail.com>
-Subject: Re: [PATCH v2] Btrfs, lockdep: get_restripe_target: use lockdep in BUG_ON
-From: Mitch Harder <mitch.harder@sabayonlinux.org>
-To: Ilya Dryomov <idryomov@gmail.com>
-Cc: Bobby Powers <bobbypowers@gmail.com>, linux-btrfs@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>, Andi Kleen <ak@linux.intel.com>,
-        Jeff Mahoney <jeffm@suse.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <4F7F20DE.3040009@gmail.com>
+References: <4F7F20DE.3040009@gmail.com>
+  <cover.1333663714.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 5, 2012 at 11:51 AM, Ilya Dryomov <idryomov@gmail.com> wrote:
-> On Thu, Apr 05, 2012 at 12:23:01PM -0400, Bobby Powers wrote:
->> On Wed, Apr 4, 2012 at 10:04 PM, Bobby Powers <bobbypowers@gmail.com> wrote:
->> > spin_is_locked always returns 0 on non-SMP systems, which causes btrfs
->> > to fail the mount.  There is documentation pending as to why checking
->>
->> I guess I should be explicit in stating that this is a regression, so
->> this patch or something else that addresses it should be pulled into
->> 3.4.
->
-> Yes, this is a regression and spin_is_locked() definitely has to go.  I
-> don't have a strong opinion on this assert, if there are objections to
-> v2 I'm OK with ripping that BUG_ON entirely and replacing it with a
-> comment (this function and its callers are WIP).
->
+Thank your Rob for replying.
+I acknowledge the reasoning has not been discussed.
 
-I'm still hitting this BUG_ON after applying this patch on my single
-CPU AthlonXP x86 system.
+> While I agree this is a more correct name, I think this is pointless
+> churn and as you highlight above incomplete.
 
-I'm running a 3.3.1 kernel merged with the for-linus branch, and had
-this patch applied.
+I don't know. I can't evaluate the "pointless" bit.  I leave this
+decision to people more involved with the fpga/asic/cpu environment.
 
-I am currently testing with the BUG_ON commented out.  The btrfs
-partitions mount without error, and I haven't encountered any
-immediate issues.
+> What's the reasoning for this other than rmk suggested it?
+
+My aim is using primecell for x86: my target chip is a pci-e bridge
+that exposes a number of amba devices to the PC; some of those are
+PrimeCell devices for which the existing drivers work fine after you
+set up stuff correctly.  While touching this stuff I"ve been asked to
+make the rename, and for me "rmk suggested it" is strong enough a
+reason.
+
+I suspect this misnaming may be disturbing in some technical
+environments; it's known that amba is being used in many
+environments without primecell logic blocks, and it's now spreading
+fast to non-arm SoC's. It may happen that a new user base may
+be confused by a misnaming (e.g., my ata is under amba, but it's not
+a primecell block, so it's not including <linux/amba.h>).
+
+It's not unlike how IDE became ATA over time.  If there's agreement
+about its usefulness I can deal with the move, before submitting the
+bridge.  Otherwise I'm also fine with using the old naming in my
+patches.
+
+/alessandro, feeling flame alert, thus maybe too verbose
