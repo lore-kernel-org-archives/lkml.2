@@ -1,134 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab2DFPY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 11:24:58 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:55009 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317Ab2DFPY5 (ORCPT
+	id S1757438Ab2DFP0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 11:26:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51117 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851Ab2DFP0g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 11:24:57 -0400
-Message-ID: <4F7F0AC5.2050805@tilera.com>
-Date: Fri, 6 Apr 2012 11:24:53 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Fri, 6 Apr 2012 11:26:36 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] arch/tile bug fixes for v3.4-rc2
-References: <4F7A2503.6070706@tilera.com>
-In-Reply-To: <4F7A2503.6070706@tilera.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120406114502.GD30425@liondog.tnic>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+	<1333666086-6517-4-git-send-email-fweisbec@gmail.com>
+	<20120406114502.GD30425@liondog.tnic>
+Date: Fri, 6 Apr 2012 17:26:35 +0200
+Message-ID: <CAFTL4hzvy1wgm8e7_h2S6Fa_A+QybUsssetLaWyUu3tB5a2m1w@mail.gmail.com>
+Subject: Re: [PATCH 03/15] perf: Build libtraceevent.a
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+2012/4/6 Borislav Petkov <bp@alien8.de>:
+> On Fri, Apr 06, 2012 at 12:47:54AM +0200, Frederic Weisbecker wrote:
+>> From: Steven Rostedt <srostedt@redhat.com>
+>>
+>> Have building perf also build libtraceevent.a. Currently, perf does
+>> not use the code within libtraceevent.a, but it soon will.
+>>
+>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Borislav Petkov <bp@alien8.de>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Arun Sharma <asharma@fb.com>
+>> Cc: Namhyung Kim <namhyung.kim@lge.com>
+>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>> ---
+>>  tools/perf/Makefile |   11 ++++++++++-
+>>  1 files changed, 10 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+>> index 6f93a99..8e60e51 100644
+>> --- a/tools/perf/Makefile
+>> +++ b/tools/perf/Makefile
+>> @@ -1,5 +1,6 @@
+>>  ifeq ("$(origin O)", "command line")
+>>       OUTPUT := $(O)/
+>> +     COMMAND_O := O=$(O)
+>>  endif
+>>
+>>  # The default target of this Makefile is...
+>> @@ -211,6 +212,9 @@ $(OUTPUT)python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+>>
+>>  SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+>>
+>> +EVENT_PARSE_DIR = ../lib/traceevent/
+>> +LIBTRACEEVENT = $(OUTPUT)$(EVENT_PARSE_DIR)libtraceevent.a
+>> +
+>>  #
+>>  # Single 'perf' binary right now:
+>>  #
+>> @@ -335,6 +339,7 @@ LIB_H += util/cpumap.h
+>>  LIB_H += util/top.h
+>>  LIB_H += $(ARCH_INCLUDE)
+>>  LIB_H += util/cgroup.h
+>> +LIB_H += $(EVENT_PARSE_DIR)event-parse.h
+>>
+>>  LIB_OBJS += $(OUTPUT)util/abspath.o
+>>  LIB_OBJS += $(OUTPUT)util/alias.o
+>> @@ -741,7 +746,7 @@ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+>>               '-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+>>               $(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
+>>
+>> -$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+>> +$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(LIBTRACEEVENT)
+>>       $(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
+>>                 $(BUILTIN_OBJS) $(LIBS) -o $@
+>>
+>> @@ -847,6 +852,10 @@ $(sort $(dir $(DIRECTORY_DEPS))):
+>>  $(LIB_FILE): $(LIB_OBJS)
+>>       $(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
+>>
+>> +# libparsevent.a
+>> +$(LIBTRACEEVENT):
+>> +     make -C $(EVENT_PARSE_DIR) $(COMMAND_O) libtraceevent.a
+>> +
+>
+> With a toplevel Makefile in tools/, this should be made into its own
+> target residing in tools/lib/traceevent/Makefile and a perf build should
+> be dependent on it instead of adding a perf-specific libtraceevent
+> target here.
 
-Ping?  This branch doesn't seem to have been pulled yet.  This is a few
-"unbreak the build" changes, plus a bunch of things we've been testing for
-a long time internally and are strictly bugfixes.
-
-Thanks!
-Chris
-
-On 4/2/2012 6:15 PM, Chris Metcalf wrote:
-> Linus,
->
-> Please pull the following changes for 3.4-rc2 from:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
->
-> This includes Paul Gortmaker's change to fix the <asm/system.h> disintegration
-> issues on tile, a fix to unbreak the tilepro ethernet driver, and a backlog
-> of bugfix-only changes from internal Tilera development over the last few months.
-> They have all been to LKML and on linux-next for the last few days.  The
-> EDAC change to MAINTAINERS is an oddity but discussion on the linux-edac list
-> suggested I ask you to pull that change through my tree since they don't have
-> a tree to pull edac changes from at the moment.
->
-> Chris Metcalf (38):
->       arch/tile/Kconfig: remove pointless "!M386" test.
->       arch/tile/Kconfig: rename tile_defconfig to tilepro_defconfig
->       arch/tile/Kconfig: don't specify CONFIG_PAGE_OFFSET for 64-bit builds
->       arch/tile: fix typo in <arch/spr_def.h>
->       arch/tile: revert comment for atomic64_add_unless().
->       arch/tile: fix gcc 4.6 warnings in <asm/bitops_64.h>
->       arch/tile: use 0 for IRQ_RESCHEDULE instead of 1
->       arch/tile: avoid false corrupt frame warning in early boot
->       arch/tile: make sure to build memcpy_user_64 without frame pointer
->       arch/tile: various bugs in stack backtracer
->       arch/tile: work around a hardware issue with the return-address stack
->       arch/tile: fix up some minor trap handling issues
->       arch/tile: fix a couple of comments that needed updating
->       arch/tile/Makefile: use KCFLAGS when figuring out the libgcc path.
->       arch/tile: don't wait for migrating PTEs in an NMI handler
->       arch/tile: don't set the homecache of a PTE unless appropriate
->       arch/tile: don't enable irqs unconditionally in page fault handler
->       arch/tile: fix bug in loading kernels larger than 16 MB
->       arch/tile: fix bug in delay_backoff()
->       arch/tile: don't leak kernel memory when we unload modules
->       arch/tile: fix up locking in pgtable.c slightly
->       arch/tile: use proper memparse() for "maxmem" options
->       arch/tile: add "nop" after "nap" to help GX idle power draw
->       arch/tile: implement panic_smp_self_stop()
->       arch/tile: fix single-stepping over swint1 instructions on tilegx
->       arch/tile: fix pointer cast in cacheflush.c
->       arch/tile: export the page_home() function.
->       arch/tile: stop mentioning the "kvm" subdirectory
->       arch/tile: use atomic exchange in arch_write_unlock()
->       arch/tile: fix finv_buffer_remote() for tilegx
->       arch/tile: return SIGBUS for addresses that are unaligned AND invalid
->       arch/tile: remove bogus performance optimization
->       arch/tile: avoid accidentally unmasking NMI-type interrupt accidentally
->       edac: say "TILEGx" not "TILEPro" for the tilegx edac driver
->       tile-srom.c driver: minor code cleanup
->       tilepro ethernet driver: fix a few minor issues
->       MAINTAINERS: update EDAC information
->       drivers/net/ethernet/tile: fix netdev_alloc_skb() bombing
->
-> Paul Gortmaker (1):
->       tile: fix multiple build failures from system.h dismantle
->
->  MAINTAINERS                         |   22 ++--
->  arch/tile/Kconfig                   |    8 +-
->  arch/tile/Makefile                  |    5 +-
->  arch/tile/include/arch/spr_def.h    |    4 +-
->  arch/tile/include/asm/atomic.h      |   50 +-------
->  arch/tile/include/asm/atomic_32.h   |    2 +-
->  arch/tile/include/asm/bitops_64.h   |    8 +-
->  arch/tile/include/asm/cmpxchg.h     |   73 +++++++++++
->  arch/tile/include/asm/irq.h         |    2 +-
->  arch/tile/include/asm/spinlock_64.h |    2 +-
->  arch/tile/include/asm/stack.h       |    1 -
->  arch/tile/include/asm/traps.h       |    6 +-
->  arch/tile/kernel/entry.S            |    2 +
->  arch/tile/kernel/intvec_32.S        |   24 +++-
->  arch/tile/kernel/intvec_64.S        |   52 +++++++-
->  arch/tile/kernel/module.c           |    2 +
->  arch/tile/kernel/process.c          |    3 +-
->  arch/tile/kernel/setup.c            |   28 +++--
->  arch/tile/kernel/single_step.c      |   31 +++--
->  arch/tile/kernel/smp.c              |    8 +-
->  arch/tile/kernel/stack.c            |  232 +++++++++++++++++------------------
->  arch/tile/kernel/traps.c            |   15 ++-
->  arch/tile/lib/Makefile              |    1 +
->  arch/tile/lib/cacheflush.c          |   30 ++++-
->  arch/tile/lib/memcpy_user_64.c      |    8 +-
->  arch/tile/lib/spinlock_common.h     |    2 +-
->  arch/tile/mm/fault.c                |   22 +++-
->  arch/tile/mm/homecache.c            |    1 +
->  arch/tile/mm/init.c                 |   26 +++--
->  arch/tile/mm/pgtable.c              |   38 ++++--
->  drivers/char/tile-srom.c            |   12 +-
->  drivers/edac/tile_edac.c            |    4 +
->  drivers/net/ethernet/tile/tilepro.c |   77 ++++++++----
->  33 files changed, 501 insertions(+), 300 deletions(-)
->  create mode 100644 arch/tile/include/asm/cmpxchg.h
->
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Not sure what you mean. The libtraceevent makefile is standalone and
+perf is dependant on it.
+What am I missing?
