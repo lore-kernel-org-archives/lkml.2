@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab2DFIvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 04:51:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42403 "EHLO
+	id S1754837Ab2DFIvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 04:51:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55836 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752822Ab2DFIvT (ORCPT
+	by vger.kernel.org with ESMTP id S1751887Ab2DFIvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 04:51:19 -0400
-Date: Fri, 6 Apr 2012 09:51:15 +0100
+	Fri, 6 Apr 2012 04:51:51 -0400
+Date: Fri, 6 Apr 2012 09:51:48 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: rc5t583: Simplify RC5T583_REG macro
-Message-ID: <20120406085115.GD3172@opensource.wolfsonmicro.com>
-References: <1333670496.2777.0.camel@phoenix>
- <4F7E8030.80000@nvidia.com>
+Cc: lrg@ti.com, paul.gortmaker@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: rc5t583: Correct MODULE LICENSE to GPL v2
+Message-ID: <20120406085148.GE3172@opensource.wolfsonmicro.com>
+References: <1333690113-8341-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jCrbxBqMcLqd4mOl"
+	protocol="application/pgp-signature"; boundary="ytoMbUMiTKPMT3hY"
 Content-Disposition: inline
-In-Reply-To: <4F7E8030.80000@nvidia.com>
+In-Reply-To: <1333690113-8341-1-git-send-email-ldewangan@nvidia.com>
 X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,43 +26,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---jCrbxBqMcLqd4mOl
+--ytoMbUMiTKPMT3hY
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Apr 06, 2012 at 11:03:36AM +0530, Laxman Dewangan wrote:
+On Fri, Apr 06, 2012 at 10:58:33AM +0530, Laxman Dewangan wrote:
+> Fixing build issue reported by Paul Gortmaker:
+>=20
+> It appears this breaks linux-next allmodconfig build, because it
+> uses an uppercase V in the v2 of its MODULE_LICENSE.
+>=20
+> FATAL: modpost: GPL-incompatible module rc5t583-regulator.ko uses
+> GPL-only symbol 'platform_driver_unregister'
+> make[2]: *** [__modpost] Error 1
 
-> I thought of doing this on my first patch and then thought that
-> table should have all configuration picture rather than deriving
-> from few parameters.
-> If this is a good way then I will take care for my next PMIC driver
-> development.
+Applied, thanks.
 
-This way is good - if you look at for example the wm831x driver where
-there's a bunch of regulators with the same register layout replicated
-in different places in the chip all it does is specify the base for the
-block when defining a regulator.
-
---jCrbxBqMcLqd4mOl
+--ytoMbUMiTKPMT3hY
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPfq58AAoJEBus8iNuMP3dgxAP/iUzZYWYBRmur875VNV4Ovla
-XkW4bibRycR8mGQFUdSeKG/fZQji5E7N0j+23KhgW038vNkG4++n98XfGmkX7i5O
-yiTWllo1sTbcD961IzqIvVXwLlgTky7eI/s59G63S60oMIbb39SQ/rFUAQt4Dy4R
-RplzEed68X1XAY8ZkZnzd9+s4SMYrBjua94wwVLvW1w7t03ZH0F00RLOmk0Hh9js
-cGtTNxk2v4K6egpSTugZS/hEAih7dLgzhznvecZhZ29O9vLJhaQZqFnLqS/2zbs5
-k6kakActcRuRKGEjO0eAX6qq8wyWM2Kd+ARIhkzwnb3N7/PKeO9UGhv3yDn8suL7
-5j4VJp54qkk7+UlF0uxwdyxlY86Hh+ZciA3S40YIWCuv0KSKkLrmTpmkuIfxPgOr
-X/z4bcGRA0hVuQaWWLYOvyyzhfHUNOT6xE1hsAkuf0bBx8T6LxZOvA8VwbdeTPWz
-oX2eEsAKc+AbTXnYcd24lPYk52IVT5h40zNdBFrhYYQUj7V+Rj/GgUPVjOm1TlPB
-lsISj5amB4f+BvPqxpsJrajmY2TG1z6CChMGwmbaQjr6G1OKjQSu182MegWZVyaV
-9lOYgXM6/QLGJYt2t50MHa0O7od77OWjmjzg9bHOdl0oAIyvDzV92qblS5fRnOu/
-YyUbSbvAkQXf7/GpRRwm
-=18uG
+iQIcBAEBAgAGBQJPfq6XAAoJEBus8iNuMP3dwtYP/jHuTigRL0O8qPmxbrT8LSYP
+TkIAR5BhvAogpc53SOPnWEZQdrzdUajcRZuDtCVJHtR75OyFIhC7ofGePkpdaNUQ
+e6augUhkWZgS1IvjplgTgvp6By8E4Htd0bEbly87vzboAkSt49IRC9cHgnB7uEby
+m+vOc8sLQfDCnVO8uQtwJ5YlyN4YL0Gx2MgYzVmB4LWG1gp3M3kqE6R0Qgnb37pk
+WspGEFVrDYrez0yYKTrrmB6mus250oJnIuDCq+V8scs1HVsMBOJiL5gjn4Utrrvg
+VtCKRnYYbXaNADTTgtuDRptsxp/BdGobLd5o4rW6TsiEiIFrMcGk3nVHDK/ulihM
+d/FLWVU/r0ikEqFHkNxoLuGr8zWwduTWyIrX8Wzy+lVls+WF/eq6NAwMfNStGBWS
+tlPvTtDnGiRc2gu9ylcONut+huOSP3/B5z3sB6C8pEzEYbpzRTn414QsXsJGkljZ
+KilevrIBFb2Dpv56Yy8coUe/OM3NUWf7QV1fN/8237TQaQRwdvhAxJbnEOm0cryT
+eiRoUoNdbqVXiK1UFKe/X7e3D7MZM/xzTeFpqoEe3RFc+uxzDbXVNxHiWlxocuVt
+xRX476hgS2UeG/6Zdh1UG9k9z/jHgdXdyY5VLwpK9RdlxOFk4+QV0It+bS1OFUs2
+8iTe2OQrEs1uBo9xwQyP
+=MsYr
 -----END PGP SIGNATURE-----
 
---jCrbxBqMcLqd4mOl--
+--ytoMbUMiTKPMT3hY--
