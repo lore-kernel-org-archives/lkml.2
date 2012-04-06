@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab2DFQcH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 12:32:07 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:59453 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab2DFQcG convert rfc822-to-8bit (ORCPT
+	id S1754644Ab2DFQhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 12:37:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51536 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab2DFQhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 12:32:06 -0400
+	Fri, 6 Apr 2012 12:37:52 -0400
+Message-ID: <4F7F1BDD.4070205@gmail.com>
+Date: Fri, 06 Apr 2012 09:37:49 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <4F7E6EBE.50501@kernel.dk>
-References: <1325254651-15379-1-git-send-email-glorioustao@gmail.com>
- <20120404144656.7b2a06ec.akpm@linux-foundation.org> <CAAV8rn+T7FM7bG+Q6fyoUrVtzOkYOx94Nh87Rg12UqCdk9HhWQ@mail.gmail.com>
- <4F7CD6C9.4060509@kernel.dk> <CAAV8rn+s__Uap1_nx8w4USGtAsg0Y=cbo_mUyCWnX2EFNzH3Eg@mail.gmail.com>
- <4F7E3011.4090803@kernel.dk> <CAAV8rnKuYoyNjhpPSLk4XJiwG7XYL11pUfdNx1Jn9mNji-9+Mw@mail.gmail.com>
- <4F7E6EBE.50501@kernel.dk>
-From: Tao Guo <glorioustao@gmail.com>
-Date: Fri, 6 Apr 2012 09:31:44 -0700
-Message-ID: <CAAV8rnLQHrZHfmgAjyUmMAos94dGwFJZRfHCdsGVNoNRh2HcDQ@mail.gmail.com>
-Subject: Re: [PATCH] umem: fix up unplugging.
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        neilb@suse.de, axboe@fusionio.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
+References: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com> <4F7E64E4.3080509@gmail.com>
+In-Reply-To: <4F7E64E4.3080509@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 5, 2012 at 9:19 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2012-04-05 22:09, Tao Guo wrote:
->> On Thu, Apr 5, 2012 at 4:51 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>> On 2012-04-04 17:58, Tao Guo wrote:
->>>> On Wed, Apr 4, 2012 at 4:18 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>> On 2012-04-04 16:20, Tao Guo wrote:
->>>>>> Hi Andrew,
->>>>>>
->>>>>> Thanks for your reply.
->>>>>>
->>>>>> Yes, without this patch the umem driver just doesn't work.
->>>>>> It is a bug introduced by commit 7eaceaccab5f40bbfda044629a6298616aeaed50.
->>>>>> In that patch, Jens removed the whole mm_unplug_device() function,
->>>>>> which used to be
->>>>>> the trigger to make umem start to work.
->>>>>
->>>>> Hmm indeed, that's isn't terribly useful. Why aren't we just calling
->>>>> activate_card() on addition of a bio?
->>>>>
->>>> It is the original design idea, the umem driver also wants to do batch
->>>> IO the same as
->>>> hard disk drive to fully utilize the IO bandwidth.
->>>
->>> Sure, just wondering whether the benefits have been tested. But yes, it
->>> certainly makes sense.
->>>
->>> Your patch looks buggy, though. What if the card is currently plugged on
->>> another tasks plug list? You seem to assume that it can only be plugged
->>> once.
->> No, it will register in its own plug callback list successfully, so
->> the unplug functions
->> will be called separately(twice the same).
->
-> So the code loops through the current plug, checking if it's already on
-> that list. If not, then it adds it. But what if it's on another plug
-> list? The above loop could be done with just a
->
->        if (!list_empty(&card->plug_cb.list))
->                ...
->
-> instead. Right now you could have !list_empty(&card->plug_cb.list) but
-> still add it to a different list.
->
-mmm, I was stupid here: card->plug_cb can not be in two list the same
-time. But I still need to make sure the final unplug will trigger the
-activate() function.
-I will sent another version to fix this problem.
+Rob,
 
-Thanks,
--Tao
-> --
-> Jens Axboe
+What the he*%? ...
+
+
+On 04/05/2012 08:37 PM, Rob Herring wrote:
+> On 04/05/2012 06:52 PM, David Daney wrote:
+>> From: David Daney<david.daney@cavium.com>
+>>
+>> In commit 4bbdd45a (irq_domain/powerpc: eliminate irq_map; use
+>> irq_alloc_desc() instead) code was added that ignores error returns
+>> from irq_alloc_desc_from() by (silently) casting the return value to
+>> unsigned.  The negitive value error return now suddenly looks like a
+>> valid irq number.
+>>
+>> Commits cc79ca69 (irq_domain: Move irq_domain code from powerpc to
+>> kernel/irq) and 1bc04f2c (irq_domain: Add support for base irq and
+>> hwirq in legacy mappings) move this code to its current location in
+
+That would be commits:
+
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=4bbdd45afdae208a7c4ade89cf602f89a6397cff
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=cc79ca691c292e9fd44f589c7940b9654e22f2f6
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=1bc04f2cf8c2a1feadbd994f50c40bb145bf2989
+
+>> irqdomain.c
+>>
+>> The result of all of this is a null pointer dereference OOPS if one of
+>> the error cases is hit.
+>>
+>> The fix: Don't cast away the negativeness of the return value and then
+>> check for errors.
+>>
+>> Signed-off-by: David Daney<david.daney@cavium.com>
+>> ---
+>>   kernel/irq/irqdomain.c |   11 ++++++-----
+>>   1 files changed, 6 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>> index af48e59..9d3e3ae 100644
+>> --- a/kernel/irq/irqdomain.c
+>> +++ b/kernel/irq/irqdomain.c
+>> @@ -351,6 +351,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>>   				irq_hw_number_t hwirq)
+>>   {
+>>   	unsigned int virq, hint;
+>> +	int irq;
+>>
+>>   	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
+>>
+>> @@ -380,14 +381,14 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>>   	hint = hwirq % irq_virq_count;
+>>   	if (hint == 0)
+>>   		hint++;
+>> -	virq = irq_alloc_desc_from(hint, 0);
 >
+> You are not looking at mainline. hint was removed in later versions, and
+> the referenced commit ids don't exist.
+
+Please look at Linus' tree before making incorrect statements about 
+whether or not code exists on the 'mainline'
+
+The current kernel.org tree contains the bug and will cause anything 
+using irq_create_mapping() to crash in a semi-random manner.
+
+David Daney
+
+>
+> Rob
+>
+>> -	if (!virq)
+>> -		virq = irq_alloc_desc_from(1, 0);
+>> -	if (!virq) {
+>> +	irq = irq_alloc_desc_from(hint, 0);
+>> +	if (irq<= 0)
+>> +		irq = irq_alloc_desc_from(1, 0);
+>> +	if (irq<= 0) {
+>>   		pr_debug("irq: ->  virq allocation failed\n");
+>>   		return 0;
+>>   	}
+>> -
+>> +	virq = irq;
+>>   	if (irq_setup_virq(domain, virq, hwirq)) {
+>>   		if (domain->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
+>>   			irq_free_desc(virq);
+>
+>
+
