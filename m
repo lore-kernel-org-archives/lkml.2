@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab2DFKRa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 06:17:30 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:33841 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab2DFKR1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 06:17:27 -0400
-Subject: Re: [E1000-devel] e1000e interface hang on 82574L
-Mime-Version: 1.0 (Apple Message framework v1276)
+	id S1755958Ab2DFKWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 06:22:45 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:58490 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753111Ab2DFKWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 06:22:43 -0400
+Date: Fri, 6 Apr 2012 12:22:32 +0200
+From: David Sterba <dave@jikos.cz>
+To: Arnd Hannemann <arnd@arndnet.de>
+Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Btrfs: allow mount -o remount,compress=no
+Message-ID: <20120406102232.GH14256@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Arnd Hannemann <arnd@arndnet.de>, chris.mason@oracle.com,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1333568777-16986-1-git-send-email-arnd@arndnet.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Chris Boot <bootc@bootc.net>
-In-Reply-To: <87ehsov6ot.fsf@spindle.srvr.nix>
-Date: Fri, 6 Apr 2012 11:17:23 +0100
-Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev <netdev@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1590F833-7D40-42FE-8FA2-6DCCADF9C6B0@bootc.net>
-References: <4EFA4024.5000909@bootc.net> <FCF3184D-CE4F-471C-B66C-0F671795FD3C@bootc.net> <9BBC4E0CF881AA4299206E2E1412B626017762@ORSMSX102.amr.corp.intel.com> <4F048861.8070501@bootc.net> <4F12B42C.9030803@bootc.net> <9BBC4E0CF881AA4299206E2E1412B62621F0B1@ORSMSX102.amr.corp.intel.com> <4F144A76.3050703@bootc.net> <4F64B4E2.20208@bootc.net> <4F64CFCB.7060702@bootc.net> <9BBC4E0CF881AA4299206E2E1412B6260E512E0C@ORSMSX102.amr.corp.intel.com> <87r4wova0b.fsf@spindle.srvr.nix> <9BBC4E0CF881AA4299206E2E1412B6260E512FB9@ORSMSX102.amr.corp.intel.com> <87ehsov6ot.fsf@spindle.srvr.nix>
-To: Nix <nix@esperi.org.uk>
-X-Mailer: Apple Mail (2.1276)
+Content-Disposition: inline
+In-Reply-To: <1333568777-16986-1-git-send-email-arnd@arndnet.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 Mar 2012, at 17:31, Nix wrote:
+On Wed, Apr 04, 2012 at 09:46:17PM +0200, Arnd Hannemann wrote:
+> Btrfs allows to turn on compression on a mounted and used filesystem
+> by issuing mount -o remount,compress=lzo.
+> This patch allows to turn compression off again
+> while the filesystem is mounted.
 
-> On 19 Mar 2012, Carolyn Wyborny said:
-> 
->>> you'll see that I tested that, and it doesn't work :( even if it did
->>> work, it shouldn't be needed: the driver attempts to turn off PCIe ASPM
->>> on affected NICs, and fails, apparently because *something* turns it
->>> back on again.
->>> 
->> The driver attempts to disable L0s state, not the entire feature. It
-> 
-> It tries to disable L1 state as well (or it did when I tested this last,
-> although I suspect you're right and it may leave L1 turned on these
-> days: judging by the contents of e1000_82574_info, anyway.)
-> 
->> is also required that the device upstream on the bus from the 82574L
->> have this disabled. Yes, I agree there appears to be something in the
->> os that either ren-enables or fails to disable the feature on the
->> upstream device, as desired. Platforms/systems also appear to vary in
->> this regard, so the solutions may vary a bit as well.
->> 
->> Its worth trying your solution as well if what I suggested doesn't
->> work, but there is not one solution that fits all, unfortunately.
-> 
-> I don't *have* a solution. :( 'setpci by hand some unknown amount of
-> time after booting once the interface has stabilized' hardly counts as a
-> solution of any sort. It's, at best, a workaround that lets me use my
-> systems without hourly lockups until a real solution is found.
-> 
-> (To clarify: manual setpci to force off the ASPM bits is the only thing
-> that works for me. The driver's automatic disabling of L0s and L1
-> doesn't work: nor does booting with pcie_aspm=off. In both cases, I end
-> up with both L0s and L1 turned on, and a lockup some time later, unless
-> I setpci the bits off by hand.)
+I agree it makes sense to allow for turning off the compression via
+remount. Currently the mount flag FORCE_COMPRESS implies COMPRESS and
+your code may lead to FORCE_COMPRESS without COMPRESS. To fix that
+clear the force option as well.
 
+For completeness, there should be also possibility of
 
-Well, with that setpci incantation run against the NIC and its upstream device to disable ASPM L1s (setpci -s <dev> CAP_EXP+10.b=40), everything has been working very well indeed. Is there something the e1000e driver could do to disable L1s as well as L0s if we know there's a problem with them for these devices?
+  -o remount,compress-force=no
 
-Adding Bjorn Helgaas and linux-pci to CCs to try to get the ball rolling some more, as this is crippling without the fixes.
+doing exactly the same, just a different syntax. Proposed fix below.
 
-Cheers,
-Chris
+> --- a/fs/btrfs/super.c
+> +++ b/fs/btrfs/super.c
+> @@ -394,15 +394,20 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
+>  			    strcmp(args[0].from, "zlib") == 0) {
+>  				compress_type = "zlib";
+>  				info->compress_type = BTRFS_COMPRESS_ZLIB;
+> +				btrfs_set_opt(info->mount_opt, COMPRESS);
+>  			} else if (strcmp(args[0].from, "lzo") == 0) {
+>  				compress_type = "lzo";
+>  				info->compress_type = BTRFS_COMPRESS_LZO;
+> +				btrfs_set_opt(info->mount_opt, COMPRESS);
+> +			} else if (strncmp(args[0].from, "no", 2) == 0) {
+> +				compress_type = "no";
+> +				info->compress_type = BTRFS_COMPRESS_NONE;
+> +				btrfs_clear_opt(info->mount_opt, COMPRESS);
 
--- 
-Chris Boot
-bootc@bootc.net
+				btrfs_clear_opt(info->mount_opt, FORCE_COMPRESS);
+				compress_force = false;
 
+>  			} else {
+>  				ret = -EINVAL;
+>  				goto out;
+>  			}
+>  
+> -			btrfs_set_opt(info->mount_opt, COMPRESS);
+>  			if (compress_force) {
+>  				btrfs_set_opt(info->mount_opt, FORCE_COMPRESS);
+>  				pr_info("btrfs: force %s compression\n",
