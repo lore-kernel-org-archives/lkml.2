@@ -1,121 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab2DFRLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 13:11:53 -0400
-Received: from anakin.london.02.net ([87.194.255.134]:55721 "EHLO
-	anakin.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756550Ab2DFRLv (ORCPT
+	id S1757273Ab2DFRMB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 13:12:01 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:52149 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757081Ab2DFRLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 13:11:51 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Apr 2012 13:11:50 EDT
-From: John Keeping <john@keeping.me.uk>
-To: netdev@vger.kernel.org
-Cc: John Keeping <john@keeping.me.uk>, linux-kernel@vger.kernel.org,
-        Mihai Maruseac <mihai.maruseac@gmail.com>
-Subject: [PATCH] net/core: Fix seeking in /proc/net/dev
-Date: Fri,  6 Apr 2012 18:05:44 +0100
-Message-Id: <1333731944-15808-1-git-send-email-john@keeping.me.uk>
-X-Mailer: git-send-email 1.7.8.5
+	Fri, 6 Apr 2012 13:11:55 -0400
+Message-Id: <201204061711.q36HBpAh015060@lab-41.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 6 Apr 2012 12:53:50 -0400
+Subject: [PATCH] init: fix bug where environment vars can't be passed via boot args
+To: Pawel Moll <pawel.moll@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 06 Apr 2012 17:11:54.0788 (UTC) FILETIME=[5DBA6640:01CD1418]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f04565ddf52e4 (dev: use name hash for dev_seq_ops) introduced
-code that fails to check the requested position when getting an item for
-/proc/net/dev.  This means that any code which seeks within this file is
-likely to receive corrupted data.
+Commit 026cee0086f had the side-effect of dropping the '=' from
+the unknown boot arguments that are passed to init as environment
+variables.  This is because parse_args() puts a NUL in the string
+where the '=' was when it passes the "param" and "val" pointers
+to the parsing subfunctions.  Previously, unknown_bootoption() was
+the last parse_args() subfunction to run, and it carefully put back
+the '=' character.  Now ignore_unknown_bootoption() is the last
+one to run, and it wasn't doing the necessary repair, so the
+envp params ended up with the embedded NUL and were no longer
+seen as valid environment variables by init.
 
-A test case for this is to use the read builtin in bash:
-
-$ while read line; do echo "$line"; done </proc/net/dev | cut -c-20
-Inter-|   Receive
-face |bytes    packe
-virbr0:   20706
-0
-lo: 2329335   10305
-eth0:       0
-
-compared to just cat'ing the file:
-
-$ cat /proc/net/dev | cut -c-20
-Inter-|   Receive
- face |bytes    pack
-    lo: 2329335   10
-virbr0:   20706
-  sit0:       0
- wlan0: 1727234745 1
-  eth0:       0
-
-This patch takes the sledgehammer approach of starting again from the
-beginning if asked to seek backwards.
-
-Signed-off-by: John Keeping <john@keeping.me.uk>
-
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
-I have made the minimal change required to fix the bug here.  If desired I
-can spend some more time and enhance the dev_from_new_bucket and
-dev_from_same_bucket functions to support walking backwards as well as
-forwards through the items in the table.
+ init/main.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
 
----
- net/core/dev.c |   24 +++++++++++++++++++-----
- 1 files changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 6ca32f6..66b1e891 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4040,6 +4040,7 @@ static int dev_ifconf(struct net *net, char __user *arg)
+diff --git a/init/main.c b/init/main.c
+index 9d454f0..44b2433 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -225,13 +225,9 @@ static int __init loglevel(char *str)
  
- struct dev_iter_state {
- 	struct seq_net_private p;
-+	loff_t expected_pos; /* current index */
- 	unsigned int pos; /* bucket << BUCKET_SPACE + offset */
+ early_param("loglevel", loglevel);
+ 
+-/*
+- * Unknown boot options get handed to init, unless they look like
+- * unused parameters (modprobe will find them in /proc/cmdline).
+- */
+-static int __init unknown_bootoption(char *param, char *val)
++/* Change NUL term back to "=", to make "param" the whole string. */
++static int __init repair_env_string(char *param, char *val)
+ {
+-	/* Change NUL term back to "=", to make "param" the whole string. */
+ 	if (val) {
+ 		/* param=val or param="val"? */
+ 		if (val == param+strlen(param)+1)
+@@ -243,6 +239,16 @@ static int __init unknown_bootoption(char *param, char *val)
+ 		} else
+ 			BUG();
+ 	}
++	return 0;
++}
++
++/*
++ * Unknown boot options get handed to init, unless they look like
++ * unused parameters (modprobe will find them in /proc/cmdline).
++ */
++static int __init unknown_bootoption(char *param, char *val)
++{
++	repair_env_string(param, val);
+ 
+ 	/* Handle obsolete-style parameters */
+ 	if (obsolete_checksetup(param))
+@@ -732,11 +738,6 @@ static char *initcall_level_names[] __initdata = {
+ 	"late parameters",
  };
  
-@@ -4096,24 +4097,37 @@ static inline struct net_device *dev_from_new_bucket(struct seq_file *seq)
- void *dev_seq_start(struct seq_file *seq, loff_t *pos)
- 	__acquires(RCU)
+-static int __init ignore_unknown_bootoption(char *param, char *val)
+-{
+-	return 0;
+-}
+-
+ static void __init do_initcall_level(int level)
  {
-+	struct net_device *dev;
- 	struct dev_iter_state *state = seq->private;
+ 	extern const struct kernel_param __start___param[], __stop___param[];
+@@ -747,7 +748,7 @@ static void __init do_initcall_level(int level)
+ 		   static_command_line, __start___param,
+ 		   __stop___param - __start___param,
+ 		   level, level,
+-		   ignore_unknown_bootoption);
++		   repair_env_string);
  
- 	rcu_read_lock();
--	if (!*pos)
-+	if (!*pos) {
-+		state->expected_pos = 0;
-+		state->pos = 0;
- 		return SEQ_START_TOKEN;
-+	}
- 
--	/* check for end of the hash */
--	if (state->pos == 0 && *pos > 1)
--		return NULL;
-+	/* If we're asked for something behind where we are, start again. */
-+	if (state->expected_pos >= *pos) {
-+		state->expected_pos = 0;
-+		state->pos = 0;
-+	}
- 
--	return dev_from_new_bucket(seq);
-+	do {
-+		dev = dev_from_new_bucket(seq);
-+		++state->expected_pos;
-+	} while (dev && state->expected_pos < *pos);
-+
-+	return dev;
- }
- 
- void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- {
- 	struct net_device *dev;
-+	struct dev_iter_state *state = seq->private;
- 
- 	++*pos;
-+	state->expected_pos = *pos;
- 
- 	if (v == SEQ_START_TOKEN)
- 		return dev_from_new_bucket(seq);
+ 	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+ 		do_one_initcall(*fn);
 -- 
-1.7.8.5
+1.6.5.2
 
