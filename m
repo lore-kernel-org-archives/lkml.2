@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab2DFGVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 02:21:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:65276 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab2DFGVj (ORCPT
+	id S1753756Ab2DFG0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 02:26:30 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:44875 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab2DFG03 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 02:21:39 -0400
+	Fri, 6 Apr 2012 02:26:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGdaadbywdKu_8H5+MLMz_Sp_VC+JoUaw0-w-EiOqMGkTA30DA@mail.gmail.com>
-References: <CANudz+uhw4LZ4EoDvp_eC2K23=Qm_ACPpM8TRq5p0t9=idKcSg@mail.gmail.com>
-	<CAGdaadbywdKu_8H5+MLMz_Sp_VC+JoUaw0-w-EiOqMGkTA30DA@mail.gmail.com>
-Date: Fri, 6 Apr 2012 14:21:38 +0800
-Message-ID: <CANudz+up6=6Zx-9=7QndLqbbBLrApJG5C87ukWorpkisiK5bdw@mail.gmail.com>
-Subject: Re: Some questions about high memory
-From: loody <miloody@gmail.com>
-To: Mulyadi Santosa <mulyadi.santosa@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1333692989-9230-1-git-send-email-kernelfans@gmail.com>
+References: <1333692989-9230-1-git-send-email-kernelfans@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 5 Apr 2012 23:26:07 -0700
+X-Google-Sender-Auth: iJa1c_8viO_PMfyMJGLSBAxYMRo
+Message-ID: <CA+55aFyT7vCjr0-3qdz_0oNVZ+a3K8A7F7aGVVzYtNdUkovp1Q@mail.gmail.com>
+Subject: Re: [PATCH] pid: remove redundant condition
+To: Liu Ping Fan <kernelfans@gmail.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi mulyadi
-
-2012/4/6 Mulyadi Santosa <mulyadi.santosa@gmail.com>:
-> Hi...
+On Thu, Apr 5, 2012 at 11:16 PM, Liu Ping Fan <kernelfans@gmail.com> wrote:
+> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
 >
-> On Fri, Apr 6, 2012 at 09:19, loody <miloody@gmail.com> wrote:
->> hi all:
->> I am trying to write a driver for my block device which dma support
->> high memory copying.
->> I have register my device as "blk_bounce_any".
->> But my driver cannot see block layer pass high memory to me so far.
+> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+> ---
+>  kernel/pid.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 >
-> perhaps because you need to kmap them first?
-If I remember correctly, Kmap is used for mapping high memory into
-kernel virtual memory.
-Isn't that the job for block layer?
-
-I thought once I declare my block device as "blk_bounce_any", the
-block layer will pass the physical address of high memory to device.
-
-
+> diff --git a/kernel/pid.c b/kernel/pid.c
+> index 9f08dfa..e4ca244 100644
+> --- a/kernel/pid.c
+> +++ b/kernel/pid.c
+> @@ -248,8 +248,7 @@ void put_pid(struct pid *pid)
+>                return;
 >
-> BTW, is it 32 bit or 64 bit Linux kernel?
-32-bits linux kernel.
+>        ns = pid->numbers[pid->level].ns;
+> -       if ((atomic_read(&pid->count) == 1) ||
+> -            atomic_dec_and_test(&pid->count)) {
+> +       if (atomic_dec_and_test(&pid->count) {
+>                kmem_cache_free(ns->pid_cachep, pid);
+>                put_pid_ns(ns);
+>        }
 
->
->> Is there any user/kernel test program which will purposely send high
->> memory for driver to use?
->> or is there any flag when opening a file in user mode that will use high memory?
->
-> I recheck mmap and mmap manual page and I found none of such flag
+No, this isn't necessarily redundant.
 
-does that mean mmap can specify which memory to map?
-if that is true, which range I should use?
+The atomic_dec_and_test() instruction can be very expensive. So if
+count was 1 before, we're the last user, and we can free it without
+the expensive atomic_dec_and_test().
 
->
-> --
-> regards,
->
-> Mulyadi Santosa
-> Freelance Linux trainer and consultant
->
-> blog: the-hydra.blogspot.com
-> training: mulyaditraining.blogspot.com
+However, if we are *not* the last user, then we can race with another
+user decrementing the count, so now we need to use the expensive
+version.
 
-Appreciate your help
+Now, whether that special case is really worth it or not, I don't
+know. But it's not redundant.
+
+                    Linus
