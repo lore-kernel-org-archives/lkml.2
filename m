@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab2DFUFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:05:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab2DFUFr (ORCPT
+	id S932418Ab2DFUF6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:05:58 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34550 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab2DFUF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:05:47 -0400
-Date: Fri, 6 Apr 2012 13:05:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        jmorris@namei.org
-Subject: Re: [PATCH v17 07/15] asm/syscall.h: add syscall_get_arch
-Message-Id: <20120406130544.3d317192.akpm@linux-foundation.org>
-In-Reply-To: <1333051320-30872-8-git-send-email-wad@chromium.org>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	<1333051320-30872-8-git-send-email-wad@chromium.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Apr 2012 16:05:56 -0400
+Date: Fri, 6 Apr 2012 23:05:55 +0300
+From: Ilya Dryomov <idryomov@gmail.com>
+To: Bobby Powers <bobbypowers@gmail.com>
+Cc: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+        Andi Kleen <ak@linux.intel.com>, Jeff Mahoney <jeffm@suse.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Btrfs, lockdep: get_restripe_target: use lockdep in
+ BUG_ON
+Message-ID: <20120406200555.GA3414@zambezi.lan>
+References: <1333570774-26462-1-git-send-email-bobbypowers@gmail.com>
+ <1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012 15:01:52 -0500
-Will Drewry <wad@chromium.org> wrote:
-
-> Adds a stub for a function that will return the AUDIT_ARCH_*
-> value appropriate to the supplied task based on the system
-> call convention.
+On Wed, Apr 04, 2012 at 10:04:12PM -0400, Bobby Powers wrote:
+> spin_is_locked always returns 0 on non-SMP systems, which causes btrfs
+> to fail the mount.  There is documentation pending as to why checking
+> for spin_is_locked is a bad idea:
 > 
-> For audit's use, the value can generally be hard-coded at the
-> audit-site.  However, for other functionality not inlined into
-> syscall entry/exit, this makes that information available.
-> seccomp_filter is the first planned consumer and, as such,
-> the comment indicates a tie to HAVE_ARCH_SECCOMP_FILTER.  That
-
-Should be "CONFIG_HAVE_ARCH_SECCOMP_FILTER", I hope.
-
-> is probably an unneeded detail.
+> https://lkml.org/lkml/2012/3/27/413
 > 
-> ...
->
-> --- a/include/asm-generic/syscall.h
-> +++ b/include/asm-generic/syscall.h
-> @@ -142,4 +142,18 @@ void syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
->  			   unsigned int i, unsigned int n,
->  			   const unsigned long *args);
+> The suggested lockdep_assert_held() is not appropriate in this case,
+> as what get_restripe_target() is checking for is that either
+> volume_mutex is held or balance_lock is held.  Luckily
+> lockdep_assert_held() is a simple macro:
+> 
+> WARN_ON(debug_locks && !lockdep_is_held(l))
+> 
+> We can mimic the structure in get_restripe_target(), but we need to
+> make sure lockdep_is_held() is defined for the !LOCKDEP case.
+> 
+> CC: Ilya Dryomov <idryomov@gmail.com>
+> CC: Chris Mason <chris.mason@oracle.com>
+> CC: Andi Kleen <ak@linux.intel.com>
+> CC: Jeff Mahoney <jeffm@suse.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: linux-kernel@vger.kernel.org
+> Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
+> ---
+>  fs/btrfs/extent-tree.c  |    5 +++--
+>  include/linux/lockdep.h |    1 +
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+> index a844204..4d13eb1 100644
+> --- a/fs/btrfs/extent-tree.c
+> +++ b/fs/btrfs/extent-tree.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/slab.h>
+>  #include <linux/ratelimit.h>
+> +#include <linux/lockdep.h>
+>  #include "compat.h"
+>  #include "hash.h"
+>  #include "ctree.h"
+> @@ -3158,8 +3159,8 @@ static u64 get_restripe_target(struct btrfs_fs_info *fs_info, u64 flags)
+>  	struct btrfs_balance_control *bctl = fs_info->balance_ctl;
+>  	u64 target = 0;
 >  
-> +/**
-> + * syscall_get_arch - return the AUDIT_ARCH for the current system call
-> + * @task:	task of interest, must be in system call entry tracing
-> + * @regs:	task_pt_regs() of @task
-> + *
-> + * Returns the AUDIT_ARCH_* based on the system call convention in use.
-> + *
-> + * It's only valid to call this when @task is stopped on entry to a system
-> + * call, due to %TIF_SYSCALL_TRACE, %TIF_SYSCALL_AUDIT, or %TIF_SECCOMP.
-> + *
-> + * Note, at present this function is only required with
-> + * CONFIG_HAVE_ARCH_SECCOMP_FILTER.
-> + */
-> +int syscall_get_arch(struct task_struct *task, struct pt_regs *regs);
->  #endif	/* _ASM_SYSCALL_H */
+> -	BUG_ON(!mutex_is_locked(&fs_info->volume_mutex) &&
+> -	       !spin_is_locked(&fs_info->balance_lock));
+> +	BUG_ON(debug_locks && !lockdep_is_held(&fs_info->volume_mutex) &&
+> +	       !lockdep_is_held(&fs_info->balance_lock));
+>  
+>  	if (!bctl)
+>  		return 0;
+> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+> index d36619e..94c0edb 100644
+> --- a/include/linux/lockdep.h
+> +++ b/include/linux/lockdep.h
+> @@ -392,6 +392,7 @@ struct lock_class_key { };
+>  
+>  #define lockdep_depth(tsk)	(0)
+>  
+> +#define lockdep_is_held(l)	(0)
+>  #define lockdep_assert_held(l)			do { } while (0)
+>  
+>  #define lockdep_recursing(tsk)			(0)
+> -- 
+> 1.7.10.rc3.3.g19a6c
 
-So architectures which permit CONFIG_HAVE_ARCH_SECCOMP_FILTER must
-provide an implementation of this.
+OK, Mitch's report prompted me to actually take a look.  This patch is
+wrong: by defining lockdep_is_held(l) to 0 in !LOCKDEP case you
+effectively mimic the behaviour of spin_is_locked() which is what
+getting us in the first place.
 
+get_restripe_target() interface is WIP so I will replace BUG_ON with a
+comment and send a patch through btrfs tree.
+
+Thanks,
+
+		Ilya
