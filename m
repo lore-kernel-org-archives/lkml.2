@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab2DFHDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 03:03:23 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:38531 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2DFHDW (ORCPT
+	id S1754527Ab2DFHEB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 03:04:01 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50423 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab2DFHDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Apr 2012 03:03:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6671"; a="179411558"
+X-IronPort-AV: E=McAfee;i="5400,1158,6671"; a="177115381"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [RFC/PATCH 0/3] static keys for debugobjects
-Date: Fri,  6 Apr 2012 00:03:15 -0700
-Message-Id: <1333695798-2917-1-git-send-email-sboyd@codeaurora.org>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC/PATCH 2/3] init: Initialize jump_labels before early parameters
+Date: Fri,  6 Apr 2012 00:03:17 -0700
+Message-Id: <1333695798-2917-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
+In-Reply-To: <1333695798-2917-1-git-send-email-sboyd@codeaurora.org>
+References: <1333695798-2917-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building in debugobjects support without enabling debugobjects
-by default is useful in test scenarios where recompiling isn't
-an option. Moving this interface to static keys/jump labels should
-allow us to always have this code compiled in without worrying about
-performance overhead when it's disabled.
+We want to use jump_labels in the debug_objects code so that when
+debug_objects aren't enabled by default we can skip debug_object
+code. Move the jump_label initialization before the early
+parameter parsing so that debug_objects code can enable and
+disable itself according to kernel command line parameters.
 
-RFC because I don't have any numbers to back this up and it's debug
-code. I took a stab at using perf but I don't think the x86 machine
-I was using had good enough stuff to see i-cache misses or things
-like that. Hints on what to do to actually prove this is useful are
-appreciated.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
 
-This is based on the perf/jump-labels branch in the tip tree:
+This also opens the window to using static keys for pr_debug().
+I tried and wound up in circular dependency hell.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/jump-labels
+ init/main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Stephen Boyd (3):
-  timer: Move debugobjects.h include to timer.c
-  init: Initialize jump_labels before early parameters
-  debugobjects: Use static keys for debug_objects_enabled
-
- include/linux/debugobjects.h |   94 +++++++++++++++++++++++++++++++++++++-----
- include/linux/timer.h        |    1 -
- init/main.c                  |    4 +-
- kernel/timer.c               |    1 +
- lib/debugobjects.c           |   73 ++++++++++++--------------------
- 5 files changed, 113 insertions(+), 60 deletions(-)
-
+diff --git a/init/main.c b/init/main.c
+index ff49a6d..39a3092 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -502,14 +502,14 @@ asmlinkage void __init start_kernel(void)
+ 	build_all_zonelists(NULL);
+ 	page_alloc_init();
+ 
++	jump_label_init();
++
+ 	printk(KERN_NOTICE "Kernel command line: %s\n", boot_command_line);
+ 	parse_early_param();
+ 	parse_args("Booting kernel", static_command_line, __start___param,
+ 		   __stop___param - __start___param,
+ 		   &unknown_bootoption);
+ 
+-	jump_label_init();
+-
+ 	/*
+ 	 * These use large bootmem allocations and must precede
+ 	 * kmem_cache_init()
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
