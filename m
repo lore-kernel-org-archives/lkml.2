@@ -1,1501 +1,523 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2DFSfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 14:35:17 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43828 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab2DFSfM (ORCPT
+	id S1754496Ab2DFSpZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 14:45:25 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:57901 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384Ab2DFSpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 14:35:12 -0400
-Message-ID: <1333737301.29217.11.camel@mop>
-Subject: Re: [PATCH] printk: support structured and multi-facility log
- messages
-From: Kay Sievers <kay@vrfy.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartmann <greg@kroah.com>
-Date: Fri, 06 Apr 2012 20:35:01 +0200
-In-Reply-To: <CA+55aFyE41U9OPr7mrAA2ZJKuQ2jvH-KmusUNyfYbH8tOm6yiQ@mail.gmail.com>
-References: <1333569554.864.3.camel@mop>
-	 <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
-	 <1333655231.725.27.camel@mop> <1333674768.23520.123.camel@joe2Laptop>
-	 <CA+55aFyE41U9OPr7mrAA2ZJKuQ2jvH-KmusUNyfYbH8tOm6yiQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.3.91 (3.3.91-1.fc17)
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Apr 2012 14:45:23 -0400
+From: Ying Han <yinghan@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V8] Eliminate task stack trace duplication
+Date: Fri,  6 Apr 2012 11:45:20 -0700
+Message-Id: <1333737920-17555-1-git-send-email-yinghan@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-05 at 18:31 -0700, Linus Torvalds wrote:
-> On Thu, Apr 5, 2012 at 6:12 PM, Joe Perches <joe@perches.com> wrote:
-> >
-> > I still think this should be 3 patches not 1.
-> 
-> I do agree that that would be lovely. That patch is really hard to
-> read, and it would be helpful if some of it was split up a bit. For
-> example, separating out the "move log buffer to be packetized"
-> (without actually doing the new things) from for the "introduce new
-> interfaces" would be quite nice.
-> 
-> In fact, I think I could merge something that does the packetization
-> early, if it is fairly obvious that it doesn't do anything else. Just
-> making the dmesg ASCII timestamp be something that is a "read buffer"
-> time thing rather than "generate printk" time thing would be nice, and
-> I think the sequence numbers can be useful even with all the old
-> interfaces.
-> 
-> So if somebody wants to help with things like that, and try to turn
-> this into a more gradual thing, I think we could merge at least some
-> initial parts of this patch even for 3.4.
+The problem with small dmesg ring buffer like 512k is that only limited number
+of task traces will be logged. Sometimes we lose important information only
+because of too many duplicated stack traces. This problem occurs when dumping
+lots of stacks in a single operation, such as sysrq-T.
 
-Here is only the conversion of the byte- to the record-buffer split out
-of the big patch.
+This patch tries to reduce the duplication of task stack trace in the dump
+message by hashing the task stack. The hashtable is a 32k pre-allocated buffer
+during bootup. Each time if we find the identical task trace in the task stack,
+we dump only the pid of the task which has the task trace dumped. So it is easy
+to back track to the full stack with the pid.
 
-Unfortunately, it's still pretty big, and the patch not easy to read;
-the code itself looks better than the patch. At this moment I have no
-convincing idea how to split that into more pieces.
+When we do the hashing, we eliminate garbage entries from stack traces. Those
+entries are still being printed in the dump to provide more debugging
+informations.
 
-Note: The output of a few continuation lines look wrong with the patch
-applied. There are two pending patches to add a couple of missing
-KERN_CONT prefixes for these users.
+[   53.510162] kworker/0:0     S ffffffff8161d820     0     4      2 0x00000000
+[   53.517237]  ffff88027547de60 0000000000000046 ffffffff812ab840 0000000000000000
+[   53.524663]  ffff880275460080 ffff88027547dfd8 ffff88027547dfd8 ffff88027547dfd8
+[   53.532092]  ffffffff81813020 ffff880275460080 0000000000000000 ffff8808758670c0
+[   53.539521] Call Trace:
+[   53.541974]  [<ffffffff812ab840>] ? cfq_init_queue+0x350/0x350
+[   53.547791]  [<ffffffff81524d49>] schedule+0x29/0x70
+[   53.552761]  [<ffffffff810945a3>] worker_thread+0x233/0x380
+[   53.558318]  [<ffffffff81094370>] ? manage_workers.isra.28+0x230/0x230
+[   53.564839]  [<ffffffff81099a73>] kthread+0x93/0xa0
+[   53.569714]  [<ffffffff8152e6d4>] kernel_thread_helper+0x4/0x10
+[   53.575628]  [<ffffffff810999e0>] ? kthread_worker_fn+0x140/0x140
+[   53.581714]  [<ffffffff8152e6d0>] ? gs_change+0xb/0xb
+[   53.586762] kworker/u:0     S ffffffff8161d820     0     5      2 0x00000000
+[   53.593858]  ffff88027547fe60 0000000000000046 ffffffffa005cc70 0000000000000000
+[   53.601307]  ffff8802754627d0 ffff88027547ffd8 ffff88027547ffd8 ffff88027547ffd8
+[   53.608788]  ffffffff81813020 ffff8802754627d0 0000000000011fc0 ffff8804758670c0
+[   53.616232] Call Trace:
+[   53.618676] <Same stack as pid 4>
 
-The crash dump symbol exports, and the printk trace point needs to be
-checked by people who know how they expect from them, and to adapt to
-the new buffer type; and if they can possibly make use of the new
-seqnums to find out if the data behind their pointers which they pass
-along is still valid when the buffer gets filled behind their back.
+changelog v8..v7:
+1. rebase on v3.4-rc1.
 
-Kay
+changelog v7..v6:
+1. rebase on v3.3_rc2, the only change is moving changes from kernel/sched.c
+to kernel/sched/core.c
 
+changelog v6..v5:
+1. clear saved stack trace before printing a set of stacks. this ensures the printed
+stack traces are not omitted messages.
+2. add log level in printing duplicate stack.
+3. remove the show_stack() API change, and non-x86 arch won't need further change.
+4. add more inline documentations.
 
-From: Kay Sievers <kay@vrfy.org>
-Subject: printk: convert byte-buffer to variable-length record buffer
+changelog v5..v4:
+1. removed changes to Kconfig file
+2. changed hashtable to keep only hash value and length of stack
+3. simplified hashtable lookup
 
-- Record-based stream instead of the traditional byte stream
-  buffer. All records carry a 64 bit timestamp, the syslog facility
-  and priority in the record header.
+changelog v4..v3:
+1. improve de-duplication by eliminating garbage entries from stack traces.
+with this change 793/825 stack traces were recognized as duplicates. in v3
+only 482/839 were duplicates.
 
-- Records consume almost the same amount, sometimes less memory than
-  the traditional byte stream buffer (if printk_time is enabled). The record
-  header is 16 bytes long, plus some padding bytes at the end if needed.
-  The byte-stream buffer needed 3 chars for the syslog prefix, 15 char for
-  the timestamp and a newline.
+changelog v3..v2:
+1. again better documentation on the patch description.
+2. make the stack_hash_table to be allocated at compile time.
+3. have better name of variable index
+4. move save_dup_stack_trace() in kernel/stacktrace.c
 
-- Buffer management is based on message sequence numbers. When records
-  need to be discarded, the reading heads move on to the next full
-  record. Unlike the byte-stream buffer, no old logged lines get
-  truncated or partly overwritten by new ones. Sequence numbers also
-  allow consumers of the log stream to get notified if any message in
-  the stream they are about to read gets discarded during the time
-  of reading.
+changelog v2..v1:
+1. better documentation on the patch description
+2. move the spinlock inside the hash lockup, so reducing the holding time.
 
-- Better buffered IO support for KERN_CONT continuation lines, when printk()
-  is called multiple times for a single line. The use of KERN_CONT is now
-  mandatory to use continuation; a few places in the kernel need trivial fixes
-  here. The buffering could possibly be extended to per-cpu variables to allow
-  better thread-safety for multiple printk() invocations for a single line.
+Note:
+1. with pid namespace, we might have same pid number for different processes. i
+wonder how the stack trace (w/o dedup) handles the case, it uses tsk->pid as well
+as far as I checked.
+2. the core functionality is in x86-specific code, this could be moved out to
+support other architectures.
+3. Andrew made the suggestion of doing appending to stack_hash_table[].
 
-- Full-featured syslog facility value support. Different facilities
-  can tag their messages. All userspace-injected messages enforce a
-  facility value > 0 now, to be able to reliably distinguish them from
-  the kernel-generated messages. Independent subsystems like a
-  baseband processor running its own firmware, or a kernel-related
-  userspace process can use their own unique facility values. Multiple
-  independent log streams can co-exist that way in the same
-  buffer. All share the same global sequence number counter to ensure
-  proper ordering (and interleaving) and to allow the consumers of the
-  log to reliably correlate the events from different facilities.
-
-Tested-by: William Douglas <william.douglas@intel.com>
-Signed-off-by: Kay Sievers <kay@vrfy.org>
+Signed-off-by: Ying Han <yinghan@google.com>
 ---
- drivers/char/mem.c     |   55 +-
- include/linux/printk.h |   11 
- kernel/printk.c        | 1020 ++++++++++++++++++++++++++++---------------------
- 3 files changed, 642 insertions(+), 444 deletions(-)
+ arch/x86/include/asm/stacktrace.h |   11 +++-
+ arch/x86/kernel/dumpstack.c       |   24 ++++++-
+ arch/x86/kernel/dumpstack_32.c    |    7 +-
+ arch/x86/kernel/dumpstack_64.c    |    7 +-
+ arch/x86/kernel/stacktrace.c      |  123 +++++++++++++++++++++++++++++++++++++
+ include/linux/sched.h             |    3 +
+ include/linux/stacktrace.h        |    4 +
+ kernel/sched/core.c               |   32 +++++++++-
+ kernel/stacktrace.c               |   15 +++++
+ 9 files changed, 211 insertions(+), 15 deletions(-)
 
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -810,33 +810,54 @@ static const struct file_operations oldm
- static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
- 			   unsigned long count, loff_t pos)
- {
--	char *line, *p;
-+	char *buf, *line;
- 	int i;
--	ssize_t ret = -EFAULT;
-+	int level = default_message_loglevel;
-+	int facility = 1;	/* LOG_USER */
- 	size_t len = iov_length(iv, count);
-+	ssize_t ret = len;
- 
--	line = kmalloc(len + 1, GFP_KERNEL);
--	if (line == NULL)
-+	if (len > 1024)
-+		return -EINVAL;
-+	buf = kmalloc(len+1, GFP_KERNEL);
-+	if (buf == NULL)
- 		return -ENOMEM;
- 
--	/*
--	 * copy all vectors into a single string, to ensure we do
--	 * not interleave our log line with other printk calls
--	 */
--	p = line;
-+	line = buf;
- 	for (i = 0; i < count; i++) {
--		if (copy_from_user(p, iv[i].iov_base, iv[i].iov_len))
-+		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len))
- 			goto out;
--		p += iv[i].iov_len;
-+		line += iv[i].iov_len;
-+	}
-+
-+	/*
-+	 * Extract and skip the syslog prefix <[0-9]*>. Coming from userspace
-+	 * the decimal value represents 32bit, the lower 3 bit are the log
-+	 * level, the rest are the log facility.
-+	 *
-+	 * If no prefix or no userspace facility is specified, we
-+	 * enforce LOG_USER, to be able to reliably distinguish
-+	 * kernel-generated messages from userspace-injected ones.
-+	 */
-+	line = buf;
-+	if (line[0] == '<') {
-+		char *endp = NULL;
-+
-+		i = simple_strtoul(line+1, &endp, 10);
-+		if (endp && endp[0] == '>') {
-+			level = i & 7;
-+			if (i >> 3)
-+				facility = i >> 3;
-+			endp++;
-+			len -= endp - line;
-+			line = endp;
-+		}
- 	}
--	p[0] = '\0';
-+	line[len] = '\0';
- 
--	ret = printk("%s", line);
--	/* printk can add a prefix */
--	if (ret > len)
--		ret = len;
-+	printk_emit(facility, level, NULL, 0, "%s", line);
- out:
--	kfree(line);
-+	kfree(buf);
- 	return ret;
- }
- 
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -95,8 +95,19 @@ extern int printk_needs_cpu(int cpu);
- extern void printk_tick(void);
- 
- #ifdef CONFIG_PRINTK
-+asmlinkage __printf(5, 0)
-+int vprintk_emit(int facility, int level,
-+		 const char *dict, size_t dictlen,
-+		 const char *fmt, va_list args);
-+
- asmlinkage __printf(1, 0)
- int vprintk(const char *fmt, va_list args);
-+
-+asmlinkage __printf(5, 6) __cold
-+asmlinkage int printk_emit(int facility, int level,
-+			   const char *dict, size_t dictlen,
-+			   const char *fmt, ...);
-+
- asmlinkage __printf(1, 2) __cold
- int printk(const char *fmt, ...);
- 
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -54,8 +54,6 @@ void asmlinkage __attribute__((weak)) ea
- {
- }
- 
--#define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
--
- /* printk's without a loglevel use this.. */
- #define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
- 
-@@ -99,24 +97,6 @@ EXPORT_SYMBOL_GPL(console_drivers);
- static int console_locked, console_suspended;
- 
- /*
-- * logbuf_lock protects log_buf, log_start, log_end, con_start and logged_chars
-- * It is also used in interesting ways to provide interlocking in
-- * console_unlock();.
-- */
--static DEFINE_RAW_SPINLOCK(logbuf_lock);
--
--#define LOG_BUF_MASK (log_buf_len-1)
--#define LOG_BUF(idx) (log_buf[(idx) & LOG_BUF_MASK])
--
--/*
-- * The indices into log_buf are not constrained to log_buf_len - they
-- * must be masked before subscripting
-- */
--static unsigned log_start;	/* Index into log_buf: next char to be read by syslog() */
--static unsigned con_start;	/* Index into log_buf: next char to be sent to consoles */
--static unsigned log_end;	/* Index into log_buf: most-recently-written-char + 1 */
--
--/*
-  * If exclusive_console is non-NULL then only this console is to be printed to.
-  */
- static struct console *exclusive_console;
-@@ -146,12 +126,176 @@ EXPORT_SYMBOL(console_set_on_cmdline);
- static int console_may_schedule;
- 
- #ifdef CONFIG_PRINTK
-+/*
-+ * The printk log buffer consists of a chain of concatenated variable
-+ * length records. Every record starts with a record header, containing
-+ * the overall length of the record.
-+ *
-+ * The heads to the first and last entry in the buffer, as well as the
-+ * sequence numbers of these both entries are maintained when messages
-+ * are stored..
-+ *
-+ * If the heads indicate available messages, the length in the header
-+ * tells the start next message. A length == 0 for the next message
-+ * indicates a wrap-around to the beginning of the buffer.
-+ *
-+ * Every record carries the monotonic timestamp in microseconds, as well as
-+ * the standard userspace syslog level and syslog facility. The usual
-+ * kernel messages use LOG_KERN; userspace-injected messages always carry
-+ * a matching syslog facility, by default LOG_USER. The origin of every
-+ * message can be reliably determined that way.
-+ *
-+ * The human readable log message directly follows the message header. The
-+ * length of the message text is stored in the header, the stored message
-+ * is not terminated.
-+ *
-+ */
-+
-+struct log {
-+	u64 ts_nsec;		/* timestamp in nanoseconds */
-+	u16 len;		/* length of entire record */
-+	u16 text_len;		/* length of text buffer */
-+	u16 dict_len;		/* length of dictionary buffer */
-+	u16 level;		/* syslog level + facility */
-+};
-+
-+/*
-+ * The logbuf_lock protects kmsg buffer, indices, counters. It is also
-+ * used in interesting ways to provide interlocking in console_unlock();
-+ */
-+static DEFINE_RAW_SPINLOCK(logbuf_lock);
-+
-+/* cpu currently holding logbuf_lock */
-+static volatile unsigned int logbuf_cpu = UINT_MAX;
-+
-+#define LOG_LINE_MAX 1024
- 
-+/* record buffer */
-+#define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
- static char __log_buf[__LOG_BUF_LEN];
- static char *log_buf = __log_buf;
--static int log_buf_len = __LOG_BUF_LEN;
--static unsigned logged_chars; /* Number of chars produced since last read+clear operation */
--static int saved_console_loglevel = -1;
-+static u32 log_buf_len = __LOG_BUF_LEN;
-+
-+/* index and sequence number of the first record stored in the buffer */
-+static u64 log_first_seq;
-+static u32 log_first_idx;
-+
-+/* index and sequence number of the next record to store in the buffer */
-+static u64 log_next_seq;
-+static u32 log_next_idx;
-+
-+/* the next printk record to read after the last 'clear' command */
-+static u64 clear_seq;
-+static u32 clear_idx;
-+
-+/* the next printk record to read by syslog(READ) or /proc/kmsg */
-+static u64 syslog_seq;
-+static u32 syslog_idx;
-+
-+/* human readable text of the record */
-+static char *log_text(const struct log *msg)
-+{
-+	return (char *)msg + sizeof(struct log);
-+}
-+
-+/* optional key/value pair dictionary attached to the record */
-+static char *log_dict(const struct log *msg)
-+{
-+	return (char *)msg + sizeof(struct log) + msg->text_len;
-+}
-+
-+/* get record by index; idx must point to valid msg */
-+static struct log *log_from_idx(u32 idx)
-+{
-+	struct log *msg = (struct log *)(log_buf + idx);
-+
-+	/*
-+	 * A length == 0 record is the end of buffer marker. Wrap around and
-+	 * read the message at the start of the buffer.
-+	 */
-+	if (!msg->len)
-+		return (struct log *)log_buf;
-+	return msg;
-+}
-+
-+/* get next record; idx must point to valid msg */
-+static u32 log_next(u32 idx)
-+{
-+	struct log *msg = (struct log *)(log_buf + idx);
-+
-+	/* length == 0 indicates the end of the buffer; wrap */
-+	/*
-+	 * A length == 0 record is the end of buffer marker. Wrap around and
-+	 * read the message at the start of the buffer as *this* one, and
-+	 * return the one after that.
-+	 */
-+	if (!msg->len) {
-+		msg = (struct log *)log_buf;
-+		return msg->len;
-+	}
-+	return idx + msg->len;
-+}
-+
-+#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-+#define LOG_ALIGN 4
-+#else
-+#define LOG_ALIGN 8
-+#endif
-+
-+/* insert record into the buffer, discard old ones, update heads */
-+static void log_store(int facility, int level,
-+		      const char *dict, u16 dict_len,
-+		      const char *text, u16 text_len)
-+{
-+	struct log *msg;
-+	u32 size, pad_len;
-+
-+	/* number of '\0' padding bytes to next message */
-+	size = sizeof(struct log) + text_len + dict_len;
-+	pad_len = (-size) & (LOG_ALIGN - 1);
-+	size += pad_len;
-+
-+	while (log_first_seq < log_next_seq) {
-+		u32 free;
-+
-+		if (log_next_idx > log_first_idx)
-+			free = max(log_buf_len - log_next_idx, log_first_idx);
-+		else
-+			free = log_first_idx - log_next_idx;
-+
-+		if (free > size + sizeof(struct log))
-+			break;
-+
-+		/* drop old messages until we have enough contiuous space */
-+		log_first_idx = log_next(log_first_idx);
-+		log_first_seq++;
-+	}
-+
-+	if (log_next_idx + size + sizeof(struct log) >= log_buf_len) {
-+		/*
-+		 * This message + an additional empty header does not fit
-+		 * at the end of the buffer. Add an empty header with len == 0
-+		 * to signify a wrap around.
-+		 */
-+		memset(log_buf + log_next_idx, 0, sizeof(struct log));
-+		log_next_idx = 0;
-+	}
-+
-+	/* fill message */
-+	msg = (struct log *)(log_buf + log_next_idx);
-+	memcpy(log_text(msg), text, text_len);
-+	msg->text_len = text_len;
-+	memcpy(log_dict(msg), dict, dict_len);
-+	msg->dict_len = dict_len;
-+	msg->level = (facility << 3) | (level & 7);
-+	msg->ts_nsec = local_clock();
-+	memset(log_dict(msg) + dict_len, 0, pad_len);
-+	msg->len = sizeof(struct log) + text_len + dict_len + pad_len;
-+
-+	/* insert message */
-+	log_next_idx += msg->len;
-+	log_next_seq++;
-+}
- 
- #ifdef CONFIG_KEXEC
- /*
-@@ -165,9 +309,9 @@ static int saved_console_loglevel = -1;
- void log_buf_kexec_setup(void)
- {
- 	VMCOREINFO_SYMBOL(log_buf);
--	VMCOREINFO_SYMBOL(log_end);
- 	VMCOREINFO_SYMBOL(log_buf_len);
--	VMCOREINFO_SYMBOL(logged_chars);
-+	VMCOREINFO_SYMBOL(log_first_idx);
-+	VMCOREINFO_SYMBOL(log_next_idx);
+diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
+index 70bbe39..32557fe 100644
+--- a/arch/x86/include/asm/stacktrace.h
++++ b/arch/x86/include/asm/stacktrace.h
+@@ -81,13 +81,20 @@ stack_frame(struct task_struct *task, struct pt_regs *regs)
  }
  #endif
  
-@@ -191,7 +335,6 @@ early_param("log_buf_len", log_buf_len_s
- void __init setup_log_buf(int early)
++/*
++ * The parameter dup_stack_pid is used for task stack deduplication.
++ * The non-zero value of dup_stack_pid indicates the pid of the
++ * task with the same stack trace.
++ */
+ extern void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *stack, unsigned long bp, char *log_lvl);
++		   unsigned long *stack, unsigned long bp, char *log_lvl,
++		   pid_t dup_stack_pid);
+ 
+ extern void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, unsigned long bp, char *log_lvl);
++		   unsigned long *sp, unsigned long bp, char *log_lvl,
++		   pid_t dup_stack_pid);
+ 
+ extern unsigned int code_bytes;
+ 
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 1b81839..589c4f0 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -162,21 +162,37 @@ static const struct stacktrace_ops print_trace_ops = {
+ 
+ void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		unsigned long *stack, unsigned long bp, char *log_lvl)
++		unsigned long *stack, unsigned long bp, char *log_lvl,
++		pid_t dup_stack_pid)
  {
- 	unsigned long flags;
--	unsigned start, dest_idx, offset;
- 	char *new_log_buf;
- 	int free;
- 
-@@ -219,20 +362,8 @@ void __init setup_log_buf(int early)
- 	log_buf_len = new_log_buf_len;
- 	log_buf = new_log_buf;
- 	new_log_buf_len = 0;
--	free = __LOG_BUF_LEN - log_end;
--
--	offset = start = min(con_start, log_start);
--	dest_idx = 0;
--	while (start != log_end) {
--		unsigned log_idx_mask = start & (__LOG_BUF_LEN - 1);
--
--		log_buf[dest_idx] = __log_buf[log_idx_mask];
--		start++;
--		dest_idx++;
--	}
--	log_start -= offset;
--	con_start -= offset;
--	log_end -= offset;
-+	free = __LOG_BUF_LEN - log_next_idx;
-+	memcpy(log_buf, __log_buf, __LOG_BUF_LEN);
- 	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 
- 	pr_info("log_buf_len: %d\n", log_buf_len);
-@@ -332,11 +463,165 @@ static int check_syslog_permissions(int
- 	return 0;
+ 	printk("%sCall Trace:\n", log_lvl);
+-	dump_trace(task, regs, stack, bp, &print_trace_ops, log_lvl);
++	if (dup_stack_pid)
++		printk("%s<Same stack as pid %d>", log_lvl, dup_stack_pid);
++	else
++		dump_trace(task, regs, stack, bp, &print_trace_ops, log_lvl);
  }
  
-+#if defined(CONFIG_PRINTK_TIME)
-+static bool printk_time = 1;
-+#else
-+static bool printk_time;
-+#endif
-+module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
-+
-+static int syslog_print_line(u32 idx, char *text, size_t size)
-+{
-+	struct log *msg;
-+	size_t len;
-+
-+	msg = log_from_idx(idx);
-+	if (!text) {
-+		/* calculate length only */
-+		len = 3;
-+
-+		if (msg->level > 9)
-+			len++;
-+		if (msg->level > 99)
-+			len++;
-+
-+		if (printk_time)
-+			len += 15;
-+
-+		len += msg->text_len;
-+		len++;
-+		return len;
-+	}
-+
-+	len = sprintf(text, "<%u>", msg->level);
-+
-+	if (printk_time) {
-+		unsigned long long t = msg->ts_nsec;
-+		unsigned long rem_ns = do_div(t, 1000000000);
-+
-+		len += sprintf(text + len, "[%5lu.%06lu] ",
-+				   (unsigned long) t, rem_ns / 1000);
-+	}
-+
-+	if (len + msg->text_len > size)
-+		return -EINVAL;
-+	memcpy(text + len, log_text(msg), msg->text_len);
-+	len += msg->text_len;
-+	text[len++] = '\n';
-+	return len;
+ void show_trace(struct task_struct *task, struct pt_regs *regs,
+ 		unsigned long *stack, unsigned long bp)
+ {
+-	show_trace_log_lvl(task, regs, stack, bp, "");
++	show_trace_log_lvl(task, regs, stack, bp, "", 0);
+ }
+ 
+ void show_stack(struct task_struct *task, unsigned long *sp)
+ {
+-	show_stack_log_lvl(task, NULL, sp, 0, "");
++	show_stack_log_lvl(task, NULL, sp, 0, "", 0);
 +}
 +
-+static int syslog_print(char __user *buf, int size)
++/*
++ * Similar to show_stack except accepting the dup_stack_pid parameter.
++ * The parameter indicates whether or not the caller side tries to do
++ * a stack dedup, and the non-zero value indicates the pid of the
++ * task with the same stack trace.
++ */
++void show_stack_dedup(struct task_struct *task, unsigned long *sp,
++			pid_t dup_stack_pid)
 +{
-+	char *text;
++	show_stack_log_lvl(task, NULL, sp, 0, "", dup_stack_pid);
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 88ec912..575b019 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -56,7 +56,8 @@ EXPORT_SYMBOL(dump_trace);
+ 
+ void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, unsigned long bp, char *log_lvl)
++		   unsigned long *sp, unsigned long bp, char *log_lvl,
++		   pid_t dup_stack_pid)
+ {
+ 	unsigned long *stack;
+ 	int i;
+@@ -78,7 +79,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		touch_nmi_watchdog();
+ 	}
+ 	printk(KERN_CONT "\n");
+-	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
++	show_trace_log_lvl(task, regs, sp, bp, log_lvl, dup_stack_pid);
+ }
+ 
+ 
+@@ -103,7 +104,7 @@ void show_registers(struct pt_regs *regs)
+ 		u8 *ip;
+ 
+ 		printk(KERN_EMERG "Stack:\n");
+-		show_stack_log_lvl(NULL, regs, &regs->sp, 0, KERN_EMERG);
++		show_stack_log_lvl(NULL, regs, &regs->sp, 0, KERN_EMERG, 0);
+ 
+ 		printk(KERN_EMERG "Code: ");
+ 
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 17107bd..8f059d0 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -198,7 +198,8 @@ EXPORT_SYMBOL(dump_trace);
+ 
+ void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, unsigned long bp, char *log_lvl)
++		   unsigned long *sp, unsigned long bp, char *log_lvl,
++		   pid_t dup_stack_pid)
+ {
+ 	unsigned long *irq_stack_end;
+ 	unsigned long *irq_stack;
+@@ -242,7 +243,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 	preempt_enable();
+ 
+ 	printk(KERN_CONT "\n");
+-	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
++	show_trace_log_lvl(task, regs, sp, bp, log_lvl, dup_stack_pid);
+ }
+ 
+ void show_registers(struct pt_regs *regs)
+@@ -271,7 +272,7 @@ void show_registers(struct pt_regs *regs)
+ 
+ 		printk(KERN_DEFAULT "Stack:\n");
+ 		show_stack_log_lvl(NULL, regs, (unsigned long *)sp,
+-				   0, KERN_DEFAULT);
++				   0, KERN_DEFAULT, 0);
+ 
+ 		printk(KERN_DEFAULT "Code: ");
+ 
+diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
+index fdd0c64..6bee992 100644
+--- a/arch/x86/kernel/stacktrace.c
++++ b/arch/x86/kernel/stacktrace.c
+@@ -7,6 +7,7 @@
+ #include <linux/stacktrace.h>
+ #include <linux/module.h>
+ #include <linux/uaccess.h>
++#include <linux/jhash.h>
+ #include <asm/stacktrace.h>
+ 
+ static int save_stack_stack(void *data, char *name)
+@@ -81,6 +82,128 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ }
+ EXPORT_SYMBOL_GPL(save_stack_trace_tsk);
+ 
++/*
++ * The implementation of stack trace dedup.
++ *
++ * It tries to reduce the duplication of task stack trace in the dump by hashing
++ * the stack trace. Each time if an identical trace is found in the stack, we
++ * dump only the pid of previous task. So it is easy to back track to the full
++ * stack with the pid.
++ *
++ * Note this chould be moved out of x86-specific code for all architectures
++ * use.
++ */
++
++/*
++ * DEDUP_STACK_HASH: pre-allocated buffer size of the hashtable.
++ * DEDUP_STACK_ENTRIES: number of task stack entries in hashtable.
++ * DEDUP_HASH_MAX_ITERATIONS: in hashtable lookup, retry serveral entries if
++ * there is a collision.
++ */
++#define DEDUP_STACK_HASH 32768
++#define DEDUP_STACK_ENTRIES (DEDUP_STACK_HASH/sizeof(struct task_stack))
++#define DEDUP_HASH_MAX_ITERATIONS 10
++
++/*
++ * The data structure of each hashtable entry
++ */
++struct task_stack {
++	/* the pid of the task of the stack trace */
++	pid_t pid;
++
++	/* the length of the stack entries */
 +	int len;
 +
-+	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
-+	if (!text)
-+		return -ENOMEM;
++	/* the hash value of the stack trace*/
++	unsigned long hash;
++};
 +
-+	raw_spin_lock_irq(&logbuf_lock);
-+	if (syslog_seq < log_first_seq) {
-+		/* messages are gone, move to first one */
-+		syslog_seq = log_first_seq;
-+		syslog_idx = log_first_idx;
-+	}
-+	len = syslog_print_line(syslog_idx, text, LOG_LINE_MAX);
-+	syslog_idx = log_next(syslog_idx);
-+	syslog_seq++;
-+	raw_spin_unlock_irq(&logbuf_lock);
++static struct task_stack stack_hash_table[DEDUP_STACK_ENTRIES];
++static struct task_stack cur_stack;
++static __cacheline_aligned_in_smp DEFINE_SPINLOCK(stack_hash_lock);
 +
-+	if (len > 0 && copy_to_user(buf, text, len))
-+		len = -EFAULT;
-+
-+	kfree(text);
-+	return len;
-+}
-+
-+static int syslog_print_all(char __user *buf, int size, bool clear)
++/*
++ * The stack hashtable uses linear probing to resolve collisions.
++ * We consider two stacks to be the same if their hash values and lengths
++ * are equal.
++ */
++static unsigned int stack_trace_lookup(void)
 +{
-+	char *text;
-+	int len = 0;
++	int j;
++	int index;
++	unsigned int ret = 0;
++	struct task_stack *stack;
 +
-+	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
-+	if (!text)
-+		return -ENOMEM;
++	index = cur_stack.hash % DEDUP_STACK_ENTRIES;
 +
-+	raw_spin_lock_irq(&logbuf_lock);
-+	if (buf) {
-+		u64 next_seq;
-+		u64 seq;
-+		u32 idx;
-+
-+		if (clear_seq < log_first_seq) {
-+			/* messages are gone, move to first available one */
-+			clear_seq = log_first_seq;
-+			clear_idx = log_first_idx;
-+		}
-+
-+		/*
-+		 * Find first record that fits, including all following records,
-+		 * into the user-provided buffer for this dump.
-+		*/
-+		seq = clear_seq;
-+		idx = clear_idx;
-+		while (seq < log_next_seq) {
-+			len += syslog_print_line(idx, NULL, 0);
-+			idx = log_next(idx);
-+			seq++;
-+		}
-+		seq = clear_seq;
-+		idx = clear_idx;
-+		while (len > size && seq < log_next_seq) {
-+			len -= syslog_print_line(idx, NULL, 0);
-+			idx = log_next(idx);
-+			seq++;
-+		}
-+
-+		/* last message in this dump */
-+		next_seq = log_next_seq;
-+
-+		len = 0;
-+		while (len >= 0 && seq < next_seq) {
-+			int textlen;
-+
-+			textlen = syslog_print_line(idx, text, LOG_LINE_MAX);
-+			if (textlen < 0) {
-+				len = textlen;
++	for (j = 0; j < DEDUP_HASH_MAX_ITERATIONS; j++) {
++		stack = stack_hash_table + (index + j) % DEDUP_STACK_ENTRIES;
++		if (stack->hash == 0) {
++			*stack = cur_stack;
++			ret = 0;
++			break;
++		} else {
++			if (stack->hash == cur_stack.hash &&
++			    stack->len == cur_stack.len) {
++				ret = stack->pid;
 +				break;
 +			}
-+			idx = log_next(idx);
-+			seq++;
-+
-+			raw_spin_unlock_irq(&logbuf_lock);
-+			if (copy_to_user(buf + len, text, textlen))
-+				len = -EFAULT;
-+			else
-+				len += textlen;
-+			raw_spin_lock_irq(&logbuf_lock);
-+
-+			if (seq < log_first_seq) {
-+				/* messages are gone, move to next one */
-+				seq = log_first_seq;
-+				idx = log_first_idx;
-+			}
 +		}
 +	}
++	if (j == DEDUP_HASH_MAX_ITERATIONS)
++		stack_hash_table[index] = cur_stack;
 +
-+	if (clear) {
-+		clear_seq = log_next_seq;
-+		clear_idx = log_next_idx;
-+	}
-+	raw_spin_unlock_irq(&logbuf_lock);
++	memset(&cur_stack, 0, sizeof(cur_stack));
 +
-+	kfree(text);
-+	return len;
++	return ret;
 +}
 +
- int do_syslog(int type, char __user *buf, int len, bool from_file)
- {
--	unsigned i, j, limit, count;
--	int do_clear = 0;
--	char c;
-+	bool clear = false;
-+	static int saved_console_loglevel = -1;
- 	int error;
- 
- 	error = check_syslog_permissions(type, from_file);
-@@ -364,28 +649,14 @@ int do_syslog(int type, char __user *buf
- 			goto out;
- 		}
- 		error = wait_event_interruptible(log_wait,
--							(log_start - log_end));
-+						 syslog_seq != log_next_seq);
- 		if (error)
- 			goto out;
--		i = 0;
--		raw_spin_lock_irq(&logbuf_lock);
--		while (!error && (log_start != log_end) && i < len) {
--			c = LOG_BUF(log_start);
--			log_start++;
--			raw_spin_unlock_irq(&logbuf_lock);
--			error = __put_user(c,buf);
--			buf++;
--			i++;
--			cond_resched();
--			raw_spin_lock_irq(&logbuf_lock);
--		}
--		raw_spin_unlock_irq(&logbuf_lock);
--		if (!error)
--			error = i;
-+		error = syslog_print(buf, len);
- 		break;
- 	/* Read/clear last kernel messages */
- 	case SYSLOG_ACTION_READ_CLEAR:
--		do_clear = 1;
-+		clear = true;
- 		/* FALL THRU */
- 	/* Read last kernel messages */
- 	case SYSLOG_ACTION_READ_ALL:
-@@ -399,52 +670,11 @@ int do_syslog(int type, char __user *buf
- 			error = -EFAULT;
- 			goto out;
- 		}
--		count = len;
--		if (count > log_buf_len)
--			count = log_buf_len;
--		raw_spin_lock_irq(&logbuf_lock);
--		if (count > logged_chars)
--			count = logged_chars;
--		if (do_clear)
--			logged_chars = 0;
--		limit = log_end;
--		/*
--		 * __put_user() could sleep, and while we sleep
--		 * printk() could overwrite the messages
--		 * we try to copy to user space. Therefore
--		 * the messages are copied in reverse. <manfreds>
--		 */
--		for (i = 0; i < count && !error; i++) {
--			j = limit-1-i;
--			if (j + log_buf_len < log_end)
--				break;
--			c = LOG_BUF(j);
--			raw_spin_unlock_irq(&logbuf_lock);
--			error = __put_user(c,&buf[count-1-i]);
--			cond_resched();
--			raw_spin_lock_irq(&logbuf_lock);
--		}
--		raw_spin_unlock_irq(&logbuf_lock);
--		if (error)
--			break;
--		error = i;
--		if (i != count) {
--			int offset = count-error;
--			/* buffer overflow during copy, correct user buffer. */
--			for (i = 0; i < error; i++) {
--				if (__get_user(c,&buf[i+offset]) ||
--				    __put_user(c,&buf[i])) {
--					error = -EFAULT;
--					break;
--				}
--				cond_resched();
--			}
--		}
-+		error = syslog_print_all(buf, len, clear);
- 		break;
- 	/* Clear ring buffer */
- 	case SYSLOG_ACTION_CLEAR:
--		logged_chars = 0;
--		break;
-+		syslog_print_all(NULL, 0, true);
- 	/* Disable logging to console */
- 	case SYSLOG_ACTION_CONSOLE_OFF:
- 		if (saved_console_loglevel == -1)
-@@ -472,7 +702,33 @@ int do_syslog(int type, char __user *buf
- 		break;
- 	/* Number of chars in the log buffer */
- 	case SYSLOG_ACTION_SIZE_UNREAD:
--		error = log_end - log_start;
-+		raw_spin_lock_irq(&logbuf_lock);
-+		if (syslog_seq < log_first_seq) {
-+			/* messages are gone, move to first one */
-+			syslog_seq = log_first_seq;
-+			syslog_idx = log_first_idx;
-+		}
-+		if (from_file) {
-+			/*
-+			 * Short-cut for poll(/"proc/kmsg") which simply checks
-+			 * for pending data, not the size; return the count of
-+			 * records, not the length.
-+			 */
-+			error = log_next_idx - syslog_idx;
-+		} else {
-+			u64 seq;
-+			u32 idx;
++static int save_dup_stack_stack(void *data, char *name)
++{
++	return 0;
++}
 +
-+			error = 0;
-+			seq = syslog_seq;
-+			idx = syslog_idx;
-+			while (seq < log_next_seq) {
-+				error += syslog_print_line(idx, NULL, 0);
-+				idx = log_next(idx);
-+				seq++;
-+			}
-+		}
-+		raw_spin_unlock_irq(&logbuf_lock);
- 		break;
- 	/* Size of the log buffer */
- 	case SYSLOG_ACTION_SIZE_BUFFER:
-@@ -501,29 +757,11 @@ void kdb_syslog_data(char *syslog_data[4
- {
- 	syslog_data[0] = log_buf;
- 	syslog_data[1] = log_buf + log_buf_len;
--	syslog_data[2] = log_buf + log_end -
--		(logged_chars < log_buf_len ? logged_chars : log_buf_len);
--	syslog_data[3] = log_buf + log_end;
-+	syslog_data[2] = log_buf + log_first_idx;
-+	syslog_data[3] = log_buf + log_next_idx;
- }
- #endif	/* CONFIG_KGDB_KDB */
- 
--/*
-- * Call the console drivers on a range of log_buf
-- */
--static void __call_console_drivers(unsigned start, unsigned end)
--{
--	struct console *con;
--
--	for_each_console(con) {
--		if (exclusive_console && con != exclusive_console)
--			continue;
--		if ((con->flags & CON_ENABLED) && con->write &&
--				(cpu_online(smp_processor_id()) ||
--				(con->flags & CON_ANYTIME)))
--			con->write(con, &LOG_BUF(start), end - start);
--	}
--}
--
- static bool __read_mostly ignore_loglevel;
- 
- static int __init ignore_loglevel_setup(char *str)
-@@ -540,142 +778,33 @@ MODULE_PARM_DESC(ignore_loglevel, "ignor
- 	"print all kernel messages to the console.");
- 
- /*
-- * Write out chars from start to end - 1 inclusive
-- */
--static void _call_console_drivers(unsigned start,
--				unsigned end, int msg_log_level)
--{
--	trace_console(&LOG_BUF(0), start, end, log_buf_len);
--
--	if ((msg_log_level < console_loglevel || ignore_loglevel) &&
--			console_drivers && start != end) {
--		if ((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK)) {
--			/* wrapped write */
--			__call_console_drivers(start & LOG_BUF_MASK,
--						log_buf_len);
--			__call_console_drivers(0, end & LOG_BUF_MASK);
--		} else {
--			__call_console_drivers(start, end);
--		}
--	}
--}
--
--/*
-- * Parse the syslog header <[0-9]*>. The decimal value represents 32bit, the
-- * lower 3 bit are the log level, the rest are the log facility. In case
-- * userspace passes usual userspace syslog messages to /dev/kmsg or
-- * /dev/ttyprintk, the log prefix might contain the facility. Printk needs
-- * to extract the correct log level for in-kernel processing, and not mangle
-- * the original value.
-- *
-- * If a prefix is found, the length of the prefix is returned. If 'level' is
-- * passed, it will be filled in with the log level without a possible facility
-- * value. If 'special' is passed, the special printk prefix chars are accepted
-- * and returned. If no valid header is found, 0 is returned and the passed
-- * variables are not touched.
-- */
--static size_t log_prefix(const char *p, unsigned int *level, char *special)
--{
--	unsigned int lev = 0;
--	char sp = '\0';
--	size_t len;
--
--	if (p[0] != '<' || !p[1])
--		return 0;
--	if (p[2] == '>') {
--		/* usual single digit level number or special char */
--		switch (p[1]) {
--		case '0' ... '7':
--			lev = p[1] - '0';
--			break;
--		case 'c': /* KERN_CONT */
--		case 'd': /* KERN_DEFAULT */
--			sp = p[1];
--			break;
--		default:
--			return 0;
--		}
--		len = 3;
--	} else {
--		/* multi digit including the level and facility number */
--		char *endp = NULL;
--
--		lev = (simple_strtoul(&p[1], &endp, 10) & 7);
--		if (endp == NULL || endp[0] != '>')
--			return 0;
--		len = (endp + 1) - p;
--	}
--
--	/* do not accept special char if not asked for */
--	if (sp && !special)
--		return 0;
--
--	if (special) {
--		*special = sp;
--		/* return special char, do not touch level */
--		if (sp)
--			return len;
--	}
--
--	if (level)
--		*level = lev;
--	return len;
--}
--
--/*
-  * Call the console drivers, asking them to write out
-  * log_buf[start] to log_buf[end - 1].
-  * The console_lock must be held.
-  */
--static void call_console_drivers(unsigned start, unsigned end)
-+static void call_console_drivers(int level, const char *text, size_t len)
- {
--	unsigned cur_index, start_print;
--	static int msg_level = -1;
-+	struct console *con;
- 
--	BUG_ON(((int)(start - end)) > 0);
-+	trace_console(text, 0, len, len);
- 
--	cur_index = start;
--	start_print = start;
--	while (cur_index != end) {
--		if (msg_level < 0 && ((end - cur_index) > 2)) {
--			/* strip log prefix */
--			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
--			start_print = cur_index;
--		}
--		while (cur_index != end) {
--			char c = LOG_BUF(cur_index);
--
--			cur_index++;
--			if (c == '\n') {
--				if (msg_level < 0) {
--					/*
--					 * printk() has already given us loglevel tags in
--					 * the buffer.  This code is here in case the
--					 * log buffer has wrapped right round and scribbled
--					 * on those tags
--					 */
--					msg_level = default_message_loglevel;
--				}
--				_call_console_drivers(start_print, cur_index, msg_level);
--				msg_level = -1;
--				start_print = cur_index;
--				break;
--			}
--		}
--	}
--	_call_console_drivers(start_print, end, msg_level);
--}
-+	if (level >= console_loglevel && !ignore_loglevel)
++static void save_dup_stack_address(void *data, unsigned long addr, int reliable)
++{
++	/*
++	 * To improve de-duplication, we'll only record reliable entries
++	 * in the stack trace.
++	 */
++	if (!reliable)
 +		return;
-+	if (!console_drivers)
-+		return;
- 
--static void emit_log_char(char c)
--{
--	LOG_BUF(log_end) = c;
--	log_end++;
--	if (log_end - log_start > log_buf_len)
--		log_start = log_end - log_buf_len;
--	if (log_end - con_start > log_buf_len)
--		con_start = log_end - log_buf_len;
--	if (logged_chars < log_buf_len)
--		logged_chars++;
-+	for_each_console(con) {
-+		if (exclusive_console && con != exclusive_console)
-+			continue;
-+		if (!(con->flags & CON_ENABLED))
-+			continue;
-+		if (!con->write)
-+			continue;
-+		if (!cpu_online(smp_processor_id()) &&
-+		    !(con->flags & CON_ANYTIME))
-+			continue;
-+		con->write(con, text, len);
-+	}
- }
- 
- /*
-@@ -700,16 +829,6 @@ static void zap_locks(void)
- 	sema_init(&console_sem, 1);
- }
- 
--#if defined(CONFIG_PRINTK_TIME)
--static bool printk_time = 1;
--#else
--static bool printk_time = 0;
--#endif
--module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
--
--static bool always_kmsg_dump;
--module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
--
- /* Check if we have any console registered that can be called early in boot. */
- static int have_callable_console(void)
- {
-@@ -722,51 +841,6 @@ static int have_callable_console(void)
- 	return 0;
- }
- 
--/**
-- * printk - print a kernel message
-- * @fmt: format string
-- *
-- * This is printk().  It can be called from any context.  We want it to work.
-- *
-- * We try to grab the console_lock.  If we succeed, it's easy - we log the output and
-- * call the console drivers.  If we fail to get the semaphore we place the output
-- * into the log buffer and return.  The current holder of the console_sem will
-- * notice the new output in console_unlock(); and will send it to the
-- * consoles before releasing the lock.
-- *
-- * One effect of this deferred printing is that code which calls printk() and
-- * then changes console_loglevel may break. This is because console_loglevel
-- * is inspected when the actual printing occurs.
-- *
-- * See also:
-- * printf(3)
-- *
-- * See the vsnprintf() documentation for format string extensions over C99.
-- */
--
--asmlinkage int printk(const char *fmt, ...)
--{
--	va_list args;
--	int r;
--
--#ifdef CONFIG_KGDB_KDB
--	if (unlikely(kdb_trap_printk)) {
--		va_start(args, fmt);
--		r = vkdb_printf(fmt, args);
--		va_end(args);
--		return r;
--	}
--#endif
--	va_start(args, fmt);
--	r = vprintk(fmt, args);
--	va_end(args);
--
--	return r;
--}
--
--/* cpu currently holding logbuf_lock */
--static volatile unsigned int printk_cpu = UINT_MAX;
--
- /*
-  * Can we actually use the console at this time on this cpu?
-  *
-@@ -810,17 +884,12 @@ static int console_trylock_for_printk(un
- 			retval = 0;
- 		}
- 	}
--	printk_cpu = UINT_MAX;
-+	logbuf_cpu = UINT_MAX;
- 	if (wake)
- 		up(&console_sem);
- 	raw_spin_unlock(&logbuf_lock);
- 	return retval;
- }
--static const char recursion_bug_msg [] =
--		KERN_CRIT "BUG: recent printk recursion!\n";
--static int recursion_bug;
--static int new_text_line = 1;
--static char printk_buf[1024];
- 
- int printk_delay_msec __read_mostly;
- 
-@@ -836,15 +905,22 @@ static inline void printk_delay(void)
- 	}
- }
- 
--asmlinkage int vprintk(const char *fmt, va_list args)
--{
--	int printed_len = 0;
--	int current_log_level = default_message_loglevel;
-+asmlinkage int vprintk_emit(int facility, int level,
-+			    const char *dict, size_t dictlen,
-+			    const char *fmt, va_list args)
-+{
-+	static int recursion_bug;
-+	static char buf[LOG_LINE_MAX];
-+	static size_t buflen;
-+	static int buflevel;
-+	static char textbuf[LOG_LINE_MAX];
-+	char *text = textbuf;
-+	size_t textlen;
- 	unsigned long flags;
- 	int this_cpu;
--	char *p;
--	size_t plen;
--	char special;
-+	bool newline = false;
-+	bool cont = false;
-+	int printed_len = 0;
- 
- 	boot_delay_msec();
- 	printk_delay();
-@@ -856,7 +932,7 @@ asmlinkage int vprintk(const char *fmt,
- 	/*
- 	 * Ouch, printk recursed into itself!
- 	 */
--	if (unlikely(printk_cpu == this_cpu)) {
-+	if (unlikely(logbuf_cpu == this_cpu)) {
- 		/*
- 		 * If a crash is occurring during printk() on this CPU,
- 		 * then try to get the crash message out but make sure
-@@ -873,97 +949,92 @@ asmlinkage int vprintk(const char *fmt,
- 
- 	lockdep_off();
- 	raw_spin_lock(&logbuf_lock);
--	printk_cpu = this_cpu;
-+	logbuf_cpu = this_cpu;
- 
- 	if (recursion_bug) {
-+		static const char recursion_msg[] =
-+			"BUG: recent printk recursion!";
-+
- 		recursion_bug = 0;
--		strcpy(printk_buf, recursion_bug_msg);
--		printed_len = strlen(recursion_bug_msg);
--	}
--	/* Emit the output into the temporary buffer */
--	printed_len += vscnprintf(printk_buf + printed_len,
--				  sizeof(printk_buf) - printed_len, fmt, args);
--
--	p = printk_buf;
--
--	/* Read log level and handle special printk prefix */
--	plen = log_prefix(p, &current_log_level, &special);
--	if (plen) {
--		p += plen;
--
--		switch (special) {
--		case 'c': /* Strip <c> KERN_CONT, continue line */
--			plen = 0;
--			break;
--		case 'd': /* Strip <d> KERN_DEFAULT, start new line */
--			plen = 0;
--		default:
--			if (!new_text_line) {
--				emit_log_char('\n');
--				new_text_line = 1;
--			}
--		}
-+		printed_len += strlen(recursion_msg);
-+		/* emit KERN_CRIT message */
-+		log_store(0, 2, NULL, 0, recursion_msg, printed_len);
- 	}
- 
- 	/*
--	 * Copy the output into log_buf. If the caller didn't provide
--	 * the appropriate log prefix, we insert them here
-+	 * The printf needs to come first; we need the syslog
-+	 * prefix which might be passed-in as a parameter.
- 	 */
--	for (; *p; p++) {
--		if (new_text_line) {
--			new_text_line = 0;
--
--			if (plen) {
--				/* Copy original log prefix */
--				int i;
--
--				for (i = 0; i < plen; i++)
--					emit_log_char(printk_buf[i]);
--				printed_len += plen;
--			} else {
--				/* Add log prefix */
--				emit_log_char('<');
--				emit_log_char(current_log_level + '0');
--				emit_log_char('>');
--				printed_len += 3;
--			}
-+	textlen = vscnprintf(text, sizeof(textbuf), fmt, args);
- 
--			if (printk_time) {
--				/* Add the current time stamp */
--				char tbuf[50], *tp;
--				unsigned tlen;
--				unsigned long long t;
--				unsigned long nanosec_rem;
--
--				t = cpu_clock(printk_cpu);
--				nanosec_rem = do_div(t, 1000000000);
--				tlen = sprintf(tbuf, "[%5lu.%06lu] ",
--						(unsigned long) t,
--						nanosec_rem / 1000);
--
--				for (tp = tbuf; tp < tbuf + tlen; tp++)
--					emit_log_char(*tp);
--				printed_len += tlen;
--			}
-+	/* mark and strip a trailing newline */
-+	if (textlen && text[textlen-1] == '\n') {
-+		textlen--;
-+		newline = true;
-+	}
- 
--			if (!*p)
--				break;
-+	/* strip syslog prefix and extract log level or flags */
-+	if (text[0] == '<' && text[1] && text[2] == '>') {
-+		switch (text[1]) {
-+		case '0' ... '7':
-+			if (level == -1)
-+				level = text[1] - '0';
-+			text += 3;
-+			textlen -= 3;
-+			break;
-+		case 'c':	/* KERN_CONT */
-+			cont = true;
-+		case 'd':	/* KERN_DEFAULT */
-+			text += 3;
-+			textlen -= 3;
-+			break;
- 		}
-+	}
- 
--		emit_log_char(*p);
--		if (*p == '\n')
--			new_text_line = 1;
-+	if (buflen && (!cont || dict)) {
-+		/* no continuation; flush existing buffer */
-+		log_store(facility, buflevel, NULL, 0, buf, buflen);
-+		printed_len += buflen;
-+		buflen = 0;
-+	}
-+
-+	if (buflen == 0) {
-+		/* remember level for first message in the buffer */
-+		if (level == -1)
-+			buflevel = default_message_loglevel;
-+		else
-+			buflevel = level;
-+	}
-+
-+	if (buflen || !newline) {
-+		/* append to existing buffer, or buffer until next message */
-+		if (buflen + textlen > sizeof(buf))
-+			textlen = sizeof(buf) - buflen;
-+		memcpy(buf + buflen, text, textlen);
-+		buflen += textlen;
-+	}
-+
-+	if (newline) {
-+		/* end of line; flush buffer */
-+		if (buflen) {
-+			log_store(facility, buflevel,
-+				  dict, dictlen, buf, buflen);
-+			printed_len += buflen;
-+			buflen = 0;
-+		} else {
-+			log_store(facility, buflevel,
-+				  dict, dictlen, text, textlen);
-+			printed_len += textlen;
-+		}
- 	}
- 
- 	/*
--	 * Try to acquire and then immediately release the
--	 * console semaphore. The release will do all the
--	 * actual magic (print out buffers, wake up klogd,
--	 * etc). 
-+	 * Try to acquire and then immediately release the console semaphore.
-+	 * The release will print out buffers and wake up /dev/kmsg and syslog()
-+	 * users.
- 	 *
--	 * The console_trylock_for_printk() function
--	 * will release 'logbuf_lock' regardless of whether it
--	 * actually gets the semaphore or not.
-+	 * The console_trylock_for_printk() function will release 'logbuf_lock'
-+	 * regardless of whether it actually gets the console semaphore or not.
- 	 */
- 	if (console_trylock_for_printk(this_cpu))
- 		console_unlock();
-@@ -974,12 +1045,73 @@ out_restore_irqs:
- 
- 	return printed_len;
- }
--EXPORT_SYMBOL(printk);
-+EXPORT_SYMBOL(vprintk_emit);
-+
-+asmlinkage int vprintk(const char *fmt, va_list args)
-+{
-+	return vprintk_emit(0, -1, NULL, 0, fmt, args);
++	cur_stack.hash = jhash(&addr, sizeof(addr), cur_stack.hash);
++	cur_stack.len++;
 +}
- EXPORT_SYMBOL(vprintk);
- 
-+asmlinkage int printk_emit(int facility, int level,
-+			   const char *dict, size_t dictlen,
-+			   const char *fmt, ...)
-+{
-+	va_list args;
-+	int r;
 +
-+	va_start(args, fmt);
-+	r = vprintk_emit(facility, level, dict, dictlen, fmt, args);
-+	va_end(args);
++static const struct stacktrace_ops save_dup_stack_ops = {
++	.stack = save_dup_stack_stack,
++	.address = save_dup_stack_address,
++	.walk_stack = print_context_stack,
++};
 +
-+	return r;
-+}
-+EXPORT_SYMBOL(printk_emit);
-+
-+/**
-+ * printk - print a kernel message
-+ * @fmt: format string
-+ *
-+ * This is printk(). It can be called from any context. We want it to work.
-+ *
-+ * We try to grab the console_lock. If we succeed, it's easy - we log the
-+ * output and call the console drivers.  If we fail to get the semaphore, we
-+ * place the output into the log buffer and return. The current holder of
-+ * the console_sem will notice the new output in console_unlock(); and will
-+ * send it to the consoles before releasing the lock.
-+ *
-+ * One effect of this deferred printing is that code which calls printk() and
-+ * then changes console_loglevel may break. This is because console_loglevel
-+ * is inspected when the actual printing occurs.
-+ *
-+ * See also:
-+ * printf(3)
-+ *
-+ * See the vsnprintf() documentation for format string extensions over C99.
++/*
++ * Clear previously saved stack traces to ensure that later printed stacks do
++ * not reference previously printed stacks.
 + */
-+asmlinkage int printk(const char *fmt, ...)
++void clear_dup_stack_traces(void)
 +{
-+	va_list args;
-+	int r;
-+
-+#ifdef CONFIG_KGDB_KDB
-+	if (unlikely(kdb_trap_printk)) {
-+		va_start(args, fmt);
-+		r = vkdb_printf(fmt, args);
-+		va_end(args);
-+		return r;
-+	}
-+#endif
-+	va_start(args, fmt);
-+	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
-+	va_end(args);
-+
-+	return r;
++	memset(stack_hash_table, 0, sizeof(stack_hash_table));
 +}
-+EXPORT_SYMBOL(printk);
++
++unsigned int save_dup_stack_trace(struct task_struct *tsk)
++{
++	unsigned int ret = 0;
++	unsigned int dummy = 0;
++
++	spin_lock(&stack_hash_lock);
++	dump_trace(tsk, NULL, NULL, 0, &save_dup_stack_ops, &dummy);
++	cur_stack.pid = tsk->pid;
++	ret = stack_trace_lookup();
++	spin_unlock(&stack_hash_lock);
++
++	return ret;
++}
++
+ /* Userspace stacktrace - based on kernel/trace/trace_sysprof.c */
+ 
+ struct stack_frame_user {
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 81a173c..7ac80e1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -298,6 +298,9 @@ extern void show_regs(struct pt_regs *);
+  */
+ extern void show_stack(struct task_struct *task, unsigned long *sp);
+ 
++extern void show_stack_dedup(struct task_struct *task, unsigned long *sp,
++				pid_t dup_stack_pid);
++
+ void io_schedule(void);
+ long io_schedule_timeout(long timeout);
+ 
+diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
+index 115b570..c137416 100644
+--- a/include/linux/stacktrace.h
++++ b/include/linux/stacktrace.h
+@@ -21,6 +21,8 @@ extern void save_stack_trace_tsk(struct task_struct *tsk,
+ 
+ extern void print_stack_trace(struct stack_trace *trace, int spaces);
+ 
++extern void clear_dup_stack_traces(void);
++extern unsigned int save_dup_stack_trace(struct task_struct *tsk);
+ #ifdef CONFIG_USER_STACKTRACE_SUPPORT
+ extern void save_stack_trace_user(struct stack_trace *trace);
  #else
+@@ -32,6 +34,8 @@ extern void save_stack_trace_user(struct stack_trace *trace);
+ # define save_stack_trace_tsk(tsk, trace)		do { } while (0)
+ # define save_stack_trace_user(trace)			do { } while (0)
+ # define print_stack_trace(trace, spaces)		do { } while (0)
++# define clear_dup_stack_traces()			do { } while (0)
++# define save_dup_stack_trace(tsk)			do { } while (0)
+ #endif
  
--static void call_console_drivers(unsigned start, unsigned end)
-+static void call_console_drivers(int level, const char *text, size_t len)
+ #endif
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4603b9d..30c685b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -71,6 +71,7 @@
+ #include <linux/ftrace.h>
+ #include <linux/slab.h>
+ #include <linux/init_task.h>
++#include <linux/stacktrace.h>
+ #include <linux/binfmts.h>
+ 
+ #include <asm/switch_to.h>
+@@ -4828,10 +4829,11 @@ out_unlock:
+ 
+ static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
+ 
+-void sched_show_task(struct task_struct *p)
++void _sched_show_task(struct task_struct *p, int dedup)
  {
- }
+ 	unsigned long free = 0;
+ 	unsigned state;
++	pid_t dup_stack_pid = 0;
  
-@@ -1217,7 +1349,7 @@ int is_console_locked(void)
- }
+ 	state = p->state ? __ffs(p->state) + 1 : 0;
+ 	printk(KERN_INFO "%-15.15s %c", p->comm,
+@@ -4854,13 +4856,37 @@ void sched_show_task(struct task_struct *p)
+ 		task_pid_nr(p), task_pid_nr(rcu_dereference(p->real_parent)),
+ 		(unsigned long)task_thread_info(p)->flags);
  
- /*
-- * Delayed printk facility, for scheduler-internal messages:
-+ * Delayed printk version, for scheduler-internal messages:
-  */
- #define PRINTK_BUF_SIZE		512
- 
-@@ -1253,6 +1385,10 @@ void wake_up_klogd(void)
- 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
- }
- 
-+/* the next printk record to write to the console */
-+static u64 console_seq;
-+static u32 console_idx;
+-	show_stack(p, NULL);
++	if (dedup) {
++		dup_stack_pid = save_dup_stack_trace(p);
++		show_stack_dedup(p, NULL, dup_stack_pid);
++	} else
++		show_stack(p, NULL);
++}
 +
- /**
-  * console_unlock - unlock the console system
-  *
-@@ -1263,15 +1399,16 @@ void wake_up_klogd(void)
-  * by printk().  If this is the case, console_unlock(); emits
-  * the output prior to releasing the lock.
-  *
-- * If there is output waiting for klogd, we wake it up.
-+ * If there is output waiting, we wake it /dev/kmsg and syslog() users.
-  *
-  * console_unlock(); may be called from any context.
-  */
- void console_unlock(void)
++void sched_show_task(struct task_struct *p)
++{
++	_sched_show_task(p, 0);
++}
++
++/*
++ * Eliminate task stack trace duplication in multi-task stackdump.
++ * Note only x86-specific code now implements the feature.
++ */
++void sched_show_task_dedup(struct task_struct *p)
++{
++	_sched_show_task(p, 1);
+ }
+ 
+ void show_state_filter(unsigned long state_filter)
  {
-+	static u64 seen_seq;
- 	unsigned long flags;
--	unsigned _con_start, _log_end;
--	unsigned wake_klogd = 0, retry = 0;
-+	bool wake_klogd = false;
-+	bool retry;
+ 	struct task_struct *g, *p;
  
- 	if (console_suspended) {
- 		up(&console_sem);
-@@ -1281,17 +1418,41 @@ void console_unlock(void)
- 	console_may_schedule = 0;
- 
- again:
--	for ( ; ; ) {
-+	for (;;) {
-+		struct log *msg;
-+		static char text[LOG_LINE_MAX];
-+		size_t len;
-+		int level;
++	/*
++	 * Prevent below printed stack traces from referring to previously
++	 * printed ones.
++	 */
++	clear_dup_stack_traces();
 +
- 		raw_spin_lock_irqsave(&logbuf_lock, flags);
--		wake_klogd |= log_start - log_end;
--		if (con_start == log_end)
--			break;			/* Nothing to print */
--		_con_start = con_start;
--		_log_end = log_end;
--		con_start = log_end;		/* Flush */
-+		if (seen_seq != log_next_seq) {
-+			wake_klogd = true;
-+			seen_seq = log_next_seq;
-+		}
-+
-+		if (console_seq < log_first_seq) {
-+			/* messages are gone, move to first one */
-+			console_seq = log_first_seq;
-+			console_idx = log_first_idx;
-+		}
-+
-+		if (console_seq == log_next_seq)
-+			break;
-+
-+		msg = log_from_idx(console_idx);
-+		level = msg->level & 7;
-+		len = msg->text_len;
-+		if (len+1 >= sizeof(text))
-+			len = sizeof(text)-1;
-+		memcpy(text, log_text(msg), len);
-+		text[len++] = '\n';
-+
-+		console_idx = log_next(console_idx);
-+		console_seq++;
- 		raw_spin_unlock(&logbuf_lock);
-+
- 		stop_critical_timings();	/* don't trace print latency */
--		call_console_drivers(_con_start, _log_end);
-+		call_console_drivers(level, text, len);
- 		start_critical_timings();
- 		local_irq_restore(flags);
- 	}
-@@ -1312,8 +1473,7 @@ again:
- 	 * flush, no worries.
- 	 */
- 	raw_spin_lock(&logbuf_lock);
--	if (con_start != log_end)
--		retry = 1;
-+	retry = console_seq != log_next_seq;
- 	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 
- 	if (retry && console_trylock())
-@@ -1549,7 +1709,8 @@ void register_console(struct console *ne
- 		 * for us.
+ #if BITS_PER_LONG == 32
+ 	printk(KERN_INFO
+ 		"  task                PC stack   pid father\n");
+@@ -4876,7 +4902,7 @@ void show_state_filter(unsigned long state_filter)
  		 */
- 		raw_spin_lock_irqsave(&logbuf_lock, flags);
--		con_start = log_start;
-+		console_seq = syslog_seq;
-+		console_idx = syslog_idx;
- 		raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 		/*
- 		 * We're about to replay the log buffer.  Only do this to the
-@@ -1758,6 +1919,9 @@ int kmsg_dump_unregister(struct kmsg_dum
- }
- EXPORT_SYMBOL_GPL(kmsg_dump_unregister);
+ 		touch_nmi_watchdog();
+ 		if (!state_filter || (p->state & state_filter))
+-			sched_show_task(p);
++			sched_show_task_dedup(p);
+ 	} while_each_thread(g, p);
  
-+static bool always_kmsg_dump;
-+module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
-+
- /**
-  * kmsg_dump - dump kernel log to kernel message dumpers.
-  * @reason: the reason (oops, panic etc) for dumping
-@@ -1767,8 +1931,7 @@ EXPORT_SYMBOL_GPL(kmsg_dump_unregister);
-  */
- void kmsg_dump(enum kmsg_dump_reason reason)
+ 	touch_all_softlockup_watchdogs();
+diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
+index 00fe55c..85afece 100644
+--- a/kernel/stacktrace.c
++++ b/kernel/stacktrace.c
+@@ -41,3 +41,18 @@ save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
  {
--	unsigned long end;
--	unsigned chars;
-+	u64 idx;
- 	struct kmsg_dumper *dumper;
- 	const char *s1, *s2;
- 	unsigned long l1, l2;
-@@ -1780,24 +1943,27 @@ void kmsg_dump(enum kmsg_dump_reason rea
- 	/* Theoretically, the log could move on after we do this, but
- 	   there's not a lot we can do about that. The new messages
- 	   will overwrite the start of what we dump. */
--	raw_spin_lock_irqsave(&logbuf_lock, flags);
--	end = log_end & LOG_BUF_MASK;
--	chars = logged_chars;
--	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 
--	if (chars > end) {
--		s1 = log_buf + log_buf_len - chars + end;
--		l1 = chars - end;
-+	raw_spin_lock_irqsave(&logbuf_lock, flags);
-+	if (syslog_seq < log_first_seq)
-+		idx = syslog_idx;
-+	else
-+		idx = log_first_idx;
+ 	WARN_ONCE(1, KERN_INFO "save_stack_trace_regs() not implemented yet.\n");
+ }
 +
-+	if (idx > log_next_idx) {
-+		s1 = log_buf;
-+		l1 = log_next_idx;
- 
--		s2 = log_buf;
--		l2 = end;
-+		s2 = log_buf + idx;
-+		l2 = log_buf_len - idx;
- 	} else {
- 		s1 = "";
- 		l1 = 0;
- 
--		s2 = log_buf + end - chars;
--		l2 = chars;
-+		s2 = log_buf + idx;
-+		l2 = log_next_idx - idx;
- 	}
-+	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(dumper, &dump_list, list)
-
++/*
++ * Architectures that do not implement the task stack dedup will fallback to
++ * the default functionality.
++ */
++__weak void
++clear_dup_stack_traces(void)
++{
++}
++
++__weak unsigned int
++save_dup_stack_trace(struct task_struct *tsk)
++{
++	return 0;
++}
+-- 
+1.7.7.3
 
