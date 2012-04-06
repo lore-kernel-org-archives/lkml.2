@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab2DFVPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:15:45 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55707 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab2DFVPm convert rfc822-to-8bit (ORCPT
+	id S932497Ab2DFVQM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:16:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60047 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758160Ab2DFVQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:15:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE6n16=5fEBYP37R3XDFWL_8YOk7MH6T_CbuX3sZCpngD=v=rg@mail.gmail.com>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
- <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406124921.5754e941.akpm@linux-foundation.org>
- <CAE6n16m3v4BghY7GGwHCy2t-7-vmRpyOV6swap9GrMQnmGLroA@mail.gmail.com>
- <CAObL_7GzsJ+EW94oYG+EzcRqYyH2EPTyFgTgo6zmSz1yxEe-xw@mail.gmail.com> <CAE6n16=5fEBYP37R3XDFWL_8YOk7MH6T_CbuX3sZCpngD=v=rg@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 6 Apr 2012 14:15:19 -0700
-X-Google-Sender-Auth: khnVPdbkttiMvFKvv03OuAe_v-A
-Message-ID: <CAObL_7E7dHWxKgA7-pSCuUCrxEqY1H55Kxg_sF_OLbdx=pkT4g@mail.gmail.com>
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-To: Markus Gutschke <markus@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Apr 2012 17:16:10 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] regmap: validate regmap_raw_read/write val_len
+Date: Fri,  6 Apr 2012 15:16:03 -0600
+Message-Id: <1333746963-6793-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 2:04 PM, Markus Gutschke <markus@chromium.org> wrote:
-> On Fri, Apr 6, 2012 at 13:54, Andrew Lutomirski <luto@mit.edu> wrote:
->> (FWIW, I think that CLONE_NEWPID interacts badly with unix socket
->> credentials and should be fixed as a prerequisite for making it easier
->> to access.)
->
-> sendmsg() is a big hair ball. And yes, I have all sorts of things on
-> my wish list that touch sendmsg(). I don't think, I'll get them
-> fullfilled anytime soon, though:
->
->  - sendmsg() does lots of different things: sending on unconnected
-> sockets, sending file descriptors, sending unix decriptors, and
-> plain-old sending data. These operations have very different security
-> properties and implications. It would be awesome if BPF filters could
-> filter these different types of operations selectively.
->
->  - ancillary data is a cool concept in general. We should use it more.
-> If I could send a memory mapping from one process to another, that
-> would solve so many problems. But I know, I am dreaming; I don't
-> expect to see this feature any time soon.
->
+From: Stephen Warren <swarren@nvidia.com>
 
-Agreed, but I'm talking about something totally different: if I can
-use CLONE_NEWPID, then I can send an unexpected pid with SCM_CREDS.
-The SCM_CREDS receive code should remap pids.
+val_len should be a multiple of val_bytes. If it's not, error out early.
 
---Andy
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+Mark, these checks are currently implemented in regmap-mmio.c. In a second,
+I'll send a patch to remove them from there.
+
+ drivers/base/regmap/regmap.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 2b5e7ae..40f9101 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -621,6 +621,9 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ {
+ 	int ret;
+ 
++	if (val_len % map->format.val_bytes)
++		return -EINVAL;
++
+ 	map->lock(map);
+ 
+ 	ret = _regmap_raw_write(map, reg, val, val_len);
+@@ -779,6 +782,9 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	unsigned int v;
+ 	int ret, i;
+ 
++	if (val_len % map->format.val_bytes)
++		return -EINVAL;
++
+ 	map->lock(map);
+ 
+ 	if (regmap_volatile_range(map, reg, val_count) || map->cache_bypass ||
+-- 
+1.7.0.4
+
