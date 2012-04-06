@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab2DFVRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:17:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38423 "EHLO
+	id S932507Ab2DFVRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:17:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37072 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758098Ab2DFVRl (ORCPT
+	with ESMTP id S1755281Ab2DFVRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Apr 2012 17:17:41 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/2] regmap: mmio: remove some error checks now in the core
-Date: Fri,  6 Apr 2012 15:17:33 -0600
-Message-Id: <1333747053-6846-2-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH 1/2] regmap: mmio: convert some error returns to BUG()
+Date: Fri,  6 Apr 2012 15:17:32 -0600
+Message-Id: <1333747053-6846-1-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1333747053-6846-1-git-send-email-swarren@wwwdotorg.org>
-References: <1333747053-6846-1-git-send-email-swarren@wwwdotorg.org>
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,41 +21,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-These error checks are implemented in regmap core. Remove the duplicate
-code from regmap-mmio.c
+Some of the error conditions detected by regmap_mmio_*() are pure internal
+errors, rather than user-/client-triggerable conditions. Convert these to
+BUG().
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-This logically slight depends on "regmap: validate regmap_raw_read/write
-val_len" that I just sent, but its not really a big deal.
-
- drivers/base/regmap/regmap-mmio.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/base/regmap/regmap-mmio.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
-index ffa0e85..bdf4dc8 100644
+index 1a7b5ee..ffa0e85 100644
 --- a/drivers/base/regmap/regmap-mmio.c
 +++ b/drivers/base/regmap/regmap-mmio.c
-@@ -37,9 +37,6 @@ static int regmap_mmio_gather_write(void *context,
+@@ -35,8 +35,8 @@ static int regmap_mmio_gather_write(void *context,
+ 	struct regmap_mmio_context *ctx = context;
+ 	u32 offset;
  
- 	BUG_ON(reg_size != 4);
- 
--	if (val_size % ctx->val_bytes)
+-	if (reg_size != 4)
 -		return -EIO;
--
- 	offset = be32_to_cpup(reg);
++	BUG_ON(reg_size != 4);
++
+ 	if (val_size % ctx->val_bytes)
+ 		return -EIO;
  
- 	while (val_size) {
-@@ -86,9 +83,6 @@ static int regmap_mmio_read(void *context,
+@@ -60,7 +60,7 @@ static int regmap_mmio_gather_write(void *context,
+ #endif
+ 		default:
+ 			/* Should be caught by regmap_mmio_check_config */
+-			return -EIO;
++			BUG();
+ 		}
+ 		val_size -= ctx->val_bytes;
+ 		val += ctx->val_bytes;
+@@ -72,8 +72,8 @@ static int regmap_mmio_gather_write(void *context,
  
- 	BUG_ON(reg_size != 4);
- 
--	if (val_size % ctx->val_bytes)
+ static int regmap_mmio_write(void *context, const void *data, size_t count)
+ {
+-	if (count < 4)
 -		return -EIO;
--
- 	offset = be32_to_cpup(reg);
++	BUG_ON(count < 4);
++
+ 	return regmap_mmio_gather_write(context, data, 4, data + 4, count - 4);
+ }
  
- 	while (val_size) {
+@@ -84,8 +84,8 @@ static int regmap_mmio_read(void *context,
+ 	struct regmap_mmio_context *ctx = context;
+ 	u32 offset;
+ 
+-	if (reg_size != 4)
+-		return -EIO;
++	BUG_ON(reg_size != 4);
++
+ 	if (val_size % ctx->val_bytes)
+ 		return -EIO;
+ 
+@@ -109,7 +109,7 @@ static int regmap_mmio_read(void *context,
+ #endif
+ 		default:
+ 			/* Should be caught by regmap_mmio_check_config */
+-			return -EIO;
++			BUG();
+ 		}
+ 		val_size -= ctx->val_bytes;
+ 		val += ctx->val_bytes;
 -- 
 1.7.0.4
 
