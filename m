@@ -1,107 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab2DFUF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:05:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:34550 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab2DFUF4 (ORCPT
+	id S932359Ab2DFUQG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:16:06 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46579 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab2DFUQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:05:56 -0400
-Date: Fri, 6 Apr 2012 23:05:55 +0300
-From: Ilya Dryomov <idryomov@gmail.com>
-To: Bobby Powers <bobbypowers@gmail.com>
-Cc: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        Andi Kleen <ak@linux.intel.com>, Jeff Mahoney <jeffm@suse.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Btrfs, lockdep: get_restripe_target: use lockdep in
- BUG_ON
-Message-ID: <20120406200555.GA3414@zambezi.lan>
-References: <1333570774-26462-1-git-send-email-bobbypowers@gmail.com>
- <1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
+	Fri, 6 Apr 2012 16:16:04 -0400
+Date: Fri, 6 Apr 2012 23:16:02 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        torvalds@linux-foundation.org, drepper@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+Message-ID: <20120406201601.GA3310@p183.telecom.by>
+References: <20120401125741.GA7484@p183.telecom.by>
+ <4F78D0BA.9040709@zytor.com>
+ <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
+ <4F7F1659.5090305@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F7F1659.5090305@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 10:04:12PM -0400, Bobby Powers wrote:
-> spin_is_locked always returns 0 on non-SMP systems, which causes btrfs
-> to fail the mount.  There is documentation pending as to why checking
-> for spin_is_locked is a bad idea:
+On Fri, Apr 06, 2012 at 09:14:17AM -0700, H. Peter Anvin wrote:
+> On 04/06/2012 02:54 AM, Alexey Dobriyan wrote:
+> > 
+> > I agree, this particular changelog may be somewhat out of line.
+> > 
+> > But I find it little hypocritical that kernel developers add CONFIG_PROC_FS,
+> > fix compilation problems associated with it, do not mount proc by default,
+> > do not mark it unmountable somehow and
+> > then say procless setups aren't worth it.
+> > 
 > 
-> https://lkml.org/lkml/2012/3/27/413
-> 
-> The suggested lockdep_assert_held() is not appropriate in this case,
-> as what get_restripe_target() is checking for is that either
-> volume_mutex is held or balance_lock is held.  Luckily
-> lockdep_assert_held() is a simple macro:
-> 
-> WARN_ON(debug_locks && !lockdep_is_held(l))
-> 
-> We can mimic the structure in get_restripe_target(), but we need to
-> make sure lockdep_is_held() is defined for the !LOCKDEP case.
-> 
-> CC: Ilya Dryomov <idryomov@gmail.com>
-> CC: Chris Mason <chris.mason@oracle.com>
-> CC: Andi Kleen <ak@linux.intel.com>
-> CC: Jeff Mahoney <jeffm@suse.de>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: linux-kernel@vger.kernel.org
-> Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
-> ---
->  fs/btrfs/extent-tree.c  |    5 +++--
->  include/linux/lockdep.h |    1 +
->  2 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-> index a844204..4d13eb1 100644
-> --- a/fs/btrfs/extent-tree.c
-> +++ b/fs/btrfs/extent-tree.c
-> @@ -24,6 +24,7 @@
->  #include <linux/kthread.h>
->  #include <linux/slab.h>
->  #include <linux/ratelimit.h>
-> +#include <linux/lockdep.h>
->  #include "compat.h"
->  #include "hash.h"
->  #include "ctree.h"
-> @@ -3158,8 +3159,8 @@ static u64 get_restripe_target(struct btrfs_fs_info *fs_info, u64 flags)
->  	struct btrfs_balance_control *bctl = fs_info->balance_ctl;
->  	u64 target = 0;
->  
-> -	BUG_ON(!mutex_is_locked(&fs_info->volume_mutex) &&
-> -	       !spin_is_locked(&fs_info->balance_lock));
-> +	BUG_ON(debug_locks && !lockdep_is_held(&fs_info->volume_mutex) &&
-> +	       !lockdep_is_held(&fs_info->balance_lock));
->  
->  	if (!bctl)
->  		return 0;
-> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-> index d36619e..94c0edb 100644
-> --- a/include/linux/lockdep.h
-> +++ b/include/linux/lockdep.h
-> @@ -392,6 +392,7 @@ struct lock_class_key { };
->  
->  #define lockdep_depth(tsk)	(0)
->  
-> +#define lockdep_is_held(l)	(0)
->  #define lockdep_assert_held(l)			do { } while (0)
->  
->  #define lockdep_recursing(tsk)			(0)
-> -- 
-> 1.7.10.rc3.3.g19a6c
+> Aren't worth *optimizing for*.  But yes, CONFIG_PROC_FS is pretty much a
+> historic relic at this point, and probably should just be dropped.
 
-OK, Mitch's report prompted me to actually take a look.  This patch is
-wrong: by defining lockdep_is_held(l) to 0 in !LOCKDEP case you
-effectively mimic the behaviour of spin_is_locked() which is what
-getting us in the first place.
+What to do with automounting /proc so it availablility would match
+syscall availability?
 
-get_restripe_target() interface is WIP so I will replace BUG_ON with a
-comment and send a patch through btrfs tree.
+> > Without proc knowledge about fdtable is gathered linearly and still unreliable.
+> > With nextfd(2), even procful environments could lose several failure branches.
+> 
+> What?  Please explain how on Earth this would "lose several failure
+> branches."
 
-Thanks,
+closefrom(3) written via nextfd(2) loop is reliable and doesn't fail.
+closefrom(3) written via /proc/self/fd is reliable and can fail (including ENOMEM).
+closefrom(3) written via close(fd++) is unreliable.
 
-		Ilya
+If programmer adds nextfd(2) loop before any closefrom(3) code
+he currently uses, there will be less failures.
