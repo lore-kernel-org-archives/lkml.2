@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab2DEXw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 19:52:29 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49195 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab2DEXw2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:52:28 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
-Date: Thu,  5 Apr 2012 16:52:13 -0700
-Message-Id: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1756469Ab2DEX7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 19:59:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59222 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751255Ab2DEX7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 19:59:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="85890044"
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Pallipadi Venkatesh <venki@google.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: [v3 VM_PAT PATCH 0/3] x86 VM_PAT series
+Date: Thu,  5 Apr 2012 17:01:32 -0700
+Message-Id: <1333670495-7016-1-git-send-email-suresh.b.siddha@intel.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <4F7D8860.3040008@openvz.org>
+References: <4F7D8860.3040008@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Thu, 2012-04-05 at 15:56 +0400, Konstantin Khlebnikov wrote:
+> With this patches I see new ranges in /sys/kernel/debug/x86/pat_memtype_list
+> This is 4k single-page vma mappged by X11. kernel fills them via vm_insert_pfn().
+> Is this ok?
 
-In commit 4bbdd45a (irq_domain/powerpc: eliminate irq_map; use
-irq_alloc_desc() instead) code was added that ignores error returns
-from irq_alloc_desc_from() by (silently) casting the return value to
-unsigned.  The negitive value error return now suddenly looks like a
-valid irq number.
+This is expected and I saw these new entries too (but not as many as you saw), as the
+patch is tracking single page vma's coming from vm_insert_pfn() interface too.
 
-Commits cc79ca69 (irq_domain: Move irq_domain code from powerpc to
-kernel/irq) and 1bc04f2c (irq_domain: Add support for base irq and
-hwirq in legacy mappings) move this code to its current location in
-irqdomain.c
+Thinking a bit more about this in the context of your numbers, those new entries that
+are getting tracked are not adding any new value. As the driver has already reserved the
+whole aperture with write-combining attribute, tracking these single page vma's doesn't
+help anymore.
 
-The result of all of this is a null pointer dereference OOPS if one of
-the error cases is hit.
+> Maybe we shouldn't use PAT for small VMA?
 
-The fix: Don't cast away the negativeness of the return value and then
-check for errors.
+For vm_insert_pfn(), expectation is that we just look up the memory attribute.
+And for remap_pfn_range(), if the whole VMA is remapped, we reserve the new
+attribute for the specified pfn-range, as typically drivers
+call remap_pfn_range() for the whole VMA (can be a single page) with the desired
+attribute (with out the prior reservation of the memory attribute for the pfn range).
+So exposing two different API's for this behavior is probably the better way
+to address this in a clean way. Revised patches follows.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- kernel/irq/irqdomain.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+Konstantin Khlebnikov (1):
+  mm, x86, PAT: rework linear pfn-mmap tracking
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index af48e59..9d3e3ae 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -351,6 +351,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 				irq_hw_number_t hwirq)
- {
- 	unsigned int virq, hint;
-+	int irq;
- 
- 	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
- 
-@@ -380,14 +381,14 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 	hint = hwirq % irq_virq_count;
- 	if (hint == 0)
- 		hint++;
--	virq = irq_alloc_desc_from(hint, 0);
--	if (!virq)
--		virq = irq_alloc_desc_from(1, 0);
--	if (!virq) {
-+	irq = irq_alloc_desc_from(hint, 0);
-+	if (irq <= 0)
-+		irq = irq_alloc_desc_from(1, 0);
-+	if (irq <= 0) {
- 		pr_debug("irq: -> virq allocation failed\n");
- 		return 0;
- 	}
--
-+	virq = irq;
- 	if (irq_setup_virq(domain, virq, hwirq)) {
- 		if (domain->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
- 			irq_free_desc(virq);
+Suresh Siddha (2):
+  x86, pat: remove the dependency on 'vm_pgoff' in track/untrack pfn
+    vma routines
+  x86, pat: separate the pfn attribute tracking for remap_pfn_range and
+    vm_insert_pfn
+
+ arch/x86/mm/pat.c             |   80 ++++++++++++++++++++++++++++------------
+ include/asm-generic/pgtable.h |   57 +++++++++++++++++------------
+ include/linux/mm.h            |   15 +-------
+ mm/huge_memory.c              |    7 ++--
+ mm/memory.c                   |   23 +++++-------
+ 5 files changed, 104 insertions(+), 78 deletions(-)
+
 -- 
-1.7.2.3
-
+1.7.6.5
