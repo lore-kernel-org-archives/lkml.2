@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab2DFP1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 11:27:41 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51771 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757371Ab2DFP1k (ORCPT
+	id S1757477Ab2DFPb5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 11:31:57 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:56404 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab2DFPbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 11:27:40 -0400
-X-Sasl-enc: trkOMaKaRRHEKcJF53E4hDHZgq99KgqheFtYIhfASmZ0 1333726059
-Message-ID: <1333726029.4077.42.camel@lenny>
-Subject: Re: [PATCH] nextfd(2)
-From: Colin Walters <walters@verbum.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        drepper@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Fri, 06 Apr 2012 11:27:09 -0400
-In-Reply-To: <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
-References: <20120401125741.GA7484@p183.telecom.by>
-	 <4F78D0BA.9040709@zytor.com>
-	 <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Apr 2012 11:31:55 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI: Fix a device reference count leakage issue in pci_dev_present()
+Date: Fri,  6 Apr 2012 23:31:36 +0800
+Message-Id: <1333726296-3817-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 12:54 +0300, Alexey Dobriyan wrote:
+Function pci_get_dev_by_id() will hold a reference count on the pci device
+returned, so pci_dev_present() should release the corresponding reference
+count to avoid memory leakage.
 
-> But I find it little hypocritical that kernel developers add CONFIG_PROC_FS,
-> fix compilation problems associated with it, do not mount proc by default,
-> do not mark it unmountable somehow and
-> then say procless setups aren't worth it.
-> 
-> I haven't seen personally procless environments
-> but several people mentioned them including on this very list.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+---
+ drivers/pci/search.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-Now that the kernel has CLONE_NEWNS, it's possible to mount proc
-"privately" just for a specific process tree.  It meshes nicely with
-CLONE_NEWPID.  Previously if you mounted proc in a chroot, it cluttered
-the mount list and leaked information about outside the root.
-With modern clone/unshare, that's no longer a concern, so there's
-much less reason to use "bare" chroots.
-
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index 9d75dc8..b572730 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -338,13 +338,13 @@ int pci_dev_present(const struct pci_device_id *ids)
+ 	WARN_ON(in_interrupt());
+ 	while (ids->vendor || ids->subvendor || ids->class_mask) {
+ 		found = pci_get_dev_by_id(ids, NULL);
+-		if (found)
+-			goto exit;
++		if (found) {
++			pci_dev_put(found);
++			return 1;
++		}
+ 		ids++;
+ 	}
+-exit:
+-	if (found)
+-		return 1;
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL(pci_dev_present);
+-- 
+1.7.5.4
 
