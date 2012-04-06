@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab2DFUtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:49:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59543 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757590Ab2DFUtl (ORCPT
+	id S1758067Ab2DFUyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:54:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38039 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755356Ab2DFUym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:49:41 -0400
-Date: Fri, 6 Apr 2012 13:49:39 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Tejun Heo <tj@kernel.org>, Mike Galbraith <mgalbraith@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
-In-Reply-To: <1333736770.2960.114.camel@laptop>
-Message-ID: <alpine.DEB.2.00.1204061347180.23328@chino.kir.corp.google.com>
-References: <20120405160829.GA12854@google.com> <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com> <20120405213704.GA29517@google.com> <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com> <20120405222400.GC29517@google.com>
- <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com> <20120405225854.GE29517@google.com> <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com> <20120405231306.GF29517@google.com> <alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
- <20120406155203.GA4798@dhcp-172-17-108-109.mtv.corp.google.com> <1333736770.2960.114.camel@laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 6 Apr 2012 16:54:42 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAE6n16m3v4BghY7GGwHCy2t-7-vmRpyOV6swap9GrMQnmGLroA@mail.gmail.com>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+ <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406124921.5754e941.akpm@linux-foundation.org>
+ <CAE6n16m3v4BghY7GGwHCy2t-7-vmRpyOV6swap9GrMQnmGLroA@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 6 Apr 2012 13:54:19 -0700
+X-Google-Sender-Auth: ARXJugfg3KBsMrtQPUppdlnKLYo
+Message-ID: <CAObL_7GzsJ+EW94oYG+EzcRqYyH2EPTyFgTgo6zmSz1yxEe-xw@mail.gmail.com>
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+To: Markus Gutschke <markus@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012, Peter Zijlstra wrote:
+On Fri, Apr 6, 2012 at 1:47 PM, Markus Gutschke <markus@chromium.org> wrote:
+> On Fri, Apr 6, 2012 at 12:49, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> On Thu, 29 Mar 2012 15:01:46 -0500
+>> Will Drewry <wad@chromium.org> wrote:
+>>> From: Andy Lutomirski <luto@amacapital.net>
+>>> With this set, a lot of dangerous operations (chroot, unshare, etc)
+>>> become a lot less dangerous because there is no possibility of
+>>> subverting privileged binaries.
+>
+> I don't want to derail things. So, tell me to go away, if I can't have
+> what I want.
+>
+> Having said that, it would be great if NO_NEW_PRIVS also gave access
+> to the restricted clone() flags. Such as CLONE_NEWIPC, CLONE_NEWNET
+> and CLONE_NEWPID.
 
-> Furthermore, the whole point of kthreadd's existence is so that we could
-> create kthreads without context. Placing it in a cgroup will ensure all
-> subsequently created kthreads do have context (including possible idle
-> threads). This seems like a particularly bad idea.
-> 
+I decided to hold off on extra controversy for awhile.  However:
 
-I don't see it as context if the only thing you're doing is accounting 
-with memcg (for slab) or or cpu.  We're simply collecting statistics for a 
-set of threads (possibly all kthreads, including kthreadd) and the best 
-way to do this is leveraging the existing functionality of cgroups to 
-setup the threads we want to collect for and the memcg kmem accounting is 
-particularly a good indicator of kernel vs userjob-triggered slab 
-allocation.
+https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=commit;h=9a520b74ad5dc14a3d6950b6d63a64714adbdd7d
+and
+http://web.mit.edu/luto/www/linux/nnp/newns.c
+
+I fully intend to resurrect both of those once nnp lands.
+
+(FWIW, I think that CLONE_NEWPID interacts badly with unix socket
+credentials and should be fixed as a prerequisite for making it easier
+to access.)
+
+--Andy
