@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab2DGBvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 21:51:13 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46544 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752765Ab2DGBvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 21:51:12 -0400
-Message-ID: <1333763471.8565.32.camel@joe2Laptop>
-Subject: Re: [PATCH] printk: support structured and multi-facility log
- messages
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartmann <greg@kroah.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Fri, 06 Apr 2012 18:51:11 -0700
-In-Reply-To: <alpine.LNX.2.00.1204070303370.24006@pobox.suse.cz>
-References: <1333569554.864.3.camel@mop>
-	 <alpine.LRH.2.00.1204070222130.18937@twin.jikos.cz>
-	 <1333760371.8565.19.camel@joe2Laptop>
-	 <alpine.LNX.2.00.1204070303370.24006@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757577Ab2DGBv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 21:51:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34821 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab2DGBvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 21:51:51 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
+To: David Daney <ddaney.cavm@gmail.com>, Rob Herring <robherring2@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4F7F1BDD.4070205@gmail.com>
+References: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com> <4F7E64E4.3080509@gmail.com> <4F7F1BDD.4070205@gmail.com>
+Date: Fri, 06 Apr 2012 16:56:07 -0700
+Message-Id: <20120406235607.DCCD53E15E9@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-07 at 03:14 +0200, Jiri Kosina wrote:
-> On Fri, 6 Apr 2012, Joe Perches wrote:
+On Fri, 06 Apr 2012 09:37:49 -0700, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 04/05/2012 08:37 PM, Rob Herring wrote:
+> > On 04/05/2012 06:52 PM, David Daney wrote:
+> >> From: David Daney<david.daney@cavium.com>
+> >> @@ -380,14 +381,14 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+> >>   	hint = hwirq % irq_virq_count;
+> >>   	if (hint == 0)
+> >>   		hint++;
+> >> -	virq = irq_alloc_desc_from(hint, 0);
+> >
+> > You are not looking at mainline. hint was removed in later versions, and
+> > the referenced commit ids don't exist.
 > 
-> > > > - Output of dev_printk() is reliably machine-readable now. In addition
-> > > >   to the printed plain text message, it creates a log dictionary with the
-> > > >   following properties:
-> > > >     SUBSYSTEM=     - the driver-core subsytem name
-> > > >     DEVICE=
-> > > >       b12:8        - block dev_t
-> > > >       c127:3       - char dev_t
-> > > >       n8           - netdev ifindex
-> > > >       +sound:card0 - subsystem:devname
-> > > 
-> > > One of the questions that hasn't been raised yet, and which I personally 
-> > > consider crucial -- are we making printk() interface part of userspace ABI 
-> > > now by this?
-> > 
-> > I hope not.
-> 
-> And how exactly do we prevent that? It's a systematic and well-defined 
-> interface between kernel and userspace, and as such it's hard to not 
-> consider it to be ABI.
-> 
-> > > Today, we are free to change any printk()s and not feel guilty about it at 
-> > > all. With this, we are making the whole thing much more systematic and 
-> > > friendly for automatic userspace consumption.
-> > 
-> > It _may_ be that new KEYWORD=VALUE combinations may become systematic 
-> > and an ABI, but the content of the message is still arbitrary and should 
-> > be designated as changeable without notice.
-> 
-> I bet there would be "you broke my userspace app because it was depending 
-> on the printk() you just removed" bugreport coming from someone very soon. 
-> 
-> We can then either start explaining why this structured and well-defined 
-> printk() is not ABI, or just don't allow for that to happen in the first 
-> place by keeping printk() what it has always been -- unstructured linear 
-> flow of log entries destined only to be read by humans.
+> Please look at Linus' tree before making incorrect statements about 
+> whether or not code exists on the 'mainline'
 
-I think the commit log is poor.
+Rob is indeed mistaken here, but please let's keep things civil.  I
+did write the patches to remove the hint, but I avoided merging them
+because I think they are risky.  I wanted to get the core irq_domain
+changes in first.  The removal of hint will be applied during the next
+merge window.
 
-printk() is effectively unmodified.
+I will take your bug fix and get it pushed up to Linus soon.
 
-Generic helpers like dev_printk() can have an extra bit
-prepended in the form of device/class/name.
-
-All dev_printk device/class/name does is show what device
-emitted a message.  It doesn't limit the message content.
-The content of the message after that device/class/name
-is still arbitrary.
-
-No other use has been proposed, that's why I think it's
-not all that valuable (yet?).
-
-I do think that printk_emit, which I think is a bad name,
-( maybe printk_tva() or printk_desc() ) has some value.
-
-The record oriented change also has value as it can more
-easily be optionally extended to compress/decompress the
-text message to save memory space per record.  Of course
-that'd only be valuable when CONFIG_LOG_BUF_SHIFT is
-large enough to gain something by using compression.
-
-
+g.
