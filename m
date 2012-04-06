@@ -1,119 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab2DFVFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:05:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37472 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758082Ab2DFVFL (ORCPT
+	id S932467Ab2DFVGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:06:06 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:17376 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758087Ab2DFVGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:05:11 -0400
-Date: Fri, 6 Apr 2012 14:05:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        jmorris@namei.org
-Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
-Message-Id: <20120406140503.10b75c5b.akpm@linux-foundation.org>
-In-Reply-To: <CAGXu5jJVDLzCOyCo-q6+pF-_3v4Ws8jBzYXwac419uv2QQS0mA@mail.gmail.com>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	<1333051320-30872-9-git-send-email-wad@chromium.org>
-	<20120406132330.457a05cf.akpm@linux-foundation.org>
-	<CAGXu5jJVDLzCOyCo-q6+pF-_3v4Ws8jBzYXwac419uv2QQS0mA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Apr 2012 17:06:04 -0400
+Date: Fri, 6 Apr 2012 17:01:18 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 6/7] xen/setup: Make dom0_mem=XGB behavior be
+ similar to classic Xen kernels.
+Message-ID: <20120406210117.GB26309@phenom.dumpdata.com>
+References: <1333139850-28456-1-git-send-email-konrad.wilk@oracle.com>
+ <1333139850-28456-7-git-send-email-konrad.wilk@oracle.com>
+ <4F7ABBC4.4050106@citrix.com>
+ <4F7AE321020000780007C456@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F7AE321020000780007C456@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F7F5AB6.0099,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012 13:44:43 -0700
-Kees Cook <keescook@chromium.org> wrote:
-
-> On Fri, Apr 6, 2012 at 1:23 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Thu, 29 Mar 2012 15:01:53 -0500
-> > Will Drewry <wad@chromium.org> wrote:
-> >
-> >> [This patch depends on luto@mit.edu's no_new_privs patch:
-> >>    https://lkml.org/lkml/2012/1/30/264
-> >>  included in this series for ease of consumption.
-> >> ]
-> >>
-> >> This patch adds support for seccomp mode 2.  Mode 2 introduces the
-> >> ability for unprivileged processes to install system call filtering
-> >> policy expressed in terms of a Berkeley Packet Filter (BPF) program.
-> >> This program will be evaluated in the kernel for each system call
-> >> the task makes and computes a result based on data in the format
-> >> of struct seccomp_data.
-> >> ...
-> >> +static void seccomp_filter_log_failure(int syscall)
-> >> +{
-> >> +     int compat = 0;
-> >> +#ifdef CONFIG_COMPAT
-> >> +     compat = is_compat_task();
-> >> +#endif
-> >
-> > hm, I'm surprised that we don't have a zero-returning implementation of
-> > is_compat_task() when CONFIG_COMPAT=n.  Seems silly.  Blames Arnd.
+On Tue, Apr 03, 2012 at 10:46:41AM +0100, Jan Beulich wrote:
+> >>> On 03.04.12 at 10:58, David Vrabel <david.vrabel@citrix.com> wrote:
+> > With your new behaviour it will no longer possible to specify an
+> > unlimited balloon but a limited number of initial pages.  This is
+> > behaviour that Jan said he used.
 > 
-> There is
-
-I can't find it.  The definition in include/linux/compat.h is inside
-#ifdef CONFIG_COMPAT.
-
-> >> +static long seccomp_attach_filter(struct sock_fprog *fprog)
-> >> +{
-> >> +     struct seccomp_filter *filter;
-> >> +     unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
-> >> +     unsigned long total_insns = fprog->len;
-> >> +     long ret;
-> >> +
-> >> +     if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
-> >> +             return -EINVAL;
-> >> +
-> >> +     for (filter = current->seccomp.filter; filter; filter = filter->prev)
-> >> +             total_insns += filter->len + 4;  /* include a 4 instr penalty */
-> >
-> > So tasks don't share filters?  We copy them by value at fork?  Do we do
-> > this at vfork() too?
+> An unlimited balloon was never possible afaict (as that would have
+> implied setting up an "infinite" number of struct page instances at
+> boot time.
 > 
-> The filter chain is shared (and refcounted).
+> What I'm using is "dom0_mem=-<num>M" together with the kernel
+> option "mem=<num>G", such that max-balloon > initial alloc (usually
+> I set max-balloon to approximately the amount of memory in the
+> system, so the upper limit is "infinite" in the sense that I can't go
+> higher anyway, but it's not truly infinity).
 
-So what's the locking rule for accessing and modifying that
-singly-linked list?
-
-> ...
-> >> +/* put_seccomp_filter - decrements the ref count of tsk->seccomp.filter */
-> >> +void put_seccomp_filter(struct task_struct *tsk)
-> >> +{
-> >> +     struct seccomp_filter *orig = tsk->seccomp.filter;
-> >> +     /* Clean up single-reference branches iteratively. */
-> >> +     while (orig && atomic_dec_and_test(&orig->usage)) {
-> >> +             struct seccomp_filter *freeme = orig;
-> >> +             orig = orig->prev;
-> >> +             kfree(freeme);
-> >> +     }
-> >> +}
-> >
-> > So if one of the filters in the list has an elevated refcount, we bail
-> > out on the remainder of the list.  Seems odd.
+Couldn't you do the same thing with 'dom0_mem=X,max:Y'
 > 
-> This so that every filter in the list doesn't need to have their
-> refcount raised. As long as the counting up matching the counting
-> down, it's fine. This allows for process trees branching the filter
-> list at different times still being safe. IIUC, this code was based on
-> how namespace refcounting is handled. I spent some time proving to
-> myself that it was correctly refcounted a while back. More eyes is
-> better, of course. :)
-
-Please ensure that future readers of this code have a description of
-how it is supposed to work.
+> Jan
