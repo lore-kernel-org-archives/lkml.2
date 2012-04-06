@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab2DFUZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 16:25:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41978 "EHLO mga02.intel.com"
+	id S932412Ab2DFU22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 16:28:28 -0400
+Received: from tex.lwn.net ([70.33.254.29]:50909 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757903Ab2DFUZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 16:25:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="126178226"
-Subject: [PATCH v2 2/2] sysfs: provide more diagnostic info for
- kobject_add_internal() failures
-To: gregkh@linuxfoundation.org
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: James Bottomley <JBottomley@parallels.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Date: Fri, 06 Apr 2012 13:41:15 -0700
-Message-ID: <20120406204111.22624.34820.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120406203619.22624.69445.stgit@dwillia2-linux.jf.intel.com>
-References: <20120406203619.22624.69445.stgit@dwillia2-linux.jf.intel.com>
-User-Agent: StGit/0.16-1-g7004
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755062Ab2DFU21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 16:28:27 -0400
+Date: Fri, 6 Apr 2012 14:28:24 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org,
+        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent
+ execve from granting privs
+Message-ID: <20120406142824.61d8ca3b@lwn.net>
+In-Reply-To: <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-2-git-send-email-wad@chromium.org>
+	<20120406125517.77133b4e.akpm@linux-foundation.org>
+	<CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1/ convert open-coded KERN_ERR+dump_stack() to WARN(), so that automated
-   tools pick up this warning.
+On Fri, 6 Apr 2012 13:01:17 -0700
+Andrew Lutomirski <luto@mit.edu> wrote:
 
-2/ include the 'child' and 'parent' kobject names.  This information was
-   useful for tracking down the case where scsi invoked device_del() on a
-   parent object and subsequently invoked device_add() on a child.  Now the
-   warning looks like:
+> This has been bugging me for awhile.  Is there any interest in moving
+> the manpages into the kernel source tree?  Then there could be a
+> general requirement that new APIs get documented when they're written.
 
-     kobject_add_internal failed for target8:0:16 (error: -2 parent: end_device-8:0:24)
-     Pid: 2942, comm: scsi_scan_8 Not tainted 3.3.0-rc7-isci+ #2
-     Call Trace:
-      [<ffffffff8125e551>] kobject_add_internal+0x1c1/0x1f3
-      [<ffffffff81075149>] ? trace_hardirqs_on+0xd/0xf
-      [<ffffffff8125e659>] kobject_add_varg+0x41/0x50
-      [<ffffffff8125e723>] kobject_add+0x64/0x66
-      [<ffffffff8131124b>] device_add+0x12d/0x63a
-      [<ffffffff8125e0ef>] ? kobject_put+0x4c/0x50
-      [<ffffffff8132f370>] scsi_sysfs_add_sdev+0x4e/0x28a
-      [<ffffffff8132dce3>] do_scan_async+0x9c/0x145
+Man page (or other documentation) requirements for patch acceptance are a
+regular kernel summit feature.  People seem to think it's a good idea, but
+actual enforcement of such requirements always seems to be lacking.  Lots
+of people have kind of given up trying.  I don't really see that adding
+the man pages to the tree would help, but I could be wrong...
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- lib/kobject.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/lib/kobject.c b/lib/kobject.c
-index c33d7a1..1bd0893 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -192,14 +192,14 @@ static int kobject_add_internal(struct kobject *kobj)
- 
- 		/* be noisy on error issues */
- 		if (error == -EEXIST)
--			printk(KERN_ERR "%s failed for %s with "
--			       "-EEXIST, don't try to register things with "
--			       "the same name in the same directory.\n",
--			       __func__, kobject_name(kobj));
-+			WARN(1, "%s failed for %s with "
-+			     "-EEXIST, don't try to register things with "
-+			     "the same name in the same directory.\n",
-+			     __func__, kobject_name(kobj));
- 		else
--			printk(KERN_ERR "%s failed for %s (%d)\n",
--			       __func__, kobject_name(kobj), error);
--		dump_stack();
-+			WARN(1, "%s failed for %s (error: %d parent: %s)\n",
-+			     __func__, kobject_name(kobj), error,
-+			     parent ? kobject_name(parent) : "'none'");
- 	} else
- 		kobj->state_in_sysfs = 1;
- 
-
+jon
