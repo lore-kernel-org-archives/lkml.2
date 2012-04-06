@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab2DFRjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 13:39:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57665 "EHLO
+	id S932291Ab2DFRjr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 13:39:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57667 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab2DFRjT (ORCPT
+	with ESMTP id S1757317Ab2DFRjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 13:39:19 -0400
-Message-ID: <4F7F2A3D.3010700@kernel.dk>
-Date: Fri, 06 Apr 2012 11:39:09 -0600
+	Fri, 6 Apr 2012 13:39:46 -0400
+Message-ID: <4F7F2A5A.6010107@kernel.dk>
+Date: Fri, 06 Apr 2012 11:39:38 -0600
 From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]block: make auto block plug flush threshold per-disk based
-References: <4F7F2765.3090003@kernel.org>
-In-Reply-To: <4F7F2765.3090003@kernel.org>
+To: Asai Thambi S P <asamymuthupa@micron.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 0/5] mtip32xx: Add support for device status and some
+ optimitizations
+References: <4F7E07BB.4080507@micron.com> <4F7E371B.8010605@kernel.dk> <4F7F2A01.6050806@micron.com>
+In-Reply-To: <4F7F2A01.6050806@micron.com>
 X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -23,21 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-06 11:27, Shaohua Li wrote:
-> We do auto block plug flush to reduce latency, the threshold is 16
-> requests. This works well if the task is accessing one or two drives.
-> The problem is if the task is accessing a raid 0 device and the raid
-> disk number is big, say 8 or 16, 16/8 = 2 or 16/16=1, we will have
-> heavy lock contention.
+On 2012-04-06 11:38, Asai Thambi S P wrote:
+> On 4/5/2012 5:21 PM, Jens Axboe wrote:
 > 
-> This patch makes the threshold per-disk based. The latency should be
-> still ok accessing one or two drives. The setup with application
-> accessing a lot of drives in the meantime uaually is big machine,
-> avoiding lock contention is more important, because any contention
-> will actually increase latency.
+>> On 2012-04-05 14:59, Asai Thambi S P wrote:
+>>>
+>>> This patchset adds support for new sysfs entry 'status', fix in restart port,
+>>> and some optimizations like merging various flag variables. 
+>>>
+>>> Asai Thambi S P (5):
+>>>   mtip32xx: Add new bitwise flag 'dd_flag' and make set comp_time as
+>>>     common
+>>>   mtip32xx: Add new sysfs entry 'status' and fix restart port
+>>>   mtip32xx: Shorten macro names
+>>>   mtip32xx: handling of commands in various scenarios
+>>>   mtip32xx: dump tagmap on failure
+>>>
+>>>  drivers/block/mtip32xx/mtip32xx.c |  844 +++++++++++++++++++++++++++++--------
+>>>  drivers/block/mtip32xx/mtip32xx.h |   58 ++-
+>>>  2 files changed, 702 insertions(+), 200 deletions(-)
+>>
+>> These are not applying to for-3.4/drivers, so I can't apply them as-is.
+>>
+> 
+> 
+> Sorry, patches were based on master. I will re-base for-3.4/drivers
 
-Thanks, applied. It should have been per-queue all along, so this
-makes a lot of sense.
+Thanks, there's a mtip32xx patch in there already, so that's probably
+what is causing the issue.
 
 -- 
 Jens Axboe
