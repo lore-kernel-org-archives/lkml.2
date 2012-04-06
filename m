@@ -1,61 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab2DFVFR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:05:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63251 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758084Ab2DFVFM (ORCPT
+	id S1758117Ab2DFVFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:05:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37472 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082Ab2DFVFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:05:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAObL_7GzsJ+EW94oYG+EzcRqYyH2EPTyFgTgo6zmSz1yxEe-xw@mail.gmail.com>
+	Fri, 6 Apr 2012 17:05:11 -0400
+Date: Fri, 6 Apr 2012 14:05:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        jmorris@namei.org
+Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
+Message-Id: <20120406140503.10b75c5b.akpm@linux-foundation.org>
+In-Reply-To: <CAGXu5jJVDLzCOyCo-q6+pF-_3v4Ws8jBzYXwac419uv2QQS0mA@mail.gmail.com>
 References: <1333051320-30872-1-git-send-email-wad@chromium.org>
- <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406124921.5754e941.akpm@linux-foundation.org>
- <CAE6n16m3v4BghY7GGwHCy2t-7-vmRpyOV6swap9GrMQnmGLroA@mail.gmail.com> <CAObL_7GzsJ+EW94oYG+EzcRqYyH2EPTyFgTgo6zmSz1yxEe-xw@mail.gmail.com>
-From: Markus Gutschke <markus@chromium.org>
-Date: Fri, 6 Apr 2012 14:04:46 -0700
-X-Google-Sender-Auth: AUQEflIOQPhWx1x8Rn04NyLzx5g
-Message-ID: <CAE6n16=5fEBYP37R3XDFWL_8YOk7MH6T_CbuX3sZCpngD=v=rg@mail.gmail.com>
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	<1333051320-30872-9-git-send-email-wad@chromium.org>
+	<20120406132330.457a05cf.akpm@linux-foundation.org>
+	<CAGXu5jJVDLzCOyCo-q6+pF-_3v4Ws8jBzYXwac419uv2QQS0mA@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 13:54, Andrew Lutomirski <luto@mit.edu> wrote:
-> (FWIW, I think that CLONE_NEWPID interacts badly with unix socket
-> credentials and should be fixed as a prerequisite for making it easier
-> to access.)
+On Fri, 6 Apr 2012 13:44:43 -0700
+Kees Cook <keescook@chromium.org> wrote:
 
-sendmsg() is a big hair ball. And yes, I have all sorts of things on
-my wish list that touch sendmsg(). I don't think, I'll get them
-fullfilled anytime soon, though:
+> On Fri, Apr 6, 2012 at 1:23 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Thu, 29 Mar 2012 15:01:53 -0500
+> > Will Drewry <wad@chromium.org> wrote:
+> >
+> >> [This patch depends on luto@mit.edu's no_new_privs patch:
+> >>    https://lkml.org/lkml/2012/1/30/264
+> >>  included in this series for ease of consumption.
+> >> ]
+> >>
+> >> This patch adds support for seccomp mode 2.  Mode 2 introduces the
+> >> ability for unprivileged processes to install system call filtering
+> >> policy expressed in terms of a Berkeley Packet Filter (BPF) program.
+> >> This program will be evaluated in the kernel for each system call
+> >> the task makes and computes a result based on data in the format
+> >> of struct seccomp_data.
+> >> ...
+> >> +static void seccomp_filter_log_failure(int syscall)
+> >> +{
+> >> +     int compat = 0;
+> >> +#ifdef CONFIG_COMPAT
+> >> +     compat = is_compat_task();
+> >> +#endif
+> >
+> > hm, I'm surprised that we don't have a zero-returning implementation of
+> > is_compat_task() when CONFIG_COMPAT=n.  Seems silly.  Blames Arnd.
+> 
+> There is
 
- - sendmsg() does lots of different things: sending on unconnected
-sockets, sending file descriptors, sending unix decriptors, and
-plain-old sending data. These operations have very different security
-properties and implications. It would be awesome if BPF filters could
-filter these different types of operations selectively.
+I can't find it.  The definition in include/linux/compat.h is inside
+#ifdef CONFIG_COMPAT.
 
- - ancillary data is a cool concept in general. We should use it more.
-If I could send a memory mapping from one process to another, that
-would solve so many problems. But I know, I am dreaming; I don't
-expect to see this feature any time soon.
+> >> +static long seccomp_attach_filter(struct sock_fprog *fprog)
+> >> +{
+> >> +     struct seccomp_filter *filter;
+> >> +     unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
+> >> +     unsigned long total_insns = fprog->len;
+> >> +     long ret;
+> >> +
+> >> +     if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
+> >> +             return -EINVAL;
+> >> +
+> >> +     for (filter = current->seccomp.filter; filter; filter = filter->prev)
+> >> +             total_insns += filter->len + 4;  /* include a 4 instr penalty */
+> >
+> > So tasks don't share filters?  We copy them by value at fork?  Do we do
+> > this at vfork() too?
+> 
+> The filter chain is shared (and refcounted).
 
+So what's the locking rule for accessing and modifying that
+singly-linked list?
 
-Markus
+> ...
+> >> +/* put_seccomp_filter - decrements the ref count of tsk->seccomp.filter */
+> >> +void put_seccomp_filter(struct task_struct *tsk)
+> >> +{
+> >> +     struct seccomp_filter *orig = tsk->seccomp.filter;
+> >> +     /* Clean up single-reference branches iteratively. */
+> >> +     while (orig && atomic_dec_and_test(&orig->usage)) {
+> >> +             struct seccomp_filter *freeme = orig;
+> >> +             orig = orig->prev;
+> >> +             kfree(freeme);
+> >> +     }
+> >> +}
+> >
+> > So if one of the filters in the list has an elevated refcount, we bail
+> > out on the remainder of the list.  Seems odd.
+> 
+> This so that every filter in the list doesn't need to have their
+> refcount raised. As long as the counting up matching the counting
+> down, it's fine. This allows for process trees branching the filter
+> list at different times still being safe. IIUC, this code was based on
+> how namespace refcounting is handled. I spent some time proving to
+> myself that it was correctly refcounted a while back. More eyes is
+> better, of course. :)
+
+Please ensure that future readers of this code have a description of
+how it is supposed to work.
