@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab2DFVbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:31:48 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61506 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab2DFVbr (ORCPT
+	id S1753510Ab2DFVci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:32:38 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54687 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab2DFVce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:31:47 -0400
-Message-ID: <4F7F60BF.9070500@suse.cz>
-Date: Fri, 06 Apr 2012 23:31:43 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
+	Fri, 6 Apr 2012 17:32:34 -0400
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: Jiri Slaby <jirislaby@gmail.com>, Keith Packard <keithp@keithp.com>,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        daniel@ffwll.ch, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: i915_driver_irq_handler: irq 42: nobody cared [generic IRQ handling
- broken?]
-References: <4F717CE3.4040206@suse.cz> <4F717D80.9040207@suse.cz> <4F758400.3080907@suse.cz> <1333104359_155028@CP5-2952> <4F75A303.3030409@suse.cz> <1333110296_156038@CP5-2952>
-In-Reply-To: <1333110296_156038@CP5-2952>
-X-Enigmail-Version: 1.4
+In-Reply-To: <CAObL_7E7dHWxKgA7-pSCuUCrxEqY1H55Kxg_sF_OLbdx=pkT4g@mail.gmail.com>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+ <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406124921.5754e941.akpm@linux-foundation.org>
+ <CAE6n16m3v4BghY7GGwHCy2t-7-vmRpyOV6swap9GrMQnmGLroA@mail.gmail.com>
+ <CAObL_7GzsJ+EW94oYG+EzcRqYyH2EPTyFgTgo6zmSz1yxEe-xw@mail.gmail.com>
+ <CAE6n16=5fEBYP37R3XDFWL_8YOk7MH6T_CbuX3sZCpngD=v=rg@mail.gmail.com> <CAObL_7E7dHWxKgA7-pSCuUCrxEqY1H55Kxg_sF_OLbdx=pkT4g@mail.gmail.com>
+From: Markus Gutschke <markus@chromium.org>
+Date: Fri, 6 Apr 2012 14:32:09 -0700
+X-Google-Sender-Auth: GUTbQhE0g3PhnvBac0MwJjykWKQ
+Message-ID: <CAE6n16m+Z242wHZUR07RFJcou4-J=fYtokBb4wXHSXPPad7ffQ@mail.gmail.com>
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org,
+        Andy Lutomirski <luto@amacapital.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2012 02:24 PM, Chris Wilson wrote:
-> On Fri, 30 Mar 2012 14:11:47 +0200, Jiri Slaby <jslaby@suse.cz> wrote:
->> On 03/30/2012 12:45 PM, Chris Wilson wrote:
->>> On Fri, 30 Mar 2012 11:59:28 +0200, Jiri Slaby <jslaby@suse.cz> wrote:
->>>> I don't know what to dump more, because iir is obviously zero too. What
->>>> other sources of interrupts are on the (G33) chip?
->>>
->>> IIR is the master interrupt, with chained secondary interrupt statuses.
->>> If IIR is 0, the interrupt wasn't raised by the GPU.
->>
->> This does not make sense, the handler does something different. Even if
->> IIR is 0, it still takes a look at pipe stats.
-> 
-> That was introduced in 05eff845a28499762075d3a72e238a31f4d2407c to close
-> a race where the pipestat triggered an interrupt after we processed the
-> secondary registers and before reseting the primary.
-> 
-> But the basic premise that we should only enter the interrupt handler
-> with IIR!=0 holds (presuming non-shared interrupt lines such as MSI).
+On Fri, Apr 6, 2012 at 14:15, Andrew Lutomirski <luto@mit.edu> wrote:
+> Agreed, but I'm talking about something totally different: if I can
+> use CLONE_NEWPID, then I can send an unexpected pid with SCM_CREDS.
+> The SCM_CREDS receive code should remap pids.
 
-Ok, this behavior is definitely new. I get several "nobody cared" about
-this interrupt a week. This never used to happen. And something weird
-emerges in /proc/interrupts when this happens:
- 42:    1003292    1212890   PCI-MSI-edge      �s����:0000:00:02.0
-instead of
- 42:    1006715    1218472   PCI-MSI-edge      i915@pci:0000:00:02.0
+Yes, I know. It's broken. And so is the view of the /proc filesystem
+when inside a pid namespace. And things behave funny if you don't set
+up a new "init" process inside of the pid namespace. And I am sure, a
+few other things are broken that we just haven't run into.
 
-It very looks like the generic IRQ handling code is broken. Like it
-frees/corrupts irq_desc and then as well calls random handlers.
+CLONE_NEWPID is tricky. I can understand, if you want to fix it first.
+Looking forward to seeing some patches in the future; please cc me, if
+you want feedback from an actual user of this code.
 
-Suspend/resume cycle helps in this case and "i915@pci:0000:00:02.0" is
-back in /proc/interrupts as can be seen above.
+The SCM_CREDS issue is the most serious one of the above, but it
+doesn't bother me personally, as I would just set up my sandbox policy
+to disallow all of SCM_CREDS (*). But that obviously not a good excuse
+for leaving a kernel bug around.
 
-Running 3.3.0-next-20120326_64+ now.
+Overall, I like both NO_NEW_PRIVS and BPF filters for seccomp though;
+they are a great way to reduce the attack surface of the kernel.
+Kernel bugs become a lot less of a headache, if I have a way to filter
+out the buggy parts of the kernel. It isn't a panacea, but it's a
+great new tool to harden applications.
 
-thanks,
--- 
-js
-suse labs
 
+Markus
+
+
+*) this is currently difficult to filter SCM_CREDS, if we still want
+to allow SCM_RIGHTS. See my earlier complaint about sendmsg().
+Currently, filtering of sendmsg() probably requires the use of a
+helper process.
