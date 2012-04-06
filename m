@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab2DFHb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 03:31:26 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:46277 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752008Ab2DFHbY (ORCPT
+	id S1754201Ab2DFHkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 03:40:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50032 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab2DFHky convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 03:31:24 -0400
-Message-ID: <4F7E9B7A.2080807@st.com>
-Date: Fri, 06 Apr 2012 09:30:02 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Fri, 6 Apr 2012 03:40:54 -0400
 MIME-Version: 1.0
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, deepak.sikri@st.com,
-        shiraz.hashim@st.com, vikas.manocha@st.com
-Subject: Re: linux-next: build failure after merge of the final tree (net-next
- tree related)
-References: <20120405132515.e61465875407a452c1a6f78e@canb.auug.org.au> <20120404.235933.350585244341009071.davem@davemloft.net> <4F7E96B9.9060907@st.com>
-In-Reply-To: <4F7E96B9.9060907@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120404122335.GD17187@pengutronix.de>
+References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
+	<1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
+	<CAMiH66EC7=x0sRYhE3hpEyBemDGSRS19xguQUqKj2kuPw5Tifw@mail.gmail.com>
+	<20120404122335.GD17187@pengutronix.de>
+Date: Fri, 6 Apr 2012 15:40:53 +0800
+Message-ID: <CAMiH66GM0RxP-z=HNkOhhPaaXCZLKPvWFy=_+aGbbGSdrsg+iQ@mail.gmail.com>
+Subject: Re: [PATCH V2 1/3] lib: add support for stmp-style devices
+From: Huang Shijie <shijie8@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Huang Shijie <b32955@freescale.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/6/2012 9:09 AM, Giuseppe CAVALLARO wrote:
-> On 4/5/2012 5:59 AM, David Miller wrote:
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Thu, 5 Apr 2012 13:25:15 +1000
->>
->>> After merging the final tree, today's linux-next build (powerpc
->>> allyesconfig) failed like this:
->>>
->>> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: In function 'stmmac_probe_config_dt':
->>> drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c:53:7: error: 'struct plat_stmmacenet_data' has no member named 'pbl'
->>>
->>> Caused by commit 8327eb65e795 ("stmmac: re-work the internal GMAC DMA
->>> platf parameters").  Clearly I am missing something, because I can't see
->>> how that patch is correct since nothing ever assigns to the new dma_cfg
->>> pointer but it is dereferenced.
->>>
->>> I have added this patch to make it build today, but it is obviously not
->>> correct.
->>
->> Sorry Stephen.
->>
->> Giuseppe don't submit patches to me that don't even compile.
->>
->> Please submit a proper fix to me for this _now_.
-> 
-> Sorry Dave!
-> I don't know what happened (I believed to test all).
-> I'm sending you the patches soon!!!
+Hi Wolfram:
 
-Please Stephen,
-can you test it on your kernel. I didn't build when CONFIG_OF is enable.
-I tested on ARM/SH/x86 but never with CONFIG_OF on.
-The problem was due to the hard-coded values adding with devicetree support.
+On Wed, Apr 4, 2012 at 8:23 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> Hi,
+>
+>> Could you provide an API such as gpmi_reset_block()?
+>> It will much helpful to me.
+>
+> Ah, that's what you meant in the other thread. Well, this can be added
+> later. My suggestion
+>
+> 1) get this mainline to remove mach dependencies
+> 2) convert the drivers
+> 3) do proper timeout mechanisms
+> 4) add features
+>
+> where 2-4 can probably happen more or less simultaneously.
+I wish you could send out the new patch as soon as possible. :)
 
-Sorry for this problem, next time I'll build also on OF.
+Best Regards
+Huang Shijie
 
-I had also done a grep in all the arch to verify the ARCH that used the
-pbl/fixed_burst/burst_len fields :-(. These have been moved in a
-separate structure.
 
-Let me know if the patch is ok.
-Peppe
 
-> 
-> Peppe
-> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe netdev" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
+>
+> Regards,
+>
+>   Wolfram
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.10 (GNU/Linux)
+>
+> iEYEARECAAYFAk98PUcACgkQD27XaX1/VRvkOQCdGqBQAgDeW5xpykbKe4LTlqXA
+> twIAnA+IivcJwTQsnrPSjLJWTNlFAULt
+> =01hN
+> -----END PGP SIGNATURE-----
+>
