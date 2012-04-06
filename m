@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab2DFO7X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 10:59:23 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39686
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754840Ab2DFO7V (ORCPT
+	id S1757387Ab2DFPLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 11:11:30 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:52507 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab2DFPL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 10:59:21 -0400
-Date: Fri, 6 Apr 2012 10:59:15 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-arch@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH 25/40] parisc: Use set_current_blocked() and
- block_sigmask()
-Message-ID: <20120406145915.GC15318@bombadil.infradead.org>
-References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
- <1329219673-28711-26-git-send-email-matt@console-pimps.org>
+	Fri, 6 Apr 2012 11:11:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329219673-28711-26-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJL_eks9Z62pRsdFH_xE5=RSX7QLqKFtCBifUzH5F2vkhYuGLA@mail.gmail.com>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+	<CAJL_eks9Z62pRsdFH_xE5=RSX7QLqKFtCBifUzH5F2vkhYuGLA@mail.gmail.com>
+Date: Fri, 6 Apr 2012 17:11:29 +0200
+Message-ID: <CAFTL4hyr+Oy4MEityw6PY3u11MhziSFLg=OB5yh6XFJwWD3QAw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 00/15] tools: Unify perf and trace-cmd trace event
+ format parsing v2
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Sharp <dhsharp@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Michael Rubin <mrubin@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 11:40:58AM +0000, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> As described in e6fa16ab ("signal: sigprocmask() should do
-> retarget_shared_pending()") the modification of current->blocked is
-> incorrect as we need to check whether the signal we're about to block
-> is pending in the shared queue.
-> 
-> Also, use the new helper function introduced in commit 5e6292c0f28f
-> ("signal: add block_sigmask() for adding sigmask to current->blocked")
-> which centralises the code for updating current->blocked after
-> successfully delivering a signal and reduces the amount of duplicate
-> code across architectures. In the past some architectures got this
-> code wrong, so using this helper function should stop that from
-> happening again.
-> 
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Kyle McMartin <kyle@mcmartin.ca>
-> Cc: Helge Deller <deller@gmx.de>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: linux-parisc@vger.kernel.org
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+2012/4/6 David Sharp <dhsharp@google.com>:
+> On Thu, Apr 5, 2012 at 3:47 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>
+>> Hi,
+>>
+>> So this is a new iteration of the libtracevent library, basically a
+>> rebase of https://lkml.org/lkml/2011/8/5/299 against latest progresses
+>> (latest tip/perf/core + tip/perf/urgent).
+>>
+>> This library unifies the trace events parsing code between perf and
+>> trace-cmd. I initially took this parsing code from trace-cmd to make
+>> perf able to display trace-events and play with their contents.
+>
+> Hi Frederic. Thanks for taking this on.
+>
+> Could you consider adding these patches to this set?
+> https://lkml.org/lkml/2011/3/21/335
 
-Nice cleanups Matt!
+Oh sure! I'll catch up with the commits I missed in trace-cmd.
 
-Acked-by: Kyle McMartin <kyle@mcmartin.ca>
+Thanks!
