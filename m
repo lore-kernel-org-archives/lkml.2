@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758368Ab2DFXh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 19:37:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63567 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab2DFXh6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 19:37:58 -0400
-Date: Fri, 6 Apr 2012 16:37:55 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT pull] timer updates for 3.4-rc
-In-Reply-To: <alpine.LFD.2.02.1204070131010.2542@ionos>
-Message-ID: <alpine.DEB.2.00.1204061636260.32765@chino.kir.corp.google.com>
-References: <alpine.LFD.2.02.1204070131010.2542@ionos>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758398Ab2DFXih (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 19:38:37 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45907 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848Ab2DFXig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 19:38:36 -0400
+Message-ID: <1333755470.3040.38.camel@pasglop>
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Sat, 07 Apr 2012 09:37:50 +1000
+In-Reply-To: <m24nsx9iz1.fsf@igel.home>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
+	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
+	 <20120402202848.1EB833E02A7@localhost>
+	 <20120402215524.GM24211@n2100.arm.linux.org.uk>
+	 <1333406005.30734.61.camel@pasglop>
+	 <20120402225223.GN24211@n2100.arm.linux.org.uk>
+	 <1333409927.30734.62.camel@pasglop> <m24nsx9iz1.fsf@igel.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 Apr 2012, Thomas Gleixner wrote:
+On Fri, 2012-04-06 at 13:51 +0200, Andreas Schwab wrote:
+> Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
+> 
+> > Ok. Doesn't matter anyway, this shouldn't be the problem in this
+> > specific case. IE. we shouldn't be setting that interrupt to NONE.
+> 
+> After removinge the call to irq_set_irq_type in mpic_host_map the irq
+> problem disappears.
+> 
+> Instead of the irq_set_irq_type(,NONE) calls from mpic_host_map I see
+> corresponding irq_set_irq_type(,LEVEL_LOW) calls now.
 
-> diff --git a/kernel/itimer.c b/kernel/itimer.c
-> index 22000c3..c70369a 100644
-> --- a/kernel/itimer.c
-> +++ b/kernel/itimer.c
-> @@ -284,8 +284,11 @@ SYSCALL_DEFINE3(setitimer, int, which, struct itimerval __user *, value,
->  	if (value) {
->  		if(copy_from_user(&set_buffer, value, sizeof(set_buffer)))
->  			return -EFAULT;
-> -	} else
-> +	} else {
->  		memset((char *) &set_buffer, 0, sizeof(set_buffer));
-> +		WARN_ONCE(1, "setitimer: new_value pointer is NULL."
-> +			  " Misfeature support will be removed\n");
-> +	}
->  
->  	error = do_setitimer(which, &set_buffer, ovalue ? &get_buffer : NULL);
->  	if (error || !ovalue)
+It's arguable that this irq_set_irq_type(,NONE) shouln't be there but
+still ... it's been around for ever and things worked :-) So something
+-else- is causing the problem and I'd like to understand what exactly.
 
-When I tried doing this for the deprecated /proc/pid/oom_adj there was a 
-complaint that WARN_ONCE() screws up log parsing scripts that think there 
-is a kernel issue so I had to change it to printk_once() and include 
-get_task_comm(current) and current->pid.  See
-http://lkml.indiana.edu/hypermail/linux/kernel/1108.0/00446.html
+(When I say arguable, I do mean it. There are some reasons to keep it
+even if we agree that it's not "setting a default" but marking the
+interrupt as somewhat disabled as Russell wants, that's fine with me, an
+MPIC external interrupt should -always- have a proper type set before
+being used).
+
+First we need to fix that business with NR_IRQS/nr_irqs everywhere, then
+if the problem persists, check why we aren't calling the proper
+irq_set_irq_type() after the mapping is established (we should be).
+
+Cheers,
+Ben.
+
+
