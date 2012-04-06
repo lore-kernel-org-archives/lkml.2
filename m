@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132Ab2DFVTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 17:19:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37620 "EHLO
+	id S1758102Ab2DFVY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 17:24:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab2DFVTj (ORCPT
+	with ESMTP id S1753510Ab2DFVY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 17:19:39 -0400
-Date: Fri, 6 Apr 2012 14:19:36 -0700
+	Fri, 6 Apr 2012 17:24:26 -0400
+Date: Fri, 6 Apr 2012 14:24:23 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Will Drewry <wad@chromium.org>
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
@@ -21,11 +21,11 @@ Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
         markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
         jmorris@namei.org
-Subject: Re: [PATCH v17 10/15] seccomp: add SECCOMP_RET_ERRNO
-Message-Id: <20120406141936.25d68860.akpm@linux-foundation.org>
-In-Reply-To: <1333051320-30872-11-git-send-email-wad@chromium.org>
+Subject: Re: [PATCH v17 13/15] ptrace,seccomp: Add PTRACE_SECCOMP support
+Message-Id: <20120406142423.b2cb2f61.akpm@linux-foundation.org>
+In-Reply-To: <1333051320-30872-14-git-send-email-wad@chromium.org>
 References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	<1333051320-30872-11-git-send-email-wad@chromium.org>
+	<1333051320-30872-14-git-send-email-wad@chromium.org>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -34,71 +34,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Mar 2012 15:01:55 -0500
+On Thu, 29 Mar 2012 15:01:58 -0500
 Will Drewry <wad@chromium.org> wrote:
 
-> This change adds the SECCOMP_RET_ERRNO as a valid return value from a
-> seccomp filter.  Additionally, it makes the first use of the lower
-> 16-bits for storing a filter-supplied errno.  16-bits is more than
-> enough for the errno-base.h calls.
+> This change adds support for a new ptrace option, PTRACE_O_TRACESECCOMP,
+> and a new return value for seccomp BPF programs, SECCOMP_RET_TRACE.
 > 
-> Returning errors instead of immediately terminating processes that
-> violate seccomp policy allow for broader use of this functionality
-> for kernel attack surface reduction.  For example, a linux container
-> could maintain a whitelist of pre-existing system calls but drop
-> all new ones with errnos.  This would keep a logically static attack
-> surface while providing errnos that may allow for graceful failure
-> without the downside of do_exit() on a bad call.
+> When a tracer specifies the PTRACE_O_TRACESECCOMP ptrace option, the
+> tracer will be notified, via PTRACE_EVENT_SECCOMP, for any syscall that
+> results in a BPF program returning SECCOMP_RET_TRACE.  The 16-bit
+> SECCOMP_RET_DATA mask of the BPF program return value will be passed as
+> the ptrace_message and may be retrieved using PTRACE_GETEVENTMSG.
+> 
+> If the subordinate process is not using seccomp filter, then no
+> system call notifications will occur even if the option is specified.
+> 
+> If there is no tracer with PTRACE_O_TRACESECCOMP when SECCOMP_RET_TRACE
+> is returned, the system call will not be executed and an -ENOSYS errno
+> will be returned to userspace.
+> 
+> This change adds a dependency on the system call slow path.  Any future
+> efforts to use the system call fast path for seccomp filter will need to
+> address this restriction.
 > 
 >
 > ...
 >
-> @@ -64,11 +65,17 @@ struct seccomp {
->  	struct seccomp_filter *filter;
->  };
->  
-> -extern void __secure_computing(int);
-> -static inline void secure_computing(int this_syscall)
-> +/*
-> + * Direct callers to __secure_computing should be updated as
-> + * CONFIG_HAVE_ARCH_SECCOMP_FILTER propagates.
+> @@ -410,6 +411,15 @@ int __secure_computing_int(int this_syscall)
+>  			/* Let the filter pass back 16 bits of data. */
+>  			seccomp_send_sigsys(this_syscall, data);
+>  			goto skip;
+> +		case SECCOMP_RET_TRACE:
+> +			/* Skip these calls if there is no tracer. */
+> +			if (!ptrace_event_enabled(current, PTRACE_EVENT_SECCOMP))
+> +				goto skip;
+> +			/* Allow the BPF to provide the event message */
+> +			ptrace_event(PTRACE_EVENT_SECCOMP, data);
+> +			if (fatal_signal_pending(current))
+> +				break;
 
-Are there any such callers?  There's one I see in arm, but it's called
-from assembly code.
+I don't have all the patches applied here so the context is missing. 
+Perhaps tht would help me understand what this fatal_signal_pending()
+test is doing here.  But an explanatory comment wouldn't hurt.
 
-> + */
-> +extern void __secure_computing(int) __deprecated;
-> +extern int __secure_computing_int(int);
-> +static inline int secure_computing(int this_syscall)
->  {
->  	if (unlikely(test_thread_flag(TIF_SECCOMP)))
-> -		__secure_computing(this_syscall);
-> +		return  __secure_computing_int(this_syscall);
-> +	return 0;
->  }
->  
-> ...
->
->  void __secure_computing(int this_syscall)
->  {
-> +	/* Filter calls should never use this function. */
-> +	BUG_ON(current->seccomp.mode == SECCOMP_MODE_FILTER);
-> +	__secure_computing_int(this_syscall);
-> +}
-> +
-> +int __secure_computing_int(int this_syscall)
+What *is* it here for, anyway?
 
-What the heck does "_int" mean here?  I read it as "integer" but
-perhaps it's shorthand for "internal".  Give us a better name, please. 
-Or a code comment.
-
-> +{
->  	int mode = current->seccomp.mode;
->  	int exit_sig = 0;
->  	int *syscall;
-> +	u32 ret = SECCOMP_RET_KILL;
-> +	int data;
->  
->  	switch (mode) {
->  	case SECCOMP_MODE_STRICT:
+> +			return 0;
+>  		case SECCOMP_RET_ALLOW:
+>  			return 0;
+>  		case SECCOMP_RET_KILL:
 
