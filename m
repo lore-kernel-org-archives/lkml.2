@@ -1,115 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab2DFAAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Apr 2012 20:00:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59222 "EHLO mga03.intel.com"
+	id S1756851Ab2DFAAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Apr 2012 20:00:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60145 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756529Ab2DEX7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Apr 2012 19:59:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85890057"
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Pallipadi Venkatesh <venki@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: [v3 VM_PAT PATCH 1/3] x86, pat: remove the dependency on 'vm_pgoff' in track/untrack pfn vma routines
-Date: Thu,  5 Apr 2012 17:01:33 -0700
-Message-Id: <1333670495-7016-2-git-send-email-suresh.b.siddha@intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1333670495-7016-1-git-send-email-suresh.b.siddha@intel.com>
-References: <4F7D8860.3040008@openvz.org>
- <1333670495-7016-1-git-send-email-suresh.b.siddha@intel.com>
+	id S1756706Ab2DFAAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Apr 2012 20:00:25 -0400
+Date: Thu, 5 Apr 2012 17:00:23 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 5/5] fbdev: s/#if CONFIG/#ifdef CONFIG/
+In-Reply-To: <4F417B3F.2050307@gmx.de>
+Message-ID: <alpine.LNX.2.00.1204051700010.9041@pobox.suse.cz>
+References: <1329664319-3128-1-git-send-email-geert@linux-m68k.org> <1329664319-3128-5-git-send-email-geert@linux-m68k.org> <4F417B3F.2050307@gmx.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'pfn' argument for track_pfn_vma_new() can be used for reserving the attribute
-for the pfn range. No need to depend on 'vm_pgoff'
+On Sun, 19 Feb 2012, Florian Tobias Schandinat wrote:
 
-Similarly, untrack_pfn_vma() can depend on the 'pfn' argument if it
-is non-zero or can use follow_phys() to get the starting value of the pfn
-range.
+> On 02/19/2012 03:11 PM, Geert Uytterhoeven wrote:
+> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> > Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> 
+> Acked-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> (I assume you want that to go mainline via Jiri's tree)
 
-Also the non zero 'size' argument can be used instead of recomputing
-it from vma.
+As this doesn't seem to be in linux-next through any other tree as of 
+today, I have picked it up.
 
-This cleanup also prepares the ground for the track/untrack pfn vma routines
-to take over the ownership of setting PAT specific vm_flag in the 'vma'.
+Thanks,
 
--v2: fixed the first argument for reserve_pfn_range()
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- arch/x86/mm/pat.c |   30 +++++++++++++++++-------------
- 1 files changed, 17 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index f6ff57b..24c3f95 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -693,14 +693,10 @@ int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
- 			unsigned long pfn, unsigned long size)
- {
- 	unsigned long flags;
--	resource_size_t paddr;
--	unsigned long vma_size = vma->vm_end - vma->vm_start;
- 
--	if (is_linear_pfn_mapping(vma)) {
--		/* reserve the whole chunk starting from vm_pgoff */
--		paddr = (resource_size_t)vma->vm_pgoff << PAGE_SHIFT;
--		return reserve_pfn_range(paddr, vma_size, prot, 0);
--	}
-+	/* reserve the whole chunk starting from pfn */
-+	if (is_linear_pfn_mapping(vma))
-+		return reserve_pfn_range(pfn << PAGE_SHIFT, size, prot, 0);
- 
- 	if (!pat_enabled)
- 		return 0;
-@@ -716,20 +712,28 @@ int track_pfn_vma_new(struct vm_area_struct *vma, pgprot_t *prot,
- /*
-  * untrack_pfn_vma is called while unmapping a pfnmap for a region.
-  * untrack can be called for a specific region indicated by pfn and size or
-- * can be for the entire vma (in which case size can be zero).
-+ * can be for the entire vma (in which case pfn, size are zero).
-  */
- void untrack_pfn_vma(struct vm_area_struct *vma, unsigned long pfn,
- 			unsigned long size)
- {
- 	resource_size_t paddr;
--	unsigned long vma_size = vma->vm_end - vma->vm_start;
-+	unsigned long prot;
- 
--	if (is_linear_pfn_mapping(vma)) {
--		/* free the whole chunk starting from vm_pgoff */
--		paddr = (resource_size_t)vma->vm_pgoff << PAGE_SHIFT;
--		free_pfn_range(paddr, vma_size);
-+	if (!is_linear_pfn_mapping(vma))
- 		return;
-+
-+	/* free the chunk starting from pfn or the whole chunk */
-+	paddr = (resource_size_t)pfn << PAGE_SHIFT;
-+	if (!paddr && !size) {
-+		if (follow_phys(vma, vma->vm_start, 0, &prot, &paddr)) {
-+			WARN_ON_ONCE(1);
-+			return;
-+		}
-+
-+		size = vma->vm_end - vma->vm_start;
- 	}
-+	free_pfn_range(paddr, size);
- }
- 
- pgprot_t pgprot_writecombine(pgprot_t prot)
 -- 
-1.7.6.5
-
+Jiri Kosina
+SUSE Labs
