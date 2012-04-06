@@ -1,335 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab2DFWDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 18:03:05 -0400
-Received: from uhura.skim.hs-owl.de ([193.174.118.81]:47207 "EHLO
-	uhura.skim.hs-owl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758166Ab2DFWDC (ORCPT
+	id S932499Ab2DFWDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 18:03:33 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:18792 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758166Ab2DFWDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 18:03:02 -0400
-Message-ID: <4F7F6495.4070507@googlemail.com>
-Date: Fri, 6 Apr 2012 23:48:05 +0200
-From: Jan Seiffert <kaffeemonster@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Firefox/11.0 SeaMonkey/2.8
+	Fri, 6 Apr 2012 18:03:32 -0400
+Message-ID: <4F7F682C.9050806@micron.com>
+Date: Fri, 6 Apr 2012 15:03:24 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: <netdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mircea Gherzan <mgherzan@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [REGRESSION][PATCH v2] bpf jit: Let the arm jit handle negative memory
- references
-References: <4F75CA89.4010709@googlemail.com> <4F7F3C7D.1040007@googlemail.com>
-In-Reply-To: <4F7F3C7D.1040007@googlemail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="UTF-8"
+To: Greg KH <greg@kroah.com>
+CC: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 2/5] mtip32xx: Add new sysfs entry 'status' and fix restart
+ port
+References: <4F7E07DC.50909@micron.com> <20120406011037.GA25892@kroah.com> <4F7F322B.6060805@micron.com> <4F7F615B.80305@micron.com> <20120406214426.GA12772@kroah.com>
+In-Reply-To: <20120406214426.GA12772@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Skim-SendBy: exchange.hs-owl.de on Sat, 07 Apr 2012 00:02:54 +0200
-X-Skim-SendBy: exchange.hs-owl.de on Sat, 07 Apr 2012 00:02:55 +0200
-X-SA-Exim-Connect-IP: 193.174.118.178
-X-SA-Exim-Mail-From: kaffeemonster@googlemail.com
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.000.1038-18810.005
+X-TM-AS-Result: No--25.431100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arm jit has the same problem as the other two jits.
-It only tests for negative absolute memory references, and if it sees
-one bails out to let the interpreter handle the filter program.
+On 4/6/2012 2:44 PM, Greg KH wrote:
 
-But this fails if the X register contains a negative memory reference
-and is used for an indirect load.
-This is only caught at runtime, where the filter will always drop
-the packet.
-Filter which work fine with the interpreter do not work with the jit.
-
-So this patch tries to fix it for the arm jit.
-
-First we add the prototype of bpf_internal_load_pointer_neg_helper to
-filter.h, since the arm jit has no assembler component, instead it has
-to be used from C.
-
-Then the helper functions are prepared to either handle known positive
-offsets, known negative offsets, or any offset and test at runtime.
-
-Finally the compiler is modified to emit calls to the right function,
-depending if either the offset is known, or not.
-
-This fixes the case of a negative X register and allows to lift
-the restriction that bpf programs with negative offsets can't
-be jited.
-
-Signed-off-by: Jan Seiffert <kaffeemonster@googlemail.com>
----
-Sorry for sending a v2 so fast, but i immidiatly found an major error...
-v1 -> v2:
- * when checking if K is greater then 0 make sure to compare signed
-
-remarks from v1 still apply.
-
- arch/arm/net/bpf_jit_32.c |  149 ++++++++++++++++++++++++++++++++-------------
- include/linux/filter.h    |    6 ++
- net/core/filter.c         |    4 +
- 3 files changed, 117 insertions(+), 42 deletions(-)
-
-diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-index 62135849..19d60af 100644
---- a/arch/arm/net/bpf_jit_32.c
-+++ b/arch/arm/net/bpf_jit_32.c
-@@ -18,6 +18,7 @@
- #include <linux/slab.h>
- #include <asm/cacheflush.h>
- #include <asm/hwcap.h>
-+#include <asm/unaligned.h>
- 
- #include "bpf_jit_32.h"
- 
-@@ -71,7 +72,7 @@ struct jit_ctx {
- 
- int bpf_jit_enable __read_mostly;
- 
--static u64 jit_get_skb_b(struct sk_buff *skb, unsigned offset)
-+static u64 jit_get_skb_b_pos(struct sk_buff *skb, unsigned offset)
- {
- 	u8 ret;
- 	int err;
-@@ -81,7 +82,7 @@ static u64 jit_get_skb_b(struct sk_buff *skb, unsigned offset)
- 	return (u64)err << 32 | ret;
- }
- 
--static u64 jit_get_skb_h(struct sk_buff *skb, unsigned offset)
-+static u64 jit_get_skb_h_pos(struct sk_buff *skb, unsigned offset)
- {
- 	u16 ret;
- 	int err;
-@@ -91,7 +92,7 @@ static u64 jit_get_skb_h(struct sk_buff *skb, unsigned offset)
- 	return (u64)err << 32 | ntohs(ret);
- }
- 
--static u64 jit_get_skb_w(struct sk_buff *skb, unsigned offset)
-+static u64 jit_get_skb_w_pos(struct sk_buff *skb, unsigned offset)
- {
- 	u32 ret;
- 	int err;
-@@ -101,6 +102,60 @@ static u64 jit_get_skb_w(struct sk_buff *skb, unsigned offset)
- 	return (u64)err << 32 | ntohl(ret);
- }
- 
-+static u64 jit_get_skb_b_neg(struct sk_buff *skb, unsigned offset)
-+{
-+	u8 *ptr;
-+
-+	ptr = bpf_internal_load_pointer_neg_helper(skb, offset, 1);
-+	if (!ptr)
-+		return (u64)1 << 32;
-+	return *ptr;
-+}
-+
-+static u64 jit_get_skb_h_neg(struct sk_buff *skb, unsigned offset)
-+{
-+	u16 *ptr;
-+
-+	ptr = bpf_internal_load_pointer_neg_helper(skb, offset, 2);
-+	if (!ptr)
-+		return (u64)1 << 32;
-+	return get_unaligned_be16(ptr);
-+}
-+
-+static u64 jit_get_skb_w_neg(struct sk_buff *skb, unsigned offset)
-+{
-+	u32 *ptr;
-+
-+	ptr = bpf_internal_load_pointer_neg_helper(skb, offset, 4);
-+	if (!ptr)
-+		return (u64)1 << 32;
-+	return get_unaligned_be32(ptr);
-+}
-+
-+static u64 jit_get_skb_b_any(struct sk_buff *skb, unsigned offset)
-+{
-+	if ((int)offset >= 0)
-+		return jit_get_skb_b_pos(skb, offset);
-+	else
-+		return jit_get_skb_b_neg(skb, offset);
-+}
-+
-+static u64 jit_get_skb_h_any(struct sk_buff *skb, unsigned offset)
-+{
-+	if ((int)offset >= 0)
-+		return jit_get_skb_h_pos(skb, offset);
-+	else
-+		return jit_get_skb_h_neg(skb, offset);
-+}
-+
-+static u64 jit_get_skb_w_any(struct sk_buff *skb, unsigned offset)
-+{
-+	if ((int)offset >= 0)
-+		return jit_get_skb_w_pos(skb, offset);
-+	else
-+		return jit_get_skb_w_neg(skb, offset);
-+}
-+
- /*
-  * Wrapper that handles both OABI and EABI and assures Thumb2 interworking
-  * (where the assembly routines like __aeabi_uidiv could cause problems).
-@@ -458,7 +513,10 @@ static inline void update_on_xread(struct jit_ctx *ctx)
- 
- static int build_body(struct jit_ctx *ctx)
- {
--	void *load_func[] = {jit_get_skb_b, jit_get_skb_h, jit_get_skb_w};
-+	void *load_func_any[] = {jit_get_skb_b_any, jit_get_skb_h_any, jit_get_skb_w_any};
-+	void *load_func_pos[] = {jit_get_skb_b_pos, jit_get_skb_h_pos, jit_get_skb_w_pos};
-+	void *load_func_neg[] = {jit_get_skb_b_neg, jit_get_skb_h_neg, jit_get_skb_w_neg};
-+	void **load_func;
- 	const struct sk_filter *prog = ctx->skf;
- 	const struct sock_filter *inst;
- 	unsigned i, load_order, off, condt;
-@@ -498,36 +556,38 @@ static int build_body(struct jit_ctx *ctx)
- 		case BPF_S_LD_B_ABS:
- 			load_order = 0;
- load:
--			/* the interpreter will deal with the negative K */
--			if ((int)k < 0)
--				return -ENOTSUPP;
- 			emit_mov_i(r_off, k, ctx);
--load_common:
--			ctx->seen |= SEEN_DATA | SEEN_CALL;
--
--			if (load_order > 0) {
--				emit(ARM_SUB_I(r_scratch, r_skb_hl,
--					       1 << load_order), ctx);
--				emit(ARM_CMP_R(r_scratch, r_off), ctx);
--				condt = ARM_COND_HS;
--			} else {
--				emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
--				condt = ARM_COND_HI;
--			}
- 
--			_emit(condt, ARM_ADD_R(r_scratch, r_off, r_skb_data),
--			      ctx);
--
--			if (load_order == 0)
--				_emit(condt, ARM_LDRB_I(r_A, r_scratch, 0),
-+			/* deal with negative K */
-+			if ((int)k >= 0) {
-+				load_func = load_func_pos;
-+				if (load_order > 0) {
-+					emit(ARM_SUB_I(r_scratch, r_skb_hl,
-+						       1 << load_order), ctx);
-+					emit(ARM_CMP_R(r_scratch, r_off), ctx);
-+					condt = ARM_COND_HS;
-+				} else {
-+					emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
-+					condt = ARM_COND_HI;
-+				}
-+
-+				_emit(condt, ARM_ADD_R(r_scratch, r_off, r_skb_data),
- 				      ctx);
--			else if (load_order == 1)
--				emit_load_be16(condt, r_A, r_scratch, ctx);
--			else if (load_order == 2)
--				emit_load_be32(condt, r_A, r_scratch, ctx);
- 
--			_emit(condt, ARM_B(b_imm(i + 1, ctx)), ctx);
-+				if (load_order == 0)
-+					_emit(condt, ARM_LDRB_I(r_A, r_scratch, 0),
-+					      ctx);
-+				else if (load_order == 1)
-+					emit_load_be16(condt, r_A, r_scratch, ctx);
-+				else if (load_order == 2)
-+					emit_load_be32(condt, r_A, r_scratch, ctx);
- 
-+				_emit(condt, ARM_B(b_imm(i + 1, ctx)), ctx);
-+			} else {
-+				load_func = load_func_neg;
-+			}
-+load_common:
-+			ctx->seen |= SEEN_DATA | SEEN_CALL;
- 			/* the slowpath */
- 			emit_mov_i(ARM_R3, (u32)load_func[load_order], ctx);
- 			emit(ARM_MOV_R(ARM_R0, r_skb), ctx);
-@@ -547,7 +607,9 @@ load_common:
- 		case BPF_S_LD_B_IND:
- 			load_order = 0;
- load_ind:
-+			load_func = load_func_any;
- 			OP_IMM3(ARM_ADD, r_off, r_X, k, ctx);
-+			load_func = load_func_any;
- 			goto load_common;
- 		case BPF_S_LDX_IMM:
- 			ctx->seen |= SEEN_X;
-@@ -565,25 +627,28 @@ load_ind:
- 		case BPF_S_LDX_B_MSH:
- 			/* x = ((*(frame + k)) & 0xf) << 2; */
- 			ctx->seen |= SEEN_X | SEEN_DATA | SEEN_CALL;
--			/* the interpreter should deal with the negative K */
--			if (k < 0)
--				return -1;
- 			/* offset in r1: we might have to take the slow path */
- 			emit_mov_i(r_off, k, ctx);
--			emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
-+			/* deal with negative K */
-+			if ((int)k >= 0) {
-+				load_func = load_func_pos;
-+				emit(ARM_CMP_R(r_skb_hl, r_off), ctx);
- 
--			/* load in r0: common with the slowpath */
--			_emit(ARM_COND_HI, ARM_LDRB_R(ARM_R0, r_skb_data,
--						      ARM_R1), ctx);
--			/*
--			 * emit_mov_i() might generate one or two instructions,
--			 * the same holds for emit_blx_r()
--			 */
--			_emit(ARM_COND_HI, ARM_B(b_imm(i + 1, ctx) - 2), ctx);
-+				/* load in r0: common with the slowpath */
-+				_emit(ARM_COND_HI, ARM_LDRB_R(ARM_R0, r_skb_data,
-+							      ARM_R1), ctx);
-+				/*
-+				 * emit_mov_i() might generate one or two instructions,
-+				 * the same holds for emit_blx_r()
-+				 */
-+				_emit(ARM_COND_HI, ARM_B(b_imm(i + 1, ctx) - 2), ctx);
-+			} else {
-+				load_func = load_func_neg;
-+			}
- 
- 			emit(ARM_MOV_R(ARM_R0, r_skb), ctx);
- 			/* r_off is r1 */
--			emit_mov_i(ARM_R3, (u32)jit_get_skb_b, ctx);
-+			emit_mov_i(ARM_R3, (u32)load_func[0], ctx);
- 			emit_blx_r(ARM_R3, ctx);
- 			/* check the return value of skb_copy_bits */
- 			emit(ARM_CMP_I(ARM_R1, 0), ctx);
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index 8eeb205..78cd56d 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -161,6 +161,12 @@ extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
- extern void bpf_jit_compile(struct sk_filter *fp);
- extern void bpf_jit_free(struct sk_filter *fp);
- #define SK_RUN_FILTER(FILTER, SKB) (*FILTER->bpf_func)(SKB, FILTER->insns)
-+/*
-+ * Only Exported for the bpf jit load helper.
-+ * Do not call from anywhere else!
-+ */
-+extern void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb,
-+		int k, unsigned int size);
- #else
- static inline void bpf_jit_compile(struct sk_filter *fp)
- {
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 6f755cc..9cbaecb 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -42,6 +42,10 @@
- /* No hurry in this branch
-  *
-  * Exported for the bpf jit load helper.
-+ *
-+ * CAUTION ! :
-+ * If its prototype is ever changed, check arch/{*}/net/{*}.S files,
-+ * since it is called from BPF assembly code.
-  */
- void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
- {
+> On Fri, Apr 06, 2012 at 02:34:19PM -0700, Asai Thambi S P wrote:
+>> On 4/6/2012 11:12 AM, Asai Thambi S P wrote:
+>>
+>>> On 4/5/2012 6:10 PM, Greg KH wrote:
+>>>
+>>>> On Thu, Apr 05, 2012 at 02:00:12PM -0700, Asai Thambi S P wrote:
+>>>>>
+>>>>> * Add support for detecting the following device status
+>>>>> 	- write protect
+>>>>> 	- over temp (thermal shutdown)
+>>>>> * New sysfs entry 'status' created for this device,  possible values - online, write_protect, thermal_shutdown
+>>>>
+>>>> All new (and existing) sysfs files must be documented in
+>>>> Documentation/ABI/ please do so for these new ones when you add them to
+>>>> the kernel.
+>>>
+>>>
+>>> I was not aware of this. Thanks. I will a add new file for mtip32xx driver.
+>>>
+>>
+>>
+>> Greg,
+>>
+>> The sysfs entry for the disk is 
+>> /sys/block/rssda -> ../devices/pci0000:00/0000:00:01.0/0000:01:00.0/block/rssda
+>>
+>> Should I use /sys/block/<disk>/<entry> or
+>> /sys/devices/.../block/<disk>/entry> in the doc file?
+> 
+> What do the existing api files show for block devices?
+> 
 
 
+I was looking into sysfs-driver-* files to create sysfs-driver-mtip32xx.
+These files have paths like /sys/bus/pci/*, /sys/devices/*,
+/sys/class/bluetooth/*, etc.
+
+There are sysfs-block-dm and sysfs-block-zram files with
+/sys/block/dm-<num>/dm/* and /sys/block/zram<id>/*. If I have to follow
+these, then the file would be sysfs-driver-rssd with /sys/block/<disk>/*.
+
+Let me know.
+
+--
+Regards,
+Asai Thambi
