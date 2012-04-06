@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab2DGBv7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 21:51:59 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34821 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244Ab2DGBvv (ORCPT
+	id S1757823Ab2DGBwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 21:52:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42293 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab2DGBwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 21:51:51 -0400
+	Fri, 6 Apr 2012 21:52:02 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
-To: David Daney <ddaney.cavm@gmail.com>, Rob Herring <robherring2@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <4F7F1BDD.4070205@gmail.com>
-References: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com> <4F7E64E4.3080509@gmail.com> <4F7F1BDD.4070205@gmail.com>
-Date: Fri, 06 Apr 2012 16:56:07 -0700
-Message-Id: <20120406235607.DCCD53E15E9@localhost>
+Subject: Re: [PATCH] gpio: Update GPIO_PCA953X Kconfig entry to include more supported devices
+To: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+In-Reply-To: <1333703506.3957.1.camel@phoenix>
+References: <1333703506.3957.1.camel@phoenix>
+Date: Fri, 06 Apr 2012 15:43:53 -0700
+Message-Id: <20120406224353.A1C8A3E0D65@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Apr 2012 09:37:49 -0700, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 04/05/2012 08:37 PM, Rob Herring wrote:
-> > On 04/05/2012 06:52 PM, David Daney wrote:
-> >> From: David Daney<david.daney@cavium.com>
-> >> @@ -380,14 +381,14 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
-> >>   	hint = hwirq % irq_virq_count;
-> >>   	if (hint == 0)
-> >>   		hint++;
-> >> -	virq = irq_alloc_desc_from(hint, 0);
-> >
-> > You are not looking at mainline. hint was removed in later versions, and
-> > the referenced commit ids don't exist.
+On Fri, 06 Apr 2012 17:11:46 +0800, Axel Lin <axel.lin@gmail.com> wrote:
+> Update the supported devices for gpio-pca953x driver.
 > 
-> Please look at Linus' tree before making incorrect statements about 
-> whether or not code exists on the 'mainline'
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Rob is indeed mistaken here, but please let's keep things civil.  I
-did write the patches to remove the hint, but I avoided merging them
-because I think they are risky.  I wanted to get the core irq_domain
-changes in first.  The removal of hint will be applied during the next
-merge window.
-
-I will take your bug fix and get it pushed up to Linus soon.
+Applied, thanks
 
 g.
+
+> ---
+>  drivers/gpio/Kconfig |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index e03653d..b35ac52 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -243,7 +243,7 @@ config GPIO_MC9S08DZ60
+>  	  Select this to enable the MC9S08DZ60 GPIO driver
+>  
+>  config GPIO_PCA953X
+> -	tristate "PCA953x, PCA955x, TCA64xx, and MAX7310 I/O ports"
+> +	tristate "PCA953x, PCA955x, PCA957x, TCA64xx, and MAX7310 I/O ports"
+>  	depends on I2C
+>  	help
+>  	  Say yes here to provide access to several register-oriented
+> @@ -252,10 +252,11 @@ config GPIO_PCA953X
+>  
+>  	  4 bits:	pca9536, pca9537
+>  
+> -	  8 bits:	max7310, pca9534, pca9538, pca9554, pca9557,
+> -	  		tca6408
+> +	  8 bits:	max7310, max7315, pca6107, pca9534, pca9538, pca9554,
+> +			pca9556, pca9557, pca9574, tca6408
+>  
+> -	  16 bits:	pca9535, pca9539, pca9555, tca6416
+> +	  16 bits:	max7312, max7313, pca9535, pca9539, pca9555, pca9575,
+> +			tca6416
+>  
+>  config GPIO_PCA953X_IRQ
+>  	bool "Interrupt controller support for PCA953x"
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
