@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab2DGSz4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 14:55:56 -0400
-Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:47501 "EHLO
-	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752463Ab2DGSzz (ORCPT
+	id S1754652Ab2DGTBA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:01:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38527 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2DGTA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 14:55:55 -0400
-X-Greylist: delayed 1042 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Apr 2012 14:55:55 EDT
-Message-ID: <4F8089A9.6080704@raumfeld.com>
-Date: Sat, 07 Apr 2012 20:38:33 +0200
-From: Sven Neumann <s.neumann@raumfeld.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Olof Johansson <olof@lixom.net>, Daniel Mack <daniel@caiaq.de>,
-        Daniel Mack <zonque@gmail.com>, linux-input@vger.kernel.org,
+	Sat, 7 Apr 2012 15:00:59 -0400
+Subject: [PATCH v2 00/10] mm: vma->vm_flags diet
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
-References: <1333777207-4151-1-git-send-email-olof@lixom.net> <20120407070206.GA17623@core.coreip.homeip.net>
-In-Reply-To: <20120407070206.GA17623@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 07 Apr 2012 23:00:49 +0400
+Message-ID: <20120407185546.9726.62260.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1333824955;d0768c86;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch-set moves/kills some VM_* flags in vma->vm_flags bit-field,
+as result there appears four free bits.
 
-On 07.04.12 09:02, Dmitry Torokhov wrote:
-> On Fri, Apr 06, 2012 at 10:40:07PM -0700, Olof Johansson wrote:
->> This seems to have been broken since 2010, so obviously noone actually
->> cares about the driver:
->>
->> make[4]: *** [drivers/input/touchscreen/eeti_ts.o] Error 1
->> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
->> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
->>
->> irq_to_gpio isn't available on most platforms today, so the driver
->> will need some rework by someone who has hardware access and can test
->> (to make sure that, for example, switching to level interrupts and just
->> keep taking them while there's more to process works).
->>
->> I guess it could just be scheduled for removal, but let's start with
->> marking it CONFIG_BROKEN.
->
-> Well, it probably works quite well on arches that do have irq_to_gpio(),
-> let's ask Daniel and Sven if they still have this hardware and if they
-> can try the patch below that implements what you suggested.
+changes from v1:
 
-This hardware is still in use and we also still follow kernel 
-development and try to update our customer devices to recent kernel 
-versions regularly. Currently we are at 3.1.10 and the touchscreen works 
-well with that. I'll try to update to a more recent kernel next week and 
-will try your patch.
+* "mm, drm/udl: fixup vma flags on mmap" already merged
+* two new x86/PAT cleanup/rework patches from Suresh Siddha
+* "mm: kill vma flag VM_EXECUTABLE" splitted into three pieces
+
+---
+
+Konstantin Khlebnikov (8):
+      mm, x86, pat: rework linear pfn-mmap tracking
+      mm: introduce vma flag VM_ARCH_1
+      mm: kill vma flag VM_CAN_NONLINEAR
+      mm: kill vma flag VM_INSERTPAGE
+      mm: use mm->exe_file instead of first VM_EXECUTABLE vma->vm_file
+      mm: kill vma flag VM_EXECUTABLE
+      mm: kill mm->num_exe_file_vmas and keep mm->exe_file until final mmput()
+      mm: move madvise vma flags to the end
+
+Suresh Siddha (2):
+      x86, pat: remove the dependency on 'vm_pgoff' in track/untrack pfn vma routines
+      x86, pat: separate the pfn attribute tracking for remap_pfn_range and vm_insert_pfn
 
 
-Regards, Sven
+ arch/powerpc/oprofile/cell/spu_task_sync.c |   15 +----
+ arch/tile/mm/elf.c                         |   19 ++----
+ arch/x86/mm/pat.c                          |   89 ++++++++++++++++++++--------
+ drivers/oprofile/buffer_sync.c             |   17 +----
+ drivers/staging/android/ashmem.c           |    1 
+ fs/9p/vfs_file.c                           |    1 
+ fs/btrfs/file.c                            |    2 -
+ fs/ceph/addr.c                             |    2 -
+ fs/cifs/file.c                             |    1 
+ fs/ecryptfs/file.c                         |    1 
+ fs/ext4/file.c                             |    2 -
+ fs/fuse/file.c                             |    1 
+ fs/gfs2/file.c                             |    2 -
+ fs/nfs/file.c                              |    1 
+ fs/nilfs2/file.c                           |    2 -
+ fs/ocfs2/mmap.c                            |    2 -
+ fs/ubifs/file.c                            |    1 
+ fs/xfs/xfs_file.c                          |    2 -
+ include/asm-generic/pgtable.h              |   57 +++++++++++-------
+ include/linux/fs.h                         |    2 +
+ include/linux/mm.h                         |   69 +++++++++-------------
+ include/linux/mm_types.h                   |    1 
+ include/linux/mman.h                       |    1 
+ kernel/auditsc.c                           |   12 +---
+ kernel/fork.c                              |   24 --------
+ mm/filemap.c                               |    2 -
+ mm/filemap_xip.c                           |    3 +
+ mm/fremap.c                                |   14 +++-
+ mm/huge_memory.c                           |   10 +--
+ mm/ksm.c                                   |    9 ++-
+ mm/memory.c                                |   37 +++++++-----
+ mm/mmap.c                                  |   32 ++--------
+ mm/nommu.c                                 |   19 +++---
+ mm/shmem.c                                 |    3 -
+ security/tomoyo/util.c                     |    9 +--
+ 35 files changed, 222 insertions(+), 243 deletions(-)
 
+-- 
+Signature
