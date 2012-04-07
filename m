@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2DGAwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 20:52:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48630 "EHLO
+	id S1753448Ab2DGA6H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 20:58:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58650 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab2DGAwN (ORCPT
+	with ESMTP id S1752154Ab2DGA6F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 20:52:13 -0400
+	Fri, 6 Apr 2012 20:58:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFy_TOEE-8RNmNKVz6xZ7s+f02jCVcDbA=MJY1iih=AJpg@mail.gmail.com>
-References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org> <CA+55aFy_TOEE-8RNmNKVz6xZ7s+f02jCVcDbA=MJY1iih=AJpg@mail.gmail.com>
+In-Reply-To: <20120407002828.GG6589@ZenIV.linux.org.uk>
+References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org> <20120407002828.GG6589@ZenIV.linux.org.uk>
 From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Fri, 6 Apr 2012 17:51:51 -0700
-X-Google-Sender-Auth: Aj0r_l0fktMHLOISyBOHCNDwfzo
-Message-ID: <CAB=NE6Xt3yeCvW-t7mbEWoYr04Rg1uvObAMTatAdpHtgsdZvYA@mail.gmail.com>
+Date: Fri, 6 Apr 2012 17:57:44 -0700
+X-Google-Sender-Auth: fZxcD-NJ9Ql7-9C9uHSJmGsLR94
+Message-ID: <CAB=NE6Xg9hM1WFBsNJL50bS0vNx97fg5imDNog5tSFG4RUqgoQ@mail.gmail.com>
 Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
-To: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
         Keith Packard <keithp@keithp.com>, Ralf Baechle <ralf@linux-mips.org>,
         David Woodhouse <dwmw2@infradead.org>,
         Stephen Hemminger <shemminger@vyatta.com>,
         "John W. Linville" <linville@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 5:36 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Apr 6, 2012 at 5:11 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
->> -MODULE_LICENSE("Dual BSD/GPL");
->> +MODULE_LICENSE("GPL-Compatible");
+On Fri, Apr 6, 2012 at 5:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Apr 06, 2012 at 05:11:22PM -0700, Luis R. Rodriguez wrote:
 >
-> I really don't see the point.
+>> You do not need to make dual licenses when licenses are compatible
+>> with each other, and in fact at times this can confuse developers / legal.
+>> This has been well documented by SFLC through their "Maintaining
+>> Permissive-Licensed Files in a GPL-Licensed Project: Guidelines for
+>> Developers" [0] which was inspired by the ambiguity of the MadWifi
+>> Project's Dual BSD/GPL license tradition. The list of GPL-Compatible
+>> licenses can be found on the FSF's website [1].
 >
-> This makes things *worse*.
->
-> "Dual BSD/GPL" actually tells you something: it tells you that you can
-> take that code, and use it in a BSD project.
->
-> In contrast "GPL-compatible" tells you nothing at all.
->
-> So you are actually removing real information, and just making things
-> harder for everybody.
+> This is obvious crap.  Explain to me, please, what makes your "GPL compatible"
+> different from "GPLv2";
 
-Its a good point that we are not declaring the exact license used for
-software, and while that is useful the "Dual BSD/GPL" tag is
-misleading. As I see it there are four options:
+GPLv2 is GPLv2, GPL-Compatible means the module is not GPLv2 but
+instead one of the licenses that are GPLv2 compatible.
 
-1) Use this as a technical artifact only to ensure symbols we declare
-EXPORT_SYMBOL_GPL() will only be used by GPL-Compatible modules. Also
-use the GPL-Compatible tag as annotated by this patch to annotate
-this. Then add another tag to specific the exact license, which is not
-anything of an artifact but just informational to the binary module
-but also software developer reviewing code. This last part would
-clarify the exact license.
+> at least that would be honest ("we have relicensed a copy of BSD/GPL code to
+> GPL alone - the license allows that and any  modifications done here are declared
+> GPL-only, so you can't pull them into the BSD-licensed variants")
 
-2) We keep extending the list of MODULE_LICENSE() with all the
-different GPL-Compatible licenses we are comfortable with. This list
-is pretty outdated already. This means we keep chugging along and
-adding more licenses.
+That's the thing Al, the purpose of this patch is not to address
+getting code from BSD to Linux but the inverse, let BSD folks benefit
+from some of our driver work which is permissively licensed. In that
+case we are declaring the module to GPL-Compatible license. When we
+take BSD code and GPL it we have to also change the license header as
+documented in the documentation provided by SFLC. An example driver
+that had this done is drivers/net/wireless/ath/carl9170/main.c and
+friends. We however have at times code licensed only under a
+permissive license and want other BSD families to help take that code
+and benefit from it. This all started for wireless with ath5k to help
+OpenBSD reap benefits from the ar5k HAL hat we took to embrace into
+Linux. We followed suit with ath9k to ensure BSD family can reap
+benefits from the driver.
 
-3) Leave things as is, and clarify this. I think this confuses
-developers though, and for sharing purposes it would be nice. Hence
-the patch. You have no idea how many e-mails I have had to deal with
-to address this. People really think this is impossible. In fact we
-had a flamewar eons ago because a few of us didn't know this was
-possible to help the BSDs. Not just developers, I think there are even
-maintainers not too sure about this.
+> "GPL compatible" is not a license; it's a set of licenses.
 
-4) Use the patch and leave it to the person who wants to extract code
-to figure out the exact module license.
+Great point, and I think Linus makes the same point.
 
-Option 1) seems to me to provide the best alternative but leaves open
-then the question of whether or not we need to keep tabs of accepted
-GPLv2 compatible licenses we accept or leave this as informational.
-Option 4) handles the technical artifacts we care about but gives some
-homework to consumers.
+> Incidentally,
+> belonging to that set is irrelevant to legality of including into the kernel,
+> since GPLv3 a member and it's *NOT* compatible with the kernel license.
 
-Please let me know if anyone can think of better alternatives.
+The FSF website indeed does not have a handy URL to only list GPLv2
+compatible licenses. That may be nice.
+
+I think on both threads the issues highlighted are the technical
+artifacts (not addressed here) Vs the actual software license of the
+files.
 
   Luis
