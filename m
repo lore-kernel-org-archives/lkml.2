@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab2DGUz0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 16:55:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51988 "EHLO
+	id S1755603Ab2DGUzY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 16:55:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51990 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab2DGUyS (ORCPT
+	with ESMTP id S1751552Ab2DGUyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 16:54:18 -0400
+	Sat, 7 Apr 2012 16:54:19 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/8] perf ui annotate browser: Allow toggling addr offset view
-Date: Sat,  7 Apr 2012 17:54:04 -0300
-Message-Id: <1333832049-2399-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/8] perf ui browser: Return the current color when setting a new one
+Date: Sat,  7 Apr 2012 17:54:02 -0300
+Message-Id: <1333832049-2399-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1333832049-2399-1-git-send-email-acme@infradead.org>
 References: <1333832049-2399-1-git-send-email-acme@infradead.org>
@@ -30,93 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The lines in objdump have this format:
+Tools that want to change parts of the line to a different color and
+then restore the previous one will use this, starting with the annotate
+browser that will change the color of addresses if not on the current
+entry, i.e. the selected one.
 
-    ffffffff8126543f:       jne    ffffffff81265494 <__list_del_entry+0x84>
-<SNIP>
-    ffffffff81265494:       mov    %rdi,%rcx
-
-Since we now have objdump_line allowing tools to print the offset
-independently from the rest of the line, allow toggling a view where
-just offsets from the start of the function are shown:
-
-     2f:       jne    ffffffff81265494 <__list_del_entry+0x84>
-<SNIP>
-     84:       mov    %rdi,%rcx
-
-The offset view will be the default as soon as operations that deal with
-offsets in a function are handled accodringly, i.e. in offset view the
-above will become:
-
-     2f:       jne    __list_del_entry+0x84
-<SNIP>
-     84:       mov    %rdi,%rcx
-
-And then a follow up patch will allow navigating thru jumps, just like
-we handle callq instructions.
-
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-uiajpevhxo4mzrvna6remb4a@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browsers/annotate.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ tools/perf/util/ui/browser.c |    5 ++++-
+ tools/perf/util/ui/browser.h |    3 ++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index 7ac7dd0..5cf9b78 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -20,6 +20,7 @@ struct annotate_browser {
- 	int		    nr_asm_entries;
- 	int		    nr_entries;
- 	bool		    hide_src_code;
-+	bool		    use_offset;
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 5568291..076a5ff 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -27,9 +27,12 @@ static int ui_browser__percent_color(struct ui_browser *browser,
+ 	return HE_COLORSET_NORMAL;
+ }
+ 
+-void ui_browser__set_color(struct ui_browser *self __used, int color)
++int ui_browser__set_color(struct ui_browser *browser, int color)
+ {
++	int ret = browser->current_color;
++	browser->current_color = color;
+ 	SLsmg_set_color(color);
++	return ret;
+ }
+ 
+ void ui_browser__set_percent_color(struct ui_browser *self,
+diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
+index 6ee82f6..65b2592 100644
+--- a/tools/perf/util/ui/browser.h
++++ b/tools/perf/util/ui/browser.h
+@@ -15,6 +15,7 @@ struct ui_browser {
+ 	u64	      index, top_idx;
+ 	void	      *top, *entries;
+ 	u16	      y, x, width, height;
++	int	      current_color;
+ 	void	      *priv;
+ 	const char    *title;
+ 	char	      *helpline;
+@@ -27,7 +28,7 @@ struct ui_browser {
+ 	bool	      use_navkeypressed;
  };
  
- struct objdump_line_rb_node {
-@@ -82,10 +83,13 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 		slsmg_write_nstring(ol->line, width - 18);
- 	else {
- 		char bf[64];
--		u64 addr = ab->start + ol->offset;
--		int printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
--		int color = -1;
-+		u64 addr = ol->offset;
-+		int printed, color = -1;
- 
-+		if (!ab->use_offset)
-+			addr += ab->start;
-+
-+		printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
- 		if (change_color)
- 			color = ui_browser__set_color(self, HE_COLORSET_ADDR);
- 		slsmg_write_nstring(bf, printed);
-@@ -250,6 +254,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 	struct symbol *sym = ms->sym;
- 	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
- 			   "H: Go to hottest line, ->/ENTER: Line action, "
-+			   "O: Toggle offset view, "
- 			   "S: Toggle source code view";
- 	int key;
- 
-@@ -310,6 +315,10 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 			if (annotate_browser__toggle_source(self))
- 				ui_helpline__puts(help);
- 			continue;
-+		case 'O':
-+		case 'o':
-+			self->use_offset = !self->use_offset;
-+			continue;
- 		case K_ENTER:
- 		case K_RIGHT:
- 			if (self->selection == NULL) {
+-void ui_browser__set_color(struct ui_browser *self, int color);
++int  ui_browser__set_color(struct ui_browser *browser, int color);
+ void ui_browser__set_percent_color(struct ui_browser *self,
+ 				   double percent, bool current);
+ bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row);
 -- 
 1.7.9.2.358.g22243
 
