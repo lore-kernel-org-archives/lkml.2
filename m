@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2DGUDi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 16:03:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53394 "EHLO mail.zytor.com"
+	id S1754889Ab2DGUEn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 16:04:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53403 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab2DGUDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 16:03:37 -0400
+	id S1752818Ab2DGUEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Apr 2012 16:04:41 -0400
 References: <4F80892A.7050104@zytor.com> <20120407202056.472d8ad9@pyramind.ukuu.org.uk>
 User-Agent: K-9 Mail for Android
 In-Reply-To: <20120407202056.472d8ad9@pyramind.ukuu.org.uk>
@@ -15,7 +15,7 @@ Content-Type: text/plain;
 Content-Transfer-Encoding: 8bit
 Subject: Re: RFC: deprecating/removing the legacy mode of devpts
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 07 Apr 2012 13:02:33 -0700
+Date: Sat, 07 Apr 2012 13:04:13 -0700
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
 CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>,
@@ -23,12 +23,12 @@ CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Kay Sievers <kay.sievers@vrfy.org>,
         Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Message-ID: <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com>
+Message-ID: <4c3e598f-35f8-4abd-8c62-4655d33b0750@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem is that the lack of migration at the root causes real problems for the people who need the extra funkiness, and unlike BSD ttys it's not an application-level change at all.
+Even "doing it manually" gets hard because udev gets in the way.
 
 Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
