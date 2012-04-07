@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2DGTCc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:02:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43824 "EHLO
+	id S1755786Ab2DGTCp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:02:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38527 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab2DGTBe (ORCPT
+	with ESMTP id S1755351Ab2DGTBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:01:34 -0400
-Subject: [PATCH v2 08/10] mm: kill vma flag VM_EXECUTABLE
+	Sat, 7 Apr 2012 15:01:25 -0400
+Subject: [PATCH v2 06/10] mm: kill vma flag VM_INSERTPAGE
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+Cc: Carsten Otte <cotte@de.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>
-Date: Sat, 07 Apr 2012 23:01:29 +0400
-Message-ID: <20120407190129.9726.96427.stgit@zurg>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nick Piggin <npiggin@kernel.dk>
+Date: Sat, 07 Apr 2012 23:01:20 +0400
+Message-ID: <20120407190120.9726.33210.stgit@zurg>
 In-Reply-To: <20120407185546.9726.62260.stgit@zurg>
 References: <20120407185546.9726.62260.stgit@zurg>
 User-Agent: StGit/0.15
@@ -26,165 +27,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the kernel sets mm->exe_file during sys_execve() and then tracks
-number of vmas with VM_EXECUTABLE flag in mm->num_exe_file_vmas, as soon as
-this counter drops to zero kernel resets mm->exe_file to NULL. Plus it resets
-mm->exe_file at last mmput() when mm->mm_users drops to zero.
+This patch merges VM_INSERTPAGE into VM_MIXEDMAP (and moves it near to VM_PFNMAP).
+VM_MIXEDMAP vma anyway can mix pure-pfn ptes, special ptes and normal ptes.
 
-Vma with VM_EXECUTABLE flag appears after mapping file with flag MAP_EXECUTABLE,
-such vmas can appears only at sys_execve() or after vma splitting, because
-sys_mmap ignores this flag. Usually binfmt module sets mm->exe_file and mmaps
-some executable vmas with this file, they hold mm->exe_file while task is running.
-
-comment from v2.6.25-6245-g925d1c4 ("procfs task exe symlink"),
-where all this stuff was introduced:
-
-> The kernel implements readlink of /proc/pid/exe by getting the file from
-> the first executable VMA.  Then the path to the file is reconstructed and
-> reported as the result.
->
-> Because of the VMA walk the code is slightly different on nommu systems.
-> This patch avoids separate /proc/pid/exe code on nommu systems.  Instead of
-> walking the VMAs to find the first executable file-backed VMA we store a
-> reference to the exec'd file in the mm_struct.
->
-> That reference would prevent the filesystem holding the executable file
-> from being unmounted even after unmapping the VMAs.  So we track the number
-> of VM_EXECUTABLE VMAs and drop the new reference when the last one is
-> unmapped.  This avoids pinning the mounted filesystem.
-
-After this patch we track the number of VMAs with vma->vm_file == mm->exe_file,
-instead of vmas with VM_EXECUTABLE. Behaviour is nearly the same: kernel will
-reset mm->exe_file as soon as task unmap its executable file.
+this patch side-effects:
+* copy_page_range() now always copies VM_MIXEDMAP vma on fork (why not?)
+* in case HAVE_PTE_SPECIAL appears non-special ptes in VM_MIXEDMAP vma.
+  seems like all ok, all code ready for this.
+* in case !HAVE_PTE_SPECIAL: vm_normal_page() will check pfn_valid() after
+  inserting pages via vm_insert_page()
+* small change in vma_wants_writenotify(), but vm_insert_page() users shouldn't
+  use bdi with enabled dirty-pages accounting, plus do_wp_page() can handle this.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Matt Helsley <matthltc@us.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Carsten Otte <cotte@de.ibm.com>
 ---
- include/linux/mm.h   |    1 -
- include/linux/mman.h |    1 -
- mm/mmap.c            |   12 ++++++------
- mm/nommu.c           |   11 ++++++-----
- 4 files changed, 12 insertions(+), 13 deletions(-)
+ include/linux/mm.h |    3 +--
+ mm/huge_memory.c   |    3 +--
+ mm/ksm.c           |    2 +-
+ mm/memory.c        |   14 ++++++++++++--
+ mm/mmap.c          |    2 +-
+ 5 files changed, 16 insertions(+), 8 deletions(-)
 
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 553d134..8e82b79 100644
+index 0dad037..553d134 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -88,7 +88,6 @@ extern unsigned int kobjsize(const void *objp);
+@@ -84,6 +84,7 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_MAYSHARE	0x00000080
+ 
+ #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
++#define VM_MIXEDMAP	0x00000200	/* Can contain "struct page" and pure PFN pages */
  #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
  #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
  
--#define VM_EXECUTABLE	0x00001000
- #define VM_LOCKED	0x00002000
- #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+@@ -103,10 +104,8 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
+ #define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
+ #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
+-#define VM_INSERTPAGE	0x02000000	/* The vma has had "vm_insert_page()" done on it */
+ #define VM_NODUMP	0x04000000	/* Do not include in the core dump */
  
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index 8b74e9b..77cec2f 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -86,7 +86,6 @@ calc_vm_flag_bits(unsigned long flags)
- {
- 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
- 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
--	       _calc_vm_trans(flags, MAP_EXECUTABLE, VM_EXECUTABLE) |
- 	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
+-#define VM_MIXEDMAP	0x10000000	/* Can contain "struct page" and pure PFN pages */
+ #define VM_HUGEPAGE	0x20000000	/* MADV_HUGEPAGE marked this vma */
+ #define VM_NOHUGEPAGE	0x40000000	/* MADV_NOHUGEPAGE marked this vma */
+ #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 6ea5477..65ed599 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1482,8 +1482,7 @@ out:
+ 	return ret;
  }
- #endif /* __KERNEL__ */
+ 
+-#define VM_NO_THP (VM_SPECIAL|VM_INSERTPAGE|VM_MIXEDMAP| \
+-		   VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
++#define VM_NO_THP (VM_SPECIAL|VM_MIXEDMAP|VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
+ 
+ int hugepage_madvise(struct vm_area_struct *vma,
+ 		     unsigned long *vm_flags, int advice)
+diff --git a/mm/ksm.c b/mm/ksm.c
+index d1cbe2a..f9ccb16 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1469,7 +1469,7 @@ int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
+ 		 */
+ 		if (*vm_flags & (VM_MERGEABLE | VM_SHARED  | VM_MAYSHARE   |
+ 				 VM_PFNMAP    | VM_IO      | VM_DONTEXPAND |
+-				 VM_RESERVED  | VM_HUGETLB | VM_INSERTPAGE |
++				 VM_RESERVED  | VM_HUGETLB |
+ 				 VM_NONLINEAR | VM_MIXEDMAP))
+ 			return 0;		/* just ignore the advice */
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 2ade15b..2ce74aa 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1043,7 +1043,8 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 	 * readonly mappings. The tradeoff is that copy_page_range is more
+ 	 * efficient than faulting.
+ 	 */
+-	if (!(vma->vm_flags & (VM_HUGETLB|VM_NONLINEAR|VM_PFNMAP|VM_INSERTPAGE))) {
++	if (!(vma->vm_flags & (VM_HUGETLB | VM_NONLINEAR |
++			       VM_PFNMAP | VM_MIXEDMAP))) {
+ 		if (!vma->anon_vma)
+ 			return 0;
+ 	}
+@@ -2068,6 +2069,11 @@ out:
+  * ask for a shared writable mapping!
+  *
+  * The page does not need to be reserved.
++ *
++ * Usually this function is called from f_op->mmap() handler
++ * under mm->mmap_sem write-lock, so it can change vma->vm_flags.
++ * Caller must set VM_MIXEDMAP on vma if it wants to call this
++ * function from other places, for example from page-fault handler.
+  */
+ int vm_insert_page(struct vm_area_struct *vma, unsigned long addr,
+ 			struct page *page)
+@@ -2076,7 +2082,11 @@ int vm_insert_page(struct vm_area_struct *vma, unsigned long addr,
+ 		return -EFAULT;
+ 	if (!page_count(page))
+ 		return -EINVAL;
+-	vma->vm_flags |= VM_INSERTPAGE;
++	if (!(vma->vm_flags & VM_MIXEDMAP)) {
++		VM_BUG_ON(down_read_trylock(&vma->vm_mm->mmap_sem));
++		VM_BUG_ON(vma->vm_flags & VM_PFNMAP);
++		vma->vm_flags |= VM_MIXEDMAP;
++	}
+ 	return insert_page(vma, addr, page, vma->vm_page_prot);
+ }
+ EXPORT_SYMBOL(vm_insert_page);
 diff --git a/mm/mmap.c b/mm/mmap.c
-index 3d254ca..bc67ed7 100644
+index 1a23d2c..3d254ca 100644
 --- a/mm/mmap.c
 +++ b/mm/mmap.c
-@@ -232,7 +232,7 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
- 		vma->vm_ops->close(vma);
- 	if (vma->vm_file) {
- 		fput(vma->vm_file);
--		if (vma->vm_flags & VM_EXECUTABLE)
-+		if (vma->vm_file == vma->vm_mm->exe_file)
- 			removed_exe_file_vma(vma->vm_mm);
- 	}
- 	mpol_put(vma_policy(vma));
-@@ -618,7 +618,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 	if (remove_next) {
- 		if (file) {
- 			fput(file);
--			if (next->vm_flags & VM_EXECUTABLE)
-+			if (file == mm->exe_file)
- 				removed_exe_file_vma(mm);
- 		}
- 		if (next->anon_vma)
-@@ -1293,7 +1293,7 @@ munmap_back:
- 		error = file->f_op->mmap(file, vma);
- 		if (error)
- 			goto unmap_and_free_vma;
--		if (vm_flags & VM_EXECUTABLE)
-+		if (file == mm->exe_file)
- 			added_exe_file_vma(mm);
+@@ -1177,7 +1177,7 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
+ 		return 0;
  
- 		/* Can addr have changed??
-@@ -1971,7 +1971,7 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 	/* Specialty mapping? */
+-	if (vm_flags & (VM_PFNMAP|VM_INSERTPAGE))
++	if (vm_flags & VM_PFNMAP)
+ 		return 0;
  
- 	if (new->vm_file) {
- 		get_file(new->vm_file);
--		if (vma->vm_flags & VM_EXECUTABLE)
-+		if (new->vm_file == mm->exe_file)
- 			added_exe_file_vma(mm);
- 	}
- 
-@@ -1992,7 +1992,7 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
- 	if (new->vm_ops && new->vm_ops->close)
- 		new->vm_ops->close(new);
- 	if (new->vm_file) {
--		if (vma->vm_flags & VM_EXECUTABLE)
-+		if (new->vm_file == mm->exe_file)
- 			removed_exe_file_vma(mm);
- 		fput(new->vm_file);
- 	}
-@@ -2379,7 +2379,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
- 			new_vma->vm_pgoff = pgoff;
- 			if (new_vma->vm_file) {
- 				get_file(new_vma->vm_file);
--				if (vma->vm_flags & VM_EXECUTABLE)
-+				if (new_vma->vm_file == mm->exe_file)
- 					added_exe_file_vma(mm);
- 			}
- 			if (new_vma->vm_ops && new_vma->vm_ops->open)
-diff --git a/mm/nommu.c b/mm/nommu.c
-index afa0a15..db8da78 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -791,7 +791,7 @@ static void delete_vma(struct mm_struct *mm, struct vm_area_struct *vma)
- 		vma->vm_ops->close(vma);
- 	if (vma->vm_file) {
- 		fput(vma->vm_file);
--		if (vma->vm_flags & VM_EXECUTABLE)
-+		if (vma->vm_file == mm->exe_file)
- 			removed_exe_file_vma(mm);
- 	}
- 	put_nommu_region(vma->vm_region);
-@@ -1287,7 +1287,7 @@ unsigned long do_mmap_pgoff(struct file *file,
- 		get_file(file);
- 		vma->vm_file = file;
- 		get_file(file);
--		if (vm_flags & VM_EXECUTABLE) {
-+		if (file == current->mm->exe_file) {
- 			added_exe_file_vma(current->mm);
- 			vma->vm_mm = current->mm;
- 		}
-@@ -1441,10 +1441,11 @@ error:
- 	if (region->vm_file)
- 		fput(region->vm_file);
- 	kmem_cache_free(vm_region_jar, region);
--	if (vma->vm_file)
-+	if (vma->vm_file) {
- 		fput(vma->vm_file);
--	if (vma->vm_flags & VM_EXECUTABLE)
--		removed_exe_file_vma(vma->vm_mm);
-+		if (vma->vm_file == vma->vm_mm->exe_file)
-+			removed_exe_file_vma(vma->vm_mm);
-+	}
- 	kmem_cache_free(vm_area_cachep, vma);
- 	kleave(" = %d", ret);
- 	return ret;
+ 	/* Can the mapping track the dirty pages? */
 
