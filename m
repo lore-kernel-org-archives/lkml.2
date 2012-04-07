@@ -1,113 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab2DGVE6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 17:04:58 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37448 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab2DGVE4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 17:04:56 -0400
+	id S1752326Ab2DGVPU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 17:15:20 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:40128 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab2DGVPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Apr 2012 17:15:18 -0400
+Date: Sat, 7 Apr 2012 17:15:12 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, Keith Packard <keithp@keithp.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
+Message-ID: <20120407211512.GC11295@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"Luis R. Rodriguez" <mcgrof@frijolero.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+	Keith Packard <keithp@keithp.com>,
+	Ralf Baechle <ralf@linux-mips.org>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Stephen Hemminger <shemminger@vyatta.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
+ <CA+55aFy_TOEE-8RNmNKVz6xZ7s+f02jCVcDbA=MJY1iih=AJpg@mail.gmail.com>
+ <CAB=NE6Xt3yeCvW-t7mbEWoYr04Rg1uvObAMTatAdpHtgsdZvYA@mail.gmail.com>
+ <20120407024941.GB11295@thunk.org>
+ <CAB=NE6Wn4w_rmm-9dTjeLCmFBwFUv_R+o05=UW1SODBN2hFH0w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMiPZ0so-ZN0HCHHhw16oPWWgfVD5t--wKSvEUtzQx94CA@mail.gmail.com>
-References: <1333777207-4151-1-git-send-email-olof@lixom.net>
-	<20120407070206.GA17623@core.coreip.homeip.net>
-	<4F8089A9.6080704@raumfeld.com>
-	<CAOesGMiPZ0so-ZN0HCHHhw16oPWWgfVD5t--wKSvEUtzQx94CA@mail.gmail.com>
-Date: Sat, 7 Apr 2012 23:04:54 +0200
-Message-ID: <CAGhQ9VwBBF97uM7kjfLz_VH12P7HpoKajBoF26vH7QAmQFDcFw@mail.gmail.com>
-Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
-From: Joachim Eastwood <manabian@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Sven Neumann <s.neumann@raumfeld.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Mack <daniel@caiaq.de>, Daniel Mack <zonque@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAB=NE6Wn4w_rmm-9dTjeLCmFBwFUv_R+o05=UW1SODBN2hFH0w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 7, 2012 at 10:32 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Sat, Apr 7, 2012 at 11:38 AM, Sven Neumann <s.neumann@raumfeld.com> wrote:
->> Hi,
->>
->>
->> On 07.04.12 09:02, Dmitry Torokhov wrote:
->>>
->>> On Fri, Apr 06, 2012 at 10:40:07PM -0700, Olof Johansson wrote:
->>>>
->>>> This seems to have been broken since 2010, so obviously noone actually
->>>> cares about the driver:
->>>>
->>>> make[4]: *** [drivers/input/touchscreen/eeti_ts.o] Error 1
->>>> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
->>>> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of
->>>> function 'irq_to_gpio' [-Werror=implicit-function-declaration]
->>>>
->>>> irq_to_gpio isn't available on most platforms today, so the driver
->>>> will need some rework by someone who has hardware access and can test
->>>> (to make sure that, for example, switching to level interrupts and just
->>>> keep taking them while there's more to process works).
->>>>
->>>> I guess it could just be scheduled for removal, but let's start with
->>>> marking it CONFIG_BROKEN.
->>>
->>>
->>> Well, it probably works quite well on arches that do have irq_to_gpio(),
->>> let's ask Daniel and Sven if they still have this hardware and if they
->>> can try the patch below that implements what you suggested.
->>
->>
->> This hardware is still in use and we also still follow kernel development
->> and try to update our customer devices to recent kernel versions regularly.
->> Currently we are at 3.1.10 and the touchscreen works well with that. I'll
->> try to update to a more recent kernel next week and will try your patch.
->
-> Ah, you're right, and this was my bad. Looks like this change was
-> introduced in 3.2 and broke this and one more driver (ezx-pcap):
->
-> Author:     Haojian Zhuang <haojian.zhuang@marvell.com>
-> AuthorDate: Mon Oct 10 16:03:51 2011 +0800
-> Commit:     Haojian Zhuang <haojian.zhuang@marvell.com>
-> CommitDate: Mon Nov 14 21:07:59 2011 +0800
->
->    ARM: pxa: rename gpio_to_irq and irq_to_gpio
->
->    Avoid to define gpio_to_irq() and irq_to_gpio() for potential name
->    confliction since multiple architecture will be built together.
->
->    Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
->
->
-> Haojian, I think it was probably premature to do the multiplatform
-> change like that, since it means that a PXA-only kernel has no mapping
-> from irq_to_gpio to pxa_irq_to_gpio. Can you please address this as a
-> fix for 3.4?
->
->
-> Thanks,
->
-> -Olof
+On Fri, Apr 06, 2012 at 08:01:36PM -0700, Luis R. Rodriguez wrote:
+> > I also really don't see how this helps License compliance folks.  If
+> > the BSD folks trying to figure out whether or not they can use some
+> > piece of code, "GPL-Compatible" is no more useful than as "Dual
+> > BSD/GPL".  In fact, Dual BSD/GPL might actually be more useful since
+> > at least to me it says it can be used under the BSD or GPL license,
+> > which is precisely what the BSD folks need.
+> 
+> If we are OK with this thread serving as documentation for this then
+> so be it, but I still prefer for this to be clarified more. *I* am
+> comfortable with this but I know other vendors who did try to achieve
+> the same sharing had quite a bit of time trying to validate the
+> approach.
 
-It's the same story with AT91. Here irq_to_gpio was also removed some
-time ago. I believe it's the same for a lot of other ARM architectures
-also.
-Currently there 7 drivers that uses irq_to_gpio, these are obviously
-broken on architectures that not provide the function.
+I would rather think the obvious clarification would be reading the
+d*mn copyright headers.  That's going to have much more weight in a
+legal dispute in any case.  If the answer is that the Linux Foundation
+needs to have a bit more basic training about what a Dual License
+means in its license compliance services, maybe that's the right thing
+--- although if a lawyer doesn't understand how dual licenses work,
+I'd suggest that the company find a better lawyer....
 
-I think it would be better to fix the drivers rather than resurrect
-irq_to_gpio on the individual architectures.
+> I rather speed help clarify this is a reasonable approach
+> and also avoid flamewars like the ones we faced when developers eons
+> ago though that we *had* to GPL the OpenBSD ar5k HAL when we ported it
+> to Linux for use in ath5k.
 
-Users of irq_to_gpio in drivers:
-pata_rb532_cf, eeti_ts, egalax_ts, ezx-pcap, db1xxx_ss, tosa_battery, lis3l02dq
+So this is a different issue.  I assume you are referring to the fact
+that include/linux/license.h's license_is_gpl_compatible() doesn't
+have a pure BSD option?  If that's the issue, then lobby for adding
+the line:
 
-regards
-Joachim Eastwood
++	|| strcmp(license, "BSD") == 0
 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+If you are really worried about people being upset that currently, you
+have to explicitly add a GPL license to BSD-licensed driver code
+before it gets imported into the kernel, and you are trying to
+sidestep the issue by adding a "GPL-Compatible" license (on the
+grounds that a BSD-only license qualifies as GPl-Compatible), let's
+have that debate openly, instead of trying to side-step it by adding
+"GPL-compatible" to include/linux/license.h and allowing BSD-only
+modules to use GPL-only symbols via a back door.
+
+Regards,
+
+							- Ted
