@@ -1,365 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab2DGONq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 10:13:46 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:53073 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab2DGONn (ORCPT
+	id S1754832Ab2DGOOa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 10:14:30 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:15605 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704Ab2DGONs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 10:13:43 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-doc@vger.kernel.org, rdunlap@xenotime.net
-Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>,
-        Rob Landley <rob@landley.net>
-Subject: [PATCH/V2] [trivial] Documentation: Fix typo in multiple files in Documentation
-Date: Sat,  7 Apr 2012 23:13:00 +0900
-Message-Id: <1333807980-26161-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.10.rc4
-In-Reply-To: <1333727104-10181-1-git-send-email-standby24x7@gmail.com>
-References: <1333727104-10181-1-git-send-email-standby24x7@gmail.com>
+	Sat, 7 Apr 2012 10:13:48 -0400
+Message-ID: <1333808024.2728.39.camel@lorien2>
+Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: shuahkhan@gmail.com, neilb@suse.de, rpurdie@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 07 Apr 2012 08:13:44 -0600
+In-Reply-To: <20120406165353.ab667eb0.akpm@linux-foundation.org>
+References: <1333310039.2879.4.camel@lorien2>
+	 <20120406165353.ab667eb0.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correcting multiple spelling typo in Documentation.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> > +This feature will help implement vibrate functionality which requires one
+> > +time activation of vibrate mode without a continuous vibrate on/off cycles.
+> 
+> They make vibrating LED? ;)
+> 
+> What's going on here?  You're proposing to repurpose the LEDs code to
+> drive vibration devices?  Or some devices couple a LED with a vibration
+> device?
 
-Cc: Rob Landley <rob@landley.net>
+I owe you filling in the blanks type explanation. Let me describe the
+use-case I am trying to address first. Vibrater function on phones is
+implemented using PWM pins on SoC or PMIC. When there is no such
+hardware present, a software solution is needed. Currently two drivers
+timed-gpio and timed-output (under staging/android in Linux 3.3)
+together implement the software vibrate feature. The main functionality
+it implements is the one time enables of timer to prevent user space
+crashes leaving the phone in vibrate mode causing the battery to drain.
+leds as it is implemented currently, is not suitable to address this
+use-case as it doesn't support one time enables.
 
----
- Documentation/ABI/testing/sysfs-bus-usb            |    4 +--
- Documentation/DocBook/kernel-hacking.tmpl          |    2 +-
- Documentation/DocBook/libata.tmpl                  |    2 +-
- Documentation/DocBook/media/v4l/controls.xml       |    6 ++---
- Documentation/blackfin/bfin-gpio-notes.txt         |    2 +-
- .../devicetree/bindings/net/can/fsl-flexcan.txt    |    2 +-
- Documentation/dvb/opera-firmware.txt               |    4 +--
- Documentation/edac.txt                             |    2 +-
- Documentation/filesystems/nfs/pnfs.txt             |    2 +-
- Documentation/filesystems/qnx6.txt                 |   28 ++++++++++----------
- Documentation/hwmon/it87                           |    2 +-
- Documentation/memory-hotplug.txt                   |    2 +-
- Documentation/networking/can.txt                   |    2 +-
- Documentation/parisc/debugging                     |    2 +-
- Documentation/scsi/ChangeLog.megaraid_sas          |    2 +-
- Documentation/sound/alsa/compress_offload.txt      |    2 +-
- Documentation/static-keys.txt                      |    2 +-
- 17 files changed, 34 insertions(+), 34 deletions(-)
+I initiated a discussion on ce-android mainlining mailing list and after
+some back and forth, the solution to enhance leds infrastructure to
+support one shot timer emerged as the preferred one to address the need
+in a generic way. Adding this feature to leds infrastructure allows
+ledgpio as well as ledpwm drivers use it. This approach allows us to
+extend the existing infrastructure as well as, avoid adding two new
+drivers. Even though leds is kind of an odd place for vibrate feature in
+that it is counter intuitive, looking at its infrastructure, it made
+sense to leverage what it already does and enhance it.
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-usb b/Documentation/ABI/testing/sysfs-bus-usb
-index 7c22a53..303923b 100644
---- a/Documentation/ABI/testing/sysfs-bus-usb
-+++ b/Documentation/ABI/testing/sysfs-bus-usb
-@@ -189,7 +189,7 @@ Contact:	Matthew Garrett <mjg@redhat.com>
- Description:
- 		Some information about whether a given USB device is
- 		physically fixed to the platform can be inferred from a
--		combination of hub decriptor bits and platform-specific data
-+		combination of hub descriptor bits and platform-specific data
- 		such as ACPI. This file will read either "removable" or
- 		"fixed" if the information is available, and "unknown"
--		otherwise.
-\ No newline at end of file
-+		otherwise.
-diff --git a/Documentation/DocBook/kernel-hacking.tmpl b/Documentation/DocBook/kernel-hacking.tmpl
-index 07a9c48..eee7142 100644
---- a/Documentation/DocBook/kernel-hacking.tmpl
-+++ b/Documentation/DocBook/kernel-hacking.tmpl
-@@ -1289,7 +1289,7 @@ static struct block_device_operations opt_fops = {
-  * Sparc assembly will do this to ya.
-  */
- C_LABEL(cputypvar):
--        .asciz "compatability"
-+        .asciz "compatibility"
- 
- /* Tested on SS-5, SS-10. Probably someone at Sun applied a spell-checker. */
-         .align 4
-diff --git a/Documentation/DocBook/libata.tmpl b/Documentation/DocBook/libata.tmpl
-index 31df1aa..deb71ba 100644
---- a/Documentation/DocBook/libata.tmpl
-+++ b/Documentation/DocBook/libata.tmpl
-@@ -918,7 +918,7 @@ and other resources, etc.
-         <title>HSM violation</title>
-         <para>
-         This error is indicated when STATUS value doesn't match HSM
--        requirement during issuing or excution any ATA/ATAPI command.
-+        requirement during issuing or execution any ATA/ATAPI command.
-         </para>
- 
- 	<itemizedlist>
-diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-index b84f25e..dd03cf4 100644
---- a/Documentation/DocBook/media/v4l/controls.xml
-+++ b/Documentation/DocBook/media/v4l/controls.xml
-@@ -2023,7 +2023,7 @@ Possible values are:</entry>
- 		<entry>integer</entry>
- 	      </row>
- 	      <row><entry spanname="descr">Cyclic intra macroblock refresh. This is the number of continuous macroblocks
--refreshed every frame. Each frame a succesive set of macroblocks is refreshed until the cycle completes and starts from the
-+refreshed every frame. Each frame a successive set of macroblocks is refreshed until the cycle completes and starts from the
- top of the frame. Applicable to H264, H263 and MPEG4 encoder.</entry>
- 	      </row>
- 
-@@ -2183,7 +2183,7 @@ Applicable to the MPEG4 and H264 encoders.</entry>
- 		<entry>integer</entry>
- 	      </row>
- 	      <row><entry spanname="descr">The Video Buffer Verifier size in kilobytes, it is used as a limitation of frame skip.
--The VBV is defined in the standard as a mean to verify that the produced stream will be succesfully decoded.
-+The VBV is defined in the standard as a mean to verify that the produced stream will be successfully decoded.
- The standard describes it as "Part of a hypothetical decoder that is conceptually connected to the
- output of the encoder. Its purpose is to provide a constraint on the variability of the data rate that an
- encoder or editing process may produce.".
-@@ -2196,7 +2196,7 @@ Applicable to the MPEG1, MPEG2, MPEG4 encoders.</entry>
- 		<entry>integer</entry>
- 	      </row>
- 	      <row><entry spanname="descr">The Coded Picture Buffer size in kilobytes, it is used as a limitation of frame skip.
--The CPB is defined in the H264 standard as a mean to verify that the produced stream will be succesfully decoded.
-+The CPB is defined in the H264 standard as a mean to verify that the produced stream will be successfully decoded.
- Applicable to the H264 encoder.</entry>
- 	      </row>
- 
-diff --git a/Documentation/blackfin/bfin-gpio-notes.txt b/Documentation/blackfin/bfin-gpio-notes.txt
-index d36b01f..d245f39 100644
---- a/Documentation/blackfin/bfin-gpio-notes.txt
-+++ b/Documentation/blackfin/bfin-gpio-notes.txt
-@@ -53,7 +53,7 @@
- 
- 3. But there are some exceptions
-     - Kernel permit the identical GPIO be requested both as GPIO and GPIO
--    interrut.
-+    interrupt.
-     Some drivers, like gpio-keys, need this behavior. Kernel only print out
-     warning messages like,
- 	bfin-gpio: GPIO 24 is already reserved by gpio-keys: BTN0, and you are
-diff --git a/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt b/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
-index 1ad80d5..f31b686 100644
---- a/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
-+++ b/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
-@@ -1,4 +1,4 @@
--Flexcan CAN contoller on Freescale's ARM and PowerPC system-on-a-chip (SOC).
-+Flexcan CAN controller on Freescale's ARM and PowerPC system-on-a-chip (SOC).
- 
- Required properties:
- 
-diff --git a/Documentation/dvb/opera-firmware.txt b/Documentation/dvb/opera-firmware.txt
-index 93e784c..fb66831 100644
---- a/Documentation/dvb/opera-firmware.txt
-+++ b/Documentation/dvb/opera-firmware.txt
-@@ -8,7 +8,7 @@ from the windriver disk into this directory.
- 
- Then run
- 
--./get_dvb_firware opera1
-+./get_dvb_firmware opera1
- 
- and after that you have 2 files:
- 
-@@ -24,4 +24,4 @@ After that the driver can load the firmware
- in kernel config and have hotplug running).
- 
- 
--Marco Gittler <g.marco@freenet.de>
-\ No newline at end of file
-+Marco Gittler <g.marco@freenet.de>
-diff --git a/Documentation/edac.txt b/Documentation/edac.txt
-index fdcc49f..03df2b0 100644
---- a/Documentation/edac.txt
-+++ b/Documentation/edac.txt
-@@ -734,7 +734,7 @@ were done at i7core_edac driver. This chapter will cover those differences
-    associated with a physical CPU socket.
- 
-    Each MC have 3 physical read channels, 3 physical write channels and
--   3 logic channels. The driver currenty sees it as just 3 channels.
-+   3 logic channels. The driver currently sees it as just 3 channels.
-    Each channel can have up to 3 DIMMs.
- 
-    The minimum known unity is DIMMs. There are no information about csrows.
-diff --git a/Documentation/filesystems/nfs/pnfs.txt b/Documentation/filesystems/nfs/pnfs.txt
-index c7919c6..52ae07f 100644
---- a/Documentation/filesystems/nfs/pnfs.txt
-+++ b/Documentation/filesystems/nfs/pnfs.txt
-@@ -93,7 +93,7 @@ The API to the login script is as follows:
- 				(allways exists)
- 				(More protocols can be defined in the future.
- 				 The client does not interpret this string it is
--				 passed unchanged as recieved from the Server)
-+				 passed unchanged as received from the Server)
- 		-o		osdname of the requested target OSD
- 				(Might be empty)
- 				(A string which denotes the OSD name, there is a
-diff --git a/Documentation/filesystems/qnx6.txt b/Documentation/filesystems/qnx6.txt
-index 050223e..0708584 100644
---- a/Documentation/filesystems/qnx6.txt
-+++ b/Documentation/filesystems/qnx6.txt
-@@ -17,7 +17,7 @@ concepts of blocks, inodes and directories.
- On QNX it is possible to create little endian and big endian qnx6 filesystems.
- This feature makes it possible to create and use a different endianness fs
- for the target (QNX is used on quite a range of embedded systems) plattform
--running on a different endianess.
-+running on a different endianness.
- The Linux driver handles endianness transparently. (LE and BE)
- 
- Blocks
-@@ -26,7 +26,7 @@ Blocks
- The space in the device or file is split up into blocks. These are a fixed
- size of 512, 1024, 2048 or 4096, which is decided when the filesystem is
- created.
--Blockpointers are 32bit, so the maximum space that can be adressed is
-+Blockpointers are 32bit, so the maximum space that can be addressed is
- 2^32 * 4096 bytes or 16TB
- 
- The superblocks
-@@ -47,16 +47,16 @@ inactive superblock.
- Each superblock holds a set of root inodes for the different filesystem
- parts. (Inode, Bitmap and Longfilenames)
- Each of these root nodes holds information like total size of the stored
--data and the adressing levels in that specific tree.
--If the level value is 0, up to 16 direct blocks can be adressed by each
-+data and the addressing levels in that specific tree.
-+If the level value is 0, up to 16 direct blocks can be addressed by each
- node.
--Level 1 adds an additional indirect adressing level where each indirect
--adressing block holds up to blocksize / 4 bytes pointers to data blocks.
--Level 2 adds an additional indirect adressig block level (so, already up
--to 16 * 256 * 256 = 1048576 blocks that can be adressed by such a tree)a
-+Level 1 adds an additional indirect addressing level where each indirect
-+addressing block holds up to blocksize / 4 bytes pointers to data blocks.
-+Level 2 adds an additional indirect addressig block level (so, already up
-+to 16 * 256 * 256 = 1048576 blocks that can be addressed by such a tree)a
- 
- Unused block pointers are always set to ~0 - regardless of root node,
--indirect adressing blocks or inodes.
-+indirect addressing blocks or inodes.
- Data leaves are always on the lowest level. So no data is stored on upper
- tree levels.
- 
-@@ -64,7 +64,7 @@ The first Superblock is located at 0x2000. (0x2000 is the bootblock size)
- The Audi MMI 3G first superblock directly starts at byte 0.
- Second superblock position can either be calculated from the superblock
- information (total number of filesystem blocks) or by taking the highest
--device address, zeroing the last 3 bytes and then substracting 0x1000 from
-+device address, zeroing the last 3 bytes and then subtracting 0x1000 from
- that address.
- 
- 0x1000 is the size reserved for each superblock - regardless of the
-@@ -83,8 +83,8 @@ size, number of blocks used, access time, change time and modification time.
- Object mode field is POSIX format. (which makes things easier)
- 
- There are also pointers to the first 16 blocks, if the object data can be
--adressed with 16 direct blocks.
--For more than 16 blocks an indirect adressing in form of another tree is
-+addressed with 16 direct blocks.
-+For more than 16 blocks an indirect addressing in form of another tree is
- used. (scheme is the same as the one used for the superblock root nodes)
- 
- The filesize is stored 64bit. Inode counting starts with 1. (whilst long
-@@ -118,13 +118,13 @@ no block pointers and the directory file record pointing to the target file
- inode.
- 
- Character and block special devices do not exist in QNX as those files
--are handled by the QNX kernel/drivers and created in /dev independant of the
-+are handled by the QNX kernel/drivers and created in /dev independent of the
- underlaying filesystem.
- 
- Long filenames
- --------------
- 
--Long filenames are stored in a seperate adressing tree. The staring point
-+Long filenames are stored in a separate addressing tree. The staring point
- is the longfilename root node in the active superblock.
- Each data block (tree leaves) holds one long filename. That filename is
- limited to 510 bytes. The first two starting bytes are used as length field
-diff --git a/Documentation/hwmon/it87 b/Documentation/hwmon/it87
-index 899128d..87850d8 100644
---- a/Documentation/hwmon/it87
-+++ b/Documentation/hwmon/it87
-@@ -71,7 +71,7 @@ Module Parameters
- Hardware Interfaces
- -------------------
- 
--All the chips suported by this driver are LPC Super-I/O chips, accessed
-+All the chips supported by this driver are LPC Super-I/O chips, accessed
- through the LPC bus (ISA-like I/O ports). The IT8712F additionally has an
- SMBus interface to the hardware monitoring functions. This driver no
- longer supports this interface though, as it is slower and less reliable
-diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-index 8f485d7..6d0c251 100644
---- a/Documentation/memory-hotplug.txt
-+++ b/Documentation/memory-hotplug.txt
-@@ -341,7 +341,7 @@ Need more implementation yet....
- --------------------------------
- 8. Memory hotplug event notifier
- --------------------------------
--Memory hotplug has event notifer. There are 6 types of notification.
-+Memory hotplug has event notifier. There are 6 types of notification.
- 
- MEMORY_GOING_ONLINE
-   Generated before new memory becomes available in order to be able to
-diff --git a/Documentation/networking/can.txt b/Documentation/networking/can.txt
-index 56ca3b7..ac29539 100644
---- a/Documentation/networking/can.txt
-+++ b/Documentation/networking/can.txt
-@@ -649,7 +649,7 @@ solution for a couple of reasons:
-   The CAN device must be configured via netlink interface. The supported
-   netlink message types are defined and briefly described in
-   "include/linux/can/netlink.h". CAN link support for the program "ip"
--  of the IPROUTE2 utility suite is avaiable and it can be used as shown
-+  of the IPROUTE2 utility suite is available and it can be used as shown
-   below:
- 
-   - Setting CAN device properties:
-diff --git a/Documentation/parisc/debugging b/Documentation/parisc/debugging
-index d728594..7d75223 100644
---- a/Documentation/parisc/debugging
-+++ b/Documentation/parisc/debugging
-@@ -34,6 +34,6 @@ registers interruption handlers read to find out where the machine
- was interrupted - so if you get an interruption between the instruction
- that clears the Q bit and the RFI that sets it again you don't know
- where exactly it happened.  If you're lucky the IAOQ will point to the
--instrucion that cleared the Q bit, if you're not it points anywhere
-+instruction that cleared the Q bit, if you're not it points anywhere
- at all.  Usually Q bit problems will show themselves in unexplainable
- system hangs or running off the end of physical memory.
-diff --git a/Documentation/scsi/ChangeLog.megaraid_sas b/Documentation/scsi/ChangeLog.megaraid_sas
-index 83f8ea8..ded11a2 100644
---- a/Documentation/scsi/ChangeLog.megaraid_sas
-+++ b/Documentation/scsi/ChangeLog.megaraid_sas
-@@ -521,7 +521,7 @@ i.	Register 16 byte CDB capability with scsi midlayer
- 3 Older Version   : 00.00.02.01 
- 
- i.	New template defined to represent each family of controllers (identified by processor used). 
--	The template will have defintions that will be initialised to appropritae values for a specific family of controllers. The template definition has four function pointers. During driver initialisation the function pointers will be set based on the controller family type. This change is done to support new controllers that has different processors and thus different register set.
-+	The template will have definitions that will be initialised to appropriate values for a specific family of controllers. The template definition has four function pointers. During driver initialisation the function pointers will be set based on the controller family type. This change is done to support new controllers that has different processors and thus different register set.
- 
- 		-Sumant Patro <Sumant.Patro@lsil.com>
- 
-diff --git a/Documentation/sound/alsa/compress_offload.txt b/Documentation/sound/alsa/compress_offload.txt
-index c83a835..90e9b3a 100644
---- a/Documentation/sound/alsa/compress_offload.txt
-+++ b/Documentation/sound/alsa/compress_offload.txt
-@@ -18,7 +18,7 @@ processing. Support for such hardware has not been very good in Linux,
- mostly because of a lack of a generic API available in the mainline
- kernel.
- 
--Rather than requiring a compability break with an API change of the
-+Rather than requiring a compatibility break with an API change of the
- ALSA PCM interface, a new 'Compressed Data' API is introduced to
- provide a control and data-streaming interface for audio DSPs.
- 
-diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
-index d93f3c0..9f5263d 100644
---- a/Documentation/static-keys.txt
-+++ b/Documentation/static-keys.txt
-@@ -235,7 +235,7 @@ label case adds:
- 6 (mov) + 2 (test) + 2 (jne) = 10 - 5 (5 byte jump 0) = 5 addition bytes.
- 
- If we then include the padding bytes, the jump label code saves, 16 total bytes
--of instruction memory for this small fucntion. In this case the non-jump label
-+of instruction memory for this small function. In this case the non-jump label
- function is 80 bytes long. Thus, we have have saved 20% of the instruction
- footprint. We can in fact improve this even further, since the 5-byte no-op
- really can be a 2-byte no-op since we can reach the branch with a 2-byte jmp.
--- 
-1.7.10.rc4
+If are interested in reading the discussion, here is the link that
+starts the discussion:
+
+http://lists.linuxfoundation.org/pipermail/ce-android-mainline/2012-February/000077.html
+
+Hope this helps understand what I am trying to accomplish. Please let me
+know after this explanation, if you think adding this feature is heading
+in the right direction to address this need? Other ideas are welcome.
+
+As per the specific comments on the code it self, here is what I will do
+while we discuss this feature,
+
+1. Cleanup simple_strtoul() in leds - in addition to the checkpatch
+warnings this patch triggered, there is at least one other use of
+simple_strtoul() that needs cleanup. I will send a patch to do that,
+while we discuss the next steps with this feature.
+
+Please see my responses on this patch in-line:
+> 
+> > +This patch implements the timer-no-default trigger support by enhancing the
+> > +current led-class, led-core, and ledtrig-timer drivers to:
+> 
+> Well, the documentation shouldn't refer to a "patch", as patches are
+> short-term transient things.  It is describing a kernel interface.  You
+> could call it "this feature" or, better "the one shot trigger feature".
+> 
+> > +- Add support for forever timer case. forever tag can be written to delay_on
+> > +  or delay_off files. Internally forever is mapped to ULONG_MAX with no timer
+> > +  associated with it.
+> > +
+> > +- The led_blink_set() which takes two pointers to times one each for delay_on
+> > +  and delay_off has been extended so that a NULL instead of a pointer means
+> > +  "forever".
+> > +
+> > +- Add a new timer-no-default trigger to ledtrig-timer
+> 
+> Similarly, it's odd to refer to "adding" things when describing an
+> already-existing kernel feature!
+> 
+> >
+> > ...
+> >
+> > --- a/drivers/leds/led-class.c
+> > +++ b/drivers/leds/led-class.c
+> > @@ -107,7 +107,9 @@ static void led_timer_function(unsigned long data)
+> >  
+> >  	led_set_brightness(led_cdev, brightness);
+> >  
+> > -	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
+> > +	if (delay != LED_TIMER_FOREVER)
+> 
+> So LED_TIMER_FOREVER really is forever?  My LED doesn't turn itself back on
+> after 2^32 jiffies?
+> 
+> > +		mod_timer(&led_cdev->blink_timer,
+> > +			jiffies + msecs_to_jiffies(delay));
+> >  }
+> 
+> Is seems so...
+Let me see, the timer is not set when delay == LED_TIMER_FOREVER. Am I
+missing something?
+
+> 
+> > ...
+> >
+> > --- a/drivers/leds/ledtrig-timer.c
+> > +++ b/drivers/leds/ledtrig-timer.c
+> > @@ -24,6 +24,9 @@ static ssize_t led_delay_on_show(struct device *dev,
+> >  {
+> >  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >  
+> > +	if (led_cdev->blink_delay_on == LED_TIMER_FOREVER)
+> > +		return sprintf(buf, "forever\n");
+> > +
+> >  	return sprintf(buf, "%lu\n", led_cdev->blink_delay_on);
+> >  }
+> 
+> This is a somewhat risky kernel interface change.  Previously the
+> output was always a decimal string.  With this change it is either a
+> decimal string or "forever".  Applications which were coded to the old
+> interface will probably misinterpret the "forever" as a zero.  Or they
+> will crash and burn.
+> 
+> A safer approach would be to just print the value.  So it comes out as
+> 4294967295 or 18446744073709551615.  That's pretty nasty, and invites
+> people to write programs which are busted on 32-bit userspace (or on
+> 64-bit).
+> 
+> Maybe it was just a mistake to overload ->blink_delay_on in this
+> fashion.  Perhaps the code will be cleaner if we add a couple of new
+> booleans to the led_cdev.
+> 
+> Anyway, please have a think about this.
+
+I had some reservations with overloading and using a string, however
+using forever would help hide the internal implementation details. That
+said I can go either way.
+
+> 
+> > @@ -32,17 +35,25 @@ static ssize_t led_delay_on_store(struct device *dev,
+> >  {
+> >  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >  	int ret = -EINVAL;
+> > -	char *after;
+> > -	unsigned long state = simple_strtoul(buf, &after, 10);
+> > -	size_t count = after - buf;
+> > -
+> > -	if (isspace(*after))
+> > -		count++;
+> >  
+> > -	if (count == size) {
+> > -		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
+> > -		led_cdev->blink_delay_on = state;
+> > -		ret = count;
+> > +	if (strncmp(buf, "forever", 7) == 0) {
+> > +		led_blink_set(led_cdev, NULL, &led_cdev->blink_delay_off);
+> > +		led_cdev->blink_delay_on = LED_TIMER_FOREVER;
+> > +		ret = size;
+> > +	} else {
+> > +		char *after;
+> > +		unsigned long state = simple_strtoul(buf, &after, 10);
+> 
+> You ignored the checkpatch warning.  Please don't.  Take the
+> opportunity to fix things up when altering existing code!
+> 
+> > +		size_t count = after - buf;
+> > +
+> > +		if (isspace(*after))
+> > +			count++;
+> > +
+> > +		if (count == size) {
+> > +			led_blink_set(led_cdev, &state,
+> > +				&led_cdev->blink_delay_off);
+> > +			led_cdev->blink_delay_on = state;
+> > +			ret = count;
+> > +		}
+> >  	}
+> 
+> Now, *writing* the "forever" is OK - it doesn't break compatibility. 
+> But we shouldn't permit bogus input such as "forever42".  Could perhaps
+> use sysfs_streq() here.  Or strcmp()?
+
+Yes I can do that.
+> 
+> >  	return ret;
+> > @@ -53,6 +64,9 @@ static ssize_t led_delay_off_show(struct device *dev,
+> >  {
+> >  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >  
+> > +	if (led_cdev->blink_delay_off == LED_TIMER_FOREVER)
+> > +		return sprintf(buf, "forever\n");
+> > +
+> >  	return sprintf(buf, "%lu\n", led_cdev->blink_delay_off);
+> >  }
+> 
+> Dittoes here.
+> 
+> > @@ -61,17 +75,24 @@ static ssize_t led_delay_off_store(struct device *dev,
+> >  {
+> >  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >  	int ret = -EINVAL;
+> > -	char *after;
+> > -	unsigned long state = simple_strtoul(buf, &after, 10);
+> > -	size_t count = after - buf;
+> >  
+> > -	if (isspace(*after))
+> > -		count++;
+> > -
+> > -	if (count == size) {
+> > -		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
+> > -		led_cdev->blink_delay_off = state;
+> > -		ret = count;
+> > +	if (strncmp(buf, "forever", 7) == 0) {
+> > +		led_blink_set(led_cdev, &led_cdev->blink_delay_on, NULL);
+> > +		led_cdev->blink_delay_off = LED_TIMER_FOREVER;
+> > +	} else {
+> > +		char *after;
+> > +		unsigned long state = simple_strtoul(buf, &after, 10);
+> > +		size_t count = after - buf;
+> > +
+> > +		if (isspace(*after))
+> > +			count++;
+> > +
+> > +		if (count == size) {
+> > +			led_blink_set(led_cdev, &led_cdev->blink_delay_on,
+> > +				&state);
+> > +			led_cdev->blink_delay_off = state;
+> > +			ret = count;
+> > +		}
+> >  	}
+> 
+> More dittoes here.
+> 
+> >  	return ret;
+> > @@ -80,7 +101,7 @@ static ssize_t led_delay_off_store(struct device *dev,
+> >  static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
+> >  static DEVICE_ATTR(delay_off, 0644, led_delay_off_show, led_delay_off_store);
+> >  
+> > -static void timer_trig_activate(struct led_classdev *led_cdev)
+> > +static void timer_trig_activate_common(struct led_classdev *led_cdev)
+> >  {
+> >  	int rc;
+> >  
+> > @@ -91,17 +112,24 @@ static void timer_trig_activate(struct led_classdev *led_cdev)
+> >  		return;
+> >  	rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
+> >  	if (rc)
+> > -		goto err_out_delayon;
+> > -
+> > -	led_blink_set(led_cdev, &led_cdev->blink_delay_on,
+> > -		      &led_cdev->blink_delay_off);
+> > +		device_remove_file(led_cdev->dev, &dev_attr_delay_on);
+> >  
+> > -	led_cdev->trigger_data = (void *)1;
+> > +	else
+> > +		led_cdev->trigger_data = (void *)1;
+> 
+> yikes.  What is the led core code doing fiddling around with an
+> open-coded (void *)1?
+
+It is being used to save state. Looked strange, however I decided to not
+touch it as part of this feature. :)
+
+> 
+> > +}
+> >  
+> >
+> > ...
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
