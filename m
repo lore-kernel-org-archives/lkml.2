@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab2DGI0K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 04:26:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42780 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752314Ab2DGI0F (ORCPT
+	id S1752402Ab2DGI6w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 04:58:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60790 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751588Ab2DGI6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 04:26:05 -0400
-Date: Sat, 7 Apr 2012 09:26:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 1/2] regmap: mmio: convert some error returns to BUG()
-Message-ID: <20120407082600.GA3099@opensource.wolfsonmicro.com>
-References: <1333747053-6846-1-git-send-email-swarren@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
-Content-Disposition: inline
-In-Reply-To: <1333747053-6846-1-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: Your ignorance cramps my conversation.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 7 Apr 2012 04:58:50 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX198/LMrR0p8vKOM2cMuV4bDF/6JM6o7L7+yoPS0Iq
+	UCt+8oqGE3bYOH
+Message-ID: <1333789124.12677.15.camel@marge.simpson.net>
+Subject: [patch] sched,cgroup_sched: fix up task_groups list buglet
+From: Mike Galbraith <efault@gmx.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>
+Date: Sat, 07 Apr 2012 10:58:44 +0200
+In-Reply-To: <1333444788.9072.9.camel@marge.simpson.net>
+References: <1333444106.9072.4.camel@marge.simpson.net>
+	 <1333444788.9072.9.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-04-03 at 11:19 +0200, Mike Galbraith wrote: 
+> ec514c48 made rt queues invisible in sched_debug, restore visibility.
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+<g> removing their cloak of invisibility might be a tad better than just
+making them visible while futzing with annoying RT_GROUP_SCHED throttle.
 
-On Fri, Apr 06, 2012 at 03:17:32PM -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->=20
-> Some of the error conditions detected by regmap_mmio_*() are pure internal
-> errors, rather than user-/client-triggerable conditions. Convert these to
-> BUG().
+sched,cgroup_sched: fix up task_groups list
 
-Applied both, thanks.
+Oops happened during sched migration to kernel/sched, fix it up.
 
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Cc: stable@kernel.org # v3.3
+---
+ kernel/sched/core.c  |    1 +
+ kernel/sched/sched.h |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6871,6 +6871,7 @@ int in_sched_functions(unsigned long add
+ 
+ #ifdef CONFIG_CGROUP_SCHED
+ struct task_group root_task_group;
++LIST_HEAD(task_groups);
+ #endif
+ 
+ DECLARE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -80,7 +80,7 @@ extern struct mutex sched_domains_mutex;
+ struct cfs_rq;
+ struct rt_rq;
+ 
+-static LIST_HEAD(task_groups);
++extern struct list_head task_groups;
+ 
+ struct cfs_bandwidth {
+ #ifdef CONFIG_CFS_BANDWIDTH
 
-iQIcBAEBAgAGBQJPf/oJAAoJEBus8iNuMP3dpdgP/RKuaQYHwLqc+FIxXc4f4kGC
-8FekL7BILnrLm+MMxGfbcgjiCpIvmccjBD63tpwZNZZqEcxpbPyB7/kjTXkjh6Sa
-DYG7c9CjVBfWPq8etq4O7+OmurgAMptX1iNOVqGcRJL2aGZ9WmUoS6IE/Xb4ckTE
-+LT96kXxqEiWnKcM4JK9C2ef+wgpUzbG0FIR3M1xgBub327oy71Fdlx89CrN979S
-RF3/9vFsfQHCcIPJvwAI1qbYbUxiM1IDpT8sudIlXbiqlZOOtX1kKkDbf80OBKCR
-z363ok+L8bGMKDojKCJcW4XFleoLFlvU2WMOG8bHvG3y3npa6S0BbZtiYdl1H4Qq
-Ryc16xiUXsvCmSsEcxN/cus3JPNpUb5ddv7t0HW5xAw7X0Ljvt5nBryP6Li4tDvz
-Pu4RSoGr6OYUi/Waffd5YzfaA5zQ2xCwO3LlTCZOhBtBQ+GU6sCmI6aRsftUZxcK
-tGNCvlZWKOKC29HG0kS4e+5lGtkA4obN5b7U1gRZ0c3BlvhDH6vJsUWrlq1CL3b2
-DEkiCnzYz4Vw5Roo8OQAFXHOv1wL3yOMQHFdkwu00//9xv/q7aLOWQd0/oH+Sfo+
-KWUTI+yWtiTFMJprckKoSVBs7o14E5COxfYmRULPFP7teIoohe9FkPnVYxZZ20H6
-wjl3QYXYIAfRwsOT++jD
-=qK3f
------END PGP SIGNATURE-----
 
---zhXaljGHf11kAtnf--
