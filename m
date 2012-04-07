@@ -1,68 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab2DGTCK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:02:10 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57871 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709Ab2DGTCF (ORCPT
+	id S1755693Ab2DGTCc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:02:32 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43824 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab2DGTBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:02:05 -0400
-Date: Sat, 7 Apr 2012 20:03:55 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        Keith Packard <keithp@keithp.com>, Ralf Baechle <ralf@linux-mips.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+	Sat, 7 Apr 2012 15:01:34 -0400
+Subject: [PATCH v2 08/10] mm: kill vma flag VM_EXECUTABLE
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
-Message-ID: <20120407200355.6be37c34@pyramind.ukuu.org.uk>
-In-Reply-To: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
-References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>
+Date: Sat, 07 Apr 2012 23:01:29 +0400
+Message-ID: <20120407190129.9726.96427.stgit@zurg>
+In-Reply-To: <20120407185546.9726.62260.stgit@zurg>
+References: <20120407185546.9726.62260.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You do not need to make dual licenses when licenses are compatible
-> with each other, and in fact at times this can confuse developers / legal.
+Currently the kernel sets mm->exe_file during sys_execve() and then tracks
+number of vmas with VM_EXECUTABLE flag in mm->num_exe_file_vmas, as soon as
+this counter drops to zero kernel resets mm->exe_file to NULL. Plus it resets
+mm->exe_file at last mmput() when mm->mm_users drops to zero.
 
-Firstly you are out of order touching the licensing tags of other vendors
-code. Absolutely and utterly. So nobody should for example be touching an
-Intel MODULE_LICENSE() tag without the say so of Intel legal.
+Vma with VM_EXECUTABLE flag appears after mapping file with flag MAP_EXECUTABLE,
+such vmas can appears only at sys_execve() or after vma splitting, because
+sys_mmap ignores this flag. Usually binfmt module sets mm->exe_file and mmaps
+some executable vmas with this file, they hold mm->exe_file while task is running.
 
-Secondly there are specific reasons this was done. For one it protects us
-from the FSF doing insane things - which is always useful. For the second
-it avoids ambiguity about licensing and it avoid assorted problems where
-'compatible' isn't really good enough.
+comment from v2.6.25-6245-g925d1c4 ("procfs task exe symlink"),
+where all this stuff was introduced:
 
-Consider the case of
+> The kernel implements readlink of /proc/pid/exe by getting the file from
+> the first executable VMA.  Then the path to the file is reconstructed and
+> reported as the result.
+>
+> Because of the VMA walk the code is slightly different on nommu systems.
+> This patch avoids separate /proc/pid/exe code on nommu systems.  Instead of
+> walking the VMAs to find the first executable file-backed VMA we store a
+> reference to the exec'd file in the mm_struct.
+>
+> That reference would prevent the filesystem holding the executable file
+> from being unmounted even after unmapping the VMAs.  So we track the number
+> of VM_EXECUTABLE VMAs and drop the new reference when the last one is
+> unmapped.  This avoids pinning the mounted filesystem.
 
-Take MIT source
-Is it GPL compatible ?
-	Yes
-Add GPL Compatible tag
-Compile
-Ship user the binary (under the MIT license), lock the source away
+After this patch we track the number of VMAs with vma->vm_file == mm->exe_file,
+instead of vmas with VM_EXECUTABLE. Behaviour is nearly the same: kernel will
+reset mm->exe_file as soon as task unmap its executable file.
 
-Conside also the case of
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ include/linux/mm.h   |    1 -
+ include/linux/mman.h |    1 -
+ mm/mmap.c            |   12 ++++++------
+ mm/nommu.c           |   11 ++++++-----
+ 4 files changed, 12 insertions(+), 13 deletions(-)
 
-Public domain
-Put into kernel
-Oh look no patent transfer clause
-Sue recipient of kernel
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 553d134..8e82b79 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -88,7 +88,6 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+ #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+ 
+-#define VM_EXECUTABLE	0x00001000
+ #define VM_LOCKED	0x00002000
+ #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+ 
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index 8b74e9b..77cec2f 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -86,7 +86,6 @@ calc_vm_flag_bits(unsigned long flags)
+ {
+ 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
+ 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
+-	       _calc_vm_trans(flags, MAP_EXECUTABLE, VM_EXECUTABLE) |
+ 	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
+ }
+ #endif /* __KERNEL__ */
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3d254ca..bc67ed7 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -232,7 +232,7 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
+ 		vma->vm_ops->close(vma);
+ 	if (vma->vm_file) {
+ 		fput(vma->vm_file);
+-		if (vma->vm_flags & VM_EXECUTABLE)
++		if (vma->vm_file == vma->vm_mm->exe_file)
+ 			removed_exe_file_vma(vma->vm_mm);
+ 	}
+ 	mpol_put(vma_policy(vma));
+@@ -618,7 +618,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 	if (remove_next) {
+ 		if (file) {
+ 			fput(file);
+-			if (next->vm_flags & VM_EXECUTABLE)
++			if (file == mm->exe_file)
+ 				removed_exe_file_vma(mm);
+ 		}
+ 		if (next->anon_vma)
+@@ -1293,7 +1293,7 @@ munmap_back:
+ 		error = file->f_op->mmap(file, vma);
+ 		if (error)
+ 			goto unmap_and_free_vma;
+-		if (vm_flags & VM_EXECUTABLE)
++		if (file == mm->exe_file)
+ 			added_exe_file_vma(mm);
+ 
+ 		/* Can addr have changed??
+@@ -1971,7 +1971,7 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 
+ 	if (new->vm_file) {
+ 		get_file(new->vm_file);
+-		if (vma->vm_flags & VM_EXECUTABLE)
++		if (new->vm_file == mm->exe_file)
+ 			added_exe_file_vma(mm);
+ 	}
+ 
+@@ -1992,7 +1992,7 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 	if (new->vm_ops && new->vm_ops->close)
+ 		new->vm_ops->close(new);
+ 	if (new->vm_file) {
+-		if (vma->vm_flags & VM_EXECUTABLE)
++		if (new->vm_file == mm->exe_file)
+ 			removed_exe_file_vma(mm);
+ 		fput(new->vm_file);
+ 	}
+@@ -2379,7 +2379,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 			new_vma->vm_pgoff = pgoff;
+ 			if (new_vma->vm_file) {
+ 				get_file(new_vma->vm_file);
+-				if (vma->vm_flags & VM_EXECUTABLE)
++				if (new_vma->vm_file == mm->exe_file)
+ 					added_exe_file_vma(mm);
+ 			}
+ 			if (new_vma->vm_ops && new_vma->vm_ops->open)
+diff --git a/mm/nommu.c b/mm/nommu.c
+index afa0a15..db8da78 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -791,7 +791,7 @@ static void delete_vma(struct mm_struct *mm, struct vm_area_struct *vma)
+ 		vma->vm_ops->close(vma);
+ 	if (vma->vm_file) {
+ 		fput(vma->vm_file);
+-		if (vma->vm_flags & VM_EXECUTABLE)
++		if (vma->vm_file == mm->exe_file)
+ 			removed_exe_file_vma(mm);
+ 	}
+ 	put_nommu_region(vma->vm_region);
+@@ -1287,7 +1287,7 @@ unsigned long do_mmap_pgoff(struct file *file,
+ 		get_file(file);
+ 		vma->vm_file = file;
+ 		get_file(file);
+-		if (vm_flags & VM_EXECUTABLE) {
++		if (file == current->mm->exe_file) {
+ 			added_exe_file_vma(current->mm);
+ 			vma->vm_mm = current->mm;
+ 		}
+@@ -1441,10 +1441,11 @@ error:
+ 	if (region->vm_file)
+ 		fput(region->vm_file);
+ 	kmem_cache_free(vm_region_jar, region);
+-	if (vma->vm_file)
++	if (vma->vm_file) {
+ 		fput(vma->vm_file);
+-	if (vma->vm_flags & VM_EXECUTABLE)
+-		removed_exe_file_vma(vma->vm_mm);
++		if (vma->vm_file == vma->vm_mm->exe_file)
++			removed_exe_file_vma(vma->vm_mm);
++	}
+ 	kmem_cache_free(vm_area_cachep, vma);
+ 	kleave(" = %d", ret);
+ 	return ret;
 
-There are good legal reasons we did it the way we did. This shouldn't be
-changed without a proper legal evaluation.
-
-Dual Foo/GPL is not the same as GPL compatible.
-
-NAK
-
-Alan
