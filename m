@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab2DGTBP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:01:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38527 "EHLO
+	id S1754846Ab2DGTGG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:06:06 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53951 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab2DGTBM (ORCPT
+	with ESMTP id S1752463Ab2DGTGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:01:12 -0400
-Subject: [PATCH v2 03/10] mm, x86, pat: rework linear pfn-mmap tracking
+	Sat, 7 Apr 2012 15:06:04 -0400
+Subject: [PATCH mm] c/r: prctl: update prctl_set_mm_exe_file() after
+ mm->num_exe_file_vmas removal
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Date: Sat, 07 Apr 2012 23:01:07 +0400
-Message-ID: <20120407190107.9726.29901.stgit@zurg>
-In-Reply-To: <20120407185546.9726.62260.stgit@zurg>
-References: <20120407185546.9726.62260.stgit@zurg>
+Date: Sat, 07 Apr 2012 23:05:54 +0400
+Message-ID: <20120407190554.10193.58306.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -28,209 +22,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces generic vma-flag VM_PFN_AT_MMAP with x86-only VM_PAT.
+[ fix for "c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-v2" from mm tree ]
 
-We can toss mapping address from remap_pfn_range() into track_pfn_vma_new(),
-and collect all PAT-related logic together in arch/x86/.
+After removing mm->num_exe_file_vmas kernel keeps mm->exe_file until final mmput(),
+it never becomes NULL while task is alive.
 
-This patch also restores orignal frustration-free is_cow_mapping() check in
-remap_pfn_range(), as it was before commit v2.6.28-rc8-88-g3c8bb73
-("x86: PAT: store vm_pgoff for all linear_over_vma_region mappings - v3")
-
-is_linear_pfn_mapping() checks can be removed from mm/huge_memory.c,
-because it already handled by VM_PFNMAP in VM_NO_THP bit-mask.
-
-[suresh.b.siddha@intel.com: Reset the VM_PAT flag as part of untrack_pfn_vma()]
+We can check for other mapped files in mm instead of checking mm->num_exe_file_vmas,
+and mark mm with flag MMF_EXE_FILE_CHANGED in order to forbid second changing of mm->exe_file.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
 ---
- arch/x86/mm/pat.c             |   17 ++++++++++++-----
- include/asm-generic/pgtable.h |    6 ++++--
- include/linux/mm.h            |   15 +--------------
- mm/huge_memory.c              |    7 +++----
- mm/memory.c                   |   12 ++++++------
- 5 files changed, 26 insertions(+), 31 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sys.c          |   31 +++++++++++++++++++------------
+ 2 files changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index d5b6759..59ee27d 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -665,7 +665,7 @@ int track_pfn_copy(struct vm_area_struct *vma)
- 	unsigned long vma_size = vma->vm_end - vma->vm_start;
- 	pgprot_t pgprot;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 81a173c..ac61e51 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -437,6 +437,7 @@ extern int get_dumpable(struct mm_struct *mm);
+ 					/* leave room for more dump flags */
+ #define MMF_VM_MERGEABLE	16	/* KSM may merge identical pages */
+ #define MMF_VM_HUGEPAGE		17	/* set when VM_HUGEPAGE is set on vma */
++#define MMF_EXE_FILE_CHANGED	18	/* see prctl_set_mm_exe_file() */
  
--	if (is_linear_pfn_mapping(vma)) {
-+	if (vma->vm_flags & VM_PAT) {
- 		/*
- 		 * reserve the whole chunk covered by vma. We need the
- 		 * starting address and protection from pte.
-@@ -687,14 +687,20 @@ int track_pfn_copy(struct vm_area_struct *vma)
-  * single reserve_pfn_range call.
-  */
- int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
--		    unsigned long pfn, unsigned long size)
-+		    unsigned long pfn, unsigned long addr, unsigned long size)
+ #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
+ 
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 089cb11..c6cdef5 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1714,17 +1714,11 @@ static bool vma_flags_mismatch(struct vm_area_struct *vma,
+ 
+ static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
  {
- 	resource_size_t paddr = (resource_size_t)pfn << PAGE_SHIFT;
- 	unsigned long flags;
++	struct vm_area_struct *vma;
+ 	struct file *exe_file;
+ 	struct dentry *dentry;
+ 	int err;
  
- 	/* reserve the whole chunk starting from paddr */
--	if (is_linear_pfn_mapping(vma))
--		return reserve_pfn_range(paddr, size, prot, 0);
-+	if (addr == vma->vm_start && size == (vma->vm_end - vma->vm_start)) {
-+		int ret;
-+
-+		ret = reserve_pfn_range(paddr, size, prot, 0);
-+		if (!ret)
-+			vma->vm_flags |= VM_PAT;
-+		return ret;
-+	}
- 
- 	if (!pat_enabled)
- 		return 0;
-@@ -748,7 +754,7 @@ void untrack_pfn(struct vm_area_struct *vma, unsigned long pfn,
- 	resource_size_t paddr;
- 	unsigned long prot;
- 
--	if (!is_linear_pfn_mapping(vma))
-+	if (!(vma->vm_flags & VM_PAT))
- 		return;
- 
- 	/* free the chunk starting from pfn or the whole chunk */
-@@ -762,6 +768,7 @@ void untrack_pfn(struct vm_area_struct *vma, unsigned long pfn,
- 		size = vma->vm_end - vma->vm_start;
- 	}
- 	free_pfn_range(paddr, size);
-+	vma->vm_flags &= ~VM_PAT;
- }
- 
- pgprot_t pgprot_writecombine(pgprot_t prot)
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index a877649..ddd613e 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -392,7 +392,8 @@ static inline void ptep_modify_prot_commit(struct mm_struct *mm,
-  * by remap_pfn_range() for physical range indicated by pfn and size.
-  */
- static inline int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
--				  unsigned long pfn, unsigned long size)
-+				  unsigned long pfn, unsigned long addr,
-+				  unsigned long size)
- {
- 	return 0;
- }
-@@ -427,7 +428,8 @@ static inline void untrack_pfn(struct vm_area_struct *vma,
- }
- #else
- extern int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
--			   unsigned long pfn, unsigned long size);
-+			   unsigned long pfn, unsigned long addr,
-+			   unsigned long size);
- extern int track_pfn_insert(struct vm_area_struct *vma, pgprot_t *prot,
- 			    unsigned long pfn);
- extern int track_pfn_copy(struct vm_area_struct *vma);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d8738a4..b8e5fe5 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -117,7 +117,7 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_CAN_NONLINEAR 0x08000000	/* Has ->fault & does nonlinear pages */
- #define VM_MIXEDMAP	0x10000000	/* Can contain "struct page" and pure PFN pages */
- #define VM_SAO		0x20000000	/* Strong Access Ordering (powerpc) */
--#define VM_PFN_AT_MMAP	0x40000000	/* PFNMAP vma that is fully mapped at mmap time */
-+#define VM_PAT		0x40000000	/* PAT reserves whole VMA at once (x86) */
- #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
- 
- /* Bits set in the VMA until the stack is in its final location */
-@@ -158,19 +158,6 @@ extern pgprot_t protection_map[16];
- #define FAULT_FLAG_RETRY_NOWAIT	0x10	/* Don't drop mmap_sem and wait when retrying */
- #define FAULT_FLAG_KILLABLE	0x20	/* The fault task is in SIGKILL killable region */
- 
--/*
-- * This interface is used by x86 PAT code to identify a pfn mapping that is
-- * linear over entire vma. This is to optimize PAT code that deals with
-- * marking the physical region with a particular prot. This is not for generic
-- * mm use. Note also that this check will not work if the pfn mapping is
-- * linear for a vma starting at physical address 0. In which case PAT code
-- * falls back to slow path of reserving physical range page by page.
-- */
--static inline int is_linear_pfn_mapping(struct vm_area_struct *vma)
--{
--	return !!(vma->vm_flags & VM_PFN_AT_MMAP);
--}
+-	/*
+-	 * Setting new mm::exe_file is only allowed when no VM_EXECUTABLE vma's
+-	 * remain. So perform a quick test first.
+-	 */
+-	if (mm->num_exe_file_vmas)
+-		return -EBUSY;
 -
- static inline int is_pfn_mapping(struct vm_area_struct *vma)
- {
- 	return !!(vma->vm_flags & VM_PFNMAP);
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index f0e5306..cf827da 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1650,7 +1650,7 @@ int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
- 	 * If is_pfn_mapping() is true is_learn_pfn_mapping() must be
- 	 * true too, verify it here.
- 	 */
--	VM_BUG_ON(is_linear_pfn_mapping(vma) || vma->vm_flags & VM_NO_THP);
-+	VM_BUG_ON(vma->vm_flags & VM_NO_THP);
- 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 	hend = vma->vm_end & HPAGE_PMD_MASK;
- 	if (hstart < hend)
-@@ -1908,7 +1908,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 * If is_pfn_mapping() is true is_learn_pfn_mapping() must be
- 	 * true too, verify it here.
- 	 */
--	VM_BUG_ON(is_linear_pfn_mapping(vma) || vma->vm_flags & VM_NO_THP);
-+	VM_BUG_ON(vma->vm_flags & VM_NO_THP);
+ 	exe_file = fget(fd);
+ 	if (!exe_file)
+ 		return -EBADF;
+@@ -1745,17 +1739,30 @@ static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
+ 	if (err)
+ 		goto exit;
  
- 	pgd = pgd_offset(mm, address);
- 	if (!pgd_present(*pgd))
-@@ -2150,8 +2150,7 @@ static unsigned int khugepaged_scan_mm_slot(unsigned int pages,
- 		 * If is_pfn_mapping() is true is_learn_pfn_mapping()
- 		 * must be true too, verify it here.
- 		 */
--		VM_BUG_ON(is_linear_pfn_mapping(vma) ||
--			  vma->vm_flags & VM_NO_THP);
-+		VM_BUG_ON(vma->vm_flags & VM_NO_THP);
- 
- 		hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 		hend = vma->vm_end & HPAGE_PMD_MASK;
-diff --git a/mm/memory.c b/mm/memory.c
-index 4cdcf53..2ade15b 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2282,23 +2282,23 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
- 	 * There's a horrible special case to handle copy-on-write
- 	 * behaviour that some programs depend on. We mark the "original"
- 	 * un-COW'ed pages by matching them up with "vma->vm_pgoff".
-+	 * See vm_normal_page() for details.
- 	 */
--	if (addr == vma->vm_start && end == vma->vm_end) {
-+	if (is_cow_mapping(vma->vm_flags)) {
-+		if (addr != vma->vm_start || end != vma->vm_end)
-+			return -EINVAL;
- 		vma->vm_pgoff = pfn;
--		vma->vm_flags |= VM_PFN_AT_MMAP;
--	} else if (is_cow_mapping(vma->vm_flags))
--		return -EINVAL;
++	down_write(&mm->mmap_sem);
++
++	/*
++	 * Forbid mm->exe_file change if there are mapped other files.
++	 */
++	err = -EBUSY;
++	for (vma = mm->mmap; vma; vma = vma->vm_next) {
++		if (vma->vm_file && !path_equal(&vma->vm_file->f_path,
++						&exe_file->f_path))
++			goto exit_unlock;
 +	}
++
+ 	/*
+ 	 * The symlink can be changed only once, just to disallow arbitrary
+ 	 * transitions malicious software might bring in. This means one
+ 	 * could make a snapshot over all processes running and monitor
+ 	 * /proc/pid/exe changes to notice unusual activity if needed.
+ 	 */
+-	down_write(&mm->mmap_sem);
+-	if (likely(!mm->exe_file))
+-		set_mm_exe_file(mm, exe_file);
+-	else
+-		err = -EBUSY;
++	err = -EPERM;
++	if (test_and_set_bit(MMF_EXE_FILE_CHANGED, &mm->flags))
++		goto exit_unlock;
++
++	set_mm_exe_file(mm, exe_file);
++exit_unlock:
+ 	up_write(&mm->mmap_sem);
  
- 	vma->vm_flags |= VM_IO | VM_RESERVED | VM_PFNMAP;
- 
--	err = track_pfn_remap(vma, &prot, pfn, PAGE_ALIGN(size));
-+	err = track_pfn_remap(vma, &prot, pfn, addr, PAGE_ALIGN(size));
- 	if (err) {
- 		/*
- 		 * To indicate that track_pfn related cleanup is not
- 		 * needed from higher level routine calling unmap_vmas
- 		 */
- 		vma->vm_flags &= ~(VM_IO | VM_RESERVED | VM_PFNMAP);
--		vma->vm_flags &= ~VM_PFN_AT_MMAP;
- 		return -EINVAL;
- 	}
- 
+ exit:
 
