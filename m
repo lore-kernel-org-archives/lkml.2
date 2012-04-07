@@ -1,114 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab2DGUjW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 16:39:22 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:54951 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751107Ab2DGUjV (ORCPT
+	id S1755306Ab2DGUyh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 16:54:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46279 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab2DGUyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 16:39:21 -0400
-X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Apr 2012 16:39:21 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AicFAKU/KE8YNOMa/2dsb2JhbACBX5x7eaB5hFo3f4YZBJARhC+KYg
-X-IronPort-AV: E=Sophos;i="4.73,1,1325480400"; 
-   d="scan'208";a="172633911"
-Message-ID: <4F80A3AF.2070406@gmail.com>
-Date: Sat, 07 Apr 2012 16:29:35 -0400
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
-MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: Pawel Moll <pawel.moll@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] init: fix bug where environment vars can't be passed
- via boot args
-References: <201204061711.q36HBpAh015060@lab-41.internal.tilera.com>
-In-Reply-To: <201204061711.q36HBpAh015060@lab-41.internal.tilera.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 7 Apr 2012 16:54:20 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 5/8] perf ui annotate browser: Add list based search for addr offset
+Date: Sat,  7 Apr 2012 17:54:06 -0300
+Message-Id: <1333832049-2399-6-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1333832049-2399-1-git-send-email-acme@infradead.org>
+References: <1333832049-2399-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Metcalf wrote:
-> Commit 026cee0086f had the side-effect of dropping the '=' from
-> the unknown boot arguments that are passed to init as environment
-> variables.  This is because parse_args() puts a NUL in the string
-> where the '=' was when it passes the "param" and "val" pointers
-> to the parsing subfunctions.  Previously, unknown_bootoption() was
-> the last parse_args() subfunction to run, and it carefully put back
-> the '=' character.  Now ignore_unknown_bootoption() is the last
-> one to run, and it wasn't doing the necessary repair, so the
-> envp params ended up with the embedded NUL and were no longer
-> seen as valid environment variables by init.
->
-> Signed-off-by: Chris Metcalf<cmetcalf@tilera.com>
-> ---
->   init/main.c |   25 +++++++++++++------------
->   1 files changed, 13 insertions(+), 12 deletions(-)
->
-> diff --git a/init/main.c b/init/main.c
-> index 9d454f0..44b2433 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -225,13 +225,9 @@ static int __init loglevel(char *str)
->
->   early_param("loglevel", loglevel);
->
-> -/*
-> - * Unknown boot options get handed to init, unless they look like
-> - * unused parameters (modprobe will find them in /proc/cmdline).
-> - */
-> -static int __init unknown_bootoption(char *param, char *val)
-> +/* Change NUL term back to "=", to make "param" the whole string. */
-> +static int __init repair_env_string(char *param, char *val)
->   {
-> -	/* Change NUL term back to "=", to make "param" the whole string. */
->   	if (val) {
->   		/* param=val or param="val"? */
->   		if (val == param+strlen(param)+1)
-> @@ -243,6 +239,16 @@ static int __init unknown_bootoption(char *param, char *val)
->   		} else
->   			BUG();
->   	}
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Unknown boot options get handed to init, unless they look like
-> + * unused parameters (modprobe will find them in /proc/cmdline).
-> + */
-> +static int __init unknown_bootoption(char *param, char *val)
-> +{
-> +	repair_env_string(param, val);
->
->   	/* Handle obsolete-style parameters */
->   	if (obsolete_checksetup(param))
-> @@ -732,11 +738,6 @@ static char *initcall_level_names[] __initdata = {
->   	"late parameters",
->   };
->
-> -static int __init ignore_unknown_bootoption(char *param, char *val)
-> -{
-> -	return 0;
-> -}
-> -
->   static void __init do_initcall_level(int level)
->   {
->   	extern const struct kernel_param __start___param[], __stop___param[];
-> @@ -747,7 +748,7 @@ static void __init do_initcall_level(int level)
->   		   static_command_line, __start___param,
->   		   __stop___param - __start___param,
->   		   level, level,
-> -		   ignore_unknown_bootoption);
-> +		   repair_env_string);
->
->   	for (fn = initcall_levels[level]; fn<  initcall_levels[level+1]; fn++)
->   		do_one_initcall(*fn);
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Thanks for the patch, works for me...
-Woody
+>From the hit sorted rb_tree, so that we can use it in the upcoming jump
+instruction support.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-44a7kl2atf9jxlg9npmotzdg@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/annotate.c |   25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
+
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index dbf8d3f..c52543c 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -157,17 +157,13 @@ static void objdump__insert_line(struct rb_root *self,
+ }
+ 
+ static void annotate_browser__set_top(struct annotate_browser *self,
+-				      struct rb_node *nd)
++				      struct objdump_line *pos, u32 idx)
+ {
+-	struct objdump_line_rb_node *rbpos;
+-	struct objdump_line *pos;
+ 	unsigned back;
+ 
+ 	ui_browser__refresh_dimensions(&self->b);
+ 	back = self->b.height / 2;
+-	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
+-	pos = ((struct objdump_line *)rbpos) - 1;
+-	self->b.top_idx = self->b.index = rbpos->idx;
++	self->b.top_idx = self->b.index = idx;
+ 
+ 	while (self->b.top_idx != 0 && back != 0) {
+ 		pos = list_entry(pos->node.prev, struct objdump_line, node);
+@@ -177,7 +173,18 @@ static void annotate_browser__set_top(struct annotate_browser *self,
+ 	}
+ 
+ 	self->b.top = pos;
+-	self->curr_hot = nd;
++}
++
++static void annotate_browser__set_rb_top(struct annotate_browser *browser,
++					 struct rb_node *nd)
++{
++	struct objdump_line_rb_node *rbpos;
++	struct objdump_line *pos;
++
++	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
++	pos = ((struct objdump_line *)rbpos) - 1;
++	annotate_browser__set_top(browser, pos, rbpos->idx);
++	browser->curr_hot = nd;
+ }
+ 
+ static void annotate_browser__calc_percent(struct annotate_browser *browser,
+@@ -308,7 +315,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 	annotate_browser__calc_percent(self, evidx);
+ 
+ 	if (self->curr_hot)
+-		annotate_browser__set_top(self, self->curr_hot);
++		annotate_browser__set_rb_top(self, self->curr_hot);
+ 
+ 	nd = self->curr_hot;
+ 
+@@ -382,7 +389,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 		}
+ 
+ 		if (nd != NULL)
+-			annotate_browser__set_top(self, nd);
++			annotate_browser__set_rb_top(self, nd);
+ 	}
+ out:
+ 	ui_browser__hide(&self->b);
+-- 
+1.7.9.2.358.g22243
 
