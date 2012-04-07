@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab2DGA2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 20:28:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48565 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758478Ab2DGA2e (ORCPT
+	id S1755143Ab2DGAgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 20:36:25 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50554 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab2DGAgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 20:28:34 -0400
-Date: Sat, 7 Apr 2012 01:28:28 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	Fri, 6 Apr 2012 20:36:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
+References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Apr 2012 17:36:03 -0700
+X-Google-Sender-Auth: piFW34MA_Gnd06Vp68B0X_OX84w
+Message-ID: <CA+55aFy_TOEE-8RNmNKVz6xZ7s+f02jCVcDbA=MJY1iih=AJpg@mail.gmail.com>
+Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
 To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
 Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
         Keith Packard <keithp@keithp.com>, Ralf Baechle <ralf@linux-mips.org>,
         David Woodhouse <dwmw2@infradead.org>,
         Stephen Hemminger <shemminger@vyatta.com>,
         "John W. Linville" <linville@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
-Message-ID: <20120407002828.GG6589@ZenIV.linux.org.uk>
-References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 06, 2012 at 05:11:22PM -0700, Luis R. Rodriguez wrote:
+On Fri, Apr 6, 2012 at 5:11 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+> -MODULE_LICENSE("Dual BSD/GPL");
+> +MODULE_LICENSE("GPL-Compatible");
 
-> You do not need to make dual licenses when licenses are compatible
-> with each other, and in fact at times this can confuse developers / legal.
-> This has been well documented by SFLC through their "Maintaining
-> Permissive-Licensed Files in a GPL-Licensed Project: Guidelines for
-> Developers" [0] which was inspired by the ambiguity of the MadWifi
-> Project's Dual BSD/GPL license tradition. The list of GPL-Compatible
-> licenses can be found on the FSF's website [1].
+I really don't see the point.
 
-This is obvious crap.  Explain to me, please, what makes your "GPL compatible"
-different from "GPLv2"; at least that would be honest ("we have relicensed
-a copy of BSD/GPL code to GPL alone - the license allows that and any
-modifications done here are declared GPL-only, so you can't pull them into
-the BSD-licensed variants")
+This makes things *worse*.
 
-"GPL compatible" is not a license; it's a set of licenses.  Incidentally,
-belonging to that set is irrelevant to legality of including into the kernel,
-since GPLv3 a member and it's *NOT* compatible with the kernel license.
-since GPLv3 a member and it's *NOT* compatible with the kernel license.
+"Dual BSD/GPL" actually tells you something: it tells you that you can
+take that code, and use it in a BSD project.
+
+In contrast "GPL-compatible" tells you nothing at all.
+
+So you are actually removing real information, and just making things
+harder for everybody.
+
+                Linus
