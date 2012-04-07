@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2DGTB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:01:26 -0400
+	id S1755668Ab2DGTBk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:01:40 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:38527 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab2DGTBV (ORCPT
+	with ESMTP id S1755445Ab2DGTBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:01:21 -0400
-Subject: [PATCH v2 05/10] mm: kill vma flag VM_CAN_NONLINEAR
+	Sat, 7 Apr 2012 15:01:38 -0400
+Subject: [PATCH v2 09/10] mm: kill mm->num_exe_file_vmas and keep mm->exe_file
+ until final mmput()
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Ingo Molnar <mingo@redhat.com>,
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Nick Piggin <npiggin@kernel.dk>
-Date: Sat, 07 Apr 2012 23:01:15 +0400
-Message-ID: <20120407190115.9726.85024.stgit@zurg>
+        Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>
+Date: Sat, 07 Apr 2012 23:01:33 +0400
+Message-ID: <20120407190133.9726.26191.stgit@zurg>
 In-Reply-To: <20120407185546.9726.62260.stgit@zurg>
 References: <20120407185546.9726.62260.stgit@zurg>
 User-Agent: StGit/0.15
@@ -27,460 +27,211 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves actual ptes filling for non-linear file mappings
-into special vma operation: ->remap_pages().
+exe_file's vma accouning is hooked into every file mmap/unmmap and vma
+split/merge just to fix some hypothetical pinning fs from umounting by mm,
+which already unmapped all its executable files, but still alive.
 
-Now fs must implement this method to get non-linear mappings support.
-If fs uses filemap_fault() then it can use generic_file_remap_pages() for this.
+Seems like currently nobody depends on this behaviour.
+We can try to remove this logic and keep mm->exe_file until final mmput().
+
+mm->exe_file is still protected with mm->mmap_sem, because we want to change it
+via new sys_prctl(PR_SET_MM_EXE_FILE) in future. Also via this syscall task can
+change its mm->exe_file and unpin mountpoint explicitly.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
 ---
- drivers/staging/android/ashmem.c |    1 -
- fs/9p/vfs_file.c                 |    1 +
- fs/btrfs/file.c                  |    2 +-
- fs/ceph/addr.c                   |    2 +-
- fs/cifs/file.c                   |    1 +
- fs/ecryptfs/file.c               |    1 +
- fs/ext4/file.c                   |    2 +-
- fs/fuse/file.c                   |    1 +
- fs/gfs2/file.c                   |    2 +-
- fs/nfs/file.c                    |    1 +
- fs/nilfs2/file.c                 |    2 +-
- fs/ocfs2/mmap.c                  |    2 +-
- fs/ubifs/file.c                  |    1 +
- fs/xfs/xfs_file.c                |    2 +-
- include/linux/fs.h               |    2 ++
- include/linux/mm.h               |    6 +++---
- mm/filemap.c                     |    2 +-
- mm/filemap_xip.c                 |    3 ++-
- mm/fremap.c                      |   14 ++++++++------
- mm/mmap.c                        |    3 +--
- mm/nommu.c                       |    8 ++++++++
- mm/shmem.c                       |    3 +--
- 22 files changed, 39 insertions(+), 23 deletions(-)
+ include/linux/mm.h       |    3 ---
+ include/linux/mm_types.h |    1 -
+ kernel/fork.c            |   21 ---------------------
+ mm/mmap.c                |   27 +++++----------------------
+ mm/nommu.c               |   14 ++------------
+ 5 files changed, 7 insertions(+), 59 deletions(-)
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index 9f1f27e..8b36d3d 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -329,7 +329,6 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
- 	if (vma->vm_file)
- 		fput(vma->vm_file);
- 	vma->vm_file = asma->file;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 
- out:
- 	mutex_unlock(&ashmem_mutex);
-diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-index fc06fd2..34b84f0 100644
---- a/fs/9p/vfs_file.c
-+++ b/fs/9p/vfs_file.c
-@@ -735,6 +735,7 @@ v9fs_cached_file_write(struct file *filp, const char __user * data,
- static const struct vm_operations_struct v9fs_file_vm_ops = {
- 	.fault = filemap_fault,
- 	.page_mkwrite = v9fs_vm_page_mkwrite,
-+	.remap_pages = generic_file_remap_pages,
- };
- 
- 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index d83260d..29a8cfb 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1576,6 +1576,7 @@ out:
- static const struct vm_operations_struct btrfs_file_vm_ops = {
- 	.fault		= filemap_fault,
- 	.page_mkwrite	= btrfs_page_mkwrite,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- static int btrfs_file_mmap(struct file	*filp, struct vm_area_struct *vma)
-@@ -1587,7 +1588,6 @@ static int btrfs_file_mmap(struct file	*filp, struct vm_area_struct *vma)
- 
- 	file_accessed(filp);
- 	vma->vm_ops = &btrfs_file_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 
- 	return 0;
- }
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 173b1d2..1745051 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -1219,6 +1219,7 @@ out:
- static struct vm_operations_struct ceph_vmops = {
- 	.fault		= filemap_fault,
- 	.page_mkwrite	= ceph_page_mkwrite,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- int ceph_mmap(struct file *file, struct vm_area_struct *vma)
-@@ -1229,6 +1230,5 @@ int ceph_mmap(struct file *file, struct vm_area_struct *vma)
- 		return -ENOEXEC;
- 	file_accessed(file);
- 	vma->vm_ops = &ceph_vmops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index fae765d..88b644a 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2565,6 +2565,7 @@ cifs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- static struct vm_operations_struct cifs_file_vm_ops = {
- 	.fault = filemap_fault,
- 	.page_mkwrite = cifs_page_mkwrite,
-+	.remap_pages = generic_file_remap_pages,
- };
- 
- int cifs_file_strict_mmap(struct file *file, struct vm_area_struct *vma)
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index 2b17f2f..367de3b 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -146,6 +146,7 @@ static void ecryptfs_vma_close(struct vm_area_struct *vma)
- static const struct vm_operations_struct ecryptfs_file_vm_ops = {
- 	.close		= ecryptfs_vma_close,
- 	.fault		= filemap_fault,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- static int ecryptfs_file_mmap(struct file *file, struct vm_area_struct *vma)
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index cb70f18..adc9a39 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -144,6 +144,7 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
- static const struct vm_operations_struct ext4_file_vm_ops = {
- 	.fault		= filemap_fault,
- 	.page_mkwrite   = ext4_page_mkwrite,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- static int ext4_file_mmap(struct file *file, struct vm_area_struct *vma)
-@@ -154,7 +155,6 @@ static int ext4_file_mmap(struct file *file, struct vm_area_struct *vma)
- 		return -ENOEXEC;
- 	file_accessed(file);
- 	vma->vm_ops = &ext4_file_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
- 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index a841868..804f0ac 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1331,6 +1331,7 @@ static const struct vm_operations_struct fuse_file_vm_ops = {
- 	.close		= fuse_vma_close,
- 	.fault		= filemap_fault,
- 	.page_mkwrite	= fuse_page_mkwrite,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- static int fuse_file_mmap(struct file *file, struct vm_area_struct *vma)
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index a3d2c9e..de6a94d 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -469,6 +469,7 @@ out:
- static const struct vm_operations_struct gfs2_vm_ops = {
- 	.fault = filemap_fault,
- 	.page_mkwrite = gfs2_page_mkwrite,
-+	.remap_pages = generic_file_remap_pages,
- };
- 
- /**
-@@ -503,7 +504,6 @@ static int gfs2_mmap(struct file *file, struct vm_area_struct *vma)
- 			return error;
- 	}
- 	vma->vm_ops = &gfs2_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 
- 	return 0;
- }
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index aa9b709..31eae53 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -550,6 +550,7 @@ out:
- static const struct vm_operations_struct nfs_file_vm_ops = {
- 	.fault = filemap_fault,
- 	.page_mkwrite = nfs_vm_page_mkwrite,
-+	.remap_pages = generic_file_remap_pages,
- };
- 
- static int nfs_need_sync_write(struct file *filp, struct inode *inode)
-diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
-index 2660152..303cbb9 100644
---- a/fs/nilfs2/file.c
-+++ b/fs/nilfs2/file.c
-@@ -126,13 +126,13 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- static const struct vm_operations_struct nilfs_file_vm_ops = {
- 	.fault		= filemap_fault,
- 	.page_mkwrite	= nilfs_page_mkwrite,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- static int nilfs_file_mmap(struct file *file, struct vm_area_struct *vma)
- {
- 	file_accessed(file);
- 	vma->vm_ops = &nilfs_file_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
- 
-diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
-index 9cd4108..7aef3f4 100644
---- a/fs/ocfs2/mmap.c
-+++ b/fs/ocfs2/mmap.c
-@@ -171,6 +171,7 @@ out:
- static const struct vm_operations_struct ocfs2_file_vm_ops = {
- 	.fault		= ocfs2_fault,
- 	.page_mkwrite	= ocfs2_page_mkwrite,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- int ocfs2_mmap(struct file *file, struct vm_area_struct *vma)
-@@ -186,7 +187,6 @@ int ocfs2_mmap(struct file *file, struct vm_area_struct *vma)
- 	ocfs2_inode_unlock(file->f_dentry->d_inode, lock_level);
- out:
- 	vma->vm_ops = &ocfs2_file_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
- 
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index 5c8f6dc..fc59462 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1536,6 +1536,7 @@ out_unlock:
- static const struct vm_operations_struct ubifs_file_vm_ops = {
- 	.fault        = filemap_fault,
- 	.page_mkwrite = ubifs_vm_page_mkwrite,
-+	.remap_pages = generic_file_remap_pages,
- };
- 
- static int ubifs_file_mmap(struct file *file, struct vm_area_struct *vma)
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index 54a67dd..4381874 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -987,7 +987,6 @@ xfs_file_mmap(
- 	struct vm_area_struct *vma)
- {
- 	vma->vm_ops = &xfs_file_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 
- 	file_accessed(filp);
- 	return 0;
-@@ -1041,4 +1040,5 @@ const struct file_operations xfs_dir_file_operations = {
- static const struct vm_operations_struct xfs_file_vm_ops = {
- 	.fault		= filemap_fault,
- 	.page_mkwrite	= xfs_vm_page_mkwrite,
-+	.remap_pages	= generic_file_remap_pages,
- };
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8de6755..6b71bd6 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2361,6 +2361,8 @@ extern int sb_min_blocksize(struct super_block *, int);
- 
- extern int generic_file_mmap(struct file *, struct vm_area_struct *);
- extern int generic_file_readonly_mmap(struct file *, struct vm_area_struct *);
-+extern int generic_file_remap_pages(struct vm_area_struct *, unsigned long addr,
-+		unsigned long size, pgoff_t pgoff);
- extern int file_read_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size);
- int generic_write_checks(struct file *file, loff_t *pos, size_t *count, int isblk);
- extern ssize_t generic_file_aio_read(struct kiocb *, const struct iovec *, unsigned long, loff_t);
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index a444f47..0dad037 100644
+index 8e82b79..3a4d721 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -106,7 +106,6 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_INSERTPAGE	0x02000000	/* The vma has had "vm_insert_page()" done on it */
- #define VM_NODUMP	0x04000000	/* Do not include in the core dump */
+@@ -1373,9 +1373,6 @@ extern void exit_mmap(struct mm_struct *);
+ extern int mm_take_all_locks(struct mm_struct *mm);
+ extern void mm_drop_all_locks(struct mm_struct *mm);
  
--#define VM_CAN_NONLINEAR 0x08000000	/* Has ->fault & does nonlinear pages */
- #define VM_MIXEDMAP	0x10000000	/* Can contain "struct page" and pure PFN pages */
- #define VM_HUGEPAGE	0x20000000	/* MADV_HUGEPAGE marked this vma */
- #define VM_NOHUGEPAGE	0x40000000	/* MADV_NOHUGEPAGE marked this vma */
-@@ -177,8 +176,7 @@ static inline int is_pfn_mapping(struct vm_area_struct *vma)
-  * of VM_FAULT_xxx flags that give details about how the fault was handled.
-  *
-  * pgoff should be used in favour of virtual_address, if possible. If pgoff
-- * is used, one may set VM_CAN_NONLINEAR in the vma->vm_flags to get nonlinear
-- * mapping support.
-+ * is used, one may implement ->remap_pages to get nonlinear mapping support.
-  */
- struct vm_fault {
- 	unsigned int flags;		/* FAULT_FLAG_xxx flags */
-@@ -236,6 +234,8 @@ struct vm_operations_struct {
- 	int (*migrate)(struct vm_area_struct *vma, const nodemask_t *from,
- 		const nodemask_t *to, unsigned long flags);
+-/* From fs/proc/base.c. callers must _not_ hold the mm's exe_file_lock */
+-extern void added_exe_file_vma(struct mm_struct *mm);
+-extern void removed_exe_file_vma(struct mm_struct *mm);
+ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
+ extern struct file *get_mm_exe_file(struct mm_struct *mm);
+ 
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 3cc3062..b480c06 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -378,7 +378,6 @@ struct mm_struct {
+ 
+ 	/* store ref to file /proc/<pid>/exe symlink points to */
+ 	struct file *exe_file;
+-	unsigned long num_exe_file_vmas;
+ #ifdef CONFIG_MMU_NOTIFIER
+ 	struct mmu_notifier_mm *mmu_notifier_mm;
  #endif
-+	int (*remap_pages)(struct vm_area_struct *vma, unsigned long addr,
-+			   unsigned long size, pgoff_t pgoff);
- };
- 
- struct mmu_gather;
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 79c4b2b..34cce46 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1753,6 +1753,7 @@ EXPORT_SYMBOL(filemap_fault);
- 
- const struct vm_operations_struct generic_file_vm_ops = {
- 	.fault		= filemap_fault,
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- /* This is used for a general mmap of a disk file */
-@@ -1765,7 +1766,6 @@ int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
- 		return -ENOEXEC;
- 	file_accessed(file);
- 	vma->vm_ops = &generic_file_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 2e060c8..54662ed 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -587,26 +587,6 @@ void mmput(struct mm_struct *mm)
  }
+ EXPORT_SYMBOL_GPL(mmput);
  
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index a4eb311..3c38d07 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -304,6 +304,7 @@ out:
- 
- static const struct vm_operations_struct xip_file_vm_ops = {
- 	.fault	= xip_file_fault,
-+	.remap_pages = generic_file_remap_pages,
- };
- 
- int xip_file_mmap(struct file * file, struct vm_area_struct * vma)
-@@ -312,7 +313,7 @@ int xip_file_mmap(struct file * file, struct vm_area_struct * vma)
- 
- 	file_accessed(file);
- 	vma->vm_ops = &xip_file_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR | VM_MIXEDMAP;
-+	vma->vm_flags |= VM_MIXEDMAP;
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(xip_file_mmap);
-diff --git a/mm/fremap.c b/mm/fremap.c
-index 9ed4fd4..c70190a 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -5,6 +5,7 @@
-  *
-  * started by Ingo Molnar, Copyright (C) 2002, 2003
-  */
-+#include <linux/export.h>
- #include <linux/backing-dev.h>
- #include <linux/mm.h>
- #include <linux/swap.h>
-@@ -80,9 +81,10 @@ out:
- 	return err;
- }
- 
--static int populate_range(struct mm_struct *mm, struct vm_area_struct *vma,
--			unsigned long addr, unsigned long size, pgoff_t pgoff)
-+int generic_file_remap_pages(struct vm_area_struct *vma, unsigned long addr,
-+			     unsigned long size, pgoff_t pgoff)
- {
-+	struct mm_struct *mm = vma->vm_mm;
- 	int err;
- 
- 	do {
-@@ -95,9 +97,9 @@ static int populate_range(struct mm_struct *mm, struct vm_area_struct *vma,
- 		pgoff++;
- 	} while (size);
- 
--        return 0;
+-/*
+- * We added or removed a vma mapping the executable. The vmas are only mapped
+- * during exec and are not mapped with the mmap system call.
+- * Callers must hold down_write() on the mm's mmap_sem for these
+- */
+-void added_exe_file_vma(struct mm_struct *mm)
+-{
+-	mm->num_exe_file_vmas++;
+-}
 -
-+	return 0;
+-void removed_exe_file_vma(struct mm_struct *mm)
+-{
+-	mm->num_exe_file_vmas--;
+-	if ((mm->num_exe_file_vmas == 0) && mm->exe_file) {
+-		fput(mm->exe_file);
+-		mm->exe_file = NULL;
+-	}
+-
+-}
+-
+ void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file)
+ {
+ 	if (new_exe_file)
+@@ -614,7 +594,6 @@ void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file)
+ 	if (mm->exe_file)
+ 		fput(mm->exe_file);
+ 	mm->exe_file = new_exe_file;
+-	mm->num_exe_file_vmas = 0;
  }
-+EXPORT_SYMBOL(generic_file_remap_pages);
  
- /**
-  * sys_remap_file_pages - remap arbitrary pages of an existing VM_SHARED vma
-@@ -167,7 +169,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 	if (vma->vm_private_data && !(vma->vm_flags & VM_NONLINEAR))
- 		goto out;
- 
--	if (!(vma->vm_flags & VM_CAN_NONLINEAR))
-+	if (!vma->vm_ops->remap_pages)
- 		goto out;
- 
- 	if (start < vma->vm_start || start + size > vma->vm_end)
-@@ -229,7 +231,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 	}
- 
- 	mmu_notifier_invalidate_range_start(mm, start, start + size);
--	err = populate_range(mm, vma, start, size, pgoff);
-+	err = vma->vm_ops->remap_pages(vma, start, size, pgoff);
- 	mmu_notifier_invalidate_range_end(mm, start, start + size);
- 	if (!err && !(flags & MAP_NONBLOCK)) {
- 		if (vma->vm_flags & VM_LOCKED) {
+ struct file *get_mm_exe_file(struct mm_struct *mm)
 diff --git a/mm/mmap.c b/mm/mmap.c
-index a7bf6a3..1a23d2c 100644
+index bc67ed7..2647bb7 100644
 --- a/mm/mmap.c
 +++ b/mm/mmap.c
-@@ -649,8 +649,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- static inline int is_mergeable_vma(struct vm_area_struct *vma,
- 			struct file *file, unsigned long vm_flags)
- {
--	/* VM_CAN_NONLINEAR may get set later by f_op->mmap() */
--	if ((vma->vm_flags ^ vm_flags) & ~VM_CAN_NONLINEAR)
-+	if (vma->vm_flags ^ vm_flags)
- 		return 0;
- 	if (vma->vm_file != file)
- 		return 0;
+@@ -230,11 +230,8 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
+ 	might_sleep();
+ 	if (vma->vm_ops && vma->vm_ops->close)
+ 		vma->vm_ops->close(vma);
+-	if (vma->vm_file) {
++	if (vma->vm_file)
+ 		fput(vma->vm_file);
+-		if (vma->vm_file == vma->vm_mm->exe_file)
+-			removed_exe_file_vma(vma->vm_mm);
+-	}
+ 	mpol_put(vma_policy(vma));
+ 	kmem_cache_free(vm_area_cachep, vma);
+ 	return next;
+@@ -616,11 +613,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+ 
+ 	if (remove_next) {
+-		if (file) {
++		if (file)
+ 			fput(file);
+-			if (file == mm->exe_file)
+-				removed_exe_file_vma(mm);
+-		}
+ 		if (next->anon_vma)
+ 			anon_vma_merge(vma, next);
+ 		mm->map_count--;
+@@ -1293,8 +1287,6 @@ munmap_back:
+ 		error = file->f_op->mmap(file, vma);
+ 		if (error)
+ 			goto unmap_and_free_vma;
+-		if (file == mm->exe_file)
+-			added_exe_file_vma(mm);
+ 
+ 		/* Can addr have changed??
+ 		 *
+@@ -1969,11 +1961,8 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 	if (anon_vma_clone(new, vma))
+ 		goto out_free_mpol;
+ 
+-	if (new->vm_file) {
++	if (new->vm_file)
+ 		get_file(new->vm_file);
+-		if (new->vm_file == mm->exe_file)
+-			added_exe_file_vma(mm);
+-	}
+ 
+ 	if (new->vm_ops && new->vm_ops->open)
+ 		new->vm_ops->open(new);
+@@ -1991,11 +1980,8 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 	/* Clean everything up if vma_adjust failed. */
+ 	if (new->vm_ops && new->vm_ops->close)
+ 		new->vm_ops->close(new);
+-	if (new->vm_file) {
+-		if (new->vm_file == mm->exe_file)
+-			removed_exe_file_vma(mm);
++	if (new->vm_file)
+ 		fput(new->vm_file);
+-	}
+ 	unlink_anon_vmas(new);
+  out_free_mpol:
+ 	mpol_put(pol);
+@@ -2377,11 +2363,8 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 			new_vma->vm_start = addr;
+ 			new_vma->vm_end = addr + len;
+ 			new_vma->vm_pgoff = pgoff;
+-			if (new_vma->vm_file) {
++			if (new_vma->vm_file)
+ 				get_file(new_vma->vm_file);
+-				if (new_vma->vm_file == mm->exe_file)
+-					added_exe_file_vma(mm);
+-			}
+ 			if (new_vma->vm_ops && new_vma->vm_ops->open)
+ 				new_vma->vm_ops->open(new_vma);
+ 			vma_link(mm, new_vma, prev, rb_link, rb_parent);
 diff --git a/mm/nommu.c b/mm/nommu.c
-index f59e170..afa0a15 100644
+index db8da78..d617d5c 100644
 --- a/mm/nommu.c
 +++ b/mm/nommu.c
-@@ -1961,6 +1961,14 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- }
- EXPORT_SYMBOL(filemap_fault);
- 
-+int generic_file_remap_pages(struct vm_area_struct *vma, unsigned long addr,
-+			     unsigned long size, pgoff_t pgoff)
-+{
-+	BUG();
-+	return 0;
-+}
-+EXPORT_SYMBOL(generic_file_remap_pages);
-+
- static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
- 		unsigned long addr, void *buf, int len, int write)
- {
-diff --git a/mm/shmem.c b/mm/shmem.c
-index f99ff3e..617621a 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1112,7 +1112,6 @@ static int shmem_mmap(struct file *file, struct vm_area_struct *vma)
- {
- 	file_accessed(file);
- 	vma->vm_ops = &shmem_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
- 
-@@ -2430,6 +2429,7 @@ static const struct vm_operations_struct shmem_vm_ops = {
- 	.set_policy     = shmem_set_policy,
- 	.get_policy     = shmem_get_policy,
- #endif
-+	.remap_pages	= generic_file_remap_pages,
- };
- 
- static struct dentry *shmem_mount(struct file_system_type *fs_type,
-@@ -2623,7 +2623,6 @@ int shmem_zero_setup(struct vm_area_struct *vma)
+@@ -789,11 +789,8 @@ static void delete_vma(struct mm_struct *mm, struct vm_area_struct *vma)
+ 	kenter("%p", vma);
+ 	if (vma->vm_ops && vma->vm_ops->close)
+ 		vma->vm_ops->close(vma);
+-	if (vma->vm_file) {
++	if (vma->vm_file)
  		fput(vma->vm_file);
- 	vma->vm_file = file;
- 	vma->vm_ops = &shmem_vm_ops;
--	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
+-		if (vma->vm_file == mm->exe_file)
+-			removed_exe_file_vma(mm);
+-	}
+ 	put_nommu_region(vma->vm_region);
+ 	kmem_cache_free(vm_area_cachep, vma);
  }
+@@ -1287,10 +1284,6 @@ unsigned long do_mmap_pgoff(struct file *file,
+ 		get_file(file);
+ 		vma->vm_file = file;
+ 		get_file(file);
+-		if (file == current->mm->exe_file) {
+-			added_exe_file_vma(current->mm);
+-			vma->vm_mm = current->mm;
+-		}
+ 	}
  
+ 	down_write(&nommu_region_sem);
+@@ -1441,11 +1434,8 @@ error:
+ 	if (region->vm_file)
+ 		fput(region->vm_file);
+ 	kmem_cache_free(vm_region_jar, region);
+-	if (vma->vm_file) {
++	if (vma->vm_file)
+ 		fput(vma->vm_file);
+-		if (vma->vm_file == vma->vm_mm->exe_file)
+-			removed_exe_file_vma(vma->vm_mm);
+-	}
+ 	kmem_cache_free(vm_area_cachep, vma);
+ 	kleave(" = %d", ret);
+ 	return ret;
 
