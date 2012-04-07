@@ -1,99 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab2DGUzV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 16:55:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51998 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab2DGUyY (ORCPT
+	id S1755495Ab2DGUzT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 16:55:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46281 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab2DGUyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 16:54:24 -0400
+	Sat, 7 Apr 2012 16:54:22 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ashay Rane <ashay.rane@tacc.utexas.edu>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/8] perf/urgent new features
-Date: Sat,  7 Apr 2012 17:54:01 -0300
-Message-Id: <1333832049-2399-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 8/8] perf annotate browser: string search: /?n
+Date: Sat,  7 Apr 2012 17:54:09 -0300
+Message-Id: <1333832049-2399-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+In-Reply-To: <1333832049-2399-1-git-send-email-acme@infradead.org>
+References: <1333832049-2399-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-	Please consider pulling.
+Using the same keystrokes as vim:
 
-	This was forked from my perf/urgent branch, that I submitted to you
-recently.
+/ = search forward
+n = search next forward/backwards
+? = search backwards
 
-	The jump stuff needs some more work and the offset mode has to become
-the default, the long address as operand of jump instructions needs to be
-suppressed, but I just wanted to push what I have to get comments about it at
-this stage.
+Still needs to continue from start/end when not found, use HOME + / or
+END + ? for now.
 
-	Will be visiting some airports in the next two days on my way home, so
-with limited or no connectivity.
+At some point we need a keybindings file to support ones favourite mode,
+erm, like EMACS, etc.
 
-- Arnaldo
+Also we now need a 'h' window with all these keybindings.
 
-The following changes since commit 31d68e7b66f168e623902e194af1e52b8cf75d71:
-
-  perf annotate: Validate addr in symbol__inc_addr_samples (2012-04-05 19:51:14 -0300)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to d3d1f61acf62204bb7b2b4509329247bffaedd7c:
-
-  perf annotate browser: string search: /?n (2012-04-07 17:37:22 -0300)
-
-----------------------------------------------------------------
-Improvements for perf/core:
-
-. Navigate jump instructions in the annotate browser, just press enter or ->,
-  still needs support for a jump navigation history, i.e. to go back.
-
-. Search string in the annotate browser: same keys as vim:
-   / forward
-   n next backward/forward
-   ? backward
-
-. Clarify number of events/samples in the report header, from Ashay Rane
-
+Requested-by: Andi Kleen <andi@firstfloor.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-rv30xj2i258n0gwkzlu0c0bc@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/annotate.c |  149 +++++++++++++++++++++++++++++++-
+ 1 file changed, 148 insertions(+), 1 deletion(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (7):
-      perf ui browser: Return the current color when setting a new one
-      perf annotate: Allow printing objdump line addr in different color
-      perf ui annotate browser: Allow toggling addr offset view
-      perf ui annotate browser: Move callq handling to separate function
-      perf ui annotate browser: Add list based search for addr offset
-      perf annotate browser: Initial support for navigating jump instructions
-      perf annotate browser: string search: /?n
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 752d8d0..c2cfeed 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -21,6 +21,8 @@ struct annotate_browser {
+ 	int		    nr_entries;
+ 	bool		    hide_src_code;
+ 	bool		    use_offset;
++	bool		    searching_backwards;
++	char		    search_bf[128];
+ };
+ 
+ struct objdump_line_rb_node {
+@@ -176,6 +178,7 @@ static void annotate_browser__set_top(struct annotate_browser *self,
+ 	}
+ 
+ 	self->b.top = pos;
++	self->b.navkeypressed = true;
+ }
+ 
+ static void annotate_browser__set_rb_top(struct annotate_browser *browser,
+@@ -354,6 +357,132 @@ static bool annotate_browser__jump(struct annotate_browser *browser)
+ 	return true;
+ }
+ 
++static struct objdump_line *
++	annotate_browser__find_string(struct annotate_browser *browser,
++				      char *s, s64 *idx)
++{
++	struct map_symbol *ms = browser->b.priv;
++	struct symbol *sym = ms->sym;
++	struct annotation *notes = symbol__annotation(sym);
++	struct objdump_line *pos = browser->selection;
++
++	*idx = browser->b.index;
++	list_for_each_entry_continue(pos, &notes->src->source, node) {
++		if (objdump_line__filter(&browser->b, &pos->node))
++			continue;
++
++		++*idx;
++
++		if (pos->line && strstr(pos->line, s) != NULL)
++			return pos;
++	}
++
++	return NULL;
++}
++
++static bool __annotate_browser__search(struct annotate_browser *browser)
++{
++	struct objdump_line *line;
++	s64 idx;
++
++	line = annotate_browser__find_string(browser, browser->search_bf, &idx);
++	if (line == NULL) {
++		ui_helpline__puts("String not found!");
++		return false;
++	}
++
++	annotate_browser__set_top(browser, line, idx);
++	browser->searching_backwards = false;
++	return true;
++}
++
++static struct objdump_line *
++	annotate_browser__find_string_reverse(struct annotate_browser *browser,
++					      char *s, s64 *idx)
++{
++	struct map_symbol *ms = browser->b.priv;
++	struct symbol *sym = ms->sym;
++	struct annotation *notes = symbol__annotation(sym);
++	struct objdump_line *pos = browser->selection;
++
++	*idx = browser->b.index;
++	list_for_each_entry_continue_reverse(pos, &notes->src->source, node) {
++		if (objdump_line__filter(&browser->b, &pos->node))
++			continue;
++
++		--*idx;
++
++		if (pos->line && strstr(pos->line, s) != NULL)
++			return pos;
++	}
++
++	return NULL;
++}
++
++static bool __annotate_browser__search_reverse(struct annotate_browser *browser)
++{
++	struct objdump_line *line;
++	s64 idx;
++
++	line = annotate_browser__find_string_reverse(browser, browser->search_bf, &idx);
++	if (line == NULL) {
++		ui_helpline__puts("String not found!");
++		return false;
++	}
++
++	annotate_browser__set_top(browser, line, idx);
++	browser->searching_backwards = true;
++	return true;
++}
++
++static bool annotate_browser__search_window(struct annotate_browser *browser,
++					    int delay_secs)
++{
++	if (ui_browser__input_window("Search", "String: ", browser->search_bf,
++				     "ENTER: OK, ESC: Cancel",
++				     delay_secs * 2) != K_ENTER ||
++	    !*browser->search_bf)
++		return false;
++
++	return true;
++}
++
++static bool annotate_browser__search(struct annotate_browser *browser, int delay_secs)
++{
++	if (annotate_browser__search_window(browser, delay_secs))
++		return __annotate_browser__search(browser);
++
++	return false;
++}
++
++static bool annotate_browser__continue_search(struct annotate_browser *browser,
++					      int delay_secs)
++{
++	if (!*browser->search_bf)
++		return annotate_browser__search(browser, delay_secs);
++
++	return __annotate_browser__search(browser);
++}
++
++static bool annotate_browser__search_reverse(struct annotate_browser *browser,
++					   int delay_secs)
++{
++	if (annotate_browser__search_window(browser, delay_secs))
++		return __annotate_browser__search_reverse(browser);
++
++	return false;
++}
++
++static
++bool annotate_browser__continue_search_reverse(struct annotate_browser *browser,
++					       int delay_secs)
++{
++	if (!*browser->search_bf)
++		return annotate_browser__search_reverse(browser, delay_secs);
++
++	return __annotate_browser__search_reverse(browser);
++}
++
+ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 				 void(*timer)(void *arg),
+ 				 void *arg, int delay_secs)
+@@ -372,8 +501,10 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 
+ 	annotate_browser__calc_percent(self, evidx);
+ 
+-	if (self->curr_hot)
++	if (self->curr_hot) {
+ 		annotate_browser__set_rb_top(self, self->curr_hot);
++		self->b.navkeypressed = false;
++	}
+ 
+ 	nd = self->curr_hot;
+ 
+@@ -428,6 +559,22 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 		case 'o':
+ 			self->use_offset = !self->use_offset;
+ 			continue;
++		case '/':
++			if (annotate_browser__search(self, delay_secs)) {
++show_help:
++				ui_helpline__puts(help);
++			}
++			continue;
++		case 'n':
++			if (self->searching_backwards ?
++			    annotate_browser__continue_search_reverse(self, delay_secs) :
++			    annotate_browser__continue_search(self, delay_secs))
++				goto show_help;
++			continue;
++		case '?':
++			if (annotate_browser__search_reverse(self, delay_secs))
++				goto show_help;
++			continue;
+ 		case K_ENTER:
+ 		case K_RIGHT:
+ 			if (self->selection == NULL)
+-- 
+1.7.9.2.358.g22243
 
-Ashay Rane (1):
-      perf report: Correct display of samples and events in header
-
- tools/perf/Documentation/perfconfig.example |    1 +
- tools/perf/builtin-report.c                 |   11 +-
- tools/perf/util/annotate.c                  |   35 ++-
- tools/perf/util/ui/browser.c                |   11 +-
- tools/perf/util/ui/browser.h                |    4 +-
- tools/perf/util/ui/browsers/annotate.c      |  362 ++++++++++++++++++++++-----
- tools/perf/util/ui/browsers/hists.c         |   10 +-
- 7 files changed, 353 insertions(+), 81 deletions(-)
