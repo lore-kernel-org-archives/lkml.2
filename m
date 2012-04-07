@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2DGAZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 20:25:57 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:34765 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab2DGAZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 20:25:56 -0400
-Message-ID: <4F7F8992.4050004@tilera.com>
-Date: Fri, 6 Apr 2012 20:25:54 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1758407Ab2DGA0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 20:26:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50659 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753220Ab2DGA0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 20:26:34 -0400
+Date: Sat, 7 Apr 2012 02:26:26 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Kay Sievers <kay@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] printk: support structured and multi-facility log
+ messages
+In-Reply-To: <1333569554.864.3.camel@mop>
+Message-ID: <alpine.LRH.2.00.1204070222130.18937@twin.jikos.cz>
+References: <1333569554.864.3.camel@mop>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hillf Danton <dhillf@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] hugetlb: fix race condition in hugetlb_fault()
-References: <201203302018.q2UKIFH5020745@farm-0012.internal.tilera.com> <CAJd=RBCoLNB+iRX1shKGAwSbE8PsZXyk9e3inPTREcm2kk3nXA@mail.gmail.com> <201203311339.q2VDdJMD006254@farm-0012.internal.tilera.com> <CAJd=RBBWx7uZcw=_oA06RVunPAGeFcJ7LY=RwFCyB_BreJb_kg@mail.gmail.com> <4F7887A5.3060700@tilera.com> <20120406152305.59408e35.akpm@linux-foundation.org> <alpine.LSU.2.00.1204061601370.3637@eggly.anvils> <20120406162618.3307a9bd.akpm@linux-foundation.org> <alpine.LSU.2.00.1204061631160.3820@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1204061631160.3820@eggly.anvils>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/6/2012 7:35 PM, Hugh Dickins wrote:
-> On Fri, 6 Apr 2012, Andrew Morton wrote:
->> On Fri, 6 Apr 2012 16:10:13 -0700 (PDT)
->> Hugh Dickins <hughd@google.com> wrote:
->>> The resulting patch is okay; but let's reassure Chris that his
->>> original patch was better, before he conceded to make the get_page
->>> and put_page unconditional, and added unnecessary detail of the race.
->>>
->> Yes, the v1 patch was better.  No reason was given for changing it?
-> I think Chris was aiming to be a model citizen, and followed review
-> suggestions that he would actually have done better to resist.
+On Wed, 4 Apr 2012, Kay Sievers wrote:
 
-Yes, exactly.  I figure if I'm submitting patches to mm, I should defer to
-suggestions from someone like Hillf who has committed a lot more of them
-than I have. :-)   Arguably the unconditional version is simpler at the
-source code level in any case, and I figure more is usually better when it
-comes to documenting race conditions, so it didn't seem necessary to push
-back.  Frankly I'm happy to keep my sign-off on either version of the patch
-and defer to Andrew or whomever as to which one gets taken.
+> - Output of dev_printk() is reliably machine-readable now. In addition
+>   to the printed plain text message, it creates a log dictionary with the
+>   following properties:
+>     SUBSYSTEM=     - the driver-core subsytem name
+>     DEVICE=
+>       b12:8        - block dev_t
+>       c127:3       - char dev_t
+>       n8           - netdev ifindex
+>       +sound:card0 - subsystem:devname
+
+One of the questions that hasn't been raised yet, and which I personally 
+consider crucial -- are we making printk() interface part of userspace ABI 
+now by this?
+
+Today, we are free to change any printk()s and not feel guilty about it at 
+all. With this, we are making the whole thing much more systematic and 
+friendly for automatic userspace consumption. Nnot really different to, 
+for example uevents, which I believe everyone considers userspace ABI now.
+
+Do we really want that?
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Jiri Kosina
+SUSE Labs
 
