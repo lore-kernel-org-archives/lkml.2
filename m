@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab2DGA23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 20:28:29 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:24698 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab2DGA22 (ORCPT
+	id S1758494Ab2DGA2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 20:28:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48565 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758478Ab2DGA2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 20:28:28 -0400
-Message-ID: <4F7F8A26.2040707@micron.com>
-Date: Fri, 6 Apr 2012 17:28:22 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Fri, 6 Apr 2012 20:28:34 -0400
+Date: Sat, 7 Apr 2012 01:28:28 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        Keith Packard <keithp@keithp.com>, Ralf Baechle <ralf@linux-mips.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
+Message-ID: <20120407002828.GG6589@ZenIV.linux.org.uk>
+References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 2/5] mtip32xx: Add new sysfs entry 'status' and fix restart
- port
-References: <4F7E07DC.50909@micron.com> <20120406011037.GA25892@kroah.com> <4F7F322B.6060805@micron.com> <4F7F615B.80305@micron.com> <20120406214426.GA12772@kroah.com> <4F7F682C.9050806@micron.com> <20120406233004.GA24121@kroah.com>
-In-Reply-To: <20120406233004.GA24121@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.000.1038-18810.005
-X-TM-AS-Result: No--12.301200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/6/2012 4:30 PM, Greg KH wrote:
+On Fri, Apr 06, 2012 at 05:11:22PM -0700, Luis R. Rodriguez wrote:
 
->>> > > What do the existing api files show for block devices?
->>> > > 
->> > 
->> > 
->> > I was looking into sysfs-driver-* files to create sysfs-driver-mtip32xx.
->> > These files have paths like /sys/bus/pci/*, /sys/devices/*,
->> > /sys/class/bluetooth/*, etc.
->> > 
->> > There are sysfs-block-dm and sysfs-block-zram files with
->> > /sys/block/dm-<num>/dm/* and /sys/block/zram<id>/*. If I have to follow
->> > these, then the file would be sysfs-driver-rssd with /sys/block/<disk>/*.
->> > 
->> > Let me know.
-> /sys/block/rs*/ would be the right place, right?  You know the tree
-> better than I do as you have this hardware and can see where in sysfs
-> the files really are :)
+> You do not need to make dual licenses when licenses are compatible
+> with each other, and in fact at times this can confuse developers / legal.
+> This has been well documented by SFLC through their "Maintaining
+> Permissive-Licensed Files in a GPL-Licensed Project: Guidelines for
+> Developers" [0] which was inspired by the ambiguity of the MadWifi
+> Project's Dual BSD/GPL license tradition. The list of GPL-Compatible
+> licenses can be found on the FSF's website [1].
 
-Yes, I started that way and found /sys/block/rssda is a sym link to
-/sys/devices/pci0000\:00/0000\:00\:01.0/0000\:01\:00.0/block/rssda/.
-That is when I got the doubt, is it ok to use the sym link path or
-should use the actual path.
+This is obvious crap.  Explain to me, please, what makes your "GPL compatible"
+different from "GPLv2"; at least that would be honest ("we have relicensed
+a copy of BSD/GPL code to GPL alone - the license allows that and any
+modifications done here are declared GPL-only, so you can't pull them into
+the BSD-licensed variants")
 
-I will go ahead with filename sysfs-block-rssd and path
-/sys/block/rssd*/<entry>.
-
-Thanks.
-
---
-Regards,
-Asai Thambi
+"GPL compatible" is not a license; it's a set of licenses.  Incidentally,
+belonging to that set is irrelevant to legality of including into the kernel,
+since GPLv3 a member and it's *NOT* compatible with the kernel license.
+since GPLv3 a member and it's *NOT* compatible with the kernel license.
