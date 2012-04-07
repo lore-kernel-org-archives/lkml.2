@@ -1,513 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab2DJPIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:08:43 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:51202 "EHLO e8.ny.us.ibm.com"
+	id S1759134Ab2DJPIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:08:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53867 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758954Ab2DJPIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:08:41 -0400
-Message-ID: <1334070570.16827.15.camel@key-ThinkPad-W510>
-Subject: [PATCH v2 07/17] powerpc: crypto: AES-CCM mode routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Tue, 10 Apr 2012 10:09:30 -0500
-In-Reply-To: <1334070249.16827.1.camel@key-ThinkPad-W510>
-References: <1334070249.16827.1.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041015-9360-0000-0000-0000054A9057
+	id S1759104Ab2DJPIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:08:43 -0400
+Date: Sat, 7 Apr 2012 10:00:27 +0200
+From: Jan Kara <jack@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
+        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
+        lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120407080027.GA2584@quack.suse.cz>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120404145134.GC12676@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in CCM mode on the Power7+ CPU's
-in-Nest accelerator driver.
+  Hi Vivek,
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-aes-ccm.c |  465 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 465 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-aes-ccm.c
+On Wed 04-04-12 10:51:34, Vivek Goyal wrote:
+> On Tue, Apr 03, 2012 at 11:36:55AM -0700, Tejun Heo wrote:
+> [..]
+> > IIUC, without cgroup, the current writeback code works more or less
+> > like this.  Throwing in cgroup doesn't really change the fundamental
+> > design.  Instead of a single pipe going down, we just have multiple
+> > pipes to the same device, each of which should be treated separately.
+> > Of course, a spinning disk can't be divided that easily and their
+> > performance characteristics will be inter-dependent, but the place to
+> > solve that problem is where the problem is, the block layer.
+> 
+> How do you take care of thorottling IO to NFS case in this model? Current
+> throttling logic is tied to block device and in case of NFS, there is no
+> block device.
+  Yeah, for throttling NFS or other network filesystems we'd have to come
+up with some throttling mechanism at some other level. The problem with
+throttling at higher levels is that you have to somehow extract information
+from lower levels about amount of work so I'm not completely certain now,
+where would be the right place. Possibly it also depends on the intended
+usecase - so far I don't know about any real user for this functionality...
 
-diff --git a/drivers/crypto/nx/nx-aes-ccm.c b/drivers/crypto/nx/nx-aes-ccm.c
-new file mode 100644
-index 0000000..e418bef
---- /dev/null
-+++ b/drivers/crypto/nx/nx-aes-ccm.c
-@@ -0,0 +1,465 @@
-+/**
-+ * AES CCM routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/internal/aead.h>
-+#include <crypto/aes.h>
-+#include <crypto/algapi.h>
-+#include <crypto/scatterwalk.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int ccm_aes_nx_set_key(struct crypto_aead *tfm,
-+			      const u8           *in_key,
-+			      unsigned int        key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	struct nx_csbcpb *csbcpb_aead = nx_ctx->csbcpb_aead;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_128);
-+		NX_CPB_SET_KEY_SIZE(csbcpb_aead, NX_KS_AES_128);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_CCM;
-+	memcpy(csbcpb->cpb.aes_ccm.key, in_key, key_len);
-+
-+	csbcpb_aead->cpb.hdr.mode = NX_MODE_AES_CCA;
-+	memcpy(csbcpb_aead->cpb.aes_cca.key, in_key, key_len);
-+
-+	return 0;
-+
-+}
-+
-+static int ccm4309_aes_nx_set_key(struct crypto_aead *tfm,
-+				  const u8           *in_key,
-+				  unsigned int        key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&tfm->base);
-+
-+	if (key_len < 3)
-+		return -EINVAL;
-+
-+	key_len -= 3;
-+
-+	memcpy(nx_ctx->priv.ccm.nonce, in_key + key_len, 3);
-+
-+	return ccm_aes_nx_set_key(tfm, in_key, key_len);
-+}
-+
-+static int ccm_aes_nx_setauthsize(struct crypto_aead *tfm,
-+				  unsigned int authsize)
-+{
-+	switch (authsize) {
-+	case 4:
-+	case 6:
-+	case 8:
-+	case 10:
-+	case 12:
-+	case 14:
-+	case 16:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	crypto_aead_crt(tfm)->authsize = authsize;
-+
-+	return 0;
-+}
-+
-+static int ccm4309_aes_nx_setauthsize(struct crypto_aead *tfm,
-+				      unsigned int authsize)
-+{
-+	switch (authsize) {
-+	case 8:
-+	case 12:
-+	case 16:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	crypto_aead_crt(tfm)->authsize = authsize;
-+
-+	return 0;
-+}
-+
-+/* taken from crypto/ccm.c */
-+static int set_msg_len(u8 *block, unsigned int msglen, int csize)
-+{
-+	__be32 data;
-+
-+	memset(block, 0, csize);
-+	block += csize;
-+
-+	if (csize >= 4)
-+		csize = 4;
-+	else if (msglen > (unsigned int)(1 << (8 * csize)))
-+		return -EOVERFLOW;
-+
-+	data = cpu_to_be32(msglen);
-+	memcpy(block - csize, (u8 *)&data + 4 - csize, csize);
-+
-+	return 0;
-+}
-+
-+/* taken from crypto/ccm.c */
-+static inline int crypto_ccm_check_iv(const u8 *iv)
-+{
-+	/* 2 <= L <= 8, so 1 <= L' <= 7. */
-+	if (1 > iv[0] || iv[0] > 7)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+/* based on code from crypto/ccm.c */
-+static int generate_b0(u8 *iv, unsigned int assoclen, unsigned int authsize,
-+		       unsigned int cryptlen, u8 *b0)
-+{
-+	unsigned int l, lp, m = authsize;
-+	int rc;
-+
-+	memcpy(b0, iv, 16);
-+
-+	lp = b0[0];
-+	l = lp + 1;
-+
-+	/* set m, bits 3-5 */
-+	*b0 |= (8 * ((m - 2) / 2));
-+
-+	/* set adata, bit 6, if associated data is used */
-+	if (assoclen)
-+		*b0 |= 64;
-+
-+	rc = set_msg_len(b0 + 16 - l, cryptlen, l);
-+
-+	return rc;
-+}
-+
-+static int generate_pat(u8                   *iv,
-+			struct aead_request  *req,
-+			struct nx_crypto_ctx *nx_ctx,
-+			unsigned int          authsize,
-+			unsigned int          nbytes,
-+			u8                   *out)
-+{
-+	struct nx_sg *nx_insg = nx_ctx->in_sg;
-+	struct nx_sg *nx_outsg = nx_ctx->out_sg;
-+	unsigned int iauth_len = 0;
-+	struct vio_pfo_op *op = NULL;
-+	u8 tmp[16], *b1 = NULL, *b0 = NULL, *result = NULL;
-+	int rc;
-+
-+	/* zero the ctr value */
-+	memset(iv + 15 - iv[0], 0, iv[0] + 1);
-+
-+	if (!req->assoclen) {
-+		b0 = nx_ctx->csbcpb->cpb.aes_ccm.in_pat_or_b0;
-+	} else if (req->assoclen <= 14) {
-+		/* if associated data is 14 bytes or less, we do 1 GCM
-+		 * operation on 2 AES blocks, B0 (stored in the csbcpb) and B1,
-+		 * which is fed in through the source buffers here */
-+		b0 = nx_ctx->csbcpb->cpb.aes_ccm.in_pat_or_b0;
-+		b1 = nx_ctx->priv.ccm.iauth_tag;
-+		iauth_len = req->assoclen;
-+
-+		nx_insg = nx_build_sg_list(nx_insg, b1, 16, nx_ctx->ap->sglen);
-+		nx_outsg = nx_build_sg_list(nx_outsg, tmp, 16,
-+					    nx_ctx->ap->sglen);
-+
-+		/* inlen should be negative, indicating to phyp that its a
-+		 * pointer to an sg list */
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - nx_insg) *
-+					sizeof(struct nx_sg);
-+		nx_ctx->op.outlen = (nx_ctx->out_sg - nx_outsg) *
-+					sizeof(struct nx_sg);
-+
-+		NX_CPB_FDM(nx_ctx->csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-+		NX_CPB_FDM(nx_ctx->csbcpb) |= NX_FDM_INTERMEDIATE;
-+
-+		op = &nx_ctx->op;
-+		result = nx_ctx->csbcpb->cpb.aes_ccm.out_pat_or_mac;
-+	} else if (req->assoclen <= 65280) {
-+		/* if associated data is less than (2^16 - 2^8), we construct
-+		 * B1 differently and feed in the associated data to a CCA
-+		 * operation */
-+		b0 = nx_ctx->csbcpb_aead->cpb.aes_cca.b0;
-+		b1 = nx_ctx->csbcpb_aead->cpb.aes_cca.b1;
-+		iauth_len = 14;
-+
-+		/* remaining assoc data must have scatterlist built for it */
-+		nx_insg = nx_walk_and_build(nx_insg, nx_ctx->ap->sglen,
-+					    req->assoc, iauth_len,
-+					    req->assoclen - iauth_len);
-+		nx_ctx->op_aead.inlen = (nx_ctx->in_sg - nx_insg) *
-+						sizeof(struct nx_sg);
-+
-+		op = &nx_ctx->op_aead;
-+		result = nx_ctx->csbcpb_aead->cpb.aes_cca.out_pat_or_b0;
-+	} else {
-+		/* if associated data is less than (2^32), we construct B1
-+		 * differently yet again and feed in the associated data to a
-+		 * CCA operation */
-+		pr_err("associated data len is %u bytes (returning -EINVAL)\n",
-+		       req->assoclen);
-+		rc = -EINVAL;
-+	}
-+
-+	rc = generate_b0(iv, req->assoclen, authsize, nbytes, b0);
-+	if (rc)
-+		goto done;
-+
-+	if (b1) {
-+		memset(b1, 0, 16);
-+		*(u16 *)b1 = (u16)req->assoclen;
-+
-+		scatterwalk_map_and_copy(b1 + 2, req->assoc, 0,
-+					 iauth_len, SCATTERWALK_FROM_SG);
-+
-+		rc = nx_hcall_sync(nx_ctx, op);
-+		if (rc)
-+			goto done;
-+
-+		atomic_inc(&(nx_ctx->stats->aes_ops));
-+		atomic64_add(req->assoclen, &(nx_ctx->stats->aes_bytes));
-+
-+		memcpy(out, result, AES_BLOCK_SIZE);
-+	}
-+done:
-+	return rc;
-+}
-+
-+static int ccm_nx_decrypt(struct aead_request   *req,
-+			  struct blkcipher_desc *desc)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	unsigned int nbytes = req->cryptlen;
-+	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
-+	struct nx_ccm_priv *priv = &nx_ctx->priv.ccm;
-+	int rc = -1;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	nbytes -= authsize;
-+
-+	/* copy out the auth tag to compare with later */
-+	scatterwalk_map_and_copy(priv->oauth_tag,
-+				 req->src, nbytes, authsize,
-+				 SCATTERWALK_FROM_SG);
-+
-+	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
-+			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
-+	if (rc)
-+		goto out;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src, nbytes,
-+			       csbcpb->cpb.aes_ccm.iv_or_ctr);
-+	if (rc)
-+		goto out;
-+
-+	NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
-+	NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+
-+	rc = memcmp(csbcpb->cpb.aes_ccm.out_pat_or_mac, priv->oauth_tag,
-+		    authsize) ? -EBADMSG : 0;
-+out:
-+	return rc;
-+}
-+
-+static int ccm_nx_encrypt(struct aead_request   *req,
-+			  struct blkcipher_desc *desc)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	unsigned int nbytes = req->cryptlen;
-+	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
-+	int rc = -1;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
-+			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
-+	if (rc)
-+		goto out;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src, nbytes,
-+			       csbcpb->cpb.aes_ccm.iv_or_ctr);
-+	if (rc)
-+		goto out;
-+
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-+	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+
-+	/* copy out the auth tag */
-+	scatterwalk_map_and_copy(csbcpb->cpb.aes_ccm.out_pat_or_mac,
-+				 req->dst, nbytes, authsize,
-+				 SCATTERWALK_TO_SG);
-+out:
-+	return rc;
-+}
-+
-+static int ccm4309_aes_nx_encrypt(struct aead_request *req)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct blkcipher_desc desc;
-+	u8 *iv = nx_ctx->priv.ccm.iv;
-+
-+	iv[0] = 3;
-+	memcpy(iv + 1, nx_ctx->priv.ccm.nonce, 3);
-+	memcpy(iv + 4, req->iv, 8);
-+
-+	desc.info = iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	return ccm_nx_encrypt(req, &desc);
-+}
-+
-+static int ccm_aes_nx_encrypt(struct aead_request *req)
-+{
-+	struct blkcipher_desc desc;
-+	int rc;
-+
-+	desc.info = req->iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	rc = crypto_ccm_check_iv(desc.info);
-+	if (rc)
-+		return rc;
-+
-+	return ccm_nx_encrypt(req, &desc);
-+}
-+
-+static int ccm4309_aes_nx_decrypt(struct aead_request *req)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct blkcipher_desc desc;
-+	u8 *iv = nx_ctx->priv.ccm.iv;
-+
-+	iv[0] = 3;
-+	memcpy(iv + 1, nx_ctx->priv.ccm.nonce, 3);
-+	memcpy(iv + 4, req->iv, 8);
-+
-+	desc.info = iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	return ccm_nx_decrypt(req, &desc);
-+}
-+
-+static int ccm_aes_nx_decrypt(struct aead_request *req)
-+{
-+	struct blkcipher_desc desc;
-+	int rc;
-+
-+	desc.info = req->iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	rc = crypto_ccm_check_iv(desc.info);
-+	if (rc)
-+		return rc;
-+
-+	return ccm_nx_decrypt(req, &desc);
-+}
-+
-+/* tell the block cipher walk routines that this is a stream cipher by
-+ * setting cra_blocksize to 1. Even using blkcipher_walk_virt_block
-+ * during encrypt/decrypt doesn't solve this problem, because it calls
-+ * blkcipher_walk_done under the covers, which doesn't use walk->blocksize,
-+ * but instead uses this tfm->blocksize. */
-+struct crypto_alg nx_ccm_aes_alg = {
-+	.cra_name        = "ccm(aes)",
-+	.cra_driver_name = "ccm-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_AEAD |
-+			   CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_aead_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ccm_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ccm_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_aead = {
-+		.ivsize      = AES_BLOCK_SIZE,
-+		.maxauthsize = AES_BLOCK_SIZE,
-+		.setkey      = ccm_aes_nx_set_key,
-+		.setauthsize = ccm_aes_nx_setauthsize,
-+		.encrypt     = ccm_aes_nx_encrypt,
-+		.decrypt     = ccm_aes_nx_decrypt,
-+	}
-+};
-+
-+struct crypto_alg nx_ccm4309_aes_alg = {
-+	.cra_name        = "rfc4309(ccm(aes))",
-+	.cra_driver_name = "rfc4309-ccm-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_AEAD |
-+			   CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_nivaead_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ccm4309_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ccm_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_aead = {
-+		.ivsize      = 8,
-+		.maxauthsize = AES_BLOCK_SIZE,
-+		.setkey      = ccm4309_aes_nx_set_key,
-+		.setauthsize = ccm4309_aes_nx_setauthsize,
-+		.encrypt     = ccm4309_aes_nx_encrypt,
-+		.decrypt     = ccm4309_aes_nx_decrypt,
-+		.geniv       = "seqiv",
-+	}
-+};
+> [..]
+> > In the discussion, for such implementation, the following obstacles
+> > were identified.
+> > 
+> > * There are a lot of cases where IOs are issued by a task which isn't
+> >   the originiator.  ie. Writeback issues IOs for pages which are
+> >   dirtied by some other tasks.  So, by the time an IO reaches the
+> >   block layer, we don't know which cgroup the IO belongs to.
+> > 
+> >   Recently, block layer has grown support to attach a task to a bio
+> >   which causes the bio to be handled as if it were issued by the
+> >   associated task regardless of the actual issuing task.  It currently
+> >   only allows attaching %current to a bio - bio_associate_current() -
+> >   but changing it to support other tasks is trivial.
+> > 
+> >   We'll need to update the async issuers to tag the IOs they issue but
+> >   the mechanism is already there.
+> 
+> Most likely this tagging will take place in "struct page" and I am not
+> sure if we will be allowed to grow size of "struct page" for this reason.
+  We can tag inodes and then bios so this should be fine.
+
+> > * Unlike dirty data pages, metadata tends to have strict ordering
+> >   requirements and thus is susceptible to priority inversion.  Two
+> >   solutions were suggested - 1. allow overdrawl for metadata writes so
+> >   that low prio metadata writes don't block the whole FS, 2. provide
+> >   an interface to query and wait for bdi-cgroup congestion which can
+> >   be called from FS metadata paths to throttle metadata operations
+> >   before they enter the stream of ordered operations.
+> 
+> So that probably will mean changing the order of operations also. IIUC, 
+> in case of fsync (ordered mode), we opened a meta data transaction first,
+> then tried to flush all the cached data and then flush metadata. So if
+> fsync is throttled, all the metadata operations behind it will get 
+> serialized for ext3/ext4.
+> 
+> So you seem to be suggesting that we change the design so that metadata
+> operation does not thrown into ordered stream till we have finished
+> writing all the data back to disk? I am not a filesystem developer, so
+> I don't know how feasible this change is.
+> 
+> This is just one of the points. In the past while talking to Dave Chinner,
+> he mentioned that in XFS, if two cgroups fall into same allocation group
+> then there were cases where IO of one cgroup can get serialized behind
+> other.
+> 
+> In general, the core of the issue is that filesystems are not cgroup aware
+> and if you do throttling below filesystems, then invariably one or other
+> serialization issue will come up and I am concerned that we will be constantly
+> fixing those serialization issues. Or the desgin point could be so central
+> to filesystem design that it can't be changed.
+  We talked about this at LSF and Dave Chinner had the idea that we could
+make processes wait at the time when a transaction is started. At that time
+we don't hold any global locks so process can be throttled without
+serializing other processes. This effectively builds some cgroup awareness
+into filesystems but pretty simple one so it should be doable.
+
+> In general, if you do throttling deeper in the stakc and build back
+> pressure, then all the layers sitting above should be cgroup aware
+> to avoid problems. Two layers identified so far are writeback and
+> filesystems. Is it really worth the complexity. How about doing 
+> throttling in higher layers when IO is entering the kernel and
+> keep proportional IO logic at the lowest level and current mechanism
+> of building pressure continues to work?
+  I would like to keep single throttling mechanism for different limitting
+methods - i.e. handle proportional IO the same way as IO hard limits. So we
+cannot really rely on the fact that throttling is work preserving.
+
+The advantage of throttling at IO layer is that we can keep all the details
+inside it and only export pretty minimal information (like is bdi congested
+for given cgroup) to upper layers. If we wanted to do throttling at upper
+layers (such as Fengguang's buffered write throttling), we need to export
+the internal details to allow effective throttling...
+
+								Honza
 -- 
-1.7.1
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
