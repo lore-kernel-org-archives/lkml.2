@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab2DGUyT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 16:54:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51986 "EHLO
+	id S1755658Ab2DGUz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 16:55:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51988 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab2DGUyS (ORCPT
+	with ESMTP id S1751325Ab2DGUyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Apr 2012 16:54:18 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ashay Rane <ashay.rane@tacc.utexas.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 7/8] perf report: Correct display of samples and events in header
-Date: Sat,  7 Apr 2012 17:54:08 -0300
-Message-Id: <1333832049-2399-8-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 3/8] perf ui annotate browser: Allow toggling addr offset view
+Date: Sat,  7 Apr 2012 17:54:04 -0300
+Message-Id: <1333832049-2399-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1333832049-2399-1-git-send-email-acme@infradead.org>
 References: <1333832049-2399-1-git-send-email-acme@infradead.org>
@@ -23,77 +28,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ashay Rane <ashay.rane@tacc.utexas.edu>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This patch prints the number of samples and the count of performance
-events separately.
+The lines in objdump have this format:
 
-This allows comparing performance of different applications with each
-other.
+    ffffffff8126543f:       jne    ffffffff81265494 <__list_del_entry+0x84>
+<SNIP>
+    ffffffff81265494:       mov    %rdi,%rcx
 
-Previously, the sample count was displayed against an 'Events:' heading.
-With this patch, the header now reads (for example):
+Since we now have objdump_line allowing tools to print the offset
+independently from the rest of the line, allow toggling a view where
+just offsets from the start of the function are shown:
 
-Samples: 5K of event 'instructions'
-Event count (approx.): 2993026545
+     2f:       jne    ffffffff81265494 <__list_del_entry+0x84>
+<SNIP>
+     84:       mov    %rdi,%rcx
 
-The patch covers both the stdio and the browser interface.
+The offset view will be the default as soon as operations that deal with
+offsets in a function are handled accodringly, i.e. in offset view the
+above will become:
 
-Signed-off-by: Ashay Rane <ashay.rane@tacc.utexas.edu>
-[ committer note: Fixed wrt e7f01d1 ]
-Link: http://lkml.kernel.org/n/tip-h4nfjm8msedlk8gxkzivfh5y@git.kernel.org
+     2f:       jne    __list_del_entry+0x84
+<SNIP>
+     84:       mov    %rdi,%rcx
+
+And then a follow up patch will allow navigating thru jumps, just like
+we handle callq instructions.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c         |   11 +++++++----
- tools/perf/util/ui/browsers/hists.c |   10 +++++++---
- 2 files changed, 14 insertions(+), 7 deletions(-)
+ tools/perf/util/ui/browsers/annotate.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 2e31743..cec2b8c 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -296,12 +296,15 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- {
- 	size_t ret;
- 	char unit;
--	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	u64 nr_events = self->stats.total_period;
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 7ac7dd0..5cf9b78 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -20,6 +20,7 @@ struct annotate_browser {
+ 	int		    nr_asm_entries;
+ 	int		    nr_entries;
+ 	bool		    hide_src_code;
++	bool		    use_offset;
+ };
  
--	nr_events = convert_unit(nr_events, &unit);
--	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
-+	nr_samples = convert_unit(nr_samples, &unit);
-+	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
- 	if (evname != NULL)
--		ret += fprintf(fp, " %s", evname);
-+		ret += fprintf(fp, " of event '%s'", evname);
+ struct objdump_line_rb_node {
+@@ -82,10 +83,13 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 		slsmg_write_nstring(ol->line, width - 18);
+ 	else {
+ 		char bf[64];
+-		u64 addr = ab->start + ol->offset;
+-		int printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
+-		int color = -1;
++		u64 addr = ol->offset;
++		int printed, color = -1;
+ 
++		if (!ab->use_offset)
++			addr += ab->start;
 +
-+	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
- 	return ret + fprintf(fp, "\n#\n");
- }
++		printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
+ 		if (change_color)
+ 			color = ui_browser__set_color(self, HE_COLORSET_ADDR);
+ 		slsmg_write_nstring(bf, printed);
+@@ -250,6 +254,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 	struct symbol *sym = ms->sym;
+ 	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
+ 			   "H: Go to hottest line, ->/ENTER: Line action, "
++			   "O: Toggle offset view, "
+ 			   "S: Toggle source code view";
+ 	int key;
  
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 2f83e5d..1b820ed 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -840,10 +840,14 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
- 	int printed;
- 	const struct dso *dso = self->dso_filter;
- 	const struct thread *thread = self->thread_filter;
--	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	u64 nr_events = self->stats.total_period;
-+
-+	nr_samples = convert_unit(nr_samples, &unit);
-+	printed = scnprintf(bf, size,
-+			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
-+			   nr_samples, unit, ev_name, nr_events);
- 
--	nr_events = convert_unit(nr_events, &unit);
--	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
- 
- 	if (self->uid_filter_str)
- 		printed += snprintf(bf + printed, size - printed,
+@@ -310,6 +315,10 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 			if (annotate_browser__toggle_source(self))
+ 				ui_helpline__puts(help);
+ 			continue;
++		case 'O':
++		case 'o':
++			self->use_offset = !self->use_offset;
++			continue;
+ 		case K_ENTER:
+ 		case K_RIGHT:
+ 			if (self->selection == NULL) {
 -- 
 1.7.9.2.358.g22243
 
