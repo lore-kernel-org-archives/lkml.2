@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab2DGWOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 18:14:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37122 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab2DGWOH (ORCPT
+	id S1752616Ab2DGXKM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 19:10:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64145 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab2DGXKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 18:14:07 -0400
-Date: Fri, 6 Apr 2012 10:52:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	Sat, 7 Apr 2012 19:10:10 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org
-Subject: Re: 3.3.0: "INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)"
-Message-ID: <20120406175210.GA2421@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120327141536.GP25457@charite.de>
- <20120328112822.GH16671@charite.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120328112822.GH16671@charite.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040722-4242-0000-0000-000001478CE2
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH] gpio: Move DT support code into drivers/gpio
+Date: Sat,  7 Apr 2012 14:37:25 -0600
+Message-Id: <1333831045-2593-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 01:28:22PM +0200, Ralf Hildebrandt wrote:
-> * Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>:
-> > 
-> > Mar 23 11:54:00 mail kernel:
-> > Mar 23 11:54:00 mail kernel: [347213.025005] INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)
-> > Mar 23 11:54:00 mail kernel: [347213.025005] Pid: 12654, comm: cleanup Not tainted 3.3.0 #1
-> > Mar 23 11:54:00 mail kernel: [347213.025005] Call Trace:
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1062ccb>] ? __rcu_pending+0x10a/0x311
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c106388d>] ? rcu_check_callbacks+0x9b/0xa1
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c102c434>] ? update_process_times+0x2a/0x53
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c104f206>] ? tick_sched_timer+0x4f/0x90
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a101>] ? __remove_hrtimer+0x25/0x79
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103a2ff>] ? __run_hrtimer.isra.32+0x38/0xbe
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c103ad95>] ? hrtimer_interrupt+0xda/0x23d
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c1016493>] ? smp_apic_timer_interrupt+0x4c/0x81
-> > Mar 23 11:54:00 mail kernel: [347213.025005]  [<c127b5d9>] ? apic_timer_interrupt+0x31/0x38
-> 
-> I read http://www.kernel.org/doc/Documentation/RCU/stallwarn.txt
-> but couldn't find "rcu_bh detected stall" being mentioned there.
+The code in drivers/of/gpio.c isn't shared by any other subsystem since it
+is all gpiolib specific.  drivers/gpio is a better place to maintain these
+functions.
 
-The documentation mentions "rcu_bh_state detected stalls".  I will check
-this and update if needed.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/gpio/Kconfig                     |    4 ++++
+ drivers/gpio/Makefile                    |    1 +
+ drivers/{of/gpio.c => gpio/gpiolib-of.c} |    0
+ drivers/of/Kconfig                       |    6 ------
+ drivers/of/Makefile                      |    1 -
+ 5 files changed, 5 insertions(+), 7 deletions(-)
+ rename drivers/{of/gpio.c => gpio/gpiolib-of.c} (100%)
 
-> I reported the same issue on 3.2.9 (same machine!) on the 13th of march:
-> 
-> Mar 12 12:58:38 mail kernel: [440746.244002] INFO: rcu_bh detected stall on CPU 2 (t=0 jiffies)
-> Mar 12 12:58:38 mail kernel: [440746.244002] Pid: 27980, comm: /usr/sbin/amavi Tainted: G        W    3.2.9 #1
-> Mar 12 12:58:38 mail kernel: [440746.244002] Call Trace:
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1061d26>] ? __rcu_pending+0x10a/0x30e
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c10626ca>] ? rcu_check_callbacks+0xd4/0xde
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1035cf2>] ? update_process_times+0x2a/0x53
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c104e1d2>] ? tick_sched_timer+0x4d/0x8e
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1043b53>] ? __remove_hrtimer+0x25/0x79
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1043d4f>] ? __run_hrtimer.isra.32+0x37/0xbd
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c10445d5>] ? hrtimer_interrupt+0xdb/0x23d
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1015e4c>] ? smp_apic_timer_interrupt+0x4c/0x81
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1275491>] ? apic_timer_interrupt+0x31/0x38 
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b8c2>] ? do_page_fault+0x141/0x38f
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1030d8d>] ? irq_exit+0x34/0x87
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c1015e51>] ? smp_apic_timer_interrupt+0x51/0x81
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c101b781>] ? vmalloc_sync_all+0x1/0x1
-> Mar 12 12:58:38 mail kernel: [440746.244002]  [<c12756b7>] ? error_code+0x67/0x6c
-
-This stack looks interesting -- might be a problem in vmalloc_sync(),
-at least if the stack can be trusted.  Could you please reproduce with
-frame pointers enabled?
-
-							Thanx, Paul
-
-> and so did Tilman Schmidt in February:
-> https://lkml.org/lkml/2012/2/18/34
-> 
-> -- 
-> Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
-> ralf.hildebrandt@charite.de        Campus Benjamin Franklin
-> http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
-> Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index e6862f1..1042c3f 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -37,6 +37,10 @@ menuconfig GPIOLIB
+ 
+ if GPIOLIB
+ 
++config OF_GPIO
++	def_bool y
++	depends on OF && !SPARC
++
+ config DEBUG_GPIO
+ 	bool "Debug GPIO calls"
+ 	depends on DEBUG_KERNEL
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 007f54b..1c2f6c0 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -3,6 +3,7 @@
+ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ 
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
++obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+ obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
+diff --git a/drivers/of/gpio.c b/drivers/gpio/gpiolib-of.c
+similarity index 100%
+rename from drivers/of/gpio.c
+rename to drivers/gpio/gpiolib-of.c
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index 8e84ce9..ce00d11 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -51,12 +51,6 @@ config OF_IRQ
+ config OF_DEVICE
+ 	def_bool y
+ 
+-config OF_GPIO
+-	def_bool y
+-	depends on GPIOLIB && !SPARC
+-	help
+-	  OpenFirmware GPIO accessors
+-
+ config OF_I2C
+ 	def_tristate I2C
+ 	depends on I2C && !SPARC
+diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+index aa90e60..aff2c62 100644
+--- a/drivers/of/Makefile
++++ b/drivers/of/Makefile
+@@ -4,7 +4,6 @@ obj-$(CONFIG_OF_PROMTREE) += pdt.o
+ obj-$(CONFIG_OF_ADDRESS)  += address.o
+ obj-$(CONFIG_OF_IRQ)    += irq.o
+ obj-$(CONFIG_OF_DEVICE) += device.o platform.o
+-obj-$(CONFIG_OF_GPIO)   += gpio.o
+ obj-$(CONFIG_OF_I2C)	+= of_i2c.o
+ obj-$(CONFIG_OF_NET)	+= of_net.o
+ obj-$(CONFIG_OF_SPI)	+= of_spi.o
+-- 
+1.7.9.1
 
