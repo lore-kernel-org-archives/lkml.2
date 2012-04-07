@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab2DGBwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 21:52:13 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42293 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab2DGBwC (ORCPT
+	id S1757750Ab2DGBwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 21:52:11 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42255 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757592Ab2DGBwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 21:52:02 -0400
+	Fri, 6 Apr 2012 21:52:01 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: Update GPIO_PCA953X Kconfig entry to include more supported devices
-To: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-In-Reply-To: <1333703506.3957.1.camel@phoenix>
-References: <1333703506.3957.1.camel@phoenix>
-Date: Fri, 06 Apr 2012 15:43:53 -0700
-Message-Id: <20120406224353.A1C8A3E0D65@localhost>
+Subject: Re: Point-to-point bus in device tree
+To: David Brown <davidb@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20120406151610.GA12888@codeaurora.org>
+References: <20120405181509.GA28693@codeaurora.org> <4F7DF142.5050601@wwwdotorg.org> <20120405200829.GA29747@codeaurora.org> <20120406151610.GA12888@codeaurora.org>
+Date: Fri, 06 Apr 2012 18:27:31 -0700
+Message-Id: <20120407012731.A61D23E1FF9@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Apr 2012 17:11:46 +0800, Axel Lin <axel.lin@gmail.com> wrote:
-> Update the supported devices for gpio-pca953x driver.
+On Fri, 6 Apr 2012 08:16:10 -0700, David Brown <davidb@codeaurora.org> wrote:
+> On Thu, Apr 05, 2012 at 01:08:29PM -0700, David Brown wrote:
+> > On Thu, Apr 05, 2012 at 01:23:46PM -0600, Stephen Warren wrote:
+> > > On 04/05/2012 12:15 PM, David Brown wrote:
+> > > > Some MSM SoCs have a small serial-type "bus" that is used to
+> > > > communicate with the PMIC devices.  This interface is always
+> > > > point-to-point.  I'm doing a device-tree conversion of the driver that
+> > > > Ken Heitke posted last year <https://lkml.org/lkml/2011/2/17/503>.
+> > > > 
+> > > > A naive conversion to device tree, would result in something like
+> > > > this:
+> > > > 
+> > > > 	qcom,ssbi@500000 {
+> > > > 		compatible = "qcom,ssbi";
+> > > > 		reg = <0x500000 0x1000>;
+> > > > 		qcom,controller-type = "ssbi";
+> > > > 
+> > > > 		qcom,pmic8058@0 {
+> > > > 			reg = <0x0 0x01>;
+> > > > 			...
+> > > > 		}
+> > > > 	}
+> > > > 
+> > > > There would end up being an extraneous register for the device on the
+> > > > other end (there are no addresses), and there would need to be code in
+> > > > the ssbi driver to traverse this small tree to find these nodes.
+> > > 
+> > > Isn't that extra code simply:
+> > > 
+> > > of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> > > 
+> > > That seems like pretty low overhead.
+> > 
+> > True, but it still bothers me to have to have a bogus register.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Ok, not sure where I got that idea, but I don't appear to actually
+> need a register in the pmic8058 node for of_platform_populate to
+> create a platform device.  It only needs a compatible field.  So, it
+> look like that matches just what I need.
 
-Applied, thanks
+Correct.  Don't use a reg and all will look good.
 
 g.
-
-> ---
->  drivers/gpio/Kconfig |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index e03653d..b35ac52 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -243,7 +243,7 @@ config GPIO_MC9S08DZ60
->  	  Select this to enable the MC9S08DZ60 GPIO driver
->  
->  config GPIO_PCA953X
-> -	tristate "PCA953x, PCA955x, TCA64xx, and MAX7310 I/O ports"
-> +	tristate "PCA953x, PCA955x, PCA957x, TCA64xx, and MAX7310 I/O ports"
->  	depends on I2C
->  	help
->  	  Say yes here to provide access to several register-oriented
-> @@ -252,10 +252,11 @@ config GPIO_PCA953X
->  
->  	  4 bits:	pca9536, pca9537
->  
-> -	  8 bits:	max7310, pca9534, pca9538, pca9554, pca9557,
-> -	  		tca6408
-> +	  8 bits:	max7310, max7315, pca6107, pca9534, pca9538, pca9554,
-> +			pca9556, pca9557, pca9574, tca6408
->  
-> -	  16 bits:	pca9535, pca9539, pca9555, tca6416
-> +	  16 bits:	max7312, max7313, pca9535, pca9539, pca9555, pca9575,
-> +			tca6416
->  
->  config GPIO_PCA953X_IRQ
->  	bool "Interrupt controller support for PCA953x"
-> -- 
-> 1.7.5.4
-> 
-> 
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
