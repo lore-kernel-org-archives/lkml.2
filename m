@@ -1,27 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab2DGTBh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:01:37 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38527 "EHLO
+	id S1755749Ab2DGTBp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:01:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43824 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab2DGTBa (ORCPT
+	with ESMTP id S1755691Ab2DGTBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:01:30 -0400
-Subject: [PATCH v2 07/10] mm: use mm->exe_file instead of first VM_EXECUTABLE
- vma->vm_file
+	Sat, 7 Apr 2012 15:01:42 -0400
+Subject: [PATCH v2 10/10] mm: move madvise vma flags to the end
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Robert Richter <robert.richter@amd.com>, Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-security-module@vger.kernel.org, oprofile-list@lists.sf.net,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        James Morris <james.l.morris@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Kentaro Takeda <takedakn@nttdata.co.jp>
-Date: Sat, 07 Apr 2012 23:01:25 +0400
-Message-ID: <20120407190125.9726.33538.stgit@zurg>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 07 Apr 2012 23:01:37 +0400
+Message-ID: <20120407190137.9726.54530.stgit@zurg>
 In-Reply-To: <20120407185546.9726.62260.stgit@zurg>
 References: <20120407185546.9726.62260.stgit@zurg>
 User-Agent: StGit/0.15
@@ -32,215 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some security modules and oprofile still uses VM_EXECUTABLE for retrieving
-task's executable file, after this patch they will use mm->exe_file directly.
-mm->exe_file protected with mm->mmap_sem, so locking stays the same.
+Let's collect them together.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Kentaro Takeda <takedakn@nttdata.co.jp>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: James Morris <james.l.morris@oracle.com>
-Cc: linux-security-module@vger.kernel.org
-Cc: oprofile-list@lists.sf.net
 ---
- arch/powerpc/oprofile/cell/spu_task_sync.c |   15 ++++-----------
- arch/tile/mm/elf.c                         |   19 +++++++------------
- drivers/oprofile/buffer_sync.c             |   17 +++--------------
- kernel/auditsc.c                           |   12 ++----------
- kernel/fork.c                              |    3 +--
- security/tomoyo/util.c                     |    9 ++-------
- 6 files changed, 19 insertions(+), 56 deletions(-)
+ include/linux/mm.h |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/oprofile/cell/spu_task_sync.c b/arch/powerpc/oprofile/cell/spu_task_sync.c
-index 642fca1..28f1af2 100644
---- a/arch/powerpc/oprofile/cell/spu_task_sync.c
-+++ b/arch/powerpc/oprofile/cell/spu_task_sync.c
-@@ -304,7 +304,7 @@ static inline unsigned long fast_get_dcookie(struct path *path)
- 	return cookie;
- }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3a4d721..5e89a4f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -91,10 +91,6 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_LOCKED	0x00002000
+ #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
  
--/* Look up the dcookie for the task's first VM_EXECUTABLE mapping,
-+/* Look up the dcookie for the task's mm->exe_file,
-  * which corresponds loosely to "application name". Also, determine
-  * the offset for the SPU ELF object.  If computed offset is
-  * non-zero, it implies an embedded SPU object; otherwise, it's a
-@@ -321,7 +321,6 @@ get_exec_dcookie_and_offset(struct spu *spu, unsigned int *offsetp,
- {
- 	unsigned long app_cookie = 0;
- 	unsigned int my_offset = 0;
--	struct file *app = NULL;
- 	struct vm_area_struct *vma;
- 	struct mm_struct *mm = spu->mm;
- 
-@@ -330,16 +329,10 @@ get_exec_dcookie_and_offset(struct spu *spu, unsigned int *offsetp,
- 
- 	down_read(&mm->mmap_sem);
- 
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
--		if (!vma->vm_file)
--			continue;
--		if (!(vma->vm_flags & VM_EXECUTABLE))
--			continue;
--		app_cookie = fast_get_dcookie(&vma->vm_file->f_path);
-+	if (mm->exe_file) {
-+		app_cookie = fast_get_dcookie(&mm->exe_file->f_path);
- 		pr_debug("got dcookie for %s\n",
--			 vma->vm_file->f_dentry->d_name.name);
--		app = vma->vm_file;
--		break;
-+			 mm->exe_file->f_dentry->d_name.name);
- 	}
- 
- 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-diff --git a/arch/tile/mm/elf.c b/arch/tile/mm/elf.c
-index 758b603..3cfa98b 100644
---- a/arch/tile/mm/elf.c
-+++ b/arch/tile/mm/elf.c
-@@ -36,19 +36,14 @@ static void sim_notify_exec(const char *binary_name)
- 	} while (c);
- }
- 
--static int notify_exec(void)
-+static int notify_exec(struct mm_struct *mm)
- {
- 	int retval = 0;  /* failure */
--	struct vm_area_struct *vma = current->mm->mmap;
--	while (vma) {
--		if ((vma->vm_flags & VM_EXECUTABLE) && vma->vm_file)
--			break;
--		vma = vma->vm_next;
--	}
--	if (vma) {
-+
-+	if (mm->exe_file) {
- 		char *buf = (char *) __get_free_page(GFP_KERNEL);
- 		if (buf) {
--			char *path = d_path(&vma->vm_file->f_path,
-+			char *path = d_path(&mm->exe_file->f_path,
- 					    buf, PAGE_SIZE);
- 			if (!IS_ERR(path)) {
- 				sim_notify_exec(path);
-@@ -106,16 +101,16 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
- 	unsigned long vdso_base;
- 	int retval = 0;
- 
-+	down_write(&mm->mmap_sem);
-+
- 	/*
- 	 * Notify the simulator that an exec just occurred.
- 	 * If we can't find the filename of the mapping, just use
- 	 * whatever was passed as the linux_binprm filename.
- 	 */
--	if (!notify_exec())
-+	if (!notify_exec(mm))
- 		sim_notify_exec(bprm->filename);
- 
--	down_write(&mm->mmap_sem);
+-					/* Used by sys_madvise() */
+-#define VM_SEQ_READ	0x00008000	/* App will access data sequentially */
+-#define VM_RAND_READ	0x00010000	/* App will not benefit from clustered reads */
 -
- 	/*
- 	 * MAYWRITE to allow gdb to COW and set breakpoints
- 	 */
-diff --git a/drivers/oprofile/buffer_sync.c b/drivers/oprofile/buffer_sync.c
-index f34b5b2..d93b2b6 100644
---- a/drivers/oprofile/buffer_sync.c
-+++ b/drivers/oprofile/buffer_sync.c
-@@ -216,7 +216,7 @@ static inline unsigned long fast_get_dcookie(struct path *path)
- }
+ #define VM_DONTCOPY	0x00020000      /* Do not copy this vma on fork */
+ #define VM_DONTEXPAND	0x00040000	/* Cannot expand with mremap() */
+ #define VM_RESERVED	0x00080000	/* Count as reserved_vm like IO */
+@@ -103,8 +99,11 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
+ #define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
+ #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
+-#define VM_NODUMP	0x04000000	/* Do not include in the core dump */
  
- 
--/* Look up the dcookie for the task's first VM_EXECUTABLE mapping,
-+/* Look up the dcookie for the task's mm->exe_file,
-  * which corresponds loosely to "application name". This is
-  * not strictly necessary but allows oprofile to associate
-  * shared-library samples with particular applications
-@@ -224,21 +224,10 @@ static inline unsigned long fast_get_dcookie(struct path *path)
- static unsigned long get_exec_dcookie(struct mm_struct *mm)
- {
- 	unsigned long cookie = NO_COOKIE;
--	struct vm_area_struct *vma;
--
--	if (!mm)
--		goto out;
- 
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
--		if (!vma->vm_file)
--			continue;
--		if (!(vma->vm_flags & VM_EXECUTABLE))
--			continue;
--		cookie = fast_get_dcookie(&vma->vm_file->f_path);
--		break;
--	}
-+	if (mm && mm->exe_file)
-+		cookie = fast_get_dcookie(&mm->exe_file->f_path);
- 
--out:
- 	return cookie;
- }
- 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index af1de0f..a34763d 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1167,16 +1167,8 @@ static void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk
- 
- 	if (mm) {
- 		down_read(&mm->mmap_sem);
--		vma = mm->mmap;
--		while (vma) {
--			if ((vma->vm_flags & VM_EXECUTABLE) &&
--			    vma->vm_file) {
--				audit_log_d_path(ab, " exe=",
--						 &vma->vm_file->f_path);
--				break;
--			}
--			vma = vma->vm_next;
--		}
-+		if (mm->exe_file)
-+			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
- 		up_read(&mm->mmap_sem);
- 	}
- 	audit_log_task_context(ab);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index b9372a0..2e060c8 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -621,8 +621,7 @@ struct file *get_mm_exe_file(struct mm_struct *mm)
- {
- 	struct file *exe_file;
- 
--	/* We need mmap_sem to protect against races with removal of
--	 * VM_EXECUTABLE vmas */
-+	/* We need mmap_sem to protect against races with removal of exe_file */
- 	down_read(&mm->mmap_sem);
- 	exe_file = mm->exe_file;
- 	if (exe_file)
-diff --git a/security/tomoyo/util.c b/security/tomoyo/util.c
-index 867558c..2952ba5 100644
---- a/security/tomoyo/util.c
-+++ b/security/tomoyo/util.c
-@@ -949,18 +949,13 @@ bool tomoyo_path_matches_pattern(const struct tomoyo_path_info *filename,
- const char *tomoyo_get_exe(void)
- {
- 	struct mm_struct *mm = current->mm;
--	struct vm_area_struct *vma;
- 	const char *cp = NULL;
- 
- 	if (!mm)
- 		return NULL;
- 	down_read(&mm->mmap_sem);
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
--		if ((vma->vm_flags & VM_EXECUTABLE) && vma->vm_file) {
--			cp = tomoyo_realpath_from_path(&vma->vm_file->f_path);
--			break;
--		}
--	}
-+	if (mm->exe_file)
-+		cp = tomoyo_realpath_from_path(&mm->exe_file->f_path);
- 	up_read(&mm->mmap_sem);
- 	return cp;
- }
++					/* Used by sys_madvise() */
++#define VM_NODUMP	0x04000000	/* Do not include in the core dump */
++#define VM_SEQ_READ	0x08000000	/* App will access data sequentially */
++#define VM_RAND_READ	0x10000000	/* App will not benefit from clustered reads */
+ #define VM_HUGEPAGE	0x20000000	/* MADV_HUGEPAGE marked this vma */
+ #define VM_NOHUGEPAGE	0x40000000	/* MADV_NOHUGEPAGE marked this vma */
+ #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
 
