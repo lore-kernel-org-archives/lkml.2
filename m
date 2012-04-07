@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413Ab2DFX7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 19:59:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40617 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab2DFX7b (ORCPT
+	id S932511Ab2DGAHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 20:07:45 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54685 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869Ab2DGAHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 19:59:31 -0400
-Date: Sat, 7 Apr 2012 01:59:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT pull] timer updates for 3.4-rc
-In-Reply-To: <20120406165824.c2ae2719.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1204070159160.2542@ionos>
-References: <alpine.LFD.2.02.1204070131010.2542@ionos> <alpine.DEB.2.00.1204061636260.32765@chino.kir.corp.google.com> <alpine.LFD.2.02.1204070148420.2542@ionos> <20120406165824.c2ae2719.akpm@linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 6 Apr 2012 20:07:44 -0400
+X-Nat-Received: from [202.181.97.72]:57321 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1333757211.8990
+To: garlick@llnl.gov
+Cc: levinsasha928@gmail.com, ericvh@gmail.com, oleg@redhat.com,
+        eric.dumazet@gmail.com, davem@davemloft.net, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com
+Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201204011221.GAG51016.JQFSFFOtLOMVHO@I-love.SAKURA.ne.jp>
+	<CA+1xoqe+T=iUtUeFdeqmRvMZ7TMCgkLs_1QYv-4YNtn-jCoMCQ@mail.gmail.com>
+	<201204052329.EBH52139.FFOLQMOJSVHOFt@I-love.SAKURA.ne.jp>
+	<201204062044.EJE13062.OLMQtSVFHOFOJF@I-love.SAKURA.ne.jp>
+	<20120406180905.GA10835@llnl.gov>
+In-Reply-To: <20120406180905.GA10835@llnl.gov>
+Message-Id: <201204070906.HHC13855.QOSFVOMtFFLJOH@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 7 Apr 2012 09:06:50 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 06042012 #7641407, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012, Andrew Morton wrote:
-
-> On Sat, 7 Apr 2012 01:48:51 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > On Fri, 6 Apr 2012, David Rientjes wrote:
+Jim Garlick wrote:
+> > I think this loop is bad with regard to response to SIGKILL.
+> > If wait_event_interruptible() was interrupted by SIGKILL, it will
+> > spin until req->status >= REQ_STATUS_RCVD becomes true.
+> > Rather,
 > > 
-> > > On Sat, 7 Apr 2012, Thomas Gleixner wrote:
-> > > 
-> > > > diff --git a/kernel/itimer.c b/kernel/itimer.c
-> > > > index 22000c3..c70369a 100644
-> > > > --- a/kernel/itimer.c
-> > > > +++ b/kernel/itimer.c
-> > > > @@ -284,8 +284,11 @@ SYSCALL_DEFINE3(setitimer, int, which, struct itimerval __user *, value,
-> > > >  	if (value) {
-> > > >  		if(copy_from_user(&set_buffer, value, sizeof(set_buffer)))
-> > > >  			return -EFAULT;
-> > > > -	} else
-> > > > +	} else {
-> > > >  		memset((char *) &set_buffer, 0, sizeof(set_buffer));
-> > > > +		WARN_ONCE(1, "setitimer: new_value pointer is NULL."
-> > > > +			  " Misfeature support will be removed\n");
-> > > > +	}
-> > > >  
-> > > >  	error = do_setitimer(which, &set_buffer, ovalue ? &get_buffer : NULL);
-> > > >  	if (error || !ovalue)
-> > > 
-> > > When I tried doing this for the deprecated /proc/pid/oom_adj there was a 
-> > > complaint that WARN_ONCE() screws up log parsing scripts that think there 
-> > > is a kernel issue so I had to change it to printk_once() and include 
-> > > get_task_comm(current) and current->pid.  See
-> > > http://lkml.indiana.edu/hypermail/linux/kernel/1108.0/00446.html
+> > 	if ((c->status == Connected) && (type == P9_TFLUSH))
+> > 		err = wait_event_killable(*req->wq,
+> > 					  req->status >= REQ_STATUS_RCVD);
+> > 	else
+> > 		err = wait_event_interruptible(*req->wq,
+> > 					       req->status >= REQ_STATUS_RCVD);
 > > 
-> > Bah.
+> > would be safer.
 > 
-> It gives you a chance to remove the unneeded cast from the memset call ;)
+> Does that work?  What prevents p9_client_rpc() from recursing via
+> p9_client_flush() on receipt of SIGKILL? 
 
-Will do :)
- 
+Sorry, I'm not a 9p user and I can't test whether that works or not.
+But at least, continuing the loop even after SIGKILL is not good.
+If you have to wait for req->status >= REQ_STATUS_RCVD becomes true, can you
+use a kernel thread that waits req->status >= REQ_STATUS_RCVD to become true
+and delegate the job of notifying the server from a userspace task to the
+kernel thread?
+
+> Yes but in the unlikely event that this happens, the effect is a small
+> memory leak for the duration of the mount.  On the other hand if the
+> fid is destroyed without successfully informing the server, then
+> subsequent operations that involve new file references will fail
+> when that fid number is reused, and the mount becomes unusable.
+
+I don't know whether Sasha's problem is caused by this patch or not.
+But p9_client_clunk() is called from many functions in fs/9p/ directory.
+They are assuming that p9_client_clunk() will call p9_fid_destroy() but
+this patch is breaking that assumption. I think this is the cause of hang which
+Sasha is experiencing because Sasha's trace shows that call_usermodehelper() is
+blocked by functions in fs/9p/ directory. Seems inconsistency state problem.
