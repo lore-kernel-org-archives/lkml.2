@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab2DGDB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 23:01:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46448 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab2DGDB5 convert rfc822-to-8bit (ORCPT
+	id S1755734Ab2DGDlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 23:41:45 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53055 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab2DGDln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 23:01:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120407024941.GB11295@thunk.org>
-References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
- <CA+55aFy_TOEE-8RNmNKVz6xZ7s+f02jCVcDbA=MJY1iih=AJpg@mail.gmail.com>
- <CAB=NE6Xt3yeCvW-t7mbEWoYr04Rg1uvObAMTatAdpHtgsdZvYA@mail.gmail.com> <20120407024941.GB11295@thunk.org>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Fri, 6 Apr 2012 20:01:36 -0700
-X-Google-Sender-Auth: qtqh1mpYfLeiSld69Efx_Rxkrl4
-Message-ID: <CAB=NE6Wn4w_rmm-9dTjeLCmFBwFUv_R+o05=UW1SODBN2hFH0w@mail.gmail.com>
-Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
-To: "Ted Ts'o" <tytso@mit.edu>, "Luis R. Rodriguez" <mcgrof@frijolero.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, Keith Packard <keithp@keithp.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Apr 2012 23:41:43 -0400
+Subject: Re: [REGRESSION][PATCH v1] bpf jit: Let the arm jit handle
+ negative memory references
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Mircea Gherzan <mgherzan@gmail.com>
+Cc: Jan Seiffert <kaffeemonster@googlemail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <4F7F6DF9.5010902@gmail.com>
+References: <4F75CA89.4010709@googlemail.com>
+	 <4F7F3C7D.1040007@googlemail.com>  <4F7F6DF9.5010902@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 07 Apr 2012 05:41:37 +0200
+Message-ID: <1333770097.3007.24.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 7:49 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Fri, Apr 06, 2012 at 05:51:51PM -0700, Luis R. Rodriguez wrote:
->>
->> Its a good point that we are not declaring the exact license used for
->> software, and while that is useful the "Dual BSD/GPL" tag is
->> misleading. As I see it there are four options:
->
-> So the real question is what is the purpose of MODULE_LICENSE()?
-> Specifically, is it intended for anything other than to tell the that
-> this module is OK to use EXPORT_SYMBOL_GPL symbols?
+On Sat, 2012-04-07 at 00:28 +0200, Mircea Gherzan wrote:
+> Hi,
+> 
+> Am 06.04.2012 20:57, schrieb Jan Seiffert:
+> > The arm jit has the same problem as the other two jits.
+> > It only tests for negative absolute memory references, and if it sees
+> > one bails out to let the interpreter handle the filter program.
+> > 
+> > But this fails if the X register contains a negative memory reference
+> > and is used for an indirect load.
+> 
+> I don't think that there's any use case for negative values in X. In
+> both the original BPF design and in the LSF interpreter, A and X are
+> considered unsigned. The role of X is mainly to allow variable length
+> headers (load the length -> unsigned).
+> 
+> "Negative" K values are permitted for ancillary data loads based on the
+> fact that we're not going to see 2GB packets any time soon.
+> 
 
-At this point that's the only thing this could be used for reliably.
+You are wrong.
 
-> Your patch which changes things like
->
-> MODULE_LICENSE("Dual BSD/GPL");
->
-> to
->
-> MODULE_LICENSE("GPL-Compatible");
->
-> in my opinion, muddles things even more, since now in some cases
-> MODULE_LICENSE() will name a specific license (i.e., GPL), and in
-> other cases, a set of licenses (i.e., GPL-Compatible).
+Please carefully read net/core/filter.c its all here :
 
-Another good point.
+void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
+{
+        u8 *ptr = NULL;
 
-> After all,
-> isn't a GPL license by definition GPL-compatible?
+        if (k >= SKF_NET_OFF)
+                ptr = skb_network_header(skb) + k - SKF_NET_OFF;
+        else if (k >= SKF_LL_OFF)
+                ptr = skb_mac_header(skb) + k - SKF_LL_OFF;
 
-:) Yeah
+        if (ptr >= skb->head && ptr + size <= skb_tail_pointer(skb))
+                return ptr;
+        return NULL;
+}
 
-> So why not change *all* MODULE_LICENSE(GPL) statements to be  MODULE_LICENSE(GPL-Compatible)?
 
-This is obviously ridiculous, I hope I'm clarifying there is something
-confusing that is in fact not ridiculous though.
+Then :
 
-> If that seems like a large, pointless patch, then maybe it's not worth it
-> to change "Dual BSD/GPL" to "GPL-Compatible".
+commit a998d4342337c82dacdc0897d30a9364de1576a1
+Author: Jan Seiffert <kaffeemonster@googlemail.com>
+Date:   Fri Mar 30 05:24:05 2012 +0000
 
-The fact that the extreme example you provide follows the logic does
-not entail that the issue I am stating is pointless.
+    bpf jit: Let the x86 jit handle negative offsets
+    
+    Now the helper function from filter.c for negative offsets is exported,
+    it can be used it in the jit to handle negative offsets.
+    
+    First modify the asm load helper functions to handle:
+    - know positive offsets
+    - know negative offsets
+    - any offset
+    
+    then the compiler can be modified to explicitly use these helper
+    when appropriate.
+    
+    This fixes the case of a negative X register and allows to lift
+    the restriction that bpf programs with negative offsets can't
+    be jited.
+    
+    Signed-of-by: Jan Seiffert <kaffeemonster@googlemail.com>
+    Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-> I also really don't see how this helps License compliance folks.  If
-> the BSD folks trying to figure out whether or not they can use some
-> piece of code, "GPL-Compatible" is no more useful than as "Dual
-> BSD/GPL".  In fact, Dual BSD/GPL might actually be more useful since
-> at least to me it says it can be used under the BSD or GPL license,
-> which is precisely what the BSD folks need.
 
-If we are OK with this thread serving as documentation for this then
-so be it, but I still prefer for this to be clarified more. *I* am
-comfortable with this but I know other vendors who did try to achieve
-the same sharing had quite a bit of time trying to validate the
-approach. I rather speed help clarify this is a reasonable approach
-and also avoid flamewars like the ones we faced when developers eons
-ago though that we *had* to GPL the OpenBSD ar5k HAL when we ported it
-to Linux for use in ath5k.
-
-  Luis
