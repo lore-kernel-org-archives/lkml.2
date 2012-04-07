@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab2DGTGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:06:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53951 "EHLO
+	id S1755253Ab2DGTIJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:08:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47871 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab2DGTGE (ORCPT
+	with ESMTP id S1754261Ab2DGTII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:06:04 -0400
-Subject: [PATCH mm] c/r: prctl: update prctl_set_mm_exe_file() after
+	Sat, 7 Apr 2012 15:08:08 -0400
+Subject: [PATCH mm RESEND] c/r: prctl: update prctl_set_mm_exe_file() after
  mm->num_exe_file_vmas removal
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Sat, 07 Apr 2012 23:05:54 +0400
-Message-ID: <20120407190554.10193.58306.stgit@zurg>
+Cc: Kees Cook <keescook@chromium.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Date: Sat, 07 Apr 2012 23:08:02 +0400
+Message-ID: <20120407190801.10294.76053.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
