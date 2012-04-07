@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab2DGDlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 23:41:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53055 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab2DGDln (ORCPT
+	id S1750949Ab2DGEWF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 00:22:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63643 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab2DGEV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 23:41:43 -0400
-Subject: Re: [REGRESSION][PATCH v1] bpf jit: Let the arm jit handle
- negative memory references
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Mircea Gherzan <mgherzan@gmail.com>
-Cc: Jan Seiffert <kaffeemonster@googlemail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Russell King <linux@arm.linux.org.uk>
-In-Reply-To: <4F7F6DF9.5010902@gmail.com>
-References: <4F75CA89.4010709@googlemail.com>
-	 <4F7F3C7D.1040007@googlemail.com>  <4F7F6DF9.5010902@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 Apr 2012 05:41:37 +0200
-Message-ID: <1333770097.3007.24.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 7 Apr 2012 00:21:56 -0400
+Date: Fri, 6 Apr 2012 21:21:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Oleg Nesterov <oleg@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Roland Dreier <roland@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH RFC] mm: account VMA before forced-COW via
+ /proc/pid/mem
+In-Reply-To: <4F7D5859.5050106@openvz.org>
+Message-ID: <alpine.LSU.2.00.1204062104090.4297@eggly.anvils>
+References: <20120402153631.5101.44091.stgit@zurg> <20120403143752.GA5150@redhat.com> <4F7C1B67.6030300@openvz.org> <20120404154148.GA7105@redhat.com> <4F7D5859.5050106@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-07 at 00:28 +0200, Mircea Gherzan wrote:
-> Hi,
-> 
-> Am 06.04.2012 20:57, schrieb Jan Seiffert:
-> > The arm jit has the same problem as the other two jits.
-> > It only tests for negative absolute memory references, and if it sees
-> > one bails out to let the interpreter handle the filter program.
+On Thu, 5 Apr 2012, Konstantin Khlebnikov wrote:
+> Oleg Nesterov wrote:
+> > On 04/04, Konstantin Khlebnikov wrote:
+> > > Oleg Nesterov wrote:
+> > > > On 04/02, Konstantin Khlebnikov wrote:
+> > > > > 
+> > > > > Currently kernel does not account read-only private mappings into
+> > > > > memory commitment.
+> > > > > But these mappings can be force-COW-ed in get_user_pages().
+> > > > 
+> > > > Heh. tail -n3 Documentation/vm/overcommit-accounting
+> > > > may be you should update it then.
+> > > 
+> > > I just wonder how fragile this accounting...
 > > 
-> > But this fails if the X register contains a negative memory reference
-> > and is used for an indirect load.
+> > I meant, this patch could also remove this "TODO" from the docs.
 > 
-> I don't think that there's any use case for negative values in X. In
-> both the original BPF design and in the LSF interpreter, A and X are
-> considered unsigned. The role of X is mainly to allow variable length
-> headers (load the length -> unsigned).
-> 
-> "Negative" K values are permitted for ancillary data loads based on the
-> fact that we're not going to see 2GB packets any time soon.
-> 
+> Actually I dug into this code for killing VM_ACCOUNT vma flag.
+> Currently we cannot do this only because asymmetry in mprotect_fixup():
+> it account vma on read-only -> writable conversion, but keep on backward
+> operation.
+> Probably we can kill this asymmetry, and after that we can recognize
+> accountable vma
+> by its others flags state, so we don't need special VM_ACCOUNT for this.
 
-You are wrong.
+(I believe the VM_ACCOUNT flag will need to stay.)
 
-Please carefully read net/core/filter.c its all here :
+But this is just a quick note to say that I'm not ignoring you: I have
+a strong interest in this, but only now found time to look through the
+thread and ponder, and I'm not yet ready to decide.
 
-void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
-{
-        u8 *ptr = NULL;
+I've long detested that behaviour of GUP write,force, and my strong
+preference would be not to layer more strangeness upon strangeness,
+but limit the damage by making GUP write,force fail in that case,
+instead of inserting a PageAnon page into a VM_SHARED mapping.
 
-        if (k >= SKF_NET_OFF)
-                ptr = skb_network_header(skb) + k - SKF_NET_OFF;
-        else if (k >= SKF_LL_OFF)
-                ptr = skb_mac_header(skb) + k - SKF_LL_OFF;
+I think it's unlikely that it will cause a regression in real life
+(it already fails if you did not open the mmap'ed file for writing),
+but it would be a user-visible change in behaviour, and I've research
+to do before arriving at a conclusion.
 
-        if (ptr >= skb->head && ptr + size <= skb_tail_pointer(skb))
-                return ptr;
-        return NULL;
-}
-
-
-Then :
-
-commit a998d4342337c82dacdc0897d30a9364de1576a1
-Author: Jan Seiffert <kaffeemonster@googlemail.com>
-Date:   Fri Mar 30 05:24:05 2012 +0000
-
-    bpf jit: Let the x86 jit handle negative offsets
-    
-    Now the helper function from filter.c for negative offsets is exported,
-    it can be used it in the jit to handle negative offsets.
-    
-    First modify the asm load helper functions to handle:
-    - know positive offsets
-    - know negative offsets
-    - any offset
-    
-    then the compiler can be modified to explicitly use these helper
-    when appropriate.
-    
-    This fixes the case of a negative X register and allows to lift
-    the restriction that bpf programs with negative offsets can't
-    be jited.
-    
-    Signed-of-by: Jan Seiffert <kaffeemonster@googlemail.com>
-    Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-
+Hugh
