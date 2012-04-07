@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2DGKen (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 06:34:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42167 "EHLO mx2.suse.de"
+	id S1753450Ab2DGKgN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 06:36:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42298 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753160Ab2DGKel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 06:34:41 -0400
-Date: Sat, 07 Apr 2012 12:34:40 +0200
-Message-ID: <s5h8vi7x22n.wl%tiwai@suse.de>
+	id S1753160Ab2DGKgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Apr 2012 06:36:12 -0400
+Date: Sat, 07 Apr 2012 12:36:11 +0200
+Message-ID: <s5h7gxrx204.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] sound/pci/hda: CX20549 cleanup/fixes
-In-Reply-To: <1333717307.4159.28.camel@localhost>
-References: <1333632577.4159.9.camel@localhost>
-	<s5hlimafe4q.wl%tiwai@suse.de>
-	<s5hk41ufe2j.wl%tiwai@suse.de>
-	<1333717307.4159.28.camel@localhost>
+Subject: Re: [PATCH 0/6] ALSA: hda - CX20549 cleanup/fixes
+In-Reply-To: <1333719260-14504-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+References: <s5hk41ufe2j.wl%tiwai@suse.de>
+	<1333719260-14504-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,54 +25,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 06 Apr 2012 15:01:47 +0200,
+At Fri,  6 Apr 2012 15:34:14 +0200,
 Michael Karcher wrote:
 > 
-> On Thu, 2012-04-05 at 16:28 +0200, Takashi Iwai wrote:
-> > BTW, did you try model=auto option to enable the auto-parser?
-> > If it doesn't work well for you, let me know.
+> This is the revised patch series for the CX20549 (and related stuff)
 > 
-> I tried the model=auto option, too. It works mostly, but the mixer node
-> seems to not be utilized correctly/at all. The capture source list does
-> not contain "mixer" anymore, and there are no playback controls for
-> Internal Mic/Mic/Line.
+> Changes:
+>  Patch 1/6:
+>   - spec->single_adc_amp has been moved to codec->single_adc_amp
+>     to fix printing in /proc.
+>  Patch 2/6: 
+>   - "Line In" has been changed to "Line".
+>   - This change has also been performed on the Mixer Labels.
+>  Patch 4/6:
+>   - .num_items has been adjusted, too.
+>   - A comment about physical testing has been added to the commit message.
+>  Patch 5/6:
+>   - pin_amp_workaround is not set for CX20549 in auto-setup, too
 
-Right, the analog loopback is dropped in the auto-parser for
-simplicity.
+Thanks, applied all patches now.
 
-> The Capture setup seems to be built correctly
-> (except for the missing mixer). The auto setup adds two extra input
-> devices for jack sense.
-> 
-> > In anyway, give alsa-info.sh output (run with --no-upload option) for
-> > better checks.
-> 
-> alsa-info for the revised patch-set (mailed soon) with and without
-> model=auto is attached. Information I consider irrelevant (non-sound
-> modules and dmesg context not relating to sound) has been edited out.
+(BTW, the first patch caused a few obvious warnings from
+ checkpatch.pl, so I fixed manually.  At the next time, please run
+ checkpatch.pl once before submission.)
 
-Thanks.
-
-> BTW: I seem to have encountered an ALSA user-space bug: The codec
-> provides a "master capture switch", i.e. the "mute" of the adc in amp.
-> It also provides a "capture source selection enum", i.e. the "Connection
-> Select" of the adc widget. The enum provides mutually exclusive capture
-> sources that have no volume control, whilst the master capture switch is
-> coupled with the capture volume control, and should not be related to
-> the source enumeration. But if I play around with capture sources in
-> alsamixer, the "Capture Switch" is turned off as soon as I switch the
-> source from the first item in the Mux list to something else.
-
-This sounds like a bug in alsa-lib mixer abstraction.
-There is a known shortcomings in the "capture source" enum, e.g. it
-can't take more than one ADCs.
-
-> This happens with both the patched hard-coded "BenQ" configuration and
-> the auto configuration.
-
-OK, I'll check it in the next week.
-
-
-thanks,
 
 Takashi
