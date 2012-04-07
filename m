@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab2DGUyh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 16:54:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46279 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842Ab2DGUyU (ORCPT
+	id S1752610Ab2DGUyT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 16:54:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51986 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab2DGUyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 16:54:20 -0400
+	Sat, 7 Apr 2012 16:54:18 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 5/8] perf ui annotate browser: Add list based search for addr offset
-Date: Sat,  7 Apr 2012 17:54:06 -0300
-Message-Id: <1333832049-2399-6-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ashay Rane <ashay.rane@tacc.utexas.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 7/8] perf report: Correct display of samples and events in header
+Date: Sat,  7 Apr 2012 17:54:08 -0300
+Message-Id: <1333832049-2399-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1333832049-2399-1-git-send-email-acme@infradead.org>
 References: <1333832049-2399-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Ashay Rane <ashay.rane@tacc.utexas.edu>
 
->From the hit sorted rb_tree, so that we can use it in the upcoming jump
-instruction support.
+This patch prints the number of samples and the count of performance
+events separately.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-44a7kl2atf9jxlg9npmotzdg@git.kernel.org
+This allows comparing performance of different applications with each
+other.
+
+Previously, the sample count was displayed against an 'Events:' heading.
+With this patch, the header now reads (for example):
+
+Samples: 5K of event 'instructions'
+Event count (approx.): 2993026545
+
+The patch covers both the stdio and the browser interface.
+
+Signed-off-by: Ashay Rane <ashay.rane@tacc.utexas.edu>
+[ committer note: Fixed wrt e7f01d1 ]
+Link: http://lkml.kernel.org/n/tip-h4nfjm8msedlk8gxkzivfh5y@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browsers/annotate.c |   25 ++++++++++++++++---------
- 1 file changed, 16 insertions(+), 9 deletions(-)
+ tools/perf/builtin-report.c         |   11 +++++++----
+ tools/perf/util/ui/browsers/hists.c |   10 +++++++---
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index dbf8d3f..c52543c 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -157,17 +157,13 @@ static void objdump__insert_line(struct rb_root *self,
- }
- 
- static void annotate_browser__set_top(struct annotate_browser *self,
--				      struct rb_node *nd)
-+				      struct objdump_line *pos, u32 idx)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2e31743..cec2b8c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -296,12 +296,15 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
  {
--	struct objdump_line_rb_node *rbpos;
--	struct objdump_line *pos;
- 	unsigned back;
+ 	size_t ret;
+ 	char unit;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	u64 nr_events = self->stats.total_period;
  
- 	ui_browser__refresh_dimensions(&self->b);
- 	back = self->b.height / 2;
--	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
--	pos = ((struct objdump_line *)rbpos) - 1;
--	self->b.top_idx = self->b.index = rbpos->idx;
-+	self->b.top_idx = self->b.index = idx;
- 
- 	while (self->b.top_idx != 0 && back != 0) {
- 		pos = list_entry(pos->node.prev, struct objdump_line, node);
-@@ -177,7 +173,18 @@ static void annotate_browser__set_top(struct annotate_browser *self,
- 	}
- 
- 	self->b.top = pos;
--	self->curr_hot = nd;
-+}
+-	nr_events = convert_unit(nr_events, &unit);
+-	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
++	nr_samples = convert_unit(nr_samples, &unit);
++	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
+ 	if (evname != NULL)
+-		ret += fprintf(fp, " %s", evname);
++		ret += fprintf(fp, " of event '%s'", evname);
 +
-+static void annotate_browser__set_rb_top(struct annotate_browser *browser,
-+					 struct rb_node *nd)
-+{
-+	struct objdump_line_rb_node *rbpos;
-+	struct objdump_line *pos;
-+
-+	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
-+	pos = ((struct objdump_line *)rbpos) - 1;
-+	annotate_browser__set_top(browser, pos, rbpos->idx);
-+	browser->curr_hot = nd;
++	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
+ 	return ret + fprintf(fp, "\n#\n");
  }
  
- static void annotate_browser__calc_percent(struct annotate_browser *browser,
-@@ -308,7 +315,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 	annotate_browser__calc_percent(self, evidx);
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 2f83e5d..1b820ed 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -840,10 +840,14 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
+ 	int printed;
+ 	const struct dso *dso = self->dso_filter;
+ 	const struct thread *thread = self->thread_filter;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	u64 nr_events = self->stats.total_period;
++
++	nr_samples = convert_unit(nr_samples, &unit);
++	printed = scnprintf(bf, size,
++			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
++			   nr_samples, unit, ev_name, nr_events);
  
- 	if (self->curr_hot)
--		annotate_browser__set_top(self, self->curr_hot);
-+		annotate_browser__set_rb_top(self, self->curr_hot);
+-	nr_events = convert_unit(nr_events, &unit);
+-	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
  
- 	nd = self->curr_hot;
- 
-@@ -382,7 +389,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 		}
- 
- 		if (nd != NULL)
--			annotate_browser__set_top(self, nd);
-+			annotate_browser__set_rb_top(self, nd);
- 	}
- out:
- 	ui_browser__hide(&self->b);
+ 	if (self->uid_filter_str)
+ 		printed += snprintf(bf + printed, size - printed,
 -- 
 1.7.9.2.358.g22243
 
