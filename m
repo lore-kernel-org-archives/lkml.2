@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab2DGSgu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 14:36:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52892 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab2DGSgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 14:36:49 -0400
-Message-ID: <4F80892A.7050104@zytor.com>
-Date: Sat, 07 Apr 2012 11:36:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755104Ab2DGSyJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 14:54:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51468 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab2DGSyI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Apr 2012 14:54:08 -0400
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: RFC: deprecating/removing the legacy mode of devpts
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F807D41.5000008@antcom.de>
+References: <1333497518-25838-1-git-send-email-stigge@antcom.de>
+	<20120407035327.9D7923E246E@localhost>
+	<4F80460E.50605@antcom.de>
+	<CAKON4OxuP6AytcJDtDvbTaho4vFvUTQ0VfJiBnN5QEbK1xo1XQ@mail.gmail.com>
+	<4F807D41.5000008@antcom.de>
+Date: Sat, 7 Apr 2012 14:54:06 -0400
+Message-ID: <CAKON4OyQr+tTDPeb1+01SXbjPKOt3=Lxba5uVpELM9A7sQPVhw@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: Device tree support for LPC32xx
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, devpts supports a legacy mode where only one instance exists.
- For backwards compatibility, this is also the default mode, but the
-right thing should be to migrate everyone over to the "newinstance" scheme.
+On Sat, Apr 7, 2012 at 1:45 PM, Roland Stigge <stigge@antcom.de> wrote:
+> On 07/04/12 19:17, jonsmirl@gmail.com wrote:
+>>> Please consider how the groups are specified in
+>>> drivers/gpio/gpio-lpc32xx.c. They each have different numbers of lines
+>>> and GPIO / GPI / GPO functionality. So they also have different callback
+>>> sets, and we need to do separate gpiochip_add()s which leads to the
+>>> separate gpio-bank specifications in the dtsi file. Separate enabling of
+>>> those banks via OF are a nice by-product.
+>>
+>> When you have six banks of 32b registers with sparse, active GPIOs in
+>> the banks, is there any advantage to saying bank one has 8 gpios, bank
+>> 2 has 14, bank 3 has 2, etc in the gpiochip?  Or just just register
+>> them as six banks of 32 GPIOs without indicating which are
+>> valid/invalid?
+>
+> I think it is a good idea to only register GPIOs that are real when we
+> already have many (~100) instead of registering hundreds of invalid
+> extra ones (that will _always_ be invalid for this very driver).
 
-However, it is increasingly clear that that is not happening; neither
-the distros nor udev support this by default at this point.
+I only want to apply this to identical controller banks. For example
+the lpc31xx has 12 identical banks of 32 bits.  You can program all
+384 of these locations identically, but only about 100 locations are
+actually hooked to real hardware.
 
-I think it might be time we set a sunset date for the legacy mode,
-probably around kernel 3.9 at this point.
+We could add something like this to the device tree for gpio-controller:
+gpios-valid = <0x1234 0x1234 0x1234 0x1234 0x1234 0x1234 0x1234 0x1234 ...>
+12 groups of bits indicating which gpios are valid.
 
-The big change is that /dev/ptmx instead of being a device node should
-be a symlink to /dev/pts/ptmx, which is then either chmodded to the
-proper permissions, or given proper permissions via the ptmxmode mount
-options to devpts.  The latter is probably preferable from a technical
-point of view since it doesn't create a "gap".
+Or we could just ignore the invalid bits. On the lpc31xx they all
+work, just just don't do anything.
 
-As such, I would like to suggest the following:
+>
+> Also corresponds nicely to the hardware specs when there are banks of
+> odd sizes which can be found registered accordingly in the kernel.
 
-1. For 3.5, add this to feature-removal.txt.
-2. For 3.6, remove CONFIG_DEVPTS_MULTIPLE_INSTANCES as a configuration
-   option, and printk a warning if devpts is mounted without the
-   "newinstance" option.
-3. For 3.9 remove the legacy support including support for a ptmx node
-   outside the devpts filesystem.
+I agree that if the structure of the GPIO banks is irregular they
+should be different gpiochips.
 
-	-hpa
+>
+> Roland
+
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Jon Smirl
+jonsmirl@gmail.com
