@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2DGHLf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 03:11:35 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:52964 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab2DGHKm (ORCPT
+	id S1753033Ab2DGHLa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 03:11:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59970 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2DGHKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 03:10:42 -0400
+	Sat, 7 Apr 2012 03:10:41 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [GIT PULL] GPIO changes for v3.4
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+55aFwN_=5UH0KrcnSUONxgfTtkmA45ND8Rq1n0tUv6+_-1hw@mail.gmail.com>
-References: <CACxGe6s1GFkqgxsbKQWQxcoJZjTkkFHbAv3tqK2cPn6tho502w@mail.gmail.com> <CA+55aFwN_=5UH0KrcnSUONxgfTtkmA45ND8Rq1n0tUv6+_-1hw@mail.gmail.com>
-Date: Fri, 06 Apr 2012 20:22:41 -0700
-Message-Id: <20120407032241.B2F753E2155@localhost>
+Subject: Re: [PATCH 2/2] gpiolib: Implement devm_gpio_request_one()
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120406144917.GE19424@opensource.wolfsonmicro.com>
+References: <1333552489-27694-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1333552489-27694-2-git-send-email-broonie@opensource.wolfsonmicro.com> <20120406044832.7C80D3E0ED5@localhost> <20120406144917.GE19424@opensource.wolfsonmicro.com>
+Date: Fri, 06 Apr 2012 19:25:12 -0700
+Message-Id: <20120407022512.2C65C3E1B12@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Mar 2012 14:08:22 -0700, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Tue, Mar 27, 2012 at 12:20 AM, Grant Likely
-> <grant.likely@secretlab.ca> wrote:
-> >
-> > Please pull.
+On Fri, 6 Apr 2012 15:49:17 +0100, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Apr 05, 2012 at 09:48:32PM -0700, Grant Likely wrote:
 > 
-> You should double-check my trivial sleep control merge of the gpios vs
-> regulator code. It looked like a trivial context merge, but there may
-> be some subtle interactions on the actual device side that I have no
-> idea of. The author for both was the same, though, so I assume they
-> work together.
+> > Can we make devm_gpio_request a static inline wrapper around
+> > devm_gpio_request_one() with the flags field set to '0'?  I don't liek
+> > the duplication of this function.
+> 
+> > Similarily, gpio_request() should actually be a static inline around
+> > gpio_request_one() instead of the other way around as it is currently
+> > written.
+> 
+> Yeah, I couldn't understand why the non-managed functions were written
+> in this way so I followed the same pattern when I added the managed one
+> assuming that the original code was sane.
 
-It looks right to me.  Laxman, can you test and verify that everything
-is working correctly with Linus' current tree?  See the merge Linus
-made in commit 7bf97e1d5, "Merge tag 'gpio-for-linus' of
-git://git.secretlab.ca/git/linux-2.6"
+Actually, I looked at it again, and the _one version behaves subtly
+different from the non-_one version.  That may be irrelevant though.
 
 g.
+
 
 -- 
 Grant Likely, B.Sc, P.Eng.
