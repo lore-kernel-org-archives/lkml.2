@@ -1,113 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab2DGNuf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 09:50:35 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:49090 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab2DGNue convert rfc822-to-8bit (ORCPT
+	id S1754647Ab2DGONq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 10:13:46 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:53073 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab2DGONn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 09:50:34 -0400
-Message-ID: <4F804617.2010700@ahsoftware.de>
-Date: Sat, 07 Apr 2012 15:50:15 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Marko_H=E4nninen?= <bugitus@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 3.3.0: Oops when resuming from hibernation
-References: <201204071518.57889.bugitus@gmail.com>
-In-Reply-To: <201204071518.57889.bugitus@gmail.com>
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Sat, 7 Apr 2012 10:13:43 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-doc@vger.kernel.org, rdunlap@xenotime.net
+Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>,
+        Rob Landley <rob@landley.net>
+Subject: [PATCH/V2] [trivial] Documentation: Fix typo in multiple files in Documentation
+Date: Sat,  7 Apr 2012 23:13:00 +0900
+Message-Id: <1333807980-26161-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.10.rc4
+In-Reply-To: <1333727104-10181-1-git-send-email-standby24x7@gmail.com>
+References: <1333727104-10181-1-git-send-email-standby24x7@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.04.2012 14:18, schrieb Marko Hänninen:
-> Hi,
->
->
-> I'm getting oops, when my laptop is resuming from hibernation (hibernated by KDE). If I hibernate again without reboot, it won't wake up anymore. My bluetooth mouse (Logitech V470) works before hibernation, but not after. I have to reboot
-> to make bluetooth work again.
-> I can reproduce this oops with every hibernation. This is regression in linux 3.3.0: bluetooth has worked correctly before (since 2.6 days to 3.2.14). The problem still exists with 3.3.1 (which introduces another problem with ath9k not
-> connecting to AP, which is why I'm stuck with 3.3.0)
->
->
-> Oops:
->
-> [  237.991473] Bluetooth: unknown link type 44
-> [  237.991478] BUG: unable to handle kernel paging request at 000000004f80229e
-> [  237.991525] IP: [<000000004f80229e>] 0x4f80229d
-> [  237.991555] PGD 0
-> [  237.991570] Oops: 0010 [#1] PREEMPT SMP
-> [  237.991598] CPU 2
-> [  237.991611] Modules linked in: psmouse joydev sdhci_pci
-> [  237.991650]
-> [  237.991661] Pid: 517, comm: khubd Not tainted 3.3.0 #1 Hewlett-Packard HP ProBook 4730s/167C
-> [  237.991720] RIP: 0010:[<000000004f80229e>]  [<000000004f80229e>] 0x4f80229d
-> [  237.991759] RSP: 0018:ffff880149e3fbd8  EFLAGS: 00010202
-> [  237.991785] RAX: 000000004f80229e RBX: ffff8801450c4000 RCX: 0000000000000013
-> [  237.991822] RDX: 0000000000000067 RSI: 0000000000000016 RDI: ffff8801450c4000
-> [  237.991857] RBP: ffff880145019638 R08: 0000000000000002 R09: 00000000fffffffe
-> [  237.991892] R10: 0000000000000000 R11: 000000000000032e R12: ffff8801450195d0
-> [  237.991927] R13: 0000000000000000 R14: ffffffff81a4c510 R15: ffffffff81a4c578
-> [  237.991973] FS:  0000000000000000(0000) GS:ffff88014f480000(0000) knlGS:0000000000000000
-> [  237.992026] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  237.992062] CR2: 000000004f80229e CR3: 0000000001a05000 CR4: 00000000000406e0
-> [  237.992088] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  237.992112] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  237.992139] Process khubd (pid: 517, threadinfo ffff880149e3e000, task ffff88014a3739f0)
-> [  237.992167] Stack:
-> [  237.992176]  ffffffff814fccc9 ffff8801466ee000 ffff8801450c4000 ffff880148706926
-> [  237.992206]  ffff880145019000 ffff880145019010 ffffffff814f9c9a ffff88014a33d140
-> [  237.992238]  ffff880145019000 0000000000000000 ffff88014a32cc00 0000000000000000
-> [  237.992269] Call Trace:
-> [  237.992283]  [<ffffffff814fccc9>] ? hci_conn_hash_flush+0x7c/0x9d
-> [  237.992306]  [<ffffffff814f9c9a>] ? hci_dev_do_close+0x10d/0x234
-> [  237.992329]  [<ffffffff814fb44f>] ? hci_unregister_dev+0x54/0x13e
-> [  237.992352]  [<ffffffff813cc76f>] ? btusb_disconnect+0x4a/0x8f
-> [  237.992374]  [<ffffffff813702f7>] ? usb_unbind_interface+0x5b/0x126
-> [  237.992398]  [<ffffffff812fa7e7>] ? __device_release_driver+0x7f/0xd0
-> [  237.992423]  [<ffffffff812fa855>] ? device_release_driver+0x1d/0x2b
-> [  237.992446]  [<ffffffff812fa43a>] ? bus_remove_device+0xd2/0xe7
-> [  237.992469]  [<ffffffff812f840f>] ? device_del+0x11a/0x168
-> [  237.992490]  [<ffffffff8136e847>] ? usb_disable_device+0x6b/0x15a
-> [  237.992514]  [<ffffffff813688f8>] ? usb_disconnect+0x94/0x107
-> [  237.992536]  [<ffffffff81369efb>] ? hub_thread+0x509/0xdeb
-> [  237.992558]  [<ffffffff81050a38>] ? update_curr+0x67/0xaa
-> [  237.992579]  [<ffffffff81040009>] ? find_worker_executing_work+0xb/0x31
-> [  237.992604]  [<ffffffff81566051>] ? __schedule+0x40a/0x421
-> [  237.992625]  [<ffffffff810456fa>] ? wake_up_bit+0x23/0x23
-> [  237.992646]  [<ffffffff813699f2>] ? usb_remote_wakeup+0x2f/0x2f
-> [  237.992668]  [<ffffffff813699f2>] ? usb_remote_wakeup+0x2f/0x2f
-> [  237.992690]  [<ffffffff810452ed>] ? kthread+0x81/0x89
-> [  237.992709]  [<ffffffff81568754>] ? kernel_thread_helper+0x4/0x10
-> [  237.992732]  [<ffffffff8104526c>] ? kthread_freezable_should_stop+0x37/0x37
-> [  237.992757]  [<ffffffff81568750>] ? gs_change+0xb/0xb
-> [  237.992774] Code:  Bad RIP value.
-> [  237.992790] RIP  [<000000004f80229e>] 0x4f80229d
-> [  237.992809]  RSP<ffff880149e3fbd8>
-> [  237.992821] CR2: 000000004f80229e
-> [  238.144442] ---[ end trace 904a4682b9213a2e ]---
->
->
->
-> This is with vanilla 3.3.0 kernel, downloaded from kernel.org:
-> Linux bugi 3.3.0 #1 SMP PREEMPT Sat Apr 7 13:23:08 EEST 2012 x86_64 Intel(R) Core(TM) i5-2410M CPU @ 2.30GHz GenuineIntel GNU/Linux
->
->
-> I'm not sure if this bug is in usb, bluetooth or hibernation, so I send this mail to lkml.
-> I'm not subscribed to the list, so please CC me.
+Correcting multiple spelling typo in Documentation.
 
-You might try that patch which removes a dead lock I had problems with:
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=e72acc13c770a82b4ce4a07e9716f29320eae0f8
+Cc: Rob Landley <rob@landley.net>
 
-See the thread here:
+---
+ Documentation/ABI/testing/sysfs-bus-usb            |    4 +--
+ Documentation/DocBook/kernel-hacking.tmpl          |    2 +-
+ Documentation/DocBook/libata.tmpl                  |    2 +-
+ Documentation/DocBook/media/v4l/controls.xml       |    6 ++---
+ Documentation/blackfin/bfin-gpio-notes.txt         |    2 +-
+ .../devicetree/bindings/net/can/fsl-flexcan.txt    |    2 +-
+ Documentation/dvb/opera-firmware.txt               |    4 +--
+ Documentation/edac.txt                             |    2 +-
+ Documentation/filesystems/nfs/pnfs.txt             |    2 +-
+ Documentation/filesystems/qnx6.txt                 |   28 ++++++++++----------
+ Documentation/hwmon/it87                           |    2 +-
+ Documentation/memory-hotplug.txt                   |    2 +-
+ Documentation/networking/can.txt                   |    2 +-
+ Documentation/parisc/debugging                     |    2 +-
+ Documentation/scsi/ChangeLog.megaraid_sas          |    2 +-
+ Documentation/sound/alsa/compress_offload.txt      |    2 +-
+ Documentation/static-keys.txt                      |    2 +-
+ 17 files changed, 34 insertions(+), 34 deletions(-)
 
-https://lkml.org/lkml/2012/4/2/62
-
-Regards,
-
-Alexander
+diff --git a/Documentation/ABI/testing/sysfs-bus-usb b/Documentation/ABI/testing/sysfs-bus-usb
+index 7c22a53..303923b 100644
+--- a/Documentation/ABI/testing/sysfs-bus-usb
++++ b/Documentation/ABI/testing/sysfs-bus-usb
+@@ -189,7 +189,7 @@ Contact:	Matthew Garrett <mjg@redhat.com>
+ Description:
+ 		Some information about whether a given USB device is
+ 		physically fixed to the platform can be inferred from a
+-		combination of hub decriptor bits and platform-specific data
++		combination of hub descriptor bits and platform-specific data
+ 		such as ACPI. This file will read either "removable" or
+ 		"fixed" if the information is available, and "unknown"
+-		otherwise.
+\ No newline at end of file
++		otherwise.
+diff --git a/Documentation/DocBook/kernel-hacking.tmpl b/Documentation/DocBook/kernel-hacking.tmpl
+index 07a9c48..eee7142 100644
+--- a/Documentation/DocBook/kernel-hacking.tmpl
++++ b/Documentation/DocBook/kernel-hacking.tmpl
+@@ -1289,7 +1289,7 @@ static struct block_device_operations opt_fops = {
+  * Sparc assembly will do this to ya.
+  */
+ C_LABEL(cputypvar):
+-        .asciz "compatability"
++        .asciz "compatibility"
+ 
+ /* Tested on SS-5, SS-10. Probably someone at Sun applied a spell-checker. */
+         .align 4
+diff --git a/Documentation/DocBook/libata.tmpl b/Documentation/DocBook/libata.tmpl
+index 31df1aa..deb71ba 100644
+--- a/Documentation/DocBook/libata.tmpl
++++ b/Documentation/DocBook/libata.tmpl
+@@ -918,7 +918,7 @@ and other resources, etc.
+         <title>HSM violation</title>
+         <para>
+         This error is indicated when STATUS value doesn't match HSM
+-        requirement during issuing or excution any ATA/ATAPI command.
++        requirement during issuing or execution any ATA/ATAPI command.
+         </para>
+ 
+ 	<itemizedlist>
+diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+index b84f25e..dd03cf4 100644
+--- a/Documentation/DocBook/media/v4l/controls.xml
++++ b/Documentation/DocBook/media/v4l/controls.xml
+@@ -2023,7 +2023,7 @@ Possible values are:</entry>
+ 		<entry>integer</entry>
+ 	      </row>
+ 	      <row><entry spanname="descr">Cyclic intra macroblock refresh. This is the number of continuous macroblocks
+-refreshed every frame. Each frame a succesive set of macroblocks is refreshed until the cycle completes and starts from the
++refreshed every frame. Each frame a successive set of macroblocks is refreshed until the cycle completes and starts from the
+ top of the frame. Applicable to H264, H263 and MPEG4 encoder.</entry>
+ 	      </row>
+ 
+@@ -2183,7 +2183,7 @@ Applicable to the MPEG4 and H264 encoders.</entry>
+ 		<entry>integer</entry>
+ 	      </row>
+ 	      <row><entry spanname="descr">The Video Buffer Verifier size in kilobytes, it is used as a limitation of frame skip.
+-The VBV is defined in the standard as a mean to verify that the produced stream will be succesfully decoded.
++The VBV is defined in the standard as a mean to verify that the produced stream will be successfully decoded.
+ The standard describes it as "Part of a hypothetical decoder that is conceptually connected to the
+ output of the encoder. Its purpose is to provide a constraint on the variability of the data rate that an
+ encoder or editing process may produce.".
+@@ -2196,7 +2196,7 @@ Applicable to the MPEG1, MPEG2, MPEG4 encoders.</entry>
+ 		<entry>integer</entry>
+ 	      </row>
+ 	      <row><entry spanname="descr">The Coded Picture Buffer size in kilobytes, it is used as a limitation of frame skip.
+-The CPB is defined in the H264 standard as a mean to verify that the produced stream will be succesfully decoded.
++The CPB is defined in the H264 standard as a mean to verify that the produced stream will be successfully decoded.
+ Applicable to the H264 encoder.</entry>
+ 	      </row>
+ 
+diff --git a/Documentation/blackfin/bfin-gpio-notes.txt b/Documentation/blackfin/bfin-gpio-notes.txt
+index d36b01f..d245f39 100644
+--- a/Documentation/blackfin/bfin-gpio-notes.txt
++++ b/Documentation/blackfin/bfin-gpio-notes.txt
+@@ -53,7 +53,7 @@
+ 
+ 3. But there are some exceptions
+     - Kernel permit the identical GPIO be requested both as GPIO and GPIO
+-    interrut.
++    interrupt.
+     Some drivers, like gpio-keys, need this behavior. Kernel only print out
+     warning messages like,
+ 	bfin-gpio: GPIO 24 is already reserved by gpio-keys: BTN0, and you are
+diff --git a/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt b/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
+index 1ad80d5..f31b686 100644
+--- a/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
++++ b/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
+@@ -1,4 +1,4 @@
+-Flexcan CAN contoller on Freescale's ARM and PowerPC system-on-a-chip (SOC).
++Flexcan CAN controller on Freescale's ARM and PowerPC system-on-a-chip (SOC).
+ 
+ Required properties:
+ 
+diff --git a/Documentation/dvb/opera-firmware.txt b/Documentation/dvb/opera-firmware.txt
+index 93e784c..fb66831 100644
+--- a/Documentation/dvb/opera-firmware.txt
++++ b/Documentation/dvb/opera-firmware.txt
+@@ -8,7 +8,7 @@ from the windriver disk into this directory.
+ 
+ Then run
+ 
+-./get_dvb_firware opera1
++./get_dvb_firmware opera1
+ 
+ and after that you have 2 files:
+ 
+@@ -24,4 +24,4 @@ After that the driver can load the firmware
+ in kernel config and have hotplug running).
+ 
+ 
+-Marco Gittler <g.marco@freenet.de>
+\ No newline at end of file
++Marco Gittler <g.marco@freenet.de>
+diff --git a/Documentation/edac.txt b/Documentation/edac.txt
+index fdcc49f..03df2b0 100644
+--- a/Documentation/edac.txt
++++ b/Documentation/edac.txt
+@@ -734,7 +734,7 @@ were done at i7core_edac driver. This chapter will cover those differences
+    associated with a physical CPU socket.
+ 
+    Each MC have 3 physical read channels, 3 physical write channels and
+-   3 logic channels. The driver currenty sees it as just 3 channels.
++   3 logic channels. The driver currently sees it as just 3 channels.
+    Each channel can have up to 3 DIMMs.
+ 
+    The minimum known unity is DIMMs. There are no information about csrows.
+diff --git a/Documentation/filesystems/nfs/pnfs.txt b/Documentation/filesystems/nfs/pnfs.txt
+index c7919c6..52ae07f 100644
+--- a/Documentation/filesystems/nfs/pnfs.txt
++++ b/Documentation/filesystems/nfs/pnfs.txt
+@@ -93,7 +93,7 @@ The API to the login script is as follows:
+ 				(allways exists)
+ 				(More protocols can be defined in the future.
+ 				 The client does not interpret this string it is
+-				 passed unchanged as recieved from the Server)
++				 passed unchanged as received from the Server)
+ 		-o		osdname of the requested target OSD
+ 				(Might be empty)
+ 				(A string which denotes the OSD name, there is a
+diff --git a/Documentation/filesystems/qnx6.txt b/Documentation/filesystems/qnx6.txt
+index 050223e..0708584 100644
+--- a/Documentation/filesystems/qnx6.txt
++++ b/Documentation/filesystems/qnx6.txt
+@@ -17,7 +17,7 @@ concepts of blocks, inodes and directories.
+ On QNX it is possible to create little endian and big endian qnx6 filesystems.
+ This feature makes it possible to create and use a different endianness fs
+ for the target (QNX is used on quite a range of embedded systems) plattform
+-running on a different endianess.
++running on a different endianness.
+ The Linux driver handles endianness transparently. (LE and BE)
+ 
+ Blocks
+@@ -26,7 +26,7 @@ Blocks
+ The space in the device or file is split up into blocks. These are a fixed
+ size of 512, 1024, 2048 or 4096, which is decided when the filesystem is
+ created.
+-Blockpointers are 32bit, so the maximum space that can be adressed is
++Blockpointers are 32bit, so the maximum space that can be addressed is
+ 2^32 * 4096 bytes or 16TB
+ 
+ The superblocks
+@@ -47,16 +47,16 @@ inactive superblock.
+ Each superblock holds a set of root inodes for the different filesystem
+ parts. (Inode, Bitmap and Longfilenames)
+ Each of these root nodes holds information like total size of the stored
+-data and the adressing levels in that specific tree.
+-If the level value is 0, up to 16 direct blocks can be adressed by each
++data and the addressing levels in that specific tree.
++If the level value is 0, up to 16 direct blocks can be addressed by each
+ node.
+-Level 1 adds an additional indirect adressing level where each indirect
+-adressing block holds up to blocksize / 4 bytes pointers to data blocks.
+-Level 2 adds an additional indirect adressig block level (so, already up
+-to 16 * 256 * 256 = 1048576 blocks that can be adressed by such a tree)a
++Level 1 adds an additional indirect addressing level where each indirect
++addressing block holds up to blocksize / 4 bytes pointers to data blocks.
++Level 2 adds an additional indirect addressig block level (so, already up
++to 16 * 256 * 256 = 1048576 blocks that can be addressed by such a tree)a
+ 
+ Unused block pointers are always set to ~0 - regardless of root node,
+-indirect adressing blocks or inodes.
++indirect addressing blocks or inodes.
+ Data leaves are always on the lowest level. So no data is stored on upper
+ tree levels.
+ 
+@@ -64,7 +64,7 @@ The first Superblock is located at 0x2000. (0x2000 is the bootblock size)
+ The Audi MMI 3G first superblock directly starts at byte 0.
+ Second superblock position can either be calculated from the superblock
+ information (total number of filesystem blocks) or by taking the highest
+-device address, zeroing the last 3 bytes and then substracting 0x1000 from
++device address, zeroing the last 3 bytes and then subtracting 0x1000 from
+ that address.
+ 
+ 0x1000 is the size reserved for each superblock - regardless of the
+@@ -83,8 +83,8 @@ size, number of blocks used, access time, change time and modification time.
+ Object mode field is POSIX format. (which makes things easier)
+ 
+ There are also pointers to the first 16 blocks, if the object data can be
+-adressed with 16 direct blocks.
+-For more than 16 blocks an indirect adressing in form of another tree is
++addressed with 16 direct blocks.
++For more than 16 blocks an indirect addressing in form of another tree is
+ used. (scheme is the same as the one used for the superblock root nodes)
+ 
+ The filesize is stored 64bit. Inode counting starts with 1. (whilst long
+@@ -118,13 +118,13 @@ no block pointers and the directory file record pointing to the target file
+ inode.
+ 
+ Character and block special devices do not exist in QNX as those files
+-are handled by the QNX kernel/drivers and created in /dev independant of the
++are handled by the QNX kernel/drivers and created in /dev independent of the
+ underlaying filesystem.
+ 
+ Long filenames
+ --------------
+ 
+-Long filenames are stored in a seperate adressing tree. The staring point
++Long filenames are stored in a separate addressing tree. The staring point
+ is the longfilename root node in the active superblock.
+ Each data block (tree leaves) holds one long filename. That filename is
+ limited to 510 bytes. The first two starting bytes are used as length field
+diff --git a/Documentation/hwmon/it87 b/Documentation/hwmon/it87
+index 899128d..87850d8 100644
+--- a/Documentation/hwmon/it87
++++ b/Documentation/hwmon/it87
+@@ -71,7 +71,7 @@ Module Parameters
+ Hardware Interfaces
+ -------------------
+ 
+-All the chips suported by this driver are LPC Super-I/O chips, accessed
++All the chips supported by this driver are LPC Super-I/O chips, accessed
+ through the LPC bus (ISA-like I/O ports). The IT8712F additionally has an
+ SMBus interface to the hardware monitoring functions. This driver no
+ longer supports this interface though, as it is slower and less reliable
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 8f485d7..6d0c251 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -341,7 +341,7 @@ Need more implementation yet....
+ --------------------------------
+ 8. Memory hotplug event notifier
+ --------------------------------
+-Memory hotplug has event notifer. There are 6 types of notification.
++Memory hotplug has event notifier. There are 6 types of notification.
+ 
+ MEMORY_GOING_ONLINE
+   Generated before new memory becomes available in order to be able to
+diff --git a/Documentation/networking/can.txt b/Documentation/networking/can.txt
+index 56ca3b7..ac29539 100644
+--- a/Documentation/networking/can.txt
++++ b/Documentation/networking/can.txt
+@@ -649,7 +649,7 @@ solution for a couple of reasons:
+   The CAN device must be configured via netlink interface. The supported
+   netlink message types are defined and briefly described in
+   "include/linux/can/netlink.h". CAN link support for the program "ip"
+-  of the IPROUTE2 utility suite is avaiable and it can be used as shown
++  of the IPROUTE2 utility suite is available and it can be used as shown
+   below:
+ 
+   - Setting CAN device properties:
+diff --git a/Documentation/parisc/debugging b/Documentation/parisc/debugging
+index d728594..7d75223 100644
+--- a/Documentation/parisc/debugging
++++ b/Documentation/parisc/debugging
+@@ -34,6 +34,6 @@ registers interruption handlers read to find out where the machine
+ was interrupted - so if you get an interruption between the instruction
+ that clears the Q bit and the RFI that sets it again you don't know
+ where exactly it happened.  If you're lucky the IAOQ will point to the
+-instrucion that cleared the Q bit, if you're not it points anywhere
++instruction that cleared the Q bit, if you're not it points anywhere
+ at all.  Usually Q bit problems will show themselves in unexplainable
+ system hangs or running off the end of physical memory.
+diff --git a/Documentation/scsi/ChangeLog.megaraid_sas b/Documentation/scsi/ChangeLog.megaraid_sas
+index 83f8ea8..ded11a2 100644
+--- a/Documentation/scsi/ChangeLog.megaraid_sas
++++ b/Documentation/scsi/ChangeLog.megaraid_sas
+@@ -521,7 +521,7 @@ i.	Register 16 byte CDB capability with scsi midlayer
+ 3 Older Version   : 00.00.02.01 
+ 
+ i.	New template defined to represent each family of controllers (identified by processor used). 
+-	The template will have defintions that will be initialised to appropritae values for a specific family of controllers. The template definition has four function pointers. During driver initialisation the function pointers will be set based on the controller family type. This change is done to support new controllers that has different processors and thus different register set.
++	The template will have definitions that will be initialised to appropriate values for a specific family of controllers. The template definition has four function pointers. During driver initialisation the function pointers will be set based on the controller family type. This change is done to support new controllers that has different processors and thus different register set.
+ 
+ 		-Sumant Patro <Sumant.Patro@lsil.com>
+ 
+diff --git a/Documentation/sound/alsa/compress_offload.txt b/Documentation/sound/alsa/compress_offload.txt
+index c83a835..90e9b3a 100644
+--- a/Documentation/sound/alsa/compress_offload.txt
++++ b/Documentation/sound/alsa/compress_offload.txt
+@@ -18,7 +18,7 @@ processing. Support for such hardware has not been very good in Linux,
+ mostly because of a lack of a generic API available in the mainline
+ kernel.
+ 
+-Rather than requiring a compability break with an API change of the
++Rather than requiring a compatibility break with an API change of the
+ ALSA PCM interface, a new 'Compressed Data' API is introduced to
+ provide a control and data-streaming interface for audio DSPs.
+ 
+diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
+index d93f3c0..9f5263d 100644
+--- a/Documentation/static-keys.txt
++++ b/Documentation/static-keys.txt
+@@ -235,7 +235,7 @@ label case adds:
+ 6 (mov) + 2 (test) + 2 (jne) = 10 - 5 (5 byte jump 0) = 5 addition bytes.
+ 
+ If we then include the padding bytes, the jump label code saves, 16 total bytes
+-of instruction memory for this small fucntion. In this case the non-jump label
++of instruction memory for this small function. In this case the non-jump label
+ function is 80 bytes long. Thus, we have have saved 20% of the instruction
+ footprint. We can in fact improve this even further, since the 5-byte no-op
+ really can be a 2-byte no-op since we can reach the branch with a 2-byte jmp.
+-- 
+1.7.10.rc4
 
