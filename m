@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab2DGNpj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 09:45:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56424 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123Ab2DGNpi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 09:45:38 -0400
+	id S1754624Ab2DGNrw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 09:47:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29885 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754203Ab2DGNrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Apr 2012 09:47:51 -0400
+Message-ID: <4F804580.9010308@redhat.com>
+Date: Sat, 07 Apr 2012 09:47:44 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20120407080032.GA17369@pengutronix.de>
-References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
-	<1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
-	<CAMiH66EC7=x0sRYhE3hpEyBemDGSRS19xguQUqKj2kuPw5Tifw@mail.gmail.com>
-	<20120404122335.GD17187@pengutronix.de>
-	<CAMiH66GM0RxP-z=HNkOhhPaaXCZLKPvWFy=_+aGbbGSdrsg+iQ@mail.gmail.com>
-	<20120406182122.GA13649@pengutronix.de>
-	<CAMiH66GxZoT-PDfkqBOFfn2jXi6n7B0jiDmMUV9GpT09J3z2yQ@mail.gmail.com>
-	<20120407080032.GA17369@pengutronix.de>
-Date: Sat, 7 Apr 2012 21:45:37 +0800
-Message-ID: <CAMiH66F4ev=M12Bav+kO6vYBdDkGFpBAPCwkgf5jRJHbRj=bpw@mail.gmail.com>
-Subject: Re: [PATCH V2 1/3] lib: add support for stmp-style devices
-From: Huang Shijie <shijie8@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Huang Shijie <b32955@freescale.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <alpine.LFD.2.02.1204070107370.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1204070107370.2542@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 7, 2012 at 4:00 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
->> emm..
->> If you think this version is ok, I will ask Artem to accept another patch:
->> "  mtd/gpmi : do not include the mxs.h".
+
+
+On 04/06/2012 07:29 PM, Thomas Gleixner wrote:
+> On Thu, 5 Apr 2012, Prarit Bhargava wrote:
+> 
+>>>
+>>> So what kernel version are you using?
 >>
->> My other patches depend on this patch. And they have been delayed for some time.
->
-> Please wait at least somebody acknowledged that this has been picked up.
-> linux-next will break otherwise.
->
+>> I retested using top of the linux.git tree, running
+>>
+>> echo 1 > /proc/sys/kernel/sysrq
+>> for i in `seq 10000`; do sleep 1000 & done
+>> echo t > /proc/sysrq-trigger
+>>
+>> and I no longer see a problem.  However, if I increase the number of threads to
+>> 1000/cpu I get
+>>
+>> Clocksource %s unstable (delta = -429565427)
+>> Clocksource switching to hpet
+> 
+> You are issuing a command which puts the kernel into a state where is
+> dumps data for several seconds with interrupts disabled. And you expect that
+> everything can cope with that?
 
-ok, thanks.
+Yes actually.  I do expect that everything "copes" with it.  I don't find it
+unreasonable with system sizes increasing that functionality that has been
+around for years works.
 
-Huang Shijie
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+However, I also understand that no one expected or saw this problem -- I'm not
+blaming anyone or screaming "Hey!  This is broken!!!".
+
+>  
+>> If I hack in (sorry for the cut-and-paste)
+>> ....
+>> +               cs_nsec = mult_frac(((csnow - cs->cs_last), cs->mult,
+>> +                                   1UL << cs->shift);
+>>
+>> -               cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last) &
+>> -                                            cs->mask, cs->mult, cs->shift);
+>> then I don't see unstable messages.
+> 
+> That does not make your approach more correct. The HPET wraparound
+> time is ~3 seconds, so you screwed everything already, when your dump
+> lasts longer than that. And there are clocksources which wrap way
+> faster.
+> 
+> No, you can't fix that by hacking the timer code. A wraparound CANNOT
+> be fixed by hacks.
+> 
+> So instead of fiddling in the victims, please fix the root cause,
+> i.e. that stupid sysrq-t code which should not need to have interrupts
+> disabled just to dump all that state. If that's not possible, send a
+> patch to the sysrq documentation and warn about the consequences.
+> 
+> But stay away from code which is correct already. You CANNOT fix a
+> problem which is caused by abnormal system state by hacking the code
+> which is exposing the problem.
+> 
+> All you do is making hot pathes more expensive with a very dubious
+> value. The time related calls are hotpath functions and optimized.
+> 
+> Aside of that you are breaking all architectures which do not have a
+> native 64/32 instruction.
+> 
+> This mult_frac stuff is not going to happen, period.
+
+Okay -- thanks for the info.  Much appreciated.
+
+P.
