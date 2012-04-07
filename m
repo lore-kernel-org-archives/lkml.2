@@ -1,367 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab2DGXKN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 19:10:13 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:34781 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab2DGXKK (ORCPT
+	id S1753065Ab2DGXRA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 19:17:00 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:5567 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab2DGXQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 19:10:10 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH] spi/devicetree: Move devicetree support code into spi directory
-Date: Sat,  7 Apr 2012 14:23:56 -0600
-Message-Id: <1333830236-19818-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.9.1
+	Sat, 7 Apr 2012 19:16:59 -0400
+Message-Id: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Sat, 7 Apr 2012 16:53:03 -0400
+Subject: [PATCH 0/3] arch/tile: provide PCIe support for tilegx
+To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        David Howells <dhowells@redhat.com>
+X-OriginalArrivalTime: 07 Apr 2012 23:16:58.0942 (UTC) FILETIME=[8808CDE0:01CD1514]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SPI device tree support code isn't shared by any other subsystem.  It can
-be moved into the core drivers/spi directory and the exported symbol can be
-removed.
+This series of changes adds PCIe support to the tilegx architecture
+using the on-chip TRIO ("Transation I/O") hardware.  The last change is
+the one that adds PCI support per-se and it is cc'ed to a wider audience.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
----
- drivers/of/Kconfig         |    6 ---
- drivers/of/Makefile        |    1 -
- drivers/of/of_spi.c        |   99 --------------------------------------------
- drivers/spi/spi-fsl-espi.c |    1 -
- drivers/spi/spi-fsl-lib.c  |    1 -
- drivers/spi/spi-ppc4xx.c   |    1 -
- drivers/spi/spi.c          |   92 ++++++++++++++++++++++++++++++++++++++++-
- include/linux/of_spi.h     |   23 ----------
- 8 files changed, 91 insertions(+), 133 deletions(-)
- delete mode 100644 drivers/of/of_spi.c
- delete mode 100644 include/linux/of_spi.h
+As usual, any code review would be appreciated.  This is layered on
+top of the GXIO IORPC mechanism presented in the previous patch series,
+which provided networking support for tilegx.
 
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index 8e84ce9..f623f17 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -67,12 +67,6 @@ config OF_NET
- 	depends on NETDEVICES
- 	def_bool y
- 
--config OF_SPI
--	def_tristate SPI
--	depends on SPI && !SPARC
--	help
--	  OpenFirmware SPI accessors
--
- config OF_MDIO
- 	def_tristate PHYLIB
- 	depends on PHYLIB
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index aa90e60..0040d18 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -7,7 +7,6 @@ obj-$(CONFIG_OF_DEVICE) += device.o platform.o
- obj-$(CONFIG_OF_GPIO)   += gpio.o
- obj-$(CONFIG_OF_I2C)	+= of_i2c.o
- obj-$(CONFIG_OF_NET)	+= of_net.o
--obj-$(CONFIG_OF_SPI)	+= of_spi.o
- obj-$(CONFIG_OF_SELFTEST) += selftest.o
- obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
- obj-$(CONFIG_OF_PCI)	+= of_pci.o
-diff --git a/drivers/of/of_spi.c b/drivers/of/of_spi.c
-deleted file mode 100644
-index 6dbc074..0000000
---- a/drivers/of/of_spi.c
-+++ /dev/null
-@@ -1,99 +0,0 @@
--/*
-- * SPI OF support routines
-- * Copyright (C) 2008 Secret Lab Technologies Ltd.
-- *
-- * Support routines for deriving SPI device attachments from the device
-- * tree.
-- */
--
--#include <linux/module.h>
--#include <linux/of.h>
--#include <linux/device.h>
--#include <linux/spi/spi.h>
--#include <linux/of_irq.h>
--#include <linux/of_spi.h>
--
--/**
-- * of_register_spi_devices - Register child devices onto the SPI bus
-- * @master:	Pointer to spi_master device
-- *
-- * Registers an spi_device for each child node of master node which has a 'reg'
-- * property.
-- */
--void of_register_spi_devices(struct spi_master *master)
--{
--	struct spi_device *spi;
--	struct device_node *nc;
--	const __be32 *prop;
--	int rc;
--	int len;
--
--	if (!master->dev.of_node)
--		return;
--
--	for_each_child_of_node(master->dev.of_node, nc) {
--		/* Alloc an spi_device */
--		spi = spi_alloc_device(master);
--		if (!spi) {
--			dev_err(&master->dev, "spi_device alloc error for %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
--
--		/* Select device driver */
--		if (of_modalias_node(nc, spi->modalias,
--				     sizeof(spi->modalias)) < 0) {
--			dev_err(&master->dev, "cannot find modalias for %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
--
--		/* Device address */
--		prop = of_get_property(nc, "reg", &len);
--		if (!prop || len < sizeof(*prop)) {
--			dev_err(&master->dev, "%s has no 'reg' property\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->chip_select = be32_to_cpup(prop);
--
--		/* Mode (clock phase/polarity/etc.) */
--		if (of_find_property(nc, "spi-cpha", NULL))
--			spi->mode |= SPI_CPHA;
--		if (of_find_property(nc, "spi-cpol", NULL))
--			spi->mode |= SPI_CPOL;
--		if (of_find_property(nc, "spi-cs-high", NULL))
--			spi->mode |= SPI_CS_HIGH;
--
--		/* Device speed */
--		prop = of_get_property(nc, "spi-max-frequency", &len);
--		if (!prop || len < sizeof(*prop)) {
--			dev_err(&master->dev, "%s has no 'spi-max-frequency' property\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->max_speed_hz = be32_to_cpup(prop);
--
--		/* IRQ */
--		spi->irq = irq_of_parse_and_map(nc, 0);
--
--		/* Store a pointer to the node in the device structure */
--		of_node_get(nc);
--		spi->dev.of_node = nc;
--
--		/* Register the new device */
--		request_module(spi->modalias);
--		rc = spi_add_device(spi);
--		if (rc) {
--			dev_err(&master->dev, "spi_device register error %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--		}
--
--	}
--}
--EXPORT_SYMBOL(of_register_spi_devices);
-diff --git a/drivers/spi/spi-fsl-espi.c b/drivers/spi/spi-fsl-espi.c
-index 7523a24..27bdc47 100644
---- a/drivers/spi/spi-fsl-espi.c
-+++ b/drivers/spi/spi-fsl-espi.c
-@@ -17,7 +17,6 @@
- #include <linux/mm.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
--#include <linux/of_spi.h>
- #include <linux/interrupt.h>
- #include <linux/err.h>
- #include <sysdev/fsl_soc.h>
-diff --git a/drivers/spi/spi-fsl-lib.c b/drivers/spi/spi-fsl-lib.c
-index 2674fad..54c876f 100644
---- a/drivers/spi/spi-fsl-lib.c
-+++ b/drivers/spi/spi-fsl-lib.c
-@@ -22,7 +22,6 @@
- #include <linux/dma-mapping.h>
- #include <linux/mm.h>
- #include <linux/of_platform.h>
--#include <linux/of_spi.h>
- #include <sysdev/fsl_soc.h>
- 
- #include "spi-fsl-lib.h"
-diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
-index 98ec532..d95d307 100644
---- a/drivers/spi/spi-ppc4xx.c
-+++ b/drivers/spi/spi-ppc4xx.c
-@@ -30,7 +30,6 @@
- #include <linux/errno.h>
- #include <linux/wait.h>
- #include <linux/of_platform.h>
--#include <linux/of_spi.h>
- #include <linux/of_gpio.h>
- #include <linux/interrupt.h>
- #include <linux/delay.h>
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 3d8f662..37c555e 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -2,6 +2,7 @@
-  * SPI init/core code
-  *
-  * Copyright (C) 2005 David Brownell
-+ * Copyright (C) 2008 Secret Lab Technologies Ltd.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -19,15 +20,16 @@
-  */
- 
- #include <linux/kernel.h>
-+#include <linux/kmod.h>
- #include <linux/device.h>
- #include <linux/init.h>
- #include <linux/cache.h>
- #include <linux/mutex.h>
- #include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/slab.h>
- #include <linux/mod_devicetable.h>
- #include <linux/spi/spi.h>
--#include <linux/of_spi.h>
- #include <linux/pm_runtime.h>
- #include <linux/export.h>
- #include <linux/sched.h>
-@@ -798,6 +800,94 @@ err_init_queue:
- 
- /*-------------------------------------------------------------------------*/
- 
-+#if defined(CONFIG_OF) && !defined(CONFIG_SPARC)
-+/**
-+ * of_register_spi_devices() - Register child devices onto the SPI bus
-+ * @master:	Pointer to spi_master device
-+ *
-+ * Registers an spi_device for each child node of master node which has a 'reg'
-+ * property.
-+ */
-+static void of_register_spi_devices(struct spi_master *master)
-+{
-+	struct spi_device *spi;
-+	struct device_node *nc;
-+	const __be32 *prop;
-+	int rc;
-+	int len;
-+
-+	if (!master->dev.of_node)
-+		return;
-+
-+	for_each_child_of_node(master->dev.of_node, nc) {
-+		/* Alloc an spi_device */
-+		spi = spi_alloc_device(master);
-+		if (!spi) {
-+			dev_err(&master->dev, "spi_device alloc error for %s\n",
-+				nc->full_name);
-+			spi_dev_put(spi);
-+			continue;
-+		}
-+
-+		/* Select device driver */
-+		if (of_modalias_node(nc, spi->modalias,
-+				     sizeof(spi->modalias)) < 0) {
-+			dev_err(&master->dev, "cannot find modalias for %s\n",
-+				nc->full_name);
-+			spi_dev_put(spi);
-+			continue;
-+		}
-+
-+		/* Device address */
-+		prop = of_get_property(nc, "reg", &len);
-+		if (!prop || len < sizeof(*prop)) {
-+			dev_err(&master->dev, "%s has no 'reg' property\n",
-+				nc->full_name);
-+			spi_dev_put(spi);
-+			continue;
-+		}
-+		spi->chip_select = be32_to_cpup(prop);
-+
-+		/* Mode (clock phase/polarity/etc.) */
-+		if (of_find_property(nc, "spi-cpha", NULL))
-+			spi->mode |= SPI_CPHA;
-+		if (of_find_property(nc, "spi-cpol", NULL))
-+			spi->mode |= SPI_CPOL;
-+		if (of_find_property(nc, "spi-cs-high", NULL))
-+			spi->mode |= SPI_CS_HIGH;
-+
-+		/* Device speed */
-+		prop = of_get_property(nc, "spi-max-frequency", &len);
-+		if (!prop || len < sizeof(*prop)) {
-+			dev_err(&master->dev, "%s has no 'spi-max-frequency' property\n",
-+				nc->full_name);
-+			spi_dev_put(spi);
-+			continue;
-+		}
-+		spi->max_speed_hz = be32_to_cpup(prop);
-+
-+		/* IRQ */
-+		spi->irq = irq_of_parse_and_map(nc, 0);
-+
-+		/* Store a pointer to the node in the device structure */
-+		of_node_get(nc);
-+		spi->dev.of_node = nc;
-+
-+		/* Register the new device */
-+		request_module(spi->modalias);
-+		rc = spi_add_device(spi);
-+		if (rc) {
-+			dev_err(&master->dev, "spi_device register error %s\n",
-+				nc->full_name);
-+			spi_dev_put(spi);
-+		}
-+
-+	}
-+}
-+#else
-+static void of_register_spi_devices(struct spi_master *master) { }
-+#endif
-+
- static void spi_master_release(struct device *dev)
- {
- 	struct spi_master *master;
-diff --git a/include/linux/of_spi.h b/include/linux/of_spi.h
-deleted file mode 100644
-index 9e3e70f..0000000
---- a/include/linux/of_spi.h
-+++ /dev/null
-@@ -1,23 +0,0 @@
--/*
-- * OpenFirmware SPI support routines
-- * Copyright (C) 2008 Secret Lab Technologies Ltd.
-- *
-- * Support routines for deriving SPI device attachments from the device
-- * tree.
-- */
--
--#ifndef __LINUX_OF_SPI_H
--#define __LINUX_OF_SPI_H
--
--#include <linux/spi/spi.h>
--
--#if defined(CONFIG_OF_SPI) || defined(CONFIG_OF_SPI_MODULE)
--extern void of_register_spi_devices(struct spi_master *master);
--#else
--static inline void of_register_spi_devices(struct spi_master *master)
--{
--	return;
--}
--#endif /* CONFIG_OF_SPI */
--
--#endif /* __LINUX_OF_SPI */
--- 
-1.7.9.1
-
+ arch/tile/Kconfig                            |   13 +-
+ arch/tile/gxio/Kconfig                       |    9 +
+ arch/tile/gxio/Makefile                      |    1 +
+ arch/tile/gxio/iorpc_trio.c                  |  352 ++++++
+ arch/tile/gxio/trio.c                        |   49 +
+ arch/tile/include/arch/trio.h                |   68 ++
+ arch/tile/include/arch/trio_constants.h      |   36 +
+ arch/tile/include/arch/trio_def.h            |   41 +
+ arch/tile/include/arch/trio_pcie_intfc.h     |  203 ++++
+ arch/tile/include/arch/trio_pcie_intfc_def.h |   32 +
+ arch/tile/include/arch/trio_pcie_rc.h        |  144 +++
+ arch/tile/include/arch/trio_pcie_rc_def.h    |   24 +
+ arch/tile/include/arch/trio_shm.h            |  111 ++
+ arch/tile/include/arch/trio_shm_def.h        |   19 +
+ arch/tile/include/asm/pci.h                  |   97 ++-
+ arch/tile/include/gxio/iorpc_trio.h          |  198 ++++
+ arch/tile/include/gxio/trio.h                |  303 +++++
+ arch/tile/include/hv/drv_trio_intf.h         |  196 ++++
+ arch/tile/kernel/Makefile                    |    4 +
+ arch/tile/kernel/pci_gx.c                    | 1597 ++++++++++++++++++++++++++
+ arch/tile/kernel/setup.c                     |    6 +
+ arch/tile/mm/pgtable.c                       |    7 -
+ drivers/pci/quirks.c                         |    6 +-
+ 23 files changed, 3490 insertions(+), 26 deletions(-)
