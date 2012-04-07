@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2DGCIz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 22:08:55 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:54073 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab2DGCIy (ORCPT
+	id S1755526Ab2DGCY2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 22:24:28 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33266 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab2DGCYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 22:08:54 -0400
-Message-ID: <4F7FA1B2.3030903@kernel.org>
-Date: Fri, 06 Apr 2012 22:08:50 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
+	Fri, 6 Apr 2012 22:24:18 -0400
+Subject: [GIT PULL] target fixes for v3.4-rc2
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] ACPI & Power Management patches for Linux-3.4-rc1
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: target-devel <target-devel@vger.kernel.org>,
+        openfcoe-devel <devel@open-fcoe.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>,
+        "Patil, Kiran" <kiran.patil@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Apr 2012 19:24:15 -0700
+Message-ID: <1333765455.23396.154.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-Please pull these ACPI & Power Management patches.
+Please go ahead and pull the following tcm_fc fabric related fixes for
+-rc2 here:
 
-Two fixes for cpuidle merge-window changes, plus a URL fix in MAINTAINERS
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git 3.4-rc-fixes
 
-thanks!
-Len Brown, Intel Open Source Technology Center
+This branch is based upon the following mainline HEAD:
 
+commit dd775ae2549217d3ae09363e3edb305d0fa19928
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Sat Mar 31 16:24:09 2012 -0700
 
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
+    Linux 3.4-rc1
 
-  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
+Note that both have been CC'ed to stable, and patch #1 is the important
+one that addresses a memory corruption bug related to FC exchange
+timeouts + command abort.
 
-are available in the git repository at:
+Thanks again to MDR for tracking down this issue!
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
+--nab
 
-for you to fetch changes up to eeaab2d8af2cf1d36d7086f22e9de42d6dd2995c:
+Mark Rustad (2):
+  tcm_fc: Add abort flag for gracefully handling exchange timeout
+  tcm_fc: Do not free tpg structure during wq allocation failure
 
-  Merge branches 'idle-fix' and 'misc' into release (2012-04-06 21:48:59 -0400)
+ drivers/target/tcm_fc/tcm_fc.h   |    1 +
+ drivers/target/tcm_fc/tfc_cmd.c  |   10 ++++++++--
+ drivers/target/tcm_fc/tfc_conf.c |   13 ++++++++-----
+ drivers/target/tcm_fc/tfc_io.c   |    2 ++
+ 4 files changed, 19 insertions(+), 7 deletions(-)
 
-----------------------------------------------------------------
-
-Igor Murzov (1):
-      MAINTAINERS: Update git url for ACPI
-
-Len Brown (1):
-      Merge branches 'idle-fix' and 'misc' into release
-
-Tony Luck (1):
-      ACPI processor: Use safe_halt() rather than halt() in acpi_idle_play_dead()
-
-Toshi Kani (1):
-      cpuidle: Fix panic in CPU off-lining with no idle driver
-
- MAINTAINERS                   |    2 +-
- drivers/acpi/processor_idle.c |    2 +-
- drivers/cpuidle/cpuidle.c     |    5 ++++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
 
