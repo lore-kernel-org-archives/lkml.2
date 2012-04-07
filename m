@@ -1,109 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab2DGBGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 21:06:17 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49226 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab2DGBGQ convert rfc822-to-8bit (ORCPT
+	id S1754398Ab2DGBKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 21:10:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40048 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab2DGBKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 21:06:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120406200555.GA3414@zambezi.lan>
-References: <1333570774-26462-1-git-send-email-bobbypowers@gmail.com>
-	<1333591452-23264-1-git-send-email-bobbypowers@gmail.com>
-	<20120406200555.GA3414@zambezi.lan>
-Date: Fri, 6 Apr 2012 21:06:15 -0400
-Message-ID: <CAArOQ2Uyw=td97y8XQ-ijf+5prX88tT31VBOG9Dya=KV+=H8ig@mail.gmail.com>
-Subject: Re: [PATCH v2] Btrfs, lockdep: get_restripe_target: use lockdep in BUG_ON
-From: Bobby Powers <bobbypowers@gmail.com>
-To: Ilya Dryomov <idryomov@gmail.com>
-Cc: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        Andi Kleen <ak@linux.intel.com>, Jeff Mahoney <jeffm@suse.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Apr 2012 21:10:12 -0400
+Date: Sat, 7 Apr 2012 11:10:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: change PCI trees
+Message-Id: <20120407111001.7ee50d80316d3684a91c19c3@canb.auug.org.au>
+In-Reply-To: <CAErSpo5a3t9-HQN-8zvK+wYjW6eAM5nVuQcfKPsaU6Ur1BZCwQ@mail.gmail.com>
+References: <CAErSpo5a3t9-HQN-8zvK+wYjW6eAM5nVuQcfKPsaU6Ur1BZCwQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__7_Apr_2012_11_10_01_+1000_HjQlV0+PMb=.E+2Y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 4:05 PM, Ilya Dryomov <idryomov@gmail.com> wrote:
-> On Wed, Apr 04, 2012 at 10:04:12PM -0400, Bobby Powers wrote:
->> spin_is_locked always returns 0 on non-SMP systems, which causes btrfs
->> to fail the mount.  There is documentation pending as to why checking
->> for spin_is_locked is a bad idea:
->>
->> https://lkml.org/lkml/2012/3/27/413
->>
->> The suggested lockdep_assert_held() is not appropriate in this case,
->> as what get_restripe_target() is checking for is that either
->> volume_mutex is held or balance_lock is held.  Luckily
->> lockdep_assert_held() is a simple macro:
->>
->> WARN_ON(debug_locks && !lockdep_is_held(l))
->>
->> We can mimic the structure in get_restripe_target(), but we need to
->> make sure lockdep_is_held() is defined for the !LOCKDEP case.
->>
->> CC: Ilya Dryomov <idryomov@gmail.com>
->> CC: Chris Mason <chris.mason@oracle.com>
->> CC: Andi Kleen <ak@linux.intel.com>
->> CC: Jeff Mahoney <jeffm@suse.de>
->> CC: Ingo Molnar <mingo@redhat.com>
->> CC: linux-kernel@vger.kernel.org
->> Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
->> ---
->>  fs/btrfs/extent-tree.c  |    5 +++--
->>  include/linux/lockdep.h |    1 +
->>  2 files changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
->> index a844204..4d13eb1 100644
->> --- a/fs/btrfs/extent-tree.c
->> +++ b/fs/btrfs/extent-tree.c
->> @@ -24,6 +24,7 @@
->>  #include <linux/kthread.h>
->>  #include <linux/slab.h>
->>  #include <linux/ratelimit.h>
->> +#include <linux/lockdep.h>
->>  #include "compat.h"
->>  #include "hash.h"
->>  #include "ctree.h"
->> @@ -3158,8 +3159,8 @@ static u64 get_restripe_target(struct btrfs_fs_info *fs_info, u64 flags)
->>       struct btrfs_balance_control *bctl = fs_info->balance_ctl;
->>       u64 target = 0;
->>
->> -     BUG_ON(!mutex_is_locked(&fs_info->volume_mutex) &&
->> -            !spin_is_locked(&fs_info->balance_lock));
->> +     BUG_ON(debug_locks && !lockdep_is_held(&fs_info->volume_mutex) &&
->> +            !lockdep_is_held(&fs_info->balance_lock));
->>
->>       if (!bctl)
->>               return 0;
->> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
->> index d36619e..94c0edb 100644
->> --- a/include/linux/lockdep.h
->> +++ b/include/linux/lockdep.h
->> @@ -392,6 +392,7 @@ struct lock_class_key { };
->>
->>  #define lockdep_depth(tsk)   (0)
->>
->> +#define lockdep_is_held(l)   (0)
->>  #define lockdep_assert_held(l)                       do { } while (0)
->>
->>  #define lockdep_recursing(tsk)                       (0)
->> --
->> 1.7.10.rc3.3.g19a6c
->
-> OK, Mitch's report prompted me to actually take a look.  This patch is
-> wrong: by defining lockdep_is_held(l) to 0 in !LOCKDEP case you
-> effectively mimic the behaviour of spin_is_locked() which is what
-> getting us in the first place.
->
-> get_restripe_target() interface is WIP so I will replace BUG_ON with a
-> comment and send a patch through btrfs tree.
+--Signature=_Sat__7_Apr_2012_11_10_01_+1000_HjQlV0+PMb=.E+2Y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hah, good point...
+Hi Bjorn,
 
-> Thanks,
->
->                Ilya
+On Fri, 6 Apr 2012 12:16:22 -0600 Bjorn Helgaas <bhelgaas@google.com> wrote:
+>=20
+> Would you please replace these PCI trees in linux-next:
+>=20
+>     pci-current     git
+> git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci#for-linus
+>     pci             git
+> git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci#linux-next
+>=20
+> with these new ones:
+>=20
+>     pci-current git
+> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git#for-linus
+>     pci git git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git=
+#next
+>=20
+> since I'm taking over PCI maintenance.
+
+OK, I have changed to use these and put you as the contact (instead of
+Jesse).  Both branches appear empty currently (just as a check).
+
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Sat__7_Apr_2012_11_10_01_+1000_HjQlV0+PMb=.E+2Y
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPf5PpAAoJEECxmPOUX5FES6kP/icCRHjAAsioh5Jgf+Iw3iRt
+z9F1OQ8iHCAcaEvAAVs8TCEsef6WRaFEaXu2RSlzz8lDzAXmTDw+Dcm+0ZCQlgjm
+5ebhCLrdnx8euJweuKzpfkTyA0sI2cUwkQOyzfnDGnqrlO6qBhVXIRSKr8HzJmeH
+0ytvxevx0nPNkoiikQcIURDhotT4TmouO6mp5fQpfC5IcTz30bBZBzWyqzckL3zn
+7viXlgvBx9qcufI53J10Ab1xWDnWyDONc9SZ3+V1gC7zMiWcKyUzo4A/wEL5eri+
+yR0tXl03/Tej8a/CrT4BqiWBtQtZVUI57q7ZNb3bySYTwZEJdDIKuSLjvZoE7VeS
+eaISVaYnOlWb/8Bp/u5Xco9f0MJ0cMitMTEwxGXmQ8Qyy5L7s/iLuRKZOwkm7EgW
+Xk+BcvMfh8fAVAIDSUuJVsmzcJzHZa/cFdSxvoehlUIBasmVz2OKeyBxs3M1qHBX
+LF0tFm5sULB+K6pDZLtun253URcY5KSKhTzDpjG/Ytj4mRAAJxM5Gy6O7fe5wV2M
+GPnTzAab2UDkx9qJxCLHUglchQxabVfwdNSmd5rV+ZGH0r2OVTjjv1aed59UNwdy
+wKUZc9bhx0JshcQ2F71PeatG0vRZ2+ixVWWQct928ADl0aPWfAch/+wzd6ATKAc+
+Z5BX5Y70WhGsPqaFx+22
+=QeVJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__7_Apr_2012_11_10_01_+1000_HjQlV0+PMb=.E+2Y--
