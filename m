@@ -1,156 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab2DGTCp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:02:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38527 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351Ab2DGTBZ (ORCPT
+	id S1755825Ab2DGTC5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:02:57 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43746 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683Ab2DGTC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:01:25 -0400
-Subject: [PATCH v2 06/10] mm: kill vma flag VM_INSERTPAGE
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Carsten Otte <cotte@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@kernel.dk>
-Date: Sat, 07 Apr 2012 23:01:20 +0400
-Message-ID: <20120407190120.9726.33210.stgit@zurg>
-In-Reply-To: <20120407185546.9726.62260.stgit@zurg>
-References: <20120407185546.9726.62260.stgit@zurg>
-User-Agent: StGit/0.15
+	Sat, 7 Apr 2012 15:02:56 -0400
+Date: Sat, 7 Apr 2012 22:02:52 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] proc: pass "fd" by value in /proc/*/{fd,fdinfo} code
+Message-ID: <20120407190252.GB5946@p183.telecom.by>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch merges VM_INSERTPAGE into VM_MIXEDMAP (and moves it near to VM_PFNMAP).
-VM_MIXEDMAP vma anyway can mix pure-pfn ptes, special ptes and normal ptes.
+Pass "fd" directly, not via pointer -- one less memory read.
 
-this patch side-effects:
-* copy_page_range() now always copies VM_MIXEDMAP vma on fork (why not?)
-* in case HAVE_PTE_SPECIAL appears non-special ptes in VM_MIXEDMAP vma.
-  seems like all ok, all code ready for this.
-* in case !HAVE_PTE_SPECIAL: vm_normal_page() will check pfn_valid() after
-  inserting pages via vm_insert_page()
-* small change in vma_wants_writenotify(), but vm_insert_page() users shouldn't
-  use bdi with enabled dirty-pages accounting, plus do_wp_page() can handle this.
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Carsten Otte <cotte@de.ibm.com>
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- include/linux/mm.h |    3 +--
- mm/huge_memory.c   |    3 +--
- mm/ksm.c           |    2 +-
- mm/memory.c        |   14 ++++++++++++--
- mm/mmap.c          |    2 +-
- 5 files changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0dad037..553d134 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -84,6 +84,7 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_MAYSHARE	0x00000080
- 
- #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
-+#define VM_MIXEDMAP	0x00000200	/* Can contain "struct page" and pure PFN pages */
- #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
- #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
- 
-@@ -103,10 +104,8 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
- #define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
- #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
--#define VM_INSERTPAGE	0x02000000	/* The vma has had "vm_insert_page()" done on it */
- #define VM_NODUMP	0x04000000	/* Do not include in the core dump */
- 
--#define VM_MIXEDMAP	0x10000000	/* Can contain "struct page" and pure PFN pages */
- #define VM_HUGEPAGE	0x20000000	/* MADV_HUGEPAGE marked this vma */
- #define VM_NOHUGEPAGE	0x40000000	/* MADV_NOHUGEPAGE marked this vma */
- #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 6ea5477..65ed599 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1482,8 +1482,7 @@ out:
- 	return ret;
- }
- 
--#define VM_NO_THP (VM_SPECIAL|VM_INSERTPAGE|VM_MIXEDMAP| \
--		   VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
-+#define VM_NO_THP (VM_SPECIAL|VM_MIXEDMAP|VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
- 
- int hugepage_madvise(struct vm_area_struct *vma,
- 		     unsigned long *vm_flags, int advice)
-diff --git a/mm/ksm.c b/mm/ksm.c
-index d1cbe2a..f9ccb16 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1469,7 +1469,7 @@ int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
- 		 */
- 		if (*vm_flags & (VM_MERGEABLE | VM_SHARED  | VM_MAYSHARE   |
- 				 VM_PFNMAP    | VM_IO      | VM_DONTEXPAND |
--				 VM_RESERVED  | VM_HUGETLB | VM_INSERTPAGE |
-+				 VM_RESERVED  | VM_HUGETLB |
- 				 VM_NONLINEAR | VM_MIXEDMAP))
- 			return 0;		/* just ignore the advice */
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index 2ade15b..2ce74aa 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1043,7 +1043,8 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 	 * readonly mappings. The tradeoff is that copy_page_range is more
- 	 * efficient than faulting.
- 	 */
--	if (!(vma->vm_flags & (VM_HUGETLB|VM_NONLINEAR|VM_PFNMAP|VM_INSERTPAGE))) {
-+	if (!(vma->vm_flags & (VM_HUGETLB | VM_NONLINEAR |
-+			       VM_PFNMAP | VM_MIXEDMAP))) {
- 		if (!vma->anon_vma)
- 			return 0;
- 	}
-@@ -2068,6 +2069,11 @@ out:
-  * ask for a shared writable mapping!
-  *
-  * The page does not need to be reserved.
-+ *
-+ * Usually this function is called from f_op->mmap() handler
-+ * under mm->mmap_sem write-lock, so it can change vma->vm_flags.
-+ * Caller must set VM_MIXEDMAP on vma if it wants to call this
-+ * function from other places, for example from page-fault handler.
-  */
- int vm_insert_page(struct vm_area_struct *vma, unsigned long addr,
- 			struct page *page)
-@@ -2076,7 +2082,11 @@ int vm_insert_page(struct vm_area_struct *vma, unsigned long addr,
- 		return -EFAULT;
- 	if (!page_count(page))
- 		return -EINVAL;
--	vma->vm_flags |= VM_INSERTPAGE;
-+	if (!(vma->vm_flags & VM_MIXEDMAP)) {
-+		VM_BUG_ON(down_read_trylock(&vma->vm_mm->mmap_sem));
-+		VM_BUG_ON(vma->vm_flags & VM_PFNMAP);
-+		vma->vm_flags |= VM_MIXEDMAP;
-+	}
- 	return insert_page(vma, addr, page, vma->vm_page_prot);
- }
- EXPORT_SYMBOL(vm_insert_page);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 1a23d2c..3d254ca 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1177,7 +1177,7 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
- 		return 0;
- 
- 	/* Specialty mapping? */
--	if (vm_flags & (VM_PFNMAP|VM_INSERTPAGE))
-+	if (vm_flags & VM_PFNMAP)
- 		return 0;
- 
- 	/* Can the mapping track the dirty pages? */
+ fs/proc/base.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1836,7 +1836,7 @@ static const struct dentry_operations tid_fd_dentry_operations =
+ static struct dentry *proc_fd_instantiate(struct inode *dir,
+ 	struct dentry *dentry, struct task_struct *task, const void *ptr)
+ {
+-	unsigned fd = *(const unsigned *)ptr;
++	unsigned fd = (unsigned long)ptr;
+ 	struct file *file;
+ 	struct files_struct *files;
+  	struct inode *inode;
+@@ -1900,7 +1900,7 @@ static struct dentry *proc_lookupfd_common(struct inode *dir,
+ 	if (fd == ~0U)
+ 		goto out;
+ 
+-	result = instantiate(dir, dentry, task, &fd);
++	result = instantiate(dir, dentry, task, (void *)(unsigned long)fd);
+ out:
+ 	put_task_struct(task);
+ out_no_task:
+@@ -1952,7 +1952,7 @@ static int proc_readfd_common(struct file * filp, void * dirent,
+ 				len = snprintf(name, sizeof(name), "%d", fd);
+ 				rv = proc_fill_cache(filp, dirent, filldir,
+ 						     name, len, instantiate, p,
+-						     &fd);
++						     (void *)(unsigned long)fd);
+ 				if (rv < 0)
+ 					goto out_fd_loop;
+ 				rcu_read_lock();
+@@ -2375,7 +2375,7 @@ static const struct inode_operations proc_fd_inode_operations = {
+ static struct dentry *proc_fdinfo_instantiate(struct inode *dir,
+ 	struct dentry *dentry, struct task_struct *task, const void *ptr)
+ {
+-	unsigned fd = *(unsigned *)ptr;
++	unsigned fd = (unsigned long)ptr;
+  	struct inode *inode;
+  	struct proc_inode *ei;
+ 	struct dentry *error = ERR_PTR(-ENOENT);
