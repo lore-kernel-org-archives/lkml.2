@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab2DGPaE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 11:30:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61238 "EHLO
+	id S1755219Ab2DGPbv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 11:31:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52130 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab2DGPaC (ORCPT
+	with ESMTP id S1754928Ab2DGPbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 11:30:02 -0400
-Message-ID: <1333812596.6390.3.camel@phoenix>
-Subject: [PATCH 2/3] regulator: tps62360: Convert to devm_regmap_init_i2c()
+	Sat, 7 Apr 2012 11:31:50 -0400
+Message-ID: <1333812704.6390.5.camel@phoenix>
+Subject: [PATCH 3/3] regulator: tps65023: Use devm_* APIs
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Sat, 07 Apr 2012 23:29:56 +0800
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Sat, 07 Apr 2012 23:31:44 +0800
 In-Reply-To: <1333812508.6390.1.camel@phoenix>
 References: <1333812508.6390.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
@@ -26,35 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/tps62360-regulator.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/regulator/tps65023-regulator.c |   14 +++-----------
+ 1 files changed, 3 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-index aa57632..e55219b 100644
---- a/drivers/regulator/tps62360-regulator.c
-+++ b/drivers/regulator/tps62360-regulator.c
-@@ -319,7 +319,7 @@ static int __devinit tps62360_probe(struct i2c_client *client,
- 	tps->desc.ops = &tps62360_dcdc_ops;
- 	tps->desc.type = REGULATOR_VOLTAGE;
- 	tps->desc.owner = THIS_MODULE;
--	tps->regmap = regmap_init_i2c(client, &tps62360_regmap_config);
-+	tps->regmap = devm_regmap_init_i2c(client, &tps62360_regmap_config);
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index 5c9a900..694386f 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -393,16 +393,16 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 	if (!init_data)
+ 		return -EIO;
+ 
+-	tps = kzalloc(sizeof(*tps), GFP_KERNEL);
++	tps = devm_kzalloc(&client->dev, sizeof(*tps), GFP_KERNEL);
+ 	if (!tps)
+ 		return -ENOMEM;
+ 
+-	tps->regmap = regmap_init_i2c(client, &tps65023_regmap_config);
++	tps->regmap = devm_regmap_init_i2c(client, &tps65023_regmap_config);
  	if (IS_ERR(tps->regmap)) {
- 		ret = PTR_ERR(tps->regmap);
- 		dev_err(&client->dev, "%s() Err: Failed to allocate register"
-@@ -404,7 +404,6 @@ err_gpio1:
- 	if (gpio_is_valid(tps->vsel0_gpio))
- 		gpio_free(tps->vsel0_gpio);
- err_gpio0:
+ 		error = PTR_ERR(tps->regmap);
+ 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
+ 			error);
+-		goto fail_alloc;
++		return error;
+ 	}
+ 
+ 	/* common for all regulators */
+@@ -445,10 +445,6 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+  fail:
+ 	while (--i >= 0)
+ 		regulator_unregister(tps->rdev[i]);
+-
 -	regmap_exit(tps->regmap);
- 	return ret;
+- fail_alloc:
+-	kfree(tps);
+ 	return error;
  }
  
-@@ -425,7 +424,6 @@ static int __devexit tps62360_remove(struct i2c_client *client)
- 		gpio_free(tps->vsel0_gpio);
+@@ -459,10 +455,6 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
  
- 	regulator_unregister(tps->rdev);
+ 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
+ 		regulator_unregister(tps->rdev[i]);
+-
 -	regmap_exit(tps->regmap);
+-	kfree(tps);
+-
  	return 0;
  }
  
