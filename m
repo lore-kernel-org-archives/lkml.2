@@ -1,72 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab2DGAHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Apr 2012 20:07:45 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:54685 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab2DGAHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Apr 2012 20:07:44 -0400
-X-Nat-Received: from [202.181.97.72]:57321 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1333757211.8990
-To: garlick@llnl.gov
-Cc: levinsasha928@gmail.com, ericvh@gmail.com, oleg@redhat.com,
-        eric.dumazet@gmail.com, davem@davemloft.net, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com
-Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201204011221.GAG51016.JQFSFFOtLOMVHO@I-love.SAKURA.ne.jp>
-	<CA+1xoqe+T=iUtUeFdeqmRvMZ7TMCgkLs_1QYv-4YNtn-jCoMCQ@mail.gmail.com>
-	<201204052329.EBH52139.FFOLQMOJSVHOFt@I-love.SAKURA.ne.jp>
-	<201204062044.EJE13062.OLMQtSVFHOFOJF@I-love.SAKURA.ne.jp>
-	<20120406180905.GA10835@llnl.gov>
-In-Reply-To: <20120406180905.GA10835@llnl.gov>
-Message-Id: <201204070906.HHC13855.QOSFVOMtFFLJOH@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 7 Apr 2012 09:06:50 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 06042012 #7641407, status: clean
+	id S1758429Ab2DGAJM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Apr 2012 20:09:12 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:54229 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848Ab2DGAJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Apr 2012 20:09:10 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] [RFC] Range tree implementation
+Date: Fri,  6 Apr 2012 17:08:57 -0700
+Message-Id: <1333757338-6854-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1333757338-6854-1-git-send-email-john.stultz@linaro.org>
+References: <1333757338-6854-1-git-send-email-john.stultz@linaro.org>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040700-5806-0000-0000-000014167B8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jim Garlick wrote:
-> > I think this loop is bad with regard to response to SIGKILL.
-> > If wait_event_interruptible() was interrupted by SIGKILL, it will
-> > spin until req->status >= REQ_STATUS_RCVD becomes true.
-> > Rather,
-> > 
-> > 	if ((c->status == Connected) && (type == P9_TFLUSH))
-> > 		err = wait_event_killable(*req->wq,
-> > 					  req->status >= REQ_STATUS_RCVD);
-> > 	else
-> > 		err = wait_event_interruptible(*req->wq,
-> > 					       req->status >= REQ_STATUS_RCVD);
-> > 
-> > would be safer.
-> 
-> Does that work?  What prevents p9_client_rpc() from recursing via
-> p9_client_flush() on receipt of SIGKILL? 
+After Andrew suggested something like his mumbletree idea
+to better store a list of ranges, I worked on a few different
+approaches, and this is what I've finally managed to get working.
 
-Sorry, I'm not a 9p user and I can't test whether that works or not.
-But at least, continuing the loop even after SIGKILL is not good.
-If you have to wait for req->status >= REQ_STATUS_RCVD becomes true, can you
-use a kernel thread that waits req->status >= REQ_STATUS_RCVD to become true
-and delegate the job of notifying the server from a userspace task to the
-kernel thread?
+I suspect range-tree isn't a totally accurate name, but I
+couldn't quite make out the difference between range trees
+and interval trees, so I just picked one to call it. Do
+let me know if you have a better name.
 
-> Yes but in the unlikely event that this happens, the effect is a small
-> memory leak for the duration of the mount.  On the other hand if the
-> fid is destroyed without successfully informing the server, then
-> subsequent operations that involve new file references will fail
-> when that fid number is reused, and the mount becomes unusable.
+The idea of storing ranges in a tree is nice, but has a number
+of complications. When adding a range, its possible that a
+large range will consume and merge a number of smaller ranges.
+When removing a range, its possible you may end up splitting an
+existing range, causing one range to become two. This makes it
+very difficult to provide generic list_head like behavior, as
+the parent structures would need to be duplicated and removed,
+and that has lots of memory ownership issues.
 
-I don't know whether Sasha's problem is caused by this patch or not.
-But p9_client_clunk() is called from many functions in fs/9p/ directory.
-They are assuming that p9_client_clunk() will call p9_fid_destroy() but
-this patch is breaking that assumption. I think this is the cause of hang which
-Sasha is experiencing because Sasha's trace shows that call_usermodehelper() is
-blocked by functions in fs/9p/ directory. Seems inconsistency state problem.
+So, this is a much simplified and more list_head like
+implementation. You can add a node to a tree, or remove a node
+to a tree, but the generic implementation doesn't do the
+merging or splitting for you. But it does provide helpers to
+find overlapping and adjacent ranges.
+
+Andrew also really wanted this range-tree implementation to be
+resuable so we don't duplicate the file locking logic. I'm not
+totally convinced that the requirements between the volatile
+ranges and file locking are really equivelent, but this reduced
+impelementation may make it possible.
+
+Do let me know what you think or if you have other ideas for
+better ways to do the same.
+
+Changelog:
+v2:
+* Reworked code to use an rbtree instead of splaying
+
+v3:
+* Added range_tree_next_in_range() to avoid having to start
+  lookups from the root every time.
+* Fixed some comments and return NULL instead of 0, as suggested
+  by Aneesh Kumar K.V
+
+v6:
+* Fixed range_tree_in_range() so that it finds the earliest range,
+  rather then the first. This allows the next_in_range() function
+  to properly cover all the ranges in the tree.
+* Minor clenaups to simplify some of the functions
+
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Android Kernel Team <kernel-team@android.com>
+CC: Robert Love <rlove@google.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Hugh Dickins <hughd@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Rik van Riel <riel@redhat.com>
+CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Neil Brown <neilb@suse.de>
+CC: Andrea Righi <andrea@betterlinux.com>
+CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/rangetree.h |   56 ++++++++++++++++++++
+ lib/Makefile              |    2 +-
+ lib/rangetree.c           |  128 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 185 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/rangetree.h
+ create mode 100644 lib/rangetree.c
+
+diff --git a/include/linux/rangetree.h b/include/linux/rangetree.h
+new file mode 100644
+index 0000000..c61ce7c
+--- /dev/null
++++ b/include/linux/rangetree.h
+@@ -0,0 +1,56 @@
++#ifndef _LINUX_RANGETREE_H
++#define _LINUX_RANGETREE_H
++
++#include <linux/types.h>
++#include <linux/rbtree.h>
++
++struct range_tree_node {
++	struct rb_node rb;
++	u64 start;
++	u64 end;
++};
++
++struct range_tree_root {
++	struct rb_root head;
++};
++
++static inline void range_tree_init(struct range_tree_root *root)
++{
++	root->head = RB_ROOT;
++}
++
++static inline void range_tree_node_init(struct range_tree_node *node)
++{
++	rb_init_node(&node->rb);
++	node->start = 0;
++	node->end = 0;
++}
++
++static inline int range_tree_empty(struct range_tree_root *root)
++{
++	return RB_EMPTY_ROOT(&root->head);
++}
++
++static inline
++struct range_tree_node *range_tree_root_node(struct range_tree_root *root)
++{
++	struct range_tree_node *ret;
++	ret = container_of(root->head.rb_node, struct range_tree_node, rb);
++	return ret;
++}
++
++extern struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
++							 u64 start, u64 end);
++extern struct range_tree_node *range_tree_in_range_adjacent(
++						struct range_tree_root *root,
++							 u64 start, u64 end);
++extern struct range_tree_node *range_tree_next_in_range(
++						struct range_tree_node *node,
++						u64 start, u64 end);
++extern void range_tree_add(struct range_tree_root *root,
++						struct range_tree_node *node);
++extern void range_tree_remove(struct range_tree_root *root,
++						struct range_tree_node *node);
++#endif
++
++
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..f43ef0d 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o rangetree.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/rangetree.c b/lib/rangetree.c
+new file mode 100644
+index 0000000..08185bc
+--- /dev/null
++++ b/lib/rangetree.c
+@@ -0,0 +1,128 @@
++#include <linux/rangetree.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++
++
++
++/**
++ * range_tree_in_range - Returns the first node that overlaps with the
++ *                       given range
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
++						u64 start, u64 end)
++{
++	struct rb_node *p = root->head.rb_node;
++	struct range_tree_node *candidate, *match = NULL;
++
++	while (p) {
++		candidate = rb_entry(p, struct range_tree_node, rb);
++		if (end < candidate->start)
++			p = p->rb_left;
++		else if (start > candidate->end)
++			p = p->rb_right;
++		else {
++			/* We found one, but try to find an earlier match */
++			match = candidate;
++			p = p->rb_left;
++		}
++	}
++
++	return match;
++}
++
++
++/**
++ * range_tree_in_range_adjacent - Returns the first node that overlaps or
++ *                                is adjacent with the given range.
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range_adjacent(
++					struct range_tree_root *root,
++					u64 start, u64 end)
++{
++	struct rb_node *p = root->head.rb_node;
++	struct range_tree_node *candidate;
++
++	while (p) {
++		candidate = rb_entry(p, struct range_tree_node, rb);
++		if (end+1 < candidate->start)
++			p = p->rb_left;
++		else if (start > candidate->end + 1)
++			p = p->rb_right;
++		else
++			return candidate;
++	}
++	return NULL;
++}
++
++struct range_tree_node *range_tree_next_in_range(struct range_tree_node *node,
++							u64 start, u64 end)
++{
++	struct rb_node *next;
++	struct range_tree_node *candidate;
++	if (!node)
++		return NULL;
++	next = rb_next(&node->rb);
++	if (!next)
++		return NULL;
++
++	candidate = container_of(next, struct range_tree_node, rb);
++
++	if ((candidate->start > end) || (candidate->end < start))
++		return NULL;
++
++	return candidate;
++}
++
++/**
++ * range_tree_add - Add a node to a range tree
++ * @root: range tree to be added to
++ * @node: range_tree_node to be added
++ *
++ * Adds a node to the range tree.
++ */
++void range_tree_add(struct range_tree_root *root,
++					struct range_tree_node *node)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct rb_node *parent = NULL;
++	struct range_tree_node *ptr;
++
++	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
++
++	while (*p) {
++		parent = *p;
++		ptr = rb_entry(parent, struct range_tree_node, rb);
++		if (node->start < ptr->start)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&node->rb, parent, p);
++	rb_insert_color(&node->rb, &root->head);
++
++}
++
++
++/**
++ * range_tree_remove: Removes a given node from the tree
++ * @root: root of tree
++ * @node: Node to be removed
++ *
++ * Removes a node and splays the tree
++ */
++void range_tree_remove(struct range_tree_root *root,
++						struct range_tree_node *node)
++{
++	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
++
++	rb_erase(&node->rb, &root->head);
++	RB_CLEAR_NODE(&node->rb);
++}
+-- 
+1.7.3.2.146.gca209
+
