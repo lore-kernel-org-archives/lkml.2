@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab2DGRdp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 13:33:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37847 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753287Ab2DGRdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 13:33:44 -0400
-Date: Sat, 7 Apr 2012 19:33:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Roland Dreier <roland@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC] mm: account VMA before forced-COW via /proc/pid/mem
-Message-ID: <20120407173318.GA5076@redhat.com>
-References: <20120402153631.5101.44091.stgit@zurg> <20120403143752.GA5150@redhat.com> <4F7C1B67.6030300@openvz.org> <20120404154148.GA7105@redhat.com> <4F7D5859.5050106@openvz.org> <alpine.LSU.2.00.1204062104090.4297@eggly.anvils>
+	id S1754159Ab2DGRg6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 13:36:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43686 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab2DGRg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Apr 2012 13:36:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1204062104090.4297@eggly.anvils>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1333757338-6854-2-git-send-email-john.stultz@linaro.org>
+References: <1333757338-6854-1-git-send-email-john.stultz@linaro.org> <1333757338-6854-2-git-send-email-john.stultz@linaro.org>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 7 Apr 2012 19:36:36 +0200
+Message-ID: <CA+1xoqcezDdeNHoLF0R0OxB9EeQaopn4jhs+yC-FieXP+b=RZw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] [RFC] Range tree implementation
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06, Hugh Dickins wrote:
+On Sat, Apr 7, 2012 at 2:08 AM, John Stultz <john.stultz@linaro.org> wrote:
+> After Andrew suggested something like his mumbletree idea
+> to better store a list of ranges, I worked on a few different
+> approaches, and this is what I've finally managed to get working.
 >
-> I've long detested that behaviour of GUP write,force, and my strong
-> preference would be not to layer more strangeness upon strangeness,
-> but limit the damage by making GUP write,force fail in that case,
-> instead of inserting a PageAnon page into a VM_SHARED mapping.
+> I suspect range-tree isn't a totally accurate name, but I
+> couldn't quite make out the difference between range trees
+> and interval trees, so I just picked one to call it. Do
+> let me know if you have a better name.
 >
-> I think it's unlikely that it will cause a regression in real life
-> (it already fails if you did not open the mmap'ed file for writing),
+> The idea of storing ranges in a tree is nice, but has a number
+> of complications. When adding a range, its possible that a
+> large range will consume and merge a number of smaller ranges.
+> When removing a range, its possible you may end up splitting an
+> existing range, causing one range to become two. This makes it
+> very difficult to provide generic list_head like behavior, as
+> the parent structures would need to be duplicated and removed,
+> and that has lots of memory ownership issues.
+>
+> So, this is a much simplified and more list_head like
+> implementation. You can add a node to a tree, or remove a node
+> to a tree, but the generic implementation doesn't do the
+> merging or splitting for you. But it does provide helpers to
+> find overlapping and adjacent ranges.
+>
+> Andrew also really wanted this range-tree implementation to be
+> resuable so we don't duplicate the file locking logic. I'm not
+> totally convinced that the requirements between the volatile
+> ranges and file locking are really equivelent, but this reduced
+> impelementation may make it possible.
+>
+> Do let me know what you think or if you have other ideas for
+> better ways to do the same.
 
-Yes, and this is what looks confusing to me. Assuming I understand
-you (and the code) correctly ;)
+Hi John,
 
-If we have a (PROT_READ, MAP_SHARED) file mapping, then FOLL_FORCE
-works depending on "file->f_mode & FMODE_WRITE".
+I have implemented an interval lookup tree using the augmented
+features of the in-kernel rbtree for the KVM tools project. We
+currently use it for several things as a framework code such as MMIO
+memory mapping.
 
-Afaics, because do_mmap_pgoff(MAP_SHARED) clears VM_MAYWRITE if
-!FMODE_WRITE, and gup(FORCE) checks "vma->vm_flags & VM_MAYWRITE"
-before follow_page/etc.
+>From what I see in the patch, you haven't fully implemented the
+interval structure (it needs to keep track of additional parameters
+when building it, and the search is a bit different and is based on
+those parameters).
 
-OTOH, if the file was opened without FMODE_WRITE, then I do not
-really understand how (PROT_READ, MAP_SHARED) differs from
-(PROT_READ, MAP_PRIVATE). However, in the latter case FOLL_FORCE
-works, VM_MAYWRITE was not cleared.
+I could send that code as a patch against the kernel tree if something
+like that is actually required for the kernel at this point.
 
-Speaking of the difference above, I'd wish I could understand
-what VM_MAYSHARE actually means except "MAP_SHARED was used".
-
-Oleg.
-
+Thanks.
