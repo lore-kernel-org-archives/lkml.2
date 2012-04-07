@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab2DGPDD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 11:03:03 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44082 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab2DGPDB (ORCPT
+	id S1754942Ab2DGPNr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 11:13:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65199 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035Ab2DGPNq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 11:03:01 -0400
+	Sat, 7 Apr 2012 11:13:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1204061347180.23328@chino.kir.corp.google.com>
-References: <20120405160829.GA12854@google.com>
-	<alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com>
-	<20120405213704.GA29517@google.com>
-	<alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com>
-	<20120405222400.GC29517@google.com>
-	<alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com>
-	<20120405225854.GE29517@google.com>
-	<alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
-	<20120405231306.GF29517@google.com>
-	<alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
-	<20120406155203.GA4798@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1333736770.2960.114.camel@laptop>
-	<alpine.DEB.2.00.1204061347180.23328@chino.kir.corp.google.com>
-Date: Sun, 8 Apr 2012 00:02:59 +0900
-Message-ID: <CABEgKgopoHYiisCQnqeFc4qT-Y4Md1b6enTcZdomoKn0vGv_RQ@mail.gmail.com>
-Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CABe5r8KL=c1=emU_20ODwM5OvFJS9vaKV1ux2hSmGB5tmZoJ1w@mail.gmail.com>
+References: <1333795467-3643-1-git-send-email-eldad@fogrefinery.com>
+	<20120407.084657.1719148601003380853.davem@davemloft.net>
+	<CABe5r8KL=c1=emU_20ODwM5OvFJS9vaKV1ux2hSmGB5tmZoJ1w@mail.gmail.com>
+Date: Sat, 7 Apr 2012 17:13:45 +0200
+Message-ID: <CABe5r8Kygjg0O21Y5z-F=RRQCqT7ReNya+EohAJU1jauaK536Q@mail.gmail.com>
+Subject: Re: [PATCH] net/ipv6/exthdrs.c et al: Optional strict PadN option checking
+From: Eldad Zack <eldad@fogrefinery.com>
+To: David Miller <davem@davemloft.net>
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012$BG/(B4$B7n(B7$BF|(B5:49 David Rientjes <rientjes@google.com>:
-> On Fri, 6 Apr 2012, Peter Zijlstra wrote:
+(resend, previous message was [rightfully] rejected by the mailer)
+
+On 7 April 2012 17:09, Eldad Zack <eldad@fogrefinery.com> wrote:
 >
->> Furthermore, the whole point of kthreadd's existence is so that we could
->> create kthreads without context. Placing it in a cgroup will ensure all
->> subsequently created kthreads do have context (including possible idle
->> threads). This seems like a particularly bad idea.
+> On 7 April 2012 14:46, David Miller <davem@davemloft.net> wrote:
 >>
+>> From: Eldad Zack <eldad@fogrefinery.com>
+>> Date: Sat,  7 Apr 2012 12:44:27 +0200
+>>
+>> > Added strict checking of PadN, which can be used to increase header
+>> > size and thus push the protocol header into the 2nd fragment.
+>>
+>> A sysctl _AND_ a kconfig option, give me a break, that's
+>> pointless.
+>>
+>> Either we want this or we don't.
 >
-> I don't see it as context if the only thing you're doing is accounting
-> with memcg (for slab) or or cpu.  We're simply collecting statistics for a
-> set of threads (possibly all kthreads, including kthreadd) and the best
-> way to do this is leveraging the existing functionality of cgroups to
-> setup the threads we want to collect for and the memcg kmem accounting is
-> particularly a good indicator of kernel vs userjob-triggered slab
-> allocation.
-
-I'm sorry if I didn't read e-mails while a trip....let me understand...
-
- - Tejun at el, tries to disallow to move kthreadd into cgroups other than root.
- - You wants to account kthreadd's activity under memg at el.
-
-Then, 2 question from me is....
-1. If this patch only affects kthreadd, you can move other
-    kthread. Is this correct ?
-
-I assume yes, if the created kthread itself has characteristics for
-working for some specific users(as vhost) it can be moved to correct
-cgroup by hand or by hook(vhost does this.)....do you need to move
-kthreadd rather than each kthreads ?
-
-2. You just want to see all resources usage. So, if memcg
-    can show correct accounting in root cgroup, is it enough ?
-
-IIRC, with current tcp mem accounting, root cgroup shows the all
-system usage. Oh, it doesn't seem to be what you want.  I think this
-can be fixed. Could you clarify your request against memcg ? Anyway,
-kmem/slab accounting isn't implemented yet.
-
-Thanks,
--Kame
+>
+> You're right, that kconfig bit was silly.
+> I'd like to keep the sysctl knob, though.
+>
+> Fixed patch follows.
+>
+> Eldad
