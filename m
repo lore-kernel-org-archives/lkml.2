@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab2DGTC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 15:02:57 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43746 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab2DGTC4 (ORCPT
+	id S1755511Ab2DGTBY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 15:01:24 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45361 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab2DGTBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 15:02:56 -0400
-Date: Sat, 7 Apr 2012 22:02:52 +0300
+	Sat, 7 Apr 2012 15:01:20 -0400
+Date: Sat, 7 Apr 2012 22:01:17 +0300
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] proc: pass "fd" by value in /proc/*/{fd,fdinfo} code
-Message-ID: <20120407190252.GB5946@p183.telecom.by>
+Subject: [PATCH 1/2] proc: don't do dummy rcu_read_lock/rcu_read_unlock on
+ error path
+Message-ID: <20120407190117.GA5946@p183.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,49 +22,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass "fd" directly, not via pointer -- one less memory read.
+rcu_read_lock()/rcu_read_unlock() is nop for TINY_RCU,
+but is not a nop for, say, PREEMPT_RCU.
+
+proc_fill_cache() is called without RCU lock,
+there is no need to lock/unlock on error path,
+simply jump out of the loop.
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
 
- fs/proc/base.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/proc/base.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
-@@ -1836,7 +1836,7 @@ static const struct dentry_operations tid_fd_dentry_operations =
- static struct dentry *proc_fd_instantiate(struct inode *dir,
- 	struct dentry *dentry, struct task_struct *task, const void *ptr)
- {
--	unsigned fd = *(const unsigned *)ptr;
-+	unsigned fd = (unsigned long)ptr;
- 	struct file *file;
- 	struct files_struct *files;
-  	struct inode *inode;
-@@ -1900,7 +1900,7 @@ static struct dentry *proc_lookupfd_common(struct inode *dir,
- 	if (fd == ~0U)
- 		goto out;
+@@ -1943,21 +1943,22 @@ static int proc_readfd_common(struct file * filp, void * dirent,
+ 			     fd++, filp->f_pos++) {
+ 				char name[PROC_NUMBUF];
+ 				int len;
++				int rv;
  
--	result = instantiate(dir, dentry, task, &fd);
-+	result = instantiate(dir, dentry, task, (void *)(unsigned long)fd);
- out:
- 	put_task_struct(task);
- out_no_task:
-@@ -1952,7 +1952,7 @@ static int proc_readfd_common(struct file * filp, void * dirent,
+ 				if (!fcheck_files(files, fd))
+ 					continue;
+ 				rcu_read_unlock();
+ 
  				len = snprintf(name, sizeof(name), "%d", fd);
- 				rv = proc_fill_cache(filp, dirent, filldir,
- 						     name, len, instantiate, p,
--						     &fd);
-+						     (void *)(unsigned long)fd);
- 				if (rv < 0)
- 					goto out_fd_loop;
+-				if (proc_fill_cache(filp, dirent, filldir,
+-						    name, len, instantiate,
+-						    p, &fd) < 0) {
+-					rcu_read_lock();
+-					break;
+-				}
++				rv = proc_fill_cache(filp, dirent, filldir,
++						     name, len, instantiate, p,
++						     &fd);
++				if (rv < 0)
++					goto out_fd_loop;
  				rcu_read_lock();
-@@ -2375,7 +2375,7 @@ static const struct inode_operations proc_fd_inode_operations = {
- static struct dentry *proc_fdinfo_instantiate(struct inode *dir,
- 	struct dentry *dentry, struct task_struct *task, const void *ptr)
- {
--	unsigned fd = *(unsigned *)ptr;
-+	unsigned fd = (unsigned long)ptr;
-  	struct inode *inode;
-  	struct proc_inode *ei;
- 	struct dentry *error = ERR_PTR(-ENOENT);
+ 			}
+ 			rcu_read_unlock();
++out_fd_loop:
+ 			put_files_struct(files);
+ 	}
+ out:
