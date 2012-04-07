@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab2DGP2k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 11:28:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62639 "EHLO
+	id S1755178Ab2DGPaE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 11:30:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61238 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab2DGP2j (ORCPT
+	with ESMTP id S1754707Ab2DGPaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 11:28:39 -0400
-Message-ID: <1333812508.6390.1.camel@phoenix>
-Subject: [PATCH 1/3] regulator: max8649: Use devm_* APIs
+	Sat, 7 Apr 2012 11:30:02 -0400
+Message-ID: <1333812596.6390.3.camel@phoenix>
+Subject: [PATCH 2/3] regulator: tps62360: Convert to devm_regmap_init_i2c()
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Sat, 07 Apr 2012 23:28:28 +0800
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Sat, 07 Apr 2012 23:29:56 +0800
+In-Reply-To: <1333812508.6390.1.camel@phoenix>
+References: <1333812508.6390.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -26,71 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/max8649.c |   19 ++++++-------------
- 1 files changed, 6 insertions(+), 13 deletions(-)
+ drivers/regulator/tps62360-regulator.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
-index 2e9ffbe..f22e893 100644
---- a/drivers/regulator/max8649.c
-+++ b/drivers/regulator/max8649.c
-@@ -229,17 +229,18 @@ static int __devinit max8649_regulator_probe(struct i2c_client *client,
- 	unsigned char data;
- 	int ret;
- 
--	info = kzalloc(sizeof(struct max8649_regulator_info), GFP_KERNEL);
-+	info = devm_kzalloc(&client->dev, sizeof(struct max8649_regulator_info),
-+			    GFP_KERNEL);
- 	if (!info) {
- 		dev_err(&client->dev, "No enough memory\n");
- 		return -ENOMEM;
- 	}
- 
--	info->regmap = regmap_init_i2c(client, &max8649_regmap_config);
-+	info->regmap = devm_regmap_init_i2c(client, &max8649_regmap_config);
- 	if (IS_ERR(info->regmap)) {
- 		ret = PTR_ERR(info->regmap);
- 		dev_err(&client->dev, "Failed to allocate register map: %d\n", ret);
--		goto fail;
-+		return ret;
- 	}
- 
- 	info->dev = &client->dev;
-@@ -267,7 +268,7 @@ static int __devinit max8649_regulator_probe(struct i2c_client *client,
- 	if (ret != 0) {
- 		dev_err(info->dev, "Failed to detect ID of MAX8649:%d\n",
- 			ret);
--		goto out;
-+		return ret;
- 	}
- 	dev_info(info->dev, "Detected MAX8649 (ID:%x)\n", val);
- 
-@@ -302,16 +303,10 @@ static int __devinit max8649_regulator_probe(struct i2c_client *client,
- 	if (IS_ERR(info->regulator)) {
- 		dev_err(info->dev, "failed to register regulator %s\n",
- 			dcdc_desc.name);
--		ret = PTR_ERR(info->regulator);
--		goto out;
-+		return PTR_ERR(info->regulator);
- 	}
- 
- 	return 0;
--out:
--	regmap_exit(info->regmap);
--fail:
--	kfree(info);
--	return ret;
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index aa57632..e55219b 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -319,7 +319,7 @@ static int __devinit tps62360_probe(struct i2c_client *client,
+ 	tps->desc.ops = &tps62360_dcdc_ops;
+ 	tps->desc.type = REGULATOR_VOLTAGE;
+ 	tps->desc.owner = THIS_MODULE;
+-	tps->regmap = regmap_init_i2c(client, &tps62360_regmap_config);
++	tps->regmap = devm_regmap_init_i2c(client, &tps62360_regmap_config);
+ 	if (IS_ERR(tps->regmap)) {
+ 		ret = PTR_ERR(tps->regmap);
+ 		dev_err(&client->dev, "%s() Err: Failed to allocate register"
+@@ -404,7 +404,6 @@ err_gpio1:
+ 	if (gpio_is_valid(tps->vsel0_gpio))
+ 		gpio_free(tps->vsel0_gpio);
+ err_gpio0:
+-	regmap_exit(tps->regmap);
+ 	return ret;
  }
  
- static int __devexit max8649_regulator_remove(struct i2c_client *client)
-@@ -321,8 +316,6 @@ static int __devexit max8649_regulator_remove(struct i2c_client *client)
- 	if (info) {
- 		if (info->regulator)
- 			regulator_unregister(info->regulator);
--		regmap_exit(info->regmap);
--		kfree(info);
- 	}
+@@ -425,7 +424,6 @@ static int __devexit tps62360_remove(struct i2c_client *client)
+ 		gpio_free(tps->vsel0_gpio);
  
+ 	regulator_unregister(tps->rdev);
+-	regmap_exit(tps->regmap);
  	return 0;
+ }
+ 
 -- 
 1.7.5.4
 
