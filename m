@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab2DGHLd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 03:11:33 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:52964 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab2DGHKm (ORCPT
+	id S1752237Ab2DGHZa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 03:25:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34732 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab2DGHZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 03:10:42 -0400
+	Sat, 7 Apr 2012 03:25:29 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: gpiolib: per-gpio edges count
-To: Jean Pihet <jean.pihet@newoldbits.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>
-In-Reply-To: <CAORVsuUQbtC=SF9RP2g04mN-ksE8BU40ACfZvoyGUju=LRbwqg@mail.gmail.com>
-References: <CAORVsuWw1rwcsMUrSqZJCeSY_vjJDwakF27kfb6=utN8nBqvag@mail.gmail.com> <CAORVsuUQbtC=SF9RP2g04mN-ksE8BU40ACfZvoyGUju=LRbwqg@mail.gmail.com>
-Date: Fri, 06 Apr 2012 20:13:06 -0700
-Message-Id: <20120407031306.B24D03E1F86@localhost>
+Subject: Re: [PATCH] gpio/sodaville: Convert sodaville driver to new irqdomain API
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Torben Hohn <torbenh@linutronix.de>
+In-Reply-To: <20120406101236.GD5734@linutronix.de>
+References: <1332968546-12901-1-git-send-email-grant.likely@secretlab.ca> <20120406101236.GD5734@linutronix.de>
+Date: Fri, 06 Apr 2012 20:39:12 -0700
+Message-Id: <20120407033912.7D0C43E23AF@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Apr 2012 16:49:03 +0200, Jean Pihet <jean.pihet@newoldbits.com> wrote:
-> Hi,
+On Fri, 6 Apr 2012 12:12:36 +0200, Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+> * Grant Likely | 2012-03-28 15:02:26 [-0600]:
 > 
-> On Wed, Apr 4, 2012 at 10:53 AM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
-> > Hi Grant, Linus,
-> >
-> > I would like to know if it is possible to get the edges count on a GPIO pin.
-> > I was hoping to get it by configuring the pin as input with an edge
-> > trigger but on OMAP there is only one irq line per controller (which
-> > controls 32 pins).
-> > Btw I am using a Beaglebone with OMAP AM3358.
+> >Hi guys,
+> Hi Grant,
 > 
-> I figured it out, with the help from Kevin on IRC (thx!).
+> sorry for the long delay.
 > 
-> Indeed there is a per-pin IRQ count available in /proc/interrupts.
-> Sorry for the unconvenience.
+> >This patch fixes the build failure for the sodaville driver, but I've got
+> >no way to test it.  Please take a look before I merge it.
 > 
-> Thanks & regards,
-> Jean
+> It looks good. I don't have the board around and I haven't get around to
+> look at the irq host changes. However, you can add my acked-by while
+> merging.
 
-Great, I'm glad you got it sorted out.  For the benefit of anyone
-coming across this thread, would you mind replying with a summary of
-how you solved the problem?
+Okay, thanks.  I'll merge it.
 
-Thanks,
 g.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
