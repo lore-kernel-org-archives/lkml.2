@@ -1,117 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab2DHXmc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 19:42:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43704 "EHLO mx2.suse.de"
+	id S1756360Ab2DHXnL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 19:43:11 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59181 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982Ab2DHXmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 19:42:31 -0400
-Date: Mon, 9 Apr 2012 09:42:19 +1000
-From: NeilBrown <neilb@suse.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, rpurdie@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
-Message-ID: <20120409094219.57d321cb@notabene.brown>
-In-Reply-To: <20120407215641.GA4539@core.coreip.homeip.net>
-References: <1333310039.2879.4.camel@lorien2>
-	<20120406165353.ab667eb0.akpm@linux-foundation.org>
-	<1333808024.2728.39.camel@lorien2>
-	<20120407215641.GA4539@core.coreip.homeip.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/tluDqp6O.RegOGJ4sxkO_gD"; protocol="application/pgp-signature"
+	id S1752387Ab2DHXnK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 19:43:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Date: Mon, 9 Apr 2012 01:47:36 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Aaron Lu <aaron.lu@amd.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <201204010923.18330.rjw@sisk.pl> <1333593080.11327.22.camel@minggr>
+In-Reply-To: <1333593080.11327.22.camel@minggr>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201204090147.36529.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/tluDqp6O.RegOGJ4sxkO_gD
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thursday, April 05, 2012, Lin Ming wrote:
+> On Sun, 2012-04-01 at 09:23 +0200, Rafael J. Wysocki wrote:
+> > Hi,
+> > 
+> > Sorry for the delayed response, I've been travelling recently.
+> > 
+> > On Sunday, April 01, 2012, Lin Ming wrote:
+> > > On Sun, 2012-04-01 at 13:56 +0800, Aaron Lu wrote:
+> > > > Hi,
+> > > > 
+> > > > On Sun, Apr 01, 2012 at 01:27:33PM +0800, Lin Ming wrote:
+> > > > > > -		if (device->power.states[state].flags.explicit_set) {
+> > > > > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
+> > > > > > +		if (state == ACPI_STATE_D3_COLD) {
+> > > > > > +			explicit_set = (ps - 1)->flags.explicit_set;
+> > > > > > +			object_name[3] -= 1;
+> > > > > > +		}
+> > > > > 
+> > > > > I'm not sure whether this works or not.
+> > > > > 
+> > > > > From ACPI spec,
+> > > > > 
+> > > > > _PS3 "is used to put the specific device into its D3hot or D3 state"
+> > > > > 
+> > > > > D3 neither means D3hot nor D3cold. It's an old term before D3hot and
+> > > > > D3cold were introduced.
+> > > > I guess D3 has to mean something, right? :-)
+> > 
+> > Well, not necessarily.
+> > 
+> > The problem is what state the _PS3 method puts the device into: D3_hot or
+> > D3_cold.
+> > 
+> > Unfortunately, as far as I can say, ACPI 4.0 didn't specify any "official"
+> > mapping between the "old" D3 and the "new" D3_{hod|cold} states, so we need to
+> > figure out something.  In my opinion, the only reasonable approach is to
+> > assume that the state _PS3 puts the device into is always D3_cold, becuase
+> > _PS3 may remove power completely from the device.  It may not do that, but
+> > we _must_ assume it does that in general.
+> > 
+> > > > Here is the problem, there is no _PR3 in AMD's implementation, just _PS3.
+> > > > And since _S0W evaluates 4, I've to put this device into D3 cold state
+> > > > with _PS3.
+> > > > 
+> > > > And the ACPI does have some words like:
+> > > > 
+> > > > ------
+> > > > Platform/drivers must assume that the device will have power completely
+> > > > removed when the device is place into “D3” via _PS3
+> > 
+> > Exactly.  What it means is basically "always reinitialize the device from
+> > scratch if you have run _PS3 on it".  And that's what we should do.
+> > 
+> > > > ------
+> > > > 
+> > > > This is in section 7.2.11: _PR3.
+> > > > 
+> > > > > 
+> > > > > Another problem:
+> > > > > 
+> > > > > With your patch, both D3hot and D3cold will evaluate _PS3, right?
+> > > > > 
+> > > > Yes.
+> > > > 
+> > > > > Will it have problem on AMD platform if you try to put ODD into D3hot
+> > > > > state? _PS3 is evaluated, so it actually enters D3Cold state.
+> > > > 
+> > > > There is no D3 hot support for this device(from the firmware's
+> > > > perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
+> > > > _PS3).
+> > > 
+> > > But this is the generic code. We can't only consider some special
+> > > device.
+> > > 
+> > > Maybe we need some flag to tell which D3 state _PS3 is used for.
+> > 
+> > No, please.  As I said above, we need to reinitialize devices that _PS3 was
+> > executed on, which is equivalent to saying that those devices were put into
+> > D3_cold.
+> > 
+> > The only situation where a device can be put into ACPI D3_hot (which is not
+> > the same as PCI D3_hot, mind you) is when:
+> > 
+> > (1) There is _PR3 listing some of the device's power resources as "on".
+> > (2) The power resources listed by the _PR3 as "off" are turned off and the
+> >     power resources listed by the _PR3 as "on" are left in the "on" state.
+> 
+> I don't understand item (2):
+> 
+> If the power resource is listed as "off", which means it's already
+> turned off. Then why should it be turned off again?
 
-On Sat, 7 Apr 2012 14:56:41 -0700 Dmitry Torokhov <dmitry.torokhov@gmail.co=
-m>
-wrote:
+Sorry, there are two lists.  One of them is returned by _PR0 (these
+are needed to put the device into D0) and the second is returned by
+_PR3 (if that exists) and these need to be "on" for the device to stay
+in D3_hot (if they are "off", the device will go into D3_cold instead).
 
-> Hi Shuah,
->=20
-> On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
-> >=20
-> > > > +This feature will help implement vibrate functionality which requi=
-res one
-> > > > +time activation of vibrate mode without a continuous vibrate on/of=
-f cycles.
-> > >=20
-> > > They make vibrating LED? ;)
-> > >=20
-> > > What's going on here?  You're proposing to repurpose the LEDs code to
-> > > drive vibration devices?  Or some devices couple a LED with a vibrati=
-on
-> > > device?
-> >=20
-> > I owe you filling in the blanks type explanation. Let me describe the
-> > use-case I am trying to address first. Vibrater function on phones is
-> > implemented using PWM pins on SoC or PMIC. When there is no such
-> > hardware present, a software solution is needed. Currently two drivers
-> > timed-gpio and timed-output (under staging/android in Linux 3.3)
-> > together implement the software vibrate feature. The main functionality
-> > it implements is the one time enables of timer to prevent user space
-> > crashes leaving the phone in vibrate mode causing the battery to drain.
-> > leds as it is implemented currently, is not suitable to address this
-> > use-case as it doesn't support one time enables.
->=20
-> So why do not you use memoryless force feedback framework that other
-> devices use (see drivers/input/misc/*vibra.c drivers).
->=20
-> Thanks.
->=20
+Actually, section 7.2.11 of ACPI 5.0 is quite clear in that respect.
 
-I don't see that using a "force feedback" "input" device to control a
-vibrator - which is neither "force feedback" nor "input", makes any more
-sense than using an "led" device to control something that isn't an LED.
-So we are even there.
+> Let's see an example
+> 
+> Assume a device "dev0" depends on 5 power resources:
+> 
+> pr1, pr2, pr3, pr4, pr5
+> 
+> _PR3 lists 3 power resources: pr3, pr4, pr5
+> 
+> Device(dev0)
+> {
+> 	Name(_PR3, Package (0x03)
+> 	{
+> 		pr3,
+> 		pr4,
+> 		pr5
+> 	})
+> }
+> 
+> If dev0 is put into ACPI D3_hot and pr1 and pr2 are not referenced by
+> other devices, then it requires:
+> 
+> - pr1 and pr2 are off
+> - pr3, pr4 and pr5 are on
+> 
+> right?
 
-I think driving leds by writing to sysfs files is lot easier (for scripting
-languages particularly) than the ioctls or binary writes needed for managing
-input devices.
-
-Of course, if the 'input' framework were used for controlling all LEDs -
-rather than just the LEDs on keyboard - then it might make sense...
-
-Also, I don't think 'ff' allows for "vibrate for N milliseconds".
-It appears that one uses the "rumble" effect and have to say "turn it on",
-then "turn it off".  Is that correct?
-I found 'struct ff_replay' which has a 'length' which is a duration, but it
-doesn't seem to be used.
-
-How would you tell the force feedback framework to play the vibrator for
-120ms, then stop?
+That's correct.
 
 Thanks,
-NeilBrown
-
---Sig_/tluDqp6O.RegOGJ4sxkO_gD
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT4IiWznsnt1WYoG5AQLjKBAAsYj93t/SI1hF4BcTjfqTl0zANhzRovV8
-Ag3JyXtXHYrf54+hwg3jDbmdsAxRFU+B7xKe8E5wyt2veltzttrUVo4uCIILyF4H
-C6OCCM5Bw5QKvy6HvUtVX7/PkhA42zNENnPCgWDT0nLurNqWzJrrScR0rHgeAwlv
-9JDi11KtagOgiCLPgeR5wz8E9HAtOFY9Y03AjOOiy5oMrfWUdUCkeR4owSQ0d2Jh
-80TmSOYr8dSQw1zqgDkDfAqA7oYU7mo7R6PGvMWcgD0pbEHhdKWa+7SPNojM/CaL
-D+zRhW+uK2sBhJRoEO18rlC3p7gy2Dyv4mrAW+nw9R1zCPuK3/D15YNtT/owQzWx
-dwc6AZYibKfcDpYI1tLGNpmw2z3gIkdD9/2pH65udUjs7AUIRnYtH8bdLqR/hf77
-sAPxRkIQKKzDvxYy8XS+9MIUfJt5DxJIj122KHCF89ib/iolJeC4/re23rxGWb1L
-GboLzXqRFilqcwQ1q9KWjj1PBChFM7bc9b6WTdCI6W5ZhK4LSjuC/ZWA1rxBhmDK
-vU7Pv1X/0+wGJScWt7OuyCdHRQgwou2X90j7FRDbHsj9ZWWZ7SGKJUCJluhBHGHU
-ebiF6nyMsCsBOuHBF2KqR6/VDLh4J5ddZgclbEeNJkY5zINEITz+rSdUgMBlGOFH
-qYUIVgLIxQQ=
-=Fgmf
------END PGP SIGNATURE-----
-
---Sig_/tluDqp6O.RegOGJ4sxkO_gD--
+Rafael
