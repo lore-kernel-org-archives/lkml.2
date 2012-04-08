@@ -1,201 +1,478 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab2DHTTM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 15:19:12 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:44638 "EHLO
+	id S1755982Ab2DHTXy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 15:23:54 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:41938 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab2DHTTK convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753654Ab2DHTXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 15:19:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
-References: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com>
-	<1333905129-8776-1-git-send-email-jiang.liu@huawei.com>
-	<1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
-Date: Sun, 8 Apr 2012 12:19:09 -0700
-X-Google-Sender-Auth: rlgNeokuyLaL1LevqTumboZBqtg
-Message-ID: <CAE9FiQXNOJA4oCDw-CF32UjaA=6tri73nXP3u6+hMEjpugjF9w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PCI, ACPI, x86: update MMCFG information when
- hot-plugging PCI host bridges
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 8 Apr 2012 15:23:53 -0400
+From: Olof Johansson <olof@lixom.net>
+To: grant.likely@secretlab.ca
+Cc: linus.walleij@stericsson.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        sangsu4u.park@samsung.com, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] gpio: samsung: refactor gpiolib init for exynos4/5
+Date: Sun,  8 Apr 2012 12:23:27 -0700
+Message-Id: <1333913007-16032-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.9.2.359.gebfc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 8, 2012 at 10:12 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> This patch enhances pci_root driver to update MMCFG information when
-> hot-plugging PCI root bridges on x86 platforms.
->
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> ---
->  arch/x86/pci/acpi.c      |   58 ++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/pci_root.c  |   20 ++++++++++++++++
->  include/acpi/acnames.h   |    1 +
->  include/linux/pci-acpi.h |    3 ++
->  4 files changed, 82 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-> index da0149d..9184970 100644
-> --- a/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@ -488,6 +488,64 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
->        return bus;
->  }
->
-> +int arch_acpi_pci_root_add(struct acpi_pci_root *root)
-> +{
-> +       int result = 0;
-> +       acpi_status status;
-> +       unsigned long long base_addr;
-> +       struct pci_mmcfg_region *cfg;
-> +
-> +       /*
-> +        * Try to insert MMCFG information for host bridges with _CBA method
-> +        */
-> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
-> +                                      NULL, &base_addr);
-> +       if (ACPI_SUCCESS(status)) {
-> +               result = pci_mmconfig_insert(root->segment,
-> +                                            root->secondary.start,
-> +                                            root->secondary.end,
-> +                                            base_addr);
-> +               /*
-> +                * MMCFG information for hot-pluggable host bridges may have
-> +                * already been added by __pci_mmcfg_init();
-> +                */
-> +               if (result == -EEXIST)
-> +                       result = 0;
-> +       } else if (status == AE_NOT_FOUND) {
-> +               /*
-> +                * Check whether MMCFG information has been added for
-> +                * host bridges without _CBA method.
-> +                */
-> +               rcu_read_lock();
-> +               cfg = pci_mmconfig_lookup(root->segment, root->secondary.start);
-> +               if (!cfg || cfg->end_bus < root->secondary.end)
-> +                       result = -ENODEV;
-> +               rcu_read_unlock();
-> +       } else
-> +               result = -ENODEV;
-> +
-> +       return result;
-> +}
-> +
-> +int arch_acpi_pci_root_remove(struct acpi_pci_root *root)
-> +{
-> +       acpi_status status;
-> +       unsigned long long base_addr;
-> +
-> +       /* Remove MMCFG information for host bridges with _CBA method */
-> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
-> +                                      NULL, &base_addr);
+Only code move, no functional change.
 
-add one flag in acpi_pci_root about we added mmconf for it before?
-like mmconf_added?
+Main reason to do this was to get rid of the warnings:
 
-> +       if (ACPI_SUCCESS(status))
-> +               return pci_mmconfig_delete(root->segment,
-> +                                          root->secondary.start,
-> +                                          root->secondary.end,
-> +                                          base_addr);
-> +       else if (status != AE_NOT_FOUND)
-> +               return -ENODEV;
-> +
-> +       return 0;
-> +}
-> +
->  int __init pci_acpi_init(void)
->  {
->        struct pci_dev *dev = NULL;
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 4a7d575..a62bfa8 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -448,6 +448,16 @@ out:
->  }
->  EXPORT_SYMBOL(acpi_pci_osc_control_set);
->
-> +int __weak arch_acpi_pci_root_add(struct acpi_pci_root *root)
-> +{
-> +       return 0;
-> +}
-> +
-> +int __weak arch_acpi_pci_root_remove(struct acpi_pci_root *root)
-> +{
-> +       return 0;
-> +}
-> +
->  static int __devinit acpi_pci_root_add(struct acpi_device *device)
->  {
->        unsigned long long segment, bus;
-> @@ -504,6 +514,14 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
->        strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
->        device->driver_data = root;
->
-> +       if (arch_acpi_pci_root_add(root)) {
-> +               printk(KERN_ERR PREFIX
-> +                       "can't add MMCFG information for Bus %04x:%02x\n",
-> +                       root->segment, (unsigned int)root->secondary.start);
-> +               result = -ENODEV;
-> +               goto out_free;
-> +       }
-> +
->        /*
->         * All supported architectures that use ACPI have support for
->         * PCI domains, so we indicate this in _OSC support capabilities.
-> @@ -629,6 +647,7 @@ out_del_root:
->        list_del_rcu(&root->node);
->        mutex_unlock(&acpi_pci_root_lock);
->        synchronize_rcu();
-> +       arch_acpi_pci_root_remove(root);
->  out_free:
->        kfree(root);
->        return result;
-> @@ -679,6 +698,7 @@ out:
->        list_del_rcu(&root->node);
->        mutex_unlock(&acpi_pci_root_lock);
->        synchronize_rcu();
-> +       arch_acpi_pci_root_remove(root);
->        kfree(root);
->
->        return 0;
-> diff --git a/include/acpi/acnames.h b/include/acpi/acnames.h
-> index 38f5088..99bda75 100644
-> --- a/include/acpi/acnames.h
-> +++ b/include/acpi/acnames.h
-> @@ -62,6 +62,7 @@
->  #define METHOD_NAME__AEI        "_AEI"
->  #define METHOD_NAME__PRW        "_PRW"
->  #define METHOD_NAME__SRS        "_SRS"
-> +#define METHOD_NAME__CBA       "_CBA"
->
->  /* Method names - these methods must appear at the namespace root */
->
-> diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
-> index ac93634..816b971 100644
-> --- a/include/linux/pci-acpi.h
-> +++ b/include/linux/pci-acpi.h
-> @@ -38,6 +38,9 @@ static inline acpi_handle acpi_pci_get_bridge_handle(struct pci_bus *pbus)
->
->  void acpi_pci_root_rescan(void);
->
-> +extern int arch_acpi_pci_root_add(struct acpi_pci_root *root);
-> +extern int arch_acpi_pci_root_remove(struct acpi_pci_root *root);
-> +
+drivers/gpio/gpio-samsung.c: In function 'samsung_gpiolib_init':
+drivers/gpio/gpio-samsung.c:2974:1: warning: label 'err_ioremap4' defined but not used [-Wunused-label]
+drivers/gpio/gpio-samsung.c:2722:47: warning: unused variable 'gpio_base4' [-Wunused-variable]
 
-don't need extern here.
+without adding more ifdef mess.
 
->  #else
->
->  static inline void acpi_pci_root_rescan(void) { }
-> --
-> 1.7.5.4
->
+I think this whole file would do well being coverted over to a platform
+driver and moving most of the tables out to SoC code and/or device trees,
+but since that changes init ordering it needs to be done with some care,
+i.e. not at this time.
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+ drivers/gpio/gpio-samsung.c |  403 +++++++++++++++++++++++--------------------
+ 1 file changed, 215 insertions(+), 188 deletions(-)
+
+diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+index 914ba64..f2c447e8 100644
+--- a/drivers/gpio/gpio-samsung.c
++++ b/drivers/gpio/gpio-samsung.c
+@@ -2707,12 +2707,224 @@ static __init void exynos_gpiolib_attach_ofnode(struct samsung_gpio_chip *chip,
+ }
+ #endif /* defined(CONFIG_ARCH_EXYNOS) && defined(CONFIG_OF) */
+ 
++static __init void exynos4_gpiolib_init(void)
++{
++#ifdef CONFIG_CPU_EXYNOS4210
++	struct samsung_gpio_chip *chip;
++	int i, nr_chips;
++	void __iomem *gpio_base1, *gpio_base2, *gpio_base3;
++	int group = 0;
++	void __iomem *gpx_base;
++
++	/* gpio part1 */
++	gpio_base1 = ioremap(EXYNOS4_PA_GPIO1, SZ_4K);
++	if (gpio_base1 == NULL) {
++		pr_err("unable to ioremap for gpio_base1\n");
++		goto err_ioremap1;
++	}
++
++	chip = exynos4_gpios_1;
++	nr_chips = ARRAY_SIZE(exynos4_gpios_1);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (!chip->config) {
++			chip->config = &exynos_gpio_cfg;
++			chip->group = group++;
++		}
++		exynos_gpiolib_attach_ofnode(chip,
++				EXYNOS4_PA_GPIO1, i * 0x20);
++	}
++	samsung_gpiolib_add_4bit_chips(exynos4_gpios_1,
++				       nr_chips, gpio_base1);
++
++	/* gpio part2 */
++	gpio_base2 = ioremap(EXYNOS4_PA_GPIO2, SZ_4K);
++	if (gpio_base2 == NULL) {
++		pr_err("unable to ioremap for gpio_base2\n");
++		goto err_ioremap2;
++	}
++
++	/* need to set base address for gpx */
++	chip = &exynos4_gpios_2[16];
++	gpx_base = gpio_base2 + 0xC00;
++	for (i = 0; i < 4; i++, chip++, gpx_base += 0x20)
++		chip->base = gpx_base;
++
++	chip = exynos4_gpios_2;
++	nr_chips = ARRAY_SIZE(exynos4_gpios_2);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (!chip->config) {
++			chip->config = &exynos_gpio_cfg;
++			chip->group = group++;
++		}
++		exynos_gpiolib_attach_ofnode(chip,
++				EXYNOS4_PA_GPIO2, i * 0x20);
++	}
++	samsung_gpiolib_add_4bit_chips(exynos4_gpios_2,
++				       nr_chips, gpio_base2);
++
++	/* gpio part3 */
++	gpio_base3 = ioremap(EXYNOS4_PA_GPIO3, SZ_256);
++	if (gpio_base3 == NULL) {
++		pr_err("unable to ioremap for gpio_base3\n");
++		goto err_ioremap3;
++	}
++
++	chip = exynos4_gpios_3;
++	nr_chips = ARRAY_SIZE(exynos4_gpios_3);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (!chip->config) {
++			chip->config = &exynos_gpio_cfg;
++			chip->group = group++;
++		}
++		exynos_gpiolib_attach_ofnode(chip,
++				EXYNOS4_PA_GPIO3, i * 0x20);
++	}
++	samsung_gpiolib_add_4bit_chips(exynos4_gpios_3,
++				       nr_chips, gpio_base3);
++
++#if defined(CONFIG_CPU_EXYNOS4210) && defined(CONFIG_S5P_GPIO_INT)
++	s5p_register_gpioint_bank(IRQ_GPIO_XA, 0, IRQ_GPIO1_NR_GROUPS);
++	s5p_register_gpioint_bank(IRQ_GPIO_XB, IRQ_GPIO1_NR_GROUPS, IRQ_GPIO2_NR_GROUPS);
++#endif
++
++	return;
++
++err_ioremap3:
++	iounmap(gpio_base2);
++err_ioremap2:
++	iounmap(gpio_base1);
++err_ioremap1:
++	return;
++#endif	/* CONFIG_CPU_EXYNOS4210 */
++}
++
++static __init void exynos5_gpiolib_init(void)
++{
++#ifdef CONFIG_SOC_EXYNOS5250
++	struct samsung_gpio_chip *chip;
++	int i, nr_chips;
++	void __iomem *gpio_base1, *gpio_base2, *gpio_base3, *gpio_base4;
++	int group = 0;
++	void __iomem *gpx_base;
++
++	/* gpio part1 */
++	gpio_base1 = ioremap(EXYNOS5_PA_GPIO1, SZ_4K);
++	if (gpio_base1 == NULL) {
++		pr_err("unable to ioremap for gpio_base1\n");
++		goto err_ioremap1;
++	}
++
++	/* need to set base address for gpx */
++	chip = &exynos5_gpios_1[20];
++	gpx_base = gpio_base1 + 0xC00;
++	for (i = 0; i < 4; i++, chip++, gpx_base += 0x20)
++		chip->base = gpx_base;
++
++	chip = exynos5_gpios_1;
++	nr_chips = ARRAY_SIZE(exynos5_gpios_1);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (!chip->config) {
++			chip->config = &exynos_gpio_cfg;
++			chip->group = group++;
++		}
++		exynos_gpiolib_attach_ofnode(chip,
++				EXYNOS5_PA_GPIO1, i * 0x20);
++	}
++	samsung_gpiolib_add_4bit_chips(exynos5_gpios_1,
++				       nr_chips, gpio_base1);
++
++	/* gpio part2 */
++	gpio_base2 = ioremap(EXYNOS5_PA_GPIO2, SZ_4K);
++	if (gpio_base2 == NULL) {
++		pr_err("unable to ioremap for gpio_base2\n");
++		goto err_ioremap2;
++	}
++
++	chip = exynos5_gpios_2;
++	nr_chips = ARRAY_SIZE(exynos5_gpios_2);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (!chip->config) {
++			chip->config = &exynos_gpio_cfg;
++			chip->group = group++;
++		}
++		exynos_gpiolib_attach_ofnode(chip,
++				EXYNOS5_PA_GPIO2, i * 0x20);
++	}
++	samsung_gpiolib_add_4bit_chips(exynos5_gpios_2,
++				       nr_chips, gpio_base2);
++
++	/* gpio part3 */
++	gpio_base3 = ioremap(EXYNOS5_PA_GPIO3, SZ_4K);
++	if (gpio_base3 == NULL) {
++		pr_err("unable to ioremap for gpio_base3\n");
++		goto err_ioremap3;
++	}
++
++	/* need to set base address for gpv */
++	exynos5_gpios_3[0].base = gpio_base3;
++	exynos5_gpios_3[1].base = gpio_base3 + 0x20;
++	exynos5_gpios_3[2].base = gpio_base3 + 0x60;
++	exynos5_gpios_3[3].base = gpio_base3 + 0x80;
++	exynos5_gpios_3[4].base = gpio_base3 + 0xC0;
++
++	chip = exynos5_gpios_3;
++	nr_chips = ARRAY_SIZE(exynos5_gpios_3);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (!chip->config) {
++			chip->config = &exynos_gpio_cfg;
++			chip->group = group++;
++		}
++		exynos_gpiolib_attach_ofnode(chip,
++				EXYNOS5_PA_GPIO3, i * 0x20);
++	}
++	samsung_gpiolib_add_4bit_chips(exynos5_gpios_3,
++				       nr_chips, gpio_base3);
++
++	/* gpio part4 */
++	gpio_base4 = ioremap(EXYNOS5_PA_GPIO4, SZ_4K);
++	if (gpio_base4 == NULL) {
++		pr_err("unable to ioremap for gpio_base4\n");
++		goto err_ioremap4;
++	}
++
++	chip = exynos5_gpios_4;
++	nr_chips = ARRAY_SIZE(exynos5_gpios_4);
++
++	for (i = 0; i < nr_chips; i++, chip++) {
++		if (!chip->config) {
++			chip->config = &exynos_gpio_cfg;
++			chip->group = group++;
++		}
++		exynos_gpiolib_attach_ofnode(chip,
++				EXYNOS5_PA_GPIO4, i * 0x20);
++	}
++	samsung_gpiolib_add_4bit_chips(exynos5_gpios_4,
++				       nr_chips, gpio_base4);
++	return;
++
++err_ioremap4:
++	iounmap(gpio_base3);
++err_ioremap3:
++	iounmap(gpio_base2);
++err_ioremap2:
++	iounmap(gpio_base1);
++err_ioremap1:
++	return;
++
++#endif	/* CONFIG_SOC_EXYNOS5250 */
++}
++
+ /* TODO: cleanup soc_is_* */
+ static __init int samsung_gpiolib_init(void)
+ {
+ 	struct samsung_gpio_chip *chip;
+ 	int i, nr_chips;
+-	void __iomem *gpio_base1, *gpio_base2, *gpio_base3, *gpio_base4;
+ 	int group = 0;
+ 
+ 	samsung_gpiolib_set_cfg(samsung_gpio_cfgs, ARRAY_SIZE(samsung_gpio_cfgs));
+@@ -2778,200 +2990,15 @@ static __init int samsung_gpiolib_init(void)
+ 		s5p_register_gpioint_bank(IRQ_GPIOINT, 0, S5P_GPIOINT_GROUP_MAXNR);
+ #endif
+ 	} else if (soc_is_exynos4210()) {
+-#ifdef CONFIG_CPU_EXYNOS4210
+-		void __iomem *gpx_base;
+-
+-		/* gpio part1 */
+-		gpio_base1 = ioremap(EXYNOS4_PA_GPIO1, SZ_4K);
+-		if (gpio_base1 == NULL) {
+-			pr_err("unable to ioremap for gpio_base1\n");
+-			goto err_ioremap1;
+-		}
+-
+-		chip = exynos4_gpios_1;
+-		nr_chips = ARRAY_SIZE(exynos4_gpios_1);
+-
+-		for (i = 0; i < nr_chips; i++, chip++) {
+-			if (!chip->config) {
+-				chip->config = &exynos_gpio_cfg;
+-				chip->group = group++;
+-			}
+-			exynos_gpiolib_attach_ofnode(chip,
+-					EXYNOS4_PA_GPIO1, i * 0x20);
+-		}
+-		samsung_gpiolib_add_4bit_chips(exynos4_gpios_1,
+-					       nr_chips, gpio_base1);
+-
+-		/* gpio part2 */
+-		gpio_base2 = ioremap(EXYNOS4_PA_GPIO2, SZ_4K);
+-		if (gpio_base2 == NULL) {
+-			pr_err("unable to ioremap for gpio_base2\n");
+-			goto err_ioremap2;
+-		}
+-
+-		/* need to set base address for gpx */
+-		chip = &exynos4_gpios_2[16];
+-		gpx_base = gpio_base2 + 0xC00;
+-		for (i = 0; i < 4; i++, chip++, gpx_base += 0x20)
+-			chip->base = gpx_base;
+-
+-		chip = exynos4_gpios_2;
+-		nr_chips = ARRAY_SIZE(exynos4_gpios_2);
+-
+-		for (i = 0; i < nr_chips; i++, chip++) {
+-			if (!chip->config) {
+-				chip->config = &exynos_gpio_cfg;
+-				chip->group = group++;
+-			}
+-			exynos_gpiolib_attach_ofnode(chip,
+-					EXYNOS4_PA_GPIO2, i * 0x20);
+-		}
+-		samsung_gpiolib_add_4bit_chips(exynos4_gpios_2,
+-					       nr_chips, gpio_base2);
+-
+-		/* gpio part3 */
+-		gpio_base3 = ioremap(EXYNOS4_PA_GPIO3, SZ_256);
+-		if (gpio_base3 == NULL) {
+-			pr_err("unable to ioremap for gpio_base3\n");
+-			goto err_ioremap3;
+-		}
+-
+-		chip = exynos4_gpios_3;
+-		nr_chips = ARRAY_SIZE(exynos4_gpios_3);
+-
+-		for (i = 0; i < nr_chips; i++, chip++) {
+-			if (!chip->config) {
+-				chip->config = &exynos_gpio_cfg;
+-				chip->group = group++;
+-			}
+-			exynos_gpiolib_attach_ofnode(chip,
+-					EXYNOS4_PA_GPIO3, i * 0x20);
+-		}
+-		samsung_gpiolib_add_4bit_chips(exynos4_gpios_3,
+-					       nr_chips, gpio_base3);
+-
+-#if defined(CONFIG_CPU_EXYNOS4210) && defined(CONFIG_S5P_GPIO_INT)
+-		s5p_register_gpioint_bank(IRQ_GPIO_XA, 0, IRQ_GPIO1_NR_GROUPS);
+-		s5p_register_gpioint_bank(IRQ_GPIO_XB, IRQ_GPIO1_NR_GROUPS, IRQ_GPIO2_NR_GROUPS);
+-#endif
+-
+-#endif	/* CONFIG_CPU_EXYNOS4210 */
++		exynos4_gpiolib_init();
+ 	} else if (soc_is_exynos5250()) {
+-#ifdef CONFIG_SOC_EXYNOS5250
+-		void __iomem *gpx_base;
+-
+-		/* gpio part1 */
+-		gpio_base1 = ioremap(EXYNOS5_PA_GPIO1, SZ_4K);
+-		if (gpio_base1 == NULL) {
+-			pr_err("unable to ioremap for gpio_base1\n");
+-			goto err_ioremap1;
+-		}
+-
+-		/* need to set base address for gpx */
+-		chip = &exynos5_gpios_1[20];
+-		gpx_base = gpio_base1 + 0xC00;
+-		for (i = 0; i < 4; i++, chip++, gpx_base += 0x20)
+-			chip->base = gpx_base;
+-
+-		chip = exynos5_gpios_1;
+-		nr_chips = ARRAY_SIZE(exynos5_gpios_1);
+-
+-		for (i = 0; i < nr_chips; i++, chip++) {
+-			if (!chip->config) {
+-				chip->config = &exynos_gpio_cfg;
+-				chip->group = group++;
+-			}
+-			exynos_gpiolib_attach_ofnode(chip,
+-					EXYNOS5_PA_GPIO1, i * 0x20);
+-		}
+-		samsung_gpiolib_add_4bit_chips(exynos5_gpios_1,
+-					       nr_chips, gpio_base1);
+-
+-		/* gpio part2 */
+-		gpio_base2 = ioremap(EXYNOS5_PA_GPIO2, SZ_4K);
+-		if (gpio_base2 == NULL) {
+-			pr_err("unable to ioremap for gpio_base2\n");
+-			goto err_ioremap2;
+-		}
+-
+-		chip = exynos5_gpios_2;
+-		nr_chips = ARRAY_SIZE(exynos5_gpios_2);
+-
+-		for (i = 0; i < nr_chips; i++, chip++) {
+-			if (!chip->config) {
+-				chip->config = &exynos_gpio_cfg;
+-				chip->group = group++;
+-			}
+-			exynos_gpiolib_attach_ofnode(chip,
+-					EXYNOS5_PA_GPIO2, i * 0x20);
+-		}
+-		samsung_gpiolib_add_4bit_chips(exynos5_gpios_2,
+-					       nr_chips, gpio_base2);
+-
+-		/* gpio part3 */
+-		gpio_base3 = ioremap(EXYNOS5_PA_GPIO3, SZ_4K);
+-		if (gpio_base3 == NULL) {
+-			pr_err("unable to ioremap for gpio_base3\n");
+-			goto err_ioremap3;
+-		}
+-
+-		/* need to set base address for gpv */
+-		exynos5_gpios_3[0].base = gpio_base3;
+-		exynos5_gpios_3[1].base = gpio_base3 + 0x20;
+-		exynos5_gpios_3[2].base = gpio_base3 + 0x60;
+-		exynos5_gpios_3[3].base = gpio_base3 + 0x80;
+-		exynos5_gpios_3[4].base = gpio_base3 + 0xC0;
+-
+-		chip = exynos5_gpios_3;
+-		nr_chips = ARRAY_SIZE(exynos5_gpios_3);
+-
+-		for (i = 0; i < nr_chips; i++, chip++) {
+-			if (!chip->config) {
+-				chip->config = &exynos_gpio_cfg;
+-				chip->group = group++;
+-			}
+-			exynos_gpiolib_attach_ofnode(chip,
+-					EXYNOS5_PA_GPIO3, i * 0x20);
+-		}
+-		samsung_gpiolib_add_4bit_chips(exynos5_gpios_3,
+-					       nr_chips, gpio_base3);
+-
+-		/* gpio part4 */
+-		gpio_base4 = ioremap(EXYNOS5_PA_GPIO4, SZ_4K);
+-		if (gpio_base4 == NULL) {
+-			pr_err("unable to ioremap for gpio_base4\n");
+-			goto err_ioremap4;
+-		}
+-
+-		chip = exynos5_gpios_4;
+-		nr_chips = ARRAY_SIZE(exynos5_gpios_4);
+-
+-		for (i = 0; i < nr_chips; i++, chip++) {
+-			if (!chip->config) {
+-				chip->config = &exynos_gpio_cfg;
+-				chip->group = group++;
+-			}
+-			exynos_gpiolib_attach_ofnode(chip,
+-					EXYNOS5_PA_GPIO4, i * 0x20);
+-		}
+-		samsung_gpiolib_add_4bit_chips(exynos5_gpios_4,
+-					       nr_chips, gpio_base4);
+-#endif	/* CONFIG_SOC_EXYNOS5250 */
++		exynos5_gpiolib_init();
+ 	} else {
+ 		WARN(1, "Unknown SoC in gpio-samsung, no GPIOs added\n");
+ 		return -ENODEV;
+ 	}
+ 
+ 	return 0;
+-
+-err_ioremap4:
+-	iounmap(gpio_base3);
+-err_ioremap3:
+-	iounmap(gpio_base2);
+-err_ioremap2:
+-	iounmap(gpio_base1);
+-err_ioremap1:
+-	return -ENOMEM;
+ }
+ core_initcall(samsung_gpiolib_init);
+ 
+-- 
+1.7.9.2.359.gebfc2
+
