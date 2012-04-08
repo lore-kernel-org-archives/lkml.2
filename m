@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab2DHPig (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 11:38:36 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:48417 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754743Ab2DHPif (ORCPT
+	id S1755881Ab2DHQHG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 12:07:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50604 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754296Ab2DHQHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 11:38:35 -0400
-From: Mark Asselstine <mark.asselstine@windriver.com>
-To: <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>, <asselsm@gmail.com>
-Subject: [PATCH v2 3/3] trace-cmd: setting plugin to 'nop' clears data before it's recorded
-Date: Sun, 8 Apr 2012 11:38:45 -0400
-Message-ID: <1333899525-6436-1-git-send-email-mark.asselstine@windriver.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1333715093.23090.2.camel@pippen.local.home>
-References: <1333715093.23090.2.camel@pippen.local.home>
+	Sun, 8 Apr 2012 12:07:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [128.224.146.23]
+In-Reply-To: <20120408155709.1c817f1f@pyramind.ukuu.org.uk>
+References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
+ <CA+55aFy_TOEE-8RNmNKVz6xZ7s+f02jCVcDbA=MJY1iih=AJpg@mail.gmail.com>
+ <CAB=NE6Xt3yeCvW-t7mbEWoYr04Rg1uvObAMTatAdpHtgsdZvYA@mail.gmail.com>
+ <20120407024941.GB11295@thunk.org> <CAB=NE6Wn4w_rmm-9dTjeLCmFBwFUv_R+o05=UW1SODBN2hFH0w@mail.gmail.com>
+ <20120407211512.GC11295@thunk.org> <CAB=NE6UJsnMx=p3Rr+iCVjgMk3YgxQiyXf_CbF0UKh93FrBezg@mail.gmail.com>
+ <20120408155709.1c817f1f@pyramind.ukuu.org.uk>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Sun, 8 Apr 2012 09:06:42 -0700
+X-Google-Sender-Auth: 21hqETxXceceRFzkCwxYQfbcI9E
+Message-ID: <CAB=NE6X1NFLn6UfPHyNP9_uFTCdYUbtoTP0ds+0YT3_oFCZTSQ@mail.gmail.com>
+Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        Keith Packard <keithp@keithp.com>, Ralf Baechle <ralf@linux-mips.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e09a5db1a929ab668c273b87c4f0a32b81e1c21a
-[trace-cmd: Add trace-cmd record --date option]
+On Sun, Apr 8, 2012 at 7:57 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> >From the work with SFLC on ath5k a while ago we learned that dual
+>> licensing BSD/GPL is legally equivalent to licensing under the BSD
+>> license, dual licensing should be used when licensing a project / file
+>> under incompatible licenses. Dual licensing BSD/GPL can also confuse
+>
+> Dual licensing avoids some confusions, it also removes the worry about
+> possible unanticipated incompatibility. Right now if a court somewhere
+> says "Hey you know what - BSD and GPL are not compatible because XYZ" the
+> fact it is dual licensed avoids problems.
 
-moved the call to disable_all() in trace_record() from after record_data()
-to before it. Unfortunately disable_all() sets 'nop' in 'current_tracer'
-which has the side affect of clearing 'trace', thus all the latency tracer
-reports are empty/useless. Here we make disable_all() optionally call
-set_plugin() thus, where we need to, we can delay the disabling of the tracer
-until we have had a chance to capture 'trace'. We have added this delayed
-behavior to trace_record() to fix the latency reports, for all other calls to
-disable_all() we continue to have set_plugin() called.
+Interesting, I had not considered that case, is this really likely to
+happen now, I mean at least with the list of licenses listed as
+GPL-Compatible on the FSF site?
 
-Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
----
-[v2] * remove redundant conditional usage
-     * add conditional param for disable_all() instead of adding new func
-     * used int and not gboolean to avoid gtk includes where not needed
+>> Well, I am arguing that "Dual BSD/GPL" is a stupid practice that has
+>> plagued the community and only has brought confusion. Its not needed
+>> and if one wants to share with the BSD community one should simply use
+>> the BSD license.
+>
+> Which then creates the risk question. This *has* happened before although
+> not with a court. Long ago the FSF used to maintain the fiction that
+> advertising clause BSD was GPL compatible. When the lawyers looked at it
+> in detail they decided this was not the case and also came up with some
+> fun abuses to demonstrate the point.
 
- trace-record.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+Thanks for the background, this provides a good amount of historical
+background as to *why* people started doing Dual BSD/GPL and it makes
+perfect sense. I do wonder if after all the review and history if we
+could end up in a situation where certain listed GPL-Compatible
+licenses could be found as incompatible...
 
-diff --git a/trace-record.c b/trace-record.c
-index 1c56fa9..95d4a2a 100644
---- a/trace-record.c
-+++ b/trace-record.c
-@@ -897,11 +897,13 @@ static void disable_tracing(void)
- 	write_tracing_on(0);
- }
- 
--static void disable_all(void)
-+static void disable_all(int disable_tracer)
- {
- 	disable_tracing();
- 
--	set_plugin("nop");
-+	if (disable_tracer)
-+		set_plugin("nop");
-+
- 	reset_events();
- 
- 	/* Force close and reset of ftrace pid file */
-@@ -1573,7 +1575,7 @@ static void set_funcs(void)
- 	/* make sure we are filtering functions */
- 	if (func_stack) {
- 		if (!functions_filtered()) {
--			disable_all();
-+			disable_all(1);
- 			die("Function stack trace set, but functions not filtered");
- 		}
- 		save_option(FUNC_STACK_TRACE);
-@@ -1938,7 +1940,7 @@ void trace_record (int argc, char **argv)
- 				break;
- 			}
- 		}
--		disable_all();
-+		disable_all(1);
- 		set_buffer_size();
- 		exit(0);
- 	} else
-@@ -2147,7 +2149,7 @@ void trace_record (int argc, char **argv)
- 
- 	if (!extract) {
- 		fset = set_ftrace(!disable);
--		disable_all();
-+		disable_all(1);
- 
- 		/* Record records the date first */
- 		if (record && date)
-@@ -2227,7 +2229,7 @@ void trace_record (int argc, char **argv)
- 	}
- 
- 	if (!keep)
--		disable_all();
-+		disable_all(0);
- 
- 	printf("Kernel buffer statistics:\n"
- 	       "  Note: \"entries\" are the entries left in the kernel ring buffer and are not\n"
-@@ -2249,6 +2251,8 @@ void trace_record (int argc, char **argv)
- 	if (keep)
- 		exit(0);
- 
-+	set_plugin("nop");
-+
- 	/* If tracing_on was enabled before we started, set it on now */
- 	if (tracing_on_init_val)
- 		write_tracing_on(tracing_on_init_val);
--- 
-1.7.5.4
+With historical context I now get why Dual BSD/GPL was used but even
+in perspective to what extent do we want to remain speculative over
+the list the FSF provides on GPL-Compatibility for the Linux kernel?
+Are there, say, at least a few GPL-Compatible licenses which we are
+comfortable with in assuming GPL-Compatibility moving forward?
 
+>> license. This is just for a file though.. but are we to keep extending
+>> this list for every new module license that is GPL-Compatible? That
+>> seems rather cumbersome.
+>
+> It only really matters if you are trying to be clear about dual use code
+> - for example some of the wireless code shared with BSD and the DRI code
+> where it's intentionally available in both universes. At the time some
+> folks wanted it to be clear their code was dual licensed and didn't want
+> to tag it "GPLv2". That may well in truth be more about politics than law
+> but it's hardly unreasonable to respect authors requests when they can
+> easily be handled.
+>
+>> As for run time... I *personally* actually believe all Linux kernel
+>> modules are GPL at runtime :D I'm not the one who argues that
+>
+> So just mark your modules "GPLv2"
+
+It is what I also concluded on another thread with Ted.
+
+> Feel free to change all those you are the sole owner for, but for
+> anything else go via the legal team of the relevant company and/or get
+> the owner to provide the change with appropriate sign off.
+
+This makes sense given the historical context under which the Dual
+tags were introduced, even though today they may seem unnecessary.
+
+  Luis
