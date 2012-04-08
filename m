@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab2DHXuG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 19:50:06 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:60030 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756347Ab2DHXuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 19:50:05 -0400
-Date: Mon, 9 Apr 2012 07:49:51 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120408234951.GA15993@gondor.apana.org.au>
-References: <20120408171323.GA16012@redhat.com>
+	id S1756466Ab2DHXx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 19:53:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44274 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753774Ab2DHXxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 19:53:55 -0400
+Date: Mon, 9 Apr 2012 01:53:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/5] hid: Extending the device-driver matching mechanism
+In-Reply-To: <20120403105554.GA14201@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1204090152140.24006@pobox.suse.cz>
+References: <1333436730-13008-1-git-send-email-rydberg@euromail.se> <CAN+gG=EvmTFKmKGaC6T-RKYhUy8U0NqWxqz-k_Gr_w5_rm57Bg@mail.gmail.com> <20120403105554.GA14201@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120408171323.GA16012@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 08, 2012 at 08:13:25PM +0300, Michael S. Tsirkin wrote:
-> commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5
-> tun: orphan an skb on tx
-> Fixed a configuration where skbs get queued
-> at the tun device forever, blocking senders.
-> 
-> However this fix isn't waterproof:
-> userspace can control whether the interface
-> is stopped, and if it is, packets
-> get queued in the qdisc, again potentially forever.
-> 
-> Complete the fix by setting a private flag and orphaning
-> at the qdisc level.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+On Tue, 3 Apr 2012, Henrik Rydberg wrote:
 
-1) Doesn't this break local UDP push-back?
-2) Isn't the stall a bug in the backend and isn't this just
-papering over that?
+> The simplest solution is probably to defer parsing for drivers known
+> from the device list. 
 
-Cheers,
+That would unfortunately still break dynamic rebinding of the drivers via 
+sysfs bind/unbind facility (which has apparently been already broken wrt. 
+report_fixup() callback and I am looking into it right now, but that's a 
+different story).
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Jiri Kosina
+SUSE Labs
