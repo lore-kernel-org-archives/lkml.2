@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab2DHIn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 04:43:59 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61633 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab2DHInu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 04:43:50 -0400
+	id S1755525Ab2DHIuY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 04:50:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16625 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755388Ab2DHIuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 04:50:22 -0400
+X-IronPort-AV: E=Sophos;i="4.75,389,1330876800"; 
+   d="scan'208";a="4704889"
+Message-ID: <4F81510B.60406@cn.fujitsu.com>
+Date: Sun, 08 Apr 2012 16:49:15 +0800
+From: Liu Bo <liubo2009@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-In-Reply-To: <1332350313-2501-1-git-send-email-ccross@android.com>
-References: <1332350313-2501-1-git-send-email-ccross@android.com>
-Date: Sun, 8 Apr 2012 10:43:48 +0200
-X-Google-Sender-Auth: 6dTVUM4p57wDSzDvoSX4RJnoW5k
-Message-ID: <CAMuHMdXM9bcmNdet4XAvtWuwPAr9KZS_pbm1TzKCM8UW2hcZmw@mail.gmail.com>
-Subject: Re: [PATCH] android: make persistent_ram based drivers depend on HAVE_MEMBLOCK
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        gregkh@linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Daniel J Blueman <daniel@quora.org>
+CC: Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        Linux BTRFS <linux-btrfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [3.4-rc1] attempt to access beyond end of device and livelock
+References: <CAMVG2ss5WzwhgPunD5greRii1HFuEYt1TMQwxgUNitrpHtguVA@mail.gmail.com> <CAMVG2st4VPbujSY1hH+VjbR1gxCR0ZEGznrObYMWnpgo++Ynug@mail.gmail.com>
+In-Reply-To: <CAMVG2st4VPbujSY1hH+VjbR1gxCR0ZEGznrObYMWnpgo++Ynug@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/08 16:49:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/08 16:49:53,
+	Serialize complete at 2012/04/08 16:49:53
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 21, 2012 at 18:18, Colin Cross <ccross@android.com> wrote:
-> m68k doesn't have memblock_reserve, which causes a build failure
-> with allmodconfig.  Make PERSISTENT_RAM and RAM_CONSOLE depend on
-> HAVE_MEMBLOCK.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Signed-off-by: Colin Cross <ccross@android.com>
+On 04/06/2012 07:36 PM, Daniel J Blueman wrote:
+> Hi Josef, Chris,
+> 
+> When testing BTRFS with RAID 0 metadata on linux-3.4-rc1, we see
+> discard ranges exceeding the end of the block device [1], potentially
+> causing dataloss; when this occurs, filesystem writeback becomes
+> catatonic due to continual resubmission.
+> 
+> Simply mounting with discard a raid0 metadata filesystem and copying
+> some data in [2] provokes the issue.
+> 
+> Thanks,
+>  Daniel
+> 
+> --- [1]
+> 
+> attempt to access beyond end of device
+> ram0: rw=129, want=8452072, limit=4096000
+> ...
+> 
+> --- [2]
+> 
+> modprobe brd rd_size=2048000 (or boot with ramdisk_size=2048000)
+> mkfs.btrfs -m raid0 /dev/ram0 /dev/ram1
+> mount /dev/ram0 /mnt -o discard
+> cd /mnt && tar -xvzf linux.tar.gz
+> <access beyond end of device and livelock>
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Thanks for the report, this bug shows we've miscalculated the length of discard extents.
 
-> ---
->  drivers/staging/android/Kconfig |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> I can't test on m68k, but this disables the options if I remove
-> HAVE_MEMBLOCK from arm.
->
-> diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-> index 08a3b11..eb1dee2 100644
-> --- a/drivers/staging/android/Kconfig
-> +++ b/drivers/staging/android/Kconfig
-> @@ -27,13 +27,14 @@ config ANDROID_LOGGER
->
->  config ANDROID_PERSISTENT_RAM
->        bool
-> +       depends on HAVE_MEMBLOCK
->        select REED_SOLOMON
->        select REED_SOLOMON_ENC8
->        select REED_SOLOMON_DEC8
->
->  config ANDROID_RAM_CONSOLE
->        bool "Android RAM buffer console"
-> -       depends on !S390 && !UML
-> +       depends on !S390 && !UML && HAVE_MEMBLOCK
->        select ANDROID_PERSISTENT_RAM
->        default n
+I'll send a patch for this soon.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+thanks,
+-- 
+liubo 
