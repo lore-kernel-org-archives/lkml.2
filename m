@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab2DHFNK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 01:13:10 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51537 "EHLO
+	id S1755452Ab2DHFNI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 01:13:08 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:51528 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab2DHFM1 (ORCPT
+	with ESMTP id S1752977Ab2DHFM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 01:12:27 -0400
+	Sun, 8 Apr 2012 01:12:26 -0400
 From: "\"Eric W. Beiderman" <ebiederm@xmission.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-fsdevel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
@@ -16,29 +16,31 @@ Cc: <linux-fsdevel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
         Al Viro <viro@ZenIV.linux.org.uk>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Sat,  7 Apr 2012 22:15:23 -0700
-Message-Id: <1333862139-31737-27-git-send-email-ebiederm@xmission.com>
+Date: Sat,  7 Apr 2012 22:15:21 -0700
+Message-Id: <1333862139-31737-25-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <m11unyn70b.fsf@fess.ebiederm.org>
 References: <m11unyn70b.fsf@fess.ebiederm.org>
 X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX188g3Jci5h2LZjgJJQKGAXEwHov6g3Lees=
+X-XM-AID: U2FsdGVkX1+cH0JUEHPSw3PtGd5KSLhf8ne6Z7fKcRE=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: *  1.1 FH_FROMEML_NOTLD E-mail address doesn't have TLD (.com, etc.)
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0538]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;<linux-kernel@vger.kernel.org>
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;<linux-kernel@vger.kernel.org>
 X-Spam-Relay-Country: **
-Subject: [PATCH 27/43] userns: Use uid_eq gid_eq helpers when comparing kuids and kgids in the vfs
+Subject: [PATCH 25/43] userns: Store uid and gid types in vfs structures with kuid_t and kgid_t types
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
@@ -48,172 +50,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
+The conversion of all of the users is not done yet there are too many to change
+in one go and leave the code reviewable. For now I change just the header and
+a few trivial users and rely on CONFIG_UIDGID_STRICT_TYPE_CHECKS not being set
+to ensure that the code will still compile during the transition.
+
+Helper functions i_uid_read, i_uid_write, i_gid_read, i_gid_write are added
+so that in most cases filesystems can avoid the complexities of multiple user
+namespaces and can concentrate on moving their raw numeric values into and
+out of the vfs data structures.
+
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/attr.c                |    8 ++++----
- fs/exec.c                |   10 +++++-----
- fs/fcntl.c               |    6 +++---
- fs/ioprio.c              |    4 ++--
- fs/locks.c               |    2 +-
- fs/namei.c               |    8 ++++----
- include/linux/quotaops.h |    4 ++--
- 7 files changed, 21 insertions(+), 21 deletions(-)
+ fs/inode.c         |    6 +++---
+ include/linux/fs.h |   36 +++++++++++++++++++++++++++++++-----
+ 2 files changed, 34 insertions(+), 8 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index 73f69a6..2f094c6 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -47,14 +47,14 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
- 
- 	/* Make sure a caller can chown. */
- 	if ((ia_valid & ATTR_UID) &&
--	    (current_fsuid() != inode->i_uid ||
--	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
-+	    (!uid_eq(current_fsuid(), inode->i_uid) ||
-+	     !uid_eq(attr->ia_uid, inode->i_uid)) && !capable(CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure caller can chgrp. */
- 	if ((ia_valid & ATTR_GID) &&
--	    (current_fsuid() != inode->i_uid ||
--	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
-+	    (!uid_eq(current_fsuid(), inode->i_uid) ||
-+	    (!in_group_p(attr->ia_gid) && gid_eq(attr->ia_gid, inode->i_gid))) &&
- 	    !capable(CAP_CHOWN))
- 		return -EPERM;
- 
-diff --git a/fs/exec.c b/fs/exec.c
-index 9a1d9f0..00ae2ef 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1139,7 +1139,7 @@ void setup_new_exec(struct linux_binprm * bprm)
- 	/* This is the point of no return */
- 	current->sas_ss_sp = current->sas_ss_size = 0;
- 
--	if (current_euid() == current_uid() && current_egid() == current_gid())
-+	if (uid_eq(current_euid(), current_uid()) && gid_eq(current_egid(), current_gid()))
- 		set_dumpable(current->mm, 1);
- 	else
- 		set_dumpable(current->mm, suid_dumpable);
-@@ -1153,8 +1153,8 @@ void setup_new_exec(struct linux_binprm * bprm)
- 	current->mm->task_size = TASK_SIZE;
- 
- 	/* install the new credentials */
--	if (bprm->cred->uid != current_euid() ||
--	    bprm->cred->gid != current_egid()) {
-+	if (!uid_eq(bprm->cred->uid, current_euid()) ||
-+	    !gid_eq(bprm->cred->gid, current_egid())) {
- 		current->pdeath_signal = 0;
- 	} else {
- 		would_dump(bprm, bprm->file);
-@@ -2120,7 +2120,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 	if (__get_dumpable(cprm.mm_flags) == 2) {
- 		/* Setuid core dump mode */
- 		flag = O_EXCL;		/* Stop rewrite attacks */
--		cred->fsuid = 0;	/* Dump root private */
-+		cred->fsuid = GLOBAL_ROOT_UID;	/* Dump root private */
- 	}
- 
- 	retval = coredump_wait(exit_code, &core_state);
-@@ -2221,7 +2221,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		 * Dont allow local users get cute and trick others to coredump
- 		 * into their pre-created files.
- 		 */
--		if (inode->i_uid != current_fsuid())
-+		if (!uid_eq(inode->i_uid, current_fsuid()))
- 			goto close_fail;
- 		if (!cprm.file->f_op || !cprm.file->f_op->write)
- 			goto close_fail;
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 75e7c1f..d078b75 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -532,9 +532,9 @@ static inline int sigio_perm(struct task_struct *p,
- 
- 	rcu_read_lock();
- 	cred = __task_cred(p);
--	ret = ((fown->euid == 0 ||
--		fown->euid == cred->suid || fown->euid == cred->uid ||
--		fown->uid  == cred->suid || fown->uid  == cred->uid) &&
-+	ret = ((uid_eq(fown->euid, GLOBAL_ROOT_UID) ||
-+		uid_eq(fown->euid, cred->suid) || uid_eq(fown->euid, cred->uid) ||
-+		uid_eq(fown->uid,  cred->suid) || uid_eq(fown->uid,  cred->uid)) &&
- 	       !security_file_send_sigiotask(p, fown, sig));
- 	rcu_read_unlock();
- 	return ret;
-diff --git a/fs/ioprio.c b/fs/ioprio.c
-index 2072e41..5e6dbe89 100644
---- a/fs/ioprio.c
-+++ b/fs/ioprio.c
-@@ -37,8 +37,8 @@ int set_task_ioprio(struct task_struct *task, int ioprio)
- 
- 	rcu_read_lock();
- 	tcred = __task_cred(task);
--	if (tcred->uid != cred->euid &&
--	    tcred->uid != cred->uid && !capable(CAP_SYS_NICE)) {
-+	if (!uid_eq(tcred->uid, cred->euid) &&
-+	    !uid_eq(tcred->uid, cred->uid) && !capable(CAP_SYS_NICE)) {
- 		rcu_read_unlock();
- 		return -EPERM;
- 	}
-diff --git a/fs/locks.c b/fs/locks.c
-index 637694b..3e946cd 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1445,7 +1445,7 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
- 	struct inode *inode = dentry->d_inode;
- 	int error;
- 
--	if ((current_fsuid() != inode->i_uid) && !capable(CAP_LEASE))
-+	if ((!uid_eq(current_fsuid(), inode->i_uid)) && !capable(CAP_LEASE))
- 		return -EACCES;
- 	if (!S_ISREG(inode->i_mode))
- 		return -EINVAL;
-diff --git a/fs/namei.c b/fs/namei.c
-index 941c436..86512b4 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -228,7 +228,7 @@ static int acl_permission_check(struct inode *inode, int mask)
- {
- 	unsigned int mode = inode->i_mode;
- 
--	if (likely(current_fsuid() == inode->i_uid))
-+	if (likely(uid_eq(current_fsuid(), inode->i_uid)))
- 		mode >>= 6;
- 	else {
- 		if (IS_POSIXACL(inode) && (mode & S_IRWXG)) {
-@@ -1956,13 +1956,13 @@ static int user_path_parent(int dfd, const char __user *path,
+diff --git a/fs/inode.c b/fs/inode.c
+index f0c4ace..deb72f6 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -135,8 +135,8 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
+ 	inode->i_fop = &empty_fops;
+ 	inode->__i_nlink = 1;
+ 	inode->i_opflags = 0;
+-	inode->i_uid = 0;
+-	inode->i_gid = 0;
++	i_uid_write(inode, 0);
++	i_gid_write(inode, 0);
+ 	atomic_set(&inode->i_writecount, 0);
+ 	inode->i_size = 0;
+ 	inode->i_blocks = 0;
+@@ -1732,7 +1732,7 @@ EXPORT_SYMBOL(inode_init_owner);
   */
- static inline int check_sticky(struct inode *dir, struct inode *inode)
+ bool inode_owner_or_capable(const struct inode *inode)
  {
--	uid_t fsuid = current_fsuid();
-+	kuid_t fsuid = current_fsuid();
+-	if (current_fsuid() == inode->i_uid)
++	if (uid_eq(current_fsuid(), inode->i_uid))
+ 		return true;
+ 	if (inode_capable(inode, CAP_FOWNER))
+ 		return true;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index a6c5efb..797eb26 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -402,6 +402,7 @@ struct inodes_stat_t {
+ #include <linux/atomic.h>
+ #include <linux/shrinker.h>
+ #include <linux/migrate_mode.h>
++#include <linux/uidgid.h>
  
- 	if (!(dir->i_mode & S_ISVTX))
- 		return 0;
--	if (inode->i_uid == fsuid)
-+	if (uid_eq(inode->i_uid, fsuid))
- 		return 0;
--	if (dir->i_uid == fsuid)
-+	if (uid_eq(dir->i_uid, fsuid))
- 		return 0;
- 	return !inode_capable(inode, CAP_FOWNER);
+ #include <asm/byteorder.h>
+ 
+@@ -469,8 +470,8 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+ struct iattr {
+ 	unsigned int	ia_valid;
+ 	umode_t		ia_mode;
+-	uid_t		ia_uid;
+-	gid_t		ia_gid;
++	kuid_t		ia_uid;
++	kgid_t		ia_gid;
+ 	loff_t		ia_size;
+ 	struct timespec	ia_atime;
+ 	struct timespec	ia_mtime;
+@@ -761,8 +762,8 @@ struct posix_acl;
+ struct inode {
+ 	umode_t			i_mode;
+ 	unsigned short		i_opflags;
+-	uid_t			i_uid;
+-	gid_t			i_gid;
++	kuid_t			i_uid;
++	kgid_t			i_gid;
+ 	unsigned int		i_flags;
+ 
+ #ifdef CONFIG_FS_POSIX_ACL
+@@ -927,6 +928,31 @@ static inline void i_size_write(struct inode *inode, loff_t i_size)
+ #endif
  }
-diff --git a/include/linux/quotaops.h b/include/linux/quotaops.h
-index d93f95e..17b9773 100644
---- a/include/linux/quotaops.h
-+++ b/include/linux/quotaops.h
-@@ -22,8 +22,8 @@ static inline struct quota_info *sb_dqopt(struct super_block *sb)
- static inline bool is_quota_modification(struct inode *inode, struct iattr *ia)
+ 
++/* Helper functions so that in most cases filesystems will
++ * not need to deal directly with kuid_t and kgid_t and can
++ * instead deal with the raw numeric values that are stored
++ * in the filesystem.
++ */
++static inline uid_t i_uid_read(const struct inode *inode)
++{
++	return from_kuid(&init_user_ns, inode->i_uid);
++}
++
++static inline gid_t i_gid_read(const struct inode *inode)
++{
++	return from_kgid(&init_user_ns, inode->i_gid);
++}
++
++static inline void i_uid_write(struct inode *inode, uid_t uid)
++{
++	inode->i_uid = make_kuid(&init_user_ns, uid);
++}
++
++static inline void i_gid_write(struct inode *inode, gid_t gid)
++{
++	inode->i_gid = make_kgid(&init_user_ns, gid);
++}
++
+ static inline unsigned iminor(const struct inode *inode)
  {
- 	return (ia->ia_valid & ATTR_SIZE && ia->ia_size != inode->i_size) ||
--		(ia->ia_valid & ATTR_UID && ia->ia_uid != inode->i_uid) ||
--		(ia->ia_valid & ATTR_GID && ia->ia_gid != inode->i_gid);
-+		(ia->ia_valid & ATTR_UID && !uid_eq(ia->ia_uid, inode->i_uid)) ||
-+		(ia->ia_valid & ATTR_GID && !gid_eq(ia->ia_gid, inode->i_gid));
- }
+ 	return MINOR(inode->i_rdev);
+@@ -943,7 +969,7 @@ struct fown_struct {
+ 	rwlock_t lock;          /* protects pid, uid, euid fields */
+ 	struct pid *pid;	/* pid or -pgrp where SIGIO should be sent */
+ 	enum pid_type pid_type;	/* Kind of process group SIGIO should be sent to */
+-	uid_t uid, euid;	/* uid/euid of process setting the owner */
++	kuid_t uid, euid;	/* uid/euid of process setting the owner */
+ 	int signum;		/* posix.1b rt signal to be delivered on IO */
+ };
  
- #if defined(CONFIG_QUOTA)
 -- 
 1.7.2.5
 
