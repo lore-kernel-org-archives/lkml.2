@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2DHFNC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 01:13:02 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51533 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2DHFM0 (ORCPT
+	id S1755185Ab2DHFM7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 01:12:59 -0400
+Received: from out08.mta.xmission.com ([166.70.13.238]:56947 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752831Ab2DHFMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 01:12:26 -0400
+	Sun, 8 Apr 2012 01:12:24 -0400
 From: "\"Eric W. Beiderman" <ebiederm@xmission.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-fsdevel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
@@ -16,28 +16,31 @@ Cc: <linux-fsdevel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
         Al Viro <viro@ZenIV.linux.org.uk>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Sat,  7 Apr 2012 22:15:25 -0700
-Message-Id: <1333862139-31737-29-git-send-email-ebiederm@xmission.com>
+Date: Sat,  7 Apr 2012 22:15:12 -0700
+Message-Id: <1333862139-31737-16-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <m11unyn70b.fsf@fess.ebiederm.org>
 References: <m11unyn70b.fsf@fess.ebiederm.org>
 X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18I++vJtlBV74mKddxwxj+f1985ylM/wCI=
+X-XM-AID: U2FsdGVkX1/BzPJ76XsMqWgpMFMfJaeC6IqFyvxylIY=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: *  1.1 FH_FROMEML_NOTLD E-mail address doesn't have TLD (.com, etc.)
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2102]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 
-X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: **
-Subject: [PATCH 29/43] userns: Convert stat to return values mapped from kuids and kgids
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;<linux-kernel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 16/43] userns: Simplify the user_namespace by making userns->creator a kuid.
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
@@ -47,160 +50,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-- Store uids and gids with kuid_t and kgid_t in struct kstat
-- Convert uid and gids to userspace usable values with
-  from_kuid and from_kgid
+- Transform userns->creator from a user_struct reference to a simple
+  kuid_t, kgid_t pair.
+
+  In cap_capable this allows the check to see if we are the creator of
+  a namespace to become the classic suser style euid permission check.
+
+  This allows us to remove the need for a struct cred in the mapping
+  functions and still be able to dispaly the user namespace creators
+  uid and gid as 0.
+
+- Remove the now unnecessary delayed_work in free_user_ns.
+
+  All that is left for free_user_ns to do is to call kmem_cache_free
+  and put_user_ns.  Those functions can be called in any context
+  so call them directly from free_user_ns removing the need for delayed work.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/arm/kernel/sys_oabi-compat.c |    4 ++--
- arch/parisc/hpux/fs.c             |    4 ++--
- arch/s390/kernel/compat_linux.c   |    4 ++--
- arch/sparc/kernel/sys_sparc32.c   |    4 ++--
- arch/x86/ia32/sys_ia32.c          |    4 ++--
- fs/compat.c                       |    4 ++--
- fs/stat.c                         |    8 ++++----
- include/linux/stat.h              |    5 +++--
- 8 files changed, 19 insertions(+), 18 deletions(-)
+ include/linux/user_namespace.h |    4 ++--
+ kernel/user.c                  |    7 ++++---
+ kernel/user_namespace.c        |   39 ++++++++++++++++++---------------------
+ security/commoncap.c           |    5 +++--
+ 4 files changed, 27 insertions(+), 28 deletions(-)
 
-diff --git a/arch/arm/kernel/sys_oabi-compat.c b/arch/arm/kernel/sys_oabi-compat.c
-index af0aaeb..3e94811 100644
---- a/arch/arm/kernel/sys_oabi-compat.c
-+++ b/arch/arm/kernel/sys_oabi-compat.c
-@@ -124,8 +124,8 @@ static long cp_oldabi_stat64(struct kstat *stat,
- 	tmp.__st_ino = stat->ino;
- 	tmp.st_mode = stat->mode;
- 	tmp.st_nlink = stat->nlink;
--	tmp.st_uid = stat->uid;
--	tmp.st_gid = stat->gid;
-+	tmp.st_uid = from_kuid_munged(current_user_ns(), stat->uid);
-+	tmp.st_gid = from_kgid_munged(current_user_ns(), stat->gid);
- 	tmp.st_rdev = huge_encode_dev(stat->rdev);
- 	tmp.st_size = stat->size;
- 	tmp.st_blocks = stat->blocks;
-diff --git a/arch/parisc/hpux/fs.c b/arch/parisc/hpux/fs.c
-index 0dc8543..c71eb6c 100644
---- a/arch/parisc/hpux/fs.c
-+++ b/arch/parisc/hpux/fs.c
-@@ -159,8 +159,8 @@ static int cp_hpux_stat(struct kstat *stat, struct hpux_stat64 __user *statbuf)
- 	tmp.st_ino = stat->ino;
- 	tmp.st_mode = stat->mode;
- 	tmp.st_nlink = stat->nlink;
--	tmp.st_uid = stat->uid;
--	tmp.st_gid = stat->gid;
-+	tmp.st_uid = from_kuid_munged(current_user_ns(), stat->uid);
-+	tmp.st_gid = from_kgid_munged(current_user_ns(), stat->gid);
- 	tmp.st_rdev = new_encode_dev(stat->rdev);
- 	tmp.st_size = stat->size;
- 	tmp.st_atime = stat->atime.tv_sec;
-diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
-index 5baac18..80ab23a 100644
---- a/arch/s390/kernel/compat_linux.c
-+++ b/arch/s390/kernel/compat_linux.c
-@@ -546,8 +546,8 @@ static int cp_stat64(struct stat64_emu31 __user *ubuf, struct kstat *stat)
- 	tmp.__st_ino = (u32)stat->ino;
- 	tmp.st_mode = stat->mode;
- 	tmp.st_nlink = (unsigned int)stat->nlink;
--	tmp.st_uid = stat->uid;
--	tmp.st_gid = stat->gid;
-+	tmp.st_uid = from_kuid_munged(current_user_ns(), stat->uid);
-+	tmp.st_gid = from_kgid_munged(current_user_ns(), stat->gid);
- 	tmp.st_rdev = huge_encode_dev(stat->rdev);
- 	tmp.st_size = stat->size;
- 	tmp.st_blksize = (u32)stat->blksize;
-diff --git a/arch/sparc/kernel/sys_sparc32.c b/arch/sparc/kernel/sys_sparc32.c
-index 29c478f..f739233 100644
---- a/arch/sparc/kernel/sys_sparc32.c
-+++ b/arch/sparc/kernel/sys_sparc32.c
-@@ -139,8 +139,8 @@ static int cp_compat_stat64(struct kstat *stat,
- 	err |= put_user(stat->ino, &statbuf->st_ino);
- 	err |= put_user(stat->mode, &statbuf->st_mode);
- 	err |= put_user(stat->nlink, &statbuf->st_nlink);
--	err |= put_user(stat->uid, &statbuf->st_uid);
--	err |= put_user(stat->gid, &statbuf->st_gid);
-+	err |= put_user(from_kuid_munged(current_user_ns(), stat->uid), &statbuf->st_uid);
-+	err |= put_user(from_kgid_munged(current_user_ns(), stat->gid), &statbuf->st_gid);
- 	err |= put_user(huge_encode_dev(stat->rdev), &statbuf->st_rdev);
- 	err |= put_user(0, (unsigned long __user *) &statbuf->__pad3[0]);
- 	err |= put_user(stat->size, &statbuf->st_size);
-diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
-index aec2202..d5c820a 100644
---- a/arch/x86/ia32/sys_ia32.c
-+++ b/arch/x86/ia32/sys_ia32.c
-@@ -71,8 +71,8 @@ static int cp_stat64(struct stat64 __user *ubuf, struct kstat *stat)
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index d767508..8a391bd 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -9,8 +9,8 @@
+ struct user_namespace {
+ 	struct kref		kref;
+ 	struct user_namespace	*parent;
+-	struct user_struct	*creator;
+-	struct work_struct	destroyer;
++	kuid_t			owner;
++	kgid_t			group;
+ };
+ 
+ extern struct user_namespace init_user_ns;
+diff --git a/kernel/user.c b/kernel/user.c
+index 025077e..cff3856 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -25,7 +25,8 @@ struct user_namespace init_user_ns = {
+ 	.kref = {
+ 		.refcount	= ATOMIC_INIT(3),
+ 	},
+-	.creator = &root_user,
++	.owner = GLOBAL_ROOT_UID,
++	.group = GLOBAL_ROOT_GID,
+ };
+ EXPORT_SYMBOL_GPL(init_user_ns);
+ 
+@@ -54,9 +55,9 @@ struct hlist_head uidhash_table[UIDHASH_SZ];
+  */
+ static DEFINE_SPINLOCK(uidhash_lock);
+ 
+-/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->user_ns */
++/* root_user.__count is 1, for init task cred */
+ struct user_struct root_user = {
+-	.__count	= ATOMIC_INIT(2),
++	.__count	= ATOMIC_INIT(1),
+ 	.processes	= ATOMIC_INIT(1),
+ 	.files		= ATOMIC_INIT(0),
+ 	.sigpending	= ATOMIC_INIT(0),
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 898e973..f69741a 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -27,6 +27,16 @@ int create_user_ns(struct cred *new)
  {
- 	typeof(ubuf->st_uid) uid = 0;
- 	typeof(ubuf->st_gid) gid = 0;
--	SET_UID(uid, stat->uid);
--	SET_GID(gid, stat->gid);
-+	SET_UID(uid, from_kuid_munged(current_user_ns(), stat->uid));
-+	SET_GID(gid, from_kgid_munged(current_user_ns(), stat->gid));
- 	if (!access_ok(VERIFY_WRITE, ubuf, sizeof(struct stat64)) ||
- 	    __put_user(huge_encode_dev(stat->dev), &ubuf->st_dev) ||
- 	    __put_user(stat->ino, &ubuf->__st_ino) ||
-diff --git a/fs/compat.c b/fs/compat.c
-index f2944ac..0781e61 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -144,8 +144,8 @@ static int cp_compat_stat(struct kstat *stat, struct compat_stat __user *ubuf)
- 	tmp.st_nlink = stat->nlink;
- 	if (tmp.st_nlink != stat->nlink)
- 		return -EOVERFLOW;
--	SET_UID(tmp.st_uid, stat->uid);
--	SET_GID(tmp.st_gid, stat->gid);
-+	SET_UID(tmp.st_uid, from_kuid_munged(current_user_ns(), stat->uid));
-+	SET_GID(tmp.st_gid, from_kgid_munged(current_user_ns(), stat->gid));
- 	tmp.st_rdev = old_encode_dev(stat->rdev);
- 	if ((u64) stat->size > MAX_NON_LFS)
- 		return -EOVERFLOW;
-diff --git a/fs/stat.c b/fs/stat.c
-index c733dc5..fca17f9 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -137,8 +137,8 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
- 	tmp.st_nlink = stat->nlink;
- 	if (tmp.st_nlink != stat->nlink)
- 		return -EOVERFLOW;
--	SET_UID(tmp.st_uid, stat->uid);
--	SET_GID(tmp.st_gid, stat->gid);
-+	SET_UID(tmp.st_uid, from_kuid_munged(current_user_ns(), stat->uid));
-+	SET_GID(tmp.st_gid, from_kgid_munged(current_user_ns(), stat->gid));
- 	tmp.st_rdev = old_encode_dev(stat->rdev);
- #if BITS_PER_LONG == 32
- 	if (stat->size > MAX_NON_LFS)
-@@ -215,8 +215,8 @@ static int cp_new_stat(struct kstat *stat, struct stat __user *statbuf)
- 	tmp.st_nlink = stat->nlink;
- 	if (tmp.st_nlink != stat->nlink)
- 		return -EOVERFLOW;
--	SET_UID(tmp.st_uid, stat->uid);
--	SET_GID(tmp.st_gid, stat->gid);
-+	SET_UID(tmp.st_uid, from_kuid_munged(current_user_ns(), stat->uid));
-+	SET_GID(tmp.st_gid, from_kgid_munged(current_user_ns(), stat->gid));
- #if BITS_PER_LONG == 32
- 	tmp.st_rdev = old_encode_dev(stat->rdev);
- #else
-diff --git a/include/linux/stat.h b/include/linux/stat.h
-index 611c398..4613240 100644
---- a/include/linux/stat.h
-+++ b/include/linux/stat.h
-@@ -58,14 +58,15 @@
+ 	struct user_namespace *ns, *parent_ns = new->user_ns;
+ 	struct user_struct *root_user;
++	kuid_t owner = make_kuid(new->user_ns, new->euid);
++	kgid_t group = make_kgid(new->user_ns, new->egid);
++
++	/* The creator needs a mapping in the parent user namespace
++	 * or else we won't be able to reasonably tell userspace who
++	 * created a user_namespace.
++	 */
++	if (!kuid_has_mapping(parent_ns, owner) ||
++	    !kgid_has_mapping(parent_ns, group))
++		return -EPERM;
  
- #include <linux/types.h>
- #include <linux/time.h>
-+#include <linux/uidgid.h>
+ 	ns = kmem_cache_alloc(user_ns_cachep, GFP_KERNEL);
+ 	if (!ns)
+@@ -43,7 +53,9 @@ int create_user_ns(struct cred *new)
  
- struct kstat {
- 	u64		ino;
- 	dev_t		dev;
- 	umode_t		mode;
- 	unsigned int	nlink;
--	uid_t		uid;
--	gid_t		gid;
-+	kuid_t		uid;
-+	kgid_t		gid;
- 	dev_t		rdev;
- 	loff_t		size;
- 	struct timespec  atime;
+ 	/* set the new root user in the credentials under preparation */
+ 	ns->parent = parent_ns;
+-	ns->creator = new->user;
++	ns->owner = owner;
++	ns->group = group;
++	free_uid(new->user);
+ 	new->user = root_user;
+ 	new->uid = new->euid = new->suid = new->fsuid = 0;
+ 	new->gid = new->egid = new->sgid = new->fsgid = 0;
+@@ -69,29 +81,15 @@ int create_user_ns(struct cred *new)
+ 	return 0;
+ }
+ 
+-/*
+- * Deferred destructor for a user namespace.  This is required because
+- * free_user_ns() may be called with uidhash_lock held, but we need to call
+- * back to free_uid() which will want to take the lock again.
+- */
+-static void free_user_ns_work(struct work_struct *work)
++void free_user_ns(struct kref *kref)
+ {
+ 	struct user_namespace *parent, *ns =
+-		container_of(work, struct user_namespace, destroyer);
++		container_of(kref, struct user_namespace, kref);
++
+ 	parent = ns->parent;
+-	free_uid(ns->creator);
+ 	kmem_cache_free(user_ns_cachep, ns);
+ 	put_user_ns(parent);
+ }
+-
+-void free_user_ns(struct kref *kref)
+-{
+-	struct user_namespace *ns =
+-		container_of(kref, struct user_namespace, kref);
+-
+-	INIT_WORK(&ns->destroyer, free_user_ns_work);
+-	schedule_work(&ns->destroyer);
+-}
+ EXPORT_SYMBOL(free_user_ns);
+ 
+ uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t uid)
+@@ -101,12 +99,11 @@ uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t
+ 	if (likely(to == cred->user_ns))
+ 		return uid;
+ 
+-
+ 	/* Is cred->user the creator of the target user_ns
+ 	 * or the creator of one of it's parents?
+ 	 */
+ 	for ( tmp = to; tmp != &init_user_ns; tmp = tmp->parent ) {
+-		if (cred->user == tmp->creator) {
++		if (uid_eq(cred->user->uid, tmp->owner)) {
+ 			return (uid_t)0;
+ 		}
+ 	}
+@@ -126,7 +123,7 @@ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t
+ 	 * or the creator of one of it's parents?
+ 	 */
+ 	for ( tmp = to; tmp != &init_user_ns; tmp = tmp->parent ) {
+-		if (cred->user == tmp->creator) {
++		if (uid_eq(cred->user->uid, tmp->owner)) {
+ 			return (gid_t)0;
+ 		}
+ 	}
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 435d074..f2399d8 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -76,8 +76,9 @@ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
+ 		int cap, int audit)
+ {
+ 	for (;;) {
+-		/* The creator of the user namespace has all caps. */
+-		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
++		/* The owner of the user namespace has all caps. */
++		if (targ_ns != &init_user_ns && uid_eq(targ_ns->owner,
++						       make_kuid(cred->user_ns, cred->euid)))
+ 			return 0;
+ 
+ 		/* Do we have the necessary capabilities? */
 -- 
 1.7.2.5
 
