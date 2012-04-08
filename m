@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab2DHWuX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 18:50:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59487 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755980Ab2DHWuW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 18:50:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
-References: <1333757482-16204-1-git-send-email-mcgrof@frijolero.org>
-Date: Sun, 8 Apr 2012 15:50:21 -0700
-X-Google-Sender-Auth: zlINliAv7Xsu7GgWlJre7WZ3K58
-Message-ID: <CAA9_cmc9=aOexD8MBViEd9H=-Z79CMtn0-HE3ZXMwHQtTuRMzg@mail.gmail.com>
-Subject: Re: [PATCH] module: Clarify GPL-Compatible is OK
-From: Dan Williams <dan.j.williams@intel.com>
-To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        Keith Packard <keithp@keithp.com>, Ralf Baechle <ralf@linux-mips.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756234Ab2DHWwR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 18:52:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48221 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756146Ab2DHWwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 18:52:16 -0400
+Message-ID: <1333925535.2508.15.camel@joe2Laptop>
+Subject: Re: [00/02] add BUILD_BUG_DECL assertion (for 3.4??)
+From: Joe Perches <joe@perches.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Sun, 08 Apr 2012 15:52:15 -0700
+In-Reply-To: <1333924698-3894-1-git-send-email-jim.cromie@gmail.com>
+References: <1333924698-3894-1-git-send-email-jim.cromie@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 6, 2012 at 5:11 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
-> From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-[..]
->  drivers/scsi/isci/init.c                           |    2 +-
-[..]
-> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
-> index eb0f56c..7a8da32 100644
-> --- a/drivers/scsi/isci/init.c
-> +++ b/drivers/scsi/isci/init.c
-> @@ -809,7 +809,7 @@ static __exit void isci_exit(void)
->        sas_release_transport(isci_transport_template);
->  }
->
-> -MODULE_LICENSE("Dual BSD/GPL");
-> +MODULE_LICENSE("GPL-Compatible");
->  MODULE_FIRMWARE(ISCI_FW_NAME);
->  module_init(isci_init);
->  module_exit(isci_exit);
+On Sun, 2012-04-08 at 16:38 -0600, Jim Cromie wrote:
 
-Per Alan's comments, Nak on the isci driver changes.
+> this patch (0001) adds new bug.h macro, BUILD_BUG_DECL(name, cond),
+> which unlike other *BUG* assertions is usable at file scope.  Its
+> primary purpose is to enforce identical sizes of 2 separate arrays,
+> which but for considerations of packing/padding/section, would be
+> together in a struct.
+> 
+> const char const *names[] = { "bart", "lisa", "homer", "marge" };
+> int a[] = {1,2,3,4};
+> int b[] = {1,2,3,5};
+> long d[] = {1,2};
+> 
+> BUILD_BUG_DECL(foo, ARRAY_SIZE(a) != ARRAY_SIZE(b));
+> BUILD_BUG_DECL(buz, sizeof(a) != sizeof(b));	// good
+> BUILD_BUG_DECL(a, sizeof(a) != sizeof(d));	// ok on x32, error x64
+> BUILD_BUG_DECL(b, ARRAY_SIZE(a) != ARRAY_SIZE(names));	// good
+> 
+> macro expands as:
+> static __attribute__ ((__section__(".init.data"))) struct {
+>        int BUILD_BUG_DECL_buz[1 - 2*!!(sizeof(a) != sizeof(b))];
+> } BUILD_BUG_DECL_buz[0] __attribute__((unused));
+> 
 
---
-Dan
+If possible, it might be better to wrap the
+declarations themselves in a macro that ensures
+the sizes are the same.
+
+Something like:
+
+declare_same_size_arrays(
+	typeof array1[] = {...},
+	typeof array2[] = {...}
+);
+
+
