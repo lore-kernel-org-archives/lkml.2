@@ -1,52 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2DHT4D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 15:56:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35934 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529Ab2DHT4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 15:56:00 -0400
-Date: Sun, 8 Apr 2012 21:55:58 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masanari Iida <standby24x7@gmail.com>, Rob Landley <rob@landley.net>
-Cc: linux-doc@vger.kernel.org, rdunlap@xenotime.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/V2] [trivial] Documentation: Fix typo in multiple files
- in Documentation
-In-Reply-To: <4F80F288.1020305@landley.net>
-Message-ID: <alpine.LNX.2.00.1204082152280.24006@pobox.suse.cz>
-References: <1333727104-10181-1-git-send-email-standby24x7@gmail.com> <1333807980-26161-1-git-send-email-standby24x7@gmail.com> <4F80F288.1020305@landley.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755986Ab2DHUN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 16:13:28 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:7310 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab2DHUN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 16:13:27 -0400
+Message-ID: <1333916003.2845.6.camel@lorien2>
+Subject: [PATCH] leds: simple_strtoul-cleanup
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: shuahkhan@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        rpurdie@linux.intel.com
+Date: Sun, 08 Apr 2012 14:13:23 -0600
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 Apr 2012, Masanari Iida wrote:
+led-class.c and ledtri-timer.c still use simple_strtoul(). 
+Change leds to use kstrtoul() instead of obsolete simple_strtoul().
 
-> Correcting multiple spelling typo in Documentation.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> 
-> Cc: Rob Landley <rob@landley.net>
-[ ... snip ... ]
-> --- a/Documentation/scsi/ChangeLog.megaraid_sas
-> +++ b/Documentation/scsi/ChangeLog.megaraid_sas
-> @@ -521,7 +521,7 @@ i.	Register 16 byte CDB capability with scsi midlayer
->  3 Older Version   : 00.00.02.01 
->  
->  i.	New template defined to represent each family of controllers (identified by processor used). 
-> -	The template will have defintions that will be initialised to appropritae values for a specific family of controllers. The template definition has four function pointers. During driver initialisation the function pointers will be set based on the controller family type. This change is done to support new controllers that has different processors and thus different register set.
-> +	The template will have definitions that will be initialised to appropriate values for a specific family of controllers. The template definition has four function pointers. During driver initialisation the function pointers will be set based on the controller family type. This change is done to support new controllers that has different processors and thus different register set.
+>From 1bd3a727b022e35c5c4506b610798acd8b05b70d Mon Sep 17 00:00:00 2001
+From: Shuah Khan <shuahkhan@gmail.com>
+Date: Sun, 8 Apr 2012 13:39:30 -0600
+Subject: [PATCH] leds: simple_strtoul-cleanup
 
-As this is a Changelog which is likely extracted from some vendor version 
-of the driver (or from it's changelog, to be more precise), I think we 
-shouldn't be touching that.
 
-Could you please drop that hunk and resend it to me? I'll then be taking 
-it together with Rob's ACK if there are no objections.
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+---
+ drivers/leds/led-class.c     |   24 ++++++++++--------------
+ drivers/leds/ledtrig-timer.c |   42 ++++++++++++++++++------------------------
+ 2 files changed, 28 insertions(+), 38 deletions(-)
 
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 5bff843..c1896e6 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -44,23 +44,19 @@ static ssize_t led_brightness_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t size)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+-	ssize_t ret = -EINVAL;
+-	char *after;
+-	unsigned long state = simple_strtoul(buf, &after, 10);
+-	size_t count = after - buf;
++	unsigned long state;
++	int ret;
+ 
+-	if (isspace(*after))
+-		count++;
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		goto out;
+ 
+-	if (count == size) {
+-		ret = count;
++	if (state == LED_OFF)
++		led_trigger_remove(led_cdev);
++	led_set_brightness(led_cdev, state);
+ 
+-		if (state == LED_OFF)
+-			led_trigger_remove(led_cdev);
+-		led_set_brightness(led_cdev, state);
+-	}
+-
+-	return ret;
++out:
++	return size;
+ }
+ 
+ static ssize_t led_max_brightness_show(struct device *dev,
+diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
+index 328c64c..dc95fa8 100644
+--- a/drivers/leds/ledtrig-timer.c
++++ b/drivers/leds/ledtrig-timer.c
+@@ -31,21 +31,18 @@ static ssize_t led_delay_on_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t size)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+-	int ret = -EINVAL;
+-	char *after;
+-	unsigned long state = simple_strtoul(buf, &after, 10);
+-	size_t count = after - buf;
+-
+-	if (isspace(*after))
+-		count++;
+-
+-	if (count == size) {
+-		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
+-		led_cdev->blink_delay_on = state;
+-		ret = count;
+-	}
++	unsigned long state;
++	int ret;
++
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		goto out;
++
++	led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
++	led_cdev->blink_delay_on = state;
+ 
+-	return ret;
++out:
++	return size;
+ }
+ 
+ static ssize_t led_delay_off_show(struct device *dev,
+@@ -60,21 +57,18 @@ static ssize_t led_delay_off_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t size)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+-	int ret = -EINVAL;
+-	char *after;
+-	unsigned long state = simple_strtoul(buf, &after, 10);
+-	size_t count = after - buf;
+-
+-	if (isspace(*after))
+-		count++;
+-
+-	if (count == size) {
+-		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
+-		led_cdev->blink_delay_off = state;
+-		ret = count;
+-	}
++	unsigned long state;
++	int ret;
++
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		goto out;
++
++	led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
++	led_cdev->blink_delay_off = state;
+ 
+-	return ret;
++out:
++	return size;
+ }
+ 
+ static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.5.4
+
+
+
