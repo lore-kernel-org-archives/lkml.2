@@ -1,107 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab2DHWkf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 18:40:35 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12301 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985Ab2DHWke (ORCPT
+	id S1756174Ab2DHWoU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 18:44:20 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46420 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755980Ab2DHWoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 18:40:34 -0400
-Date: Mon, 9 Apr 2012 00:40:32 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: trivial@kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH][Trivial] Delete trailing whitespace from
- sound/soc/codecs/wm8994.c
-Message-ID: <alpine.LNX.2.00.1204090038270.11747@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 8 Apr 2012 18:44:19 -0400
+Date: Sun, 8 Apr 2012 23:46:41 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: RFC: deprecating/removing the legacy mode of devpts
+Message-ID: <20120408234641.788f8426@pyramind.ukuu.org.uk>
+In-Reply-To: <4F8210A5.7000900@zytor.com>
+References: <4F80892A.7050104@zytor.com>
+	<4F81D5C4.9000503@openvz.org>
+	<20120408231841.42e28867@pyramind.ukuu.org.uk>
+	<4F8210A5.7000900@zytor.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While reading through sound/soc/codecs/wm8994.c I noticed a fair
-amount of trailing whitespace. This patch gets rid of it.
+> What if it turns out we can make udev/devtmpfs make this happen
+> transparently (which it sounds like it might be possible)?  Would you be
+> okay with removing the "implicit bind mount" property of the current
+> devpts then?
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- sound/soc/codecs/wm8994.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+Once we get to the point where it "just works" I'm quite happy for that
+to happen unless it turns out there's any large code size/performance
+hits in having the feature always on. I don't see any.
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 7c49642..c6c2cb2 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -398,7 +398,7 @@ static void wm8994_set_retune_mobile(struct snd_soc_codec *codec, int block)
- 		wm8994->dac_rates[iface]);
- 
- 	/* The EQ will be disabled while reconfiguring it, remember the
--	 * current configuration. 
-+	 * current configuration.
- 	 */
- 	save = snd_soc_read(codec, base);
- 	save &= WM8994_AIF1DAC1_EQ_ENA;
-@@ -991,7 +991,7 @@ static void wm8994_update_class_w(struct snd_soc_codec *codec)
- 				    WM8994_CP_DYN_SRC_SEL_MASK,
- 				    source | WM8994_CP_DYN_PWR);
- 		wm8994->hubs.class_w = true;
--		
-+
- 	} else {
- 		dev_dbg(codec->dev, "Class W disabled\n");
- 		snd_soc_update_bits(codec, WM8994_CLASS_W_1,
-@@ -1358,7 +1358,7 @@ static const struct snd_kcontrol_new wm8958_aif3adc_mux =
- 	SOC_DAPM_ENUM("AIF3ADC Mux", wm8958_aif3adc_enum);
- 
- static const char *mono_pcm_out_text[] = {
--	"None", "AIF2ADCL", "AIF2ADCR", 
-+	"None", "AIF2ADCL", "AIF2ADCR",
- };
- 
- static const struct soc_enum mono_pcm_out_enum =
-@@ -2122,7 +2122,7 @@ static int wm8994_set_dai_sysclk(struct snd_soc_dai *dai,
- 
- 	case WM8994_SYSCLK_OPCLK:
- 		/* Special case - a division (times 10) is given and
--		 * no effect on main clocking. 
-+		 * no effect on main clocking.
- 		 */
- 		if (freq) {
- 			for (i = 0; i < ARRAY_SIZE(opclk_divs); i++)
-@@ -2958,14 +2958,14 @@ static void wm8994_handle_retune_mobile_pdata(struct wm8994_priv *wm8994)
- 
- 		/* Expand the array... */
- 		t = krealloc(wm8994->retune_mobile_texts,
--			     sizeof(char *) * 
-+			     sizeof(char *) *
- 			     (wm8994->num_retune_mobile_texts + 1),
- 			     GFP_KERNEL);
- 		if (t == NULL)
- 			continue;
- 
- 		/* ...store the new entry... */
--		t[wm8994->num_retune_mobile_texts] = 
-+		t[wm8994->num_retune_mobile_texts] =
- 			pdata->retune_mobile_cfgs[i].name;
- 
- 		/* ...and remember the new version. */
-@@ -3907,7 +3907,6 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
- 					  ARRAY_SIZE(wm8994_dac_widgets));
- 		break;
- 	}
--		
- 
- 	wm_hubs_add_analogue_routes(codec, 0, 0);
- 	snd_soc_dapm_add_routes(dapm, intercon, ARRAY_SIZE(intercon));
--- 
-1.7.10
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Alan
