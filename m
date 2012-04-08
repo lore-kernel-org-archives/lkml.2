@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab2DHFV4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 01:21:56 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51474 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab2DHFMT (ORCPT
+	id S1755872Ab2DHFVx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 01:21:53 -0400
+Received: from out07.mta.xmission.com ([166.70.13.237]:44030 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752479Ab2DHFMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Apr 2012 01:12:19 -0400
 From: "\"Eric W. Beiderman" <ebiederm@xmission.com>
@@ -16,13 +16,13 @@ Cc: <linux-fsdevel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
         Al Viro <viro@ZenIV.linux.org.uk>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Sat,  7 Apr 2012 22:15:06 -0700
-Message-Id: <1333862139-31737-10-git-send-email-ebiederm@xmission.com>
+Date: Sat,  7 Apr 2012 22:15:10 -0700
+Message-Id: <1333862139-31737-14-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <m11unyn70b.fsf@fess.ebiederm.org>
 References: <m11unyn70b.fsf@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX196khP2o8WimZWXOLyEz2X+uMXYI6+lfmI=
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19WKxc3+Ab+V3wMIOjfLYBh1sXNkvwPp+o=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: *  1.1 FH_FROMEML_NOTLD E-mail address doesn't have TLD (.com, etc.)
@@ -33,80 +33,84 @@ X-Spam-Report: *  1.1 FH_FROMEML_NOTLD E-mail address doesn't have TLD (.com, et
 	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+	*  0.2 XMSubMetaSSx_00 1+ SortaSexy Words + 1 Sexy Word
 X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
+X-Spam-Combo: ****;<linux-kernel@vger.kernel.org>
 X-Spam-Relay-Country: **
-Subject: [PATCH 10/43] userns: Deprecate and rename the user_namespace reference in the user_struct
+Subject: [PATCH 14/43] userns: Add a Kconfig option to enforce strict kuid and kgid type checks
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-With a user_ns reference in struct cred the only user of the user namespace
-reference in struct user_struct is to keep the uid hash table alive.
+Make it possible to easily switch between strong mandatory
+type checks and relaxed type checks so that the code can
+easily be tested with the type checks and then built
+with the strong type checks disabled so the resulting
+code can be used.
 
-The user_namespace reference in struct user_struct will be going away soon, and
-I have removed all of the references.  Rename the field from user_ns to _user_ns
-so that the compiler can verify nothing follows the user struct to the user
-namespace anymore.
+Require strong mandatory type checks when enabling the user namespace.
+It is very simple to make a typo and use the wrong type allowing
+conversions to/from userspace values to be bypassed by accident,
+the strong type checks prevent this.
 
 Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- include/linux/sched.h |    2 +-
- kernel/user.c         |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ include/linux/uidgid.h |    2 +-
+ init/Kconfig           |   12 +++++++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 720ce8d..6867ae9 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -729,7 +729,7 @@ struct user_struct {
- 	/* Hash table maintenance information */
- 	struct hlist_node uidhash_node;
- 	uid_t uid;
--	struct user_namespace *user_ns;
-+	struct user_namespace *_user_ns; /* Don't use will be removed soon */
+diff --git a/include/linux/uidgid.h b/include/linux/uidgid.h
+index a0addb8..5398568 100644
+--- a/include/linux/uidgid.h
++++ b/include/linux/uidgid.h
+@@ -17,7 +17,7 @@
+ struct user_namespace;
+ extern struct user_namespace init_user_ns;
  
- #ifdef CONFIG_PERF_EVENTS
- 	atomic_long_t locked_vm;
-diff --git a/kernel/user.c b/kernel/user.c
-index 71dd236..d65fec0 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -58,7 +58,7 @@ struct user_struct root_user = {
- 	.files		= ATOMIC_INIT(0),
- 	.sigpending	= ATOMIC_INIT(0),
- 	.locked_shm     = 0,
--	.user_ns	= &init_user_ns,
-+	._user_ns	= &init_user_ns,
- };
+-#if defined(NOTYET)
++#ifdef CONFIG_UIDGID_STRICT_TYPE_CHECKS
  
- /*
-@@ -72,7 +72,7 @@ static void uid_hash_insert(struct user_struct *up, struct hlist_head *hashent)
- static void uid_hash_remove(struct user_struct *up)
- {
- 	hlist_del_init(&up->uidhash_node);
--	put_user_ns(up->user_ns);
-+	put_user_ns(up->_user_ns); /* It is safe to free the uid hash table now */
- }
+ typedef struct {
+ 	uid_t val;
+diff --git a/init/Kconfig b/init/Kconfig
+index 72f33fa..86cf760 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -828,7 +828,8 @@ config IPC_NS
+ config USER_NS
+ 	bool "User namespace (EXPERIMENTAL)"
+ 	depends on EXPERIMENTAL
+-	default y
++	select UIDGID_STRICT_TYPE_CHECKS
++	default n
+ 	help
+ 	  This allows containers, i.e. vservers, to use user namespaces
+ 	  to provide different user info for different servers.
+@@ -852,6 +853,15 @@ config NET_NS
  
- static struct user_struct *uid_hash_find(uid_t uid, struct hlist_head *hashent)
-@@ -153,7 +153,7 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
- 		new->uid = uid;
- 		atomic_set(&new->__count, 1);
+ endif # NAMESPACES
  
--		new->user_ns = get_user_ns(ns);
-+		new->_user_ns = get_user_ns(ns);
- 
- 		/*
- 		 * Before adding this, check whether we raced
++config UIDGID_STRICT_TYPE_CHECKS
++	bool "Require conversions between uid/gids and their internal representation"
++	default n
++	help
++	 While the nececessary conversions are being added to all subsystems this option allows
++	 the code to continue to build for unconverted subsystems.
++
++	 Say Y here if you want the strict type checking enabled
++
+ config SCHED_AUTOGROUP
+ 	bool "Automatic process group scheduling"
+ 	select EVENTFD
 -- 
 1.7.2.5
 
