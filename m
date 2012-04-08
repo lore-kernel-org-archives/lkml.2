@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2DHRzF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 13:55:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3388 "EHLO mx1.redhat.com"
+	id S1755891Ab2DHSBK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 14:01:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59512 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab2DHRzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 13:55:02 -0400
-Date: Sun, 8 Apr 2012 19:49:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, cfriesen@nortel.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Subject: Re: [PATCH 01/16] sched: add sched_class->task_dead.
-Message-ID: <20120408174919.GA28428@redhat.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com> <1333696481-3433-2-git-send-email-juri.lelli@gmail.com>
+	id S1754460Ab2DHSBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 14:01:09 -0400
+Message-ID: <4F81D254.9090000@zytor.com>
+Date: Sun, 08 Apr 2012 11:00:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333696481-3433-2-git-send-email-juri.lelli@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Kay Sievers <kay@vrfy.org>
+CC: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Greg Kroah-Hartman <gregkh@linux-foundation.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: RFC: deprecating/removing the legacy mode of devpts
+References: <4F80892A.7050104@zytor.com> <20120407202056.472d8ad9@pyramind.ukuu.org.uk> <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com> <20120407212705.GD11295@thunk.org> <4F80B9AC.2010103@zytor.com> <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com>
+In-Reply-To: <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06, Juri Lelli wrote:
->
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -3219,6 +3219,9 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
->  	if (mm)
->  		mmdrop_delayed(mm);
->  	if (unlikely(prev_state == TASK_DEAD)) {
-> +		if (prev->sched_class->task_dead)
-> +			prev->sched_class->task_dead(prev);
-> +
+On 04/08/2012 12:30 AM, Kay Sievers wrote:
+> 
+> I don't think it has much to do with udev, it follows 100%
+> instructions from the kernel, and it does not create the device node
+> that is in the way here.
+> 
+> Udev does not name any device in the system since a long time. Since
+> quite a while it has not even the code to do mknod() and requires
+> devtmpfs. The device node part of udev these day is limited to manage
+> device node permissions and creating additional symlinks. All device
+> node creation happens inside the kernel itself - where it belongs -
+> and not in userspace.
+> 
+> If the default behaviour of /dev/pts/* should be changed, the kernel
+> should be changed to support the multi-instance mode right away
+> without involving userspace. We better do not require userspace to
+> gain any knowledge about such stuff. I'm confident, that we should not
+> add more, or require to support multiple alternative ways of handling
+> kernel internals in userspace.
+> 
+> So, I think we either remove the '/sys/class/tty/ptmx' device from the
+> system, and let the devpts code create the symlink in the 'devtmpfs'
+> filesystem, or alternatively the '/sys/class/tty/ptmx' device supports
+> the multi-instance mode itself, instead of requiring a symlink. Such
+> stuff belongs entirely into the kernel these day. Anything else seems
+> to just ask for trouble.
+> 
 
-And 5/16 adds
+OK, this seems very reasonable, and something that could (and probably
+*has to*) be done as an atomic change... maybe.
 
-	+static void task_dead_dl(struct task_struct *p)
-	+{
-	+       struct hrtimer *timer = &p->dl.dl_timer;
-	+
-	+	if (hrtimer_active(timer))
-	+               hrtimer_try_to_cancel(timer);
-	+}
+There is no way for /dev/ptmx to support the multiinstance mode since it
+is located outside any devpts filesystem; it *has* to be inside the
+devpts filesystem in order to function... if that wasn't the case this
+whole thing would have been trivial from the get-go.
 
-This looks suspicious. finish_task_switch() does put_task_struct()
-after that, it is quite possible this actually frees the memory.
+Greg, do you have any insights in what would have to be necessary
+mechanics to make this.
 
-What if hrtimer_try_to_cancel() fails because the timer is running?
-In this case __run_hrtimer() can play with the freed timer. Say, to
-clear HRTIMER_STATE_CALLBACK. Not to mention dl_task_timer() itself.
-
-Oleg.
+	-hpa
 
