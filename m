@@ -1,137 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab2DHX5n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 19:57:43 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59223 "EHLO ogre.sisk.pl"
+	id S1756530Ab2DHX6h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 19:58:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44412 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756417Ab2DHX5k convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 19:57:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-Date: Mon, 9 Apr 2012 02:02:07 +0200
-User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
-Cc: Aaron Lu <aaron.lu@amd.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <201204010923.18330.rjw@sisk.pl> <1333593497.11327.25.camel@minggr>
-In-Reply-To: <1333593497.11327.25.camel@minggr>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201204090202.08279.rjw@sisk.pl>
+	id S1753906Ab2DHX6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 19:58:36 -0400
+Date: Mon, 9 Apr 2012 09:58:25 +1000
+From: NeilBrown <neilb@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: shuahkhan@gmail.com, rpurdie@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
+Message-ID: <20120409095825.36a436ef@notabene.brown>
+In-Reply-To: <20120406165353.ab667eb0.akpm@linux-foundation.org>
+References: <1333310039.2879.4.camel@lorien2>
+	<20120406165353.ab667eb0.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/cVIp+0C9XaqYn7VAAlqsX/E"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 05, 2012, Lin Ming wrote:
-> On Sun, 2012-04-01 at 09:23 +0200, Rafael J. Wysocki wrote:
-> > Hi,
-> > 
-> > Sorry for the delayed response, I've been travelling recently.
-> > 
-> > On Sunday, April 01, 2012, Lin Ming wrote:
-> > > On Sun, 2012-04-01 at 13:56 +0800, Aaron Lu wrote:
-> > > > Hi,
-> > > > 
-> > > > On Sun, Apr 01, 2012 at 01:27:33PM +0800, Lin Ming wrote:
-> > > > > > -		if (device->power.states[state].flags.explicit_set) {
-> > > > > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
-> > > > > > +		if (state == ACPI_STATE_D3_COLD) {
-> > > > > > +			explicit_set = (ps - 1)->flags.explicit_set;
-> > > > > > +			object_name[3] -= 1;
-> > > > > > +		}
-> > > > > 
-> > > > > I'm not sure whether this works or not.
-> > > > > 
-> > > > > From ACPI spec,
-> > > > > 
-> > > > > _PS3 "is used to put the specific device into its D3hot or D3 state"
-> > > > > 
-> > > > > D3 neither means D3hot nor D3cold. It's an old term before D3hot and
-> > > > > D3cold were introduced.
-> > > > I guess D3 has to mean something, right? :-)
-> > 
-> > Well, not necessarily.
-> > 
-> > The problem is what state the _PS3 method puts the device into: D3_hot or
-> > D3_cold.
-> > 
-> > Unfortunately, as far as I can say, ACPI 4.0 didn't specify any "official"
-> > mapping between the "old" D3 and the "new" D3_{hod|cold} states, so we need to
-> > figure out something.  In my opinion, the only reasonable approach is to
-> > assume that the state _PS3 puts the device into is always D3_cold, becuase
-> > _PS3 may remove power completely from the device.  It may not do that, but
-> > we _must_ assume it does that in general.
-> > 
-> > > > Here is the problem, there is no _PR3 in AMD's implementation, just _PS3.
-> > > > And since _S0W evaluates 4, I've to put this device into D3 cold state
-> > > > with _PS3.
-> > > > 
-> > > > And the ACPI does have some words like:
-> > > > 
-> > > > ------
-> > > > Platform/drivers must assume that the device will have power completely
-> > > > removed when the device is place into “D3” via _PS3
-> > 
-> > Exactly.  What it means is basically "always reinitialize the device from
-> > scratch if you have run _PS3 on it".  And that's what we should do.
-> > 
-> > > > ------
-> > > > 
-> > > > This is in section 7.2.11: _PR3.
-> > > > 
-> > > > > 
-> > > > > Another problem:
-> > > > > 
-> > > > > With your patch, both D3hot and D3cold will evaluate _PS3, right?
-> > > > > 
-> > > > Yes.
-> > > > 
-> > > > > Will it have problem on AMD platform if you try to put ODD into D3hot
-> > > > > state? _PS3 is evaluated, so it actually enters D3Cold state.
-> > > > 
-> > > > There is no D3 hot support for this device(from the firmware's
-> > > > perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
-> > > > _PS3).
-> > > 
-> > > But this is the generic code. We can't only consider some special
-> > > device.
-> > > 
-> > > Maybe we need some flag to tell which D3 state _PS3 is used for.
-> > 
-> > No, please.  As I said above, we need to reinitialize devices that _PS3 was
-> > executed on, which is equivalent to saying that those devices were put into
-> > D3_cold.
-> > 
-> > The only situation where a device can be put into ACPI D3_hot (which is not
-> > the same as PCI D3_hot, mind you) is when:
-> > 
-> > (1) There is _PR3 listing some of the device's power resources as "on".
-> > (2) The power resources listed by the _PR3 as "off" are turned off and the
-> >     power resources listed by the _PR3 as "on" are left in the "on" state.
-> 
-> (1) and (2) seems conflict.
-> 
-> (1) means all power resources listed in _PR3 are "on", but
-> (2) means some power resources listed in _PR3 are "off" and others are
-> "on"
-> 
-> Is my understanding correct?
+--Sig_/cVIp+0C9XaqYn7VAAlqsX/E
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Not really, sorry for the confusion.  As I said in another message, if _PR3 is
-present, there are two lists of resources, the one returned by _PR3 and the
-one returned by _PR0 (which lists all power resources the device depends on).
+On Fri, 6 Apr 2012 16:53:53 -0700 Andrew Morton <akpm@linux-foundation.org>
+wrote:
 
-So (1) above really means "power resources returned by _PR3 are on" and (2) means
-"the power resources listed by _PR0 and not by _PR3 are in the 'off' state,
-while the ones listed by both _PR0 and _PR3 are in the 'on' state".
+> On Sun, 01 Apr 2012 13:53:59 -0600
+> Shuah Khan <shuahkhan@gmail.com> wrote:
+>=20
+> > LED infrastructure lacks support for one shot timer trigger and activat=
+ion.
+> > The current support allows for setting two timers, one for specifying h=
+ow
+> > long a state to be on, and the second for how long the state to be off.=
+ For
+> > example, delay_on value specifies the time period an LED should stay in=
+ on
+> > state, followed by a delay_off value that specifies how long the LED sh=
+ould
+> > stay in off state. The on and off cycle repeats until the trigger gets
+> > deactivated. There is no provision for one time activation to implement
+> > features that require an on or off state to be held just once and then =
+stay
+> > in the original state forever.
+> >=20
+> > This feature will help implement vibrate functionality which requires o=
+ne
+> > time activation of vibrate mode without a continuous vibrate on/off cyc=
+les.
+> >=20
+> > >From 1ebe0fd67580da833f8f06fc3119445e9991100f Mon Sep 17 00:00:00 2001
+> > From: Shuah Khan <shuahkhan@gmail.com>
+> > Date: Sat, 31 Mar 2012 21:56:07 -0600
+> > Subject: [PATCH] LEDS-One-Shot-Timer-Trigger-implementation
+>=20
+> Should be "leds: one shot timer trigger implementation", please.
+>=20
+> >
+> > ...
+> >
+> > +This feature will help implement vibrate functionality which requires =
+one
+> > +time activation of vibrate mode without a continuous vibrate on/off cy=
+cles.
+>=20
+> They make vibrating LED? ;)
+>=20
+> What's going on here?  You're proposing to repurpose the LEDs code to
+> drive vibration devices?  Or some devices couple a LED with a vibration
+> device?
 
-In theory, there may be power resources that are listed by _PR3 and not by
-_PR0, but that would be a very strange case in practice.
+We use 'scsi' devices to drive SATA disks.
+We use 'input' devices to beep the PC 'speaker'.
 
-Thanks,
-Rafael
+It is no great deviation from this pattern to use a 'led' device to trigger=
+ a
+vibrator.
+
+We could rename all of these subsystems, but that probably won't win us any
+friends.
+It may well make sense to create a 'vibrator' class which shared 99% of the
+code of the 'led' class.  This is a bit like the 'backlight' class which al=
+so
+drives LEDs (sometimes) and sets their brightness.  It is presumably helpful
+for user-space to see the difference intention of the LEDS - some for displ=
+ay
+backlight and some for signalling - and so also helpful to differentiate
+output devices - some emit light, some emit kinetic energy.
+
+It would be really nice to have a system-wide holistic way to address these
+classification issues.  But as we tend to work in an incremental-development
+approach, it is easiest just to add functionality where it seems to fit.
+
+> > ...
+> >
+> > --- a/drivers/leds/ledtrig-timer.c
+> > +++ b/drivers/leds/ledtrig-timer.c
+> > @@ -24,6 +24,9 @@ static ssize_t led_delay_on_show(struct device *dev,
+> >  {
+> >  	struct led_classdev *led_cdev =3D dev_get_drvdata(dev);
+> > =20
+> > +	if (led_cdev->blink_delay_on =3D=3D LED_TIMER_FOREVER)
+> > +		return sprintf(buf, "forever\n");
+> > +
+> >  	return sprintf(buf, "%lu\n", led_cdev->blink_delay_on);
+> >  }
+>=20
+> This is a somewhat risky kernel interface change.  Previously the
+> output was always a decimal string.  With this change it is either a
+> decimal string or "forever".  Applications which were coded to the old
+> interface will probably misinterpret the "forever" as a zero.  Or they
+> will crash and burn.
+>=20
+> A safer approach would be to just print the value.  So it comes out as
+> 4294967295 or 18446744073709551615.  That's pretty nasty, and invites
+> people to write programs which are busted on 32-bit userspace (or on
+> 64-bit).
+>=20
+> Maybe it was just a mistake to overload ->blink_delay_on in this
+> fashion.  Perhaps the code will be cleaner if we add a couple of new
+> booleans to the led_cdev.
+>=20
+> Anyway, please have a think about this.
+>=20
+
+I don't think it is very risky.  The output will continue to always be a
+decimal string unless user-space explicitly chooses to write "forever".
+So the risky step is to modify part of userspace to write 'forever' without
+modifying other parts to recognise 'forever'.  I doubt anyone would actually
+do that but in any case it is not the place of the kernel to care.  The
+kernel change is perfectly safe (Well.... it would be if we trapped an
+attempt to write 'MAXINT' and converted  it to 'MAXINT-1' - that is trivial
+to do and then we would be perfectly safe).
+
+However it might make sense to discard the 'forever' and instead introduce a
+'repeat_count' attribute which defaults to 'forever' but could be explicitly
+set to '1' (or 2 or 3).
+I didn't advocate that at first as it seemed a bigger change than needed (a=
+nd
+incremental development is good), but maybe it is better to take that bigger
+step.
+
+NeilBrown
+
+--Sig_/cVIp+0C9XaqYn7VAAlqsX/E
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT4ImITnsnt1WYoG5AQJgShAAgTIh/jTlGmp3/rB+HJev6lgwlHucOwhb
+Dl98eHZFQ6+2u6VGUDOYB1u9kwt/TQcFuaU3z2BtiCFxs/AiDmAyfcJDcIhSWGk1
+yF0a9U43DhfP6JZpaZDLrX7sk44ZHDhuqc2qUttu7In9BPcIkMnj1TOqvpzP38mK
+DTkmEidBwdL2rKFLwQiNBOLpAoo6vVKF0jWxjKnI2arqawevlHmtdO3wbjJF51eT
+FDWwAli1+ELsxE7rhTzlX/8vTY6RF7sdhj8uJmha4+pCAXsifnMalYUaqfJ196o9
+2rSzj9ASUs0L0erqtJAwX+lOs21W1TA1wjKpzGVIaN1BrAJCoAEbU8nQDCJ8kpyQ
+2vNY/XTIdCICgGPxY3snnrb+eAgue5ICUVGwhad9HliOQD5lYOfYER6P5Jq/zBct
+5IgVdbkhuE2johPRQe+zOBt3ZgBf9bEAb5bBpH4HtKpG1ROsBCZd1cHG9gLxkA/q
+7LEueEhDtHnfHXPCVreg3GCKLwNsNs/XOUGzsP5rwqnTSmQKOimVqzrr4a7z9cgf
++VOY6Xse/7JDz4ohO/CAoMReNTbLpe7sIztpHkvUj1YsfxxzyL7LBzGHGpj89JGM
+Lc7bCxZ7SF/BERqZ2PnH3qg+2rHknlEL2CEyYjssvcKeGEX0YEjmVb1Kckyyhnp5
+PSMM85wWvrw=
+=wuM/
+-----END PGP SIGNATURE-----
+
+--Sig_/cVIp+0C9XaqYn7VAAlqsX/E--
