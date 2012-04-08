@@ -1,91 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2DHWj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 18:39:26 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50083 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985Ab2DHWic (ORCPT
+	id S1756167Ab2DHWkf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 18:40:35 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12301 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab2DHWke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 18:38:32 -0400
-From: Jim Cromie <jim.cromie@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 1/2] bug.h: add BUILD_BUG_DECL, usable at file scope
-Date: Sun,  8 Apr 2012 16:38:17 -0600
-Message-Id: <1333924698-3894-2-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1333924698-3894-1-git-send-email-jim.cromie@gmail.com>
-References: <1333924698-3894-1-git-send-email-jim.cromie@gmail.com>
+	Sun, 8 Apr 2012 18:40:34 -0400
+Date: Mon, 9 Apr 2012 00:40:32 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: trivial@kernel.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH][Trivial] Delete trailing whitespace from
+ sound/soc/codecs/wm8994.c
+Message-ID: <alpine.LNX.2.00.1204090038270.11747@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds BUILD_BUG_DECL, primarily to check sizes of file-scoped
-arrays etc:
+While reading through sound/soc/codecs/wm8994.c I noticed a fair
+amount of trailing whitespace. This patch gets rid of it.
 
-  const char const *names[] = { "bart", "lisa", "homer", "marge" };
-  int a[] = {1,2,3,4}, b[] = {1,2,3,5}, c[] = {1,2}
-  long d[] = {1,2};
-  BUILD_BUG_DECL(Luke, sizeof(a) != sizeof(d));			// ok, but iffy usage
-  BUILD_BUG_DECL(Han, sizeof(a) != sizeof(b));			// good
-  BUILD_BUG_DECL(Obi, ARRAY_SIZE(a) != ARRAY_SIZE(b));		// better
-  BUILD_BUG_DECL(Yoda, ARRAY_SIZE(a) != ARRAY_SIZE(names));	// good, on different types
-  BUILD_BUG_DECL(Darth, sizeof(a) != sizeof(c));		// compile err
-
-example 1 expands as:
-    static __attribute__ ((__section__(".init.data"))) struct {
-       int BUILD_BUG_DECL_Luke[1 - 2*!!(sizeof(a) != sizeof(b))];
-    } BUILD_BUG_DECL_Luke[0]  __attribute__((unused));
-
-The name parameter distinguishes multiple uses in the same scope, but
-is otherwise arbitrary.  You can reuse the name of one of the checked
-vars, or pick something easy to find on the rare occaision when the
-assertion breaks the build.
-
-example 5 yields:
-    error: size of array ‘BUILD_BUG_DECL_Darth’ is negative
-
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- include/linux/bug.h |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ sound/soc/codecs/wm8994.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/bug.h b/include/linux/bug.h
-index 72961c3..c76e6f6 100644
---- a/include/linux/bug.h
-+++ b/include/linux/bug.h
-@@ -17,6 +17,7 @@ struct pt_regs;
- #define BUILD_BUG_ON_NULL(e) ((void*)0)
- #define BUILD_BUG_ON(condition)
- #define BUILD_BUG() (0)
-+#define BUILD_BUG_DECL(name, condition)
- #else /* __CHECKER__ */
+diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
+index 7c49642..c6c2cb2 100644
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -398,7 +398,7 @@ static void wm8994_set_retune_mobile(struct snd_soc_codec *codec, int block)
+ 		wm8994->dac_rates[iface]);
  
- /* Force a compilation error if a constant expression is not a power of 2 */
-@@ -70,6 +71,20 @@ extern int __build_bug_on_failed;
- 		__build_bug_failed();				\
- 	} while (0)
- 
-+/**
-+ * BUILD_BUG_DECL - check declared objects
-+ * @name: distinguishes multiple uses at same scope.
-+ * @cond: false expr, typically like sizeof(a) != sizeof(b)
-+ *
-+ * This works at file-scope too, and supports checks like:
-+ * BUILD_BUG_DECL(foo, sizeof(a) != sizeof(b));
-+ * BUILD_BUG_DECL(id_strings, ARRAY_SIZE(id_strings) != ARRAY_SIZE(id_vals));
-+ */
-+#define BUILD_BUG_DECL(name, cond)				\
-+	static __initdata struct {				\
-+		int BUILD_BUG_DECL_ ## name[1 - 2*!!(cond)];	\
-+	} BUILD_BUG_DECL_ ##name[0] __attribute__((unused))
+ 	/* The EQ will be disabled while reconfiguring it, remember the
+-	 * current configuration. 
++	 * current configuration.
+ 	 */
+ 	save = snd_soc_read(codec, base);
+ 	save &= WM8994_AIF1DAC1_EQ_ENA;
+@@ -991,7 +991,7 @@ static void wm8994_update_class_w(struct snd_soc_codec *codec)
+ 				    WM8994_CP_DYN_SRC_SEL_MASK,
+ 				    source | WM8994_CP_DYN_PWR);
+ 		wm8994->hubs.class_w = true;
+-		
 +
- #endif	/* __CHECKER__ */
+ 	} else {
+ 		dev_dbg(codec->dev, "Class W disabled\n");
+ 		snd_soc_update_bits(codec, WM8994_CLASS_W_1,
+@@ -1358,7 +1358,7 @@ static const struct snd_kcontrol_new wm8958_aif3adc_mux =
+ 	SOC_DAPM_ENUM("AIF3ADC Mux", wm8958_aif3adc_enum);
  
- #ifdef CONFIG_GENERIC_BUG
+ static const char *mono_pcm_out_text[] = {
+-	"None", "AIF2ADCL", "AIF2ADCR", 
++	"None", "AIF2ADCL", "AIF2ADCR",
+ };
+ 
+ static const struct soc_enum mono_pcm_out_enum =
+@@ -2122,7 +2122,7 @@ static int wm8994_set_dai_sysclk(struct snd_soc_dai *dai,
+ 
+ 	case WM8994_SYSCLK_OPCLK:
+ 		/* Special case - a division (times 10) is given and
+-		 * no effect on main clocking. 
++		 * no effect on main clocking.
+ 		 */
+ 		if (freq) {
+ 			for (i = 0; i < ARRAY_SIZE(opclk_divs); i++)
+@@ -2958,14 +2958,14 @@ static void wm8994_handle_retune_mobile_pdata(struct wm8994_priv *wm8994)
+ 
+ 		/* Expand the array... */
+ 		t = krealloc(wm8994->retune_mobile_texts,
+-			     sizeof(char *) * 
++			     sizeof(char *) *
+ 			     (wm8994->num_retune_mobile_texts + 1),
+ 			     GFP_KERNEL);
+ 		if (t == NULL)
+ 			continue;
+ 
+ 		/* ...store the new entry... */
+-		t[wm8994->num_retune_mobile_texts] = 
++		t[wm8994->num_retune_mobile_texts] =
+ 			pdata->retune_mobile_cfgs[i].name;
+ 
+ 		/* ...and remember the new version. */
+@@ -3907,7 +3907,6 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
+ 					  ARRAY_SIZE(wm8994_dac_widgets));
+ 		break;
+ 	}
+-		
+ 
+ 	wm_hubs_add_analogue_routes(codec, 0, 0);
+ 	snd_soc_dapm_add_routes(dapm, intercon, ARRAY_SIZE(intercon));
 -- 
-1.7.7.6
+1.7.10
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
