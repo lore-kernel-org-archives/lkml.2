@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab2DHFMP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 01:12:15 -0400
-Received: from out08.mta.xmission.com ([166.70.13.238]:56878 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751422Ab2DHFMN (ORCPT
+	id S1753584Ab2DHF7H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 01:59:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36614 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab2DHF7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 01:12:13 -0400
-From: "\"Eric W. Beiderman" <ebiederm@xmission.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-fsdevel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Sat,  7 Apr 2012 22:14:57 -0700
-Message-Id: <1333862139-31737-1-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <m11unyn70b.fsf@fess.ebiederm.org>
-References: <m11unyn70b.fsf@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+f6cJn6nRwM7vxBBHaS0UC81hiPJXafyM=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.1 FH_FROMEML_NOTLD E-mail address doesn't have TLD (.com, etc.)
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: **
-Subject: [PATCH 01/43] vfs: Don't allow a user namespace root to make device nodes
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Sun, 8 Apr 2012 01:59:05 -0400
+Subject: Re: [PATCH] clocksource: Load the ACPI PM clocksource asynchronously
+Date: Sun, 08 Apr 2012 05:58:31 -0000
+From: Michael Witten <mfwitten@gmail.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <lenb@kernel.org>,
+        Arjan van de Ven <arjanvandeven@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <717f591b21b34ebea5793c6206b8a2b8-mfwitten@gmail.com>
+In-Reply-To: <20120130205120.652aa64f@infradead.org>
+References: <20120130205120.652aa64f@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@xmission.com>
+On Mon, 30 Jan 2012 20:51:20 -0800, Arjan van de Ven wrote:
 
-Safely making device nodes in a container is solvable but simply
-having the capability in a user namespace is not sufficient to make
-this work.
+> ...
+>
+> The ACPI clocksource takes quite some time to initialize,
+> and this increases the boot time of the kernel for a
+> double digit percentage. This while almost all modern
+> systems will be using the HPET already anyway.
+>
+> This patch turns the clocksource loading into an asynchronous
+> operation; which means it won't hold up the boot while
+> still becoming available normally.
+>
+> To make this work well, an udelay() had to be turned into an
+> usleep_range() so that on UP systems, we yield the CPU to
+> regular boot tasks instead of spinning.
+>
+> ...
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- fs/namei.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+This patch became the following commit:
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 1898198..701954d 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2560,8 +2560,7 @@ int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
- 	if (error)
- 		return error;
- 
--	if ((S_ISCHR(mode) || S_ISBLK(mode)) &&
--	    !ns_capable(inode_userns(dir), CAP_MKNOD))
-+	if ((S_ISCHR(mode) || S_ISBLK(mode)) && !capable(CAP_MKNOD))
- 		return -EPERM;
- 
- 	if (!dir->i_op->mknod)
--- 
-1.7.2.5
+  commit b519508298e0292e1771eecf14aaf67755adc39d
+  Author:     Arjan van de Ven <arjan@linux.intel.com>
+  AuthorDate: Mon Jan 30 20:23:30 2012 -0800
+  Commit:     John Stultz <john.stultz@linaro.org>
+  CommitDate: Wed Feb 1 18:39:46 2012 -0800
 
+to which I bisected as the culprit for very strange load balance
+behavior on my machine.
+
+With this patch in place, my CPU is constantly being pegged at 100%
+(and my CPU monitor sometimes registers NaN%), regardless of the
+active governor and under conditions when my computer would normally
+be idling quite placidly.
+
+Reverting this commit does indeed remove the problem from previously
+problematic builds.
+
+Sincerely,
+Michael Witten
+
+Some probably useless information:
+
+  * Dell Latitude D810 (from about 2005/2006)
+
+      * BIOS Version A05
+
+  * /proc/cpuinfo:
+
+      processor       : 0
+      vendor_id       : GenuineIntel
+      cpu family      : 6
+      model           : 13
+      model name      : Intel(R) Pentium(R) M processor 2.13GHz
+      stepping        : 8
+      microcode       : 0x20
+      cpu MHz         : 800.000
+      cache size      : 2048 KB
+      fdiv_bug        : no
+      hlt_bug         : no
+      f00f_bug        : no
+      coma_bug        : no
+      fpu             : yes
+      fpu_exception   : yes
+      cpuid level     : 2
+      wp              : yes
+      flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov clflush dts acpi mmx fxsr sse sse2 ss tm pbe nx bts est tm2
+      bogomips        : 1596.47
+      clflush size    : 64
+      cache_alignment : 64
+      address sizes   : 32 bits physical, 32 bits virtual
+      power management:
