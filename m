@@ -1,170 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2DHAVv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Apr 2012 20:21:51 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:62099 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab2DHAVn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Apr 2012 20:21:43 -0400
-Message-ID: <4F80DA15.1090909@tilera.com>
-Date: Sat, 7 Apr 2012 20:21:41 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] arch/tile: provide kernel support for the tilegx
- TRIO shim
-References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204072319.q37NJgrI019382@farm-0023.internal.tilera.com> <alpine.LNX.2.00.1204080126300.4431@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1204080126300.4431@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1753582Ab2DHArH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Apr 2012 20:47:07 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48318 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751156Ab2DHArF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Apr 2012 20:47:05 -0400
+Message-ID: <1333846023.1834.21.camel@joe2Laptop>
+Subject: Re: [PATCH] printk: support structured and multi-facility log
+ messages
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>
+Date: Sat, 07 Apr 2012 17:47:03 -0700
+In-Reply-To: <1333737301.29217.11.camel@mop>
+References: <1333569554.864.3.camel@mop>
+	 <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
+	 <1333655231.725.27.camel@mop> <1333674768.23520.123.camel@joe2Laptop>
+	 <CA+55aFyE41U9OPr7mrAA2ZJKuQ2jvH-KmusUNyfYbH8tOm6yiQ@mail.gmail.com>
+	 <1333737301.29217.11.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/7/2012 7:39 PM, Jesper Juhl wrote:
-> On Sat, 7 Apr 2012, Chris Metcalf wrote:
->> Provide kernel support for the tilegx "Transaction I/O" (TRIO) on-chip
->> hardware.  This hardware implements the PCIe interface for tilegx;
->> the driver changes to use TRIO for PCIe are in a subsequent commit.
->>
->> The change is layered on top of the tilegx GXIO IORPC subsystem.
->>
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
->> [...]
->> +/* This file is machine-generated; DO NOT EDIT! */
->> +#include "gxio/iorpc_trio.h"
->> +
->> +typedef struct {
->> +     unsigned int count;
->> +     unsigned int first;
->> +     unsigned int flags;
->> +} alloc_asids_param_t;
->> +
->> +int gxio_trio_alloc_asids(gxio_trio_context_t * context, unsigned int count,
->> +                       unsigned int first, unsigned int flags)
->> +{
->> +     uint64_t __offset;
->> +     int __result;
->> +     alloc_asids_param_t temp;
->> +     alloc_asids_param_t *params = &temp;
->> +     size_t __size = sizeof(*params);
->> +
->> +     params->count = count;
->> +     params->first = first;
->> +     params->flags = flags;
->> +
->> +     __offset = GXIO_TRIO_OP_ALLOC_ASIDS;
->> +     __result =
->> +         hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params, __size,
->> +                       __offset);
->> +     return __result;
->> +}
-> Having the "__offset" variable seems redundant here. It is declared, then
-> later initialized to GXIO_TRIO_OP_ALLOC_ASIDS and then later used just
-> once.
-> I'd say either initialize it to GXIO_TRIO_OP_ALLOC_ASIDS when it's
-> declared (and make that variable const) or just get rid of it entirely and
-> just use GXIO_TRIO_OP_ALLOC_ASIDS directly in the one place the variable
-> is used.
-> This goes for other functions as well, using a __offset variable in a
-> similar way - not going to explicitly point them all out.
+On Fri, 2012-04-06 at 20:35 +0200, Kay Sievers wrote:
+> On Thu, 2012-04-05 at 18:31 -0700, Linus Torvalds wrote:
+> > On Thu, Apr 5, 2012 at 6:12 PM, Joe Perches <joe@perches.com> wrote:
+> > >
+> > > I still think this should be 3 patches not 1.
+> > 
+> > I do agree that that would be lovely. That patch is really hard to
+> > read, and it would be helpful if some of it was split up a bit. For
+> > example, separating out the "move log buffer to be packetized"
+> > (without actually doing the new things) from for the "introduce new
+> > interfaces" would be quite nice.
+> > 
+> > In fact, I think I could merge something that does the packetization
+> > early, if it is fairly obvious that it doesn't do anything else. Just
+> > making the dmesg ASCII timestamp be something that is a "read buffer"
+> > time thing rather than "generate printk" time thing would be nice, and
+> > I think the sequence numbers can be useful even with all the old
+> > interfaces.
+> > 
+> > So if somebody wants to help with things like that, and try to turn
+> > this into a more gradual thing, I think we could merge at least some
+> > initial parts of this patch even for 3.4.
+> 
+> Here is only the conversion of the byte- to the record-buffer split out
+> of the big patch.
+> 
+> Unfortunately, it's still pretty big, and the patch not easy to read;
+> the code itself looks better than the patch. At this moment I have no
+> convincing idea how to split that into more pieces.
 
-Yes, there's certainly a tension here: as the comment at the top points
-out, this file is machine-generated.  The compiled object code will clearly
-be just as good whether __offset is done in a terser and more normal style,
-or if it is done the way the generating code does it now.  This code also
-comes from "upstream" internally at Tilera in the sense that Linux just
-uses files that are generated by code in the hypervisor build process.  But
-I can certainly look into whether the generated files can be easily made
-terser.
+I'll spend some time on breaking up Kay's
+patch in the next couple of weeks.
 
-> What's the point of the "__result" variable? why not just get rid of it
-> and just "return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-> __size, __offset);" ??
-> Goes for other functions as well..
+I'll try to get my printk restructuring patch
+out by Monday.
 
-Yes, same issue here too, and I'll look into this as well.
+I think Kay's still relatively large patch can
+be broken into a sequence of:
 
->> [...]
->> +int gxio_trio_config_legacy_intr(gxio_trio_context_t * context, int inter_x,
->> +                              int inter_y, int inter_ipi, int inter_event,
->> +                              unsigned int mac, unsigned int intx)
->> +{
->> +     uint64_t __offset;
->> +     int __result;
->> +     config_legacy_intr_param_t temp;
->> +     config_legacy_intr_param_t *params = &temp;
->> +     size_t __size = sizeof(*params);
->> +
-> const size_t __size = sizeof(*params);  ??? or maybe just get rid of the
-> variable since it is only used once.?
+1.  log_buf record oriented patch only
+2.  S
+ what I think is an
+intelligible sequence of small concept pieces
+and submit it end of April.  I'll be more or
+less unavailable until then though.
 
-I don't see "const" used that much in the kernel (though there does seem to
-be a slight swing towards more of it despite the threat of "const
-poisoning" issues).  Getting rid of the variable might or might not be
-easy, again, depending on the code generator issues.  I'll check.
 
->> [...]
->> +#define GXIO_TRIO_OP_GET_PORT_PROPERTY IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x1419)
->> +#define GXIO_TRIO_OP_CONFIG_LEGACY_INTR IORPC_OPCODE(IORPC_FORMAT_KERNEL_INTERRUPT, 0x141a)
->> +#define GXIO_TRIO_OP_CONFIG_MSI_INTR   IORPC_OPCODE(IORPC_FORMAT_KERNEL_INTERRUPT, 0x141b)
->> +#define GXIO_TRIO_OP_CONFIG_CHAR_INTR  IORPC_OPCODE(IORPC_FORMAT_KERNEL_INTERRUPT, 0x141c)
->> +#define GXIO_TRIO_OP_SET_MPS_MRS       IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x141d)
->> +#define GXIO_TRIO_OP_FORCE_LINK_UP     IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x141e)
->> +#define GXIO_TRIO_OP_GET_MMIO_BASE     IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8000)
->> +#define GXIO_TRIO_OP_CHECK_MMIO_OFFSET IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8001)
->> +
->
-> There is some funky formatting going on here (or my email client is
-> playing tricks on me) :
 
-The code generator here is trying to align the #define values at column 40
-and if the #define symbol is too long, it just uses one space and leaves it
-at that.
-
->> [...]
->> +int gxio_trio_force_link_up(gxio_trio_context_t * context, unsigned int mac);
->> +
->> +int gxio_trio_get_mmio_base(gxio_trio_context_t * context, HV_PTE *base);
->> +
->> +int gxio_trio_check_mmio_offset(gxio_trio_context_t * context,
->> +                             unsigned long offset, unsigned long size);
->> +
-> First of all, when you have "pointer_type * variable", please use the
-> style "pointer_type *variable" - as per accepted kernel coding style.
-
-Yes, this is a bug from my missing some typenames when using "indent" to
-try to force the upstream files into something closer to standard Linux
-format.  I can add some "-T" arguments to remove the extra whitespace.
-
-> Also, I find the indentation to be inconsistent; varuing from function to
-> function - is it just my email client or??  If not, please fix.
-
-The upstream code style is closer to FSF, with the return typename on the
-line before the function.  Using "indent -npsl" is theoretically supposed
-to fix this to Linux style, but in fact it appears that if the function and
-its arguments is longer than 80 columns, indent "helpfully" doesn't do
-this.  I'd like to fix this in a mechanical way so I don't end up in merge
-hell in a year or two, but failing that I'm planning to just leave this
-code with some signatures in the wrong style; it seems the lesser of
-several evils.
-
->> +/** TRIO requires that all mappings have 4kB aligned start addresses. */
->> +#define HV_TRIO_PAGE_SIZE (1ull << HV_TRIO_PAGE_SHIFT)
->> +
->> +
->> +
-> 3 blank lines seems excessive - surely 2 is enough.
-
-Fixed.
-
-Thanks for your review - I appreciate it!
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
 
