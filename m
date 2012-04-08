@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab2DHFRq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 01:17:46 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51548 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab2DHFM1 (ORCPT
+	id S1755504Ab2DHFRo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 01:17:44 -0400
+Received: from out08.mta.xmission.com ([166.70.13.238]:56977 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753123Ab2DHFM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Apr 2012 01:12:27 -0400
 From: "\"Eric W. Beiderman" <ebiederm@xmission.com>
@@ -16,13 +16,13 @@ Cc: <linux-fsdevel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
         Al Viro <viro@ZenIV.linux.org.uk>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Sat,  7 Apr 2012 22:15:29 -0700
-Message-Id: <1333862139-31737-33-git-send-email-ebiederm@xmission.com>
+Date: Sat,  7 Apr 2012 22:15:30 -0700
+Message-Id: <1333862139-31737-34-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <m11unyn70b.fsf@fess.ebiederm.org>
 References: <m11unyn70b.fsf@fess.ebiederm.org>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/1e5fVwIOK5Fs2oaGQXW4rh2BPOMAuDMk=
+X-XM-AID: U2FsdGVkX19V0BTg1hOV5fQkPoULIbUBuP7duR+wz1I=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: *  1.1 FH_FROMEML_NOTLD E-mail address doesn't have TLD (.com, etc.)
@@ -30,16 +30,16 @@ X-Spam-Report: *  1.1 FH_FROMEML_NOTLD E-mail address doesn't have TLD (.com, et
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
 	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0010]
+	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1]
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
 	*  1.6 XMSubMetaSx_00 1+ Sexy Words
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ***;<linux-kernel@vger.kernel.org>
 X-Spam-Relay-Country: **
-Subject: [PATCH 33/43] userns: Convert binary formats to use kuid/kgid where appropriate
+Subject: [PATCH 34/43] userns: Convert devpts to use kuid/kgid where appropriate
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -51,70 +51,74 @@ From: Eric W. Biederman <ebiederm@xmission.com>
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/binfmt_elf.c       |   12 ++++++------
- fs/binfmt_elf_fdpic.c |   12 ++++++------
- 2 files changed, 12 insertions(+), 12 deletions(-)
+ fs/devpts/inode.c |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 48ffb3d..efc6731 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -228,10 +228,10 @@ create_elf_tables(struct linux_binprm *bprm, struct elfhdr *exec,
- 	NEW_AUX_ENT(AT_BASE, interp_load_addr);
- 	NEW_AUX_ENT(AT_FLAGS, 0);
- 	NEW_AUX_ENT(AT_ENTRY, exec->e_entry);
--	NEW_AUX_ENT(AT_UID, cred->uid);
--	NEW_AUX_ENT(AT_EUID, cred->euid);
--	NEW_AUX_ENT(AT_GID, cred->gid);
--	NEW_AUX_ENT(AT_EGID, cred->egid);
-+	NEW_AUX_ENT(AT_UID, from_kuid_munged(cred->user_ns, cred->uid));
-+	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));
-+	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));
-+	NEW_AUX_ENT(AT_EGID, from_kgid_munged(cred->user_ns, cred->egid));
-  	NEW_AUX_ENT(AT_SECURE, security_bprm_secureexec(bprm));
- 	NEW_AUX_ENT(AT_RANDOM, (elf_addr_t)(unsigned long)u_rand_bytes);
- 	NEW_AUX_ENT(AT_EXECFN, bprm->exec);
-@@ -1367,8 +1367,8 @@ static int fill_psinfo(struct elf_prpsinfo *psinfo, struct task_struct *p,
- 	psinfo->pr_flag = p->flags;
- 	rcu_read_lock();
- 	cred = __task_cred(p);
--	SET_UID(psinfo->pr_uid, cred->uid);
--	SET_GID(psinfo->pr_gid, cred->gid);
-+	SET_UID(psinfo->pr_uid, from_kuid_munged(cred->user_ns, cred->uid));
-+	SET_GID(psinfo->pr_gid, from_kgid_munged(cred->user_ns, cred->gid));
- 	rcu_read_unlock();
- 	strncpy(psinfo->pr_fname, p->comm, sizeof(psinfo->pr_fname));
- 	
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 9bd5612..82bf0ed 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -631,10 +631,10 @@ static int create_elf_fdpic_tables(struct linux_binprm *bprm,
- 	NEW_AUX_ENT(AT_BASE,	interp_params->elfhdr_addr);
- 	NEW_AUX_ENT(AT_FLAGS,	0);
- 	NEW_AUX_ENT(AT_ENTRY,	exec_params->entry_addr);
--	NEW_AUX_ENT(AT_UID,	(elf_addr_t) cred->uid);
--	NEW_AUX_ENT(AT_EUID,	(elf_addr_t) cred->euid);
--	NEW_AUX_ENT(AT_GID,	(elf_addr_t) cred->gid);
--	NEW_AUX_ENT(AT_EGID,	(elf_addr_t) cred->egid);
-+	NEW_AUX_ENT(AT_UID,	(elf_addr_t) from_kuid_munged(cred->user_ns, cred->uid));
-+	NEW_AUX_ENT(AT_EUID,	(elf_addr_t) from_kuid_munged(cred->user_ns, cred->euid));
-+	NEW_AUX_ENT(AT_GID,	(elf_addr_t) from_kgid_munged(cred->user_ns, cred->gid));
-+	NEW_AUX_ENT(AT_EGID,	(elf_addr_t) from_kgid_munged(cred->user_ns, cred->egid));
- 	NEW_AUX_ENT(AT_SECURE,	security_bprm_secureexec(bprm));
- 	NEW_AUX_ENT(AT_EXECFN,	bprm->exec);
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index 10f5e0b..979c1e3 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -98,8 +98,8 @@ static struct vfsmount *devpts_mnt;
+ struct pts_mount_opts {
+ 	int setuid;
+ 	int setgid;
+-	uid_t   uid;
+-	gid_t   gid;
++	kuid_t   uid;
++	kgid_t   gid;
+ 	umode_t mode;
+ 	umode_t ptmxmode;
+ 	int newinstance;
+@@ -158,11 +158,13 @@ static inline struct super_block *pts_sb_from_inode(struct inode *inode)
+ static int parse_mount_options(char *data, int op, struct pts_mount_opts *opts)
+ {
+ 	char *p;
++	kuid_t uid;
++	kgid_t gid;
  
-@@ -1431,8 +1431,8 @@ static int fill_psinfo(struct elf_prpsinfo *psinfo, struct task_struct *p,
- 	psinfo->pr_flag = p->flags;
- 	rcu_read_lock();
- 	cred = __task_cred(p);
--	SET_UID(psinfo->pr_uid, cred->uid);
--	SET_GID(psinfo->pr_gid, cred->gid);
-+	SET_UID(psinfo->pr_uid, from_kuid_munged(cred->user_ns, cred->uid));
-+	SET_GID(psinfo->pr_gid, from_kgid_munged(cred->user_ns, cred->gid));
- 	rcu_read_unlock();
- 	strncpy(psinfo->pr_fname, p->comm, sizeof(psinfo->pr_fname));
+ 	opts->setuid  = 0;
+ 	opts->setgid  = 0;
+-	opts->uid     = 0;
+-	opts->gid     = 0;
++	opts->uid     = GLOBAL_ROOT_UID;
++	opts->gid     = GLOBAL_ROOT_GID;
+ 	opts->mode    = DEVPTS_DEFAULT_MODE;
+ 	opts->ptmxmode = DEVPTS_DEFAULT_PTMX_MODE;
+ 	opts->max     = NR_UNIX98_PTY_MAX;
+@@ -184,13 +186,19 @@ static int parse_mount_options(char *data, int op, struct pts_mount_opts *opts)
+ 		case Opt_uid:
+ 			if (match_int(&args[0], &option))
+ 				return -EINVAL;
+-			opts->uid = option;
++			uid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(uid))
++				return -EINVAL;
++			opts->uid = uid;
+ 			opts->setuid = 1;
+ 			break;
+ 		case Opt_gid:
+ 			if (match_int(&args[0], &option))
+ 				return -EINVAL;
+-			opts->gid = option;
++			gid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(gid))
++				return -EINVAL;
++			opts->gid = gid;
+ 			opts->setgid = 1;
+ 			break;
+ 		case Opt_mode:
+@@ -315,9 +323,9 @@ static int devpts_show_options(struct seq_file *seq, struct dentry *root)
+ 	struct pts_mount_opts *opts = &fsi->mount_opts;
  
+ 	if (opts->setuid)
+-		seq_printf(seq, ",uid=%u", opts->uid);
++		seq_printf(seq, ",uid=%u", from_kuid_munged(&init_user_ns, opts->uid));
+ 	if (opts->setgid)
+-		seq_printf(seq, ",gid=%u", opts->gid);
++		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, opts->gid));
+ 	seq_printf(seq, ",mode=%03o", opts->mode);
+ #ifdef CONFIG_DEVPTS_MULTIPLE_INSTANCES
+ 	seq_printf(seq, ",ptmxmode=%03o", opts->ptmxmode);
 -- 
 1.7.2.5
 
