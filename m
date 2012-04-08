@@ -1,113 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab2DHRNl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 13:13:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab2DHRNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 13:13:39 -0400
-Date: Sun, 8 Apr 2012 20:13:25 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120408171323.GA16012@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755573Ab2DHRP0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 13:15:26 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38653 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab2DHRPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 13:15:24 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH RFC 0/2] PCI, x86: update MMCFG information when hot-plugging PCI host bridges
+Date: Mon,  9 Apr 2012 01:12:07 +0800
+Message-Id: <1333905129-8776-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com>
+References: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5
-tun: orphan an skb on tx
-Fixed a configuration where skbs get queued
-at the tun device forever, blocking senders.
+This patchset enhance pci_root driver to update MMCFG information when
+hot-plugging PCI root bridges. It applies to Yinghai's tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-root-bus-hotplug
 
-However this fix isn't waterproof:
-userspace can control whether the interface
-is stopped, and if it is, packets
-get queued in the qdisc, again potentially forever.
+The second patch is based on Taku Izumi work with some enhancements to
+correctly handle PCI host bridges without _CBA method.
 
-Complete the fix by setting a private flag and orphaning
-at the qdisc level.
+Jiang Liu (2):
+  PCI,x86: introduce new MMCFG interfaces to support PCI host bridge
+    hotplug
+  PCI, ACPI, x86: update MMCFG information when hot-plugging PCI host
+    bridges
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/tun.c       |    3 +++
- include/linux/if.h      |    1 +
- net/core/dev.c          |    5 +++++
- net/sched/sch_generic.c |    5 +++++
- 4 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/pci_x86.h |    4 +
+ arch/x86/pci/acpi.c            |   58 +++++++++++++
+ arch/x86/pci/mmconfig-shared.c |  186 +++++++++++++++++++++++++++++++---------
+ arch/x86/pci/mmconfig_32.c     |   28 ++++++-
+ arch/x86/pci/mmconfig_64.c     |   35 +++++++-
+ drivers/acpi/pci_root.c        |   20 +++++
+ include/acpi/acnames.h         |    1 +
+ include/linux/pci-acpi.h       |    3 +
+ 8 files changed, 288 insertions(+), 47 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index bb8c72c..15c5bb8 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -535,6 +535,9 @@ static void tun_net_init(struct net_device *dev)
- 		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
- 		break;
- 	}
-+	/* Once queue becomes full, we stop tx until userspace
-+	 * dequeues some packets, that is potentially forever. */
-+	dev->priv_flags |= IFF_TX_CAN_STALL;
- }
- 
- /* Character device part */
-diff --git a/include/linux/if.h b/include/linux/if.h
-index f995c66..dd2c7f7 100644
---- a/include/linux/if.h
-+++ b/include/linux/if.h
-@@ -81,6 +81,7 @@
- #define IFF_UNICAST_FLT	0x20000		/* Supports unicast filtering	*/
- #define IFF_TEAM_PORT	0x40000		/* device used as team port */
- #define IFF_SUPP_NOFCS	0x80000		/* device supports sending custom FCS */
-+#define IFF_TX_CAN_STALL 0x100000	/* Device can stop tx forever */
- 
- 
- #define IF_GET_IFACE	0x0001		/* for querying only */
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 5d59155..e812706 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2516,6 +2516,11 @@ int dev_queue_xmit(struct sk_buff *skb)
- 	struct Qdisc *q;
- 	int rc = -ENOMEM;
- 
-+	/* Orphan the skb - required if we might hang on to it
-+	 * for indefinite time. */
-+	if (dev->priv_flags & IFF_TX_CAN_STALL)
-+		skb_orphan(skb);
-+
- 	/* Disable soft irqs for various locks below. Also
- 	 * stops preemption for RCU.
- 	 */
-diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-index 67fc573..27883d1 100644
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -120,6 +120,11 @@ int sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
- 	/* And release qdisc */
- 	spin_unlock(root_lock);
- 
-+	/* Orphan the skb - required if we might hang on to it
-+	 * for indefinite time. */
-+	if (dev->priv_flags & IFF_TX_CAN_STALL)
-+		skb_orphan(skb);
-+
- 	HARD_TX_LOCK(dev, txq, smp_processor_id());
- 	if (!netif_xmit_frozen_or_stopped(txq))
- 		ret = dev_hard_start_xmit(skb, dev, txq);
 -- 
-1.7.9.111.gf3fb0
+1.7.5.4
+
