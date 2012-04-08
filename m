@@ -1,57 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab2DHVks (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 17:40:48 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53919 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755229Ab2DHVkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 17:40:47 -0400
-Message-ID: <1333921246.2508.8.camel@joe2Laptop>
-Subject: Re: [PATCH] dma: pl330: fix a couple of compilation warnings
-From: Joe Perches <joe@perches.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, Boojin Kim <boojin.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Date: Sun, 08 Apr 2012 14:40:46 -0700
-In-Reply-To: <1333919920-25481-1-git-send-email-olof@lixom.net>
-References: <1333919920-25481-1-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1756009Ab2DHVuF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 17:50:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60533 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754883Ab2DHVuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 17:50:04 -0400
+Message-ID: <4F820804.2040302@zytor.com>
+Date: Sun, 08 Apr 2012 14:49:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Xin Tong <xerox.time.tech@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: oostore on x86
+References: <CALKntY1V2nELdTOSVpm1PwVmxm1pxtGdvs8tUyNA1R=c9K8pcA@mail.gmail.com>
+In-Reply-To: <CALKntY1V2nELdTOSVpm1PwVmxm1pxtGdvs8tUyNA1R=c9K8pcA@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-08 at 14:18 -0700, Olof Johansson wrote:
-> Move a couple of tests and do a minor refactor to avoid:
-[]
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-[]
-> @@ -2926,8 +2928,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->  	INIT_LIST_HEAD(&pd->channels);
->  
->  	/* Initialize channel parameters */
-> -	num_chan = max(pdat ? pdat->nr_valid_peri : (u8)pi->pcfg.num_peri,
-> -			(u8)pi->pcfg.num_chan);
-> +	num_chan = max_t(int, pdat ? pdat->nr_valid_peri :
-> +				     pi->pcfg.num_peri,
-> +			      pi->pcfg.num_chan);
->  	pdmac->peripherals = kzalloc(num_chan * sizeof(*pch), GFP_KERNEL);
+On 04/07/2012 12:48 PM, Xin Tong wrote:
+> how can one enable oostore on x86, does one need to recompile the kernel ?
 
-Few trivial things:
+Yes, and expect the code to have seriously bitrotted.
 
-There's no error checking for a malloc failure
-This should probably be kcalloc
-The alignment here is not nice
+	-hpa
 
-Maybe:
-
-	num_chan = max_t(size_t, pdat ? pdat->nr_valid_peri : pi->pcfg.num_peri,
-			 pi->pcfg.num_chan);
-	pdmac->peripherals = kcalloc(num_chan, sizeof(*pch), GFP_KERNEL);
-	if (!pdmac->peripherals)
-		goto some_err;
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
