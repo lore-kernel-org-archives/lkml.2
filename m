@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab2DHXtn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 19:49:43 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59205 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab2DHXtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 19:49:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-Date: Mon, 9 Apr 2012 01:54:08 +0200
-User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
-Cc: Aaron Lu <aaron.lu@amd.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <20120405025609.GA5208@localhost.amd.com> <1333594904.11327.27.camel@minggr>
-In-Reply-To: <1333594904.11327.27.camel@minggr>
+	id S1756492Ab2DHXuG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 19:50:06 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:60030 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756347Ab2DHXuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 19:50:05 -0400
+Date: Mon, 9 Apr 2012 07:49:51 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120408234951.GA15993@gondor.apana.org.au>
+References: <20120408171323.GA16012@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204090154.09183.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120408171323.GA16012@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 05, 2012, Lin Ming wrote:
-> On Thu, 2012-04-05 at 10:56 +0800, Aaron Lu wrote:
-> > Hi,
-> > 
-> > On Thu, Apr 05, 2012 at 10:31:20AM +0800, Lin Ming wrote:
-> > > > 
-> > > > The only situation where a device can be put into ACPI D3_hot (which is not
-> > > > the same as PCI D3_hot, mind you) is when:
-> > > > 
-> > > > (1) There is _PR3 listing some of the device's power resources as "on".
-> > > > (2) The power resources listed by the _PR3 as "off" are turned off and the
-> > > >     power resources listed by the _PR3 as "on" are left in the "on" state.
-> > > 
-> > > I don't understand item (2):
-> > > 
-> > > If the power resource is listed as "off", which means it's already
-> > > turned off. Then why should it be turned off again?
-> > 
-> > Rafael,
-> > I think you misunderstand the meaning of _PR3.
-> > The _PR3 will evaluate a list of power resources, not two lists(one "on"
-> > list and one "off" list), as illustrated by Ming below.
-> > 
-> > And for a device to be put to D3 hot, it should:
-> > 1 execuate _PS3 first if available
-> > 2 turn on all the power resources referenced by _PR3
+On Sun, Apr 08, 2012 at 08:13:25PM +0300, Michael S. Tsirkin wrote:
+> commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5
+> tun: orphan an skb on tx
+> Fixed a configuration where skbs get queued
+> at the tun device forever, blocking senders.
 > 
->   3 turn off all the power resources referenced by previous state
+> However this fix isn't waterproof:
+> userspace can control whether the interface
+> is stopped, and if it is, packets
+> get queued in the qdisc, again potentially forever.
+> 
+> Complete the fix by setting a private flag and orphaning
+> at the qdisc level.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-But leave the ones listed by _PR3 in the "on" state, you mean?
+1) Doesn't this break local UDP push-back?
+2) Isn't the stall a bug in the backend and isn't this just
+papering over that?
 
-Rafael
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
