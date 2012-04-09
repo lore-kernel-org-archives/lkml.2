@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab2DITP4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:15:56 -0400
-Received: from mga07.intel.com ([143.182.124.22]:5920 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753224Ab2DITPx convert rfc822-to-8bit (ORCPT
+	id S1757873Ab2DITQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:16:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61712 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757686Ab2DITQc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:15:53 -0400
+	Mon, 9 Apr 2012 15:16:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <201204091849.20705.arnd@arndb.de>
-References: <20120409182041.317.33360.stgit@dwillia2-linux.jf.intel.com>
-	<20120409182203.317.81835.stgit@dwillia2-linux.jf.intel.com>
-	<201204091849.20705.arnd@arndb.de>
-Date: Mon, 9 Apr 2012 12:15:50 -0700
-Message-ID: <CABE8wwszp3MoVxCdUfjUtvMkugL7VzOYTSxFQwqwQ7U9Wr0kbA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] of_serial: add support for setup quirks
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: gregkh@linuxfoundation.org, Stephen Warren <swarren@nvidia.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        linux-serial@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, alan@linux.intel.com
+In-Reply-To: <1540670.AFBi1SpGoi@sifl>
+References: <1540670.AFBi1SpGoi@sifl>
+Date: Mon, 9 Apr 2012 12:16:30 -0700
+X-Google-Sender-Auth: XpncvK6UKjMfDC9PLWeoE6oOuoI
+Message-ID: <CAGXu5jL5nAY4=5OKhA6VPdrzkUjVuBTcLQuMxUSEv_=N=ohbzQ@mail.gmail.com>
+Subject: Re: ANN: libseccomp
+From: Kees Cook <keescook@chromium.org>
+To: Paul Moore <paul@paul-moore.com>
+Cc: libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 11:49 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 09 April 2012, Dan Williams wrote:
->> Benign conversion of of_serial.c to offer the option of 'setup' quirks
->> similar to how 8250_pci.c houses the pci-serial-device quirks.
->>
->> A setup quirk allows custom uart_port ops to specified in the
->> of_serial_info data fed to each serial of_device_id.
->>
->> Tegra's 'break' quirk is the target consumer.
->>
->> Cc: Colin Cross <ccross@android.com>
->> Cc: Olof Johansson <olof@lixom.net>
->> Cc: Stephen Warren <swarren@nvidia.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
->> ---
->>  drivers/tty/serial/of_serial.c |   68 ++++++++++++++++++++++++++++------------
->>  1 files changed, 47 insertions(+), 21 deletions(-)
+On Mon, Apr 9, 2012 at 11:58 AM, Paul Moore <paul@paul-moore.com> wrote:
+> With the seccomp patches finally stabilizing a bit, it seems like now is a
+> good time to announce libseccomp: a library designed to make it easier to
+> create complex, architecture independent seccomp filters.
 >
-> I don't think this is a good idea. Aside from the bug that you introduce
-> (you can no longer have multiple ports of the same type because of overwrite
-> the static info->line number),
+>  * http://sourceforge.net/projects/libseccomp/
+>  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
 
-ah, yes, good catch.
+This looks really great; nice work!
 
-> it seems an unnecessary complication.
-> Either just add the quirk to the of_serial file based on the compatible value,
-> or do a trivial new driver that has a subset of the existing one you need,
-> plus the quirk.
+I see that the arch check happens during _gen_bpf_build_bpf(), which
+is excellent. Do you have any thoughts about including a call to
+prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) by default as well?
 
-ok.
+-Kees
 
-The open question was where to house tegra_serial_handle_break, I'd
-just as soon keep it all in of_serial.c and maintain the temporary
-exports for use in the to-be-removed board files in
-arch/arm/mach-tegra.
-
---
-Dan
+-- 
+Kees Cook
+ChromeOS Security
