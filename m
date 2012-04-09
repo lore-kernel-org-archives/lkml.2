@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab2DIDcc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 23:32:32 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:48666 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754988Ab2DIDca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 23:32:30 -0400
-Message-ID: <4F8257F7.60302@st.com>
-Date: Mon, 9 Apr 2012 09:01:03 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1755355Ab2DIDrb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 23:47:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:3971 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747Ab2DIDr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 23:47:28 -0400
+X-IronPort-AV: E=Sophos;i="4.75,392,1330876800"; 
+   d="scan'208";a="4709237"
+Message-ID: <4F825BE7.80204@cn.fujitsu.com>
+Date: Mon, 09 Apr 2012 11:47:51 +0800
+From: Ren Mingxin <renmx@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20110412 CentOS/3.1.3-1.el6.centos Thunderbird/3.1.3
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Dong Aisheng <b29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/1] pinctrl: fix pinmux_check_ops error checking
-References: <1333714689-22450-1-git-send-email-b29396@freescale.com> <4F7F0C7E.6030407@wwwdotorg.org>
-In-Reply-To: <4F7F0C7E.6030407@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Tejun Heo <tj@kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, KVM <kvm@vger.kernel.org>,
+        SCSI <linux-scsi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        VIRTUAL <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass
+ of disks naming
+References: <4F7581D4.4040301@cn.fujitsu.com> <4F7582B0.5010609@cn.fujitsu.com> <20120330152606.GB28934@google.com> <20120330152808.GC28934@google.com> <4F78FE89.2070707@cn.fujitsu.com> <20120402072009.GF30360@redhat.com> <20120402185259.GA16226@dhcp-172-17-108-109.mtv.corp.google.com> <1333392978.2971.25.camel@dabdike> <20120402190045.GC16226@dhcp-172-17-108-109.mtv.corp.google.com> <20120404080149.GC22658@redhat.com>
+In-Reply-To: <20120404080149.GC22658@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/09 11:46:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/09 11:46:58,
+	Serialize complete at 2012/04/09 11:46:58
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/6/2012 9:02 PM, Stephen Warren wrote:
-> On 04/06/2012 06:18 AM, Dong Aisheng wrote:
->> > From: Dong Aisheng <dong.aisheng@linaro.org>
->> > 
->> > Do not use get_functions_count before checking.
->> > 
->> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-> 
-> IIRC, Viresh added some other get_*_count() functions in the same patch.
-> Do we need any more fixes similar to the this for those too?
+  On 04/04/2012 04:01 PM, Michael S. Tsirkin wrote:
+> On Mon, Apr 02, 2012 at 12:00:45PM -0700, Tejun Heo wrote:
+>> On Mon, Apr 02, 2012 at 11:56:18AM -0700, James Bottomley wrote:
+>>> So if we're agreed no other devices going forwards should ever use this
+>>> interface, is there any point unifying the interface?  No matter how
+>>> many caveats you hedge it round with, putting the API in a central place
+>>> will be a bit like a honey trap for careless bears.   It might be safer
+>>> just to leave it buried in the three current drivers.
+>> Yeah, that was my hope but I think it would be easier to enforce to
+>> have a common function which is clearly marked legacy so that new
+>> driver writers can go look for the naming code in the existing ones,
+>> find out they're all using the same function which is marked legacy
+>> and explains what to do for newer drivers.
+> I think I'm not the only one to be confused about the
+> preferred direction here.
+> James, do you agree to the approach above?
+>
+> It would be nice to fix virtio block for 3.4, so
+> how about this:
+> - I'll just apply the original bugfix patch for 3.4 -
+>    it only affects virtio
 
-Might not be required as this patch handles the pinmux_check_ops() routine.
-At other places ops is guaranteed to have correct value.
+Sorry, about only affects virtio, I'm not very clear here:
+1) Just duplicate the disk name format function in virtio_blk
+     like the original patch: https://lkml.org/lkml/2012/3/28/45
+2) Move the disk name format function into block core like
+     this patch series but only affects virtio(not affect mtip32xx).
+Do you mean the 2) one or something else?
+
+> - Ren will repost the refactoring patch on top, and we can
+>    keep up the discussion
+>
+> Ren if you agree, can you make this a two patch series please?
+>
+
+Sure.
 
 -- 
-viresh
+Thanks,
+Ren
+
