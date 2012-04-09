@@ -1,121 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab2DICLq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 22:11:46 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56585 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab2DICLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 22:11:44 -0400
-X-AuditID: 9c930197-b7b09ae000000a5d-18-4f82455a905e
-Message-ID: <4F8245EA.6000600@kernel.org>
-Date: Mon, 09 Apr 2012 11:14:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1754418Ab2DICPU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 22:15:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38871 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752160Ab2DICPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 22:15:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="126736504"
+Date: Mon, 9 Apr 2012 10:15:17 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Keith Packard <keithp@keithp.com>
+Subject: [PATCH] alsa: hide HDMI/ELD printks unless in debug kernels
+Message-ID: <20120409021517.GA14618@localhost>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel.mmc,gmane.linux.kernel
-To: Alex Lemberg <Alex.Lemberg@sandisk.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Rik van Riel <riel@redhat.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luca Porzio (lporzio)" <lporzio@micron.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hyojin Jeong <syr.jeong@samsung.com>,
-        "kernel-team@android.com" <kernel-team@android.com>,
-        Yejin Moon <yejin.moon@samsung.com>, Hugh Dickins <hughd@google.com>,
-        Yaniv Iarovici <Yaniv.Iarovici@sandisk.com>
-Subject: Re: swap on eMMC and other flash
-References: <201203301744.16762.arnd@arndb.de> <201204021145.43222.arnd@arndb.de> <alpine.LSU.2.00.1204020734560.1847@eggly.anvils> <201204021455.25029.arnd@arndb.de> <D70D75BB1A02CA42A3E28AA542D282303A0661B561@MILMBMIPV3.sdcorp.global.sandisk.com>
-In-Reply-To: <D70D75BB1A02CA42A3E28AA542D282303A0661B561@MILMBMIPV3.sdcorp.global.sandisk.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-04-08 오후 10:50, Alex Lemberg 쓴 글:
+These trivial messages will show up repeatedly on hot plug as well as
+video mode changes, which could be annoying.
 
-> Hi Arnd,
-> 
-> Regarding time to issue discard/TRIM commands:
-> It would be advised to issue the discard command immediately after deleting/freeing a SWAP cluster (i.e. as soon as it becomes available).
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ sound/pci/hda/hda_eld.c    |    6 +++---
+ sound/pci/hda/patch_hdmi.c |    4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-
-Is it still good with page size, not cluster size?
-
-> 
-> Regarding SWAP page size:
-> Working with as large as SWAP pages as possible would be recommended (preferably 64KB). Also, writing in a sequential manner as much as possible while swapping large quantities of data is also advisable.
-> 
-> SWAP pages and corresponding transactions should be aligned to the SWAP page size (i.e. 64KB above), the alignment should correspond to the physical storage "LBA 0", i.e. to the first LBA of the storage device (and not to a logical/physical partition).
-> 
-
-
-
-I have a curiosity on above comment is valid on Samsung and other eMMC.
-Hyojin, Could you answer?
-
-
-> Thanks,
-> Alex
-> 
->> -----Original Message-----
->> From: Arnd Bergmann [mailto:arnd@arndb.de]
->> Sent: Monday, April 02, 2012 5:55 PM
->> To: Hugh Dickins
->> Cc: linaro-kernel@lists.linaro.org; Rik van Riel; linux-
->> mmc@vger.kernel.org; Alex Lemberg; linux-kernel@vger.kernel.org; Luca
->> Porzio (lporzio); linux-mm@kvack.org; Hyojin Jeong; kernel-
->> team@android.com; Yejin Moon
->> Subject: Re: swap on eMMC and other flash
->>
->> On Monday 02 April 2012, Hugh Dickins wrote:
->>> On Mon, 2 Apr 2012, Arnd Bergmann wrote:
->>>>
->>>> Another option would be batched discard as we do it for file
->> systems:
->>>> occasionally stop writing to swap space and scanning for areas that
->>>> have become available since the last discard, then send discard
->>>> commands for those.
->>>
->>> I'm not sure whether you've missed "swapon --discard", which switches
->>> on discard_swap_cluster() just before we allocate from a new cluster;
->>> or whether you're musing that it's no use to you because you want to
->>> repurpose the swap cluster to match erase block: I'm mentioning it in
->>> case you missed that it's already there (but few use it, since even
->>> done at that scale it's often more trouble than it's worth).
->>
->> I actually argued that discard_swap_cluster is exactly the right thing
->> to do, especially when clusters match erase blocks on the less capable
->> devices like SD cards.
->>
->> Luca was arguing that on some hardware there is no point in ever
->> submitting a discard just before we start reusing space, because
->> at that point it the hardware already discards the old data by
->> overwriting the logical addresses with new blocks, while
->> issuing a discard on all blocks as soon as they become available
->> would make a bigger difference. I would be interested in hearing
->> from Hyojin Jeong and Alex Lemberg what they think is the best
->> time to issue a discard, because they would know about other hardware
->> than Luca.
->>
->>       Arnd
-> 
-> PLEASE NOTE: The information contained in this electronic mail message is intended only for the use of the designated recipient(s) named above. If the reader of this message is not the intended recipient, you are hereby notified that you have received this message in error and that any review, dissemination, distribution, or copying of this message is strictly prohibited. If you have received this communication in error, please notify the sender by telephone or e-mail (as shown above) immediately and destroy any and all copies of this message in your possession (whether hard copies or electronically stored copies).
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
+--- linux.orig/sound/pci/hda/hda_eld.c	2011-11-11 19:08:21.000000000 +0800
++++ linux/sound/pci/hda/hda_eld.c	2011-11-11 19:09:35.000000000 +0800
+@@ -410,7 +410,7 @@ static void hdmi_show_short_audio_desc(s
+ 	else
+ 		buf2[0] = '\0';
+ 
+-	printk(KERN_INFO "HDMI: supports coding type %s:"
++	snd_printdd("HDMI: supports coding type %s:"
+ 			" channels = %d, rates =%s%s\n",
+ 			cea_audio_coding_type_names[a->format],
+ 			a->channels,
+@@ -434,14 +434,14 @@ void snd_hdmi_show_eld(struct hdmi_eld *
+ {
+ 	int i;
+ 
+-	printk(KERN_INFO "HDMI: detected monitor %s at connection type %s\n",
++	snd_printdd("HDMI: detected monitor %s at connection type %s\n",
+ 			e->monitor_name,
+ 			eld_connection_type_names[e->conn_type]);
+ 
+ 	if (e->spk_alloc) {
+ 		char buf[SND_PRINT_CHANNEL_ALLOCATION_ADVISED_BUFSIZE];
+ 		snd_print_channel_allocation(e->spk_alloc, buf, sizeof(buf));
+-		printk(KERN_INFO "HDMI: available speakers:%s\n", buf);
++		snd_printdd("HDMI: available speakers:%s\n", buf);
+ 	}
+ 
+ 	for (i = 0; i < e->sad_count; i++)
+--- linux.orig/sound/pci/hda/patch_hdmi.c	2011-11-11 19:07:15.000000000 +0800
++++ linux/sound/pci/hda/patch_hdmi.c	2011-11-11 19:08:16.000000000 +0800
+@@ -757,7 +757,7 @@ static void hdmi_intrinsic_event(struct 
+ 	int pin_idx;
+ 	struct hdmi_eld *eld;
+ 
+-	printk(KERN_INFO
++	snd_printdd(
+ 		"HDMI hot plug event: Codec=%d Pin=%d Presence_Detect=%d ELD_Valid=%d\n",
+ 		codec->addr, pin_nid, pd, eldv);
+ 
+@@ -989,7 +989,7 @@ static void hdmi_present_sense(struct hd
+ 	else
+ 		eld->eld_valid	= 0;
+ 
+-	printk(KERN_INFO
++	snd_printdd(
+ 		"HDMI status: Codec=%d Pin=%d Presence_Detect=%d ELD_Valid=%d\n",
+ 		codec->addr, pin_nid, eld->monitor_present, eld->eld_valid);
+ 
