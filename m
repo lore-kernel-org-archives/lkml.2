@@ -1,250 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab2DIUss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:48:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47446 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755595Ab2DIUsY (ORCPT
+	id S1756671Ab2DIUsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:48:50 -0400
+Received: from mga06.intel.com ([134.134.136.21]:61507 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755727Ab2DIUsg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:48:24 -0400
+	Mon, 9 Apr 2012 16:48:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F82F42C.5040301@gmail.com>
-References: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com>
-	<1333905129-8776-1-git-send-email-jiang.liu@huawei.com>
-	<1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQXNOJA4oCDw-CF32UjaA=6tri73nXP3u6+hMEjpugjF9w@mail.gmail.com>
-	<4F82F42C.5040301@gmail.com>
-Date: Mon, 9 Apr 2012 13:48:23 -0700
-X-Google-Sender-Auth: 5zw8-wFGgE0YdCriZhsJJFht05o
-Message-ID: <CAE9FiQXp_73pj5N-SaZdOG9NLK0miEPhjrYqyAhPaUBpgNOPOQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PCI, ACPI, x86: update MMCFG information when
- hot-plugging PCI host bridges
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b10cebb8d6a2f04bd452058
+In-Reply-To: <4F833CFC.9020809@wwwdotorg.org>
+References: <20120409194514.8004.53204.stgit@dwillia2-linux.jf.intel.com>
+	<20120409194857.8004.86352.stgit@dwillia2-linux.jf.intel.com>
+	<4F833CFC.9020809@wwwdotorg.org>
+Date: Mon, 9 Apr 2012 13:48:32 -0700
+Message-ID: <CABE8wwtqUsgTd5cwJPu3MebuJUB0jHfpiA7LavFYn87kRhnDrw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] tegra, serial8250: add ->handle_break() uart_port op
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
+        linux-kernel@vger.kernel.org, arnd@arndb.de,
+        Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Alan Cox <alan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b10cebb8d6a2f04bd452058
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Apr 9, 2012 at 7:37 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> Hi Yinghai,
->
->>> +int arch_acpi_pci_root_remove(struct acpi_pci_root *root)
->>> +{
->>> + =A0 =A0 =A0 acpi_status status;
->>> + =A0 =A0 =A0 unsigned long long base_addr;
->>> +
->>> + =A0 =A0 =A0 /* Remove MMCFG information for host bridges with _CBA me=
-thod */
->>> + =A0 =A0 =A0 status =3D acpi_evaluate_integer(root->device->handle, ME=
-THOD_NAME__CBA,
->>> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
-=A0 =A0NULL, &base_addr);
+On Mon, Apr 9, 2012 at 12:48 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 04/09/2012 01:48 PM, Dan Williams wrote:
+>> The "KT" serial port has another use case for a "received break" quirk,
+>> so before adding another special case to the 8250 core take this
+>> opportunity to push such quirks out of the core and into a uart_port op.
 >>
->> add one flag in acpi_pci_root about we added mmconf for it before?
->> like mmconf_added?
+>> Stephen says:
+>> "If the callback function is to no longer live in 8250.c itself,
+>>  arch/arm/mach-tegra/devices.c isn't logically a good place to put it,
+>>  and that file will be going away once we get rid of all the board files
+>>  and move solely to device tree."
 >>
+>> ...so since 8250_pci.c houses all the quirks for pci serial devices this
+>> quirk is similarly housed in of_serial.c.  Once the open firmware
+>> conversion completes the infrastructure details (CONFIG_TEGRA_SERIAL,
+>> include/linux/of_serial.h, and the export) can all be removed to make
+>> this self contained to of_serial.c.
 >
-> I feel adding a flag here doesn't help here. For any hot-pluggable PCI ho=
-st bridge
-> with _CBA method available, arch_acpi_pci_root_remove() should delete the=
- MMCFG
-> information, no matter it's added by __pci_mmcfg_init() or arch_acpi_pci_=
-root_add().
-> So check existence of _CBA seems simpler here.
+> This still seems much to invasive.
 
-please check updated patch that will use mmconf_added.
-it will make sure only remove mmconf with _CBA.
-other than that if BIOS have duplicated one in MCFG table, and
-_CBA, will bail out early.
+I agree that the arch/arm/mach-tegra/ and Kconfig touches are messy,
+but those are also things that will just be deleted when Tegra
+completes its transition to open firmware.
 
-Line added will be 68 instead of 90.
+If you take those changes out of the equation this patch is actually
+net-positive in terms deleting more lines than it adds.
 
-also some changes could be merged to patch 1-5.
+ drivers/tty/serial/8250/8250.c |   34 +++-------------------------------
+ drivers/tty/serial/of_serial.c |   25 +++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 31 deletions(-)
 
-Thanks
+> Again, what's wrong with simply keeping the quirk implementation where
+> it is, and driving everything off the already-extant
+> plat_serial8250_port.type == PORT_TEGRA flag?
 
-Yinghai
+Because Alan said to Sudhakar's new "break" quirk:
 
---047d7b10cebb8d6a2f04bd452058
-Content-Type: application/octet-stream; name="jiang_mmconf_6_v3.patch"
-Content-Disposition: attachment; filename="jiang_mmconf_6_v3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h0tzrirb0
+"This wants to be some kind of call back handled case not more stuff in
+the core 8250.c which we are trying to drive all the special cases back
+out of."
 
-RnJvbTogSmlhbmcgTGl1IDxsaXVqOTdAZ21haWwuY29tPgpUbzogVGFrdSBJenVtaSA8aXp1bWku
-dGFrdUBqcC5mdWppdHN1LmNvbT4sCglLZW5qaSBLYW5lc2hpZ2UgPGthbmVzaGlnZS5rZW5qaUBq
-cC5mdWppdHN1LmNvbT4sCglZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CkNjOiBKaWFu
-ZyBMaXUgPGppYW5nLmxpdUBodWF3ZWkuY29tPiwKCUJqb3JuIEhlbGdhYXMgPGJoZWxnYWFzQGdv
-b2dsZS5jb20+LAoJTGVuIEJyb3duIDxsZW5iQGtlcm5lbC5vcmc+LAoJSmlhbmcgTGl1IDxsaXVq
-OTdAZ21haWwuY29tPiwKCUtlcGluZyBDaGVuIDxjaGVua2VwaW5nQGh1YXdlaS5jb20+LAoJeDg2
-QHZnZXIua2VybmVsLm9yZywKCWxpbnV4LXBjaUB2Z2VyLmtlcm5lbC5vcmcsCglsaW51eC1hY3Bp
-QHZnZXIua2VybmVsLm9yZwpTdWJqZWN0OiBbUEFUQ0ggVjIgNi82XSBQQ0ksIEFDUEksIHg4Njog
-dXBkYXRlIE1NQ0ZHIGluZm9ybWF0aW9uIHdoZW4gaG90LXBsdWdnaW5nIFBDSSBob3N0IGJyaWRn
-ZXMKRGF0ZTogVHVlLCAxMCBBcHIgMjAxMiAwMDoyMjo0OCArMDgwMApNZXNzYWdlLUlkOiA8MTMz
-Mzk4ODU2OC0xMTI4Mi03LWdpdC1zZW5kLWVtYWlsLWppYW5nLmxpdUBodWF3ZWkuY29tPgoKVGhp
-cyBwYXRjaCBlbmhhbmNlcyBwY2lfcm9vdCBkcml2ZXIgdG8gdXBkYXRlIE1NQ0ZHIGluZm9ybWF0
-aW9uIHdoZW4KaG90LXBsdWdnaW5nIFBDSSByb290IGJyaWRnZXMgb24geDg2IHBsYXRmb3Jtcy4K
-Ci12MzogYWRkIG1tY29uZl9hZGRlZCB0byBzaW1wbHkgZnJlZSBwYXRoLCBhbHNvIG1ha2UgcGNp
-X21tY29uZmlnX2luc2VydCgpCiAgICAgdG8gcHJvY2VzcyBleHRyYSBleGlzdCBjYXNlIC0tLSBC
-eSBZaW5naGFpCgpTaWduZWQtb2ZmLWJ5OiBKaWFuZyBMaXUgPGppYW5nLmxpdUBodWF3ZWkuY29t
-PgotLS0KIGFyY2gveDg2L2luY2x1ZGUvYXNtL3BjaV94ODYuaCB8ICAgIDQgKy0tCiBhcmNoL3g4
-Ni9wY2kvYWNwaS5jICAgICAgICAgICAgfCAgIDQ3ICsrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKysrKysrCiBhcmNoL3g4Ni9wY2kvbW1jb25maWctc2hhcmVkLmMgfCAgIDE3ICsr
-KysrKy0tLS0tLS0tCiBhcmNoL3g4Ni9wY2kvbW1jb25maWdfMzIuYyAgICAgfCAgICAyIC0KIGFy
-Y2gveDg2L3BjaS9tbWNvbmZpZ182NC5jICAgICB8ICAgIDIgLQogZHJpdmVycy9hY3BpL3BjaV9y
-b290LmMgICAgICAgIHwgICAxNyArKysrKysrKysrKysrKwogaW5jbHVkZS9hY3BpL2FjbmFtZXMu
-aCAgICAgICAgIHwgICAgMSAKIGluY2x1ZGUvYWNwaS9hY3BpX2J1cy5oICAgICAgICB8ICAgIDEg
-CiBpbmNsdWRlL2xpbnV4L3BjaS1hY3BpLmggICAgICAgfCAgICAzICsrCiA5IGZpbGVzIGNoYW5n
-ZWQsIDgxIGluc2VydGlvbnMoKyksIDEzIGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9h
-cmNoL3g4Ni9wY2kvYWNwaS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2
-L3BjaS9hY3BpLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9wY2kvYWNwaS5jCkBAIC00ODgsNiAr
-NDg4LDUzIEBAIHN0cnVjdCBwY2lfYnVzICogX19kZXZpbml0IHBjaV9hY3BpX3NjYW4KIAlyZXR1
-cm4gYnVzOwogfQogCitpbnQgX19kZXZpbml0IGFyY2hfYWNwaV9wY2lfcm9vdF9hZGQoc3RydWN0
-IGFjcGlfcGNpX3Jvb3QgKnJvb3QpCit7CisJaW50IHJlc3VsdCA9IDA7CisJdW5zaWduZWQgbG9u
-ZyBsb25nIGJhc2VfYWRkciA9IDA7CisKKwkvKiBNTUNPTkZJRyBkaXNhYmxlZCAqLworCWlmICgh
-IShwY2lfcHJvYmUgJiBQQ0lfUFJPQkVfTUFTSyAmIH5QQ0lfUFJPQkVfTU1DT05GKSkKKwkJcmV0
-dXJuIDA7CisKKwkvKgorCSAqIFRyeSB0byBpbnNlcnQgTU1DRkcgaW5mb3JtYXRpb24gZm9yIGhv
-c3QgYnJpZGdlcyB3aXRoIF9DQkEgbWV0aG9kCisJICovCisJYWNwaV9ldmFsdWF0ZV9pbnRlZ2Vy
-KHJvb3QtPmRldmljZS0+aGFuZGxlLCBNRVRIT0RfTkFNRV9fQ0JBLAorCQkJCSAgICAgICBOVUxM
-LCAmYmFzZV9hZGRyKTsKKworCXJlc3VsdCA9IHBjaV9tbWNvbmZpZ19pbnNlcnQocm9vdC0+c2Vn
-bWVudCwKKwkJCQkgICAgIHJvb3QtPnNlY29uZGFyeS5zdGFydCwKKwkJCQkgICAgIHJvb3QtPnNl
-Y29uZGFyeS5lbmQsCisJCQkJICAgICBiYXNlX2FkZHIpOworCWlmICghcmVzdWx0KQorCQlyb290
-LT5tbWNvbmZfYWRkZWQgPSB0cnVlOworCisJaWYgKHJlc3VsdCA9PSAtRUVYSVNUKQorCQlyZXN1
-bHQgPSAwOworCisJaWYgKHJlc3VsdCkKKwkJcHJpbnRrKEtFUk5fRVJSCisJCQkiY2FuJ3QgYWRk
-IE1NQ0ZHIGluZm9ybWF0aW9uIGZvciBCdXMgJTA0eDolMDJ4XG4iLAorCQkJcm9vdC0+c2VnbWVu
-dCwgKHVuc2lnbmVkIGludClyb290LT5zZWNvbmRhcnkuc3RhcnQpOworCisJLyogc3RpbGwgY291
-bGQgdXNlIGNvbmYxIHdpdGggaXQgKi8KKwlpZiAoIXJvb3QtPnNlZ21lbnQpCisJCXJlc3VsdCA9
-IDA7CisKKwlyZXR1cm4gcmVzdWx0OworfQorCitpbnQgYXJjaF9hY3BpX3BjaV9yb290X3JlbW92
-ZShzdHJ1Y3QgYWNwaV9wY2lfcm9vdCAqcm9vdCkKK3sKKwlpZiAoIXJvb3QtPm1tY29uZl9hZGRl
-ZCkKKwkJcmV0dXJuIDA7CisKKwlyZXR1cm4gcGNpX21tY29uZmlnX2RlbGV0ZShyb290LT5zZWdt
-ZW50LAorCQkJCSAgIHJvb3QtPnNlY29uZGFyeS5zdGFydCwKKwkJCQkgICByb290LT5zZWNvbmRh
-cnkuZW5kKTsKK30KKwogaW50IF9faW5pdCBwY2lfYWNwaV9pbml0KHZvaWQpCiB7CiAJc3RydWN0
-IHBjaV9kZXYgKmRldiA9IE5VTEw7CkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3BjaV9y
-b290LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9hY3BpL3BjaV9yb290
-LmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL2FjcGkvcGNpX3Jvb3QuYwpAQCAtNDQ4LDYgKzQ0OCwx
-NiBAQCBvdXQ6CiB9CiBFWFBPUlRfU1lNQk9MKGFjcGlfcGNpX29zY19jb250cm9sX3NldCk7CiAK
-K2ludCBfX3dlYWsgYXJjaF9hY3BpX3BjaV9yb290X2FkZChzdHJ1Y3QgYWNwaV9wY2lfcm9vdCAq
-cm9vdCkKK3sKKwlyZXR1cm4gMDsKK30KKworaW50IF9fd2VhayBhcmNoX2FjcGlfcGNpX3Jvb3Rf
-cmVtb3ZlKHN0cnVjdCBhY3BpX3BjaV9yb290ICpyb290KQoreworCXJldHVybiAwOworfQorCiBz
-dGF0aWMgaW50IF9fZGV2aW5pdCBhY3BpX3BjaV9yb290X2FkZChzdHJ1Y3QgYWNwaV9kZXZpY2Ug
-KmRldmljZSkKIHsKIAl1bnNpZ25lZCBsb25nIGxvbmcgc2VnbWVudCwgYnVzOwpAQCAtNTA0LDYg
-KzUxNCwxMSBAQCBzdGF0aWMgaW50IF9fZGV2aW5pdCBhY3BpX3BjaV9yb290X2FkZChzCiAJc3Ry
-Y3B5KGFjcGlfZGV2aWNlX2NsYXNzKGRldmljZSksIEFDUElfUENJX1JPT1RfQ0xBU1MpOwogCWRl
-dmljZS0+ZHJpdmVyX2RhdGEgPSByb290OwogCisJaWYgKGFyY2hfYWNwaV9wY2lfcm9vdF9hZGQo
-cm9vdCkpIHsKKwkJcmVzdWx0ID0gLUVOT0RFVjsKKwkJZ290byBvdXRfZnJlZTsKKwl9CisKIAkv
-KgogCSAqIEFsbCBzdXBwb3J0ZWQgYXJjaGl0ZWN0dXJlcyB0aGF0IHVzZSBBQ1BJIGhhdmUgc3Vw
-cG9ydCBmb3IKIAkgKiBQQ0kgZG9tYWlucywgc28gd2UgaW5kaWNhdGUgdGhpcyBpbiBfT1NDIHN1
-cHBvcnQgY2FwYWJpbGl0aWVzLgpAQCAtNjI5LDYgKzY0NCw3IEBAIG91dF9kZWxfcm9vdDoKIAls
-aXN0X2RlbF9yY3UoJnJvb3QtPm5vZGUpOwogCW11dGV4X3VubG9jaygmYWNwaV9wY2lfcm9vdF9s
-b2NrKTsKIAlzeW5jaHJvbml6ZV9yY3UoKTsKKwlhcmNoX2FjcGlfcGNpX3Jvb3RfcmVtb3ZlKHJv
-b3QpOwogb3V0X2ZyZWU6CiAJa2ZyZWUocm9vdCk7CiAJcmV0dXJuIHJlc3VsdDsKQEAgLTY4Niw2
-ICs3MDIsNyBAQCBvdXQ6CiAJbGlzdF9kZWxfcmN1KCZyb290LT5ub2RlKTsKIAltdXRleF91bmxv
-Y2soJmFjcGlfcGNpX3Jvb3RfbG9jayk7CiAJc3luY2hyb25pemVfcmN1KCk7CisJYXJjaF9hY3Bp
-X3BjaV9yb290X3JlbW92ZShyb290KTsKIAlrZnJlZShyb290KTsKIAogCXJldHVybiAwOwpJbmRl
-eDogbGludXgtMi42L2luY2x1ZGUvYWNwaS9hY25hbWVzLmgKPT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
-Mi42Lm9yaWcvaW5jbHVkZS9hY3BpL2FjbmFtZXMuaAorKysgbGludXgtMi42L2luY2x1ZGUvYWNw
-aS9hY25hbWVzLmgKQEAgLTYyLDYgKzYyLDcgQEAKICNkZWZpbmUgTUVUSE9EX05BTUVfX0FFSSAg
-ICAgICAgIl9BRUkiCiAjZGVmaW5lIE1FVEhPRF9OQU1FX19QUlcgICAgICAgICJfUFJXIgogI2Rl
-ZmluZSBNRVRIT0RfTkFNRV9fU1JTICAgICAgICAiX1NSUyIKKyNkZWZpbmUgTUVUSE9EX05BTUVf
-X0NCQQkiX0NCQSIKIAogLyogTWV0aG9kIG5hbWVzIC0gdGhlc2UgbWV0aG9kcyBtdXN0IGFwcGVh
-ciBhdCB0aGUgbmFtZXNwYWNlIHJvb3QgKi8KIApJbmRleDogbGludXgtMi42L2luY2x1ZGUvbGlu
-dXgvcGNpLWFjcGkuaAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4
-L3BjaS1hY3BpLmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L3BjaS1hY3BpLmgKQEAgLTE4
-LDYgKzE4LDkgQEAgZXh0ZXJuIGFjcGlfc3RhdHVzIHBjaV9hY3BpX2FkZF9wbV9ub3RpZgogCQkJ
-CQkgICAgIHN0cnVjdCBwY2lfZGV2ICpwY2lfZGV2KTsKIGV4dGVybiBhY3BpX3N0YXR1cyBwY2lf
-YWNwaV9yZW1vdmVfcG1fbm90aWZpZXIoc3RydWN0IGFjcGlfZGV2aWNlICpkZXYpOwogCitpbnQg
-YXJjaF9hY3BpX3BjaV9yb290X2FkZChzdHJ1Y3QgYWNwaV9wY2lfcm9vdCAqcm9vdCk7CitpbnQg
-YXJjaF9hY3BpX3BjaV9yb290X3JlbW92ZShzdHJ1Y3QgYWNwaV9wY2lfcm9vdCAqcm9vdCk7CisK
-IHN0YXRpYyBpbmxpbmUgYWNwaV9oYW5kbGUgYWNwaV9maW5kX3Jvb3RfYnJpZGdlX2hhbmRsZShz
-dHJ1Y3QgcGNpX2RldiAqcGRldikKIHsKIAlzdHJ1Y3QgcGNpX2J1cyAqcGJ1cyA9IHBkZXYtPmJ1
-czsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmgKPT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9hc20vcGNpX3g4Ni5oCisr
-KyBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vcGNpX3g4Ni5oCkBAIC0xMzYsOSArMTM2
-LDkgQEAgc3RydWN0IHBjaV9tbWNmZ19yZWdpb24gewogZXh0ZXJuIGludCBfX2luaXQgcGNpX21t
-Y2ZnX2FyY2hfaW5pdCh2b2lkKTsKIGV4dGVybiB2b2lkIF9faW5pdCBwY2lfbW1jZmdfYXJjaF9m
-cmVlKHZvaWQpOwogZXh0ZXJuIGludCBfX2RldmluaXQgcGNpX21tY2ZnX2FyY2hfbWFwKHN0cnVj
-dCBwY2lfbW1jZmdfcmVnaW9uICpjZmcpOwotZXh0ZXJuIHZvaWQgX19kZXZpbml0IHBjaV9tbWNm
-Z19hcmNoX3VubWFwKHN0cnVjdCBwY2lfbW1jZmdfcmVnaW9uICpjZmcpOworZXh0ZXJuIHZvaWQg
-cGNpX21tY2ZnX2FyY2hfdW5tYXAoc3RydWN0IHBjaV9tbWNmZ19yZWdpb24gKmNmZyk7CiBleHRl
-cm4gaW50IF9fZGV2aW5pdCBwY2lfbW1jb25maWdfaW5zZXJ0KGludCBzZWcsIGludCBzdGFydCwg
-aW50IGVuZCwgdTY0IGFkZHIpOwotZXh0ZXJuIGludCBfX2RldmluaXQgcGNpX21tY29uZmlnX2Rl
-bGV0ZShpbnQgc2VnLCBpbnQgc3RhcnQsIGludCBlbmQsIHU2NCBhZGRyKTsKK2V4dGVybiBpbnQg
-cGNpX21tY29uZmlnX2RlbGV0ZShpbnQgc2VnLCBpbnQgc3RhcnQsIGludCBlbmQpOwogZXh0ZXJu
-IHN0cnVjdCBwY2lfbW1jZmdfcmVnaW9uICpwY2lfbW1jb25maWdfbG9va3VwKGludCBzZWdtZW50
-LCBpbnQgYnVzKTsKIAogZXh0ZXJuIHN0cnVjdCBsaXN0X2hlYWQgcGNpX21tY2ZnX2xpc3Q7Cklu
-ZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvcGNpL21tY29uZmlnLXNoYXJlZC5jCj09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
-LS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L3BjaS9tbWNvbmZpZy1zaGFyZWQuYworKysgbGlu
-dXgtMi42L2FyY2gveDg2L3BjaS9tbWNvbmZpZy1zaGFyZWQuYwpAQCAtNjg0LDIxICs2ODQsMTkg
-QEAgc3RhdGljIERFRklORV9NVVRFWChwY2lfbW1jZmdfbG9jayk7CiAvKiBBZGQgTU1DRkcgaW5m
-b3JtYXRpb24gZm9yIGhvdC1hZGRlZCBob3N0IGJyaWRnZXMgYXQgcnVudGltZSAqLwogaW50IF9f
-ZGV2aW5pdCBwY2lfbW1jb25maWdfaW5zZXJ0KGludCBzZWdtZW50LCBpbnQgc3RhcnQsIGludCBl
-bmQsIHU2NCBhZGRyKQogewotCWludCByYzsKKwlpbnQgcmMgPSAtRUlOVkFMOwogCXN0cnVjdCBw
-Y2lfbW1jZmdfcmVnaW9uICpjZmcgPSBOVUxMOwogCi0JaWYgKGFkZHIgPT0gMCB8fCBzZWdtZW50
-IDwgMCB8fCBzZWdtZW50ID4gVVNIUlRfTUFYIHx8CisJaWYgKHNlZ21lbnQgPCAwIHx8IHNlZ21l
-bnQgPiBVU0hSVF9NQVggfHwKIAkgICAgc3RhcnQgPCAwIHx8IHN0YXJ0ID4gMjU1IHx8IGVuZCA8
-IHN0YXJ0IHx8IGVuZCA+IDI1NSkKLQkJcmV0dXJuIC1FSU5WQUw7CisJCXJldHVybiByYzsKIAog
-CW11dGV4X2xvY2soJnBjaV9tbWNmZ19sb2NrKTsKIAljZmcgPSBwY2lfbW1jb25maWdfbG9va3Vw
-KHNlZ21lbnQsIHN0YXJ0KTsKIAlpZiAoY2ZnKSB7Ci0JCWlmIChjZmctPnN0YXJ0X2J1cyA9PSBz
-dGFydCAmJiBjZmctPmVuZF9idXMgPT0gZW5kICYmCi0JCSAgICBjZmctPmFkZHJlc3MgPT0gYWRk
-cikgeworCQlpZiAoY2ZnLT5zdGFydF9idXMgPD0gc3RhcnQgJiYgY2ZnLT5lbmRfYnVzID49IGVu
-ZCkgewogCQkJcmMgPSAtRUVYSVNUOwogCQl9IGVsc2UgewotCQkJcmMgPSAtRUlOVkFMOwogCQkJ
-cHJpbnRrKEtFUk5fV0FSTklORyBQUkVGSVgKIAkJCSAgICAgICAiTU1DT05GSUcgZm9yIGRvbWFp
-biAlMDR4IFtidXMgJTAyeC0lMDJ4XSAiCiAJCQkgICAgICAgImNvbmZsaWN0cyB3aXRoIGRvbWFp
-biAlMDR4IFtidXMgJTAyeC0lMDJ4XVxuIiwKQEAgLTcwNywxMiArNzA1LDEzIEBAIGludCBfX2Rl
-dmluaXQgcGNpX21tY29uZmlnX2luc2VydChpbnQgc2UKIAkJfQogCQlnb3RvIG91dDsKIAl9CisJ
-aWYgKCFhZGRyKQorCQlnb3RvIG91dDsKIAogCWNmZyA9IHBjaV9tbWNvbmZpZ19hbGxvYyhzZWdt
-ZW50LCBzdGFydCwgZW5kLCBhZGRyKTsKIAlpZiAoY2ZnID09IE5VTEwpIHsKIAkJcmMgPSAtRU5P
-TUVNOwogCX0gZWxzZSBpZiAoIXBjaV9tbWNmZ19jaGVja19yZXNlcnZlZChjZmcsIDApKSB7Ci0J
-CXJjID0gLUVJTlZBTDsKIAkJcHJpbnRrKEtFUk5fV0FSTklORyBQUkVGSVgKIAkJICAgICAgICJN
-TUNPTkZJRyBmb3IgZG9tYWluICUwNHggW2J1cyAlMDJ4LSUwMnhdICIKIAkJICAgICAgICJpc24n
-dCByZXNlcnZlZFxuIiwgc2VnbWVudCwgc3RhcnQsIGVuZCk7CkBAIC03NDUsMTQgKzc0NCwxNCBA
-QCBvdXQ6CiB9CiAKIC8qIERlbGV0ZSBNTUNGRyBpbmZvcm1hdGlvbiBhdCBydW50aW1lICovCi1p
-bnQgX19kZXZpbml0IHBjaV9tbWNvbmZpZ19kZWxldGUoaW50IHNlZ21lbnQsIGludCBzdGFydCwg
-aW50IGVuZCwgdTY0IGFkZHIpCitpbnQgcGNpX21tY29uZmlnX2RlbGV0ZShpbnQgc2VnbWVudCwg
-aW50IHN0YXJ0LCBpbnQgZW5kKQogewogCXN0cnVjdCBwY2lfbW1jZmdfcmVnaW9uICpjZmc7CiAK
-IAltdXRleF9sb2NrKCZwY2lfbW1jZmdfbG9jayk7CiAJbGlzdF9mb3JfZWFjaF9lbnRyeV9yY3Uo
-Y2ZnLCAmcGNpX21tY2ZnX2xpc3QsIGxpc3QpIHsKIAkJaWYgKGNmZy0+c2VnbWVudCA9PSBzZWdt
-ZW50ICYmIGNmZy0+c3RhcnRfYnVzID09IHN0YXJ0ICYmCi0JCSAgICBjZmctPmVuZF9idXMgPT0g
-ZW5kICYmIGNmZy0+YWRkcmVzcyA9PSBhZGRyKSB7CisJCSAgICBjZmctPmVuZF9idXMgPT0gZW5k
-KSB7CiAJCQlsaXN0X2RlbF9yY3UoJmNmZy0+bGlzdCk7CiAJCQlzeW5jaHJvbml6ZV9yY3UoKTsK
-IAkJCXBjaV9tbWNmZ19hcmNoX3VubWFwKGNmZyk7CkluZGV4OiBsaW51eC0yLjYvaW5jbHVkZS9h
-Y3BpL2FjcGlfYnVzLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9hY3Bp
-L2FjcGlfYnVzLmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2FjcGkvYWNwaV9idXMuaApAQCAtMzcx
-LDYgKzM3MSw3IEBAIHN0cnVjdCBhY3BpX3BjaV9yb290IHsKIAl1MzIgb3NjX3N1cHBvcnRfc2V0
-OwkvKiBfT1NDIHN0YXRlIG9mIHN1cHBvcnQgYml0cyAqLwogCXUzMiBvc2NfY29udHJvbF9zZXQ7
-CS8qIF9PU0Mgc3RhdGUgb2YgY29udHJvbCBiaXRzICovCiAJYm9vbCBob3RfYWRkZWQ7CisJYm9v
-bCBtbWNvbmZfYWRkZWQ7CiB9OwogCiAvKiBoZWxwZXIgKi8KSW5kZXg6IGxpbnV4LTIuNi9hcmNo
-L3g4Ni9wY2kvbW1jb25maWdfNjQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNo
-L3g4Ni9wY2kvbW1jb25maWdfNjQuYworKysgbGludXgtMi42L2FyY2gveDg2L3BjaS9tbWNvbmZp
-Z182NC5jCkBAIC0xNTEsNyArMTUxLDcgQEAgaW50IF9fZGV2aW5pdCBwY2lfbW1jZmdfYXJjaF9t
-YXAoc3RydWN0CiAJcmV0dXJuIDA7CiB9CiAKLXZvaWQgX19kZXZpbml0IHBjaV9tbWNmZ19hcmNo
-X3VubWFwKHN0cnVjdCBwY2lfbW1jZmdfcmVnaW9uICpjZmcpCit2b2lkIHBjaV9tbWNmZ19hcmNo
-X3VubWFwKHN0cnVjdCBwY2lfbW1jZmdfcmVnaW9uICpjZmcpCiB7CiAJaWYgKGNmZyAmJiBjZmct
-PnZpcnQpIHsKIAkJaW91bm1hcChjZmctPnZpcnQgKyBQQ0lfTU1DRkdfQlVTX09GRlNFVChjZmct
-PnN0YXJ0X2J1cykpOwpJbmRleDogbGludXgtMi42L2FyY2gveDg2L3BjaS9tbWNvbmZpZ18zMi5j
-Cj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L3BjaS9tbWNvbmZpZ18zMi5j
-CisrKyBsaW51eC0yLjYvYXJjaC94ODYvcGNpL21tY29uZmlnXzMyLmMKQEAgLTE0Nyw3ICsxNDcs
-NyBAQCBpbnQgX19kZXZpbml0IHBjaV9tbWNmZ19hcmNoX21hcChzdHJ1Y3QKIAlyZXR1cm4gMDsK
-IH0KIAotdm9pZCBfX2RldmluaXQgcGNpX21tY2ZnX2FyY2hfdW5tYXAoc3RydWN0IHBjaV9tbWNm
-Z19yZWdpb24gKmNmZykKK3ZvaWQgcGNpX21tY2ZnX2FyY2hfdW5tYXAoc3RydWN0IHBjaV9tbWNm
-Z19yZWdpb24gKmNmZykKIHsKIAl1bnNpZ25lZCBsb25nIGZsYWdzOwogCg==
---047d7b10cebb8d6a2f04bd452058--
+...and a certain Stephen Warren ;-) said in a comment:
+
+" * FIXME: This needs to become a port specific callback once we have a
+  * framework for this"
+
+> I believe all that's required here is to enhance struct struct
+> serial8250_config (and hence 8250.c's uart_config[] quirk table) to be
+> able to set the quirk function pointers as well as all the other exiting
+> quirked variables.
+
+That does not provide the necessary amount of flexibility.  The "KT"
+device is a good example it's a standard 8250 with a handle_break
+quirk.  We could not express that if quirks were tied to
+serial8250_config... outside of requiring a new type for every
+variation of quirk.
+
+--
+Dan
