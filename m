@@ -1,118 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab2DITuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:50:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21978 "EHLO mx1.redhat.com"
+	id S1756083Ab2DITvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:51:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43641 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755287Ab2DITuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:50:00 -0400
-Date: Mon, 9 Apr 2012 16:46:14 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-ID: <20120409194614.GB23053@amt.cnet>
-References: <4F742951.7080003@linux.vnet.ibm.com>
- <4F82E04E.6000900@redhat.com>
- <20120409175829.GB21894@amt.cnet>
- <4F8329D3.7000605@gmail.com>
+	id S1754230Ab2DITvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 15:51:04 -0400
+Message-ID: <4F833D8D.8000802@ti.com>
+Date: Mon, 9 Apr 2012 14:50:37 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F8329D3.7000605@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Mohammed, Afzal" <afzal@ti.com>
+CC: "tony@atomide.com" <tony@atomide.com>, "Hilman, Kevin" <khilman@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grinberg@compulab.co.il" <grinberg@compulab.co.il>,
+        "mike@compulab.co.il" <mike@compulab.co.il>,
+        "Menon, Nishanth" <nm@ti.com>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "vimal.newwork@gmail.com" <vimal.newwork@gmail.com>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Subject: Re: [PATCH v3 1/9] ARM: OMAP2+: gpmc: driver conversion
+References: <cover.1333640054.git.afzal@ti.com> <cefbe934da40f0a169b1e3a75c46451e5546a8bd.1333640054.git.afzal@ti.com> <4F7DFED5.4030000@ti.com> <C8443D0743D26F4388EA172BF4E2A7A9317C5E58@DBDE01.ent.ti.com>
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A9317C5E58@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.113.215]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 02:26:27AM +0800, Xiao Guangrong wrote:
-> On 04/10/2012 01:58 AM, Marcelo Tosatti wrote:
-> 
-> > On Mon, Apr 09, 2012 at 04:12:46PM +0300, Avi Kivity wrote:
-> >> On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
-> >>> * Idea
-> >>> The present bit of page fault error code (EFEC.P) indicates whether the
-> >>> page table is populated on all levels, if this bit is set, we can know
-> >>> the page fault is caused by the page-protection bits (e.g. W/R bit) or
-> >>> the reserved bits.
-> >>>
-> >>> In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
-> >>> simply fixed: the page fault caused by reserved bit
-> >>> (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
-> >>> path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
-> >>> is just increasing the corresponding access on the spte.
-> >>>
-> >>> This pachset introduces a fast path to fix this kind of page fault: it
-> >>> is out of mmu-lock and need not walk host page table to get the mapping
-> >>> from gfn to pfn.
-> >>>
-> >>>
-> >>
-> >> This patchset is really worrying to me.
-> >>
-> >> It introduces a lot of concurrency into data structures that were not
-> >> designed for it.  Even if it is correct, it will be very hard to
-> >> convince ourselves that it is correct, and if it isn't, to debug those
-> >> subtle bugs.  It will also be much harder to maintain the mmu code than
-> >> it is now.
-> >>
-> >> There are a lot of things to check.  Just as an example, we need to be
-> >> sure that if we use rcu_dereference() twice in the same code path, that
-> >> any inconsistencies due to a write in between are benign.  Doing that is
-> >> a huge task.
-> >>
-> >> But I appreciate the performance improvement and would like to see a
-> >> simpler version make it in.  This needs to reduce the amount of data
-> >> touched in the fast path so it is easier to validate, and perhaps reduce
-> >> the number of cases that the fast path works on.
-> >>
-> >> I would like to see the fast path as simple as
-> >>
-> >>   rcu_read_lock();
-> >>
-> >>   (lockless shadow walk)
-> >>   spte = ACCESS_ONCE(*sptep);
-> >>
-> >>   if (!(spte & PT_MAY_ALLOW_WRITES))
-> >>         goto slow;
-> >>
-> >>   gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
-> >>   mark_page_dirty(kvm, gfn);
-> >>
-> >>   new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
-> >>   if (cmpxchg(sptep, spte, new_spte) != spte)
-> >>        goto slow;
-> >>
-> >>   rcu_read_unlock();
-> >>   return;
-> >>
-> >> slow:
-> >>   rcu_read_unlock();
-> >>   slow_path();
-> >>
-> >> It now becomes the responsibility of the slow path to maintain *sptep &
-> >> PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
-> >> can be as simple as a clear_bit() before we update sp->gfns[] or if we
-> >> add host write protection.
-> >>
-> >> Sorry, it's too complicated for me.  Marcelo, what's your take?
-> > 
-> > The improvement is small and limited to special cases (migration should
-> > be rare and framebuffer memory accounts for a small percentage of total
-> > memory).
-> 
-> 
-> Actually, although the framebuffer is small but it is modified really
-> frequently, and another unlucky things is that dirty-log is also
-> very frequently and need hold mmu-lock to do write-protect.
-> 
-> Yes, if Xwindow is not enabled, the benefit is limited. :)
+Hi Afzal,
 
-Ignoring that fact, the safety of lockless set_spte and friends is not
-clear.
+On 04/06/2012 01:52 AM, Mohammed, Afzal wrote:
+> Hi Jon,
+>
+> On Fri, Apr 06, 2012 at 01:51:41, Hunter, Jon wrote:
+>>> +struct gpmc_irq	{
+>>> +	unsigned		irq;
+>>> +	u32			regval;
+>>
+>> Are you using regval to indicate the bit-mask? If so, maybe call it
+>> "bitmask" instead.
+>
+> Yes, bitmask would be better.
+>
+>>> +			switch (gpmc->irq[i].regval) {
+>>> +			case GPMC_IRQ_WAIT0EDGEDETECTION:
+>>> +			case GPMC_IRQ_WAIT1EDGEDETECTION:
+>>> +			case GPMC_IRQ_WAIT2EDGEDETECTION:
+>>> +			case GPMC_IRQ_WAIT3EDGEDETECTION:
+>>> +				val = __ffs(gpmc->irq[i].regval);
+>>> +				val -= __ffs(GPMC_IRQ_WAIT0EDGEDETECTION);
+>>> +				gpmc_cs_configure(cs->cs,
+>>> +					GPMC_CONFIG_WAITPIN, val);
+>>
+>> Why is the configuration of the wait pin done here? It is possible to
+>> use the wait pin may be used without enabling the interrupt.
+>>
+>> Where do you handle allocating the wait pins to ensure two devices don't
+>> attempt to use the same one? Like how the CS are managed.
+>>
+>> Also, where you you configure the polarity of the wait pins? I would
+>> have thought it would make sense to have the wait pin configured as part
+>> of the cs configuration.
+>
+> I will revisit waitpin configurations.
 
-Perhaps the mmu_lock hold times by get_dirty are a large component here?
-If that can be alleviated, not only RO->RW faults benefit.
+Ok.
 
+>>> +	for (i = 0, j = 0, cs = gdp->cs_data; i<   gdp->num_cs; cs++, i++) {
+>>> +		dev->gpmc_res[j] = gpmc_setup_cs_mem(cs, gdp, gpmc);
+>>> +		if (dev->gpmc_res[j++].flags&   IORESOURCE_MEM)
+>>> +			j += gpmc_setup_cs_irq(gpmc, gdp, cs,
+>>> +						dev->gpmc_res + j);
+>>> +		else {
+>>> +			dev_err(gpmc->dev, "error: setup for %s\n", gdp->name);
+>>> +			devm_kfree(gpmc->dev, dev->gpmc_res);
+>>> +			dev->gpmc_res = NULL;
+>>> +			dev->num_gpmc_res = 0;
+>>> +			return -EINVAL;
+>>> +		}
+>>>    	}
+>>
+>> This section of code is not straight-forward to read. I see what you are
+>> doing, but I am wondering if this could be improved.
+>>
+>> First of all, returning a structure from a function is making this code
+>> harder to read. Per the CodingStyle document in the kernel, it is
+>> preferred for a function to return success or failure if the function is
+>> an action, like a setup.
+>>
+>> Secondly, do you need to pass cs, gdp and gpmc to gpmc_setup_cs_mem()?
+>> It appears that gdp and gpmc are only used for prints. You could
+>> probably avoid passing gdp and move the print to outside this function.
+>
+> This section will be modified to make it clearer.
+
+Thanks.
+
+>>> +	if (gpmc->num_irq<   GPMC_NR_IRQ) {
+>>> +		dev_warn(gpmc->dev, "Insufficient interrupts for device\n");
+>>> +		return -EINVAL;
+>>> +	} else if (gpmc->num_irq>   GPMC_NR_IRQ)
+>>> +		gpmc->num_irq = GPMC_NR_IRQ;
+>>
+>> Hmmm ... why not just have ...
+>>
+>> 	if (gpmc->num_irq != GPMC_NR_IRQ) {
+>> 		dev_warn(...);
+>> 		return -EINVAL;
+>> 	}
+>
+> This will cause irq setup to fail if num_irq>  GPMC_NR_IRQ, even though
+> irq setup could have been done w/o any problem, only because platform
+> indicated willingness to accommodate more number of interrupts than
+> actually required for this device.
+
+Ok, so num_irqs represents OMAP_GPMC_NR_IRQS and we are making sure we 
+have enough IRQs allocated by the platform.
+
+>> This also raises the question why bother passing num_irq if we always
+>> want it to be GPMC_NR_IRQ? Why not always initialise them all driver?
+>
+> Because num_irq (or available irqs for fictitious irq chip) is platform specific.
+
+Ok, so OMAP_GPMC_NR_IRQS is defined and will not vary from device to 
+device, so why pass this? Why not use it directly?
+
+Furthermore, GPMC_NR_IRQ is defined as 6 which is correct for OMAP2/3 
+but not for OMAP4/5, it is 5. Therefore, we need to detect whether we 
+are using an OMAP2/3 or OMAP4+ and set num_irqs based upon this. This 
+could be done in the probe and we can avoid passing this.
+
+So we could simplify this by configuring num_irqs in the probe function 
+and then just make sure num_irqs is less than OMAP_GPMC_NR_IRQS above.
+
+>>> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>>> +	if (res == NULL)
+>>> +		dev_warn(gpmc->dev, "Failed to get resource: irq\n");
+>>> +	else
+>>> +		gpmc->master_irq = res->start;
+>>
+>> Why not return an error if the IRQ is not found? We don't know if anyone
+>> will be trying to use them.
+>
+> Why do you want to do that ?
+
+Because this indicates a BUG :-)
+
+> If someone (say NAND) wants to work with irq, and if interrupt is not
+> available, NAND driver can fail, and suppose smsc911x ethernet is present
+> and he is not using gpmc irq, if we fail here, smsc911x also would
+> not work, which would have worked otherwise.
+>
+> It is a different matter that even NAND setup will happen properly,
+> even if interrupt is not available, it is only when NAND is told to
+> work with IRQ, it fails, please see nand patches.
+>
+> And as of now in mainline (with the code as is), there is not a single
+> board that will need gpmc irq for gpmc peripherals to work.
+>
+> I feel we should try to get more devices working rather than preventing
+> more devices from working, when it could have.
+
+I understand your point, but then you are hiding a BUG. If someone 
+introduces a BUG that causes this to fail, then it is easier to detect, 
+find and fix.
+
+ From my perspective get the resources should never fail and if it does 
+and break the driver for all devices, then so be it, because a BUG has 
+been introduced. Ok, this may not be critical at this point but still is 
+should not fail.
+
+>>> +	for (gdq = gp->device_pdata, gd = gpmc->device; *gdq; gdq++, i++) {
+>>> +		ret = gpmc_setup_device(*gdq, gd, gpmc);
+>>> +		if (IS_ERR_VALUE(ret))
+>>> +			dev_err(gpmc->dev, "gpmc setup on %s failed\n",
+>>> +								(*gdq)->name);
+>>> +		else
+>>> +			gd++;
+>>> +	}
+>>
+>> Would a while loop be simpler?
+>
+> My preference is to go with "for"
+
+Ok, just wondering if this could be cleaned up a little.
+
+>>
+>> The above loop appears to terminate when *gdq == 0. Is this always
+>> guaranteed? In other words, safe?
+>
+> This is a standard idiom for array of pointers
+
+Ok.
+
+>>
+>> I see that "i" is not being used in the above loop either.
+>
+> That was left over code, it will be removed.
+
+Thanks.
+
+>>> +struct gpmc_cs_data {
+>>> +	unsigned		cs;
+>>> +	unsigned long		mem_size;
+>>> +	unsigned long		mem_start;
+>>> +	unsigned long		mem_offset;
+>>> +	struct gpmc_config	*config;
+>>> +	unsigned		num_config;
+>>> +	struct gpmc_timings	*timing;
+>>> +	unsigned		irq_flags;
+>>
+>> I found the name irq_flags a bit unclear. This appears to be a mask for
+>> the interrupts used. So may be this should be "irq_mask" or just "irqs".
+>
+> Probably, this confusion arose as an attempt was made to club irq bit fields
+> with irq capability, so as to reduce additional macro definitions.
+>
+> Here my preference is to keep irq_flags (or can be irq_capabilities), define
+> a new set of macros, and use bitmask in struct gpmc_irq
+
+Ok, how about irq_config? The name irq_flags make me think of flags 
+passed to configure the irq as in the set_irq_flags() API.
+
+> Thanks for the comments.
+
+No problem.
+
+Jon
