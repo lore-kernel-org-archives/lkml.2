@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab2DIRSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 13:18:04 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:57532 "HELO
+	id S1755450Ab2DIRTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 13:19:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:56043 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751672Ab2DIRSC (ORCPT
+	with SMTP id S1751672Ab2DIRTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 13:18:02 -0400
-X-Authenticated: #117848833
-X-Provags-ID: V01U2FsdGVkX19QuwUd3chQuyfq+Zr8ABZ2scPFvqJ43pdbGZr0CB
-	9xQgvCQmsmhuDP
-Date: Mon, 9 Apr 2012 19:17:56 +0200
-From: "B. K. Lohse" <lolium@gmx.net>
-To: linux-kernel@vger.kernel.org
-Subject: [Regression]: Bluetooth: btusb: hci command tx timeout
-Message-Id: <20120409191756.f6eeea4e.lolium@gmx.net>
-X-Mailer: Sylpheed 3.1.2 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Apr 2012 13:19:12 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1+2fNIn8ei23AWtBN2GtyumE+i25hWUokdOFr9OUk
+	i2lFL5zkQur7iS
+From: Sven Joachim <svenjoac@gmx.de>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
+References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
+	<20120408195044.13ea6c8e.akpm@linux-foundation.org>
+	<CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
+	<8762d9v10x.fsf@turtle.gmx.de> <4F8306ED.7080405@redhat.com>
+	<87398cev3j.fsf@turtle.gmx.de> <4F830F64.8000703@redhat.com>
+	<CAOJsxLE0ADd8PvXv+tGadLf3oqi-7SBNtHQsP6manoEMCDPOnA@mail.gmail.com>
+Date: Mon, 09 Apr 2012 19:19:07 +0200
+In-Reply-To: <CAOJsxLE0ADd8PvXv+tGadLf3oqi-7SBNtHQsP6manoEMCDPOnA@mail.gmail.com>
+	(Pekka Enberg's message of "Mon, 9 Apr 2012 20:00:17 +0300")
+Message-ID: <87mx6kddro.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-since Linux 2.6.29 my integrated Bluetooth hostcontroller does not work
-anymore. Its a hardwired Broadcom chip connected via USB in an IBM
-Thinkpad T43 and supported by btusb.
+On 2012-04-09 19:00 +0200, Pekka Enberg wrote:
 
-While scanning for devices and pairing mostly succeeds, the process
-stalls after that repeatable, so its impossible to use the connection.
-Kernel message buffer shows:
+> On Mon, Apr 9, 2012 at 7:33 PM, Rik van Riel <riel@redhat.com> wrote:
+>>> Attaching these files, since I can't really make anything out of the
+>>> latter.  Note that I started a few memory hogs (X, Firefox, Emacs with
+>>> Gnus), so overall memory footprint has grown to 768 MB.
+>>
+>> Looks like the "missing" 400MB is all in filesystem caches,
+>> specifically the dentry cache, the ext4 inode cache and
+>> buffer heads.
+>>
+>> That is perfectly fine, since those caches will be shrunk
+>> when the system needs memory.
+>
+> CONFIG_SLUB, right?
 
-Bluetooth: hci0 link tx timeout
-Bluetooth: killing stalled connection XX:XX:XX:XX:XX:XX
+Actually, no.  For some reason (probably historical…) I have CONFIG_SLAB.
 
-Verified with bluetooth mouse, cellphone and another linuxbox with
-bluez, kernel 2.6.30-3.4-rc1, bluez 4.96, 4.98, 4.99, git.
+> It will merge caches so you don't necessarily see
+> leaks in /proc/slabinfo. You can use "slub_nomerge" kernel parameter
+> to disable the merging.
 
-Adapter information:
-[*] lsusb
-ID: 0a5c:201e Broadcom Corp. IBM Integrated Bluetooth IV
-[*] hciconfig -a
-hci0:	Type: BR/EDR  Bus: USB
-	BD Address: 00:0E:9B:XX:XX:XX  ACL MTU: 377:10  SCO MTU: 64:8
-	UP RUNNING PSCAN 
-	RX bytes:1839 acl:0 sco:0 events:56 errors:0
-	TX bytes:509 acl:0 sco:0 commands:56 errors:0
-	Features: 0xff 0xfe 0x0d 0x38 0x08 0x08 0x00 0x00
-	Packet type: DM1 DM3 DM5 DH1 DH3 DH5 HV1 HV2 HV3 
-	Link policy: 
-	Link mode: SLAVE ACCEPT 
-	Name: 'xxx'
-	Class: 0x420100
-	Service Classes: Networking, Telephony
-	Device Class: Computer, Uncategorized
-	HCI Version: 1.2 (0x2)  Revision: 0x9
-	LMP Version: 1.2 (0x2)  Subversion: 0x6963
-	Manufacturer: Broadcom Corporation (15)
-
-Would be great if someone investigates that issue further.
-
-Sincerely yours
-Burkhard
-
-
-You can email me directly, too: lolium {replace-with-at-sign} gmx.net 
+Cheers,
+       Sven
