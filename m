@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab2DITQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:16:33 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61712 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757686Ab2DITQc convert rfc822-to-8bit (ORCPT
+	id S1757892Ab2DITQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:16:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60493 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757686Ab2DITQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:16:32 -0400
+	Mon, 9 Apr 2012 15:16:47 -0400
+Message-ID: <4F83359B.90103@lwfinger.net>
+Date: Mon, 09 Apr 2012 14:16:43 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <1540670.AFBi1SpGoi@sifl>
-References: <1540670.AFBi1SpGoi@sifl>
-Date: Mon, 9 Apr 2012 12:16:30 -0700
-X-Google-Sender-Auth: XpncvK6UKjMfDC9PLWeoE6oOuoI
-Message-ID: <CAGXu5jL5nAY4=5OKhA6VPdrzkUjVuBTcLQuMxUSEv_=N=ohbzQ@mail.gmail.com>
-Subject: Re: ANN: libseccomp
-From: Kees Cook <keescook@chromium.org>
-To: Paul Moore <paul@paul-moore.com>
-Cc: libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Dave Airlie <airlied@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: oops on rmmod of rtl8192ce
+References: <CAPM=9tz-2bXahnfDK0-anxyZcqFUPOSEewJxh2+2U51xypmw-w@mail.gmail.com> <CAPM=9tzqwZpWP9Ea-UVWYFcoVY-fa+jCf5FOShiMTrY4roN-og@mail.gmail.com>
+In-Reply-To: <CAPM=9tzqwZpWP9Ea-UVWYFcoVY-fa+jCf5FOShiMTrY4roN-og@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 11:58 AM, Paul Moore <paul@paul-moore.com> wrote:
-> With the seccomp patches finally stabilizing a bit, it seems like now is a
-> good time to announce libseccomp: a library designed to make it easier to
-> create complex, architecture independent seccomp filters.
->
->  * http://sourceforge.net/projects/libseccomp/
->  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
+On 04/09/2012 10:02 AM, Dave Airlie wrote:
+> ping any ideas on this oops on unload?
 
-This looks really great; nice work!
+Sorry about the delay.
 
-I see that the arch check happens during _gen_bpf_build_bpf(), which
-is excellent. Do you have any thoughts about including a call to
-prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) by default as well?
+The oops looks like interrupts are not being disabled soon enough. Does the 
+following patch help?
 
--Kees
 
--- 
-Kees Cook
-ChromeOS Security
+Index: wireless-testing-new/drivers/net/wireless/rtlwifi/pci.c
+===================================================================
+--- wireless-testing-new.orig/drivers/net/wireless/rtlwifi/pci.c
++++ wireless-testing-new/drivers/net/wireless/rtlwifi/pci.c
+@@ -1943,6 +1943,7 @@ void rtl_pci_disconnect(struct pci_dev *
+  		rtl_deinit_deferred_work(hw);
+  		rtlpriv->intf_ops->adapter_stop(hw);
+  	}
++	rtlpriv->cfg->ops->disable_interrupt(hw);
+
+  	/*deinit rfkill */
+  	rtl_deinit_rfkill(hw);
+
+Larry
