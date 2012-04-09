@@ -1,53 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab2DIOfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 10:35:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753106Ab2DIOfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 10:35:30 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Chris Mason <chris.mason@oracle.com>, Shaohua Li <shli@fusionio.com>
-Subject: Re: [RESEND][PATCH v2] block: remove plugging at buffered write time
-References: <20120408010600.GA31377@localhost>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 09 Apr 2012 10:34:44 -0400
-In-Reply-To: <20120408010600.GA31377@localhost> (Wu Fengguang's message of
-	"Sun, 8 Apr 2012 09:06:00 +0800")
-Message-ID: <x494nst7z3v.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1757233Ab2DIOhv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 10:37:51 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37063 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab2DIOhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 10:37:50 -0400
+Message-ID: <4F82F42C.5040301@gmail.com>
+Date: Mon, 09 Apr 2012 22:37:32 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/2] PCI, ACPI, x86: update MMCFG information when hot-plugging
+ PCI host bridges
+References: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com> <1333905129-8776-1-git-send-email-jiang.liu@huawei.com> <1333905129-8776-3-git-send-email-jiang.liu@huawei.com> <CAE9FiQXNOJA4oCDw-CF32UjaA=6tri73nXP3u6+hMEjpugjF9w@mail.gmail.com>
+In-Reply-To: <CAE9FiQXNOJA4oCDw-CF32UjaA=6tri73nXP3u6+hMEjpugjF9w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu Fengguang <fengguang.wu@intel.com> writes:
+Hi Yinghai,
+	
+>> +int arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+>> +{
+>> +       acpi_status status;
+>> +       unsigned long long base_addr;
+>> +
+>> +       /* Remove MMCFG information for host bridges with _CBA method */
+>> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+>> +                                      NULL, &base_addr);
+> 
+> add one flag in acpi_pci_root about we added mmconf for it before?
+> like mmconf_added?
+> 
 
-> Buffered write(2) is not directly tied to IO, so it's not suitable to
-> handle plug in generic_file_aio_write().
-[snip, moved]
-> Note that plugging for O_SYNC writes is also removed. The user may pass
-> arbitrary @size arguments, which may be much larger than the preferable
-> I/O size, or may cross extent/device boundaries. Let the lower layers
-> handle the plugging. Otherwise the plugging code here will turn the
-> low level plugging into no-ops.
+I feel adding a flag here doesn't help here. For any hot-pluggable PCI host bridge
+with _CBA method available, arch_acpi_pci_root_remove() should delete the MMCFG 
+information, no matter it's added by __pci_mmcfg_init() or arch_acpi_pci_root_add(). 
+So check existence of _CBA seems simpler here.
+Thanks!
 
-I assume you have some numbers to back this up, right?  Care to share
-those?
+On 04/09/2012 03:19 AM, Yinghai Lu wrote:
+> On Sun, Apr 8, 2012 at 10:12 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> This patch enhances pci_root driver to update MMCFG information when
+>> hot-plugging PCI root bridges on x86 platforms.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> ---
+>>  arch/x86/pci/acpi.c      |   58 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/acpi/pci_root.c  |   20 ++++++++++++++++
+>>  include/acpi/acnames.h   |    1 +
+>>  include/linux/pci-acpi.h |    3 ++
+>>  4 files changed, 82 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+>> index da0149d..9184970 100644
+>> --- a/arch/x86/pci/acpi.c
+>> +++ b/arch/x86/pci/acpi.c
+>> @@ -488,6 +488,64 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+>>        return bus;
+>>  }
+>>
+>> +int arch_acpi_pci_root_add(struct acpi_pci_root *root)
+>> +{
+>> +       int result = 0;
+>> +       acpi_status status;
+>> +       unsigned long long base_addr;
+>> +       struct pci_mmcfg_region *cfg;
+>> +
+>> +       /*
+>> +        * Try to insert MMCFG information for host bridges with _CBA method
+>> +        */
+>> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+>> +                                      NULL, &base_addr);
+>> +       if (ACPI_SUCCESS(status)) {
+>> +               result = pci_mmconfig_insert(root->segment,
+>> +                                            root->secondary.start,
+>> +                                            root->secondary.end,
+>> +                                            base_addr);
+>> +               /*
+>> +                * MMCFG information for hot-pluggable host bridges may have
+>> +                * already been added by __pci_mmcfg_init();
+>> +                */
+>> +               if (result == -EEXIST)
+>> +                       result = 0;
+>> +       } else if (status == AE_NOT_FOUND) {
+>> +               /*
+>> +                * Check whether MMCFG information has been added for
+>> +                * host bridges without _CBA method.
+>> +                */
+>> +               rcu_read_lock();
+>> +               cfg = pci_mmconfig_lookup(root->segment, root->secondary.start);
+>> +               if (!cfg || cfg->end_bus < root->secondary.end)
+>> +                       result = -ENODEV;
+>> +               rcu_read_unlock();
+>> +       } else
+>> +               result = -ENODEV;
+>> +
+>> +       return result;
+>> +}
+>> +
+>> +int arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+>> +{
+>> +       acpi_status status;
+>> +       unsigned long long base_addr;
+>> +
+>> +       /* Remove MMCFG information for host bridges with _CBA method */
+>> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+>> +                                      NULL, &base_addr);
+> 
+> add one flag in acpi_pci_root about we added mmconf for it before?
+> like mmconf_added?
+> 
+>> +       if (ACPI_SUCCESS(status))
+>> +               return pci_mmconfig_delete(root->segment,
+>> +                                          root->secondary.start,
+>> +                                          root->secondary.end,
+>> +                                          base_addr);
+>> +       else if (status != AE_NOT_FOUND)
+>> +               return -ENODEV;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>>  int __init pci_acpi_init(void)
+>>  {
+>>        struct pci_dev *dev = NULL;
+>> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+>> index 4a7d575..a62bfa8 100644
+>> --- a/drivers/acpi/pci_root.c
+>> +++ b/drivers/acpi/pci_root.c
+>> @@ -448,6 +448,16 @@ out:
+>>  }
+>>  EXPORT_SYMBOL(acpi_pci_osc_control_set);
+>>
+>> +int __weak arch_acpi_pci_root_add(struct acpi_pci_root *root)
+>> +{
+>> +       return 0;
+>> +}
+>> +
+>> +int __weak arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+>> +{
+>> +       return 0;
+>> +}
+>> +
+>>  static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>>  {
+>>        unsigned long long segment, bus;
+>> @@ -504,6 +514,14 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>>        strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
+>>        device->driver_data = root;
+>>
+>> +       if (arch_acpi_pci_root_add(root)) {
+>> +               printk(KERN_ERR PREFIX
+>> +                       "can't add MMCFG information for Bus %04x:%02x\n",
+>> +                       root->segment, (unsigned int)root->secondary.start);
+>> +               result = -ENODEV;
+>> +               goto out_free;
+>> +       }
+>> +
+>>        /*
+>>         * All supported architectures that use ACPI have support for
+>>         * PCI domains, so we indicate this in _OSC support capabilities.
+>> @@ -629,6 +647,7 @@ out_del_root:
+>>        list_del_rcu(&root->node);
+>>        mutex_unlock(&acpi_pci_root_lock);
+>>        synchronize_rcu();
+>> +       arch_acpi_pci_root_remove(root);
+>>  out_free:
+>>        kfree(root);
+>>        return result;
+>> @@ -679,6 +698,7 @@ out:
+>>        list_del_rcu(&root->node);
+>>        mutex_unlock(&acpi_pci_root_lock);
+>>        synchronize_rcu();
+>> +       arch_acpi_pci_root_remove(root);
+>>        kfree(root);
+>>
+>>        return 0;
+>> diff --git a/include/acpi/acnames.h b/include/acpi/acnames.h
+>> index 38f5088..99bda75 100644
+>> --- a/include/acpi/acnames.h
+>> +++ b/include/acpi/acnames.h
+>> @@ -62,6 +62,7 @@
+>>  #define METHOD_NAME__AEI        "_AEI"
+>>  #define METHOD_NAME__PRW        "_PRW"
+>>  #define METHOD_NAME__SRS        "_SRS"
+>> +#define METHOD_NAME__CBA       "_CBA"
+>>
+>>  /* Method names - these methods must appear at the namespace root */
+>>
+>> diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
+>> index ac93634..816b971 100644
+>> --- a/include/linux/pci-acpi.h
+>> +++ b/include/linux/pci-acpi.h
+>> @@ -38,6 +38,9 @@ static inline acpi_handle acpi_pci_get_bridge_handle(struct pci_bus *pbus)
+>>
+>>  void acpi_pci_root_rescan(void);
+>>
+>> +extern int arch_acpi_pci_root_add(struct acpi_pci_root *root);
+>> +extern int arch_acpi_pci_root_remove(struct acpi_pci_root *root);
+>> +
+> 
+> don't need extern here.
+> 
+>>  #else
+>>
+>>  static inline void acpi_pci_root_rescan(void) { }
+>> --
+>> 1.7.5.4
+>>
 
-> Also moves unplugging for direct I/O from around ->direct_IO() down to
-> do_blockdev_direct_IO().
-
-This could be handled in a separate patch.  Acked-by: Jeff Moyer
-<jmoyer@redhat.com> for this part.
-
-Cheers,
-Jeff
