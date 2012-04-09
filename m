@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab2DIOHR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 10:07:17 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49999 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab2DIOHP (ORCPT
+	id S1757002Ab2DIONV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 10:13:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51853 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab2DIONT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 10:07:15 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <002601cd1632$c34b24b0$49e16e10$%han@samsung.com>
-References: <1333944982-15859-1-git-send-email-olof@lixom.net>
-	<002601cd1632$c34b24b0$49e16e10$%han@samsung.com>
-Date: Mon, 9 Apr 2012 07:07:15 -0700
-Message-ID: <CAOesGMiRs8DUTrykePU+SSqsBK52A4x=6M=xt0RLV+NCzDt9pg@mail.gmail.com>
-Subject: Re: [PATCH] video: exynos: fix build warning and bad pointer deref in
- dp driver
-From: Olof Johansson <olof@lixom.net>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Apr 2012 10:13:19 -0400
+Subject: [PATCH] sil3531: has no PM capability, remove support.
+From: philby john <pjohn@mvista.com>
+To: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        htejun@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Apr 2012 19:44:09 +0530
+Message-ID: <1333980849.11209.5.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 2:25 AM, Jingoo Han <jg1.han@samsung.com> wrote:
->> -----Original Message-----
->> From: Olof Johansson [mailto:olof@lixom.net]
->> Sent: Monday, April 09, 2012 1:16 PM
->>
->> I'm not 100% sure if the fix for 'adjust_request' is correct, since
->> it's uncertain what the original intent was. But it's so clearly an
->> uninitialized pointer dereference that my resolution seems to make sense.
->>
->> drivers/video/exynos/exynos_dp_core.c: In function 'exynos_dp_set_link_train':
->> drivers/video/exynos/exynos_dp_core.c:521:21: warning: 'adjust_request' may be used uninitialized in
->> this function [-Wuninitialized]
->> drivers/video/exynos/exynos_dp_core.c:481:6: note: 'adjust_request' was declared here
->> drivers/video/exynos/exynos_dp_core.c:529:18: warning: 'reg' may be used uninitialized in this function
->> [-Wuninitialized]
->> drivers/video/exynos/exynos_dp_core.c:395:6: note: 'reg' was declared here
->
-> My compiler cannot detect this warning.
-> What is your compiler version?
+From: Philby John <pjohn@mvista.com>
+Date: Mon, 9 Apr 2012 19:09:51 +0530
+Subject: [PATCH] sil3531: has no PM capability, remove support.
 
-gcc version 4.6.2 (GCC)
+SATA sil3531 does not support Power Management Capability and
+as per the manual Bit [31:27] is hardwired to 00h.
+Otherwise, when the device goes into suspend/resume the Power
+Management Control + Status registers are accessed and the
+arch specific readl()/__raw_readl() calls block indefinitely.
+
+This patch sets the PCI_DEV_FLAGS_NO_D3 flag by which the if
+condition in pci_set_power_state() evaluates to true and
+pci_raw_set_power_state() functions are not executed.
+
+Signed-off-by: Philby John <pjohn@mvista.com>
+Signed-off-by: Johnny Chiang <Johnny.Chiang@caviumnetworks.com>
+---
+ drivers/pci/pci.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 8156744..129120d 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1863,6 +1863,7 @@ void pci_pm_init(struct pci_dev *dev)
+ 		pci_pme_active(dev, false);
+ 	} else {
+ 		dev->pme_support = 0;
++		dev->dev_flags |= PCI_DEV_FLAGS_NO_D3;
+ 	}
+ }
+ 
+-- 
+1.6.3.3.340.g77d18
 
 
--Olof
+
