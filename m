@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab2DIOFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 10:05:34 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46594 "EHLO
+	id S1757143Ab2DIOHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 10:07:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49999 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab2DIOFc convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753690Ab2DIOHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 10:05:32 -0400
+	Mon, 9 Apr 2012 10:07:15 -0400
 MIME-Version: 1.0
 X-Originating-IP: [173.13.129.225]
-In-Reply-To: <002301cd162d$51bd6b00$f5384100$%han@samsung.com>
+In-Reply-To: <002601cd1632$c34b24b0$49e16e10$%han@samsung.com>
 References: <1333944982-15859-1-git-send-email-olof@lixom.net>
-	<002301cd162d$51bd6b00$f5384100$%han@samsung.com>
-Date: Mon, 9 Apr 2012 07:05:31 -0700
-Message-ID: <CAOesGMjH3wwR1k-jurXm4vED8peTLStaQGmQ4Wx4M-bza9Jrcw@mail.gmail.com>
+	<002601cd1632$c34b24b0$49e16e10$%han@samsung.com>
+Date: Mon, 9 Apr 2012 07:07:15 -0700
+Message-ID: <CAOesGMiRs8DUTrykePU+SSqsBK52A4x=6M=xt0RLV+NCzDt9pg@mail.gmail.com>
 Subject: Re: [PATCH] video: exynos: fix build warning and bad pointer deref in
  dp driver
 From: Olof Johansson <olof@lixom.net>
@@ -21,12 +21,11 @@ To: Jingoo Han <jg1.han@samsung.com>
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 1:46 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+On Mon, Apr 9, 2012 at 2:25 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 >> -----Original Message-----
 >> From: Olof Johansson [mailto:olof@lixom.net]
 >> Sent: Monday, April 09, 2012 1:16 PM
@@ -42,73 +41,11 @@ On Mon, Apr 9, 2012 at 1:46 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 >> drivers/video/exynos/exynos_dp_core.c:529:18: warning: 'reg' may be used uninitialized in this function
 >> [-Wuninitialized]
 >> drivers/video/exynos/exynos_dp_core.c:395:6: note: 'reg' was declared here
->>
->> Signed-off-by: Olof Johansson <olof@lixom.net>
->> ---
->>  drivers/video/exynos/exynos_dp_core.c |   23 +++++++++--------------
->>  1 file changed, 9 insertions(+), 14 deletions(-)
->>
->> diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
->> index 2a4481c..8973e18 100644
->> --- a/drivers/video/exynos/exynos_dp_core.c
->> +++ b/drivers/video/exynos/exynos_dp_core.c
->> @@ -392,24 +392,19 @@ static unsigned int exynos_dp_get_lane_link_training(
->>                               struct exynos_dp_device *dp,
->>                               int lane)
->>  {
->> -     u32 reg;
->> -
->>       switch (lane) {
->>       case 0:
->> -             reg = exynos_dp_get_lane0_link_training(dp);
->> -             break;
->> +             return exynos_dp_get_lane0_link_training(dp);
->>       case 1:
->> -             reg = exynos_dp_get_lane1_link_training(dp);
->> -             break;
->> +             return exynos_dp_get_lane1_link_training(dp);
->>       case 2:
->> -             reg = exynos_dp_get_lane2_link_training(dp);
->> -             break;
->> +             return exynos_dp_get_lane2_link_training(dp);
->>       case 3:
->> -             reg = exynos_dp_get_lane3_link_training(dp);
->> -             break;
->> +             return exynos_dp_get_lane3_link_training(dp);
->>       }
 >
-> I don't like multi return.
+> My compiler cannot detect this warning.
+> What is your compiler version?
 
-In a small helper function like this there's nothing wrong with it.
-Larger functions? Sure.
-
-Adding a default in the switch didn't seem like an improvement to me.
-But I'll leave it up to you.
-
->>
->> -     return reg;
->> +     WARN_ON(1);
->> +     return 0;
->>  }
->>
->>  static void exynos_dp_reduce_link_rate(struct exynos_dp_device *dp)
->> @@ -489,13 +484,13 @@ static int exynos_dp_process_clock_recovery(struct exynos_dp_device *dp)
->>                               6, link_status);
->>       lane_count = dp->link_train.lane_count;
->>
->> +     adjust_request = link_status + (DPCD_ADDR_ADJUST_REQUEST_LANE0_1
->> +                                     - DPCD_ADDR_LANE0_1_STATUS);
->> +
->
-> It makes the problem. adjust_request will be different.
->
-> OK, I understand what you want to do.
-> I will send the version 2 patch which is simpler.
->
-> Thank you for sending the patch.
-
-Ok, thanks. As I said, I'm not sure what your intent with the second
-(else) code path was.
+gcc version 4.6.2 (GCC)
 
 
 -Olof
