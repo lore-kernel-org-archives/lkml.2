@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab2DITt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:49:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54669 "EHLO mx1.redhat.com"
+	id S1755633Ab2DITuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:50:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21978 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752676Ab2DITt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:49:57 -0400
-Date: Mon, 9 Apr 2012 16:31:44 -0300
+	id S1755287Ab2DITuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 15:50:00 -0400
+Date: Mon, 9 Apr 2012 16:46:14 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
 Cc: Avi Kivity <avi@redhat.com>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
 Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-ID: <20120409193144.GA23053@amt.cnet>
+Message-ID: <20120409194614.GB23053@amt.cnet>
 References: <4F742951.7080003@linux.vnet.ibm.com>
  <4F82E04E.6000900@redhat.com>
  <20120409175829.GB21894@amt.cnet>
- <4F8326D5.7060004@gmail.com>
+ <4F8329D3.7000605@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F8326D5.7060004@gmail.com>
+In-Reply-To: <4F8329D3.7000605@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 02:13:41AM +0800, Xiao Guangrong wrote:
+On Tue, Apr 10, 2012 at 02:26:27AM +0800, Xiao Guangrong wrote:
 > On 04/10/2012 01:58 AM, Marcelo Tosatti wrote:
 > 
 > > On Mon, Apr 09, 2012 at 04:12:46PM +0300, Avi Kivity wrote:
@@ -102,40 +102,17 @@ On Tue, Apr 10, 2012 at 02:13:41AM +0800, Xiao Guangrong wrote:
 > > The improvement is small and limited to special cases (migration should
 > > be rare and framebuffer memory accounts for a small percentage of total
 > > memory).
-> > 
-> > For one, how can this be safe against mmu notifier methods?
-> > 
-> > KSM			      |VCPU0		| VCPU1
-> > 		 	      | fault		| fault
-> > 			      | cow-page	|
-> > 			      |	set spte RW	|
-> > 			      |			|
-> > write protect host pte	      |			|
-> > grab mmu_lock		      |			|
-> > remove writeable bit in spte  |			|
-> > increase mmu_notifier_seq     |			|  spte = read-only spte
-> > release mmu_lock	      |			|  cmpxchg succeeds, RO->RW!
-> > 
-> > MMU notifiers rely on the fault path sequence being
-> > 
-> > read host pte
-> > read mmu_notifier_seq
-> > spin_lock(mmu_lock)
-> > if (mmu_notifier_seq changed)
-> > 	goodbye, host pte value is stale
-> > spin_unlock(mmu_lock)
-> > 
-> > By the example above, you cannot rely on the spte value alone,
-> > mmu_notifier_seq must be taken into account.
 > 
 > 
-> No.
+> Actually, although the framebuffer is small but it is modified really
+> frequently, and another unlucky things is that dirty-log is also
+> very frequently and need hold mmu-lock to do write-protect.
 > 
-> When KSM change the host page to read-only, the HOST_WRITABLE bit
-> of spte should be removed, that means, the spte should be changed
-> that can be watched by cmpxchg.
-> 
-> Note: we mark spte to be writeable only if spte.HOST_WRITABLE is
-> set.
+> Yes, if Xwindow is not enabled, the benefit is limited. :)
 
-Right. 
+Ignoring that fact, the safety of lockless set_spte and friends is not
+clear.
+
+Perhaps the mmu_lock hold times by get_dirty are a large component here?
+If that can be alleviated, not only RO->RW faults benefit.
+
