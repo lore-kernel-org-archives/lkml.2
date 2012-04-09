@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab2DIXII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 19:08:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34008 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab2DIXIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 19:08:06 -0400
-Date: Mon, 9 Apr 2012 16:08:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] printk(): add KERN_CONT where needed
-Message-Id: <20120409160803.27bc1376.akpm@linux-foundation.org>
-In-Reply-To: <CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
-References: <1333415903.860.0.camel@mop>
-	<1333420612.26079.6.camel@joe2Laptop>
-	<CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758110Ab2DIXKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 19:10:15 -0400
+Received: from [195.159.66.52] ([195.159.66.52]:33575 "EHLO lauken.nlc.no"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752984Ab2DIXKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 19:10:14 -0400
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Apr 2012 19:10:14 EDT
+Message-ID: <aab6c360d4fab33ca3fe38b3d007389c.squirrel@nlc.no>
+Date: Tue, 10 Apr 2012 01:00:44 +0200
+Subject: Is this intended design, or a bug? Missing event for gateway being
+ deleted
+From: "Stian Skjelstad" <stian@nixia.no>
+To: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Apr 2012 05:00:10 +0200
-Kay Sievers <kay@vrfy.org> wrote:
+I'm sorry if this has been discussed before, but my google searches didn't
+give me any good hints so:
 
-> > Maybe it'd be better to aggregate content rather like
-> > printk does. __Aggregate until you get a newline or a
-> > new KERN_<LEVEL>
-> 
-> The continuation printk() can can always go wrong when multiple
-> threads do that in parallel. We can try to make it better with a
-> per-cpu buffer, but I guess there will always be a situation where
-> this can happen.
+I'm using rtnetlink for a project and I noticed a non-consistent behavior.
+When I tear down (the last) ip address, the default gateway is removed,
+but it is not announced on the netlink socket. This can also be verified
+using "ip monitor". This is tested with linux kernel version 3.2.6 on ARM.
 
-Maybe we can be a bit smarter.  For example, if `current' is unchanged
-and __builtin_return_address(0) is unchanged, keep on buffering.
 
-It's all a bit hacky, but weeding out all those thousands of printks
-which never get printed anyway doesn't sound much fun either.
 
-> -	printk(")");
-> +	printk(KERN_CONT ")");
 
-And I do think we should avoid doing it that way, if only because it
-consumes 10 display columns and makes a mess.  Maybe use pr_cont()? 
-But that implies that the affected code is using the pr_foo()
-facilities, and a lot of it doesn't.  So maybe a new macro.
 
-All a bit of a pain.
+# ip monitor &
+# ip addr add 10.0.0.2/8 dev eth0
+2: eth0    inet 10.0.0.2/8 scope global eth0
+local 10.0.0.2 dev eth0  table local  proto kernel  scope host  src
+10.0.0.2 10.0.0.0/8 dev eth0  proto kernel  scope link  src 10.0.0.2
+broadcast 10.0.0.0 dev eth0  table local  proto kernel  scope link  src
+10.0.0.2
+broadcast 10.255.255.255 dev eth0  table local  proto kernel  scope link 
+src 10.0.0.2
+# ip route add via 10.0.1.22
+default via 10.0.1.2 dev eth0
+# ip addr del 10.0.0.2/8 dev eth0
+Deleted 2: eth0    inet 10.0.0.2/8 scope global eth0
+Deleted 10.0.0.0/8 dev eth0  proto kernel  scope link  src 10.0.0.2
+Deleted broadcast 10.255.255.255 dev eth0  table local  proto kernel 
+scope link  src 10.0.0.2
+Deleted broadcast 10.0.0.0 dev eth0  table local  proto kernel  scope link
+ src 10.0.0.2
+Deleted local 10.0.0.2 dev eth0  table local  proto kernel  scope host 
+src 10.0.0.2
+
+(No Deleted default via line here)
+
+
+Stian Skjelstad
+
+
+
