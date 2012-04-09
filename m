@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab2DIVVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:21:33 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60923 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396Ab2DIVVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:21:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
-Date: Mon, 9 Apr 2012 23:25:59 +0200
-User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
-Cc: Aaron Lu <aaron.lu@amd.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <201204090154.09183.rjw@sisk.pl> <1333935525.7482.7.camel@minggr>
-In-Reply-To: <1333935525.7482.7.camel@minggr>
+	id S1756030Ab2DIVWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:22:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45685 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab2DIVWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 17:22:40 -0400
+Date: Mon, 9 Apr 2012 14:22:37 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Christian Bejram <christian.bejram@stericsson.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1
+ sticks-and-crashs)
+In-Reply-To: <CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com>
+References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com> <20120408195044.13ea6c8e.akpm@linux-foundation.org> <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com> <alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
+ <CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204092325.59602.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 09, 2012, Lin Ming wrote:
-> On Mon, 2012-04-09 at 01:54 +0200, Rafael J. Wysocki wrote:
-> > On Thursday, April 05, 2012, Lin Ming wrote:
-> > > On Thu, 2012-04-05 at 10:56 +0800, Aaron Lu wrote:
-> > > > Hi,
-> > > > 
-> > > > On Thu, Apr 05, 2012 at 10:31:20AM +0800, Lin Ming wrote:
-> > > > > > 
-> > > > > > The only situation where a device can be put into ACPI D3_hot (which is not
-> > > > > > the same as PCI D3_hot, mind you) is when:
-> > > > > > 
-> > > > > > (1) There is _PR3 listing some of the device's power resources as "on".
-> > > > > > (2) The power resources listed by the _PR3 as "off" are turned off and the
-> > > > > >     power resources listed by the _PR3 as "on" are left in the "on" state.
-> > > > > 
-> > > > > I don't understand item (2):
-> > > > > 
-> > > > > If the power resource is listed as "off", which means it's already
-> > > > > turned off. Then why should it be turned off again?
-> > > > 
-> > > > Rafael,
-> > > > I think you misunderstand the meaning of _PR3.
-> > > > The _PR3 will evaluate a list of power resources, not two lists(one "on"
-> > > > list and one "off" list), as illustrated by Ming below.
-> > > > 
-> > > > And for a device to be put to D3 hot, it should:
-> > > > 1 execuate _PS3 first if available
-> > > > 2 turn on all the power resources referenced by _PR3
-> > > 
-> > >   3 turn off all the power resources referenced by previous state
-> > 
-> > But leave the ones listed by _PR3 in the "on" state, you mean?
-> 
-> Yes.
-> 
-> _PR0: {r1, r2, r3, r4, r5}
-> _PR3: {r4, r5}
-> 
-> D0: {r1, r2, r3, r4, r5} are all on
-> D3 hot: {r1, r2, r3} are turned off and {r4, r5} are *left* on
-> D3 cold: {r1, r2, r3, r4, r5} are all turned off
-> 
-> Is this correct?
+On Mon, 9 Apr 2012, Linus Torvalds wrote:
 
-Yes, that's my understanding.
+> The real bug is actually that those notifiers are a f*cking joke, and
+> the return value from the notifier is a mistake.
+> 
+> So I personally think that the real problem is this code in
+> profile_handoff_task:
+> 
+>         return (ret == NOTIFY_OK) ? 1 : 0;
+> 
+> and ask yourself two questions:
+> 
+>  - what the hell does NOTIFY_OK/NOTIFY_DONE mean?
+>  - what happens if there are multiple notifiers that all (or some)
+> return NOTIFY_OK?
+> 
 
-> Thanks for your detail explanation.
+NOTIFY_OK should never be a valid response for this notifier the way it's 
+currently implemented, it should be NOTIFY_STOP to stop iterating the call 
+chain to avoid a double free.  Right now it doesn't matter because only 
+oprofile is actually freeing the task_struct and lowmemorykiller should be 
+using NOTIFY_DONE.
 
-No problem.
+Then we have a completeness issue if multiple callbacks want to return 
+NOTIFY_STOP and an ordering issue if the oprofile callback is invoked 
+before lowmemorykiller.
 
-Thanks,
-Rafael
+> I'll tell you what my answers are:
+> 
+>  (a) NOTIFY_DONE is the "ok, everything is fine, you can free the
+> task-struct". It's also what that handoff notifier thing returns if
+> there are no notifiers registered at all.
+> 
+>      So the fix to the Android lowmemorykiller is as simple as just
+> changing NOTIFY_OK to NOTIFY_DONE, which will mean that the caller
+> will properly free the task struct.
+> 
+
+I don't think so for Werner's config who also has CONFIG_OPROFILE=y, so 
+oprofile would return NOTIFY_OK and queue the task_struct for free, then 
+the second notifier callback to the lowmemorykiller would return 
+NOTIFY_DONE which would result in put_task_struct() doing free_task() 
+itself for a double free.
+
+>      The NOTIFY_OK/NOTIFY_DONE difference really does seem to be just
+> "NOTIFY_OK means that I will free the task myself later". That's what
+> the oprofile uses, and it frees the task.
+> 
+>  (b) But the whole interface is a total f*cking mess. If *multiple*
+> people return NOTIFY_OK, they're royally fucked. And the whole (and
+> only) point of notifiers is that you can register multiple different
+> ones independently.
+> 
+> So quite frankly, the *real* bug is not in that android driver
+> (although I'd say that we should just make it return NOTIFY_DONE and
+> be done with it). The real bug is that the whole f*cking notifier is a
+> mistake, and checking the error return was the biggest mistake of all.
+> 
+
+Right, we can't handoff the freeing of the task_struct to more than one 
+notifier.  It seems misdesigned from the beginning and what we really want 
+is to hijack task->usage for __put_task_struct(task) if we have such a 
+notifier callchain and require each one (currently just oprofile) to take 
+a reference on task->usage for NOTIFY_OK and then be responsible for 
+dropping the reference when it's done with it later instead of requiring 
+it to free the task_struct itself.
+
+That's _if_ we want to continue to have such an interface in the first 
+place where it's only really necessary right now for oprofile (and, hence, 
+wasn't implemented in an extendable way).  I'm thinking the 
+lowmemorykiller, as I eluded to, could be written in a way where we can 
+detect if a thread we've already killed has exited yet before killing 
+another one.  We can't just store a pointer to the task_struct of the 
+killed task since it could be reused for a fork later, but we could use 
+TIF_MEMDIE like the oom killer does.
