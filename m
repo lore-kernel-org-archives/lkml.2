@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab2DIN7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 09:59:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56885 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2DIN7U (ORCPT
+	id S1756973Ab2DIN7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 09:59:34 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45344 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755570Ab2DIN7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 09:59:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 3/3] arch/tile: tilegx PCI root complex support
-Date: Mon, 9 Apr 2012 13:59:12 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Myron Stowe <myron.stowe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Joe Perches <joe@perches.com>, David Howells <dhowells@redhat.com>
-References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com>
-In-Reply-To: <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com>
+	Mon, 9 Apr 2012 09:59:32 -0400
+Message-ID: <4F82EB3B.8000204@linux.vnet.ibm.com>
+Date: Mon, 09 Apr 2012 21:59:23 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Avi Kivity <avi@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F7436FB.9000004@redhat.com> <4F744A43.4060600@linux.vnet.ibm.com> <4F745C4F.4060404@redhat.com> <4F757A7C.6020109@linux.vnet.ibm.com> <4F7850EA.3080203@redhat.com> <4F7E1531.5020307@gmail.com> <4F7E7E1A.3000807@linux.vnet.ibm.com> <4F82E228.7050602@redhat.com>
+In-Reply-To: <4F82E228.7050602@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204091359.13059.arnd@arndb.de>
-X-Provags-ID: V02:K0:mx0BizWxi3Cz7/0X4+YAK5pV22zHeAZVKoZYLx0GFF1
- raaU3bRQzktOCEz3HZxoVtFwmiog3HJiHTR1vccJWIdhJHPNM/
- enbWQkeWhnXGI7glMbsXxED69buy+Cb57pn/4vVF+SCnakhOu7
- 2tYwUhslB+0Z+tPSOuBUdgln3iBl22FJKiNAOymX9n86PFBE3o
- itJ+gcVwvBfc6xMxCBqBO9bMY2sZSHwfmpEXvOApvAwBMqkIxv
- azgOqSW7FAwhmTEzzAwh+irtIYNNyCYvc3eaMy6Aj1Fj8x5Twd
- 4VCUdz39Kzhx/ajbJn9RJr5vv9/2nkt5ppxgqX3uYfTwe3fwnV
- Dhxc5RVRTf7NilyqNSOk=
+x-cbid: 12040913-8256-0000-0000-000001F03587
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 07 April 2012, Chris Metcalf wrote:
-> This change implements PCIe root complex support for tilegx using
-> the kernel support layer for accessing the TRIO hardware shim.
+On 04/09/2012 09:20 PM, Avi Kivity wrote:
+
+> On 04/06/2012 08:24 AM, Xiao Guangrong wrote:
+>>
+>> Foolish me, i should be crazy. Sorry for my mistake. :(
+>>
+>> Unfortunately, it can not work, we can not get a stable gfn from gpte or
+>> sp->gfns[]. For example:
+>>
+>> beginning:
+>> Gpte = Gfn1
+>> gfn_to_pfn(Gfn1) = Pfn
+>> Spte = Pfn
+>> Gfn1 is write-free
+>> Gfn2 is write-protected
+>>
+>>
+>> VCPU 0                              VCPU 1                     VCPU 2
+>>
+>> fault on gpte
+>> fast page fault path:
+>>   set Spte.fast_pf
+>>   get Gfn1 from Gpte/sp->gfns[]
+>>   if (Gfn1 is writable)
+>>                                 Pfn is swapped out:
+>> 					Spte = 0
+>> 				Gpte is modified to Gfn2,
+>>                                 and Pfn is realloced and remapped
+>>                                 to Gfn2, so:
+>>                                         Spte = Pfn
+>>
+>>                                                           fast page fault path:
+>>                                                              set Spte.fast_pf
+>>
+>>          cmpxchg  Spte+w
+>>             OOPS!!!
+>>   <we see Spte is not changed and
+>>    happily make it writable, so gfn2 can be writable>
+>>
+>> It seems only a unique identification can prevent this. :(
+>>
 > 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Ouch.
+> 
+> What about restricting this to role.direct=1?  Then gfn is stable?
+> 
 
-Hi Chris,
 
-I don't know if we discussed it during the initial merge, but I notice that the PIO
-accessors (inb/outb and friends) are still not implemented in this patch. Normally
-PIO can just be mapped into the MMIO address space, so that inb() becomes
-a call to readb() with an offset on the address.
+Yes.
 
-> +/*
-> + * Second PCI initialization entry point, called by subsys_initcall.
-> + *
-> + * The controllers have been set up by the time we get here, by a call to
-> + * tile_pci_init.
-> + */
-> +int __devinit pcibios_init(void)
-> +{
-> +	resource_size_t offset;
-> +	int i;
-> +
-> +        if (num_rc_controllers == 0 && num_ep_controllers == 0)
-> +		return 0;
-> +
-> +	pr_info("PCI: Probing PCI hardware\n");
-> +
-> +	/*
-> +	 * We loop over all the TRIO shims and set up the MMIO mappings.
-> +	 * This step can't be done in tile_pci_init because the MM subsystem
-> +	 * hasn't been initialized then.
-> +	 */
-> +	for (i = 0; i < TILEGX_NUM_TRIO; i++) {
-> +		gxio_trio_context_t *context = &trio_contexts[i];
-> +
-> +		if (context->fd < 0)
-> +			continue;
-> +
-> +		/*
-> +		 * Map in the MMIO space for the MAC.
-> +                 */
-> +		offset = 0;
-> +		context->mmio_base_mac =
-> +			iorpc_ioremap(context->fd, offset,
-> +				      HV_TRIO_CONFIG_IOREMAP_SIZE);
-> +		if (context->mmio_base_mac == NULL) {
-> +			pr_err("PCI: MAC map failure on TRIO %d\n", i);
-> +
-> +			hv_dev_close(context->fd);
-> +			context->fd = -1;
-> +			continue;
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * Delay a bit in case devices aren't ready.  Some devices are
-> +	 * known to require at least 20ms here, but we use a more
-> +	 * conservative value.
-> +	 */
-> +	mdelay(250);
+The gfn of direct sp is stable since it is calculated by sp->gfn which is
+independent with gpte.
 
-Using mdelay is generally considered very rude. Since you are not in atomic
-context here, just use msleep() instead.
-
-	Arnd
