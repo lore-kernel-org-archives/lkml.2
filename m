@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab2DIIWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 04:22:48 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39392 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754977Ab2DIIWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 04:22:47 -0400
-From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Subject: [BUG PATCH] perf: kvm - finding struct machine fails for
- PERF_RECORD_MMAP
-To: mingo@redhat.com, acme@ghostprotocols.net, dsahern@gmail.com
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, fweisbec@gmail.com,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        nikunj@linux.vnet.ibm.com
-Date: Mon, 09 Apr 2012 13:52:23 +0530
-Message-ID: <20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S1756489Ab2DII0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:26:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10002 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755103Ab2DII0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 04:26:53 -0400
+Date: Mon, 9 Apr 2012 10:39:54 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120409073953.GD12014@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <20120408234951.GA15993@gondor.apana.org.au>
+ <20120409072849.GA12014@redhat.com>
+ <20120409073354.GA3218@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12040908-5564-0000-0000-0000022166FD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120409073354.GA3218@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+On Mon, Apr 09, 2012 at 03:33:54PM +0800, Herbert Xu wrote:
+> On Mon, Apr 09, 2012 at 10:28:49AM +0300, Michael S. Tsirkin wrote:
+> >
+> > > 1) Doesn't this break local UDP push-back?
+> > 
+> > What is meant by UDP pushback here? Two tap
+> > devices communicating by UDP packets locally?
+> > This was always broken, see below.
+> 
+> I mean push-back from UDP transmission to the physical NIC.
+> 
+> Your patch breaks that
 
-Running 'perf kvm --host --guest --guestmount /tmp/guestmount record -a -g -- sleep 2'
+I think there's some misunderstanding. pushback is only disabled
+for destinations that set IFF_TX_CAN_STALL. I expect that
+no physical NICs set this flag - only tun and possibly
+other userspace-controlled devices in the future.
 
-Was resulting in a segfault. For event type PERF_RECORD_MMAP,
-event->ip.pid is being used in perf_session__find_machine_for_cpumode,
-which is not correct.
+> as now the guest will have no push-back
+> whatsoever so anything that transmits UDP without protocol-level
+> congestion control will start dropping most of their packets.
+> 
+> Granted you can argue that these apps are broken, but they do
+> exist and we've always catered for them, both on baremetal and
+> under virtualisation.
+> > Thus we get this situation
+> >     tap1 sends packets, some of them to tap2, tap2 does not consume them,
+> >     as a result tap2 queue overflows, tap2 stops forever and
+> >     packets get queued in the qdisc, now tap1
+> >     send buffer gets full so it can not communicate to any destination.
+> > 
+> > So the problem is one VM can block all networking from another one.
+> 
+> This should be addressed in the backend, as it can distinguish
+> between packets going out to physical and packets stuck going to
+> a local VM.
 
-event->ip.pid happens to be 0 in this case and results in returning a
-NULL machine object. Finally, access to self->pid in
-machine__mmap_name, results in a segfault later.
+Sorry I still have no clue what you call a backend.
+Could you clarify please? All packets from a tun device
+go to userspace.
 
-For PERF_RECORD_MMAP type, pass event->mmap.pid.
+>  In the latter case you can then duplicate and release
+> the sender's memory.
+> 
+> Cheers,
 
-Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
----
+The problem this patch is trying to address is tun device
+can get stopped forever, which causes packets to
+accumulate in qdisc again forever. So tun does not
+get a chance to release sender's memory for these packets.
 
- tools/perf/util/session.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 9412e3b..00923cd 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -826,8 +826,16 @@ static struct machine *
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
--	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest)
--		return perf_session__find_machine(session, event->ip.pid);
-+	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
-+		u32 pid;
-+
-+		if (event->header.type == PERF_RECORD_MMAP)
-+			pid = event->mmap.pid;
-+		else
-+			pid = event->ip.pid;
-+
-+		return perf_session__find_machine(session, pid);
-+	}
- 
- 	return perf_session__find_host_machine(session);
- }
-
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
