@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab2DIUvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:51:39 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:52706 "EHLO
+	id S1757720Ab2DIUwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:52:04 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:52724 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab2DIUvh (ORCPT
+	with ESMTP id S1753781Ab2DIUv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:51:37 -0400
-Date: Mon, 9 Apr 2012 22:51:36 +0200 (CEST)
+	Mon, 9 Apr 2012 16:51:59 -0400
+Date: Mon, 9 Apr 2012 22:51:58 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Michael Reed <mdr@sgi.com>
-Subject: [PATCH 18/26] [SCSI] qla1280: Remove redundant NULL check before
- release_firmware() call
+cc: trivial@kernel.org, devel@driverdev.osuosl.org,
+        Jiri Pirko <jpirko@redhat.com>, Julia Lawall <julia@diku.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Marcos Paulo de Souza <marcos.mage@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Forest Bond <forest@alittletooquiet.net>
+Subject: [PATCH 21/26] staging: vt6656: Don't needlessly test for NULL before
+ release_firmware()
 In-Reply-To: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204092228380.13925@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1204092239320.14420@swampdragon.chaosbits.net>
 References: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
@@ -25,38 +28,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-release_firmware() checks for NULL pointers internally so checking
-before calling the function is redundant.
+Checking for a NULL pointer before calling release_firmware() is
+redundant since the function does that check itself.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/scsi/qla1280.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/staging/vt6656/main_usb.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/qla1280.c b/drivers/scsi/qla1280.c
-index 6c6486f..538230b 100644
---- a/drivers/scsi/qla1280.c
-+++ b/drivers/scsi/qla1280.c
-@@ -4473,17 +4473,14 @@ qla1280_exit(void)
- 	pci_unregister_driver(&qla1280_pci_driver);
- 	/* release any allocated firmware images */
- 	for (i = 0; i < QL_NUM_FW_IMAGES; i++) {
--		if (qla1280_fw_tbl[i].fw) {
--			release_firmware(qla1280_fw_tbl[i].fw);
--			qla1280_fw_tbl[i].fw = NULL;
--		}
-+		release_firmware(qla1280_fw_tbl[i].fw);
-+		qla1280_fw_tbl[i].fw = NULL;
+diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+index 763e028..ee5261a 100644
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -1257,9 +1257,7 @@ static void __devexit vt6656_disconnect(struct usb_interface *intf)
  	}
- }
  
- module_init(qla1280_init);
- module_exit(qla1280_exit);
- 
+ 	device_release_WPADEV(device);
 -
- MODULE_AUTHOR("Qlogic & Jes Sorensen");
- MODULE_DESCRIPTION("Qlogic ISP SCSI (qla1x80/qla1x160) driver");
- MODULE_LICENSE("GPL");
+-	if (device->firmware)
+-		release_firmware(device->firmware);
++	release_firmware(device->firmware);
+ 
+ 	usb_set_intfdata(intf, NULL);
+ 	usb_put_dev(interface_to_usbdev(intf));
 -- 
 1.7.10
 
