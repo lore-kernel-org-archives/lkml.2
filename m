@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab2DIKNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 06:13:31 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47221 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050Ab2DIKN3 (ORCPT
+	id S1756966Ab2DIKOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 06:14:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55408 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756131Ab2DIKOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 06:13:29 -0400
-X-AuditID: 9c930197-b7b09ae000000a5d-4c-4f82b63ff86f
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [RFC][PATCH 00/15] tools: Unify perf and trace-cmd trace event format parsing v2
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-Date: Mon, 09 Apr 2012 19:13:19 +0900
-In-Reply-To: <1333666086-6517-1-git-send-email-fweisbec@gmail.com> (Frederic
-	Weisbecker's message of "Fri, 6 Apr 2012 00:47:51 +0200")
-Message-ID: <87d37h6wn4.fsf@youngshil.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 9 Apr 2012 06:14:20 -0400
+Message-ID: <4F82B61D.8010502@mvista.com>
+Date: Mon, 09 Apr 2012 14:12:45 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: AAAAAA==
+To: "Thang Q. Nguyen" <tqnguyen@apm.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Jeff Garzik <jgarzik@pobox.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/1] Add support 2 SATA ports for Maui and change filename
+ from sata_dwc_460ex.c to sata_dwc_4xx.c
+References: <1333447938-16461-1-git-send-email-tqnguyen@apm.com>
+In-Reply-To: <1333447938-16461-1-git-send-email-tqnguyen@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello.
 
-On Fri,  6 Apr 2012 00:47:51 +0200, Frederic Weisbecker wrote:
-> So I think we really need to restart the debate. We strongly need to make
-> progresses in this area so I'm posting this iteration in the hope we
-> can move forward. With the coming of uprobes, there are some chances
-> that our tracing becomes more important in the future. Let's join
-> our efforts.
+On 03-04-2012 14:12, Thang Q. Nguyen wrote:
+
+> Signed-off-by: Thang Q. Nguyen<tqnguyen@apm.com>
+[...]
+
+> diff --git a/arch/powerpc/boot/dts/bluestone.dts b/arch/powerpc/boot/dts/bluestone.dts
+> index cfa23bf..803fda6 100644
+> --- a/arch/powerpc/boot/dts/bluestone.dts
+> +++ b/arch/powerpc/boot/dts/bluestone.dts
+> @@ -155,6 +155,27 @@
+>   					/*RXDE*/  0x5 0x4>;
+>   		};
 >
+> +		/* SATA DWC devices */
+> +		SATA0: sata@bffd1000 {
+> +			compatible = "amcc,sata-apm821xx";
+> +			reg =<4 0xbffd1000 0x800   /* SATA0 */
+> +			       4 0xbffd0800 0x400>; /* AHBDMA */
+> +			dma-channel=<0>;
+> +			interrupt-parent =<&UIC0>;
+> +			interrupts =<26 4    /* SATA0 */
+> +			              25 4>;  /* AHBDMA */
+> +		};
+> +
+> +		SATA1: sata@bffd1800 {
+> +			compatible = "amcc,sata-apm821xx";
+> +			reg =<4 0xbffd1800 0x800   /* SATA1 */
+> +			       4 0xbffd0800 0x400>; /* AHBDMA */
+> +			dma-channel=<1>;
+> +			interrupt-parent =<&UIC0>;
+> +			interrupts =<27 4    /* SATA1 */
+> +			              25 4>;  /* AHBDMA */
+> +		};
+> +
 
-My concern is its error reporting mechanism - being a generic library it
-should support various environments like GUI as well as stdio. I see
-current warning, pr_stat and die can be overridden via strong symbol
-binding but it's just briefly documented and need more explicit handling
-IMHO - something like setup/reset_error_functions or so.
+    So, this is dual SATA controller, not dual port SATA controller?
+BTW, it's wrong to have the same AHBDMA resource in two device nodes I think.
 
-In addition, I think we should avoid using die-like functions that can
-terminate a client program in the middle of library calls. Instead,
-return proper error codes so that the client can handle its failure and
-take appropriate actions it needs. Making the library more robust is
-also needed of course - please see my other posting today [1].
-
-Thanks,
-Namhyung
-
-
-[1] https://lkml.org/lkml/2012/4/8/177
+MBR, Sergei
