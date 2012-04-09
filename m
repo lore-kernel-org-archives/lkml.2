@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab2DITHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:07:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52343 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757702Ab2DITHO (ORCPT
+	id S1757800Ab2DITIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:08:49 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46550 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757498Ab2DITIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:07:14 -0400
-Date: Mon, 9 Apr 2012 12:07:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH 25/69] TTY: con3215, remove tasklet for tty_wakeup
-Message-ID: <20120409190710.GA14176@kroah.com>
-References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
- <1333367693-3244-26-git-send-email-jslaby@suse.cz>
- <20120403054241.GA2700@osiris.boeblingen.de.ibm.com>
- <4F7AADD7.5070802@suse.cz>
- <20120409182720.GA12044@kroah.com>
- <4F832ABF.4060509@suse.cz>
+	Mon, 9 Apr 2012 15:08:48 -0400
+Message-ID: <4F8333BC.3050509@windriver.com>
+Date: Mon, 9 Apr 2012 14:08:44 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F832ABF.4060509@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <ak@linux.intel.com>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][REGRESSION] panic: fix stack dump print on direct call
+ to panic()
+References: <1333992030-21181-1-git-send-email-jason.wessel@windriver.com> <4F832BC8.4090907@linux.intel.com>
+In-Reply-To: <4F832BC8.4090907@linux.intel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 08:30:23PM +0200, Jiri Slaby wrote:
-> On 04/09/2012 08:27 PM, Greg KH wrote:
-> > On Tue, Apr 03, 2012 at 09:59:19AM +0200, Jiri Slaby wrote:
-> >> On 04/03/2012 07:42 AM, Heiko Carstens wrote:
-> >>> On Mon, Apr 02, 2012 at 01:54:09PM +0200, Jiri Slaby wrote:
-> >>>> tty_wakeup is safe to be called from all contexts. No need to schedule
-> >>>> a tasklet for that. Let us call it directly like in other drivers.
-> >>>>
-> >>>> And delete the tasklet completely.
-> >>>
-> >>> Your patch actually reverts Martin's recent commit 656d912537
-> >>> "[S390] 3215 deadlock with tty_wakeup".
-> >>> I'm quite sure the reason for the deadlock still exists.
-> >>> Unfortunately the commit doesn't contain the call chain that
-> >>> led to fix.
-> >>
-> >> Ok, I would really appreciate the trace.
-> >>
-> >> If this is really an issue, we should provide a helper in the TTY layer
-> >> like tty_schedule_wakeup.
-> > 
-> > Jiri, should I not apply this patch?
-> 
-> Yes, please skip it until this is sorted out. And also the other con3215
-> patches if they don't apply cleanly now.
+On 04/09/2012 01:34 PM, Andi Kleen wrote:
+>> The proper way to resolve the problem that original commit tried to
+>> solve is to avoid printing a stack dump from panic() when the either
+>> of the following conditions is true:
+>>
+>>    1) TAINT_DIE has been set (this is done by oops_end())
+>>       This indicates and oops has already been printed.
+>>    2) oops_in_progress>  1
+>>       This guards against the rare case where panic() is invoked
+>>       a second time, or in between oops_begin() and oops_end()
+> Oops. I guess can just revert it for now. Thanks for catching, Jason.
+>
+> The proper solution is probably some variant of
+> http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/xpanic
+>
+> Let the caller pass in the proper action instead of all these hacks.
 
-Ok, I've not applied patches 25, 26, and 27 in this series, but have
-applied all others, thanks.
+That is an interesting patch series, but I am not sure I agree about the caller propagating a flag to control what you see in panic.  I intentionally set CONFIG_DEBUG_VERBOSE=y for a reason, I want a stack trace if and when panic(), oops, BUG, etc... is ever called.  This might be a personal preference, but I do not wish to be searching on a string, to find out where the kernel execution terminated.  I want to see stack traces all the time, with the exception of the cases you pointed out in the original patch.
 
-greg k-h
+I had taken the time to instrument and the edge cases for the oops and panic() nesting.  I would agree that it is not useful to print further traces if the kernel has already processed an oops.  I also checked non-x86 archs to see that the original behavior was intact with the new version of the patch.  My opinion is that checking for the panic recursion is a necessary evil here, we just have to agree about the right approach.  :-)
+
+Cheers,
+Jason.
