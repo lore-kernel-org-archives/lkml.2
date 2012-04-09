@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab2DIPjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 11:39:36 -0400
-Received: from server1.neighborhoods.net ([207.154.13.48]:42022 "EHLO
-	server1.neighborhoods.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab2DIPjf (ORCPT
+	id S1757466Ab2DIPkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 11:40:18 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:65482 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab2DIPkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 11:39:35 -0400
-Message-ID: <4F8302B4.8040901@meetinghouse.net>
-Date: Mon, 09 Apr 2012 11:39:32 -0400
-From: Miles Fidelman <mfidelman@meetinghouse.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	Mon, 9 Apr 2012 11:40:15 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        peter.chubb@nicta.com.au, michael.d.labriola@gmail.com, mjg@redhat.com
-Subject: reboot via bios on X86_64?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
+References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
+ <20120408195044.13ea6c8e.akpm@linux-foundation.org> <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
+ <alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Apr 2012 08:39:52 -0700
+X-Google-Sender-Auth: BTR0CR-mIdDHXuRFyXkNhkvUWvU
+Message-ID: <CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
+Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Christian Bejram <christian.bejram@stericsson.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc'd to maintainers of reboot.c]
+On Mon, Apr 9, 2012 at 3:15 AM, David Rientjes <rientjes@google.com> wrote:
+>
+> I think you nailed it.
+>
+> I suspect the problem is 1eda5166c764 ("staging: android/lowmemorykiller:
+> Don't unregister notifier from atomic context") merged during the 3.4
+> merge window and, unfortunately, backported to stable.
 
-Re. the 2.6.32.5 kernel (currently used in Debian stable), and this 
-seems to apply to
-later ones as well:
+Ok. That does seem to match everything.
 
-The reboot code in arch/x86/kernel/reboot.c provides for rebooting 
-through the bios
-by either a kernel option of "reboot=bios" or as automatically invoked 
-by quite
-a few of the quirks case statements.
+However, I think your patch is the wrong one.
 
-But... reboot=bios is  enabled only when configured for 32-bit mode - 
-which just bit me
-when I moved from a 32bit kernel to a 64bit one on an old P4 box, which 
-hangs on
-reboot for all reboot options except reboot=bios when running in 32 bit 
-mode.
+The real bug is actually that those notifiers are a f*cking joke, and
+the return value from the notifier is a mistake.
 
-Which leads to two questions:
+So I personally think that the real problem is this code in
+profile_handoff_task:
 
-1. What's the logic behind this?  Why not enable a bios reboot for 64bit
-kernels?  Is there any reason why the machine_real_restart code wouldn't
-work just as well in 64bit mode?  Anybody know the history?
+        return (ret == NOTIFY_OK) ? 1 : 0;
 
-2. Anybody know a workaround, short of patching and compiling a custom
-kernel? Are there other paths through the reboot code that can invoke a 
-bios
-reboot?  [Note: someone suggested trying a kexec-reboot, but that's also
-not supported on my configuration (running over a Xen hypervisor).]
+and ask yourself two questions:
 
-Thank you very much,
+ - what the hell does NOTIFY_OK/NOTIFY_DONE mean?
+ - what happens if there are multiple notifiers that all (or some)
+return NOTIFY_OK?
 
-Miles Fidelman
+I'll tell you what my answers are:
 
--- 
-In theory, there is no difference between theory and practice.
-In practice, there is.   .... Yogi Berra
+ (a) NOTIFY_DONE is the "ok, everything is fine, you can free the
+task-struct". It's also what that handoff notifier thing returns if
+there are no notifiers registered at all.
 
+     So the fix to the Android lowmemorykiller is as simple as just
+changing NOTIFY_OK to NOTIFY_DONE, which will mean that the caller
+will properly free the task struct.
 
+     The NOTIFY_OK/NOTIFY_DONE difference really does seem to be just
+"NOTIFY_OK means that I will free the task myself later". That's what
+the oprofile uses, and it frees the task.
+
+ (b) But the whole interface is a total f*cking mess. If *multiple*
+people return NOTIFY_OK, they're royally fucked. And the whole (and
+only) point of notifiers is that you can register multiple different
+ones independently.
+
+So quite frankly, the *real* bug is not in that android driver
+(although I'd say that we should just make it return NOTIFY_DONE and
+be done with it). The real bug is that the whole f*cking notifier is a
+mistake, and checking the error return was the biggest mistake of all.
+
+Werner: just test David's patch (do *not* change both the error value
+*and* apply David's patch - that would free the task-struct twice). I
+don't think his patch is what I want to apply eventually, but it
+should fix the issue.
+
+Sadly, I don't think we have anybody who really "owns"
+kernel/profile.c - the thing is broken, it was misdesigned, and nobody
+really cares. Which is why we'll probably have to fix this by just
+making that Android thing return NOTIFY_DONE, and just accept that the
+whole thing is a f*cking joke.
+
+                         Linus
