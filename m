@@ -1,129 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab2DINzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 09:55:35 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:53034 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab2DINze (ORCPT
+	id S1754965Ab2DIN7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 09:59:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56885 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab2DIN7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 09:55:34 -0400
-Message-ID: <4F82EA4C.1020507@linux.vnet.ibm.com>
-Date: Mon, 09 Apr 2012 21:55:24 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Mon, 9 Apr 2012 09:59:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH 3/3] arch/tile: tilegx PCI root complex support
+Date: Mon, 9 Apr 2012 13:59:12 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Joe Perches <joe@perches.com>, David Howells <dhowells@redhat.com>
+References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com>
+In-Reply-To: <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com>
-In-Reply-To: <4F82E04E.6000900@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12040903-7014-0000-0000-000000DD2E51
+Message-Id: <201204091359.13059.arnd@arndb.de>
+X-Provags-ID: V02:K0:mx0BizWxi3Cz7/0X4+YAK5pV22zHeAZVKoZYLx0GFF1
+ raaU3bRQzktOCEz3HZxoVtFwmiog3HJiHTR1vccJWIdhJHPNM/
+ enbWQkeWhnXGI7glMbsXxED69buy+Cb57pn/4vVF+SCnakhOu7
+ 2tYwUhslB+0Z+tPSOuBUdgln3iBl22FJKiNAOymX9n86PFBE3o
+ itJ+gcVwvBfc6xMxCBqBO9bMY2sZSHwfmpEXvOApvAwBMqkIxv
+ azgOqSW7FAwhmTEzzAwh+irtIYNNyCYvc3eaMy6Aj1Fj8x5Twd
+ 4VCUdz39Kzhx/ajbJn9RJr5vv9/2nkt5ppxgqX3uYfTwe3fwnV
+ Dhxc5RVRTf7NilyqNSOk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2012 09:12 PM, Avi Kivity wrote:
-
-> On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
->> * Idea
->> The present bit of page fault error code (EFEC.P) indicates whether the
->> page table is populated on all levels, if this bit is set, we can know
->> the page fault is caused by the page-protection bits (e.g. W/R bit) or
->> the reserved bits.
->>
->> In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
->> simply fixed: the page fault caused by reserved bit
->> (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
->> path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
->> is just increasing the corresponding access on the spte.
->>
->> This pachset introduces a fast path to fix this kind of page fault: it
->> is out of mmu-lock and need not walk host page table to get the mapping
->> from gfn to pfn.
->>
->>
+On Saturday 07 April 2012, Chris Metcalf wrote:
+> This change implements PCIe root complex support for tilegx using
+> the kernel support layer for accessing the TRIO hardware shim.
 > 
-> This patchset is really worrying to me.
-> 
-> It introduces a lot of concurrency into data structures that were not
-> designed for it.  Even if it is correct, it will be very hard to
-> convince ourselves that it is correct, and if it isn't, to debug those
-> subtle bugs.  It will also be much harder to maintain the mmu code than
-> it is now.
-> 
-> There are a lot of things to check.  Just as an example, we need to be
-> sure that if we use rcu_dereference() twice in the same code path, that
-> any inconsistencies due to a write in between are benign.  Doing that is
-> a huge task.
-> 
-> But I appreciate the performance improvement and would like to see a
-> simpler version make it in.  This needs to reduce the amount of data
-> touched in the fast path so it is easier to validate, and perhaps reduce
-> the number of cases that the fast path works on.
-> 
-> I would like to see the fast path as simple as
-> 
->   rcu_read_lock();
-> 
->   (lockless shadow walk)
->   spte = ACCESS_ONCE(*sptep);
-> 
->   if (!(spte & PT_MAY_ALLOW_WRITES))
->         goto slow;
-> 
->   gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
->   mark_page_dirty(kvm, gfn);
-> 
->   new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
->   if (cmpxchg(sptep, spte, new_spte) != spte)
->        goto slow;
-> 
->   rcu_read_unlock();
->   return;
-> 
-> slow:
->   rcu_read_unlock();
->   slow_path();
-> 
-> It now becomes the responsibility of the slow path to maintain *sptep &
-> PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
-> can be as simple as a clear_bit() before we update sp->gfns[] or if we
-> add host write protection.
-> 
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
+Hi Chris,
 
-Okay, let's simplify it as possible:
+I don't know if we discussed it during the initial merge, but I notice that the PIO
+accessors (inb/outb and friends) are still not implemented in this patch. Normally
+PIO can just be mapped into the MMIO address space, so that inb() becomes
+a call to readb() with an offset on the address.
 
-- let it only fix the page fault with PFEC.P == 1 && PFEC.W = 0, that means
-  unlock set_spte path can be dropped
+> +/*
+> + * Second PCI initialization entry point, called by subsys_initcall.
+> + *
+> + * The controllers have been set up by the time we get here, by a call to
+> + * tile_pci_init.
+> + */
+> +int __devinit pcibios_init(void)
+> +{
+> +	resource_size_t offset;
+> +	int i;
+> +
+> +        if (num_rc_controllers == 0 && num_ep_controllers == 0)
+> +		return 0;
+> +
+> +	pr_info("PCI: Probing PCI hardware\n");
+> +
+> +	/*
+> +	 * We loop over all the TRIO shims and set up the MMIO mappings.
+> +	 * This step can't be done in tile_pci_init because the MM subsystem
+> +	 * hasn't been initialized then.
+> +	 */
+> +	for (i = 0; i < TILEGX_NUM_TRIO; i++) {
+> +		gxio_trio_context_t *context = &trio_contexts[i];
+> +
+> +		if (context->fd < 0)
+> +			continue;
+> +
+> +		/*
+> +		 * Map in the MMIO space for the MAC.
+> +                 */
+> +		offset = 0;
+> +		context->mmio_base_mac =
+> +			iorpc_ioremap(context->fd, offset,
+> +				      HV_TRIO_CONFIG_IOREMAP_SIZE);
+> +		if (context->mmio_base_mac == NULL) {
+> +			pr_err("PCI: MAC map failure on TRIO %d\n", i);
+> +
+> +			hv_dev_close(context->fd);
+> +			context->fd = -1;
+> +			continue;
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * Delay a bit in case devices aren't ready.  Some devices are
+> +	 * known to require at least 20ms here, but we use a more
+> +	 * conservative value.
+> +	 */
+> +	mdelay(250);
 
-- let it just fixes the page fault caused by dirty-log that means we always
-  skip the spte which write-protected by shadow page protection.
+Using mdelay is generally considered very rude. Since you are not in atomic
+context here, just use msleep() instead.
 
-Then, things should be fair simper:
-
-In set_spte path, if the spte can be writable, we set ALLOW_WRITE bit
-In rmap_write_protect:
-  if (spte.PT_WRITABLE_MASK) {
-	WARN_ON(!(spte & ALLOW_WRITE));
-	spte &= ~PT_WRITABLE_MASK;
-	spte |= WRITE_PROTECT;
-  }
-
-in fast page fault:
-
-if (spte & PT_WRITABLE_MASK)
-	return_go_guest;
-
-if ((spte & ALLOW_WRITE) && !(spte & WRITE_PROTECT))
-	cmpxchg spte + PT_WRITABLE_MASK
-
-The information all we needed comes from spte it is independence from other path,
-and no barriers.
-
-
-Hmm, how about this one?
-
+	Arnd
