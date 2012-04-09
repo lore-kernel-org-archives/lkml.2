@@ -1,161 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab2DIKBR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 06:01:17 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50083 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050Ab2DIKBP (ORCPT
+	id S1756920Ab2DIKNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 06:13:31 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47221 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756050Ab2DIKN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 06:01:15 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V5 12/14] memcg: move HugeTLB resource count to parent cgroup on memcg removal
-In-Reply-To: <4F827EAD.9080300@jp.fujitsu.com>
-References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1333738260-1329-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F827EAD.9080300@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 09 Apr 2012 15:30:42 +0530
-Message-ID: <87ty0tcjhx.fsf@skywalker.in.ibm.com>
+	Mon, 9 Apr 2012 06:13:29 -0400
+X-AuditID: 9c930197-b7b09ae000000a5d-4c-4f82b63ff86f
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [RFC][PATCH 00/15] tools: Unify perf and trace-cmd trace event format parsing v2
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+Date: Mon, 09 Apr 2012 19:13:19 +0900
+In-Reply-To: <1333666086-6517-1-git-send-email-fweisbec@gmail.com> (Frederic
+	Weisbecker's message of "Fri, 6 Apr 2012 00:47:51 +0200")
+Message-ID: <87d37h6wn4.fsf@youngshil.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12040910-4790-0000-0000-0000021DCFE5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+Hi,
 
-> (2012/04/07 3:50), Aneesh Kumar K.V wrote:
->
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> This add support for memcg removal with HugeTLB resource usage.
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->
->
-> Hmm 
->
+On Fri,  6 Apr 2012 00:47:51 +0200, Frederic Weisbecker wrote:
+> So I think we really need to restart the debate. We strongly need to make
+> progresses in this area so I'm posting this iteration in the hope we
+> can move forward. With the coming of uprobes, there are some chances
+> that our tracing becomes more important in the future. Let's join
+> our efforts.
 >
 
-....
-...
+My concern is its error reporting mechanism - being a generic library it
+should support various environments like GUI as well as stdio. I see
+current warning, pr_stat and die can be overridden via strong symbol
+binding but it's just briefly documented and need more explicit handling
+IMHO - something like setup/reset_error_functions or so.
 
->> +	csize = PAGE_SIZE << compound_order(page);
->> +	/*
->> +	 * uncharge from child and charge the parent. If we have
->> +	 * use_hierarchy set, we can never fail here. In-order to make
->> +	 * sure we don't get -ENOMEM on parent charge, we first uncharge
->> +	 * the child and then charge the parent.
->> +	 */
->> +	if (parent->use_hierarchy) {
->
->
->> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
->> +		if (!mem_cgroup_is_root(parent))
->> +			ret = res_counter_charge(&parent->hugepage[idx],
->> +						 csize, &fail_res);
->
->
-> Ah, why is !mem_cgroup_is_root() checked ? no res_counter update for
-> root cgroup ?
+In addition, I think we should avoid using die-like functions that can
+terminate a client program in the middle of library calls. Instead,
+return proper error codes so that the client can handle its failure and
+take appropriate actions it needs. Making the library more robust is
+also needed of course - please see my other posting today [1].
 
-My mistake. Earlier version of the patch series didn't charge/uncharge the root
-cgroup during different operations. Later as per your review I updated
-the charge/uncharge path to charge root cgroup. I missed to update this code.
-
->
-> I think it's better to have res_counter_move_parent()...to do ops in atomic.
-> (I'll post a patch for that for my purpose). OR, just ignore res->usage if
-> parent->use_hierarchy == 1.
->
-> uncharge->charge will have a race.
+Thanks,
+Namhyung
 
 
-
-How about the below
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7b6e79a..5b4bc98 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3351,24 +3351,24 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 
- 	csize = PAGE_SIZE << compound_order(page);
- 	/*
--	 * uncharge from child and charge the parent. If we have
--	 * use_hierarchy set, we can never fail here. In-order to make
--	 * sure we don't get -ENOMEM on parent charge, we first uncharge
--	 * the child and then charge the parent.
-+	 * If we have use_hierarchy set we can never fail here. So instead of
-+	 * using res_counter_uncharge use the open-coded variant which just
-+	 * uncharge the child res_counter. The parent will retain the charge.
- 	 */
- 	if (parent->use_hierarchy) {
--		res_counter_uncharge(&memcg->hugepage[idx], csize);
--		if (!mem_cgroup_is_root(parent))
--			ret = res_counter_charge(&parent->hugepage[idx],
--						 csize, &fail_res);
-+		unsigned long flags;
-+		struct res_counter *counter;
-+
-+		counter = &memcg->hugepage[idx];
-+		spin_lock_irqsave(&counter->lock, flags);
-+		res_counter_uncharge_locked(counter, csize);
-+		spin_unlock_irqrestore(&counter->lock, flags);
- 	} else {
--		if (!mem_cgroup_is_root(parent)) {
--			ret = res_counter_charge(&parent->hugepage[idx],
--						 csize, &fail_res);
--			if (ret) {
--				ret = -EBUSY;
--				goto err_out;
--			}
-+		ret = res_counter_charge(&parent->hugepage[idx],
-+					 csize, &fail_res);
-+		if (ret) {
-+			ret = -EBUSY;
-+			goto err_out;
- 		}
- 		res_counter_uncharge(&memcg->hugepage[idx], csize);
- 	}
-
-
->
->> +	} else {
->> +		if (!mem_cgroup_is_root(parent)) {
->> +			ret = res_counter_charge(&parent->hugepage[idx],
->> +						 csize, &fail_res);
->> +			if (ret) {
->> +				ret = -EBUSY;
->> +				goto err_out;
->> +			}
->> +		}
->> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
->> +	}
->
->
-> Just a notice. Recently, Tejun changed failure of pre_destory() to show WARNING.
-> Then, I'd like to move the usage to the root cgroup if use_hierarchy=0.
-> Will it work for you ?
-
-That should work.
-
-
->
->> +	/*
->> +	 * caller should have done css_get
->> +	 */
->
->
-> Could you explain meaning of this comment ?
->
-
-inherited from mem_cgroup_move_account. I guess it means css cannot go
-away at this point. We have done a css_get on the child. For a generic
-move_account function may be the comment is needed. I guess in our case
-the comment is redundant ?
-
--aneesh
-
+[1] https://lkml.org/lkml/2012/4/8/177
