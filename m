@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab2DIHVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 03:21:31 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:44013 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753835Ab2DIHV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 03:21:29 -0400
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: benh@kernel.crashing.org, jwboyer@gmail.com, grant.likely@secretlab.ca,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Tanmay Inamdar <tinamdar@apm.com>
-Subject: [V2 2/5] powerpc: 40x: Add AHB, APB of_device_ids
-Date: Mon,  9 Apr 2012 12:50:49 +0530
-Message-Id: <1333956052-25319-2-git-send-email-tinamdar@apm.com>
-X-Mailer: git-send-email 1.6.1.rc3
-In-Reply-To: <1333956052-25319-1-git-send-email-tinamdar@apm.com>
-References: <1333956052-25319-1-git-send-email-tinamdar@apm.com>
+	id S1754260Ab2DIH3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 03:29:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab2DIH3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 03:29:04 -0400
+Date: Mon, 9 Apr 2012 10:28:49 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120409072849.GA12014@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <20120408234951.GA15993@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120408234951.GA15993@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding of_device_id's for AHB and APB buses used in klondike (APM8018X) in
-platforms/40x/ppc40x_simple.c file
+On Mon, Apr 09, 2012 at 07:49:51AM +0800, Herbert Xu wrote:
+> On Sun, Apr 08, 2012 at 08:13:25PM +0300, Michael S. Tsirkin wrote:
+> > commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5
+> > tun: orphan an skb on tx
+> > Fixed a configuration where skbs get queued
+> > at the tun device forever, blocking senders.
+> > 
+> > However this fix isn't waterproof:
+> > userspace can control whether the interface
+> > is stopped, and if it is, packets
+> > get queued in the qdisc, again potentially forever.
+> > 
+> > Complete the fix by setting a private flag and orphaning
+> > at the qdisc level.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> 1) Doesn't this break local UDP push-back?
 
-Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
----
-:100644 100644 9761206... 7b518ed... M	arch/powerpc/platforms/40x/ppc40x_simple.c
- arch/powerpc/platforms/40x/ppc40x_simple.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+What is meant by UDP pushback here? Two tap
+devices communicating by UDP packets locally?
+This was always broken, see below.
 
-diff --git a/arch/powerpc/platforms/40x/ppc40x_simple.c b/arch/powerpc/platforms/40x/ppc40x_simple.c
-index 9761206..7b518ed 100644
---- a/arch/powerpc/platforms/40x/ppc40x_simple.c
-+++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
-@@ -29,6 +29,8 @@ static __initdata struct of_device_id ppc40x_of_bus[] = {
- 	{ .compatible = "ibm,plb4", },
- 	{ .compatible = "ibm,opb", },
- 	{ .compatible = "ibm,ebc", },
-+	{ .compatible = "apm,ahb", },
-+	{ .compatible = "apm,apb", },
- 	{ .compatible = "simple-bus", },
- 	{},
- };
--- 
-1.6.1.rc3
+> 2) Isn't the stall a bug in the backend and isn't this just
+> papering over that?
+> 
+> Cheers,
 
+What do you mean by the backend? userspace? Yes, the stall is a result of
+userspace not consuming packets:
+
+        if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
+                if (!(tun->flags & TUN_ONE_QUEUE)) {
+                        /* Normal queueing mode. */
+                        /* Packet scheduler handles dropping of further packets. */
+                        netif_stop_queue(dev);
+                       /* We won't see all dropped packets individually, so overrun
+                         * error is more appropriate. */
+                        dev->stats.tx_fifo_errors++;
+
+Thus we get this situation
+    tap1 sends packets, some of them to tap2, tap2 does not consume them,
+    as a result tap2 queue overflows, tap2 stops forever and
+    packets get queued in the qdisc, now tap1
+    send buffer gets full so it can not communicate to any destination.
+
+So the problem is one VM can block all networking from another one.
+
+As a solution this patch is always changing ownership if we're going
+into a hostile device: it just does this early in qdisc instead of
+at xmit time.
+
+
+
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
