@@ -1,80 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab2DIGM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 02:12:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50537 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab2DIGM6 convert rfc822-to-8bit (ORCPT
+	id S1752970Ab2DIGSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 02:18:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40918 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab2DIGSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 02:12:58 -0400
+	Mon, 9 Apr 2012 02:18:07 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F827EAD.9080300@jp.fujitsu.com>
+Date: Mon, 09 Apr 2012 15:16:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120208164736.GA31066@redhat.com>
-References: <20120208160405.GA1587@gmail.com>
-	<20120208164736.GA31066@redhat.com>
-Date: Mon, 9 Apr 2012 14:12:57 +0800
-Message-ID: <CAEH94Li15C60V1AHfbm6_9TCNcFKWFs543BVWrwTDOgsuo9+BQ@mail.gmail.com>
-Subject: Re: tools/virtio: Compile errors
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Dongsu Park <advance38@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V5 12/14] memcg: move HugeTLB resource count to parent
+ cgroup on memcg removal
+References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1333738260-1329-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1333738260-1329-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 12:47 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Wed, Feb 08, 2012 at 05:04:05PM +0100, Dongsu Park wrote:
->> Hi,
->>
->> there are compile problems under tools/virtio.
->> If I simply run make,
->>
->> ~/linuxsrc/linux-3.2/tools/virtio $ make
->> gcc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
->> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
->> ../../drivers/virtio/virtio_ring.c
->> ../../drivers/virtio/virtio_ring.c:24:26: fatal error: linux/module.h:
->> No such file or directory
->> compilation terminated.
->> make: *** [virtio_ring.o] Error 1
->
->
->> By the way, my system is Ubuntu 11.10 with Kernel 3.2.
->>
->> Cheers,
->> Dongsu
->
-> This patch is missing - I'll put it upstream.
->
-> --->
->
-> tools/virtio: add module.h stub
->
-> make it build with linux 3.2
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->
-> diff --git a/tools/virtio/linux/module.h b/tools/virtio/linux/module.h
-> new file mode 100644
-> index 0000000..96868eb
-> --- /dev/null
-> +++ b/tools/virtio/linux/module.h
-> @@ -0,0 +1,3 @@
-> +#ifndef LINUX_MODULE_H
-> +#define LINUX_MODULE_H
+(2012/04/07 3:50), Aneesh Kumar K.V wrote:
+
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> This add support for memcg removal with HugeTLB resource usage.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+
+Hmm 
+
+
+> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> +/*
+> + * Force the memcg to empty the hugetlb resources by moving them to
+> + * the parent cgroup. We can fail if the parent cgroup's limit prevented
+> + * the charging. This should only happen if use_hierarchy is not set.
+> + */
+> +int hugetlb_force_memcg_empty(struct cgroup *cgroup)
+> +{
+> +	struct hstate *h;
+> +	struct page *page;
+> +	int ret = 0, idx = 0;
+> +
+> +	do {
+> +		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
+> +			goto out;
+> +		/*
+> +		 * If the task doing the cgroup_rmdir got a signal
+> +		 * we don't really need to loop till the hugetlb resource
+> +		 * usage become zero.
+> +		 */
+> +		if (signal_pending(current)) {
+> +			ret = -EINTR;
+> +			goto out;
+> +		}
+> +		for_each_hstate(h) {
+> +			spin_lock(&hugetlb_lock);
+> +			list_for_each_entry(page, &h->hugepage_activelist, lru) {
+> +				ret = mem_cgroup_move_hugetlb_parent(idx, cgroup, page);
+> +				if (ret) {
+> +					spin_unlock(&hugetlb_lock);
+> +					goto out;
+> +				}
+> +			}
+> +			spin_unlock(&hugetlb_lock);
+> +			idx++;
+> +		}
+> +		cond_resched();
+> +	} while (mem_cgroup_have_hugetlb_usage(cgroup));
+> +out:
+> +	return ret;
+> +}
 > +#endif
-I found that it is not only lack of this head file when i ran "make
-test", but also depend on other head files.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +
+>  /* Should be called on processing a hugepagesz=... option */
+>  void __init hugetlb_add_hstate(unsigned order)
+>  {
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 7d3330e..7b6e79a 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3228,9 +3228,11 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
+>  #endif
+>  
+>  #ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> -static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
+> +bool mem_cgroup_have_hugetlb_usage(struct cgroup *cgroup)
+>  {
+>  	int idx;
+> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
+> +
+>  	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
+>  		if ((res_counter_read_u64(&memcg->hugepage[idx], RES_USAGE)) > 0)
+>  			return 1;
+> @@ -3328,10 +3330,57 @@ void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
+>  	res_counter_uncharge(&memcg->hugepage[idx], csize);
+>  	return;
+>  }
+> -#else
+> -static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
+> +
+> +int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
+> +				   struct page *page)
+>  {
+> -	return 0;
+> +	struct page_cgroup *pc;
+> +	int csize,  ret = 0;
+> +	struct res_counter *fail_res;
+> +	struct cgroup *pcgrp = cgroup->parent;
+> +	struct mem_cgroup *parent = mem_cgroup_from_cont(pcgrp);
+> +	struct mem_cgroup *memcg  = mem_cgroup_from_cont(cgroup);
+> +
+> +	if (!get_page_unless_zero(page))
+> +		goto out;
+> +
+> +	pc = lookup_page_cgroup(page);
+> +	lock_page_cgroup(pc);
+> +	if (!PageCgroupUsed(pc) || pc->mem_cgroup != memcg)
+> +		goto err_out;
+> +
+> +	csize = PAGE_SIZE << compound_order(page);
+> +	/*
+> +	 * uncharge from child and charge the parent. If we have
+> +	 * use_hierarchy set, we can never fail here. In-order to make
+> +	 * sure we don't get -ENOMEM on parent charge, we first uncharge
+> +	 * the child and then charge the parent.
+> +	 */
+> +	if (parent->use_hierarchy) {
+
+
+> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
+> +		if (!mem_cgroup_is_root(parent))
+> +			ret = res_counter_charge(&parent->hugepage[idx],
+> +						 csize, &fail_res);
+
+
+Ah, why is !mem_cgroup_is_root() checked ? no res_counter update for
+root cgroup ?
+
+I think it's better to have res_counter_move_parent()...to do ops in atomic.
+(I'll post a patch for that for my purpose). OR, just ignore res->usage if
+parent->use_hierarchy == 1.
+
+uncharge->charge will have a race.
+
+> +	} else {
+> +		if (!mem_cgroup_is_root(parent)) {
+> +			ret = res_counter_charge(&parent->hugepage[idx],
+> +						 csize, &fail_res);
+> +			if (ret) {
+> +				ret = -EBUSY;
+> +				goto err_out;
+> +			}
+> +		}
+> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
+> +	}
+
+
+Just a notice. Recently, Tejun changed failure of pre_destory() to show WARNING.
+Then, I'd like to move the usage to the root cgroup if use_hierarchy=0.
+Will it work for you ?
+
+> +	/*
+> +	 * caller should have done css_get
+> +	 */
+
+
+Could you explain meaning of this comment ?
+
+
+Thanks,
+-Kame
+
+> +	pc->mem_cgroup = parent;
+> +err_out:
+> +	unlock_page_cgroup(pc);
+> +	put_page(page);
+> +out:
+> +	return ret;
+>  }
+>  #endif /* CONFIG_MEM_RES_CTLR_HUGETLB */
+>  
+> @@ -3852,6 +3901,11 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg, bool free_all)
+>  	/* should free all ? */
+>  	if (free_all)
+>  		goto try_to_free;
+> +
+> +	/* move the hugetlb charges */
+> +	ret = hugetlb_force_memcg_empty(cgrp);
+> +	if (ret)
+> +		goto out;
+>  move_account:
+>  	do {
+>  		ret = -EBUSY;
+> @@ -5172,12 +5226,6 @@ free_out:
+>  static int mem_cgroup_pre_destroy(struct cgroup *cont)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+> -	/*
+> -	 * Don't allow memcg removal if we have HugeTLB resource
+> -	 * usage.
+> -	 */
+> -	if (mem_cgroup_have_hugetlb_usage(memcg))
+> -		return -EBUSY;
+>  
+>  	return mem_cgroup_force_empty(memcg, false);
+>  }
 
 
 
--- 
-Regards,
-
-Zhi Yong Wu
