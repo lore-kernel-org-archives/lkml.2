@@ -1,171 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab2DIP1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 11:27:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757256Ab2DIP1G convert rfc822-to-8bit (ORCPT
+	id S1757416Ab2DIPbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 11:31:07 -0400
+Received: from de01.mail.all-tld.net ([195.140.232.8]:61204 "EHLO
+	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab2DIPbF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 11:27:06 -0400
-Date: Mon, 9 Apr 2012 11:27:39 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "bfields@fieldses.org" <bfields@fieldses.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-Message-ID: <20120409112739.6a823d6f@corrin.poochiereds.net>
-In-Reply-To: <4F82F16C.7030303@parallels.com>
-References: <4F7F230A.6080506@parallels.com>
-	<20120406234039.GA20940@fieldses.org>
-	<4F82C6E3.3030009@parallels.com>
-	<20120409094743.56932677@tlielax.poochiereds.net>
-	<4F82F16C.7030303@parallels.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 Apr 2012 11:31:05 -0400
+X-Greylist: delayed 1760 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Apr 2012 11:31:05 EDT
+Date: Mon, 09 Apr 2012 17:01:36 +0200
+From: Anders Larsen <al@alarsen.net>
+Subject: Re: [PATCH/V3] [trivial] Documentation: Fix multiple typo in
+ Documentation
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1333972735-12670-1-git-send-email-standby24x7@gmail.com> (from
+	standby24x7@gmail.com on Mon Apr  9 13:58:55 2012)
+X-Mailer: Balsa 2.4.1
+Message-Id: <1333983696.3519.0@oscar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+References: <1333972735-12670-1-git-send-email-standby24x7@gmail.com>
+X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
+X-ALL-TLD-GmbH-VirusScanner: Found to be clean
+X-ALL-TLD-GmbH-SpamCheck: 
+X-MailScanner-From: al@alarsen.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Apr 2012 18:25:48 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+Hi,
 
-> 09.04.2012 17:47, Jeff Layton пишет:
-> > On Mon, 09 Apr 2012 15:24:19 +0400
-> > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
-> >
-> >> 07.04.2012 03:40, bfields@fieldses.org пишет:
-> >>> On Fri, Apr 06, 2012 at 09:08:26PM +0400, Stanislav Kinsbursky wrote:
-> >>>> Hello, Bruce.
-> >>>> Could you, please, clarify this reason why grace list is used?
-> >>>> I.e. why list is used instead of some atomic variable, for example?
-> >>>
-> >>> Like just a reference count?  Yeah, that would be OK.
-> >>>
-> >>> In theory it could provide some sort of debugging help.  (E.g. we could
-> >>> print out the list of "lock managers" currently keeping us in grace.)  I
-> >>> had some idea we'd make those lock manager objects more complicated, and
-> >>> might have more for individual containerized services.
-> >>
-> >> Could you share this idea, please?
-> >>
-> >> Anyway, I have nothing against lists. Just was curious, why it was used.
-> >> I added Trond and lists to this reply.
-> >>
-> >> Let me explain, what is the problem with grace period I'm facing right know, and
-> >> what I'm thinking about it.
-> >> So, one of the things to be containerized during "NFSd per net ns" work is the
-> >> grace period, and these are the basic components of it:
-> >> 1) Grace period start.
-> >> 2) Grace period end.
-> >> 3) Grace period check.
-> >> 3) Grace period restart.
-> >>
-> >> So, the simplest straight-forward way is to make all internal stuff:
-> >> "grace_list", "grace_lock", "grace_period_end" work and both "lockd_manager" and
-> >> "nfsd4_manager" - per network namespace. Also, "laundromat_work" have to be
-> >> per-net as well.
-> >> In this case:
-> >> 1) Start - grace period can be started per net ns in "lockd_up_net()" (thus has
-> >> to be moves there from "lockd()") and "nfs4_state_start()".
-> >> 2) End - grace period can be ended per net ns in "lockd_down_net()" (thus has to
-> >> be moved there from "lockd()"), "nfsd4_end_grace()" and "fs4_state_shutdown()".
-> >> 3) Check - looks easy. There is either svc_rqst or net context can be passed to
-> >> function.
-> >> 4) Restart - this is a tricky place. It would be great to restart grace period
-> >> only for the networks namespace of the sender of the kill signal. So, the idea
-> >> is to check siginfo_t for the pid of sender, then try to locate the task, and if
-> >> found, then get sender's networks namespace, and restart grace period only for
-> >> this namespace (of course, if lockd was started for this namespace - see below).
-> >>
-> >> If task not found, of it's lockd wasn't started for it's namespace, then grace
-> >> period can be either restarted for all namespaces, of just silently dropped.
-> >> This is the place where I'm not sure, how to do. Because calling grace period
-> >> for all namespaces will be overkill...
-> >>
-> >> There also another problem with the "task by pid" search, that found task can be
-> >> actually not sender (which died already), but some other new task with the same
-> >> pid number. In this case, I think, we can just neglect this probability and
-> >> always assume, that we located sender (if, of course, lockd was started for
-> >> sender's network namespace).
-> >>
-> >> Trond, Bruce, could you, please, comment this ideas?
-> >>
-> >
-> > I can comment and I'm not sure that will be sufficient.
-> >
+(at least) two more typos slipped by:
+
+On 2012-04-09 13:58:55, Masanari Iida wrote:
+[snip]
+> diff --git a/Documentation/filesystems/qnx6.txt  
+> b/Documentation/filesystems/qnx6.txt
+> index 050223e..0708584 100644
+> --- a/Documentation/filesystems/qnx6.txt
+> +++ b/Documentation/filesystems/qnx6.txt
+> @@ -17,7 +17,7 @@ concepts of blocks, inodes and directories.
+>  On QNX it is possible to create little endian and big endian qnx6  
+> filesystems.
+>  This feature makes it possible to create and use a different  
+> endianness fs
+>  for the target (QNX is used on quite a range of embedded systems)  
+> plattform
+> -running on a different endianess.
+> +running on a different endianness.
+>  The Linux driver handles endianness transparently. (LE and BE)
 > 
-> Hi, Jeff. Thanks for the comment.
+>  Blocks
+> @@ -26,7 +26,7 @@ Blocks
+>  The space in the device or file is split up into blocks. These are a  
+> fixed
+>  size of 512, 1024, 2048 or 4096, which is decided when the  
+> filesystem is
+>  created.
+> -Blockpointers are 32bit, so the maximum space that can be adressed is
+> +Blockpointers are 32bit, so the maximum space that can be addressed  
+> is
+>  2^32 * 4096 bytes or 16TB
 > 
-> > The grace period has a particular purpose. It keeps nfsd or lockd from
-> > handing out stateful objects (e.g. locks) before clients have an
-> > opportunity to reclaim them. Once the grace period expires, there is no
-> > more reclaim allowed and "normal" lock and open requests can proceed.
-> >
-> > Traditionally, there has been one nfsd or lockd "instance" per host.
-> > With that, we were able to get away with a relatively simple-minded
-> > approach of a global grace period that's gated on nfsd or lockd's
-> > startup and shutdown.
-> >
-> > Now, you're looking at making multiple nfsd or lockd "instances". Does
-> > it make sense to make this a per-net thing? Here's a particularly
-> > problematic case to illustrate what I mean:
-> >
-> > Suppose I have a filesystem that's mounted and exported in two
-> > different containers. You start up one container and then 60s later,
-> > start up the other. The grace period expires in the first container and
-> > that nfsd hands out locks that conflict with some that have not been
-> > reclaimed yet in the other.
-> >
-> > Now, we can just try to say "don't export the same fs from more than
-> > one container". But we all know that people will do it anyway, since
-> > there's nothing that really stops you from doing so.
-> >
+>  The superblocks
+> @@ -47,16 +47,16 @@ inactive superblock.
+>  Each superblock holds a set of root inodes for the different  
+> filesystem
+>  parts. (Inode, Bitmap and Longfilenames)
+>  Each of these root nodes holds information like total size of the  
+> stored
+> -data and the adressing levels in that specific tree.
+> -If the level value is 0, up to 16 direct blocks can be adressed by  
+> each
+> +data and the addressing levels in that specific tree.
+> +If the level value is 0, up to 16 direct blocks can be addressed by  
+> each
+>  node.
+> -Level 1 adds an additional indirect adressing level where each  
+> indirect
+> -adressing block holds up to blocksize / 4 bytes pointers to data  
+> blocks.
+> -Level 2 adds an additional indirect adressig block level (so,  
+> already up
+> -to 16 * 256 * 256 = 1048576 blocks that can be adressed by such a  
+> tree)a
+> +Level 1 adds an additional indirect addressing level where each  
+> indirect
+> +addressing block holds up to blocksize / 4 bytes pointers to data  
+> blocks.
+> +Level 2 adds an additional indirect addressig block level (so,  
+> already up
+
+s/addressig/addressing/
+
+> +to 16 * 256 * 256 = 1048576 blocks that can be addressed by such a  
+> tree)a
+
+s/a$/./
+
 > 
-> Yes, I see. But situation you described is existent already.
-> I.e. you can replace containers with the same file system by two nodes, sharing 
-> the same distributed file system (like Lustre and GPFS), and you'll experience 
-> the same problem in such case.
+>  Unused block pointers are always set to ~0 - regardless of root node,
+> -indirect adressing blocks or inodes.
+> +indirect addressing blocks or inodes.
+>  Data leaves are always on the lowest level. So no data is stored on  
+> upper
+>  tree levels.
 > 
-
-Yep, which is why we don't support active/active serving from clustered
-filesystems (yet). Containers are somewhat similar to a clustered
-configuration.
-
-The simple minded grace period handling we have now is really only
-suitable for very simple export configurations. The grace period exists
-to ensure that filesystem objects are not "oversubscribed" so it makes
-some sense to turn it into a per-sb property.
-
-> > What probably makes more sense is making the grace period a per-sb
-> > property, and coming up with a set of rules for the fs going into and
-> > out of "grace" status.
-> >
-> > Perhaps a way for different net namespaces to "subscribe" to a
-> > particular fs, and don't take the fs out of grace until all of the
-> > grace period timers pop? If a fs attempts to subscribe after the fs
-> > comes out of grace, then its subscription would be denied and reclaim
-> > attempts would get NFS4ERR_NOGRACE or the NLM equivalent.
-> >
+> @@ -64,7 +64,7 @@ The first Superblock is located at 0x2000. (0x2000  
+> is the bootblock size)
+>  The Audi MMI 3G first superblock directly starts at byte 0.
+>  Second superblock position can either be calculated from the  
+> superblock
+>  information (total number of filesystem blocks) or by taking the  
+> highest
+> -device address, zeroing the last 3 bytes and then substracting  
+> 0x1000 from
+> +device address, zeroing the last 3 bytes and then subtracting 0x1000  
+> from
+>  that address.
 > 
-> This raises another problem. Imagine, that grace period has elapsed for some 
-> container and then you start nfsd in another one. New grace period will affect 
-> all both of them. And that's even worse from my pow.
+>  0x1000 is the size reserved for each superblock - regardless of the
+> @@ -83,8 +83,8 @@ size, number of blocks used, access time, change  
+> time and modification time.
+>  Object mode field is POSIX format. (which makes things easier)
 > 
+>  There are also pointers to the first 16 blocks, if the object data  
+> can be
+> -adressed with 16 direct blocks.
+> -For more than 16 blocks an indirect adressing in form of another  
+> tree is
+> +addressed with 16 direct blocks.
+> +For more than 16 blocks an indirect addressing in form of another  
+> tree is
+>  used. (scheme is the same as the one used for the superblock root  
+> nodes)
+> 
+>  The filesize is stored 64bit. Inode counting starts with 1. (whilst  
+> long
+> @@ -118,13 +118,13 @@ no block pointers and the directory file record  
+> pointing to the target file
+>  inode.
+> 
+>  Character and block special devices do not exist in QNX as those  
+> files
+> -are handled by the QNX kernel/drivers and created in /dev  
+> independant of the
+> +are handled by the QNX kernel/drivers and created in /dev  
+> independent of the
+>  underlaying filesystem.
+> 
+>  Long filenames
+>  --------------
+> 
+> -Long filenames are stored in a seperate adressing tree. The staring  
+> point
+> +Long filenames are stored in a separate addressing tree. The staring  
+> point
+>  is the longfilename root node in the active superblock.
+>  Each data block (tree leaves) holds one long filename. That filename  
+> is
+>  limited to 510 bytes. The first two starting bytes are used as  
+> length field
 
-If you allow one container to hand out conflicting locks while another
-container is allowing reclaims, then you can end up with some very
-difficult to debug silent data corruption. That's the worst possible
-outcome, IMO. We really need to actively keep people from shooting
-themselves in the foot here.
-
-One possibility might be to only allow filesystems to be exported from
-a single container at a time (and allow that to be overridable somehow
-once we have a working active/active serving solution). With that, you
-may be able limp along with a per-container grace period handling
-scheme like you're proposing.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Cheers
+Anders
