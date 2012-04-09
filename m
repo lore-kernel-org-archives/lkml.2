@@ -1,104 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab2DHX4E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 19:56:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44340 "EHLO mx2.suse.de"
+	id S932066Ab2DHX5n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 19:57:43 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59223 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756346Ab2DHX4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 19:56:02 -0400
-Date: Mon, 9 Apr 2012 01:56:00 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/5] hid: Remove multitouch quirk
-In-Reply-To: <1333436730-13008-2-git-send-email-rydberg@euromail.se>
-Message-ID: <alpine.LNX.2.00.1204090154430.24006@pobox.suse.cz>
-References: <1333436730-13008-1-git-send-email-rydberg@euromail.se> <1333436730-13008-2-git-send-email-rydberg@euromail.se>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756417Ab2DHX5k convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Apr 2012 19:57:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH] ACPI: evaluate _PS3 when entering D3 Cold
+Date: Mon, 9 Apr 2012 02:02:07 +0200
+User-Agent: KMail/1.13.6 (Linux/3.3.0+; KDE/4.6.0; x86_64; ; )
+Cc: Aaron Lu <aaron.lu@amd.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
+References: <1333217910-29579-1-git-send-email-aaron.lu@amd.com> <201204010923.18330.rjw@sisk.pl> <1333593497.11327.25.camel@minggr>
+In-Reply-To: <1333593497.11327.25.camel@minggr>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201204090202.08279.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Apr 2012, Henrik Rydberg wrote:
-
-> In preparation for a generic autoloading mechanism, remove
-> the temporary HID_QUIRK_MULTITOUCH quirk.
-> ---
->  drivers/hid/hid-core.c  |    5 -----
->  drivers/hid/hid-input.c |   11 -----------
->  include/linux/hid.h     |    1 -
->  3 files changed, 17 deletions(-)
+On Thursday, April 05, 2012, Lin Ming wrote:
+> On Sun, 2012-04-01 at 09:23 +0200, Rafael J. Wysocki wrote:
+> > Hi,
+> > 
+> > Sorry for the delayed response, I've been travelling recently.
+> > 
+> > On Sunday, April 01, 2012, Lin Ming wrote:
+> > > On Sun, 2012-04-01 at 13:56 +0800, Aaron Lu wrote:
+> > > > Hi,
+> > > > 
+> > > > On Sun, Apr 01, 2012 at 01:27:33PM +0800, Lin Ming wrote:
+> > > > > > -		if (device->power.states[state].flags.explicit_set) {
+> > > > > > +		/* If state is D3 Cold, try to evaluate _PS3 first */
+> > > > > > +		if (state == ACPI_STATE_D3_COLD) {
+> > > > > > +			explicit_set = (ps - 1)->flags.explicit_set;
+> > > > > > +			object_name[3] -= 1;
+> > > > > > +		}
+> > > > > 
+> > > > > I'm not sure whether this works or not.
+> > > > > 
+> > > > > From ACPI spec,
+> > > > > 
+> > > > > _PS3 "is used to put the specific device into its D3hot or D3 state"
+> > > > > 
+> > > > > D3 neither means D3hot nor D3cold. It's an old term before D3hot and
+> > > > > D3cold were introduced.
+> > > > I guess D3 has to mean something, right? :-)
+> > 
+> > Well, not necessarily.
+> > 
+> > The problem is what state the _PS3 method puts the device into: D3_hot or
+> > D3_cold.
+> > 
+> > Unfortunately, as far as I can say, ACPI 4.0 didn't specify any "official"
+> > mapping between the "old" D3 and the "new" D3_{hod|cold} states, so we need to
+> > figure out something.  In my opinion, the only reasonable approach is to
+> > assume that the state _PS3 puts the device into is always D3_cold, becuase
+> > _PS3 may remove power completely from the device.  It may not do that, but
+> > we _must_ assume it does that in general.
+> > 
+> > > > Here is the problem, there is no _PR3 in AMD's implementation, just _PS3.
+> > > > And since _S0W evaluates 4, I've to put this device into D3 cold state
+> > > > with _PS3.
+> > > > 
+> > > > And the ACPI does have some words like:
+> > > > 
+> > > > ------
+> > > > Platform/drivers must assume that the device will have power completely
+> > > > removed when the device is place into “D3” via _PS3
+> > 
+> > Exactly.  What it means is basically "always reinitialize the device from
+> > scratch if you have run _PS3 on it".  And that's what we should do.
+> > 
+> > > > ------
+> > > > 
+> > > > This is in section 7.2.11: _PR3.
+> > > > 
+> > > > > 
+> > > > > Another problem:
+> > > > > 
+> > > > > With your patch, both D3hot and D3cold will evaluate _PS3, right?
+> > > > > 
+> > > > Yes.
+> > > > 
+> > > > > Will it have problem on AMD platform if you try to put ODD into D3hot
+> > > > > state? _PS3 is evaluated, so it actually enters D3Cold state.
+> > > > 
+> > > > There is no D3 hot support for this device(from the firmware's
+> > > > perspective), either it is at D0(via _PS0), or it will be at D3 cold(via
+> > > > _PS3).
+> > > 
+> > > But this is the generic code. We can't only consider some special
+> > > device.
+> > > 
+> > > Maybe we need some flag to tell which D3 state _PS3 is used for.
+> > 
+> > No, please.  As I said above, we need to reinitialize devices that _PS3 was
+> > executed on, which is equivalent to saying that those devices were put into
+> > D3_cold.
+> > 
+> > The only situation where a device can be put into ACPI D3_hot (which is not
+> > the same as PCI D3_hot, mind you) is when:
+> > 
+> > (1) There is _PR3 listing some of the device's power resources as "on".
+> > (2) The power resources listed by the _PR3 as "off" are turned off and the
+> >     power resources listed by the _PR3 as "on" are left in the "on" state.
 > 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index af08ce7..35ba9d9 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1230,11 +1230,6 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
->  	if ((connect_mask & HID_CONNECT_HIDINPUT) && !hidinput_connect(hdev,
->  				connect_mask & HID_CONNECT_HIDINPUT_FORCE))
->  		hdev->claimed |= HID_CLAIMED_INPUT;
-> -	if (hdev->quirks & HID_QUIRK_MULTITOUCH) {
-> -		/* this device should be handled by hid-multitouch, skip it */
-> -		hdev->quirks &= ~HID_QUIRK_MULTITOUCH;
-> -		return -ENODEV;
-> -	}
->  
->  	if ((connect_mask & HID_CONNECT_HIDDEV) && hdev->hiddev_connect &&
->  			!hdev->hiddev_connect(hdev,
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 627850a..e15575a 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -631,10 +631,6 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
->  			map_key_clear(BTN_STYLUS2);
->  			break;
->  
-> -		case 0x51: /* ContactID */
-> -			device->quirks |= HID_QUIRK_MULTITOUCH;
-> -			goto unknown;
-> -
->  		default:  goto unknown;
->  		}
->  		break;
-> @@ -1201,13 +1197,6 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
->  		}
->  	}
->  
-> -	if (hid->quirks & HID_QUIRK_MULTITOUCH) {
-> -		/* generic hid does not know how to handle multitouch devices */
-> -		if (hidinput)
-> -			goto out_cleanup;
-> -		goto out_unwind;
-> -	}
-> -
->  	if (hidinput && input_register_device(hidinput->input))
->  		goto out_cleanup;
->  
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 3a95da6..5b3be43 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -317,7 +317,6 @@ struct hid_item {
->  #define HID_QUIRK_BADPAD			0x00000020
->  #define HID_QUIRK_MULTI_INPUT			0x00000040
->  #define HID_QUIRK_HIDINPUT_FORCE		0x00000080
-> -#define HID_QUIRK_MULTITOUCH			0x00000100
->  #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
->  #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
->  #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
+> (1) and (2) seems conflict.
+> 
+> (1) means all power resources listed in _PR3 are "on", but
+> (2) means some power resources listed in _PR3 are "off" and others are
+> "on"
+> 
+> Is my understanding correct?
 
-Very minorish comment to this -- how about putting it at the very end of 
-the patch series instead, so that all the multitouch devices keep working 
-throughout the whole patchset? (because of bisectability ... very corner 
-cases where this would case actual problems, yes).
+Not really, sorry for the confusion.  As I said in another message, if _PR3 is
+present, there are two lists of resources, the one returned by _PR3 and the
+one returned by _PR0 (which lists all power resources the device depends on).
+
+So (1) above really means "power resources returned by _PR3 are on" and (2) means
+"the power resources listed by _PR0 and not by _PR3 are in the 'off' state,
+while the ones listed by both _PR0 and _PR3 are in the 'on' state".
+
+In theory, there may be power resources that are listed by _PR3 and not by
+_PR0, but that would be a very strange case in practice.
 
 Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Rafael
