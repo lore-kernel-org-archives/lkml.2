@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab2DIRoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 13:44:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61674 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab2DIRoK (ORCPT
+	id S1756987Ab2DIRpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 13:45:01 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:30267 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab2DIRpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 13:44:10 -0400
-Date: Mon, 9 Apr 2012 10:44:05 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH] pch_uart: Fix dma channel unallocated issue
-Message-ID: <20120409174405.GA25990@kroah.com>
-References: <1332842162-26113-1-git-send-email-tomoya.rohm@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332842162-26113-1-git-send-email-tomoya.rohm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Apr 2012 13:45:00 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6675"; a="177726097"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: trivial@kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [TRIVIAL/PATCH] workqueue: Fix workqueue_execute_end() comment
+Date: Mon,  9 Apr 2012 10:44:57 -0700
+Message-Id: <1333993497-28215-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.10.rc3.3.g19a6c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 27, 2012 at 06:56:02PM +0900, Tomoya MORINAGA wrote:
-> This driver anticipates pch_uart_verify_port() is not called
-> during installation.
-> However, actually pch_uart_verify_port() is called during
-> installation.
-> As a result, memory access violation occurs like below.
-> 
-> 0. initial value: use_dma=0
-> 1. starup()
->     - dma channel is not allocated because use_dma=0
-> 2. pch_uart_verify_port()
->     - Set use_dma=1
-> 3. UART processing acts DMA mode because use_dma=1
->      - memory access violation occurs!
-> 
-> This patch fixes the issue.
-> 
-> Solution:
-> Whenever pch_uart_verify_port() is called and then
-> dma channel is not allocated, the channel should be allocated.
-> 
-> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-> ---
->  drivers/tty/serial/pch_uart.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+workqueue_execute_end() is called after the callback function,
+not before.
 
-This patch does not apply to 3.4-rc2, so I can not apply it, sorry.
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ include/trace/events/workqueue.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Care to redo it?
+diff --git a/include/trace/events/workqueue.h b/include/trace/events/workqueue.h
+index 7d49729..4018f50 100644
+--- a/include/trace/events/workqueue.h
++++ b/include/trace/events/workqueue.h
+@@ -103,7 +103,7 @@ TRACE_EVENT(workqueue_execute_start,
+ );
+ 
+ /**
+- * workqueue_execute_end - called immediately before the workqueue callback
++ * workqueue_execute_end - called immediately after the workqueue callback
+  * @work:	pointer to struct work_struct
+  *
+  * Allows to track workqueue execution.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-greg k-h
