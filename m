@@ -1,115 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab2DIJZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 05:25:57 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50796 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab2DIJZ4 (ORCPT
+	id S1756064Ab2DIJfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 05:35:13 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39007 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab2DIJfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 05:25:56 -0400
-X-AuditID: cbfee61b-b7baeae000004fa7-cf-4f82ab228196
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Olof Johansson'" <olof@lixom.net>
-Cc: "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1333944982-15859-1-git-send-email-olof@lixom.net>
-In-reply-to: <1333944982-15859-1-git-send-email-olof@lixom.net>
-Subject: RE: [PATCH] video: exynos: fix build warning and bad pointer deref in
- dp driver
-Date: Mon, 09 Apr 2012 18:25:54 +0900
-Message-id: <002601cd1632$c34b24b0$49e16e10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0WB47Ng3u4GY5tShC3ai7B1T/BfwAKxDkQ
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Mon, 9 Apr 2012 05:35:12 -0400
+Date: Mon, 9 Apr 2012 10:37:45 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dave Jones <davej@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Xin Tong <xerox.time.tech@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: oostore on x86
+Message-ID: <20120409103745.487fa6f1@pyramind.ukuu.org.uk>
+In-Reply-To: <20120408232728.GA29407@redhat.com>
+References: <CALKntY1V2nELdTOSVpm1PwVmxm1pxtGdvs8tUyNA1R=c9K8pcA@mail.gmail.com>
+	<4F820804.2040302@zytor.com>
+	<20120408232728.GA29407@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> I've suggested just removing that code in the past a few times.
+> Even if it does still work, anyone complaining about performance loss
+> of a modern kernel on something of that era can't be taken seriously.
 
+I'm not sure removing it makes sense given what a tiny spec of code is
+involved. Also in practice most of the same bits are actually used with
+different fencing operators on PPro for errata and on PIII and higher for
+temporal stores. Of the tree tiny changes it causes two are identical to
+PPro...
 
-> -----Original Message-----
-> From: Olof Johansson [mailto:olof@lixom.net]
-> Sent: Monday, April 09, 2012 1:16 PM
-> 
-> I'm not 100% sure if the fix for 'adjust_request' is correct, since
-> it's uncertain what the original intent was. But it's so clearly an
-> uninitialized pointer dereference that my resolution seems to make sense.
-> 
-> drivers/video/exynos/exynos_dp_core.c: In function 'exynos_dp_set_link_train':
-> drivers/video/exynos/exynos_dp_core.c:521:21: warning: 'adjust_request' may be used uninitialized in
-> this function [-Wuninitialized]
-> drivers/video/exynos/exynos_dp_core.c:481:6: note: 'adjust_request' was declared here
-> drivers/video/exynos/exynos_dp_core.c:529:18: warning: 'reg' may be used uninitialized in this function
-> [-Wuninitialized]
-> drivers/video/exynos/exynos_dp_core.c:395:6: note: 'reg' was declared here
-
-My compiler cannot detect this warning.
-What is your compiler version?
-
-
-> 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
->  drivers/video/exynos/exynos_dp_core.c |   23 +++++++++--------------
->  1 file changed, 9 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-> index 2a4481c..8973e18 100644
-> --- a/drivers/video/exynos/exynos_dp_core.c
-> +++ b/drivers/video/exynos/exynos_dp_core.c
-> @@ -392,24 +392,19 @@ static unsigned int exynos_dp_get_lane_link_training(
->  				struct exynos_dp_device *dp,
->  				int lane)
->  {
-> -	u32 reg;
-> -
->  	switch (lane) {
->  	case 0:
-> -		reg = exynos_dp_get_lane0_link_training(dp);
-> -		break;
-> +		return exynos_dp_get_lane0_link_training(dp);
->  	case 1:
-> -		reg = exynos_dp_get_lane1_link_training(dp);
-> -		break;
-> +		return exynos_dp_get_lane1_link_training(dp);
->  	case 2:
-> -		reg = exynos_dp_get_lane2_link_training(dp);
-> -		break;
-> +		return exynos_dp_get_lane2_link_training(dp);
->  	case 3:
-> -		reg = exynos_dp_get_lane3_link_training(dp);
-> -		break;
-> +		return exynos_dp_get_lane3_link_training(dp);
->  	}
-> 
-> -	return reg;
-> +	WARN_ON(1);
-> +	return 0;
->  }
-> 
->  static void exynos_dp_reduce_link_rate(struct exynos_dp_device *dp)
-> @@ -489,13 +484,13 @@ static int exynos_dp_process_clock_recovery(struct exynos_dp_device *dp)
->  				6, link_status);
->  	lane_count = dp->link_train.lane_count;
-> 
-> +	adjust_request = link_status + (DPCD_ADDR_ADJUST_REQUEST_LANE0_1
-> +					- DPCD_ADDR_LANE0_1_STATUS);
-> +
->  	if (exynos_dp_clock_recovery_ok(link_status, lane_count) == 0) {
->  		/* set training pattern 2 for EQ */
->  		exynos_dp_set_training_pattern(dp, TRAINING_PTN2);
-> 
-> -		adjust_request = link_status + (DPCD_ADDR_ADJUST_REQUEST_LANE0_1
-> -						- DPCD_ADDR_LANE0_1_STATUS);
-> -
->  		exynos_dp_get_adjust_train(dp, adjust_request);
-> 
->  		buf[0] = DPCD_SCRAMBLING_DISABLED |
-> --
-> 1.7.9.2.359.gebfc2
+Alan
 
