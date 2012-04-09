@@ -1,108 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab2DIUSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:18:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2DIUSM (ORCPT
+	id S1755636Ab2DIUUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:20:51 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:32462 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab2DIUUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:18:12 -0400
-Message-ID: <4F8343CA.7050208@gmail.com>
-Date: Mon, 09 Apr 2012 14:17:14 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, acme@ghostprotocols.net
-CC: mingo@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        fweisbec@gmail.com, eranian@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [BUG PATCH] perf: kvm - finding struct machine fails for PERF_RECORD_MMAP
-References: <20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com>
-In-Reply-To: <20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 9 Apr 2012 16:20:50 -0400
+Message-ID: <1334002847.2871.26.camel@lorien2>
+Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: shuahkhan@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        neilb@suse.de, rpurdie@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 09 Apr 2012 14:20:47 -0600
+In-Reply-To: <20120409184558.GB18542@core.coreip.homeip.net>
+References: <1333310039.2879.4.camel@lorien2>
+	 <20120406165353.ab667eb0.akpm@linux-foundation.org>
+	 <1333808024.2728.39.camel@lorien2>
+	 <20120407215641.GA4539@core.coreip.homeip.net>
+	 <1333990549.2871.10.camel@lorien2>
+	 <20120409173703.GA18542@core.coreip.homeip.net>
+	 <1333995365.2871.17.camel@lorien2>
+	 <20120409184558.GB18542@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/9/12 2:22 AM, Nikunj A. Dadhania wrote:
-> From: Nikunj A. Dadhania<nikunj@linux.vnet.ibm.com>
->
-> Running 'perf kvm --host --guest --guestmount /tmp/guestmount record -a -g -- sleep 2'
->
-> Was resulting in a segfault. For event type PERF_RECORD_MMAP,
-> event->ip.pid is being used in perf_session__find_machine_for_cpumode,
-> which is not correct.
+On Mon, 2012-04-09 at 11:45 -0700, Dmitry Torokhov wrote:
+> On Mon, Apr 09, 2012 at 12:16:05PM -0600, Shuah Khan wrote:
+> > On Mon, 2012-04-09 at 10:37 -0700, Dmitry Torokhov wrote:
+> > > On Mon, Apr 09, 2012 at 10:55:49AM -0600, Shuah Khan wrote:
+> > > > On Sat, 2012-04-07 at 14:56 -0700, Dmitry Torokhov wrote:
+> > > > > Hi Shuah,
+> > > > > 
+> > > > > On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
+> > > > > > 
+> > > > > > > > +This feature will help implement vibrate functionality which requires one
+> > > > > > > > +time activation of vibrate mode without a continuous vibrate on/off cycles.
+> > > > > > > 
+> > > > > > > They make vibrating LED? ;)
+> > > > > > > 
+> > > > > > > What's going on here?  You're proposing to repurpose the LEDs code to
+> > > > > > > drive vibration devices?  Or some devices couple a LED with a vibration
+> > > > > > > device?
+> > > > > > 
+> > > > > > I owe you filling in the blanks type explanation. Let me describe the
+> > > > > > use-case I am trying to address first. Vibrater function on phones is
+> > > > > > implemented using PWM pins on SoC or PMIC. When there is no such
+> > > > > > hardware present, a software solution is needed. Currently two drivers
+> > > > > > timed-gpio and timed-output (under staging/android in Linux 3.3)
+> > > > > > together implement the software vibrate feature. The main functionality
+> > > > > > it implements is the one time enables of timer to prevent user space
+> > > > > > crashes leaving the phone in vibrate mode causing the battery to drain.
+> > > > > > leds as it is implemented currently, is not suitable to address this
+> > > > > > use-case as it doesn't support one time enables.
+> > > > > 
+> > > > > So why do not you use memoryless force feedback framework that other
+> > > > > devices use (see drivers/input/misc/*vibra.c drivers).
+> > > > > 
+> > > > 
+> > > > Dimitry,
+> > > > 
+> > > > I took a look at these vibra* drivers. The three vibrate drivers are
+> > > > chip-set specific. The use-case I have is a non-chip set approach to
+> > > > address the use-case when vibrate hardware is not present. Are you
+> > > > envisioning a generic approach using ff-memoryless infrastructure?
+> > > 
+> > > Shuah,
+> > > 
+> > > I guess I am confused now. You need some form of hardware to make your
+> > > device to vibrate.
+> > > 
+> > > What exactly are you trying to do? Are you trying to:
+> > > 
+> > > 1. activate vibration on devices that can actually do it using LED
+> > >    interface, or
+> > > 
+> > > 2. use LEDs as an alternative to vibrate on devices that can't
+> > >    physically vibrate?
+> > > 
+> > > Thanks.
+> > 
+> > What I meant by generic approach is a higher level interface that is not
+> > tied too closely to the underlying hardware. Similar to the leds-pwm.c
+> > and leds-gpio.c handle gpio and pwm based leds. The vibrate hardware in
+> > my sue-case is a gpio based and could pwm based on some phones.
+> 
+> Ok, so you need to add drivers/input/misc/gpio-vibrate.c and pwm-vibrate.c
+> and then use FF to activate them. This way we have all vibrate
+> implementation use one subsystem instead of splitting between
+> input/led/whatever else people could come up with.
+> 
+> Thanks.
+> 
 
-I'm not getting the segfault with latest tip/perf/urgent, but I am 
-getting a hang.
+Dmitry,
 
-It's stuck on buildid:
+It is unfortunate that we have these two infrastructures evolve that has
+a lot of overlap. Let me summarize the two alternatives first so we get
+a feel for the work involved to address this use-case using ff and leds
+frameworks:
 
-(gdb) bt
-#0  0x00007fabf53e79da in mmap64 () from /lib64/libc.so.6
-#1  0x0000000000454656 in __perf_session__process_events 
-(session=0x1e06110,
-     data_offset=<value optimized out>, data_size=<value optimized out>, 
-file_size=37328,
-     tool=0x75db40) at util/session.c:1192
-#2  0x00000000004102e6 in process_buildids (status=<value optimized 
-out>, arg=0x75cc00)
-     at builtin-record.c:320
-#3  perf_record__exit (status=<value optimized out>, arg=0x75cc00) at 
-builtin-record.c:333
-#4  0x00007fabf53419c9 in exit () from /lib64/libc.so.6
-#5  0x0000000000406b84 in handle_internal_command (argc=9, 
-argv=0x7fff3f14d6c0) at perf.c:345
-#6  run_argv (argc=9, argv=0x7fff3f14d6c0) at perf.c:389
-#7  main (argc=9, argv=0x7fff3f14d6c0) at perf.c:487
+Alternative 1: using leds infrastructure
+
+Add new kernel interface to support one time enables. This will enable
+existing gpio and pwm drivers to be used to implement vibrate.
+
+Alternative 2: using ff infrastructure
+
+Add new drivers gpio and pwm that use existing one time enable to
+implement vibrate in a generic way.
+
+Does this sound right? From a quick glance it sounds like we can get to
+the end goal quicker and in a simpler way with Alternative 1. However, I
+might be missing longterm view. Any other alternatives we could explore?
+
+-- Shuah 
 
 
-Adding -B works around it and proves something is not right regarding 
-buildid's and perf-kvm. I'll dig into it as time allows, but wanted to 
-send this out in case Arnaldo understands the problem now.
 
-David
-
->
-> event->ip.pid happens to be 0 in this case and results in returning a
-> NULL machine object. Finally, access to self->pid in
-> machine__mmap_name, results in a segfault later.
->
-> For PERF_RECORD_MMAP type, pass event->mmap.pid.
->
-> Signed-off-by: Nikunj A. Dadhania<nikunj@linux.vnet.ibm.com>
-> ---
->
->   tools/perf/util/session.c |   12 ++++++++++--
->   1 files changed, 10 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 9412e3b..00923cd 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -826,8 +826,16 @@ static struct machine *
->   {
->   	const u8 cpumode = event->header.misc&  PERF_RECORD_MISC_CPUMODE_MASK;
->
-> -	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL&&  perf_guest)
-> -		return perf_session__find_machine(session, event->ip.pid);
-> +	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL&&  perf_guest) {
-> +		u32 pid;
-> +
-> +		if (event->header.type == PERF_RECORD_MMAP)
-> +			pid = event->mmap.pid;
-> +		else
-> +			pid = event->ip.pid;
-> +
-> +		return perf_session__find_machine(session, pid);
-> +	}
->
->   	return perf_session__find_host_machine(session);
->   }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
