@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757002Ab2DIONV (ORCPT <rfc822;w@1wt.eu>);
+	id S1757189Ab2DIONx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 10:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757044Ab2DIONV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Apr 2012 10:13:21 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51853 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858Ab2DIONT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 10:13:19 -0400
-Subject: [PATCH] sil3531: has no PM capability, remove support.
-From: philby john <pjohn@mvista.com>
-To: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        htejun@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Apr 2012 19:44:09 +0530
-Message-ID: <1333980849.11209.5.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
-Content-Transfer-Encoding: 7bit
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Shaohua Li <shli@kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]block: make auto block plug flush threshold per-disk based
+References: <4F7F2765.3090003@kernel.org> <4F7F2A3D.3010700@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 09 Apr 2012 10:13:12 -0400
+In-Reply-To: <4F7F2A3D.3010700@kernel.dk> (Jens Axboe's message of "Fri, 06
+	Apr 2012 11:39:09 -0600")
+Message-ID: <x498vi5803r.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philby John <pjohn@mvista.com>
-Date: Mon, 9 Apr 2012 19:09:51 +0530
-Subject: [PATCH] sil3531: has no PM capability, remove support.
+Jens Axboe <axboe@kernel.dk> writes:
 
-SATA sil3531 does not support Power Management Capability and
-as per the manual Bit [31:27] is hardwired to 00h.
-Otherwise, when the device goes into suspend/resume the Power
-Management Control + Status registers are accessed and the
-arch specific readl()/__raw_readl() calls block indefinitely.
+> On 2012-04-06 11:27, Shaohua Li wrote:
+>> We do auto block plug flush to reduce latency, the threshold is 16
+>> requests. This works well if the task is accessing one or two drives.
+>> The problem is if the task is accessing a raid 0 device and the raid
+>> disk number is big, say 8 or 16, 16/8 = 2 or 16/16=1, we will have
+>> heavy lock contention.
+>> 
+>> This patch makes the threshold per-disk based. The latency should be
+>> still ok accessing one or two drives. The setup with application
+>> accessing a lot of drives in the meantime uaually is big machine,
+>> avoiding lock contention is more important, because any contention
+>> will actually increase latency.
+>
+> Thanks, applied. It should have been per-queue all along, so this
+> makes a lot of sense.
 
-This patch sets the PCI_DEV_FLAGS_NO_D3 flag by which the if
-condition in pci_set_power_state() evaluates to true and
-pci_raw_set_power_state() functions are not executed.
+Yeah, I had noticed this before when looking over the code.  Makes
+sense.
 
-Signed-off-by: Philby John <pjohn@mvista.com>
-Signed-off-by: Johnny Chiang <Johnny.Chiang@caviumnetworks.com>
----
- drivers/pci/pci.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8156744..129120d 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1863,6 +1863,7 @@ void pci_pm_init(struct pci_dev *dev)
- 		pci_pme_active(dev, false);
- 	} else {
- 		dev->pme_support = 0;
-+		dev->dev_flags |= PCI_DEV_FLAGS_NO_D3;
- 	}
- }
- 
--- 
-1.6.3.3.340.g77d18
-
-
-
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
