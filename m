@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab2DIQjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 12:39:09 -0400
-Received: from fieldses.org ([174.143.236.118]:47560 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750886Ab2DIQjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 12:39:05 -0400
-Date: Mon, 9 Apr 2012 12:39:02 -0400
-From: "bfields@fieldses.org" <bfields@fieldses.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-Message-ID: <20120409163902.GD6482@fieldses.org>
-References: <20120406234039.GA20940@fieldses.org>
- <4F82C6E3.3030009@parallels.com>
- <20120409094743.56932677@tlielax.poochiereds.net>
- <4F82F16C.7030303@parallels.com>
- <20120409112739.6a823d6f@corrin.poochiereds.net>
- <4F830999.5000504@parallels.com>
- <20120409161114.GB6482@fieldses.org>
- <1333988226.2688.76.camel@lade.trondhjem.org>
- <20120409162107.GC6482@fieldses.org>
- <1333989216.2688.87.camel@lade.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1752916Ab2DIQjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 12:39:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38116 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab2DIQjj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 9 Apr 2012 12:39:39 -0400
+Message-Id: <4F831ED7020000780008228C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 09 Apr 2012 17:39:35 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <konrad.wilk@oracle.com>
+Cc: <david.vrabel@citrix.com>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 6/7] xen/setup: Make dom0_mem=XGB
+ behavior be similar to classic Xen kernels.
+References: <1333139850-28456-1-git-send-email-konrad.wilk@oracle.com>
+ <1333139850-28456-7-git-send-email-konrad.wilk@oracle.com>
+ <4F7ABBC4.4050106@citrix.com>
+ <4F7AE321020000780007C456@nat28.tlf.novell.com>
+ <20120406210117.GB26309@phenom.dumpdata.com>
+In-Reply-To: <20120406210117.GB26309@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1333989216.2688.87.camel@lade.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 04:33:36PM +0000, Myklebust, Trond wrote:
-> On Mon, 2012-04-09 at 12:21 -0400, bfields@fieldses.org wrote:
-> > On Mon, Apr 09, 2012 at 04:17:06PM +0000, Myklebust, Trond wrote:
-> > > On Mon, 2012-04-09 at 12:11 -0400, bfields@fieldses.org wrote:
-> > > > On Mon, Apr 09, 2012 at 08:08:57PM +0400, Stanislav Kinsbursky wrote:
-> > > > > 09.04.2012 19:27, Jeff Layton пишет:
-> > > > > >
-> > > > > >If you allow one container to hand out conflicting locks while another
-> > > > > >container is allowing reclaims, then you can end up with some very
-> > > > > >difficult to debug silent data corruption. That's the worst possible
-> > > > > >outcome, IMO. We really need to actively keep people from shooting
-> > > > > >themselves in the foot here.
-> > > > > >
-> > > > > >One possibility might be to only allow filesystems to be exported from
-> > > > > >a single container at a time (and allow that to be overridable somehow
-> > > > > >once we have a working active/active serving solution). With that, you
-> > > > > >may be able limp along with a per-container grace period handling
-> > > > > >scheme like you're proposing.
-> > > > > >
-> > > > > 
-> > > > > Ok then. Keeping people from shooting themselves here sounds reasonable.
-> > > > > And I like the idea of exporting a filesystem only from once per
-> > > > > network namespace.
-> > > > 
-> > > > Unfortunately that's not going to get us very far, especially not in the
-> > > > v4 case where we've got the common read-only pseudoroot that everyone
-> > > > has to share.
-> > > 
-> > > I don't see how that can work in cases where each container has its own
-> > > private mount namespace. You're going to have to tie that pseudoroot to
-> > > the mount namespace somehow.
-> > 
-> > Sure, but in typical cases it'll still be shared; requiring that they
-> > not be sounds like a severe limitation.
-> 
-> I'd expect the typical case to be the non-shared namespace: the whole
-> point of containers is to provide for complete isolation of processes.
-> Usually that implies that you don't want them to be able to communicate
-> via a shared filesystem.
+>>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> 04/06/12 11:06 PM >>>
+>On Tue, Apr 03, 2012 at 10:46:41AM +0100, Jan Beulich wrote:
+>> >>> On 03.04.12 at 10:58, David Vrabel <david.vrabel@citrix.com> wrote:
+>> > With your new behaviour it will no longer possible to specify an
+>> > unlimited balloon but a limited number of initial pages.  This is
+>> > behaviour that Jan said he used.
+>> 
+>> An unlimited balloon was never possible afaict (as that would have
+>> implied setting up an "infinite" number of struct page instances at
+>> boot time.
+>> 
+>> What I'm using is "dom0_mem=-<num>M" together with the kernel
+>> option "mem=<num>G", such that max-balloon > initial alloc (usually
+>> I set max-balloon to approximately the amount of memory in the
+>> system, so the upper limit is "infinite" in the sense that I can't go
+>> higher anyway, but it's not truly infinity).
+>
+>Couldn't you do the same thing with 'dom0_mem=X,max:Y'
 
-If it's just a file server, then you may want to be able to bring up and
-down service on individual server ip's individually, and possibly
-advertise different exports; but requiring complete isolation to do that
-seems like overkill.
+That would be possible (albeit not exactly identical in behavior). But my
+main point in the discussion was to not modify existing behavior without
+actual need to (including the desire to not have to modify dozens of
+command lines).
 
---b.
+Jan
+
