@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180Ab2DIXZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 19:25:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64238 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758151Ab2DIXZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 19:25:56 -0400
-Date: Mon, 9 Apr 2012 16:25:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Christian Bejram <christian.bejram@stericsson.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1
- sticks-and-crashs)
-In-Reply-To: <CA+55aFztPW2x1grh2Z7RTOxKZ29_Ha6-kDkJXgdghFHQ61EZOQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1204091603430.21813@chino.kir.corp.google.com>
-References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com> <20120408195044.13ea6c8e.akpm@linux-foundation.org> <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com> <alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
- <CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com> <alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com> <CA+55aFztPW2x1grh2Z7RTOxKZ29_Ha6-kDkJXgdghFHQ61EZOQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758194Ab2DIX0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 19:26:22 -0400
+Received: from fieldses.org ([174.143.236.118]:33148 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757434Ab2DIX0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 19:26:21 -0400
+Date: Mon, 9 Apr 2012 19:26:18 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Grace period
+Message-ID: <20120409232618.GI10508@fieldses.org>
+References: <4F7F230A.6080506@parallels.com>
+ <20120406234039.GA20940@fieldses.org>
+ <4F82C6E3.3030009@parallels.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-1665819623-1334013033=:21813"
-Content-ID: <alpine.DEB.2.00.1204091610450.21813@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F82C6E3.3030009@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---397155492-1665819623-1334013033=:21813
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.00.1204091610451.21813@chino.kir.corp.google.com>
-
-On Mon, 9 Apr 2012, Linus Torvalds wrote:
-
-> > Right, we can't handoff the freeing of the task_struct to more than one
-> > notifier.  It seems misdesigned from the beginning and what we really want
-> > is to hijack task->usage for __put_task_struct(task) if we have such a
-> > notifier callchain and require each one (currently just oprofile) to take
-> > a reference on task->usage for NOTIFY_OK and then be responsible for
-> > dropping the reference when it's done with it later instead of requiring
-> > it to free the task_struct itself.
+On Mon, Apr 09, 2012 at 03:24:19PM +0400, Stanislav Kinsbursky wrote:
+> 07.04.2012 03:40, bfields@fieldses.org пишет:
+> >On Fri, Apr 06, 2012 at 09:08:26PM +0400, Stanislav Kinsbursky wrote:
+> >>Hello, Bruce.
+> >>Could you, please, clarify this reason why grace list is used?
+> >>I.e. why list is used instead of some atomic variable, for example?
+> >
+> >Like just a reference count?  Yeah, that would be OK.
+> >
+> >In theory it could provide some sort of debugging help.  (E.g. we could
+> >print out the list of "lock managers" currently keeping us in grace.)  I
+> >had some idea we'd make those lock manager objects more complicated, and
+> >might have more for individual containerized services.
 > 
-> We could make notifier.c just "or" all the return values together, and
-> then it's ok if *one* person returns NOTIFY_OK.
+> Could you share this idea, please?
 > 
-
-You could that if you also turned the check for "ret == NOTIFY_OK" in 
-profile_handoff_task() into "ret & NOTIFY_OK" in your patch, otherwise you 
-get a double free from __put_task_struct() and oprofile.
-
-> Of course, that's not how notifiers are documented to work, but quite
-> frankly, notifiers with non-zero values that don't sat STOP are broken
-> as-is anyway, so you might we well do a logical "or" of the return
-> values and at least make things like this work.
+> Anyway, I have nothing against lists. Just was curious, why it was used.
+> I added Trond and lists to this reply.
 > 
+> Let me explain, what is the problem with grace period I'm facing
+> right know, and what I'm thinking about it.
+> So, one of the things to be containerized during "NFSd per net ns"
+> work is the grace period, and these are the basic components of it:
+> 1) Grace period start.
+> 2) Grace period end.
+> 3) Grace period check.
+> 3) Grace period restart.
 
-It works fine if the callbacks are correctly implemented, it's just that 
-the task handoff in kernel/profile.c is broken because it assumes only one 
-callback will return NOTIFY_OK, meaning it will eventually free, and its 
-only checking the return value of the last notifier called to see if 
-__put_task_struct() should immediately free.
+For restart, you're thinking of the fs/lockd/svc.c:restart_grace()
+that's called on aisngal in lockd()?
 
-In defense of notifiers, though, it works fine right now for memory 
-hotplug.  The last issue I had with it was when slab lacked a callback 
-when a node was onlined or offlined in 2.6.34 and then I added memory 
-hotplug support for that allocator and it has since worked fine.  For 
-things like MEM_GOING_OFFLINE, returning NOTIFY_BAD is great if the 
-subsystem of interest can't allow the memory to go offline (in-use slab 
-objects, for example).  In the memory hotplug usecase, we certainly don't 
-want to stop at NOTIFY_OK because we need to notify every subsystem on the 
-callchain.
+I wonder if there's any way to figure out if that's actually used by
+anyone?  (E.g. by any distro init scripts).  It strikes me as possibly
+impossible to use correctly.  Perhaps we could deprecate it....
 
-> Oh well. So my suggestion right now would be something like the
-> attached. It's still horribly broken, it actively breaks documented
-> notifier behavior, but dammit, if the notifier people don't like
-> 'or'ing return values together they should damn well return zero from
-> the notifier that doesn't do anything. And returning an error will
-> exit out, so..
+> So, the simplest straight-forward way is to make all internal stuff:
+> "grace_list", "grace_lock", "grace_period_end" work and both
+> "lockd_manager" and "nfsd4_manager" - per network namespace. Also,
+> "laundromat_work" have to be per-net as well.
+> In this case:
+> 1) Start - grace period can be started per net ns in
+> "lockd_up_net()" (thus has to be moves there from "lockd()") and
+> "nfs4_state_start()".
+> 2) End - grace period can be ended per net ns in "lockd_down_net()"
+> (thus has to be moved there from "lockd()"), "nfsd4_end_grace()" and
+> "fs4_state_shutdown()".
+> 3) Check - looks easy. There is either svc_rqst or net context can
+> be passed to function.
+> 4) Restart - this is a tricky place. It would be great to restart
+> grace period only for the networks namespace of the sender of the
+> kill signal. So, the idea is to check siginfo_t for the pid of
+> sender, then try to locate the task, and if found, then get sender's
+> networks namespace, and restart grace period only for this namespace
+> (of course, if lockd was started for this namespace - see below).
+
+If it's really the signalling that's the problem--perhaps we can get
+away from the signal-based interface.
+
+At least in the case of lockd I suspect we could.
+
+Or perhaps the decision to share a single lockd thread (or set of nsfd
+threads) among multiple network namespaces was a poor one.  But I
+realize multithreading lockd doesn't look easy.
+
+--b.
+
+> If task not found, of it's lockd wasn't started for it's namespace,
+> then grace period can be either restarted for all namespaces, of
+> just silently dropped. This is the place where I'm not sure, how to
+> do. Because calling grace period for all namespaces will be
+> overkill...
 > 
-
-Instead of this and it's possible bad interactions with other notifiers 
-during the -rc cycle, I think it would be better to
-
- (1)  fix the lowmemorykiller so it doesn't need to use these notifiers at 
-      all, which isn't difficult, for 3.4, then
-
- (2a) change the task handoff to a refcount on task->usage after the final
-      put_task_struct() using the notifier and then allow it to be freed 
-      after everybody does a put_handoff_task_struct() for 3.5
-
-	or
-
- (2b) remove the task handoff notifier callchain entirely and just tie it
-      directly to oprofile since android won't be using it anymore after 
-      (1).
---397155492-1665819623-1334013033=:21813--
+> There also another problem with the "task by pid" search, that found
+> task can be actually not sender (which died already), but some other
+> new task with the same pid number. In this case, I think, we can
+> just neglect this probability and always assume, that we located
+> sender (if, of course, lockd was started for sender's network
+> namespace).
+> 
+> Trond, Bruce, could you, please, comment this ideas?
+> 
+> -- 
+> Best regards,
+> Stanislav Kinsbursky
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
