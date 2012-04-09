@@ -1,92 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab2DIH3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 03:29:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55274 "EHLO mx1.redhat.com"
+	id S1754198Ab2DIHcr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 03:32:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab2DIH3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 03:29:04 -0400
-Date: Mon, 9 Apr 2012 10:28:49 +0300
+	id S1753256Ab2DIHcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 03:32:46 -0400
+Date: Mon, 9 Apr 2012 10:33:00 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120409072849.GA12014@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
- <20120408234951.GA15993@gondor.apana.org.au>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: Dongsu Park <advance38@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: tools/virtio: Compile errors
+Message-ID: <20120409073258.GB12014@redhat.com>
+References: <20120208160405.GA1587@gmail.com>
+ <20120208164736.GA31066@redhat.com>
+ <CAEH94Lgha0Ug2Tk9-22=B58tb9xWG5knAfB04aVbW63F5Xi6TA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120408234951.GA15993@gondor.apana.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEH94Lgha0Ug2Tk9-22=B58tb9xWG5knAfB04aVbW63F5Xi6TA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 07:49:51AM +0800, Herbert Xu wrote:
-> On Sun, Apr 08, 2012 at 08:13:25PM +0300, Michael S. Tsirkin wrote:
-> > commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5
-> > tun: orphan an skb on tx
-> > Fixed a configuration where skbs get queued
-> > at the tun device forever, blocking senders.
-> > 
-> > However this fix isn't waterproof:
-> > userspace can control whether the interface
-> > is stopped, and if it is, packets
-> > get queued in the qdisc, again potentially forever.
-> > 
-> > Complete the fix by setting a private flag and orphaning
-> > at the qdisc level.
-> > 
+On Mon, Apr 09, 2012 at 02:02:53PM +0800, Zhi Yong Wu wrote:
+> On Thu, Feb 9, 2012 at 12:47 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > On Wed, Feb 08, 2012 at 05:04:05PM +0100, Dongsu Park wrote:
+> >> Hi,
+> >>
+> >> there are compile problems under tools/virtio.
+> >> If I simply run make,
+> >>
+> >> ~/linuxsrc/linux-3.2/tools/virtio $ make
+> >> gcc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+> >> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+> >> ../../drivers/virtio/virtio_ring.c
+> >> ../../drivers/virtio/virtio_ring.c:24:26: fatal error: linux/module.h:
+> >> No such file or directory
+> >> compilation terminated.
+> >> make: *** [virtio_ring.o] Error 1
+> >
+> >
+> >> By the way, my system is Ubuntu 11.10 with Kernel 3.2.
+> >>
+> >> Cheers,
+> >> Dongsu
+> >
+> > This patch is missing - I'll put it upstream.
+> >
+> > --->
+> >
+> > tools/virtio: add module.h stub
+> >
+> > make it build with linux 3.2
+> >
 > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >
+> > diff --git a/tools/virtio/linux/module.h b/tools/virtio/linux/module.h
+> > new file mode 100644
+> > index 0000000..96868eb
+> > --- /dev/null
+> > +++ b/tools/virtio/linux/module.h
+> > @@ -0,0 +1,3 @@
+> > +#ifndef LINUX_MODULE_H
+> > +#define LINUX_MODULE_H
+> > +#endif
+> After the patch was applied in my env, i met another issue.
+> [root@f15 virtio]# make test
+> cc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+> ../../drivers/virtio/virtio_ring.c
+> ../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_add_buf\u2019:
+> ../../drivers/virtio/virtio_ring.c:277:2: warning: implicit
+> declaration of function \u2018wmb\u2019
+> [-Wimplicit-function-declaration]
+> ../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_get_buf\u2019:
+> ../../drivers/virtio/virtio_ring.c:437:2: warning: implicit
+> declaration of function \u2018rmb\u2019
+> [-Wimplicit-function-declaration]
+> cc   virtio_test.o virtio_ring.o   -o virtio_test
+> virtio_ring.o: In function `virtqueue_add_buf':
+> /home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:277:
+> undefined reference to `wmb'
+> virtio_ring.o: In function `virtqueue_get_buf':
+> /home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:437:
+> undefined reference to `rmb'
+> collect2: ld returned 1 exit status
+> make: *** [virtio_test] Error 1
+
+On which kernel version does this trigger?
+
 > 
-> 1) Doesn't this break local UDP push-back?
-
-What is meant by UDP pushback here? Two tap
-devices communicating by UDP packets locally?
-This was always broken, see below.
-
-> 2) Isn't the stall a bug in the backend and isn't this just
-> papering over that?
 > 
-> Cheers,
-
-What do you mean by the backend? userspace? Yes, the stall is a result of
-userspace not consuming packets:
-
-        if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
-                if (!(tun->flags & TUN_ONE_QUEUE)) {
-                        /* Normal queueing mode. */
-                        /* Packet scheduler handles dropping of further packets. */
-                        netif_stop_queue(dev);
-                       /* We won't see all dropped packets individually, so overrun
-                         * error is more appropriate. */
-                        dev->stats.tx_fifo_errors++;
-
-Thus we get this situation
-    tap1 sends packets, some of them to tap2, tap2 does not consume them,
-    as a result tap2 queue overflows, tap2 stops forever and
-    packets get queued in the qdisc, now tap1
-    send buffer gets full so it can not communicate to any destination.
-
-So the problem is one VM can block all networking from another one.
-
-As a solution this patch is always changing ownership if we're going
-into a hostile device: it just does this early in qdisc instead of
-at xmit time.
-
-
-
 > -- 
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> Regards,
+> 
+> Zhi Yong Wu
