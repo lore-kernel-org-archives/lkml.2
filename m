@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab2DIIeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 04:34:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755304Ab2DIIeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 04:34:09 -0400
-Date: Mon, 9 Apr 2012 11:34:02 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120409083402.GA28249@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
- <20120408234951.GA15993@gondor.apana.org.au>
- <20120409072849.GA12014@redhat.com>
- <20120409073354.GA3218@gondor.apana.org.au>
- <20120409073953.GD12014@redhat.com>
- <20120409082919.GA3471@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120409082919.GA3471@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756781Ab2DIIgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:36:44 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3476 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755304Ab2DIIgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 04:36:43 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 09 Apr 2012 01:36:43 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        sameo@linux.intel.com, ldewangan@nvidia.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH V2 0/2] RC5T583: Add support for gpio
+Date: Mon,  9 Apr 2012 13:55:53 +0530
+Message-Id: <1333959955-968-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 04:29:20PM +0800, Herbert Xu wrote:
-> On Mon, Apr 09, 2012 at 10:39:54AM +0300, Michael S. Tsirkin wrote:
-> > On Mon, Apr 09, 2012 at 03:33:54PM +0800, Herbert Xu wrote:
-> > > On Mon, Apr 09, 2012 at 10:28:49AM +0300, Michael S. Tsirkin wrote:
-> > > >
-> > > > > 1) Doesn't this break local UDP push-back?
-> > > > 
-> > > > What is meant by UDP pushback here? Two tap
-> > > > devices communicating by UDP packets locally?
-> > > > This was always broken, see below.
-> > > 
-> > > I mean push-back from UDP transmission to the physical NIC.
-> > > 
-> > > Your patch breaks that
-> > 
-> > I think there's some misunderstanding. pushback is only disabled
-> > for destinations that set IFF_TX_CAN_STALL. I expect that
-> > no physical NICs set this flag - only tun and possibly
-> > other userspace-controlled devices in the future.
-> 
-> I'm talking about an app running in the guest transmitting UDP
-> to the physical NIC via virtio/vhost.  This will break with your
-> patch.
-> 
-> Cheers,
+RICOH's PMIC support 8 gpios. Adding support of accessing
+these pins through gpio library.
+This patch series add the related support.
 
-Puzzled. This patch orphans skbs only if the destination device sets
-IFF_TX_CAN_STALL.  Since the physical NIC doesn't stall forever it never
-sets this flag.
+Changes from V1:
+As per suggestion from Grant, the gpio driver should be register
+as separate driver.
+Making the related changes to have gpio driver as platform driver
+which got register through mfd devices from mfd core.
 
-So it seems that this patch should not affect the configuration
-you describe at all.
+Laxman Dewangan (2):
+  gpio: Add gpio driver for RICOH PMIC RC5T583
+  mfd: rc5t583: add rc5t583's gpio in mfd device list
 
-Could you please clarify? What did I miss?
+ drivers/gpio/Kconfig        |    9 ++
+ drivers/gpio/Makefile       |    1 +
+ drivers/gpio/gpio-rc5t583.c |  195 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/rc5t583.c       |    1 +
+ include/linux/mfd/rc5t583.h |    9 ++
+ 5 files changed, 215 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/gpio-rc5t583.c
 
-> -- 
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
