@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab2DIUu4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:50:56 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20965 "EHLO
+	id S1757620Ab2DIUus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:50:48 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:45077 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770Ab2DIUuy (ORCPT
+	with ESMTP id S1753224Ab2DIUun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:50:54 -0400
-Date: Mon, 9 Apr 2012 22:50:53 +0200 (CEST)
+	Mon, 9 Apr 2012 16:50:43 -0400
+Date: Mon, 9 Apr 2012 22:50:42 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Simon Kelley <simon@thekelleys.org.uk>
-Subject: [PATCH 11/26] wireless, atmel: remove pointless test for NULL before
- release_firmware() call
+cc: trivial@kernel.org, netdev@vger.kernel.org,
+        Andy Gospodarek <andy@greyhouse.net>
+Subject: [PATCH 09/26] tehuti: delete redundant NULL check before
+ release_firmware()
 In-Reply-To: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204092219310.13925@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1204092217250.13925@swampdragon.chaosbits.net>
 References: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
@@ -25,28 +24,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-release_firmware() does its own test. Explicitly checking before the
-call is redundant.
+release_firmware() checks for NULL pointers - no need to test before
+the call.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/net/wireless/atmel.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/tehuti/tehuti.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/atmel.c b/drivers/net/wireless/atmel.c
-index 6c87a82..d07c030 100644
---- a/drivers/net/wireless/atmel.c
-+++ b/drivers/net/wireless/atmel.c
-@@ -3989,8 +3989,7 @@ static int reset_atmel_card(struct net_device *dev)
- 			atmel_copy_to_card(priv->dev, 0x8000, &fw[0x6000], len - 0x6000);
- 		}
+diff --git a/drivers/net/ethernet/tehuti/tehuti.c b/drivers/net/ethernet/tehuti/tehuti.c
+index ad973ff..a445e77 100644
+--- a/drivers/net/ethernet/tehuti/tehuti.c
++++ b/drivers/net/ethernet/tehuti/tehuti.c
+@@ -341,8 +341,8 @@ static int bdx_fw_load(struct bdx_priv *priv)
+ out:
+ 	if (master)
+ 		WRITE_REG(priv, regINIT_SEMAPHORE, 1);
+-	if (fw)
+-		release_firmware(fw);
++
++	release_firmware(fw);
  
--		if (fw_entry)
--			release_firmware(fw_entry);
-+		release_firmware(fw_entry);
- 	}
- 
- 	err = atmel_wakeup_firmware(priv);
+ 	if (rc) {
+ 		netdev_err(priv->ndev, "firmware loading failed\n");
 -- 
 1.7.10
 
