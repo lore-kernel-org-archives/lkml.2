@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab2DISpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 14:45:08 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54319 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757694Ab2DISpF convert rfc822-to-8bit (ORCPT
+	id S1757788Ab2DISqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 14:46:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54415 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757689Ab2DISqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 14:45:05 -0400
+	Mon, 9 Apr 2012 14:46:06 -0400
+Date: Mon, 9 Apr 2012 11:45:58 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, neilb@suse.de,
+        rpurdie@linux.intel.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
+Message-ID: <20120409184558.GB18542@core.coreip.homeip.net>
+References: <1333310039.2879.4.camel@lorien2>
+ <20120406165353.ab667eb0.akpm@linux-foundation.org>
+ <1333808024.2728.39.camel@lorien2>
+ <20120407215641.GA4539@core.coreip.homeip.net>
+ <1333990549.2871.10.camel@lorien2>
+ <20120409173703.GA18542@core.coreip.homeip.net>
+ <1333995365.2871.17.camel@lorien2>
 MIME-Version: 1.0
-In-Reply-To: <4F83249B.2020701@linaro.org>
-References: <1333757338-6854-1-git-send-email-john.stultz@linaro.org>
- <1333757338-6854-2-git-send-email-john.stultz@linaro.org> <CA+1xoqcezDdeNHoLF0R0OxB9EeQaopn4jhs+yC-FieXP+b=RZw@mail.gmail.com>
- <4F83249B.2020701@linaro.org>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Mon, 9 Apr 2012 20:44:43 +0200
-Message-ID: <CA+1xoqfR67VYLZu14Xhntvdfgry+5NkSgyJZWWduFmnwc_NytA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [RFC] Range tree implementation
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333995365.2871.17.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 8:04 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On 04/07/2012 10:36 AM, Sasha Levin wrote:
->>
->> On Sat, Apr 7, 2012 at 2:08 AM, John Stultz<john.stultz@linaro.org>
->>  wrote:
->>>
->>> After Andrew suggested something like his mumbletree idea
->>> to better store a list of ranges, I worked on a few different
->>> approaches, and this is what I've finally managed to get working.
->>>
->>> I suspect range-tree isn't a totally accurate name, but I
->>> couldn't quite make out the difference between range trees
->>> and interval trees, so I just picked one to call it. Do
->>> let me know if you have a better name.
->>>
->>> The idea of storing ranges in a tree is nice, but has a number
->>> of complications. When adding a range, its possible that a
->>> large range will consume and merge a number of smaller ranges.
->>> When removing a range, its possible you may end up splitting an
->>> existing range, causing one range to become two. This makes it
->>> very difficult to provide generic list_head like behavior, as
->>> the parent structures would need to be duplicated and removed,
->>> and that has lots of memory ownership issues.
->>>
->>> So, this is a much simplified and more list_head like
->>> implementation. You can add a node to a tree, or remove a node
->>> to a tree, but the generic implementation doesn't do the
->>> merging or splitting for you. But it does provide helpers to
->>> find overlapping and adjacent ranges.
->>>
->>> Andrew also really wanted this range-tree implementation to be
->>> resuable so we don't duplicate the file locking logic. I'm not
->>> totally convinced that the requirements between the volatile
->>> ranges and file locking are really equivelent, but this reduced
->>> impelementation may make it possible.
->>>
->>> Do let me know what you think or if you have other ideas for
->>> better ways to do the same.
->>
->> Hi John,
->>
->> I have implemented an interval lookup tree using the augmented
->> features of the in-kernel rbtree for the KVM tools project. We
->> currently use it for several things as a framework code such as MMIO
->> memory mapping.
->>
->>  From what I see in the patch, you haven't fully implemented the
->> interval structure (it needs to keep track of additional parameters
->> when building it, and the search is a bit different and is based on
->> those parameters).
->
-> Any more details on whats missing/different? Or the pros/cons of the
-> different approaches?
+On Mon, Apr 09, 2012 at 12:16:05PM -0600, Shuah Khan wrote:
+> On Mon, 2012-04-09 at 10:37 -0700, Dmitry Torokhov wrote:
+> > On Mon, Apr 09, 2012 at 10:55:49AM -0600, Shuah Khan wrote:
+> > > On Sat, 2012-04-07 at 14:56 -0700, Dmitry Torokhov wrote:
+> > > > Hi Shuah,
+> > > > 
+> > > > On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
+> > > > > 
+> > > > > > > +This feature will help implement vibrate functionality which requires one
+> > > > > > > +time activation of vibrate mode without a continuous vibrate on/off cycles.
+> > > > > > 
+> > > > > > They make vibrating LED? ;)
+> > > > > > 
+> > > > > > What's going on here?  You're proposing to repurpose the LEDs code to
+> > > > > > drive vibration devices?  Or some devices couple a LED with a vibration
+> > > > > > device?
+> > > > > 
+> > > > > I owe you filling in the blanks type explanation. Let me describe the
+> > > > > use-case I am trying to address first. Vibrater function on phones is
+> > > > > implemented using PWM pins on SoC or PMIC. When there is no such
+> > > > > hardware present, a software solution is needed. Currently two drivers
+> > > > > timed-gpio and timed-output (under staging/android in Linux 3.3)
+> > > > > together implement the software vibrate feature. The main functionality
+> > > > > it implements is the one time enables of timer to prevent user space
+> > > > > crashes leaving the phone in vibrate mode causing the battery to drain.
+> > > > > leds as it is implemented currently, is not suitable to address this
+> > > > > use-case as it doesn't support one time enables.
+> > > > 
+> > > > So why do not you use memoryless force feedback framework that other
+> > > > devices use (see drivers/input/misc/*vibra.c drivers).
+> > > > 
+> > > 
+> > > Dimitry,
+> > > 
+> > > I took a look at these vibra* drivers. The three vibrate drivers are
+> > > chip-set specific. The use-case I have is a non-chip set approach to
+> > > address the use-case when vibrate hardware is not present. Are you
+> > > envisioning a generic approach using ff-memoryless infrastructure?
+> > 
+> > Shuah,
+> > 
+> > I guess I am confused now. You need some form of hardware to make your
+> > device to vibrate.
+> > 
+> > What exactly are you trying to do? Are you trying to:
+> > 
+> > 1. activate vibration on devices that can actually do it using LED
+> >    interface, or
+> > 
+> > 2. use LEDs as an alternative to vibrate on devices that can't
+> >    physically vibrate?
+> > 
+> > Thanks.
+> 
+> What I meant by generic approach is a higher level interface that is not
+> tied too closely to the underlying hardware. Similar to the leds-pwm.c
+> and leds-gpio.c handle gpio and pwm based leds. The vibrate hardware in
+> my sue-case is a gpio based and could pwm based on some phones.
 
-I took the implementation from 'Introduction to Algorithms', which
-called for keeping the max high all the nodes in each sub-tree in the
-root of that tree. I don't remember what stood behind that but I can
-look it up when I get back to the book :)
-
->> I could send that code as a patch against the kernel tree if something
->> like that is actually required for the kernel at this point.
->>
-> Sure.  I'm not married to this implementation (its just the only one so far
-> that solves my needs - Dmitry already pointed out that the priotree might be
-> close to sufficient, but I've not yet tried to adapt it), and whatever goes
-> upstream needs to be generic enough to solve the related problems that a
-> number of folks are all working on solving.  So seeing your approach might
-> be good too.
-
-The code is located here:
-https://github.com/penberg/linux-kvm/blob/master/tools/kvm/util/rbtree-interval.c
-
-Note that we didn't deal with intersecting ranges simply because there
-was no call for that (we used it to map devices in a virtual memory
-range, and those can't intersect). But it's not much of an issue
-expanding the range intersection function to deal with that.
-
-If the code above looks ok to you I'll format it as a patch and re-send it.
+Ok, so you need to add drivers/input/misc/gpio-vibrate.c and pwm-vibrate.c
+and then use FF to activate them. This way we have all vibrate
+implementation use one subsystem instead of splitting between
+input/led/whatever else people could come up with.
 
 Thanks.
+
+-- 
+Dmitry
