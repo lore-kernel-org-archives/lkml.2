@@ -1,183 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab2DIMfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 08:35:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54494 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab2DIMfx convert rfc822-to-8bit (ORCPT
+	id S1756025Ab2DIMgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 08:36:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63897 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869Ab2DIMgm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 08:35:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Minchan Kim <minchan@kernel.org>
-Subject: Re: swap on eMMC and other flash
-Date: Mon, 9 Apr 2012 12:35:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linaro-kernel@lists.linaro.org, android-kernel@googlegroups.com,
-        linux-mm@kvack.org, "Luca Porzio (lporzio)" <lporzio@micron.com>,
-        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
-        Saugata Das <saugata.das@linaro.org>,
-        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
-        Hyojin Jeong <syr.jeong@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-References: <201203301744.16762.arnd@arndb.de> <201204061616.11716.arnd@arndb.de> <4F82443F.9000804@kernel.org>
-In-Reply-To: <4F82443F.9000804@kernel.org>
+	Mon, 9 Apr 2012 08:36:42 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <4F829818.6040600@broadcom.com>
+References: <1333903588-32608-1-git-send-email-mcgrof@frijolero.org> <4F829818.6040600@broadcom.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Mon, 9 Apr 2012 05:36:21 -0700
+X-Google-Sender-Auth: NL_sH-nwazMdFAZbGlc9X4U3HYk
+Message-ID: <CAB=NE6VBGg7-RxcmLUd8j3spTid6J3N3hsUPsuTt3aDx_0mmEg@mail.gmail.com>
+Subject: Re: [PATCH v2] module: Clarify usage of MODULE_LICENSE()
+To: Arend van Spriel <arend@broadcom.com>
+Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tso Ted <tytso@mit.edu>, Keith Packard <keithp@keithp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201204091235.48750.arnd@arndb.de>
-X-Provags-ID: V02:K0:uqtTaHhthwhlL1pf6yvEVzshLpZAhwCB7i+Quc20Gep
- 16OYKD8PDMyMoLrcP7TcEPS8AN6xS3yHyNG8gVGJX4fBIYutCH
- B+V6fNLw9gs8kqXHtyX+5nxGGZj5702WUtpTpMfn54IOlwS2ZD
- jEOGwP05fqAGvnnNDZOLjNRVvE3H53XIVtRs9xeMCie68BLhFs
- Vz0GWGyDiZJOOzQxgQO6w7b1+XqC2NCInTOa5FNbNYepx9iaXm
- SQ5F4w3GOxjenKBj0j4cPrxt5aQojZF5RKFIjR+4P35jTYSKNi
- fhTFwBHBcVqJBPC+QvFx3scFbLBJfhn8tPDbjRuDdJfrhRKI/q
- NhfZ2vdWPcVbHYWkGZLI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 April 2012, Minchan Kim wrote:
-> 2012-04-07 오전 1:16, Arnd Bergmann 쓴 글:
-> 
-> > larger chunks would generally be helpful, in order to guarantee that we
-> > the drive doesn't do any garbage collection, we would have to do all writes
-> 
-> 
-> And we should guarantee for avoiding unnecessary swapout, even OOM killing.
-> 
-> > in aligned chunks. It would probably be enough to do this in 8kb or
-> > 16kb units for most devices over the next few years, but implementing it
-> > for 64kb should be the same amount of work and will get us a little bit
-> > further.
-> 
-> 
-> I understand it's best for writing 64K in your statement.
-> What the 8K, 16K? Could you elaborate relation between 8K, 16K and 64K?
+On Mon, Apr 9, 2012 at 1:04 AM, Arend van Spriel <arend@broadcom.com> wrote:
+> On 04/08/2012 06:46 PM, Luis R. Rodriguez wrote:
+>>
+>>  include/linux/module.h |   17 +++++++++++++----
+>>  1 file changed, 13 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/module.h b/include/linux/module.h
+>> index fbcafe2..8d36d86 100644
+>> --- a/include/linux/module.h
+>> +++ b/include/linux/module.h
+>> - * This exists for several reasons
+>> + * The MODULE_LICENSE() exists for several reasons:
+>> + * 0.   So EXPORT_SYMBOL_GPL() allows the module to use its symbols
+>
+>
+> It seems there is some tab/space mixup here.
 
->From my measurements, there are three sizes that are relevant here:
+Ah yes, I'll send a v3.
 
-1. The underlying page size of the flash: This used to be less than 4kb,
-which is fine when paging out 4kb mmu pages, as long as the partition is
-aligned. Today, most devices use 8kb pages and the number is increasing
-over time, meaning we will see more 16kb page devices in the future and
-presumably larger sizes after that. Writes that are not naturally aligned
-multiples of the page size tend to be a significant problem for the
-controller to deal with: in order to guarantee that a 4kb write makes it
-into permanent storage, the device has to write 8kb and the next 4kb
-write has to go into another 8kb page because each page can only be
-written once before the block is erased. At a later point, all the partial
-pages get rewritten into a new erase block, a process that can take
-hundreds of miliseconds and that we absolutely want to prevent from
-happening, as it can block all other I/O to the device. Writing all
-(flash) pages in an erase block sequentially usually avoids this, as
-long as you don't write to many different erase blocks at the same time.
-Note that the page size depends on how the controller combines different
-planes and channels.
+> Also not sure if the above statement is clear or correct.
+> Correct me if I am wrong, but I thought it
+> put a requirement on other modules to be able to use its symbols.
 
-2. The super-page size of the flash: When you have multiple channels
-between the controller and the individual flash chips, you can write
-multiple pages simultaneously, which means that e.g. sending 32kb of
-data to the device takes roughly the same amount of time as writing a
-single 8kb page. Writing less than the super-page size when there is
-more data waiting to get written out is a waste of time, although the
-effects are much less drastic as writing data that is not aligned to
-pages because it does not require garbage collection.
+Never heard of this but boy, wouldn't that be nice.
 
-3. optimum write size: While writing larger amounts of data in a single
-request is usually faster than writing less, almost all devices
-I've seen have a sharp cut-off where increasing the size of the write
-does not actually help any more because of a bottleneck somewhere
-in the stack. Writing more than 64kb almost never improves performance
-and sometimes reduces performance.
-
->From the I've done, a typical profile could look like
-
-Size	Throughput
-1KB	200KB/s
-2KB	450KB/s
-4KB	1MB/s
-8KB	4MB/s		<== page size
-16KB	8MB/s
-32KB	16MB/s		<== superpage size
-64KB	18MB/s		<== optimum size
-128KB	17MB/s
-...
-8MB	18MB/s		<== erase block size
-
-> > I'm not sure what we would do when there are less than 64kb available
-> > for pageout on the inactive list. The two choices I can think of are
-> > either not writing anything, or wasting the swap slots and filling
-> 
-> 
-> No wrtite will cause unnecessary many pages to swap out by next prioirty
-> of scanning and we can't gaurantee how long we wait to queue up to 64KB
-> in anon pages. It might take longer than GC time so we need some deadline.
-> 
-> 
-> > up the data with zeroes.
-> 
-> 
-> Zero padding would be a good solution but I have a concern on WAP so we
-> need smart policy.
-> 
-> To be honest, I think swapout is normally asynchonous operation so that
-> it should not affect system latency rather than swap read which is
-> synchronous operation. So if system is low memory pressure, we can queue
-> swap out pages up to 64KB and then batch write-out in empty cluster. If
-> we don't have any empty cluster in low memory pressure, we should write
-> out it in partial cluster. Maybe it doesn't affect system latency
-> severely in low memory pressure.
-
-The main thing that can affect system latency is garbage collection
-that blocks any other reads or writes for an extended amount of time.
-If we can avoid that, we've got the 95% solution.
-
-Note that eMMC-4.5 provides a high-priority interrupt mechamism that
-lets us interrupt the a write that has hit the garbage collection
-path, so we can send a more important read request to the device.
-This will not work on other devices though and the patches for this
-are still under discussion.
-
-> If system memory pressure is high(and It shoud be not frequent),
-> swap-out B/W would be more important. So we can reserve some clusters
-> for it and I think we can use page padding you mentioned in this case
-> for reducing latency if we can queue it up to 64KB within threshold time.
-> 
-> Swap-read is also important. We have to investigate fragmentation of
-> swap slots because we disable swap readahead in non-rotation device. It
-> can make lots of hole in swap cluster and it makes to find empty
-> cluster. So for it, it might be better than enable swap-read in
-> non-rotation devices, too.
-
-Yes, reading in up to 64kb or at least a superpage would also help here,
-although there is no problem reading in a single cpu page, it will still
-take no more time than reading in a superpage.
-
-> >>> 2) Make variable sized swap clusters. Right now, the swap space is
-> >>> organized in clusters of 256 pages (1MB), which is less than the typical
-> >>> erase block size of 4 or 8 MB. We should try to make the swap cluster
-> >>> aligned to erase blocks and have the size match to avoid garbage collection
-> >>> in the drive. The cluster size would typically be set by mkswap as a new
-> >>> option and interpreted at swapon time.
-> >>>
-> >>
-> >> If we can find such big contiguous swap slots easily, it would be good.
-> >> But I am not sure how often we can get such big slots. And maybe we have to
-> >> improve search method for getting such big empty cluster.
-> > 
-> > As long as there are clusters available, we should try to find them. When
-> > free space is too fragmented to find any unused cluster, we can pick one
-> > that has very little data in it, so that we reduce the time it takes to
-> > GC that erase block in the drive. While we could theoretically do active
-> > garbage collection of swap data in the kernel, it won't get more efficient
-> > than the GC inside of the drive. If we do this, it unfortunately means that
-> > we can't just send a discard for the entire erase block.
-> 
-> 
-> Might need some compaction during idle time but WAP concern raises again. :(
-
-Sorry for my ignorance, but what does WAP stand for?
-
-	Arnd
+  Luis
