@@ -1,117 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab2DIX0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 19:26:22 -0400
-Received: from fieldses.org ([174.143.236.118]:33148 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757434Ab2DIX0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 19:26:21 -0400
-Date: Mon, 9 Apr 2012 19:26:18 -0400
-From: "bfields@fieldses.org" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-Message-ID: <20120409232618.GI10508@fieldses.org>
-References: <4F7F230A.6080506@parallels.com>
- <20120406234039.GA20940@fieldses.org>
- <4F82C6E3.3030009@parallels.com>
+	id S1758185Ab2DIXfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 19:35:37 -0400
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:43519 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753491Ab2DIXff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 19:35:35 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Colin Cross <ccross@android.com>, Len Brown <len.brown@intel.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        linux-pm@lists.linux-foundation.org,
+        Arjan van de Ven <arjan@linux.intel.com>, Rob Lee <rob.lee@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [linux-pm] [PATCHv2 0/5] coupled cpuidle state support
+Organization: Texas Instruments, Inc.
+References: <1331749794-8056-1-git-send-email-ccross@android.com>
+	<CAMbhsRQAw2+as13NVvWkh7ojyRs+jNpFist2gmiiEY52U=o84A@mail.gmail.com>
+	<4F75ACCA.4090009@ti.com> <4F828BAB.5010302@ti.com>
+Date: Mon, 09 Apr 2012 16:35:40 -0700
+In-Reply-To: <4F828BAB.5010302@ti.com> (Santosh Shilimkar's message of "Mon,
+	09 Apr 2012 12:41:39 +0530")
+Message-ID: <87mx6k7a2b.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F82C6E3.3030009@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 03:24:19PM +0400, Stanislav Kinsbursky wrote:
-> 07.04.2012 03:40, bfields@fieldses.org пишет:
-> >On Fri, Apr 06, 2012 at 09:08:26PM +0400, Stanislav Kinsbursky wrote:
-> >>Hello, Bruce.
-> >>Could you, please, clarify this reason why grace list is used?
-> >>I.e. why list is used instead of some atomic variable, for example?
-> >
-> >Like just a reference count?  Yeah, that would be OK.
-> >
-> >In theory it could provide some sort of debugging help.  (E.g. we could
-> >print out the list of "lock managers" currently keeping us in grace.)  I
-> >had some idea we'd make those lock manager objects more complicated, and
-> >might have more for individual containerized services.
-> 
-> Could you share this idea, please?
-> 
-> Anyway, I have nothing against lists. Just was curious, why it was used.
-> I added Trond and lists to this reply.
-> 
-> Let me explain, what is the problem with grace period I'm facing
-> right know, and what I'm thinking about it.
-> So, one of the things to be containerized during "NFSd per net ns"
-> work is the grace period, and these are the basic components of it:
-> 1) Grace period start.
-> 2) Grace period end.
-> 3) Grace period check.
-> 3) Grace period restart.
+Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
 
-For restart, you're thinking of the fs/lockd/svc.c:restart_grace()
-that's called on aisngal in lockd()?
+> On Friday 30 March 2012 06:23 PM, Santosh Shilimkar wrote:
+>> Colin,
+>> 
+>> On Friday 16 March 2012 05:07 AM, Colin Cross wrote:
+>>> On Wed, Mar 14, 2012 at 11:29 AM, Colin Cross <ccross@android.com> wrote:
+>> 
+>> [...]
+>> 
+>>>>
+>>>> v2:
+>>>>   * removed the coupled lock, replacing it with atomic counters
+>>>>   * added a check for outstanding pokes before beginning the
+>>>>     final transition to avoid extra wakeups
+>>>>   * made the cpuidle_coupled struct completely private
+>>>>   * fixed kerneldoc comment formatting
+>>>>   * added a patch with a helper function for resynchronizing
+>>>>     cpus after aborting idle
+>>>>   * added a patch (not for merging) to add trace events for
+>>>>     verification and performance testing
+>>>
+>>> I forgot to mention, this patch series is on v3.3-rc7, and will
+>>> conflict with the cpuidle timekeeping patches.  If those go in first
+>>> (which is likely), I will rework this series on top of it.  I left it
+>>> on v3.3-rc7 now to make testing easier.
+>> 
+>> I have re-based your series against Len Browns
+>> next branch [1] which has time keeping and other cpuidle patches.
+>> Have also folded the CPU hotplug fix which I posted in the
+>> original coupled idle patch.
+>> 
+> As you know, we have been playing around this series for OMAP
+> for last few weeks. This version series seems to work as intended
+> and found it pretty stable in my testing. Apart from the cpu
+> hotplug fix and the trace event comment, series looks fine
+> to me.
+>
+> FWIW,
+> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>	
 
-I wonder if there's any way to figure out if that's actually used by
-anyone?  (E.g. by any distro init scripts).  It strikes me as possibly
-impossible to use correctly.  Perhaps we could deprecate it....
+Also
 
-> So, the simplest straight-forward way is to make all internal stuff:
-> "grace_list", "grace_lock", "grace_period_end" work and both
-> "lockd_manager" and "nfsd4_manager" - per network namespace. Also,
-> "laundromat_work" have to be per-net as well.
-> In this case:
-> 1) Start - grace period can be started per net ns in
-> "lockd_up_net()" (thus has to be moves there from "lockd()") and
-> "nfs4_state_start()".
-> 2) End - grace period can be ended per net ns in "lockd_down_net()"
-> (thus has to be moved there from "lockd()"), "nfsd4_end_grace()" and
-> "fs4_state_shutdown()".
-> 3) Check - looks easy. There is either svc_rqst or net context can
-> be passed to function.
-> 4) Restart - this is a tricky place. It would be great to restart
-> grace period only for the networks namespace of the sender of the
-> kill signal. So, the idea is to check siginfo_t for the pid of
-> sender, then try to locate the task, and if found, then get sender's
-> networks namespace, and restart grace period only for this namespace
-> (of course, if lockd was started for this namespace - see below).
+Reviewed-by: Kevin Hilman <khilman@ti.com>
+Tested-by: Kevin Hilman <khilman@ti.com>
 
-If it's really the signalling that's the problem--perhaps we can get
-away from the signal-based interface.
+as I've been working with Santosh on getting this stabilized on OMAP and
+we are very keen to see this functionality merged.
 
-At least in the case of lockd I suspect we could.
+Thanks,
 
-Or perhaps the decision to share a single lockd thread (or set of nsfd
-threads) among multiple network namespaces was a poor one.  But I
-realize multithreading lockd doesn't look easy.
+Kevin
 
---b.
-
-> If task not found, of it's lockd wasn't started for it's namespace,
-> then grace period can be either restarted for all namespaces, of
-> just silently dropped. This is the place where I'm not sure, how to
-> do. Because calling grace period for all namespaces will be
-> overkill...
-> 
-> There also another problem with the "task by pid" search, that found
-> task can be actually not sender (which died already), but some other
-> new task with the same pid number. In this case, I think, we can
-> just neglect this probability and always assume, that we located
-> sender (if, of course, lockd was started for sender's network
-> namespace).
-> 
-> Trond, Bruce, could you, please, comment this ideas?
-> 
-> -- 
-> Best regards,
-> Stanislav Kinsbursky
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
