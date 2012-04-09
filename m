@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab2DIIQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 04:16:41 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:46603 "EHLO mgw2.diku.dk"
+	id S1756272Ab2DIIRD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:17:03 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:46607 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab2DIIQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 04:16:39 -0400
+	id S1753834Ab2DIIQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 04:16:41 -0400
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Andrew Veliath <andrewtv@usa.net>
-Cc: kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sound/oss/msnd_pinnacle.c: add vfrees
-Date: Mon,  9 Apr 2012 10:16:32 +0200
-Message-Id: <1333959392-18933-1-git-send-email-Julia.Lawall@lip6.fr>
+To: Jaroslav Kysela <perex@perex.cz>
+Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sound/isa/sscape.c: add missing resource-release code
+Date: Mon,  9 Apr 2012 10:16:35 +0200
+Message-Id: <1333959395-18960-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,52 +20,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-At the point of this error-handling code, HAVE_DSPCODEH may be undefined,
-so free INITCODE and PERMCODE as done elsewhere.  A jump and label are
-introduced to avoid code duplication.
+At the point of this error-handling code, both regions and the dma have
+been allocated, so free it as done in previous and subsequent
+error-handling code.
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- sound/oss/msnd_pinnacle.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ sound/isa/sscape.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/sound/oss/msnd_pinnacle.c b/sound/oss/msnd_pinnacle.c
-index 2c79d60..536c4c0 100644
---- a/sound/oss/msnd_pinnacle.c
-+++ b/sound/oss/msnd_pinnacle.c
-@@ -1294,6 +1294,8 @@ static int __init calibrate_adc(WORD srate)
- 
- static int upload_dsp_code(void)
- {
-+	int ret = 0;
-+
- 	msnd_outb(HPBLKSEL_0, dev.io + HP_BLKS);
- #ifndef HAVE_DSPCODEH
- 	INITCODESIZE = mod_firmware_load(INITCODEFILE, &INITCODE);
-@@ -1312,7 +1314,8 @@ static int upload_dsp_code(void)
- 	memcpy_toio(dev.base, PERMCODE, PERMCODESIZE);
- 	if (msnd_upload_host(&dev, INITCODE, INITCODESIZE) < 0) {
- 		printk(KERN_WARNING LOGNAME ": Error uploading to DSP\n");
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto out;
+diff --git a/sound/isa/sscape.c b/sound/isa/sscape.c
+index b4a6aa9..131dd98 100644
+--- a/sound/isa/sscape.c
++++ b/sound/isa/sscape.c
+@@ -1019,13 +1019,15 @@ static int __devinit create_sscape(int dev, struct snd_card *card)
+ 	irq_cfg = get_irq_config(sscape->type, irq[dev]);
+ 	if (irq_cfg == INVALID_IRQ) {
+ 		snd_printk(KERN_ERR "sscape: Invalid IRQ %d\n", irq[dev]);
+-		return -ENXIO;
++		err = -ENXIO;
++		goto _release_dma;
  	}
- #ifdef HAVE_DSPCODEH
- 	printk(KERN_INFO LOGNAME ": DSP firmware uploaded (resident)\n");
-@@ -1320,12 +1323,13 @@ static int upload_dsp_code(void)
- 	printk(KERN_INFO LOGNAME ": DSP firmware uploaded\n");
- #endif
  
-+out:
- #ifndef HAVE_DSPCODEH
- 	vfree(INITCODE);
- 	vfree(PERMCODE);
- #endif
+ 	mpu_irq_cfg = get_irq_config(sscape->type, mpu_irq[dev]);
+ 	if (mpu_irq_cfg == INVALID_IRQ) {
+ 		snd_printk(KERN_ERR "sscape: Invalid IRQ %d\n", mpu_irq[dev]);
+-		return -ENXIO;
++		err = -ENXIO;
++		goto _release_dma;
+ 	}
  
--	return 0;
-+	return ret;
- }
- 
- #ifdef MSND_CLASSIC
+ 	/*
 
