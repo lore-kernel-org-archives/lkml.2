@@ -1,97 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab2DIWjr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 18:39:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:61628 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758042Ab2DIWjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 18:39:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="87098094"
-Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if
- the current device is always running.
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, johnstul@us.ibm.com
-Date: Mon, 09 Apr 2012 15:41:44 -0700
-In-Reply-To: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>
-Organization: Intel Corp
+	id S1758069Ab2DIWkd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 18:40:33 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:26791 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab2DIWkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 18:40:31 -0400
+Message-ID: <1334011229.2871.32.camel@lorien2>
+Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: shuahkhan@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        neilb@suse.de, rpurdie@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 09 Apr 2012 16:40:29 -0600
+In-Reply-To: <20120409204202.GC18542@core.coreip.homeip.net>
+References: <1333310039.2879.4.camel@lorien2>
+	 <20120406165353.ab667eb0.akpm@linux-foundation.org>
+	 <1333808024.2728.39.camel@lorien2>
+	 <20120407215641.GA4539@core.coreip.homeip.net>
+	 <1333990549.2871.10.camel@lorien2>
+	 <20120409173703.GA18542@core.coreip.homeip.net>
+	 <1333995365.2871.17.camel@lorien2>
+	 <20120409184558.GB18542@core.coreip.homeip.net>
+	 <1334002847.2871.26.camel@lorien2>
+	 <20120409204202.GC18542@core.coreip.homeip.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-09 at 11:33 +0530, Santosh Shilimkar wrote:
-> Commit 77b0d60{clockevents: Leave the broadcast device in shutdown mode
-> when not needed} was intended to leave the broadcast device in shutdown mode
-> when the per-cpu clockevent devices are always running.
+On Mon, 2012-04-09 at 13:42 -0700, Dmitry Torokhov wrote:
+> On Mon, Apr 09, 2012 at 02:20:47PM -0600, Shuah Khan wrote:
+> > On Mon, 2012-04-09 at 11:45 -0700, Dmitry Torokhov wrote:
+> > > On Mon, Apr 09, 2012 at 12:16:05PM -0600, Shuah Khan wrote:
+> > > > On Mon, 2012-04-09 at 10:37 -0700, Dmitry Torokhov wrote:
+> > > > > On Mon, Apr 09, 2012 at 10:55:49AM -0600, Shuah Khan wrote:
+> > > > > > On Sat, 2012-04-07 at 14:56 -0700, Dmitry Torokhov wrote:
+> > > > > > > Hi Shuah,
+> > > > > > > 
+> > > > > > > On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
+> > > > > > > > 
+> > > > > > > > > > +This feature will help implement vibrate functionality which requires one
+> > > > > > > > > > +time activation of vibrate mode without a continuous vibrate on/off cycles.
+> > > > > > > > > 
+> > > > > > > > > They make vibrating LED? ;)
+> > > > > > > > > 
+> > > > > > > > > What's going on here?  You're proposing to repurpose the LEDs code to
+> > > > > > > > > drive vibration devices?  Or some devices couple a LED with a vibration
+> > > > > > > > > device?
+> > > > > > > > 
+> > > > > > > > I owe you filling in the blanks type explanation. Let me describe the
+> > > > > > > > use-case I am trying to address first. Vibrater function on phones is
+> > > > > > > > implemented using PWM pins on SoC or PMIC. When there is no such
+> > > > > > > > hardware present, a software solution is needed. Currently two drivers
+> > > > > > > > timed-gpio and timed-output (under staging/android in Linux 3.3)
+> > > > > > > > together implement the software vibrate feature. The main functionality
+> > > > > > > > it implements is the one time enables of timer to prevent user space
+> > > > > > > > crashes leaving the phone in vibrate mode causing the battery to drain.
+> > > > > > > > leds as it is implemented currently, is not suitable to address this
+> > > > > > > > use-case as it doesn't support one time enables.
+> > > > > > > 
+> > > > > > > So why do not you use memoryless force feedback framework that other
+> > > > > > > devices use (see drivers/input/misc/*vibra.c drivers).
+> > > > > > > 
+> > > > > > 
+> > > > > > Dimitry,
+> > > > > > 
+> > > > > > I took a look at these vibra* drivers. The three vibrate drivers are
+> > > > > > chip-set specific. The use-case I have is a non-chip set approach to
+> > > > > > address the use-case when vibrate hardware is not present. Are you
+> > > > > > envisioning a generic approach using ff-memoryless infrastructure?
+> > > > > 
+> > > > > Shuah,
+> > > > > 
+> > > > > I guess I am confused now. You need some form of hardware to make your
+> > > > > device to vibrate.
+> > > > > 
+> > > > > What exactly are you trying to do? Are you trying to:
+> > > > > 
+> > > > > 1. activate vibration on devices that can actually do it using LED
+> > > > >    interface, or
+> > > > > 
+> > > > > 2. use LEDs as an alternative to vibrate on devices that can't
+> > > > >    physically vibrate?
+> > > > > 
+> > > > > Thanks.
+> > > > 
+> > > > What I meant by generic approach is a higher level interface that is not
+> > > > tied too closely to the underlying hardware. Similar to the leds-pwm.c
+> > > > and leds-gpio.c handle gpio and pwm based leds. The vibrate hardware in
+> > > > my sue-case is a gpio based and could pwm based on some phones.
+> > > 
+> > > Ok, so you need to add drivers/input/misc/gpio-vibrate.c and pwm-vibrate.c
+> > > and then use FF to activate them. This way we have all vibrate
+> > > implementation use one subsystem instead of splitting between
+> > > input/led/whatever else people could come up with.
+> > > 
+> > > Thanks.
+> > > 
+> > 
+> > Dmitry,
+> > 
+> > It is unfortunate that we have these two infrastructures evolve that has
+> > a lot of overlap. Let me summarize the two alternatives first so we get
+> > a feel for the work involved to address this use-case using ff and leds
+> > frameworks:
+> > 
+> > Alternative 1: using leds infrastructure
+> > 
+> > Add new kernel interface to support one time enables. This will enable
+> > existing gpio and pwm drivers to be used to implement vibrate.
+> > 
+> > Alternative 2: using ff infrastructure
+> > 
+> > Add new drivers gpio and pwm that use existing one time enable to
+> > implement vibrate in a generic way.
+> > 
+> > Does this sound right? From a quick glance it sounds like we can get to
+> > the end goal quicker and in a simpler way with Alternative 1. However, I
+> > might be missing longterm view. Any other alternatives we could explore?
+> > 
 > 
-> This breaks the systems where per cpu clock events stop in low power states.
+> For 1 you are forgetting "persuade current users of mainline vibrator
+> drivers in kernel to adopt their drivers and userpace to LED framework"
+> because we should try to provide single interface for a given function.
 > 
-> Hence revert 77b0d60 and implement the same requirement with use
-> of C3STOP feature flag.
+> Thanks.
+> 
 
-Problem you encountered is not related to leaving the broadcast device
-in shutdown mode. Problem is that we didn't track the mode change to
-oneshot and later during idle entry/exit, when we request the broadcast
-device services using CLOCK_EVT_NOTIFY_BROADCAST_ENTER etc,
-tick_broadcast_oneshot_control() returns with out doing much as it
-thinks broadcast device is in periodic mode.
+Dmitry,
 
-Can you please check if the appended patch fixes the issue? I could
-reproduce the issue on my NHM platform which doesn't have always running
-apic timer and with the appended fix, all is well with cpu's going into
-tickless idle etc. Thanks.
----
+I can't argue against the user-space angle. Let me give more thought to
+Alternative 2 and see if it indeed turns out to be more work. Thanks for
+a good discussion.
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: clockevents: track broadcast device mode change in tick_broadcast_switch_to_oneshot()
-
-In the commit 77b0d60c5adf39c74039e2142a1d3cd1e4d53799,
-"clockevents: Leave the broadcast device in shutdown mode when not needed",
-we were bailing out too quickly in tick_broadcast_switch_to_oneshot(),
-with out tracking the broadcast device mode change to 'TICKDEV_MODE_ONESHOT'.
-
-This breaks the platforms which need broadcast device oneshot services during
-deep idle states. tick_broadcast_oneshot_control() thinks that it is
-in periodic mode and fails to take proper decisions based on the
-CLOCK_EVT_NOTIFY_BROADCAST_[ENTER, EXIT] notifications during deep
-idle entry/exit.
-
-Fix this by tracking the broadcast device mode as 'TICKDEV_MODE_ONESHOT',
-before leaving the broadcast HW device in shutdown mode if there are no active
-requests for the moment.
-
-Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- kernel/time/tick-broadcast.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index e883f57..bf57abd 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -575,10 +575,12 @@ void tick_broadcast_switch_to_oneshot(void)
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
-+
-+	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
-+
- 	if (cpumask_empty(tick_get_broadcast_mask()))
- 		goto end;
- 
--	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
- 	bc = tick_broadcast_device.evtdev;
- 	if (bc)
- 		tick_broadcast_setup_oneshot(bc);
+-- Shuah
 
 
