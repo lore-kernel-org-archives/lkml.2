@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab2DIWqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 18:46:10 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49362 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007Ab2DIWqI (ORCPT
+	id S932163Ab2DIWsD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 18:48:03 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42084 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758070Ab2DIWr7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 18:46:08 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Will Drewry <wad@chromium.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: ANN: libseccomp
-Date: Mon, 09 Apr 2012 18:46:02 -0400
-Message-ID: <5076094.qra9nCCzS0@sifl>
-User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
-In-Reply-To: <CABqD9haXLBDxEkC3+3AN4d4PDVYE-JrqH4P6iTJ95mqYxoR=yA@mail.gmail.com>
-References: <1540670.AFBi1SpGoi@sifl> <1580647.pAHyaBF6MS@sifl> <CABqD9haXLBDxEkC3+3AN4d4PDVYE-JrqH4P6iTJ95mqYxoR=yA@mail.gmail.com>
+	Mon, 9 Apr 2012 18:47:59 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CBA89B80.3C770%ware@linux.intel.com>
+References: <CAE6n16kMv5Y+Cp9XZ=tmK0sgoJJZ6CJUq_ttuNEUMb4JFXJ33g@mail.gmail.com>
+	<CBA89B80.3C770%ware@linux.intel.com>
+Date: Mon, 9 Apr 2012 17:47:55 -0500
+Message-ID: <CABqD9hYQPDmNadkPw9O6fRXHpWDxh=MVPf7VB_3fz_X72dNz4w@mail.gmail.com>
+Subject: Re: [PATCH v17 15/15] Documentation: prctl/seccomp_filter
+From: Will Drewry <wad@chromium.org>
+To: Ryan Ware <ware@linux.intel.com>, Markus Gutschke <markus@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 09, 2012 04:51:30 PM Will Drewry wrote:
-> On Mon, Apr 9, 2012 at 4:32 PM, Paul Moore <paul@paul-moore.com> wrote:
-> > On Monday, April 09, 2012 12:16:30 PM Kees Cook wrote:
-> >> On Mon, Apr 9, 2012 at 11:58 AM, Paul Moore <paul@paul-moore.com> wrote:
-> >> > With the seccomp patches finally stabilizing a bit, it seems like now
-> >> > is a
-> >> > good time to announce libseccomp: a library designed to make it easier
-> >> > to
-> >> > create complex, architecture independent seccomp filters.
-> >> > 
-> >> >  * http://sourceforge.net/projects/libseccomp/
-> >> >  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
-> >> 
-> >> This looks really great; nice work!
-> 
-> Agreed -- this is great to see!
+On Mon, Apr 9, 2012 at 3:58 PM, Ryan Ware <ware@linux.intel.com> wrote:
+>
+> On 4/9/12 1:47 PM, "Markus Gutschke" <markus@chromium.org> wrote:
+>
+>>No matter what you do, please leave the samples accessible somewhere.
+>>They proved incredibly useful in figuring out how the API works. I am
+>>sure, other developers are going to appreciate them as well.
+>>
+>>Alternatively, if you don't want to include the samples with the
+>>kernel sources, figure out how you can include a sample in the
+>>official manual page for prctl().
+>>
+>
+> I second this!  They are extremely useful.
+>
+> Ryan
 
-Not as much as the actual kernel support :)
+In that case, would it make sense to put up a separate tools/testing
+patch and leave samples where they lie? (I'd _love_ to keep this patch
+series from acquiring another 1000 lines, but either way works :)
 
-> >> I see that the arch check happens during _gen_bpf_build_bpf(), which
-> >> is excellent. Do you have any thoughts about including a call to
-> >> prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) by default as well?
-> > 
-> > That is a good question, and I guess it comes down to another question of
-> > if anyone would want to use seccomp without NO_NEW_PRIVS.  If the answer
-> > is no then I'm comfortable adding it into the seccomp_load() function;
-> > however, if the answer is yes we might want to do something different.
-> > 
-> > I haven't given much thought to this yet, so if you or anyone else feels
-> > strongly about the issue - either pro or con - I'd appreciate hearing the
-> > argument.
-> 
-> I guess the question is if there is an expectation that this library
-> be used with something like lxc, where a whole, functional system with
-> suid/fcaps binaries is contained.  In that world, it may not be
-> desirable to set the nnp bit.   The same is true if, for some reason,
-> the init task was to set a system-wide filter.
-> 
-> Most likely, default use of nnp is probably "the right thing", but
-> it'd be nice to be able to annotate when you really want to allow
-> privileged contexts to set filters without nnp.
+My current tester and harness lives here:
+  https://github.com/redpig/seccomp/blob/master/tests/
+and the licensing can be sorted out prior to a patch mail.
 
-Okay, that seems reasonable: default to NO_NEW_PRIVS, but provide an override 
-mechanism.
-
-I've been wanting a mechanism/API for tweaking some of the default library 
-parameters for the past few weeks, this is likely the last bit of motivation I 
-need to start working on this.  I'll look into it once the license issue is 
-sorted.
-
--- 
-paul moore
-www.paul-moore.com
-
+thanks!
+will
