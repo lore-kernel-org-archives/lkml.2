@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab2DIMhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 08:37:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57747 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab2DIMhQ (ORCPT
+	id S1756188Ab2DIMjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 08:39:11 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43933 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336Ab2DIMjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 08:37:16 -0400
+	Mon, 9 Apr 2012 08:39:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120409122950.GA21833@lizard>
-References: <20120408233550.GA3791@panacea>
-	<20120408233802.GA4839@panacea>
-	<1333960831.3943.4.camel@jaguar>
-	<20120409122950.GA21833@lizard>
-Date: Mon, 9 Apr 2012 15:37:16 +0300
-X-Google-Sender-Auth: 8Rlg6Yan5ZnBcv48CcRGY-6QNhY
-Message-ID: <CAOJsxLEZ6ZHBTKnCBO0bpC0ci6E2F4LZYiQkrExUxWR2dQjqGw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] vmevent: Should not grab mutex in the atomic context
-From: Pekka Enberg <penberg@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Mon, 9 Apr 2012 20:39:08 +0800
+Message-ID: <CAJd=RBAL4ODagH3oEwQMFqRX=1tXy9nQkA1U_ij6Rw7BCEOQHw@mail.gmail.com>
+Subject: [PATCH] DLS: fix select_task_rq_dl
+From: Hillf Danton <dhillf@gmail.com>
+To: Dario Faggioli <raistlin@linux.it>, Juri Lelli <juri.lelli@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Apr 09, 2012 at 11:40:31AM +0300, Pekka Enberg wrote:
->> On Mon, 2012-04-09 at 03:38 +0400, Anton Vorontsov wrote:
->> > vmevent grabs a mutex in the atomic context, and so this pops up:
->> >
->> > BUG: sleeping function called from invalid context at kernel/mutex.c:271
->> > in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
-> [...]
->> > This patch fixes the issue by removing the mutex and making the logic
->> > lock-free.
->> >
->> > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
->>
->> What guarantees that there's only one thread writing to struct
->> vmevent_attr::value in vmevent_sample() now that the mutex is gone?
+Check for CPU online is added for correct reference of rq->curr, and for the
+chance to find another runqueue for given task.
 
-On Mon, Apr 9, 2012 at 3:29 PM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> Well, it is called from the timer function, which has the same guaranties
-> as an interrupt handler: it can have only one execution thread (unlike
-> bare softirq handler), so we don't need to worry about racing w/
-> ourselves?
->
-> If you're concerned about several instances of timers accessing the
-> same vmevent_watch, I don't really see how it is possible, as we
-> allocate vmevent_watch together w/ the timer instance in vmevent_fd(),
-> so there is always one timer per vmevent_watch.
+We never find other runqueue if the current task could be peempted, no matter
+its migratary or not. IOW, preempt check should never be bypassed.
 
-Makes sense. A big fat comment on top of vmevent_sample() explaining
-all this would be helpful... ;-)
+BTW, SD_BALANCE_XXX matches DLS?
 
-                        Pekka
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+
+--- a/kernel/sched_dl.c	Mon Apr  9 19:39:56 2012
++++ b/kernel/sched_dl.c	Mon Apr  9 19:57:12 2012
+@@ -806,8 +806,7 @@ static void yield_task_dl(struct rq *rq)
+
+ static int find_later_rq(struct task_struct *task);
+
+-static int
+-select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
++static int select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
+ {
+ 	struct task_struct *curr;
+ 	struct rq *rq;
+@@ -815,36 +814,40 @@ select_task_rq_dl(struct task_struct *p,
+
+ 	cpu = task_cpu(p);
+
++	if (!cpu_online(cpu))
++		goto find;
++	if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
++		goto find;
++
+ 	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
+ 		goto out;
+
+ 	rq = cpu_rq(cpu);
+
+ 	rcu_read_lock();
+-	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
+
+-	/*
+-	 * If we are dealing with a -deadline task, we must
+-	 * decide where to wake it up.
+-	 * If it has a later deadline and the current task
+-	 * on this rq can't move (provided the waking task
+-	 * can!) we prefer to send it somewhere else. On the
+-	 * other hand, if it has a shorter deadline, we
+-	 * try to make it stay here, it might be important.
+-	 */
+-	if (unlikely(dl_task(curr)) &&
+-	    (curr->dl.nr_cpus_allowed < 2 ||
+-	     !dl_entity_preempt(&p->dl, &curr->dl)) &&
+-	    (p->dl.nr_cpus_allowed > 1)) {
++	curr = ACCESS_ONCE(rq->curr);
++
++	if (!dl_task(curr))
++		goto unlock;
++
++	if (dl_entity_preempt(&p->dl, &curr->dl))
++		goto unlock;
++
++	rcu_read_unlock();
++find:
++	if (p->dl.nr_cpus_allowed > 1) {
+ 		int target = find_later_rq(p);
+
+ 		if (target != -1)
+ 			cpu = target;
+ 	}
+-	rcu_read_unlock();
+
+ out:
+ 	return cpu;
++unlock:
++	rcu_read_unlock();
++	goto out;
+ }
+
+ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
+--
