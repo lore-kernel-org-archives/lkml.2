@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab2DIXhs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 19:37:48 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45649 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753491Ab2DIXhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 19:37:47 -0400
-Message-ID: <1334014666.3228.33.camel@joe2Laptop>
-Subject: Re: [PATCH] printk(): add KERN_CONT where needed
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Len Brown <lenb@kernel.org>
-Date: Mon, 09 Apr 2012 16:37:46 -0700
-In-Reply-To: <20120409160803.27bc1376.akpm@linux-foundation.org>
-References: <1333415903.860.0.camel@mop>
-	 <1333420612.26079.6.camel@joe2Laptop>
-	 <CAPXgP12jX37GLgMJQuDYEi6q5A2Ma3d+e+_sNkFVdYfwsdMrtQ@mail.gmail.com>
-	 <20120409160803.27bc1376.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1758190Ab2DIXk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 19:40:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764Ab2DIXk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 19:40:56 -0400
+Message-ID: <4F83737B.7040308@redhat.com>
+Date: Mon, 09 Apr 2012 19:40:43 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: [RFC PATCH 0/2] Removal of lumpy reclaim
+References: <1332950783-31662-1-git-send-email-mgorman@suse.de> <20120406123439.d2ba8920.akpm@linux-foundation.org> <alpine.LSU.2.00.1204061316580.3057@eggly.anvils> <4F8325FB.80409@redhat.com> <alpine.LSU.2.00.1204091205130.1536@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1204091205130.1536@eggly.anvils>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-09 at 16:08 -0700, Andrew Morton wrote:
-> On Tue, 3 Apr 2012 05:00:10 +0200
-> Kay Sievers <kay@vrfy.org> wrote:
-> 
-> > > Maybe it'd be better to aggregate content rather like
-> > > printk does. __Aggregate until you get a newline or a
-> > > new KERN_<LEVEL>
-> > 
-> > The continuation printk() can can always go wrong when multiple
-> > threads do that in parallel. We can try to make it better with a
-> > per-cpu buffer, but I guess there will always be a situation where
-> > this can happen.
-> 
-> Maybe we can be a bit smarter.  For example, if `current' is unchanged
-> and __builtin_return_address(0) is unchanged, keep on buffering.
+On 04/09/2012 03:18 PM, Hugh Dickins wrote:
+> On Mon, 9 Apr 2012, Rik van Riel wrote:
 
-There are dozens to hundreds of existing sequences
-like:
+>> I could see NOMMU being unable to use compaction, but
+>
+> Yes, COMPACTION depends on MMU.
+>
+>> chances are lumpy reclaim would be sufficient for that
+>> configuration, anyway...
+>
+> That's an argument for your patch in 3.4-rc, which uses lumpy only
+> when !COMPACTION_BUILD.  But here we're worrying about Mel's patch,
+> which removes the lumpy code completely.
 
-void some_func(...)
-{
-	printk("some additional data");
-}
+Sorry, that was a typo in my mail.
 
-...
+I wanted to say that I expect lumpy reclaim to NOT be
+sufficient for NOMMU anyway, because it cannot reclaim
+lumps of memory large enough to fit a new process.
 
-void some_device_init(...)
-{
-	...
-	printk([KERN_LEVEL or not] "some initiator")
-	some_func();
-	printk("\n");
-}
-
-> It's all a bit hacky, but weeding out all those thousands of printks
-> which never get printed anyway doesn't sound much fun either.
-
-Nope.  That isn't any fun.
-
-So given the example above, maybe check if the
-initial printk's __builtin_return_address(0) exists
-in some level of the stack say up to 3 deep for each
-subsequent printk.
-
-I don't remember any threads spun off to emit printk
-continuation lines so maybe that'd work reasonably
-well.
-
-> All a bit of a pain.
-
-Too true.
-
-
+-- 
+All rights reversed
