@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab2DING2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 09:06:28 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1756544Ab2DINNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 09:13:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620Ab2DING1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 09:06:27 -0400
-Message-ID: <4F82DECD.10100@nod.at>
-Date: Mon, 09 Apr 2012 15:06:21 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1751701Ab2DINNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 09:13:07 -0400
+Message-ID: <4F82E04E.6000900@redhat.com>
+Date: Mon, 09 Apr 2012 16:12:46 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, benh@kernel.crashing.org, agust@denx.de
-Subject: Re: [PATCH] powerpc: 512x: Fix mpc5121_clk_get()
-References: <1332788489-27435-1-git-send-email-richard@nod.at>
-In-Reply-To: <1332788489-27435-1-git-send-email-richard@nod.at>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig61BF48B0C84F3DAF2FB373EC"
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com>
+In-Reply-To: <4F742951.7080003@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig61BF48B0C84F3DAF2FB373EC
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
+> * Idea
+> The present bit of page fault error code (EFEC.P) indicates whether the
+> page table is populated on all levels, if this bit is set, we can know
+> the page fault is caused by the page-protection bits (e.g. W/R bit) or
+> the reserved bits.
+>
+> In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
+> simply fixed: the page fault caused by reserved bit
+> (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
+> path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
+> is just increasing the corresponding access on the spte.
+>
+> This pachset introduces a fast path to fix this kind of page fault: it
+> is out of mmu-lock and need not walk host page table to get the mapping
+> from gfn to pfn.
+>
+>
 
-Am 26.03.2012 21:01, schrieb Richard Weinberger:
-> If try_module_get() fails, mpc5121_clk_get() might return
-> a wrong clock.
->=20
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/powerpc/platforms/512x/clock.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
->=20
-> diff --git a/arch/powerpc/platforms/512x/clock.c b/arch/powerpc/platfor=
-ms/512x/clock.c
-> index 1d8700f..9f771e0 100644
-> --- a/arch/powerpc/platforms/512x/clock.c
-> +++ b/arch/powerpc/platforms/512x/clock.c
-> @@ -54,14 +54,16 @@ static DEFINE_MUTEX(clocks_mutex);
->  static struct clk *mpc5121_clk_get(struct device *dev, const char *id)=
+This patchset is really worrying to me.
 
->  {
->  	struct clk *p, *clk =3D ERR_PTR(-ENOENT);
-> -	int dev_match =3D 0;
-> -	int id_match =3D 0;
-> +	int dev_match;
-> +	int id_match;
-> =20
->  	if (dev =3D=3D NULL || id =3D=3D NULL)
->  		return clk;
-> =20
->  	mutex_lock(&clocks_mutex);
->  	list_for_each_entry(p, &clocks, node) {
-> +		dev_match =3D id_match =3D 0;
-> +
->  		if (dev =3D=3D p->dev)
->  			dev_match++;
->  		if (strcmp(id, p->name) =3D=3D 0)
+It introduces a lot of concurrency into data structures that were not
+designed for it.  Even if it is correct, it will be very hard to
+convince ourselves that it is correct, and if it isn't, to debug those
+subtle bugs.  It will also be much harder to maintain the mmu code than
+it is now.
 
-*ping*
+There are a lot of things to check.  Just as an example, we need to be
+sure that if we use rcu_dereference() twice in the same code path, that
+any inconsistencies due to a write in between are benign.  Doing that is
+a huge task.
 
-Thanks,
-//richard
+But I appreciate the performance improvement and would like to see a
+simpler version make it in.  This needs to reduce the amount of data
+touched in the fast path so it is easier to validate, and perhaps reduce
+the number of cases that the fast path works on.
 
+I would like to see the fast path as simple as
 
---------------enig61BF48B0C84F3DAF2FB373EC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+  rcu_read_lock();
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+  (lockless shadow walk)
+  spte = ACCESS_ONCE(*sptep);
 
-iQEcBAEBAgAGBQJPgt7OAAoJEN9758yqZn9eGtAIAIp58++YtCQffl7plFuxeSaw
-C/VKYCntkUf9DCKPjpNzq8Gn9IqMKsdfUj60+wcF+Kl6cutNImVbUzkICpBIZxea
-JYwWck+SXlrQXlRBSrasGqyzIAZYH3ZuE+YB5HNYgyJ5JcSus+BNqhMrS37jSdS9
-NUXXITdRd8ael+mvmAXuKA8amn6riLAhl9OU8UdP1lbqG2eeRfkHw5Dp89EOUEQt
-Eh2k9GPxQmqEHI0ntsMYiGdc6MDUx45Dd+YKBz1ehcpuHfc525sl5wybqDjXuLX1
-mTOAAbHrlCkZxSrFJQn3w5jqU6ej7/6YtjInFyMzkdB1npti0DsMod0cQDC0nSw=
-=ble7
------END PGP SIGNATURE-----
+  if (!(spte & PT_MAY_ALLOW_WRITES))
+        goto slow;
 
---------------enig61BF48B0C84F3DAF2FB373EC--
+  gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
+  mark_page_dirty(kvm, gfn);
+
+  new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
+  if (cmpxchg(sptep, spte, new_spte) != spte)
+       goto slow;
+
+  rcu_read_unlock();
+  return;
+
+slow:
+  rcu_read_unlock();
+  slow_path();
+
+It now becomes the responsibility of the slow path to maintain *sptep &
+PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
+can be as simple as a clear_bit() before we update sp->gfns[] or if we
+add host write protection.
+
+Sorry, it's too complicated for me.  Marcelo, what's your take?
+
+-- 
+error compiling committee.c: too many arguments to function
+
