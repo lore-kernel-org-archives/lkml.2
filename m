@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab2DIUuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:50:00 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20764 "EHLO
+	id S1757270Ab2DIUuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:50:14 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20840 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab2DIUt6 (ORCPT
+	with ESMTP id S1750734Ab2DIUuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:49:58 -0400
-Date: Mon, 9 Apr 2012 22:49:57 +0200 (CEST)
+	Mon, 9 Apr 2012 16:50:11 -0400
+Date: Mon, 9 Apr 2012 22:50:10 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, dri-devel@lists.freedesktop.org,
-        Jon Mason <jdmason@kudzu.us>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Dave Airlie <airlied@redhat.com>, David Airlie <airlied@linux.ie>
-Subject: [PATCH 02/26] radeon_cp: Remove unneeded tests for NULL before
- calling release_firmware()
+cc: trivial@kernel.org, netdev@vger.kernel.org,
+        David Dillow <dave@thedillows.org>
+Subject: [PATCH 04/26] typhoon: get rid of redundant conditional before all
+ to release_firmware()
 In-Reply-To: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204092204380.13925@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1204092208140.13925@swampdragon.chaosbits.net>
 References: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
@@ -26,35 +24,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-release_firmware() does its own tests for NULL pointers so there's no
-need to explicitly test before calling it.
+There's no need to test for a NULL pointer before calling
+release_firmware() since the function does that check itself, so
+remove the redundant test.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/gpu/drm/radeon/radeon_cp.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/3com/typhoon.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_cp.c b/drivers/gpu/drm/radeon/radeon_cp.c
-index 0ebb7d4..ef67e18 100644
---- a/drivers/gpu/drm/radeon/radeon_cp.c
-+++ b/drivers/gpu/drm/radeon/radeon_cp.c
-@@ -1827,14 +1827,10 @@ void radeon_do_release(struct drm_device * dev)
- 			r600_do_cleanup_cp(dev);
- 		else
- 			radeon_do_cleanup_cp(dev);
--		if (dev_priv->me_fw) {
--			release_firmware(dev_priv->me_fw);
--			dev_priv->me_fw = NULL;
--		}
--		if (dev_priv->pfp_fw) {
--			release_firmware(dev_priv->pfp_fw);
--			dev_priv->pfp_fw = NULL;
--		}
-+		release_firmware(dev_priv->me_fw);
-+		dev_priv->me_fw = NULL;
-+		release_firmware(dev_priv->pfp_fw);
-+		dev_priv->pfp_fw = NULL;
- 	}
+diff --git a/drivers/net/ethernet/3com/typhoon.c b/drivers/net/ethernet/3com/typhoon.c
+index 1234a14..b153666 100644
+--- a/drivers/net/ethernet/3com/typhoon.c
++++ b/drivers/net/ethernet/3com/typhoon.c
+@@ -2549,8 +2549,7 @@ typhoon_init(void)
+ static void __exit
+ typhoon_cleanup(void)
+ {
+-	if (typhoon_fw)
+-		release_firmware(typhoon_fw);
++	release_firmware(typhoon_fw);
+ 	pci_unregister_driver(&typhoon_driver);
  }
  
 -- 
