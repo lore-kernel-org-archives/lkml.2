@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757653Ab2DIVnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:43:22 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40481 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab2DIVnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:43:20 -0400
-Date: Mon, 9 Apr 2012 14:43:16 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] staging: zsmalloc: fix memory leak
-Message-ID: <20120409214316.GB535@kroah.com>
-References: <1333376036-9841-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <d858d87f-6e07-4303-a9b3-e41ff93c8080@default>
- <4F7C7626.40506@linux.vnet.ibm.com>
- <4F83454A.3050007@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F83454A.3050007@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757601Ab2DIVtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:49:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752173Ab2DIVtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 17:49:40 -0400
+From: Adam Jackson <ajax@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mjg@redhat.com
+Subject: [PATCH] intel_ips: Hush the i915 symbols message
+Date: Mon,  9 Apr 2012 17:49:36 -0400
+Message-Id: <1334008176-1142-1-git-send-email-ajax@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A: No.
-Q: Should I include quotations after my reply?
+We can't control order here, and getting it inverted is harmless.  So
+turn this down to dev_info() and leave a note about how to fix it in
+case userspace is insufficiently automagic.
 
-http://daringfireball.net/2007/07/on_top
+Bugzilla: https://bugzilla.redhat.com/794953
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ drivers/platform/x86/intel_ips.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Mon, Apr 09, 2012 at 03:23:38PM -0500, Seth Jennings wrote:
-> Hey Greg,
-> 
-> Haven't heard back from you on this patch and it needs to
-> get into the 3.4 -rc releases ASAP.  It fixes a substantial
-> memory leak when frontswap/zcache are enabled.
-> 
-> Let me know if you need me to repost.
-> 
-> The patch was sent on 4/2.
+diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
+index f7ba316..0ffdb3c 100644
+--- a/drivers/platform/x86/intel_ips.c
++++ b/drivers/platform/x86/intel_ips.c
+@@ -1565,7 +1565,7 @@ static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 		ips->poll_turbo_status = true;
+ 
+ 	if (!ips_get_i915_syms(ips)) {
+-		dev_err(&dev->dev, "failed to get i915 symbols, graphics turbo disabled\n");
++		dev_info(&dev->dev, "failed to get i915 symbols, graphics turbo disabled until i915 loads\n");
+ 		ips->gpu_turbo_enabled = false;
+ 	} else {
+ 		dev_dbg(&dev->dev, "graphics turbo enabled\n");
+-- 
+1.7.7.6
 
-5 meager days ago, with a major holliday in the middle, not to mention a
-conference as well.  That's bold.
-
-It is not lost, is in my queue, and will get to Linus before 3.4-final
-comes out, don't worry.
-
-greg k-h
