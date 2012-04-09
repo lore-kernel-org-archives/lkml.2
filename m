@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2DICQv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 22:16:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33910 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080Ab2DICQt (ORCPT
+	id S1754496Ab2DICTK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 22:19:10 -0400
+Received: from [221.122.61.228] ([221.122.61.228]:39182 "EHLO mx.nrchpc.ac.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753139Ab2DICTI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 22:16:49 -0400
-Message-ID: <4F82468E.5000308@lwfinger.net>
-Date: Sun, 08 Apr 2012 21:16:46 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Sun, 8 Apr 2012 22:19:08 -0400
+From: "Liu Yu" <liuyums@bwstor.com.cn>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>
+References: <006001cd0cb2$20f547b0$62dfd710$@com.cn> <20120406120521.1a6dcd1b.akpm@linux-foundation.org>
+In-Reply-To: <20120406120521.1a6dcd1b.akpm@linux-foundation.org>
+Subject: re: Wrong use of MAX_JIFFY_OFFSET?
+Date: Mon, 9 Apr 2012 10:18:23 +0800
+Message-ID: <003501cd15f7$13547560$39fd6020$@com.cn>
 MIME-Version: 1.0
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jrh <jharbestonus@gmail.com>
-Subject: Re: [PATCH] media: au0828: Convert BUG_ON to WARN_ONCE
-References: <1333927151-13014-1-git-send-email-Larry.Finger@lwfinger.net> <CAGoCfixO1mUO0VGBL9GzOmaWpQ6rVos095reFfUWnVwCj0CyYg@mail.gmail.com>
-In-Reply-To: <CAGoCfixO1mUO0VGBL9GzOmaWpQ6rVos095reFfUWnVwCj0CyYg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="gb2312"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Ac0UUMIZuiyu2ahpSkaIbU1YSV5XOABphEOg
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2012 08:46 PM, Devin Heitmueller wrote:
-> On Sun, Apr 8, 2012 at 7:19 PM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
->> In the mail thread at http://www.mythtv.org/pipermail/mythtv-users/2012-April/331164.html,
->> a kernel crash is triggered when trying to run mythtv with a HVR950Q tuner.
->> The crash condition is due to res_free() being called to free something that
->> has is not reserved. The actual reason for this mismatch of reserve/free is
->> not known; however, using a BUG_ON rather than a WARN_ON seems unfortunate.
->
-> This patch should be nack'd.  The real reason should be identified,
-> and a patch should be submitted for that (and from what I gather, it
-> seems like it is easily reproduced by the submitter).  Just add a few
-> "dump_stack()" calls in the res_get() and res_free() calls to identify
-> the failing call path.
+> -----邮件原件-----
+> 发件人: Andrew Morton [mailto:akpm@linux-foundation.org]
+> 发送时间: 2012年4月7日 3:05
+> 收件人: Liu Yu
+> 抄送: linux-kernel@vger.kernel.org
+> 主题: Re: Wrong use of MAX_JIFFY_OFFSET?
+> 
+> On Wed, 28 Mar 2012 15:12:24 +0800
+> "Liu Yu" <liuyums@bwstor.com.cn> wrote:
+> 
+> > Hi guys,
+> >
+> > I saw a couple of places in current kernel have this kind of code:
+> >
+> > > static inline unsigned int elapsed_jiffies_msecs(unsigned long start)
+> > > {
+> > >         unsigned long end = jiffies;
+> > >
+> > >         if (end >= start)
+> > >                return jiffies_to_msecs(end - start);
+> > >
+> > >         return jiffies_to_msecs(end + (MAX_JIFFY_OFFSET - start) + 1);
+> > > }
+> >
+> > As you know, jiffies has a type of unsigned long, so if we know which is
+the
+> > end and
+> > which is the start, then (end - start) can simply figure out how much
+> > jiffies flies,
+> > without worry about the overflow.
+> >
+> > Look at the code above, assume that there is just an overflow happening
+on
+> > jiffies: end=0 and start=~0UL.
+> > Since end < start, then the return value of the function is
+> > jiffies_to_msecs(MAX_JIFFY_OFFSET+2).
+> > But shouldn't the correct value be jiffies_to_msecs(1)?
+> >
+> > could someone tell me that am I missing anything?
+> >
+> 
+> Seems right.  The code should be
+> 
+> static inline unsigned long elapsed_jiffies_msecs(unsigned long start)
+> {
+> 	return jiffies_to_msecs(jiffies - start);
+> }
+> 
+> Note the return type.  jiffies_to_msecs() currently returns unsigned
+> int.  I think it should return unsigned long.  Even then, it can still
+> overflow with valid inputs on HZ=100 32-bit machines.
 
-I agree that we need to find the real cause; however, I am not the one with the 
-problem, and I do not have the hardware. In addition, I am not sure how much 
-additional debug information the person will be able to provide. He has not 
-built Linux kernels since 1.2. If he can get a kernel built, then we will try to 
-find the real cause.
+Thanks a lot for your reply :)
 
-In any case, why the reluctance to get rid of the BUG_ON? Is this condition so 
-severe that the kernel needs to be stopped immediately?
+I saw similar code in
+	drivers/net/wireless/ipw2x00/libipw_wx.c
+	net/wireless/scan.c
+	include/linux/jbd2.h
 
-Larry
+hope someone can fix this. :)
+
+Thanks,
+Yu
+
