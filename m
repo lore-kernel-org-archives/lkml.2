@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab2DITeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:34:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12374 "EHLO mx1.redhat.com"
+	id S932327Ab2DITg0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:36:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30982 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932118Ab2DITeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:34:18 -0400
-Message-ID: <1333999988.14260.9.camel@localhost>
-Subject: Re: [kernel-hardening] Re: [PATCH v17 09/15] seccomp: remove
- duplicated failure logging
-From: Eric Paris <eparis@redhat.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, netdev@vger.kernel.org, x86@kernel.org,
-        arnd@arndb.de, davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        jmorris@namei.org
-Date: Mon, 09 Apr 2012 15:33:08 -0400
-In-Reply-To: <CABqD9hZVZQXA5cyufwWirWVUYZwSkjRxHR2CBKW5V62qD-DGtA@mail.gmail.com>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	 <1333051320-30872-10-git-send-email-wad@chromium.org>
-	 <20120406141415.93f46bc6.akpm@linux-foundation.org>
-	 <CABqD9hZVZQXA5cyufwWirWVUYZwSkjRxHR2CBKW5V62qD-DGtA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932118Ab2DITgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 15:36:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="126975933"
+Date: Mon, 9 Apr 2012 12:36:25 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][REGRESSION] panic: fix stack dump print on direct call
+ to panic()
+Message-ID: <20120409193625.GB28791@tassilo.jf.intel.com>
+References: <1333992030-21181-1-git-send-email-jason.wessel@windriver.com>
+ <4F832BC8.4090907@linux.intel.com>
+ <4F8333BC.3050509@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F8333BC.3050509@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-09 at 14:26 -0500, Will Drewry wrote:
-> On Fri, Apr 6, 2012 at 4:14 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Thu, 29 Mar 2012 15:01:54 -0500
-> > Will Drewry <wad@chromium.org> wrote:
+> That is an interesting patch series, but I am not sure I agree about the caller propagating a flag to control what you see in panic.  I intentionally set CONFIG_DEBUG_VERBOSE=y for a reason, I want a stack trace if and when panic(), oops, BUG, etc... is ever called.  This might be a personal preference, but I do not wish to be searching on a string, to find out where the kernel execution terminated.  I want to see stack traces all the time, with the exception of the cases you pointed out in the original patch.
 
-> >> -void __audit_seccomp(unsigned long syscall)
-> >> +void __audit_seccomp(unsigned long syscall, long signr, int code)
-> >>  {
-> >>       struct audit_buffer *ab;
-> >>
-> >>       ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
-> >> -     audit_log_abend(ab, "seccomp", SIGKILL);
-> >> +     audit_log_abend(ab, "seccomp", signr);
-> >>       audit_log_format(ab, " syscall=%ld", syscall);
-> >> +#ifdef CONFIG_COMPAT
-> >> +     audit_log_format(ab, " compat=%d", is_compat_task());
-> >> +#endif
-> >
-> > We don't need the ifdef for compilation reasons now.
-> >
-> > The question is: should we emit the compat= record on
-> > non-compat-capable architectures?  Doing so would be safer - making it
-> > conditional invites people to write x86-only usersapce.
-> 
-> I'd certainly prefer it always being there for exactly that reason.
-> 
-> Kees, Eric, any preferences?  Unless I hear one, I'll just drop the
-> ifdefs in the next revision.
+The idea was that callers who are calling panic not due to a programming
+error (like no root, hardware error etc.) do not print the backtrace.
+And only "assert like" panics would. 
 
-I'd just leave it in unconditionally.  The audit parse libraries would
-handle it just fine, but that doesn't mean everyone uses that tool to
-parse the text.
+This makes the screen less cluttered for user or hardware induced
+panics.
 
--Eric
+Besides that it does a couple of related things, like set proper
+timeouts.
 
+-Andi
