@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab2DISsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 14:48:08 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51266 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab2DISsG (ORCPT
+	id S1757350Ab2DIStc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 14:49:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58662 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab2DISt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 14:48:06 -0400
-Date: Mon, 9 Apr 2012 11:45:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: semaphore and mutex in current Linux kernel (3.2.2)
-Message-ID: <20120409184538.GE2430@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <491D6B4EAD0A714894D8AD22F4BDE0439F94AB@SCYBEXDAG02.amd.com>
- <20120401121943.GA11893@gmail.com>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9560@SCYBEXDAG02.amd.com>
- <20120403075245.GD26826@gmail.com>
- <4F7DA8FD.1020909@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9E45@SCYBEXDAG02.amd.com>
- <4F7EC111.4010608@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
+	Mon, 9 Apr 2012 14:49:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v2 1/4] of_serial: add support for setup quirks
+Date: Mon, 9 Apr 2012 18:49:20 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        linux-serial@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, alan@linux.intel.com
+References: <20120409182041.317.33360.stgit@dwillia2-linux.jf.intel.com> <20120409182203.317.81835.stgit@dwillia2-linux.jf.intel.com>
+In-Reply-To: <20120409182203.317.81835.stgit@dwillia2-linux.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040918-7282-0000-0000-0000080D5682
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204091849.20705.arnd@arndb.de>
+X-Provags-ID: V02:K0:qcKv/p7VWVTWqs4feHSxdmQp6I9kVvWaOUu3OFYFGDo
+ wZs7z7XU/GYuT89Ggv98kOJqaU2W2X6OOY4Edhu/zfYu+hh5U4
+ yg90qc4bBBjD0R0K+mgJ/W7+dWjJ34cQGBC6Wkz4lOg1qp4wFi
+ 3Yxh72KuR4Lgy2/EC45oNp3IQIApdqW85uqmMbpBbuiqlMozZ+
+ 1Y+3TlKJXK+FFnb2xSKcpH0XQAi13SZSNyYOjnw3sfOWFOw/ft
+ la2rMUAqjZhmBmZy7Uw5tWKgq84u+HZFbh8ZzlTI7qszOVmy0Y
+ vq4UQafbrvGlo65RrP5rVxVN+UH2qcmGBNBuS87PeJ+QUYEcmb
+ 9IOqcWY6gWll6caIEOlA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 06, 2012 at 05:47:28PM +0000, Chen, Dennis (SRDC SW) wrote:
-> On Fri, Apr 6, 2012 at 6:10 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
-> > Chen, Dennis (SRDC SW) wrote:
-> >> On Thu, Apr 5, 2012 at 10:15 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
-> >>
-> >> I guess this is related with RCU component, but I don't found the right place where the code
-> >> Located yet.
-> >
-> > "On the internet, nobody can hear you being subtle."
-> >
-> > If some other process wants to run on the same CPU, needs_resched() is set.
-> > (This might happen to make the cursor blink, for keyboard input, or when
-> > somebody starts a rogue process like ps.)
-> >
+On Monday 09 April 2012, Dan Williams wrote:
+> Benign conversion of of_serial.c to offer the option of 'setup' quirks
+> similar to how 8250_pci.c houses the pci-serial-device quirks.
 > 
-> Hmm, I forget that in each timer interrupt, __rcu_pending() will be called, it will call
-> set_need_resched() to set the TIF_NEED_RESCHED in some condition...
-> The optimization of mutex work closely with rcu, so fantastic!
+> A setup quirk allows custom uart_port ops to specified in the
+> of_serial_info data fed to each serial of_device_id.
+> 
+> Tegra's 'break' quirk is the target consumer.
+> 
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Stephen Warren <swarren@nvidia.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> ---
+>  drivers/tty/serial/of_serial.c |   68 ++++++++++++++++++++++++++++------------
+>  1 files changed, 47 insertions(+), 21 deletions(-)
 
-I must confess that you all lost me on this one.
+I don't think this is a good idea. Aside from the bug that you introduce
+(you can no longer have multiple ports of the same type because of overwrite
+the static info->line number), it seems an unnecessary complication.
+Either just add the quirk to the of_serial file based on the compatible value,
+or do a trivial new driver that has a subset of the existing one you need,
+plus the quirk.
 
-There is a call to set_need_resched() in __rcu_pending(), which is
-invoked when the current CPU has not yet responded to a non-preemptible
-RCU grace period for some time.  However, in the common case where the
-CPUs all respond in reasonable time, __rcu_pending() will never call
-set_need_resched().
-
-However, we really do not want to call set_need_resched() on every call
-to __rcu_pending().  There is almost certainly a better solution to any
-problem that might be solved by a per-jiffy call to set_need_resched().
-
-So, what are you really trying to do?
-
-							Thanx, Paul
-
+	Arnd 
