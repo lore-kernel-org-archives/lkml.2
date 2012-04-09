@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2DIQ4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 12:56:15 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:36957 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142Ab2DIQ4N convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 9 Apr 2012 12:56:13 -0400
-Message-Id: <4F8322BB020000780008229D@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 09 Apr 2012 17:56:11 +0100
-From: "Jan Beulich" <jbeulich@suse.com>
-To: <david.vrabel@citrix.com>, <konrad.wilk@oracle.com>
-Cc: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 6/7] xen/setup: Make dom0_mem=XGB
- behavior be similar to classic Xen kernels.
-References: <1333139850-28456-1-git-send-email-konrad.wilk@oracle.com>
- <1333139850-28456-7-git-send-email-konrad.wilk@oracle.com>
- <4F7ABBC4.4050106@citrix.com> <20120406205909.GA26309@phenom.dumpdata.com>
-In-Reply-To: <20120406205909.GA26309@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754984Ab2DIQ4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 12:56:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52883 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056Ab2DIQ4d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 12:56:33 -0400
+Message-ID: <4F8314BE.9090708@gmail.com>
+Date: Mon, 09 Apr 2012 09:56:30 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
+References: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com> <20120407012616.62D133E17B2@localhost>
+In-Reply-To: <20120407012616.62D133E17B2@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> 04/06/12 11:04 PM >>>
->> With your new behaviour it will no longer possible to specify an
->> unlimited balloon but a limited number of initial pages.  This is
->> behaviour that Jan said he used.
+On 04/06/2012 06:26 PM, Grant Likely wrote:
+> On Thu,  5 Apr 2012 16:52:13 -0700, David Daney<ddaney.cavm@gmail.com>  wrote:
+>> From: David Daney<david.daney@cavium.com>
+>>
+>> In commit 4bbdd45a (irq_domain/powerpc: eliminate irq_map; use
+>> irq_alloc_desc() instead) code was added that ignores error returns
+>> from irq_alloc_desc_from() by (silently) casting the return value to
+>> unsigned.  The negitive value error return now suddenly looks like a
+>> valid irq number.
+>>
+>> Commits cc79ca69 (irq_domain: Move irq_domain code from powerpc to
+>> kernel/irq) and 1bc04f2c (irq_domain: Add support for base irq and
+>> hwirq in legacy mappings) move this code to its current location in
+>> irqdomain.c
+>>
+>> The result of all of this is a null pointer dereference OOPS if one of
+>> the error cases is hit.
+>>
+>> The fix: Don't cast away the negativeness of the return value and then
+>> check for errors.
+>>
+>> Signed-off-by: David Daney<david.daney@cavium.com>
+>> ---
+>>   kernel/irq/irqdomain.c |   11 ++++++-----
+>>   1 files changed, 6 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>> index af48e59..9d3e3ae 100644
+>> --- a/kernel/irq/irqdomain.c
+>> +++ b/kernel/irq/irqdomain.c
+>> @@ -351,6 +351,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>>   				irq_hw_number_t hwirq)
+>>   {
+>>   	unsigned int virq, hint;
+>> +	int irq;
 >
->I am not sure I see the problem - I mean if one uses:
+> Merged, but I've dropped the new variable in favour of making virq an
+> int.  Makes for a smaller diffstat.
 >
->dom0_mem=min:8G,max:16G
->
->I understand that we want to start at 8GB and if the user
->choose to - balloon up to 16GB.
->
->But doing this:
->
->dom0_mem=8G
->
->and allocating pagetables up to .. say 32GB, seems counter-intuive
->as the effect is similar to having no 'dom0_mem' except that the initial
->size is smaller.
 
-What's counter intuitive here? There may not be a need - from the perspective
-of the kernel - for a hard upper limit enforced by Xen (i.e. the pseudo infinity
-we have right now may be quite fine).
+Thanks Grant,
 
-Anyway, as said in the other reply already - unless this is to address a bug, I
-don't see the point in changing behavior that has been that way for a pretty
-long time.
+I had thought about that too, but since virq throughout all the rest of 
+the code is unsigned, I didn't want to introduce an inconsistency.
 
-Jan
+After a little more thought, I think that the domain of virq and the irq 
+used by the rest of the kernel are the same, so it might make sense to 
+change virq to be int universally, and use the kernel convention that 
+negative numbers indicate error conditions.  But that would be a much 
+larger patch.
+
+David Daney
+
+
+
+> g.
+>
+>>
+>>   	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
+>>
+>> @@ -380,14 +381,14 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>>   	hint = hwirq % irq_virq_count;
+>>   	if (hint == 0)
+>>   		hint++;
+>> -	virq = irq_alloc_desc_from(hint, 0);
+>> -	if (!virq)
+>> -		virq = irq_alloc_desc_from(1, 0);
+>> -	if (!virq) {
+>> +	irq = irq_alloc_desc_from(hint, 0);
+>> +	if (irq<= 0)
+>> +		irq = irq_alloc_desc_from(1, 0);
+>> +	if (irq<= 0) {
+>>   		pr_debug("irq: ->  virq allocation failed\n");
+>>   		return 0;
+>>   	}
+>> -
+>> +	virq = irq;
+>>   	if (irq_setup_virq(domain, virq, hwirq)) {
+>>   		if (domain->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
+>>   			irq_free_desc(virq);
+>> --
+>> 1.7.2.3
+>>
+>
 
