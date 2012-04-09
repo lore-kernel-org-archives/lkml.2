@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab2DIUxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:53:33 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:19776 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758031Ab2DIUxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758286Ab2DIUxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:53:47 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:31876 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758201Ab2DIUxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Apr 2012 16:53:31 -0400
-From: "Linus Walleij" <linus.walleij@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Alim Akhtar <alim.akhtar@gmail.com>
-Subject: [PATCH 1/2] dma/amba-pl08x: check for terminal count status only
-Date: Mon,  9 Apr 2012 22:53:21 +0200
-Message-Id: <1334004801-20185-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+Message-ID: <4F834C48.1060603@tilera.com>
+Date: Mon, 9 Apr 2012 16:53:28 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] arch/tile: support MMIO-based readb/writeb etc.
+References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204062101.q36L1tuT011403@farm-0027.internal.tilera.com> <201204091324.34288.arnd@arndb.de>
+In-Reply-To: <201204091324.34288.arnd@arndb.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For some reason I can't figure out we're reading the PL080_INT_STATUS
-register instead of PL080_TC_STATUS when checking for the terminal
-count. The PL080_INT_STATUS is a logical OR between the error and
-terminal count status register and may not report what we want it
-to, especially if there is an error and a terminal count at the same
-time and the former is not lowered in time for the check in the TC
-register. Make sure we read what we're actually interested in.
+On 4/9/2012 9:24 AM, Arnd Bergmann wrote:
+> On Friday 06 April 2012, Chris Metcalf wrote:
+>> Add support for MMIO read/write on tilegx to support GXIO IORPC access.
+>> Similar to the asm-generic version, but we include memory fences on
+>> the writes to be conservative.
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> It's usually better to use inline assembly here, to guarantee that
+> the compiler does not split an access into multiple byte sized
+> accesses as it might sometimes do if a register data structure
+> is marged "packed". The "volatile" guarantees that the access
+> does not go beyond a single word, but it does not guarantee that
+> it's atomic.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Viresh Kumar <viresh.kumar@st.com>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/dma/amba-pl08x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Good point.  Since tile doesn't support unaligned reads in kernel space
+anyway, it hadn't occurred to me, but you're right that the compiler might
+be too conservative in some circumstances.  Fixed.
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index c301a8e..08589c6 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1615,7 +1615,7 @@ static irqreturn_t pl08x_irq(int irq, void *dev)
- 			__func__, err);
- 		writel(err, pl08x->base + PL080_ERR_CLEAR);
- 	}
--	tc = readl(pl08x->base + PL080_INT_STATUS);
-+	tc = readl(pl08x->base + PL080_TC_STATUS);
- 	if (tc)
- 		writel(tc, pl08x->base + PL080_TC_CLEAR);
- 
+> I don't think you need the fences after the write because PCI MMIO
+> writes are posted anyway (only PIO is non-posted), but you might need
+> some kind of barrier on the read to prevent a scenario where an MMIO 
+> read tells you that a DMA has completed, but the CPU (or the compiler)
+> has scheduled the read of that data ahead of the MMIO read.
+
+I'm not sure why posted vs non-posted would matter, but I think you're
+right that we shouldn't need them, and some simple testing seemed to show
+that the system was stable without them.  The initial developer said they
+were there originally just there for reasons of paranoia during development.
+
+Thanks!
+
 -- 
-1.7.7.6
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
