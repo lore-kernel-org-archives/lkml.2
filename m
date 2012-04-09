@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab2DIVdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:33:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33630 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab2DIVdr (ORCPT
+	id S1757549Ab2DIViT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:38:19 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:10287 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551Ab2DIViR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:33:47 -0400
-Date: Mon, 9 Apr 2012 14:33:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: shuahkhan@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>
-Subject: Re: [PATCH v5] ramoops: use pstore interface
-Message-Id: <20120409143345.a7a8c257.akpm@linux-foundation.org>
-In-Reply-To: <CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
-References: <20120117235852.GA4877@www.outflux.net>
-	<20120118140603.0fc22302.akpm@linux-foundation.org>
-	<CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
-	<5C4C569E8A4B9B42A84A977CF070A35B2DA7A7F226@USINDEVS01.corp.hds.com>
-	<4F1A7854.7010808@gmail.com>
-	<1333399194.6431.3.camel@lorien2>
-	<CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 9 Apr 2012 17:38:17 -0400
+Message-ID: <4F8356C7.60706@tilera.com>
+Date: Mon, 9 Apr 2012 17:38:15 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Joe Perches <joe@perches.com>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/3] arch/tile: tilegx PCI root complex support
+References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com> <201204091359.13059.arnd@arndb.de>
+In-Reply-To: <201204091359.13059.arnd@arndb.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Apr 2012 13:51:29 -0700
-Kees Cook <keescook@chromium.org> wrote:
+On 4/9/2012 9:59 AM, Arnd Bergmann wrote:
+> On Saturday 07 April 2012, Chris Metcalf wrote:
+>> This change implements PCIe root complex support for tilegx using
+>> the kernel support layer for accessing the TRIO hardware shim.
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Hi Chris,
+>
+> I don't know if we discussed it during the initial merge, but I notice that the PIO
+> accessors (inb/outb and friends) are still not implemented in this patch. Normally
+> PIO can just be mapped into the MMIO address space, so that inb() becomes
+> a call to readb() with an offset on the address.
 
-> On Mon, Apr 2, 2012 at 1:39 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> >> First of all ramoops was born mainly for debug purpose and to help the
-> >> maintainability of a product. I used it in systems where the uptime (so
-> >> no reboot) was important. So it can be very useful for me load the
-> >> module, gather logs and unload it for example. A kernel panic is not
-> >> recoverable so the reboot is needed but it's not always true for a
-> >> kernel oops.
-> >>
-> >> Marco
-> >
-> > What is the status of this patch? Don't see it in 3.3 and haven't
-> > checked 3.4-rc1 yet.
-> 
-> Hi,
-> 
-> I've been hoping it would get into 3.4. It's in the -mm tree, and has
-> been living in linux-next for a while. I'm not sure why it hasn't been
-> merged into Linus's tree yet. Andrew, is there a reason it hasn't been
-> merged?
+I asked our PCI expert here, who said, "My understanding is that if someone
+wants to use inb/outb to access MMIO space, he'll get the MMIO, as opposed
+to methods implemented with I/O instructions which are not supported by
+TILE.  If the driver is dependent on the I/O instructions, it won't work on
+TILE. These drivers are legacy PC drivers, e.g. ATA devices, which are not
+supported by TILE."
 
-The patch breaks ramoops module unloading.  Tony says there's "no
-credible end-user case" for this and Marco promptly provided one,
-which was ignored.
+Should we just arrange to #include <asm-generic/io.h> to pick up inb/outb
+et al?  Any reason to think a non-zero offset should be part of the
+solution?  (I don't really understand how inb/outb are used by modern drivers.)
+
+> Using mdelay is generally considered very rude. Since you are not in
+> atomic context here, just use msleep() instead.
+
+Done.
+
+Thanks for all your reviews!
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
