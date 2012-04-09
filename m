@@ -1,173 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab2DIIri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 04:47:38 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:53061 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab2DIIrh (ORCPT
+	id S1756851Ab2DIItP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:49:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53398 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab2DIItO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 04:47:37 -0400
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Apr 2012 04:47:37 EDT
-Subject: Re: [PATCH 1/3] vmevent: Should not grab mutex in the atomic
- context
-From: Pekka Enberg <penberg@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-In-Reply-To: <20120408233802.GA4839@panacea>
-References: <20120408233550.GA3791@panacea>  <20120408233802.GA4839@panacea>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 09 Apr 2012 11:40:31 +0300
-Message-ID: <1333960831.3943.4.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Apr 2012 04:49:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120409075548.GC27771@redhat.com>
+References: <20120208160405.GA1587@gmail.com>
+	<20120208164736.GA31066@redhat.com>
+	<CAEH94Lgha0Ug2Tk9-22=B58tb9xWG5knAfB04aVbW63F5Xi6TA@mail.gmail.com>
+	<20120409073258.GB12014@redhat.com>
+	<CAEH94LjQxT5AkZjskdMMkryvcw3Q3fyVp1RGmKsFtaHda2V=TA@mail.gmail.com>
+	<20120409075548.GC27771@redhat.com>
+Date: Mon, 9 Apr 2012 16:49:14 +0800
+Message-ID: <CAEH94LiYeGoDAcboi9u1gna_v4cxL+Hc33cGL4ExMxtj+ss6qA@mail.gmail.com>
+Subject: Re: tools/virtio: Compile errors
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Dongsu Park <advance38@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-09 at 03:38 +0400, Anton Vorontsov wrote:
-> vmevent grabs a mutex in the atomic context, and so this pops up:
-> 
-> BUG: sleeping function called from invalid context at kernel/mutex.c:271
-> in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
-> 1 lock held by swapper/0/0:
->  #0:  (&watch->timer){+.-...}, at: [<ffffffff8103eb80>] call_timer_fn+0x0/0xf0
-> Pid: 0, comm: swapper/0 Not tainted 3.2.0+ #6
-> Call Trace:
->  <IRQ>  [<ffffffff8102f5da>] __might_sleep+0x12a/0x1e0
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff81321f2c>] mutex_lock_nested+0x3c/0x340
->  [<ffffffff81064b33>] ? lock_acquire+0xa3/0xc0
->  [<ffffffff8103eb80>] ? internal_add_timer+0x110/0x110
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff810bda21>] vmevent_timer_fn+0x91/0xf0
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff8103ebf5>] call_timer_fn+0x75/0xf0
->  [<ffffffff8103eb80>] ? internal_add_timer+0x110/0x110
->  [<ffffffff81062fdd>] ? trace_hardirqs_on_caller+0x7d/0x120
->  [<ffffffff8103ee9f>] run_timer_softirq+0x10f/0x1e0
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff81038d90>] __do_softirq+0xb0/0x160
->  [<ffffffff8105eb0f>] ? tick_program_event+0x1f/0x30
->  [<ffffffff8132642c>] call_softirq+0x1c/0x26
->  [<ffffffff810036d5>] do_softirq+0x85/0xc0
-> 
-> This patch fixes the issue by removing the mutex and making the logic
-> lock-free.
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-
-What guarantees that there's only one thread writing to struct
-vmevent_attr::value in vmevent_sample() now that the mutex is gone?
-
-> ---
->  mm/vmevent.c |   35 ++++++++++++-----------------------
->  1 files changed, 12 insertions(+), 23 deletions(-)
-> 
-> diff --git a/mm/vmevent.c b/mm/vmevent.c
-> index 1847b56..a56174f 100644
-> --- a/mm/vmevent.c
-> +++ b/mm/vmevent.c
-> @@ -1,4 +1,5 @@
->  #include <linux/anon_inodes.h>
-> +#include <linux/atomic.h>
->  #include <linux/vmevent.h>
->  #include <linux/syscalls.h>
->  #include <linux/timer.h>
-> @@ -23,7 +24,7 @@ struct vmevent_watch {
->  	struct vmevent_config		config;
->  
->  	struct mutex			mutex;
-> -	bool				pending;
-> +	atomic_t			pending;
->  
->  	/*
->  	 * Attributes that are exported as part of delivered VM events.
-> @@ -103,20 +104,18 @@ static void vmevent_sample(struct vmevent_watch *watch)
->  {
->  	int i;
->  
-> +	if (atomic_read(&watch->pending))
-> +		return;
->  	if (!vmevent_match(watch))
->  		return;
->  
-> -	mutex_lock(&watch->mutex);
-> -
-> -	watch->pending = true;
-> -
->  	for (i = 0; i < watch->nr_attrs; i++) {
->  		struct vmevent_attr *attr = &watch->sample_attrs[i];
->  
->  		attr->value = vmevent_sample_attr(watch, attr);
->  	}
->  
-> -	mutex_unlock(&watch->mutex);
-> +	atomic_set(&watch->pending, 1);
->  }
->  
->  static void vmevent_timer_fn(unsigned long data)
-> @@ -125,7 +124,7 @@ static void vmevent_timer_fn(unsigned long data)
->  
->  	vmevent_sample(watch);
->  
-> -	if (watch->pending)
-> +	if (atomic_read(&watch->pending))
->  		wake_up(&watch->waitq);
->  	mod_timer(&watch->timer, jiffies +
->  			nsecs_to_jiffies64(watch->config.sample_period_ns));
-> @@ -148,13 +147,9 @@ static unsigned int vmevent_poll(struct file *file, poll_table *wait)
->  
->  	poll_wait(file, &watch->waitq, wait);
->  
-> -	mutex_lock(&watch->mutex);
-> -
-> -	if (watch->pending)
-> +	if (atomic_read(&watch->pending))
->  		events |= POLLIN;
->  
-> -	mutex_unlock(&watch->mutex);
-> -
->  	return events;
->  }
->  
-> @@ -171,15 +166,13 @@ static ssize_t vmevent_read(struct file *file, char __user *buf, size_t count, l
->  	if (count < size)
->  		return -EINVAL;
->  
-> -	mutex_lock(&watch->mutex);
-> -
-> -	if (!watch->pending)
-> -		goto out_unlock;
-> +	if (!atomic_read(&watch->pending))
-> +		goto out;
->  
->  	event = kmalloc(size, GFP_KERNEL);
->  	if (!event) {
->  		ret = -ENOMEM;
-> -		goto out_unlock;
-> +		goto out;
->  	}
->  
->  	for (i = 0; i < watch->nr_attrs; i++) {
-> @@ -195,14 +188,10 @@ static ssize_t vmevent_read(struct file *file, char __user *buf, size_t count, l
->  
->  	ret = count;
->  
-> -	watch->pending = false;
-> -
-> +	atomic_set(&watch->pending, 0);
->  out_free:
->  	kfree(event);
-> -
-> -out_unlock:
-> -	mutex_unlock(&watch->mutex);
-> -
-> +out:
->  	return ret;
->  }
->  
+On Mon, Apr 9, 2012 at 3:55 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Mon, Apr 09, 2012 at 03:41:36PM +0800, Zhi Yong Wu wrote:
+>> On Mon, Apr 9, 2012 at 3:33 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> > On Mon, Apr 09, 2012 at 02:02:53PM +0800, Zhi Yong Wu wrote:
+>> >> On Thu, Feb 9, 2012 at 12:47 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> >> > On Wed, Feb 08, 2012 at 05:04:05PM +0100, Dongsu Park wrote:
+>> >> >> Hi,
+>> >> >>
+>> >> >> there are compile problems under tools/virtio.
+>> >> >> If I simply run make,
+>> >> >>
+>> >> >> ~/linuxsrc/linux-3.2/tools/virtio $ make
+>> >> >> gcc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+>> >> >> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+>> >> >> ../../drivers/virtio/virtio_ring.c
+>> >> >> ../../drivers/virtio/virtio_ring.c:24:26: fatal error: linux/module.h:
+>> >> >> No such file or directory
+>> >> >> compilation terminated.
+>> >> >> make: *** [virtio_ring.o] Error 1
+>> >> >
+>> >> >
+>> >> >> By the way, my system is Ubuntu 11.10 with Kernel 3.2.
+>> >> >>
+>> >> >> Cheers,
+>> >> >> Dongsu
+>> >> >
+>> >> > This patch is missing - I'll put it upstream.
+>> >> >
+>> >> > --->
+>> >> >
+>> >> > tools/virtio: add module.h stub
+>> >> >
+>> >> > make it build with linux 3.2
+>> >> >
+>> >> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>> >> >
+>> >> > diff --git a/tools/virtio/linux/module.h b/tools/virtio/linux/module.h
+>> >> > new file mode 100644
+>> >> > index 0000000..96868eb
+>> >> > --- /dev/null
+>> >> > +++ b/tools/virtio/linux/module.h
+>> >> > @@ -0,0 +1,3 @@
+>> >> > +#ifndef LINUX_MODULE_H
+>> >> > +#define LINUX_MODULE_H
+>> >> > +#endif
+>> >> After the patch was applied in my env, i met another issue.
+>> >> [root@f15 virtio]# make test
+>> >> cc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+>> >> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+>> >> ../../drivers/virtio/virtio_ring.c
+>> >> ../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_add_buf\u2019:
+>> >> ../../drivers/virtio/virtio_ring.c:277:2: warning: implicit
+>> >> declaration of function \u2018wmb\u2019
+>> >> [-Wimplicit-function-declaration]
+>> >> ../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_get_buf\u2019:
+>> >> ../../drivers/virtio/virtio_ring.c:437:2: warning: implicit
+>> >> declaration of function \u2018rmb\u2019
+>> >> [-Wimplicit-function-declaration]
+>> >> cc   virtio_test.o virtio_ring.o   -o virtio_test
+>> >> virtio_ring.o: In function `virtqueue_add_buf':
+>> >> /home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:277:
+>> >> undefined reference to `wmb'
+>> >> virtio_ring.o: In function `virtqueue_get_buf':
+>> >> /home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:437:
+>> >> undefined reference to `rmb'
+>> >> collect2: ld returned 1 exit status
+>> >> make: *** [virtio_test] Error 1
+>> >
+>> > On which kernel version does this trigger?
+>> [root@f15 linux-2.6]# git log
+>> commit e22057c8599373e5caef0bc42bdb95d2a361ab0d
+>> Merge: 496b919 df7a3ee
+>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>> Date:   Sat Mar 24 12:20:25 2012 -0700
+>
+> Update to 3.4-rc2 and most of the issues go away
+> (there's still a build breakage with a missing
+> flag to dev_cleanup, I'm fixing this up for now
+> you can just pass false).
+thanks.
+By the way,  what does it mean as below?
+[root@f15 virtio]# ./virtio_test
+spurious wakeus: 0x4
+[root@f15 virtio]# ./virtio_test -h
+Usage: virtio_test [--help] [--no-indirect] [--no-event-idx]
+spurious wakeus: 0x2
+[root@f15 virtio]# ./virtio_test --no-indirect
+spurious wakeus: 0x4
+[root@f15 virtio]# ./virtio_test --no-event-idx
+spurious wakeus: 0x7
+[root@f15 virtio]# ./virtio_test
+spurious wakeus: 0x5
+[root@f15 virtio]# ./virtio_test
+spurious wakeus: 0x2
+[root@f15 virtio]# ./virtio_test
+spurious wakeus: 0x3
+[root@f15 virtio]# ./virtio_test
+spurious wakeus: 0x5
+[root@f15 virtio]# ./virtio_test
+spurious wakeus: 0x4
 
 
+>
+
+
+
+-- 
+Regards,
+
+Zhi Yong Wu
