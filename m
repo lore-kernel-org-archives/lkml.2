@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab2DISCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 14:02:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32875 "EHLO mx1.redhat.com"
+	id S1757510Ab2DISEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 14:04:48 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:34332 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753835Ab2DISCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 14:02:17 -0400
-Date: Mon, 9 Apr 2012 14:58:29 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-ID: <20120409175829.GB21894@amt.cnet>
-References: <4F742951.7080003@linux.vnet.ibm.com>
- <4F82E04E.6000900@redhat.com>
+	id S1754139Ab2DISEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 14:04:47 -0400
+Message-ID: <4F83249B.2020701@linaro.org>
+Date: Mon, 09 Apr 2012 11:04:11 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F82E04E.6000900@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 1/2] [RFC] Range tree implementation
+References: <1333757338-6854-1-git-send-email-john.stultz@linaro.org> <1333757338-6854-2-git-send-email-john.stultz@linaro.org> <CA+1xoqcezDdeNHoLF0R0OxB9EeQaopn4jhs+yC-FieXP+b=RZw@mail.gmail.com>
+In-Reply-To: <CA+1xoqcezDdeNHoLF0R0OxB9EeQaopn4jhs+yC-FieXP+b=RZw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040918-7182-0000-0000-0000013725EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 04:12:46PM +0300, Avi Kivity wrote:
-> On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
-> > * Idea
-> > The present bit of page fault error code (EFEC.P) indicates whether the
-> > page table is populated on all levels, if this bit is set, we can know
-> > the page fault is caused by the page-protection bits (e.g. W/R bit) or
-> > the reserved bits.
-> >
-> > In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
-> > simply fixed: the page fault caused by reserved bit
-> > (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
-> > path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
-> > is just increasing the corresponding access on the spte.
-> >
-> > This pachset introduces a fast path to fix this kind of page fault: it
-> > is out of mmu-lock and need not walk host page table to get the mapping
-> > from gfn to pfn.
-> >
-> >
-> 
-> This patchset is really worrying to me.
-> 
-> It introduces a lot of concurrency into data structures that were not
-> designed for it.  Even if it is correct, it will be very hard to
-> convince ourselves that it is correct, and if it isn't, to debug those
-> subtle bugs.  It will also be much harder to maintain the mmu code than
-> it is now.
-> 
-> There are a lot of things to check.  Just as an example, we need to be
-> sure that if we use rcu_dereference() twice in the same code path, that
-> any inconsistencies due to a write in between are benign.  Doing that is
-> a huge task.
-> 
-> But I appreciate the performance improvement and would like to see a
-> simpler version make it in.  This needs to reduce the amount of data
-> touched in the fast path so it is easier to validate, and perhaps reduce
-> the number of cases that the fast path works on.
-> 
-> I would like to see the fast path as simple as
-> 
->   rcu_read_lock();
-> 
->   (lockless shadow walk)
->   spte = ACCESS_ONCE(*sptep);
-> 
->   if (!(spte & PT_MAY_ALLOW_WRITES))
->         goto slow;
-> 
->   gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
->   mark_page_dirty(kvm, gfn);
-> 
->   new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
->   if (cmpxchg(sptep, spte, new_spte) != spte)
->        goto slow;
-> 
->   rcu_read_unlock();
->   return;
-> 
-> slow:
->   rcu_read_unlock();
->   slow_path();
-> 
-> It now becomes the responsibility of the slow path to maintain *sptep &
-> PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
-> can be as simple as a clear_bit() before we update sp->gfns[] or if we
-> add host write protection.
-> 
-> Sorry, it's too complicated for me.  Marcelo, what's your take?
+On 04/07/2012 10:36 AM, Sasha Levin wrote:
+> On Sat, Apr 7, 2012 at 2:08 AM, John Stultz<john.stultz@linaro.org>  wrote:
+>> After Andrew suggested something like his mumbletree idea
+>> to better store a list of ranges, I worked on a few different
+>> approaches, and this is what I've finally managed to get working.
+>>
+>> I suspect range-tree isn't a totally accurate name, but I
+>> couldn't quite make out the difference between range trees
+>> and interval trees, so I just picked one to call it. Do
+>> let me know if you have a better name.
+>>
+>> The idea of storing ranges in a tree is nice, but has a number
+>> of complications. When adding a range, its possible that a
+>> large range will consume and merge a number of smaller ranges.
+>> When removing a range, its possible you may end up splitting an
+>> existing range, causing one range to become two. This makes it
+>> very difficult to provide generic list_head like behavior, as
+>> the parent structures would need to be duplicated and removed,
+>> and that has lots of memory ownership issues.
+>>
+>> So, this is a much simplified and more list_head like
+>> implementation. You can add a node to a tree, or remove a node
+>> to a tree, but the generic implementation doesn't do the
+>> merging or splitting for you. But it does provide helpers to
+>> find overlapping and adjacent ranges.
+>>
+>> Andrew also really wanted this range-tree implementation to be
+>> resuable so we don't duplicate the file locking logic. I'm not
+>> totally convinced that the requirements between the volatile
+>> ranges and file locking are really equivelent, but this reduced
+>> impelementation may make it possible.
+>>
+>> Do let me know what you think or if you have other ideas for
+>> better ways to do the same.
+> Hi John,
+>
+> I have implemented an interval lookup tree using the augmented
+> features of the in-kernel rbtree for the KVM tools project. We
+> currently use it for several things as a framework code such as MMIO
+> memory mapping.
+>
+>  From what I see in the patch, you haven't fully implemented the
+> interval structure (it needs to keep track of additional parameters
+> when building it, and the search is a bit different and is based on
+> those parameters).
+Any more details on whats missing/different? Or the pros/cons of the 
+different approaches?
 
-The improvement is small and limited to special cases (migration should
-be rare and framebuffer memory accounts for a small percentage of total
-memory).
+> I could send that code as a patch against the kernel tree if something
+> like that is actually required for the kernel at this point.
+>
+Sure.  I'm not married to this implementation (its just the only one so 
+far that solves my needs - Dmitry already pointed out that the priotree 
+might be close to sufficient, but I've not yet tried to adapt it), and 
+whatever goes upstream needs to be generic enough to solve the related 
+problems that a number of folks are all working on solving.  So seeing 
+your approach might be good too.
 
-For one, how can this be safe against mmu notifier methods?
+thanks
+-john
 
-KSM			      |VCPU0		| VCPU1
-		 	      | fault		| fault
-			      | cow-page	|
-			      |	set spte RW	|
-			      |			|
-write protect host pte	      |			|
-grab mmu_lock		      |			|
-remove writeable bit in spte  |			|
-increase mmu_notifier_seq     |			|  spte = read-only spte
-release mmu_lock	      |			|  cmpxchg succeeds, RO->RW!
-
-MMU notifiers rely on the fault path sequence being
-
-read host pte
-read mmu_notifier_seq
-spin_lock(mmu_lock)
-if (mmu_notifier_seq changed)
-	goodbye, host pte value is stale
-spin_unlock(mmu_lock)
-
-By the example above, you cannot rely on the spte value alone,
-mmu_notifier_seq must be taken into account.
 
