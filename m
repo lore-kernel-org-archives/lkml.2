@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab2DIIn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 04:43:57 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56520 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694Ab2DIIn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 04:43:56 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V5 07/14] memcg: Add HugeTLB extension
-In-Reply-To: <4F827BF9.2090205@jp.fujitsu.com>
-References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1333738260-1329-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F827BF9.2090205@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 09 Apr 2012 14:13:45 +0530
-Message-ID: <87zkalcn26.fsf@skywalker.in.ibm.com>
+	id S1756824Ab2DIIoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:44:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756055Ab2DIIoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 04:44:16 -0400
+Date: Mon, 9 Apr 2012 11:44:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: zwu.kernel@gmail.com
+Cc: linux-kernel@vger.kernel.org, stefanha@linux.vnet.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH] vhost_test: fix compile breakage
+Message-ID: <20120409084427.GB28362@redhat.com>
+References: <1333960256-7491-1-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12040822-7014-0000-0000-000000DC98C0
+Content-Disposition: inline
+In-Reply-To: <1333960256-7491-1-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Mon, Apr 09, 2012 at 04:30:56PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+> The arguments of vhost_dev_cleanup has been changed. So test.c need to be changed accordingly.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-> (2012/04/07 3:50), Aneesh Kumar K.V wrote:
->
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> This patch implements a memcg extension that allows us to control HugeTLB
->> allocations via memory controller. The extension allows to limit the
->> HugeTLB usage per control group and enforces the controller limit during
->> page fault. Since HugeTLB doesn't support page reclaim, enforcing the limit
->> at page fault time implies that, the application will get SIGBUS signal if it
->> tries to access HugeTLB pages beyond its limit. This requires the application
->> to know beforehand how much HugeTLB pages it would require for its use.
->> 
->> The charge/uncharge calls will be added to HugeTLB code in later patch.
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->
->
-> Hmm, seems ok to me. please explain 'this patch doesn't include updates
-> for memcg destroying, it will be in patch 12/14' or some...
->
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
->
-> BTW, you don't put res_counter for hugeltb under CONFIG_MEM_RES_CTLR_HUGETLB...
-> do you think we need the config ?
+Applied, thanks.
 
-
-That results in more #ifdef CONFIG_MEM_RES_CTLR_HUGETLB in the
-memcg code (mem_cgroup_create/mem_cgroup_read/write etc). I was not
-sure we want to do that. Let me know if you think we really need to do this.
-
-
--aneesh
-
+> ---
+>  drivers/vhost/test.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
+> index fc9a1d7..3de00d9 100644
+> --- a/drivers/vhost/test.c
+> +++ b/drivers/vhost/test.c
+> @@ -155,7 +155,7 @@ static int vhost_test_release(struct inode *inode, struct file *f)
+>  
+>  	vhost_test_stop(n, &private);
+>  	vhost_test_flush(n);
+> -	vhost_dev_cleanup(&n->dev);
+> +	vhost_dev_cleanup(&n->dev, false);
+>  	/* We do an extra flush before freeing memory,
+>  	 * since jobs can re-queue themselves. */
+>  	vhost_test_flush(n);
+> -- 
+> 1.7.6
