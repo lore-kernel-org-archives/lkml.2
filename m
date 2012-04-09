@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab2DIQzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 12:55:52 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:26953 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab2DIQzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 12:55:51 -0400
-Message-ID: <1333990549.2871.10.camel@lorien2>
-Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: shuahkhan@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        neilb@suse.de, rpurdie@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 09 Apr 2012 10:55:49 -0600
-In-Reply-To: <20120407215641.GA4539@core.coreip.homeip.net>
-References: <1333310039.2879.4.camel@lorien2>
-	 <20120406165353.ab667eb0.akpm@linux-foundation.org>
-	 <1333808024.2728.39.camel@lorien2>
-	 <20120407215641.GA4539@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1754760Ab2DIQ4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 12:56:15 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36957 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2DIQ4N convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 9 Apr 2012 12:56:13 -0400
+Message-Id: <4F8322BB020000780008229D@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 09 Apr 2012 17:56:11 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <david.vrabel@citrix.com>, <konrad.wilk@oracle.com>
+Cc: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 6/7] xen/setup: Make dom0_mem=XGB
+ behavior be similar to classic Xen kernels.
+References: <1333139850-28456-1-git-send-email-konrad.wilk@oracle.com>
+ <1333139850-28456-7-git-send-email-konrad.wilk@oracle.com>
+ <4F7ABBC4.4050106@citrix.com> <20120406205909.GA26309@phenom.dumpdata.com>
+In-Reply-To: <20120406205909.GA26309@phenom.dumpdata.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-07 at 14:56 -0700, Dmitry Torokhov wrote:
-> Hi Shuah,
-> 
-> On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
-> > 
-> > > > +This feature will help implement vibrate functionality which requires one
-> > > > +time activation of vibrate mode without a continuous vibrate on/off cycles.
-> > > 
-> > > They make vibrating LED? ;)
-> > > 
-> > > What's going on here?  You're proposing to repurpose the LEDs code to
-> > > drive vibration devices?  Or some devices couple a LED with a vibration
-> > > device?
-> > 
-> > I owe you filling in the blanks type explanation. Let me describe the
-> > use-case I am trying to address first. Vibrater function on phones is
-> > implemented using PWM pins on SoC or PMIC. When there is no such
-> > hardware present, a software solution is needed. Currently two drivers
-> > timed-gpio and timed-output (under staging/android in Linux 3.3)
-> > together implement the software vibrate feature. The main functionality
-> > it implements is the one time enables of timer to prevent user space
-> > crashes leaving the phone in vibrate mode causing the battery to drain.
-> > leds as it is implemented currently, is not suitable to address this
-> > use-case as it doesn't support one time enables.
-> 
-> So why do not you use memoryless force feedback framework that other
-> devices use (see drivers/input/misc/*vibra.c drivers).
-> 
+>>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> 04/06/12 11:04 PM >>>
+>> With your new behaviour it will no longer possible to specify an
+>> unlimited balloon but a limited number of initial pages.  This is
+>> behaviour that Jan said he used.
+>
+>I am not sure I see the problem - I mean if one uses:
+>
+>dom0_mem=min:8G,max:16G
+>
+>I understand that we want to start at 8GB and if the user
+>choose to - balloon up to 16GB.
+>
+>But doing this:
+>
+>dom0_mem=8G
+>
+>and allocating pagetables up to .. say 32GB, seems counter-intuive
+>as the effect is similar to having no 'dom0_mem' except that the initial
+>size is smaller.
 
-Dimitry,
+What's counter intuitive here? There may not be a need - from the perspective
+of the kernel - for a hard upper limit enforced by Xen (i.e. the pseudo infinity
+we have right now may be quite fine).
 
-I took a look at these vibra* drivers. The three vibrate drivers are
-chip-set specific. The use-case I have is a non-chip set approach to
-address the use-case when vibrate hardware is not present. Are you
-envisioning a generic approach using ff-memoryless infrastructure?
+Anyway, as said in the other reply already - unless this is to address a bug, I
+don't see the point in changing behavior that has been that way for a pretty
+long time.
 
--- Shuah
+Jan
 
