@@ -1,148 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab2DIWmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 18:42:40 -0400
-Received: from mta112.f1.k8.com.br ([187.73.32.184]:59034 "EHLO
-	mta112.f1.k8.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab2DIWmj (ORCPT
+	id S1758095Ab2DIWob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 18:44:31 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62360 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab2DIWoa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 18:42:39 -0400
-Message-ID: <1334011353.2444.36.camel@Thor>
-Subject: Re: [PATCH 1/1] rculist: Made list_first_entry_rcu usable
-From: Michel Machado <michel@digirati.com.br>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Date: Mon, 09 Apr 2012 18:42:33 -0400
-In-Reply-To: <20120409222219.GP2430@linux.vnet.ibm.com>
-References: <1333417354.2412.7.camel@Thor>
-	 <20120409212440.GL2430@linux.vnet.ibm.com> <1334009322.2444.12.camel@Thor>
-	 <20120409222219.GP2430@linux.vnet.ibm.com>
-Organization: Digirati Internet
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 9 Apr 2012 18:44:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120409222120.GA14149@kroah.com>
+References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
+	<20120408195044.13ea6c8e.akpm@linux-foundation.org>
+	<CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
+	<alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
+	<CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
+	<alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com>
+	<CAMbhsRRUNVn9_eL_obZxcZv7LqDW_8SeRApdKzDePbaW_Y4uvg@mail.gmail.com>
+	<20120409222120.GA14149@kroah.com>
+Date: Mon, 9 Apr 2012 15:44:28 -0700
+X-Google-Sender-Auth: USoPO_02QPqgrfixSFGyEerEswY
+Message-ID: <CANcMJZCAzixEDWpCDJyqqzSKjNka-JU1yu7ky+sgfQHBT+vkKA@mail.gmail.com>
+Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
+From: john stultz <johnstul@us.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@google.com>, David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Christian Bejram <christian.bejram@stericsson.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-09 at 15:22 -0700, Paul E. McKenney wrote:
-> On Mon, Apr 09, 2012 at 06:08:42PM -0400, Michel Machado wrote:
-> > On Mon, 2012-04-09 at 14:24 -0700, Paul E. McKenney wrote:
-> > > On Mon, Apr 02, 2012 at 09:42:34PM -0400, Michel Machado wrote:
-> > > > The macro list_first_entry_rcu assumed that the passed list is not empty
-> > > > as its counterpart list_first_entry does. However, one can test that a
-> > > > list is not empty with list_empty before calling list_first_entry,
-> > > > whereas neither exists list_empty_rcu, nor is advisable to add it as the
-> > > > example below shows.
-> > > > 
-> > > > Assuming that list_empty_rcu is available, one could write the following
-> > > > snippet:
-> > > > 
-> > > > if (!list_empty_rcu(mylist)) {
-> > > > 	struct foo *bar = list_first_entry_rcu(mylist, struct foo,
-> > > > 		list_member);
-> > > > 	do_something(bar);
-> > > > }
-> > > > 
-> > > > The problem with this snippet is the following racing condition: the
-> > > > list may not be empty when list_empty_rcu checks it, but it may be when
-> > > > list_first_entry_rcu rereads the ->next pointer.
-> > > > 
-> > > > This patch cannot break any upstream code because list_first_entry_rcu
-> > > > is not being used anywhere in the kernel (tested with grep(1)), and
-> > > > external code that uses it is probably broken already.
-> > > 
-> > > Hello, Michel,
-> > > 
-> > > Interesting point!
-> > > 
-> > > Are you intending to use list_first_entry_rcu()?  If not, perhaps the
-> > > best thing to do is to remove it.
-> > > 
-> > > 							Thanx, Paul
-> > 
-> > Hi Paul,
-> > 
-> >    I'd rather keep list_first_entry_rcu(). I've already used it twice in
-> > the project I'm working on
-> > (https://github.com/AltraMayor/XIA-for-Linux), and I expect to submit
-> > this work upstream once it reaches reasonable quality as you can check
-> > in the roadmap available here:
-> > 
-> > https://github.com/AltraMayor/XIA-for-Linux/wiki/Roadmap#wiki-Making_into_Linus_source_tree
-> > 
-> >    Not to mention that, given the subtlety of the problem, removing
-> > list_first_entry_rcu() may introduce the same bug whenever someone tries
-> > to mimic list_first_entry(), and having it in the kernel helps to guide
-> > those with an example.
-> 
-> Actually, list_first_entry_rcu() really does mimic list_first_entry()
-> from what I can see.  Both of them require that the list be non-empty,
-> which can be checked via !list_empty().
-> 
-> Or is list_first_entry() being converted to check for an empty list?
-> 
-> We really do need both list_first_entry() and list_first_entry_rcu()
-> to have the same semantics on empty lists, I am sure you would agree.
-> 
-> 							Thanx, Paul
+On Mon, Apr 9, 2012 at 3:21 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Apr 09, 2012 at 03:13:00PM -0700, Colin Cross wrote:
+>> sched: Add a generic notifier when a task struct is about to be freed
+>> https://www.codeaurora.org/gitweb/quic/la/?p=kernel/common.git;a=commitdiff;h=667dffa787a87ef4ea43cc65957ce96077fdcd0a
+>
+> Yes, I can't add a patch like that for this driver, that is why I
+> thought everyone was getting together to "properly" determine how to
+> solve this oom notifier problem.  Has that work stalled somwhere?
 
-Yes, the current list_first_entry_rcu() does mimic list_first_entry(),
-and that's the reason the problem is there. A list without RCU readers
-would have list_empty() _and_ list_first_entry() protected by a lock, so
-the reread of the ->next pointer isn't an issue there, but it's not the
-case for a list with RCU readers.
+Anton Vorontsov  has been working on this (and just sent out some
+related vmevent patches today). His hope is to use the vmevent  or mem
+cgroup interface to notify a userland killer to get the same or
+improved behavior as the in-kernel lowmemory killer.
 
-I agree that having the same semantics for both is the perfect solution,
-but list_first_entry() already has many users in the kernel. My patch is
-a compromise to not have this bug lurking around, but I see that the
-names may cause confusion. Would you be comfortable with removing the
-current list_first_entry_rcu(), and adding my version renamed to
-list_first_entry_if_not_empty_rcu() (or a shorter name)?
-
-> 
-> > [ ]'s
-> > Michel Machado
-> > 
-> > > 
-> > > > Signed-off-by: Michel Machado <michel@digirati.com.br>
-> > > > CC: Dipankar Sarma <dipankar@in.ibm.com>
-> > > > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > ---
-> > > > Please CC my e-mail address while replying this message because I don't
-> > > > subscribe this mailing list due to its high volume; thanks.
-> > > > 
-> > > > diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-> > > > index d079290..866d3ec 100644
-> > > > --- a/include/linux/rculist.h
-> > > > +++ b/include/linux/rculist.h
-> > > > @@ -233,13 +233,16 @@ static inline void list_splice_init_rcu(struct
-> > > > list_head *list,
-> > > >   * @type:       the type of the struct this is embedded in.
-> > > >   * @member:     the name of the list_struct within the struct.
-> > > >   *
-> > > > - * Note, that list is expected to be not empty.
-> > > > + * Note that if the list is empty, it returns NULL.
-> > > >   *
-> > > >   * This primitive may safely run concurrently with the _rcu
-> > > > list-mutation
-> > > >   * primitives such as list_add_rcu() as long as it's guarded by
-> > > > rcu_read_lock().
-> > > >   */
-> > > >  #define list_first_entry_rcu(ptr, type, member) \
-> > > > -	list_entry_rcu((ptr)->next, type, member)
-> > > > +	({struct list_head *__ptr = ptr; \
-> > > > +	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
-> > > > +	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL;
-> > > > \
-> > > > +	})
-> > > > 
-> > > >  /**
-> > > >   * list_for_each_entry_rcu	-	iterate over rcu list of given type
-> > > > 
-> > > > 
-> > > 
-> > 
-> 
-
+thanks
+-john
