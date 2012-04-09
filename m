@@ -1,32 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab2DIWkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 18:40:33 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:26791 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab2DIWkb (ORCPT
+	id S1758083Ab2DIWmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 18:42:40 -0400
+Received: from mta112.f1.k8.com.br ([187.73.32.184]:59034 "EHLO
+	mta112.f1.k8.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab2DIWmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 18:40:31 -0400
-Message-ID: <1334011229.2871.32.camel@lorien2>
-Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: shuahkhan@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        neilb@suse.de, rpurdie@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 09 Apr 2012 16:40:29 -0600
-In-Reply-To: <20120409204202.GC18542@core.coreip.homeip.net>
-References: <1333310039.2879.4.camel@lorien2>
-	 <20120406165353.ab667eb0.akpm@linux-foundation.org>
-	 <1333808024.2728.39.camel@lorien2>
-	 <20120407215641.GA4539@core.coreip.homeip.net>
-	 <1333990549.2871.10.camel@lorien2>
-	 <20120409173703.GA18542@core.coreip.homeip.net>
-	 <1333995365.2871.17.camel@lorien2>
-	 <20120409184558.GB18542@core.coreip.homeip.net>
-	 <1334002847.2871.26.camel@lorien2>
-	 <20120409204202.GC18542@core.coreip.homeip.net>
+	Mon, 9 Apr 2012 18:42:39 -0400
+Message-ID: <1334011353.2444.36.camel@Thor>
+Subject: Re: [PATCH 1/1] rculist: Made list_first_entry_rcu usable
+From: Michel Machado <michel@digirati.com.br>
+To: paulmck@linux.vnet.ibm.com
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Date: Mon, 09 Apr 2012 18:42:33 -0400
+In-Reply-To: <20120409222219.GP2430@linux.vnet.ibm.com>
+References: <1333417354.2412.7.camel@Thor>
+	 <20120409212440.GL2430@linux.vnet.ibm.com> <1334009322.2444.12.camel@Thor>
+	 <20120409222219.GP2430@linux.vnet.ibm.com>
+Organization: Digirati Internet
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -35,111 +26,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-09 at 13:42 -0700, Dmitry Torokhov wrote:
-> On Mon, Apr 09, 2012 at 02:20:47PM -0600, Shuah Khan wrote:
-> > On Mon, 2012-04-09 at 11:45 -0700, Dmitry Torokhov wrote:
-> > > On Mon, Apr 09, 2012 at 12:16:05PM -0600, Shuah Khan wrote:
-> > > > On Mon, 2012-04-09 at 10:37 -0700, Dmitry Torokhov wrote:
-> > > > > On Mon, Apr 09, 2012 at 10:55:49AM -0600, Shuah Khan wrote:
-> > > > > > On Sat, 2012-04-07 at 14:56 -0700, Dmitry Torokhov wrote:
-> > > > > > > Hi Shuah,
-> > > > > > > 
-> > > > > > > On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
-> > > > > > > > 
-> > > > > > > > > > +This feature will help implement vibrate functionality which requires one
-> > > > > > > > > > +time activation of vibrate mode without a continuous vibrate on/off cycles.
-> > > > > > > > > 
-> > > > > > > > > They make vibrating LED? ;)
-> > > > > > > > > 
-> > > > > > > > > What's going on here?  You're proposing to repurpose the LEDs code to
-> > > > > > > > > drive vibration devices?  Or some devices couple a LED with a vibration
-> > > > > > > > > device?
-> > > > > > > > 
-> > > > > > > > I owe you filling in the blanks type explanation. Let me describe the
-> > > > > > > > use-case I am trying to address first. Vibrater function on phones is
-> > > > > > > > implemented using PWM pins on SoC or PMIC. When there is no such
-> > > > > > > > hardware present, a software solution is needed. Currently two drivers
-> > > > > > > > timed-gpio and timed-output (under staging/android in Linux 3.3)
-> > > > > > > > together implement the software vibrate feature. The main functionality
-> > > > > > > > it implements is the one time enables of timer to prevent user space
-> > > > > > > > crashes leaving the phone in vibrate mode causing the battery to drain.
-> > > > > > > > leds as it is implemented currently, is not suitable to address this
-> > > > > > > > use-case as it doesn't support one time enables.
-> > > > > > > 
-> > > > > > > So why do not you use memoryless force feedback framework that other
-> > > > > > > devices use (see drivers/input/misc/*vibra.c drivers).
-> > > > > > > 
-> > > > > > 
-> > > > > > Dimitry,
-> > > > > > 
-> > > > > > I took a look at these vibra* drivers. The three vibrate drivers are
-> > > > > > chip-set specific. The use-case I have is a non-chip set approach to
-> > > > > > address the use-case when vibrate hardware is not present. Are you
-> > > > > > envisioning a generic approach using ff-memoryless infrastructure?
-> > > > > 
-> > > > > Shuah,
-> > > > > 
-> > > > > I guess I am confused now. You need some form of hardware to make your
-> > > > > device to vibrate.
-> > > > > 
-> > > > > What exactly are you trying to do? Are you trying to:
-> > > > > 
-> > > > > 1. activate vibration on devices that can actually do it using LED
-> > > > >    interface, or
-> > > > > 
-> > > > > 2. use LEDs as an alternative to vibrate on devices that can't
-> > > > >    physically vibrate?
-> > > > > 
-> > > > > Thanks.
+On Mon, 2012-04-09 at 15:22 -0700, Paul E. McKenney wrote:
+> On Mon, Apr 09, 2012 at 06:08:42PM -0400, Michel Machado wrote:
+> > On Mon, 2012-04-09 at 14:24 -0700, Paul E. McKenney wrote:
+> > > On Mon, Apr 02, 2012 at 09:42:34PM -0400, Michel Machado wrote:
+> > > > The macro list_first_entry_rcu assumed that the passed list is not empty
+> > > > as its counterpart list_first_entry does. However, one can test that a
+> > > > list is not empty with list_empty before calling list_first_entry,
+> > > > whereas neither exists list_empty_rcu, nor is advisable to add it as the
+> > > > example below shows.
 > > > > 
-> > > > What I meant by generic approach is a higher level interface that is not
-> > > > tied too closely to the underlying hardware. Similar to the leds-pwm.c
-> > > > and leds-gpio.c handle gpio and pwm based leds. The vibrate hardware in
-> > > > my sue-case is a gpio based and could pwm based on some phones.
+> > > > Assuming that list_empty_rcu is available, one could write the following
+> > > > snippet:
+> > > > 
+> > > > if (!list_empty_rcu(mylist)) {
+> > > > 	struct foo *bar = list_first_entry_rcu(mylist, struct foo,
+> > > > 		list_member);
+> > > > 	do_something(bar);
+> > > > }
+> > > > 
+> > > > The problem with this snippet is the following racing condition: the
+> > > > list may not be empty when list_empty_rcu checks it, but it may be when
+> > > > list_first_entry_rcu rereads the ->next pointer.
+> > > > 
+> > > > This patch cannot break any upstream code because list_first_entry_rcu
+> > > > is not being used anywhere in the kernel (tested with grep(1)), and
+> > > > external code that uses it is probably broken already.
 > > > 
-> > > Ok, so you need to add drivers/input/misc/gpio-vibrate.c and pwm-vibrate.c
-> > > and then use FF to activate them. This way we have all vibrate
-> > > implementation use one subsystem instead of splitting between
-> > > input/led/whatever else people could come up with.
+> > > Hello, Michel,
 > > > 
-> > > Thanks.
+> > > Interesting point!
 > > > 
+> > > Are you intending to use list_first_entry_rcu()?  If not, perhaps the
+> > > best thing to do is to remove it.
+> > > 
+> > > 							Thanx, Paul
 > > 
-> > Dmitry,
+> > Hi Paul,
 > > 
-> > It is unfortunate that we have these two infrastructures evolve that has
-> > a lot of overlap. Let me summarize the two alternatives first so we get
-> > a feel for the work involved to address this use-case using ff and leds
-> > frameworks:
+> >    I'd rather keep list_first_entry_rcu(). I've already used it twice in
+> > the project I'm working on
+> > (https://github.com/AltraMayor/XIA-for-Linux), and I expect to submit
+> > this work upstream once it reaches reasonable quality as you can check
+> > in the roadmap available here:
 > > 
-> > Alternative 1: using leds infrastructure
+> > https://github.com/AltraMayor/XIA-for-Linux/wiki/Roadmap#wiki-Making_into_Linus_source_tree
 > > 
-> > Add new kernel interface to support one time enables. This will enable
-> > existing gpio and pwm drivers to be used to implement vibrate.
+> >    Not to mention that, given the subtlety of the problem, removing
+> > list_first_entry_rcu() may introduce the same bug whenever someone tries
+> > to mimic list_first_entry(), and having it in the kernel helps to guide
+> > those with an example.
+> 
+> Actually, list_first_entry_rcu() really does mimic list_first_entry()
+> from what I can see.  Both of them require that the list be non-empty,
+> which can be checked via !list_empty().
+> 
+> Or is list_first_entry() being converted to check for an empty list?
+> 
+> We really do need both list_first_entry() and list_first_entry_rcu()
+> to have the same semantics on empty lists, I am sure you would agree.
+> 
+> 							Thanx, Paul
+
+Yes, the current list_first_entry_rcu() does mimic list_first_entry(),
+and that's the reason the problem is there. A list without RCU readers
+would have list_empty() _and_ list_first_entry() protected by a lock, so
+the reread of the ->next pointer isn't an issue there, but it's not the
+case for a list with RCU readers.
+
+I agree that having the same semantics for both is the perfect solution,
+but list_first_entry() already has many users in the kernel. My patch is
+a compromise to not have this bug lurking around, but I see that the
+names may cause confusion. Would you be comfortable with removing the
+current list_first_entry_rcu(), and adding my version renamed to
+list_first_entry_if_not_empty_rcu() (or a shorter name)?
+
+> 
+> > [ ]'s
+> > Michel Machado
 > > 
-> > Alternative 2: using ff infrastructure
-> > 
-> > Add new drivers gpio and pwm that use existing one time enable to
-> > implement vibrate in a generic way.
-> > 
-> > Does this sound right? From a quick glance it sounds like we can get to
-> > the end goal quicker and in a simpler way with Alternative 1. However, I
-> > might be missing longterm view. Any other alternatives we could explore?
+> > > 
+> > > > Signed-off-by: Michel Machado <michel@digirati.com.br>
+> > > > CC: Dipankar Sarma <dipankar@in.ibm.com>
+> > > > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > ---
+> > > > Please CC my e-mail address while replying this message because I don't
+> > > > subscribe this mailing list due to its high volume; thanks.
+> > > > 
+> > > > diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+> > > > index d079290..866d3ec 100644
+> > > > --- a/include/linux/rculist.h
+> > > > +++ b/include/linux/rculist.h
+> > > > @@ -233,13 +233,16 @@ static inline void list_splice_init_rcu(struct
+> > > > list_head *list,
+> > > >   * @type:       the type of the struct this is embedded in.
+> > > >   * @member:     the name of the list_struct within the struct.
+> > > >   *
+> > > > - * Note, that list is expected to be not empty.
+> > > > + * Note that if the list is empty, it returns NULL.
+> > > >   *
+> > > >   * This primitive may safely run concurrently with the _rcu
+> > > > list-mutation
+> > > >   * primitives such as list_add_rcu() as long as it's guarded by
+> > > > rcu_read_lock().
+> > > >   */
+> > > >  #define list_first_entry_rcu(ptr, type, member) \
+> > > > -	list_entry_rcu((ptr)->next, type, member)
+> > > > +	({struct list_head *__ptr = ptr; \
+> > > > +	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
+> > > > +	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL;
+> > > > \
+> > > > +	})
+> > > > 
+> > > >  /**
+> > > >   * list_for_each_entry_rcu	-	iterate over rcu list of given type
+> > > > 
+> > > > 
+> > > 
 > > 
 > 
-> For 1 you are forgetting "persuade current users of mainline vibrator
-> drivers in kernel to adopt their drivers and userpace to LED framework"
-> because we should try to provide single interface for a given function.
-> 
-> Thanks.
-> 
-
-Dmitry,
-
-I can't argue against the user-space angle. Let me give more thought to
-Alternative 2 and see if it indeed turns out to be more work. Thanks for
-a good discussion.
-
--- Shuah
-
 
