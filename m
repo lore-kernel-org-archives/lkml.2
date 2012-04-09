@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab2DINNJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 09:13:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701Ab2DINNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 09:13:07 -0400
-Message-ID: <4F82E04E.6000900@redhat.com>
-Date: Mon, 09 Apr 2012 16:12:46 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1756594Ab2DINPP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 09:15:15 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35904 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab2DINPN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 09:15:13 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com>
-In-Reply-To: <4F742951.7080003@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
+References: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Mon, 9 Apr 2012 21:14:52 +0800
+X-Google-Sender-Auth: A-z94kC_PUx5yH6OU4DoKmq1RI0
+Message-ID: <CAGS+omB=dC8u+eJo5_mKJRH6=8=6BoQJ1uctKrhso6R4S5FTEg@mail.gmail.com>
+Subject: Re: [PATCH 00/16 v2] cleanup atmel_mxt_ts
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Cc: Daniel Kurtz <djkurtz@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
-> * Idea
-> The present bit of page fault error code (EFEC.P) indicates whether the
-> page table is populated on all levels, if this bit is set, we can know
-> the page fault is caused by the page-protection bits (e.g. W/R bit) or
-> the reserved bits.
+On Fri, Mar 30, 2012 at 12:49 AM, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> This patchset cleans up the atmel_mxt_ts touchscreen driver.
+> In particular, v2 implements the following:
 >
-> In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
-> simply fixed: the page fault caused by reserved bit
-> (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
-> path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
-> is just increasing the corresponding access on the spte.
+> 1) sysfs
+>   a) fw_update only by root
+> 2) faster initialization
+>   a) read/write sets of registers using i2c block transactions
+>   b) fetch object table as a set of i2c reads, one per object
+>   c) write config data as a set of i2c writes, one per object
+> 3) faster interrupt processing & initialization times
+>   a) cache important values at init instead of computing in isr
+>   b) don't read message checksum byte (which isn't even enabled in fw)
+> 4) more correct MT-B support
+>   a) send all (changed) contacts in a single EV_SYN/SYN_REPORT
 >
-> This pachset introduces a fast path to fix this kind of page fault: it
-> is out of mmu-lock and need not walk host page table to get the mapping
-> from gfn to pfn.
+> v2:
+>  * Writable config via sysfs has been removed to resolve possible
+>    conflict with Nick Dyer's implementation.
+>  * Using T44 has been removed from this patchset, hopefully it can
+>    be reexamined after most of these patches are accepted.
 >
+> The patches were tested using an MXT224E.
+
+Joonyoung, Nick, Henrik,
+
+Can you please take a look at this second version of the atmel_mxt_ts patches?
+Thanks!
+
 >
-
-This patchset is really worrying to me.
-
-It introduces a lot of concurrency into data structures that were not
-designed for it.  Even if it is correct, it will be very hard to
-convince ourselves that it is correct, and if it isn't, to debug those
-subtle bugs.  It will also be much harder to maintain the mmu code than
-it is now.
-
-There are a lot of things to check.  Just as an example, we need to be
-sure that if we use rcu_dereference() twice in the same code path, that
-any inconsistencies due to a write in between are benign.  Doing that is
-a huge task.
-
-But I appreciate the performance improvement and would like to see a
-simpler version make it in.  This needs to reduce the amount of data
-touched in the fast path so it is easier to validate, and perhaps reduce
-the number of cases that the fast path works on.
-
-I would like to see the fast path as simple as
-
-  rcu_read_lock();
-
-  (lockless shadow walk)
-  spte = ACCESS_ONCE(*sptep);
-
-  if (!(spte & PT_MAY_ALLOW_WRITES))
-        goto slow;
-
-  gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
-  mark_page_dirty(kvm, gfn);
-
-  new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
-  if (cmpxchg(sptep, spte, new_spte) != spte)
-       goto slow;
-
-  rcu_read_unlock();
-  return;
-
-slow:
-  rcu_read_unlock();
-  slow_path();
-
-It now becomes the responsibility of the slow path to maintain *sptep &
-PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
-can be as simple as a clear_bit() before we update sp->gfns[] or if we
-add host write protection.
-
-Sorry, it's too complicated for me.  Marcelo, what's your take?
-
--- 
-error compiling committee.c: too many arguments to function
-
+> Daniel Kurtz (16):
+>  Input: atmel_mxt_ts - use CONFIG_PM_SLEEP
+>  Input: atmel_mxt_ts - only allow root to update firmware
+>  Input: atmel_mxt_ts - refactor mxt_read/write_reg to take a length
+>  Input: atmel_mxt_ts - store actual size and instance
+>  Input: atmel_mxt_ts - verify object size in mxt_write_object
+>  Input: atmel_mxt_ts - do not read extra (checksum) byte
+>  Input: atmel_mxt_ts - dump each message on just 1 line
+>  Input: atmel_mxt_ts - refactor mxt_object_show
+>  Input: atmel_mxt_ts - optimize writing of object table entries
+>  Input: atmel_mxt_ts - refactor get info
+>  Input: atmel_mxt_ts - refactor reading object table
+>  Input: atmel_mxt_ts - simplify event reporting
+>  Input: atmel_mxt_ts - cache T9 reportid range when reading object
+>    table
+>  Input: atmel_mxt_ts - parse vector field of data packets
+>  Input: atmel_mxt_ts - send all MT-B slots in one input report
+>  Input: atmel_mxt_ts - parse T6 reports
+>
+>  drivers/input/touchscreen/atmel_mxt_ts.c |  477 ++++++++++++------------------
+>  1 files changed, 191 insertions(+), 286 deletions(-)
+>
+> --
+> 1.7.7.3
+>
