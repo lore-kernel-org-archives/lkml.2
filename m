@@ -1,56 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab2DIQJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 12:09:31 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:27320 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754779Ab2DIQJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 12:09:29 -0400
-Message-ID: <4F830999.5000504@parallels.com>
-Date: Mon, 09 Apr 2012 20:08:57 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "bfields@fieldses.org" <bfields@fieldses.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-References: <4F7F230A.6080506@parallels.com>	<20120406234039.GA20940@fieldses.org>	<4F82C6E3.3030009@parallels.com>	<20120409094743.56932677@tlielax.poochiereds.net>	<4F82F16C.7030303@parallels.com> <20120409112739.6a823d6f@corrin.poochiereds.net>
-In-Reply-To: <20120409112739.6a823d6f@corrin.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S932197Ab2DIQLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 12:11:11 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:17849 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab2DIQLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 12:11:10 -0400
+Message-ID: <1333987866.2871.5.camel@lorien2>
+Subject: Re: [PATCH v2] leds: simple_strtoul-cleanup
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: shuahkhan@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        rpurdie@linux.intel.com
+Date: Mon, 09 Apr 2012 10:11:06 -0600
+In-Reply-To: <1333981564.2871.1.camel@lorien2>
+References: <1333916003.2845.6.camel@lorien2>
+	 <1333916453.1801.2.camel@joe2Laptop> <1333981564.2871.1.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09.04.2012 19:27, Jeff Layton пишет:
->
-> If you allow one container to hand out conflicting locks while another
-> container is allowing reclaims, then you can end up with some very
-> difficult to debug silent data corruption. That's the worst possible
-> outcome, IMO. We really need to actively keep people from shooting
-> themselves in the foot here.
->
-> One possibility might be to only allow filesystems to be exported from
-> a single container at a time (and allow that to be overridable somehow
-> once we have a working active/active serving solution). With that, you
-> may be able limp along with a per-container grace period handling
-> scheme like you're proposing.
->
+led-class.c and ledtri-timer.c still use simple_strtoul(). 
+Change leds to use kstrtoul() instead of obsolete simple_strtoul().
 
-Ok then. Keeping people from shooting themselves here sounds reasonable.
-And I like the idea of exporting a filesystem only from once per network 
-namespace. Looks like there should be a list of pairs "exported superblock - 
-network namespace". And if superblock is exported already in other namespace, 
-then export in new namespace have to be skipped (replaced?) with appropriate 
-warning (error?) message shown in log.
-Or maybe we even should deny starting of NFS server if one of it's exports is 
-shared already by other NFS server "instance"?
-But any of these ideas would be easy to implement in RAM, and thus it suits only 
-for containers...
+This patch version addresses Joe's review comment. Added returning -EINVAL 
+in error paths back in. Also fixed existing int ret declaration to be ssize_t 
+to match the return type for _store functions in ledtrig-timer.c
 
+>From 411bd03d4327d210595264c39f71e6f446ac0f90 Mon Sep 17 00:00:00 2001
+From: Shuah Khan <shuahkhan@gmail.com>
+Date: Mon, 9 Apr 2012 09:05:07 -0600
+Subject: [PATCH] leds: simple_strtoul-cleanup
+
+
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+---
+ drivers/leds/led-class.c     |   21 ++++++++-------------
+ drivers/leds/ledtrig-timer.c |   40 ++++++++++++++++------------------------
+ 2 files changed, 24 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 5bff843..8ee92c8 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -44,23 +44,18 @@ static ssize_t led_brightness_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t size)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	unsigned long state;
+ 	ssize_t ret = -EINVAL;
+-	char *after;
+-	unsigned long state = simple_strtoul(buf, &after, 10);
+-	size_t count = after - buf;
+ 
+-	if (isspace(*after))
+-		count++;
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		return ret;
+ 
+-	if (count == size) {
+-		ret = count;
++	if (state == LED_OFF)
++		led_trigger_remove(led_cdev);
++	led_set_brightness(led_cdev, state);
+ 
+-		if (state == LED_OFF)
+-			led_trigger_remove(led_cdev);
+-		led_set_brightness(led_cdev, state);
+-	}
+-
+-	return ret;
++	return size;
+ }
+ 
+ static ssize_t led_max_brightness_show(struct device *dev,
+diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
+index 328c64c..b32d5ea 100644
+--- a/drivers/leds/ledtrig-timer.c
++++ b/drivers/leds/ledtrig-timer.c
+@@ -31,21 +31,17 @@ static ssize_t led_delay_on_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t size)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+-	int ret = -EINVAL;
+-	char *after;
+-	unsigned long state = simple_strtoul(buf, &after, 10);
+-	size_t count = after - buf;
+-
+-	if (isspace(*after))
+-		count++;
+-
+-	if (count == size) {
+-		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
+-		led_cdev->blink_delay_on = state;
+-		ret = count;
+-	}
++	unsigned long state;
++	ssize_t ret = -EINVAL;
++
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		return ret;
++
++	led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
++	led_cdev->blink_delay_on = state;
+ 
+-	return ret;
++	return size;
+ }
+ 
+ static ssize_t led_delay_off_show(struct device *dev,
+@@ -60,21 +56,17 @@ static ssize_t led_delay_off_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t size)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+-	int ret = -EINVAL;
+-	char *after;
+-	unsigned long state = simple_strtoul(buf, &after, 10);
+-	size_t count = after - buf;
+-
+-	if (isspace(*after))
+-		count++;
+-
+-	if (count == size) {
+-		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
+-		led_cdev->blink_delay_off = state;
+-		ret = count;
+-	}
++	unsigned long state;
++	ssize_t ret = -EINVAL;
++
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		return ret;
++
++	led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
++	led_cdev->blink_delay_off = state;
+ 
+-	return ret;
++	return size;
+ }
+ 
+ static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.5.4
+
+
+
