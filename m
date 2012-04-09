@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab2DIWEL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 18:04:11 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53039 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab2DIWEI (ORCPT
+	id S1757937Ab2DIWHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 18:07:40 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:55314 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757578Ab2DIWHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 18:04:08 -0400
-Date: Mon, 9 Apr 2012 15:03:45 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: Re: [PATCH] mm: sync rss-counters at the end of exit_mm()
-In-Reply-To: <CAHGf_=oWj-hz-E5ht8-hUbQKdsZ1bzP80n987kGYnFm8BpXBVQ@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1204091433380.1859@eggly.anvils>
-References: <20120409200336.8368.63793.stgit@zurg> <CAHGf_=oWj-hz-E5ht8-hUbQKdsZ1bzP80n987kGYnFm8BpXBVQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 9 Apr 2012 18:07:39 -0400
+Message-ID: <4F835D53.3090201@linux.vnet.ibm.com>
+Date: Mon, 09 Apr 2012 17:06:11 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-495961883-1334009032=:1859"
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] staging: zsmalloc: fix memory leak
+References: <1333376036-9841-1-git-send-email-sjenning@linux.vnet.ibm.com> <d858d87f-6e07-4303-a9b3-e41ff93c8080@default> <4F7C7626.40506@linux.vnet.ibm.com> <4F83454A.3050007@linux.vnet.ibm.com> <20120409214316.GB535@kroah.com>
+In-Reply-To: <20120409214316.GB535@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040922-7282-0000-0000-0000080EB4D7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 04/09/2012 04:43 PM, Greg Kroah-Hartman wrote:
+> A: No.
+> Q: Should I include quotations after my reply?
+> 
+> http://daringfireball.net/2007/07/on_top
 
---8323584-495961883-1334009032=:1859
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Noted. I only included what I did to keep the Ack chain in the
+message, which I guess was unnecessary.
 
-On Mon, 9 Apr 2012, KOSAKI Motohiro wrote:
-> On Mon, Apr 9, 2012 at 4:03 PM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org> wrote:
-> > On task's exit do_exit() calls sync_mm_rss() but this is not enough,
-> > there can be page-faults after this point, for example exit_mm() ->
-> > mm_release() -> put_user() (for processing tsk->clear_child_tid).
-> > Thus there may be some rss-counters delta in current->rss_stat.
->=20
-> Seems reasonable.
+> On Mon, Apr 09, 2012 at 03:23:38PM -0500, Seth Jennings wrote:
+>> Hey Greg,
+>>
+>> Haven't heard back from you on this patch and it needs to
+>> get into the 3.4 -rc releases ASAP.  It fixes a substantial
+>> memory leak when frontswap/zcache are enabled.
+>>
+>> Let me know if you need me to repost.
+>>
+>> The patch was sent on 4/2.
+> 
+> 5 meager days ago, with a major holliday in the middle, not to mention a
+> conference as well.  That's bold.
 
-Yes, I think Konstantin has probably caught it;
-but I'd like to hear confirmation from Markus.
+Sorry about that.  Forgot about the summit and the holiday :-/
 
-> but I have another question. Do we have any reason to
-> keep sync_mm_rss() in do_exit()? I havn't seen any reason that thread exi=
-ting
-> makes rss consistency.
+The date was not to convey "It's been a whole week! Why the delay?",
+but to help you find the original patch in your stack of emails.
 
-IIRC it's all about the hiwater_rss/maxrss stuff: we want to sync the
-maximum rss into mm->hiwater_rss before it's transferred to signal->maxrss,
-and later made visible to the user though getrusage(RUSAGE_CHILDREN,) -
-does your reading confirm that?
+> It is not lost, is in my queue, and will get to Linus before 3.4-final
+> comes out, don't worry.
 
-Konstantin now finds the child_tid and futex stuff can trigger faults
-raising rss beyond that point, but usually it won't go higher than when
-it was captured for maxrss there.
+I'll be more patient (and take into account summits/holiday) for replies.
 
-The sync_mm_rss() added by this patch (after "tsk->mm =3D NULL" so
-*_mm_counter_fast() cannot store any more into the tsk even if there
-were more faults) is solely to satisfy Konstantin's check_mm(), and
-it is irritating to have that duplicated on the exit path.
+Thanks Greg!
 
-I'd be happy to see the new one put under CONFIG_DEBUG_VM along with
-check_mm(), once it's had a few -rcs of exposure without.
+--
+Seth
 
-Hugh
-
->=20
->=20
-> >
-> > Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> > Cc: Hugh Dickins <hughd@google.com>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> > =A0kernel/exit.c | =A0 =A01 +
-> > =A01 file changed, 1 insertion(+)
-> >
-> > diff --git a/kernel/exit.c b/kernel/exit.c
-> > index d8bd3b42..8e09dbe 100644
-> > --- a/kernel/exit.c
-> > +++ b/kernel/exit.c
-> > @@ -683,6 +683,7 @@ static void exit_mm(struct task_struct * tsk)
-> > =A0 =A0 =A0 =A0enter_lazy_tlb(mm, current);
-> > =A0 =A0 =A0 =A0task_unlock(tsk);
-> > =A0 =A0 =A0 =A0mm_update_next_owner(mm);
-> > + =A0 =A0 =A0 sync_mm_rss(mm);
-> > =A0 =A0 =A0 =A0mmput(mm);
-> > =A0}
-> >
---8323584-495961883-1334009032=:1859--
