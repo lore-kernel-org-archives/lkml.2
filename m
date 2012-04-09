@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab2DIUuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:50:10 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20802 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2DIUuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:50:05 -0400
-Date: Mon, 9 Apr 2012 22:50:04 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, linux-media@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Dean Anderson <linux-dev@sensoray.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [PATCH 03/26] [media] s2255drv: Remove redundant NULL test before
- release_firmware()
-In-Reply-To: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204092206300.13925@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757032Ab2DIU7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:59:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12684 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756487Ab2DIU7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 16:59:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="126998889"
+User-Agent: Microsoft-MacOutlook/14.14.0.111121
+Date: Mon, 09 Apr 2012 13:58:56 -0700
+Subject: Re: [PATCH v17 15/15] Documentation: prctl/seccomp_filter
+From: Ryan Ware <ware@linux.intel.com>
+To: Markus Gutschke <markus@chromium.org>, Will Drewry <wad@chromium.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-security-module@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <kernel-hardening@lists.openwall.com>,
+        <netdev@vger.kernel.org>, <x86@kernel.org>, <arnd@arndb.de>,
+        <davem@davemloft.net>, <hpa@zytor.com>, <mingo@redhat.com>,
+        <oleg@redhat.com>, <peterz@infradead.org>, <rdunlap@xenotime.net>,
+        <mcgrathr@chromium.org>, <tglx@linutronix.de>, <luto@mit.edu>,
+        <eparis@redhat.com>, <serge.hallyn@canonical.com>, <djm@mindrot.org>,
+        <scarybeasts@gmail.com>, <indan@nul.nu>, <pmoore@redhat.com>,
+        <corbet@lwn.net>, <eric.dumazet@gmail.com>,
+        <coreyb@linux.vnet.ibm.com>, <keescook@chromium.org>,
+        <jmorris@namei.org>
+Message-ID: <CBA89B80.3C770%ware@linux.intel.com>
+Thread-Topic: [PATCH v17 15/15] Documentation: prctl/seccomp_filter
+In-Reply-To: <CAE6n16kMv5Y+Cp9XZ=tmK0sgoJJZ6CJUq_ttuNEUMb4JFXJ33g@mail.gmail.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-release_firmware() tests for NULL pointers on its own - there's no
-reason to do an explicit check before calling the function.
+I second this!  They are extremely useful.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/media/video/s2255drv.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Ryan
 
-diff --git a/drivers/media/video/s2255drv.c b/drivers/media/video/s2255drv.c
-index 4894cbb..37845de 100644
---- a/drivers/media/video/s2255drv.c
-+++ b/drivers/media/video/s2255drv.c
-@@ -1826,8 +1826,7 @@ static void s2255_destroy(struct s2255_dev *dev)
- 		usb_free_urb(dev->fw_data->fw_urb);
- 		dev->fw_data->fw_urb = NULL;
- 	}
--	if (dev->fw_data->fw)
--		release_firmware(dev->fw_data->fw);
-+	release_firmware(dev->fw_data->fw);
- 	kfree(dev->fw_data->pfw_data);
- 	kfree(dev->fw_data);
- 	/* reset the DSP so firmware can be reloaded next time */
--- 
-1.7.10
+On 4/9/12 1:47 PM, "Markus Gutschke" <markus@chromium.org> wrote:
 
+>No matter what you do, please leave the samples accessible somewhere.
+>They proved incredibly useful in figuring out how the API works. I am
+>sure, other developers are going to appreciate them as well.
+>
+>Alternatively, if you don't want to include the samples with the
+>kernel sources, figure out how you can include a sample in the
+>official manual page for prctl().
+>
+>
+>Markus
+>--
+>To unsubscribe from this list: send the line "unsubscribe
+>linux-security-module" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
 
