@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab2DIIbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 04:31:12 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42978 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590Ab2DIIbK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 04:31:10 -0400
-From: zwu.kernel@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, stefanha@linux.vnet.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] vhost_test: fix compile breakage
-Date: Mon,  9 Apr 2012 16:30:56 +0800
-Message-Id: <1333960256-7491-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12040908-7408-0000-0000-0000040EDC4F
+	id S1756771Ab2DIIeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:34:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48625 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755304Ab2DIIeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 04:34:09 -0400
+Date: Mon, 9 Apr 2012 11:34:02 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120409083402.GA28249@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <20120408234951.GA15993@gondor.apana.org.au>
+ <20120409072849.GA12014@redhat.com>
+ <20120409073354.GA3218@gondor.apana.org.au>
+ <20120409073953.GD12014@redhat.com>
+ <20120409082919.GA3471@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120409082919.GA3471@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Mon, Apr 09, 2012 at 04:29:20PM +0800, Herbert Xu wrote:
+> On Mon, Apr 09, 2012 at 10:39:54AM +0300, Michael S. Tsirkin wrote:
+> > On Mon, Apr 09, 2012 at 03:33:54PM +0800, Herbert Xu wrote:
+> > > On Mon, Apr 09, 2012 at 10:28:49AM +0300, Michael S. Tsirkin wrote:
+> > > >
+> > > > > 1) Doesn't this break local UDP push-back?
+> > > > 
+> > > > What is meant by UDP pushback here? Two tap
+> > > > devices communicating by UDP packets locally?
+> > > > This was always broken, see below.
+> > > 
+> > > I mean push-back from UDP transmission to the physical NIC.
+> > > 
+> > > Your patch breaks that
+> > 
+> > I think there's some misunderstanding. pushback is only disabled
+> > for destinations that set IFF_TX_CAN_STALL. I expect that
+> > no physical NICs set this flag - only tun and possibly
+> > other userspace-controlled devices in the future.
+> 
+> I'm talking about an app running in the guest transmitting UDP
+> to the physical NIC via virtio/vhost.  This will break with your
+> patch.
+> 
+> Cheers,
 
-The arguments of vhost_dev_cleanup has been changed. So test.c need to be changed accordingly.
+Puzzled. This patch orphans skbs only if the destination device sets
+IFF_TX_CAN_STALL.  Since the physical NIC doesn't stall forever it never
+sets this flag.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- drivers/vhost/test.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+So it seems that this patch should not affect the configuration
+you describe at all.
 
-diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
-index fc9a1d7..3de00d9 100644
---- a/drivers/vhost/test.c
-+++ b/drivers/vhost/test.c
-@@ -155,7 +155,7 @@ static int vhost_test_release(struct inode *inode, struct file *f)
- 
- 	vhost_test_stop(n, &private);
- 	vhost_test_flush(n);
--	vhost_dev_cleanup(&n->dev);
-+	vhost_dev_cleanup(&n->dev, false);
- 	/* We do an extra flush before freeing memory,
- 	 * since jobs can re-queue themselves. */
- 	vhost_test_flush(n);
--- 
-1.7.6
+Could you please clarify? What did I miss?
 
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
