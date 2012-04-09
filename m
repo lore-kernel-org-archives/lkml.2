@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab2DIHdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 03:33:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab2DIHds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 03:33:48 -0400
-Date: Mon, 9 Apr 2012 10:33:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ren Mingxin <renmx@cn.fujitsu.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, KVM <kvm@vger.kernel.org>,
-        SCSI <linux-scsi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        VIRTUAL <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 4/4] virtio_blk: use disk_name_format() to support mass
- of disks naming
-Message-ID: <20120409073350.GC12014@redhat.com>
-References: <4F7582B0.5010609@cn.fujitsu.com>
- <20120330152606.GB28934@google.com>
- <20120330152808.GC28934@google.com>
- <4F78FE89.2070707@cn.fujitsu.com>
- <20120402072009.GF30360@redhat.com>
- <20120402185259.GA16226@dhcp-172-17-108-109.mtv.corp.google.com>
- <1333392978.2971.25.camel@dabdike>
- <20120402190045.GC16226@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404080149.GC22658@redhat.com>
- <4F825BE7.80204@cn.fujitsu.com>
+	id S1755077Ab2DIHeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 03:34:09 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:44613 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754729Ab2DIHeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 03:34:07 -0400
+Date: Mon, 9 Apr 2012 15:33:54 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120409073354.GA3218@gondor.apana.org.au>
+References: <20120408171323.GA16012@redhat.com> <20120408234951.GA15993@gondor.apana.org.au> <20120409072849.GA12014@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F825BE7.80204@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120409072849.GA12014@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 11:47:51AM +0800, Ren Mingxin wrote:
->  On 04/04/2012 04:01 PM, Michael S. Tsirkin wrote:
-> >On Mon, Apr 02, 2012 at 12:00:45PM -0700, Tejun Heo wrote:
-> >>On Mon, Apr 02, 2012 at 11:56:18AM -0700, James Bottomley wrote:
-> >>>So if we're agreed no other devices going forwards should ever use this
-> >>>interface, is there any point unifying the interface?  No matter how
-> >>>many caveats you hedge it round with, putting the API in a central place
-> >>>will be a bit like a honey trap for careless bears.   It might be safer
-> >>>just to leave it buried in the three current drivers.
-> >>Yeah, that was my hope but I think it would be easier to enforce to
-> >>have a common function which is clearly marked legacy so that new
-> >>driver writers can go look for the naming code in the existing ones,
-> >>find out they're all using the same function which is marked legacy
-> >>and explains what to do for newer drivers.
-> >I think I'm not the only one to be confused about the
-> >preferred direction here.
-> >James, do you agree to the approach above?
-> >
-> >It would be nice to fix virtio block for 3.4, so
-> >how about this:
-> >- I'll just apply the original bugfix patch for 3.4 -
-> >   it only affects virtio
+On Mon, Apr 09, 2012 at 10:28:49AM +0300, Michael S. Tsirkin wrote:
+>
+> > 1) Doesn't this break local UDP push-back?
 > 
-> Sorry, about only affects virtio, I'm not very clear here:
-> 1) Just duplicate the disk name format function in virtio_blk
->     like the original patch: https://lkml.org/lkml/2012/3/28/45
-> 2) Move the disk name format function into block core like
->     this patch series but only affects virtio(not affect mtip32xx).
-> Do you mean the 2) one or something else?
+> What is meant by UDP pushback here? Two tap
+> devices communicating by UDP packets locally?
+> This was always broken, see below.
 
-I mean 1) - I'll apply the original patch.
+I mean push-back from UDP transmission to the physical NIC.
 
-> >- Ren will repost the refactoring patch on top, and we can
-> >   keep up the discussion
-> >
-> >Ren if you agree, can you make this a two patch series please?
-> >
+Your patch breaks that as now the guest will have no push-back
+whatsoever so anything that transmits UDP without protocol-level
+congestion control will start dropping most of their packets.
+
+Granted you can argue that these apps are broken, but they do
+exist and we've always catered for them, both on baremetal and
+under virtualisation.
+ 
+> Thus we get this situation
+>     tap1 sends packets, some of them to tap2, tap2 does not consume them,
+>     as a result tap2 queue overflows, tap2 stops forever and
+>     packets get queued in the qdisc, now tap1
+>     send buffer gets full so it can not communicate to any destination.
 > 
-> Sure.
-> 
-> -- 
-> Thanks,
-> Ren
+> So the problem is one VM can block all networking from another one.
+
+This should be addressed in the backend, as it can distinguish
+between packets going out to physical and packets stuck going to
+a local VM.  In the latter case you can then duplicate and release
+the sender's memory.
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
