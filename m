@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab2DIMgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 08:36:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63897 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab2DIMgm convert rfc822-to-8bit (ORCPT
+	id S1756219Ab2DIMgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 08:36:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8437 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab2DIMgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 08:36:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F829818.6040600@broadcom.com>
-References: <1333903588-32608-1-git-send-email-mcgrof@frijolero.org> <4F829818.6040600@broadcom.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Mon, 9 Apr 2012 05:36:21 -0700
-X-Google-Sender-Auth: NL_sH-nwazMdFAZbGlc9X4U3HYk
-Message-ID: <CAB=NE6VBGg7-RxcmLUd8j3spTid6J3N3hsUPsuTt3aDx_0mmEg@mail.gmail.com>
-Subject: Re: [PATCH v2] module: Clarify usage of MODULE_LICENSE()
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tso Ted <tytso@mit.edu>, Keith Packard <keithp@keithp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Apr 2012 08:36:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 09 Apr 2012 05:36:51 -0700
+From: Preetham Chandru <pchandru@nvidia.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Andrew Chew <achew@nvidia.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Preetham Chandru <pchandru@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] staging: iio: ak8975: Remove i2c client data corruption
+Date: Mon,  9 Apr 2012 18:05:01 +0530
+Message-Id: <1333974901-24282-1-git-send-email-pchandru@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 1:04 AM, Arend van Spriel <arend@broadcom.com> wrote:
-> On 04/08/2012 06:46 PM, Luis R. Rodriguez wrote:
->>
->>  include/linux/module.h |   17 +++++++++++++----
->>  1 file changed, 13 insertions(+), 4 deletions(-)
->>
->> diff --git a/include/linux/module.h b/include/linux/module.h
->> index fbcafe2..8d36d86 100644
->> --- a/include/linux/module.h
->> +++ b/include/linux/module.h
->> - * This exists for several reasons
->> + * The MODULE_LICENSE() exists for several reasons:
->> + * 0.   So EXPORT_SYMBOL_GPL() allows the module to use its symbols
->
->
-> It seems there is some tab/space mixup here.
+i2c client data set is of type struct indio_dev pointer and hence the
+pointer returned from i2c_get_clientdata() should be assigned to
+an object of type struct indio_dev and not to an object of type
+struct ak8975_data.
 
-Ah yes, I'll send a v3.
+Also in ak8975_probe() client data should be set first
+before calling ak8975_setup() as it references the client data.
 
-> Also not sure if the above statement is clear or correct.
-> Correct me if I am wrong, but I thought it
-> put a requirement on other modules to be able to use its symbols.
+Signed-off-by: Preetham Chandru R <pchandru@nvidia.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/staging/iio/magnetometer/ak8975.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Never heard of this but boy, wouldn't that be nice.
+diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
+index d5ddac3..ebc2d08 100644
+--- a/drivers/staging/iio/magnetometer/ak8975.c
++++ b/drivers/staging/iio/magnetometer/ak8975.c
+@@ -108,7 +108,8 @@ static const int ak8975_index_to_reg[] = {
+ static int ak8975_write_data(struct i2c_client *client,
+ 			     u8 reg, u8 val, u8 mask, u8 shift)
+ {
+-	struct ak8975_data *data = i2c_get_clientdata(client);
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++	struct ak8975_data *data = iio_priv(indio_dev);
+ 	u8 regval;
+ 	int ret;
+ 
+@@ -159,7 +160,8 @@ static int ak8975_read_data(struct i2c_client *client,
+  */
+ static int ak8975_setup(struct i2c_client *client)
+ {
+-	struct ak8975_data *data = i2c_get_clientdata(client);
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++	struct ak8975_data *data = iio_priv(indio_dev);
+ 	u8 device_id;
+ 	int ret;
+ 
+@@ -509,6 +511,7 @@ static int ak8975_probe(struct i2c_client *client,
+ 		goto exit_gpio;
+ 	}
+ 	data = iio_priv(indio_dev);
++	i2c_set_clientdata(client, indio_dev);
+ 	/* Perform some basic start-of-day setup of the device. */
+ 	err = ak8975_setup(client);
+ 	if (err < 0) {
+@@ -516,7 +519,6 @@ static int ak8975_probe(struct i2c_client *client,
+ 		goto exit_free_iio;
+ 	}
+ 
+-	i2c_set_clientdata(client, indio_dev);
+ 	data->client = client;
+ 	mutex_init(&data->lock);
+ 	data->eoc_irq = client->irq;
+-- 
+1.7.0.4
 
-  Luis
