@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788Ab2DISqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 14:46:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54415 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757689Ab2DISqG (ORCPT
+	id S1757047Ab2DISsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 14:48:08 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51266 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab2DISsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 14:46:06 -0400
-Date: Mon, 9 Apr 2012 11:45:58 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, neilb@suse.de,
-        rpurdie@linux.intel.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
-Message-ID: <20120409184558.GB18542@core.coreip.homeip.net>
-References: <1333310039.2879.4.camel@lorien2>
- <20120406165353.ab667eb0.akpm@linux-foundation.org>
- <1333808024.2728.39.camel@lorien2>
- <20120407215641.GA4539@core.coreip.homeip.net>
- <1333990549.2871.10.camel@lorien2>
- <20120409173703.GA18542@core.coreip.homeip.net>
- <1333995365.2871.17.camel@lorien2>
+	Mon, 9 Apr 2012 14:48:06 -0400
+Date: Mon, 9 Apr 2012 11:45:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: semaphore and mutex in current Linux kernel (3.2.2)
+Message-ID: <20120409184538.GE2430@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <491D6B4EAD0A714894D8AD22F4BDE0439F94AB@SCYBEXDAG02.amd.com>
+ <20120401121943.GA11893@gmail.com>
+ <491D6B4EAD0A714894D8AD22F4BDE0439F9560@SCYBEXDAG02.amd.com>
+ <20120403075245.GD26826@gmail.com>
+ <4F7DA8FD.1020909@ladisch.de>
+ <491D6B4EAD0A714894D8AD22F4BDE0439F9E45@SCYBEXDAG02.amd.com>
+ <4F7EC111.4010608@ladisch.de>
+ <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1333995365.2871.17.camel@lorien2>
+In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12040918-7282-0000-0000-0000080D5682
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 12:16:05PM -0600, Shuah Khan wrote:
-> On Mon, 2012-04-09 at 10:37 -0700, Dmitry Torokhov wrote:
-> > On Mon, Apr 09, 2012 at 10:55:49AM -0600, Shuah Khan wrote:
-> > > On Sat, 2012-04-07 at 14:56 -0700, Dmitry Torokhov wrote:
-> > > > Hi Shuah,
-> > > > 
-> > > > On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
-> > > > > 
-> > > > > > > +This feature will help implement vibrate functionality which requires one
-> > > > > > > +time activation of vibrate mode without a continuous vibrate on/off cycles.
-> > > > > > 
-> > > > > > They make vibrating LED? ;)
-> > > > > > 
-> > > > > > What's going on here?  You're proposing to repurpose the LEDs code to
-> > > > > > drive vibration devices?  Or some devices couple a LED with a vibration
-> > > > > > device?
-> > > > > 
-> > > > > I owe you filling in the blanks type explanation. Let me describe the
-> > > > > use-case I am trying to address first. Vibrater function on phones is
-> > > > > implemented using PWM pins on SoC or PMIC. When there is no such
-> > > > > hardware present, a software solution is needed. Currently two drivers
-> > > > > timed-gpio and timed-output (under staging/android in Linux 3.3)
-> > > > > together implement the software vibrate feature. The main functionality
-> > > > > it implements is the one time enables of timer to prevent user space
-> > > > > crashes leaving the phone in vibrate mode causing the battery to drain.
-> > > > > leds as it is implemented currently, is not suitable to address this
-> > > > > use-case as it doesn't support one time enables.
-> > > > 
-> > > > So why do not you use memoryless force feedback framework that other
-> > > > devices use (see drivers/input/misc/*vibra.c drivers).
-> > > > 
-> > > 
-> > > Dimitry,
-> > > 
-> > > I took a look at these vibra* drivers. The three vibrate drivers are
-> > > chip-set specific. The use-case I have is a non-chip set approach to
-> > > address the use-case when vibrate hardware is not present. Are you
-> > > envisioning a generic approach using ff-memoryless infrastructure?
-> > 
-> > Shuah,
-> > 
-> > I guess I am confused now. You need some form of hardware to make your
-> > device to vibrate.
-> > 
-> > What exactly are you trying to do? Are you trying to:
-> > 
-> > 1. activate vibration on devices that can actually do it using LED
-> >    interface, or
-> > 
-> > 2. use LEDs as an alternative to vibrate on devices that can't
-> >    physically vibrate?
-> > 
-> > Thanks.
+On Fri, Apr 06, 2012 at 05:47:28PM +0000, Chen, Dennis (SRDC SW) wrote:
+> On Fri, Apr 6, 2012 at 6:10 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
+> > Chen, Dennis (SRDC SW) wrote:
+> >> On Thu, Apr 5, 2012 at 10:15 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
+> >>
+> >> I guess this is related with RCU component, but I don't found the right place where the code
+> >> Located yet.
+> >
+> > "On the internet, nobody can hear you being subtle."
+> >
+> > If some other process wants to run on the same CPU, needs_resched() is set.
+> > (This might happen to make the cursor blink, for keyboard input, or when
+> > somebody starts a rogue process like ps.)
+> >
 > 
-> What I meant by generic approach is a higher level interface that is not
-> tied too closely to the underlying hardware. Similar to the leds-pwm.c
-> and leds-gpio.c handle gpio and pwm based leds. The vibrate hardware in
-> my sue-case is a gpio based and could pwm based on some phones.
+> Hmm, I forget that in each timer interrupt, __rcu_pending() will be called, it will call
+> set_need_resched() to set the TIF_NEED_RESCHED in some condition...
+> The optimization of mutex work closely with rcu, so fantastic!
 
-Ok, so you need to add drivers/input/misc/gpio-vibrate.c and pwm-vibrate.c
-and then use FF to activate them. This way we have all vibrate
-implementation use one subsystem instead of splitting between
-input/led/whatever else people could come up with.
+I must confess that you all lost me on this one.
 
-Thanks.
+There is a call to set_need_resched() in __rcu_pending(), which is
+invoked when the current CPU has not yet responded to a non-preemptible
+RCU grace period for some time.  However, in the common case where the
+CPUs all respond in reasonable time, __rcu_pending() will never call
+set_need_resched().
 
--- 
-Dmitry
+However, we really do not want to call set_need_resched() on every call
+to __rcu_pending().  There is almost certainly a better solution to any
+problem that might be solved by a per-jiffy call to set_need_resched().
+
+So, what are you really trying to do?
+
+							Thanx, Paul
+
