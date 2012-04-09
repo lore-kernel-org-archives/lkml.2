@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab2DIHeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 03:34:09 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:44613 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754729Ab2DIHeH (ORCPT
+	id S1755394Ab2DIHeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 03:34:24 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39081 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab2DIHeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 03:34:07 -0400
-Date: Mon, 9 Apr 2012 15:33:54 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120409073354.GA3218@gondor.apana.org.au>
-References: <20120408171323.GA16012@redhat.com> <20120408234951.GA15993@gondor.apana.org.au> <20120409072849.GA12014@redhat.com>
+	Mon, 9 Apr 2012 03:34:19 -0400
+Message-ID: <4F8290F8.90706@gmail.com>
+Date: Mon, 09 Apr 2012 09:34:16 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120409072849.GA12014@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Hillf Danton <dhillf@gmail.com>
+CC: Dario Faggioli <raistlin@linux.it>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] DLS: add dl_time_equal helper in deadline scheduler
+References: <CAJd=RBDKe_fX0ROdbs8sqeqJmjWtUmtSTtF1kMLbdOvt0a6UHQ@mail.gmail.com>
+In-Reply-To: <CAJd=RBDKe_fX0ROdbs8sqeqJmjWtUmtSTtF1kMLbdOvt0a6UHQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 10:28:49AM +0300, Michael S. Tsirkin wrote:
+Hi,
+
+On 04/07/2012 09:49 AM, Hillf Danton wrote:
+> Hi all
 >
-> > 1) Doesn't this break local UDP push-back?
-> 
-> What is meant by UDP pushback here? Two tap
-> devices communicating by UDP packets locally?
-> This was always broken, see below.
+> A tiny helper, dl_time_equal, is added for easing readers.
+>
+> And dl_entity_preempt is redefined to be bool, and its comment is also changed.
+>
+> Signed-off-by: Hillf Danton<dhillf@gmail.com>
+> ---
+>
+> --- a/kernel/sched_dl.c	Sat Apr  7 15:00:28 2012
+> +++ b/kernel/sched_dl.c	Sat Apr  7 15:20:10 2012
+> @@ -16,16 +16,21 @@
+>    */
+>   static const struct sched_class dl_sched_class;
+>
+> -static inline int dl_time_before(u64 a, u64 b)
+> +static inline bool dl_time_equal(u64 a, u64 b)
+> +{
+> +	return a == b;
+> +}
+> +
+> +static inline bool dl_time_before(u64 a, u64 b)
+>   {
+>   	return (s64)(a - b)<  0;
+>   }
+>
+>   /*
+> - * Tells if entity @a should preempt entity @b.
+> + * Return true if entity @a could preempt entity @b in term of deadline
+>    */
+> -static inline
+> -int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
+> +static inline bool
+> +dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
+>   {
+>   	return dl_time_before(a->deadline, b->deadline);
+>   }
+> @@ -885,7 +890,7 @@ static void check_preempt_curr_dl(struct
+>   	 * In the unlikely case current and p have the same deadline
+>   	 * let us try to decide what's the best thing to do...
+>   	 */
+> -	if ((s64)(p->dl.deadline - rq->curr->dl.deadline) == 0&&
+> +	if (dl_time_equal(p->dl.deadline, rq->curr->dl.deadline)&&
+>   	!need_resched())
+>   		check_preempt_equal_dl(rq, p);
+>   #endif /* CONFIG_SMP */
+> --
 
-I mean push-back from UDP transmission to the physical NIC.
+I'll change the comparison to be deadline_a == deadline_b, but I don't see the
+need for a special helper function. It is used only once, better to have the
+comparison really inline (a very special case).
 
-Your patch breaks that as now the guest will have no push-back
-whatsoever so anything that transmits UDP without protocol-level
-congestion control will start dropping most of their packets.
+Thanks and Regards,
 
-Granted you can argue that these apps are broken, but they do
-exist and we've always catered for them, both on baremetal and
-under virtualisation.
- 
-> Thus we get this situation
->     tap1 sends packets, some of them to tap2, tap2 does not consume them,
->     as a result tap2 queue overflows, tap2 stops forever and
->     packets get queued in the qdisc, now tap1
->     send buffer gets full so it can not communicate to any destination.
-> 
-> So the problem is one VM can block all networking from another one.
-
-This should be addressed in the backend, as it can distinguish
-between packets going out to physical and packets stuck going to
-a local VM.  In the latter case you can then duplicate and release
-the sender's memory.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+- Juri
