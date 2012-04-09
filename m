@@ -1,61 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286Ab2DIUxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:53:47 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:31876 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758201Ab2DIUxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:53:31 -0400
-Message-ID: <4F834C48.1060603@tilera.com>
-Date: Mon, 9 Apr 2012 16:53:28 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] arch/tile: support MMIO-based readb/writeb etc.
-References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204062101.q36L1tuT011403@farm-0027.internal.tilera.com> <201204091324.34288.arnd@arndb.de>
-In-Reply-To: <201204091324.34288.arnd@arndb.de>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+	id S1758270Ab2DIUxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:53:45 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:19782 "EHLO mail.df.lth.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758031Ab2DIUxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 16:53:42 -0400
+From: "Linus Walleij" <linus.walleij@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Alim Akhtar <alim.akhtar@gmail.com>
+Subject: [PATCH 2/2] dma/amba-pl08x: add support for the Nomadik variant
+Date: Mon,  9 Apr 2012 22:53:36 +0200
+Message-Id: <1334004816-20219-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/9/2012 9:24 AM, Arnd Bergmann wrote:
-> On Friday 06 April 2012, Chris Metcalf wrote:
->> Add support for MMIO read/write on tilegx to support GXIO IORPC access.
->> Similar to the asm-generic version, but we include memory fences on
->> the writes to be conservative.
->>
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> It's usually better to use inline assembly here, to guarantee that
-> the compiler does not split an access into multiple byte sized
-> accesses as it might sometimes do if a register data structure
-> is marged "packed". The "volatile" guarantees that the access
-> does not go beyond a single word, but it does not guarantee that
-> it's atomic.
+The Nomadik PL080 variant has some extra protection bits that
+may be set, so we need to check these bits to see if the
+channels are actually available for the DMAengine to use.
 
-Good point.  Since tile doesn't support unaligned reads in kernel space
-anyway, it hadn't occurred to me, but you're right that the compiler might
-be too conservative in some circumstances.  Fixed.
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Viresh Kumar <viresh.kumar@st.com>
+Cc: Alim Akhtar <alim.akhtar@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/include/asm/hardware/pl080.h |    2 +
+ drivers/dma/amba-pl08x.c              |   43 +++++++++++++++++++++++++++++----
+ include/linux/amba/pl08x.h            |    3 ++
+ 3 files changed, 43 insertions(+), 5 deletions(-)
 
-> I don't think you need the fences after the write because PCI MMIO
-> writes are posted anyway (only PIO is non-posted), but you might need
-> some kind of barrier on the read to prevent a scenario where an MMIO 
-> read tells you that a DMA has completed, but the CPU (or the compiler)
-> has scheduled the read of that data ahead of the MMIO read.
-
-I'm not sure why posted vs non-posted would matter, but I think you're
-right that we shouldn't need them, and some simple testing seemed to show
-that the system was stable without them.  The initial developer said they
-were there originally just there for reasons of paranoia during development.
-
-Thanks!
-
+diff --git a/arch/arm/include/asm/hardware/pl080.h b/arch/arm/include/asm/hardware/pl080.h
+index 33c78d7..4eea210 100644
+--- a/arch/arm/include/asm/hardware/pl080.h
++++ b/arch/arm/include/asm/hardware/pl080.h
+@@ -102,6 +102,8 @@
+ #define PL080_WIDTH_16BIT			(0x1)
+ #define PL080_WIDTH_32BIT			(0x2)
+ 
++#define PL080N_CONFIG_ITPROT			(1 << 20)
++#define PL080N_CONFIG_SECPROT			(1 << 19)
+ #define PL080_CONFIG_HALT			(1 << 18)
+ #define PL080_CONFIG_ACTIVE			(1 << 17)  /* RO */
+ #define PL080_CONFIG_LOCK			(1 << 16)
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index 08589c6..f2a8d32 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -95,10 +95,14 @@ static struct amba_driver pl08x_amba_driver;
+  * struct vendor_data - vendor-specific config parameters for PL08x derivatives
+  * @channels: the number of channels available in this variant
+  * @dualmaster: whether this version supports dual AHB masters or not.
++ * @nomadik: whether the channels have Nomadik security extension bits
++ *	that need to be checked for permission before use and some registers are
++ *	missing
+  */
+ struct vendor_data {
+ 	u8 channels;
+ 	bool dualmaster;
++	bool nomadik;
+ };
+ 
+ /*
+@@ -385,7 +389,7 @@ pl08x_get_phy_channel(struct pl08x_driver_data *pl08x,
+ 
+ 		spin_lock_irqsave(&ch->lock, flags);
+ 
+-		if (!ch->serving) {
++		if (!ch->locked && !ch->serving) {
+ 			ch->serving = virt_chan;
+ 			ch->signal = -1;
+ 			spin_unlock_irqrestore(&ch->lock, flags);
+@@ -1483,6 +1487,9 @@ bool pl08x_filter_id(struct dma_chan *chan, void *chan_id)
+  */
+ static void pl08x_ensure_on(struct pl08x_driver_data *pl08x)
+ {
++	/* The Nomadik variant does not have the config register */
++	if (pl08x->vd->nomadik)
++		return;
+ 	writel(PL080_CONFIG_ENABLE, pl08x->base + PL080_CONFIG);
+ }
+ 
+@@ -1772,8 +1779,10 @@ static int pl08x_debugfs_show(struct seq_file *s, void *data)
+ 		spin_lock_irqsave(&ch->lock, flags);
+ 		virt_chan = ch->serving;
+ 
+-		seq_printf(s, "%d\t\t%s\n",
+-			   ch->id, virt_chan ? virt_chan->name : "(none)");
++		seq_printf(s, "%d\t\t%s%s\n",
++			   ch->id,
++			   virt_chan ? virt_chan->name : "(none)",
++			   ch->locked ? " LOCKED" : "");
+ 
+ 		spin_unlock_irqrestore(&ch->lock, flags);
+ 	}
+@@ -1934,6 +1943,24 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 		spin_lock_init(&ch->lock);
+ 		ch->serving = NULL;
+ 		ch->signal = -1;
++
++		/*
++		 * Nomadik variants can have channels that are locked
++		 * down for the secure world only. Lock up these channels
++		 * by perpetually serving a dummy virtual channel.
++		 */
++		if (vd->nomadik) {
++			u32 val;
++
++			val = readl(ch->base + PL080_CH_CONFIG);
++			if (val & (PL080N_CONFIG_ITPROT | PL080N_CONFIG_SECPROT)) {
++				dev_info(&adev->dev, "physical channel %d reserved "
++					 "for secure access only\n", i);
++				ch->locked = true;
++			} else
++				ch->locked = false;
++		}
++
+ 		dev_dbg(&adev->dev, "physical channel %d is %s\n",
+ 			i, pl08x_phy_channel_busy(ch) ? "BUSY" : "FREE");
+ 	}
+@@ -2016,6 +2043,12 @@ static struct vendor_data vendor_pl080 = {
+ 	.dualmaster = true,
+ };
+ 
++static struct vendor_data vendor_nomadik = {
++	.channels = 8,
++	.dualmaster = true,
++	.nomadik = true,
++};
++
+ static struct vendor_data vendor_pl081 = {
+ 	.channels = 2,
+ 	.dualmaster = false,
+@@ -2036,9 +2069,9 @@ static struct amba_id pl08x_ids[] = {
+ 	},
+ 	/* Nomadik 8815 PL080 variant */
+ 	{
+-		.id	= 0x00280880,
++		.id	= 0x00280080,
+ 		.mask	= 0x00ffffff,
+-		.data	= &vendor_pl080,
++		.data	= &vendor_nomadik,
+ 	},
+ 	{ 0, 0 },
+ };
+diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
+index e64ce2c..0254901 100644
+--- a/include/linux/amba/pl08x.h
++++ b/include/linux/amba/pl08x.h
+@@ -92,6 +92,8 @@ struct pl08x_bus_data {
+  * right now
+  * @serving: the virtual channel currently being served by this physical
+  * channel
++ * @locked: channel unavailable for the system, e.g. dedicated to secure
++ * world
+  */
+ struct pl08x_phy_chan {
+ 	unsigned int id;
+@@ -99,6 +101,7 @@ struct pl08x_phy_chan {
+ 	spinlock_t lock;
+ 	int signal;
+ 	struct pl08x_dma_chan *serving;
++	bool locked;
+ };
+ 
+ /**
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.7.6
 
