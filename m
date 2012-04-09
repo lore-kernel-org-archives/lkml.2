@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab2DITNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:13:22 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24729 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab2DITNU (ORCPT
+	id S1757862Ab2DITP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:15:56 -0400
+Received: from mga07.intel.com ([143.182.124.22]:5920 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753224Ab2DITPx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:13:20 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6675"; a="177759393"
-X-IronPort-AV: E=Sophos;i="4.75,394,1330934400"; 
-   d="scan'208";a="301069176"
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+	Mon, 9 Apr 2012 15:15:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <20355.13473.382563.281929@gargle.gargle.HOWL>
-Date: Tue, 10 Apr 2012 00:42:33 +0530
-To: Michael Leun <lkml20120218@newton.leun.net>
-CC: Ben Greear <greearb@candelatech.com>,
-        Kelly Anderson <kelly@silka.with-linux.com>,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <casteyde.christian@free.fr>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>
-Subject: [ath9k-devel] 3.4-rc ath9k regression (Re: 3.3.1 ath9k regression)
-In-Reply-To: <20120409010816.36244f17@xenia.leun.net>
-References: <4F7A8EB7.4060200@silka.with-linux.com>
-	<4F7A923D.5000002@candelatech.com>
-	<CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com>
-	<4F7A9D5C.8040402@silka.with-linux.com>
-	<CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com>
-	<4F7AAAD9.2040307@silka.with-linux.com>
-	<CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com>
-	<CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
-	<4F7AB6FE.3080009@silka.with-linux.com>
-	<20120403200306.0afbb48b@xenia.leun.net>
-	<CAD2nsn2k3mKMm3gK=fXqDYcOeKBwkyqGz9RWz1KOe=6=CDyhHA@mail.gmail.com>
-	<CAD2nsn1AshPTYd-FcydV-5HpiXPb0FfqLQPTqFYyw3kJX+fXEA@mail.gmail.com>
-	<20120404235104.682cfad3@xenia.leun.net>
-	<4F7DE3A4.1040705@candelatech.com>
-	<CAD2nsn16AozFF2QhiY063-48bKiXdyQLmSqJLLHPpsZ3H3JtHQ@mail.gmail.com>
-	<4F7F52BD.7060906@candelatech.com>
-	<20120409010816.36244f17@xenia.leun.net>
-X-Mailer: VM 8.2.0a under 23.4.1 (x86_64-unknown-linux-gnu)
-X-Originating-IP: [172.30.48.1]
+In-Reply-To: <201204091849.20705.arnd@arndb.de>
+References: <20120409182041.317.33360.stgit@dwillia2-linux.jf.intel.com>
+	<20120409182203.317.81835.stgit@dwillia2-linux.jf.intel.com>
+	<201204091849.20705.arnd@arndb.de>
+Date: Mon, 9 Apr 2012 12:15:50 -0700
+Message-ID: <CABE8wwszp3MoVxCdUfjUtvMkugL7VzOYTSxFQwqwQ7U9Wr0kbA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] of_serial: add support for setup quirks
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: gregkh@linuxfoundation.org, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        linux-serial@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, alan@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Leun wrote:
-> After an suspend to disk / resume cycle (in kernel suspend to disk,
-> openSuSE) with 3.4-rc2 my ath9k wireless does not ping
-> anymore.
-> 
-> Output of iwconfig wlan0 looks just as usual (associated to AP).
-> 
-> iwconfig wlan0 essid <myssid> fixes this (causes an
-> deauthenticate/authenticate with AP) - then connectivity is there again.
-> 
-> Guess what: "Of course" does not happen when reverting
-> c1afdaff90538ef085b756454f12b29575411214 ath9k: fix going to full-sleep
-> on PS idle.
-> 
-> So, in my opinion it should be seriously considered to revert that patch
-> until it is fully understood what is going on and why.
-> 
-> It may look theoretically correct (I've no knowledge that would enable
-> me assess that), but it seems to have caused 3 more or less different
-> problems to various people.
+On Mon, Apr 9, 2012 at 11:49 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 09 April 2012, Dan Williams wrote:
+>> Benign conversion of of_serial.c to offer the option of 'setup' quirks
+>> similar to how 8250_pci.c houses the pci-serial-device quirks.
+>>
+>> A setup quirk allows custom uart_port ops to specified in the
+>> of_serial_info data fed to each serial of_device_id.
+>>
+>> Tegra's 'break' quirk is the target consumer.
+>>
+>> Cc: Colin Cross <ccross@android.com>
+>> Cc: Olof Johansson <olof@lixom.net>
+>> Cc: Stephen Warren <swarren@nvidia.com>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+>> ---
+>>  drivers/tty/serial/of_serial.c |   68 ++++++++++++++++++++++++++++------------
+>>  1 files changed, 47 insertions(+), 21 deletions(-)
+>
+> I don't think this is a good idea. Aside from the bug that you introduce
+> (you can no longer have multiple ports of the same type because of overwrite
+> the static info->line number),
 
-The patch in question should just be reverted for 3.3.1-stable. It would mean
-that power-saving would take a hit on that kernel - but it's impact would be
-much lesser than a broken driver, one that fails in basic connection.
-I'll send a patch reverting c1afdaff90538ef085b756454f12b29575411214.
+ah, yes, good catch.
 
-For 3.4, can you build the driver with debugging enabled [1] , load the driver
-with debug=0x801 and post the log here (before/after resume) ?
+> it seems an unnecessary complication.
+> Either just add the quirk to the of_serial file based on the compatible value,
+> or do a trivial new driver that has a subset of the existing one you need,
+> plus the quirk.
 
-Thanks.
+ok.
 
-[1] : http://linuxwireless.org/en/users/Drivers/ath9k/debug
+The open question was where to house tegra_serial_handle_break, I'd
+just as soon keep it all in of_serial.c and maintain the temporary
+exports for use in the to-be-removed board files in
+arch/arm/mach-tegra.
 
-Sujith
+--
+Dan
