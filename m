@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab2DIV2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:28:44 -0400
-Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:49885 "EHLO
-	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab2DIV2n (ORCPT
+	id S1757574Ab2DIV3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:29:08 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38149 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757125Ab2DIV3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:28:43 -0400
-Message-ID: <1334006908.12209.150.camel@dagon.hellion.org.uk>
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Sergei Trofimovich <slyich@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Date: Mon, 09 Apr 2012 22:28:28 +0100
-In-Reply-To: <20120408115920.4d7d2197@sf.home>
-References: <20120408115920.4d7d2197@sf.home>
-Organization: 
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.1.7
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: arm: CONFIG_ARM_PATCH_PHYS_VIRT=y is broken on kirkwood
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+	Mon, 9 Apr 2012 17:29:06 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, libseccomp-discuss@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>
+Subject: Re: ANN: libseccomp
+Date: Mon, 09 Apr 2012 17:28:41 -0400
+Message-ID: <1524909.RpscfJeEfO@sifl>
+User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
+In-Reply-To: <CA+5PVA6vQF5T4j2-GoURrLshzCybELd-Hn3cgEd5nHVcQgNV7w@mail.gmail.com>
+References: <1540670.AFBi1SpGoi@sifl> <4F83403F.3010609@zytor.com> <CA+5PVA6vQF5T4j2-GoURrLshzCybELd-Hn3cgEd5nHVcQgNV7w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-08 at 11:59 +0300, Sergei Trofimovich wrote:
-> In order to make the box boot I had to set:
->     CONFIG_EMBEDDED=y
->     # CONFIG_ARM_PATCH_PHYS_VIRT is not set
->    CONFIG_PHYS_OFFSET=0x0
+On Monday, April 09, 2012 04:14:15 PM Josh Boyer wrote:
+> On Mon, Apr 9, 2012 at 4:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 04/09/2012 12:25 PM, Josh Boyer wrote:
+> >> Do you think the GPLv2 license will limit adoption of it's usage across
+> >> a wider variety of software projects?  I'm not anti-GPL by any means
+> >> but I am slightly surprised libseccomp is using it.
+> >> 
+> >> josh
+> > 
+> > Yes, on the surface of it this would seem more like LGPL material.
+> > 
+> > Other than that, very much needed!
 > 
-> Do you have an idea why it does not boot anymore by default?
+> Agreed on both points.  I only brought this up now as it's very early
+> in the project's lifetime.  If a relicense were to happen it would be
+> better to do it before a larger number of developers started
+> contributing to the project.
 
-There is a u-boot commit which fixes this issue:
+You both bring up a good point, the LGPL seems like a better choice.  I chose 
+GPLv2 when I started simply out of habit; it is a license I am both familiar 
+and comfortable with so it has a tendency to get used when I start a new chunk 
+of code.
 
-commit 679530278d5a79d34e356ad2d452f4400953bfc2
-Author: Michael Walle <[michael@walle.cc]>
-Date:   Mon Feb 6 22:42:10 2012 +0530
-
-    arm, arm-kirkwood: disable l2c before linux boot
-    
-    The decompressor expects the L2 cache to be disabled. This fixes booting
-    some kernels, which have CONFIG_ARM_PATCH_PHYS_VIRT enabled.
-    
-    Signed-off-by: Michael Walle <michael@walle.cc>
-    Acked-by: Prafulla Wadaskar <prafulla@marvell.com>
-    Cc: Albert ARIBAUD <albert.u.boot@aribaud.net>
-    Cc: Prafulla Wadaskar <prafulla@marvell.com>
-    Cc: Wolfgang Denk <wd@denx.de>
-
-Ian.
+As you pointed out, the project is still very new with only a handful of 
+authors beyond myself.  I'll get in touch with them privately to make sure 
+they are comfortable with the relicense and assuming there are no problems 
+I'll report back when everything has been changed.
 
 -- 
-Ian Campbell
-
-
-If I can have honesty, it's easier to overlook mistakes.
-		-- Kirk, "Space Seed", stardate 3141.9
+paul moore
+www.paul-moore.com
 
