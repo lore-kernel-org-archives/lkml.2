@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab2DIQLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 12:11:20 -0400
-Received: from fieldses.org ([174.143.236.118]:54002 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932069Ab2DIQLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 12:11:17 -0400
-Date: Mon, 9 Apr 2012 12:11:14 -0400
-From: "bfields@fieldses.org" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-Message-ID: <20120409161114.GB6482@fieldses.org>
-References: <4F7F230A.6080506@parallels.com>
- <20120406234039.GA20940@fieldses.org>
- <4F82C6E3.3030009@parallels.com>
- <20120409094743.56932677@tlielax.poochiereds.net>
- <4F82F16C.7030303@parallels.com>
- <20120409112739.6a823d6f@corrin.poochiereds.net>
- <4F830999.5000504@parallels.com>
+	id S932235Ab2DIQOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 12:14:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54888 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab2DIQOs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 12:14:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dave Jones <davej@redhat.com>
+Subject: Re: No more Linux 2.4 releases
+Date: Mon, 9 Apr 2012 16:14:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org
+References: <20120409133050.GA17473@1wt.eu> <201204091522.38021.arnd@arndb.de> <20120409155639.GA21505@redhat.com>
+In-Reply-To: <20120409155639.GA21505@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F830999.5000504@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204091614.41162.arnd@arndb.de>
+X-Provags-ID: V02:K0:lKvnDha+sYo8G1n8scc+AmyaE1k/70RNF569pkoRzVO
+ IMXkm3LSkmyXgIHO04mgoFZu1Wc+9IG1IzUdYEbnCbr0DChMXl
+ T4HnS+ykdevgLuFthnolLg4PLHz9H2ST4476oAC45vzdVEgzqP
+ u03tBLdXZbvcuyunAh8ONSGQEDqWTfWYfFJ20X0BQyMMjjkWQW
+ BL19qpHHUVWITQysb/Q959AYUjYwmuT8xz0PvxY6IMn96CYR/R
+ NZgeDcORD+FFdzG6sTLK3QfGWqDnK8GreK+fzSDzpl3NIb1Kv6
+ tySo4IwnLd/vV3idY3I4KAoD6jPRn+RfHkapAbKaChOlYH+Go5
+ 11kcxetEmJWvbE4T7qJE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 08:08:57PM +0400, Stanislav Kinsbursky wrote:
-> 09.04.2012 19:27, Jeff Layton пишет:
-> >
-> >If you allow one container to hand out conflicting locks while another
-> >container is allowing reclaims, then you can end up with some very
-> >difficult to debug silent data corruption. That's the worst possible
-> >outcome, IMO. We really need to actively keep people from shooting
-> >themselves in the foot here.
-> >
-> >One possibility might be to only allow filesystems to be exported from
-> >a single container at a time (and allow that to be overridable somehow
-> >once we have a working active/active serving solution). With that, you
-> >may be able limp along with a per-container grace period handling
-> >scheme like you're proposing.
-> >
+On Monday 09 April 2012, Dave Jones wrote:
+> On Mon, Apr 09, 2012 at 03:22:37PM +0000, Arnd Bergmann wrote:
+>  
+>  > I'm still looking for a copy of the "historic" kernels that we used
+>  > to have on kernel.org, but that's not your problem.
 > 
-> Ok then. Keeping people from shooting themselves here sounds reasonable.
-> And I like the idea of exporting a filesystem only from once per
-> network namespace.
+> http://archive.org/details/git-history-of-linux
 
-Unfortunately that's not going to get us very far, especially not in the
-v4 case where we've got the common read-only pseudoroot that everyone
-has to share.
+Cool, thanks a lot!
 
---b.
-
-> Looks like there should be a list of pairs
-> "exported superblock - network namespace". And if superblock is
-> exported already in other namespace, then export in new namespace
-> have to be skipped (replaced?) with appropriate warning (error?)
-> message shown in log.
-> Or maybe we even should deny starting of NFS server if one of it's
-> exports is shared already by other NFS server "instance"?
-> But any of these ideas would be easy to implement in RAM, and thus
-> it suits only for containers...
-> 
-> -- 
-> Best regards,
-> Stanislav Kinsbursky
+	Arnd
