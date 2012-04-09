@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab2DIWob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 18:44:31 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62360 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab2DIWoa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 18:44:30 -0400
+	id S1758120Ab2DIWol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 18:44:41 -0400
+Received: from smtpfree.forptr.21cn.com ([59.36.102.64]:25080 "EHLO 21cn.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758098Ab2DIWoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 18:44:39 -0400
+HMM_SOURCE_IP: 10.27.2.6:35419.515486603
+HMM_ATTACHE_NUM: 0000
+HMM_SOURCE_TYPE: SMTP
+0/X-Brightmail-Tracker: AAAAAA==
+1/X-Total-Score: 5:
+3/X-Total-Score: 0:
+X-FILTER-SCORE: to=<linux-kernel@vger.kernel.orglinux-leman-commercial@alphanet.chlinux-list@lyris.tucows.comlinux-mbone@linuxtv.orglinuxmine@gmail.comlinux-newbie@vger.kernel.org>, score=<1334011467ZZqZZdZZXZG0kINqdXRZZNNbNNdNNrNORHfgbdrtNNgN>  
+Reply-To: xtay131415@126.com
+Message-ID: <63D28567B42EA2182EDBEA71E2A6E3BA@qpnvsw>
+From: "bcl" <backstromlqt@21cn.com>
+To: <linux-kernel@vger.kernel.org>, <linux-leman-commercial@alphanet.ch>,
+        <linux-list@lyris.tucows.com>, <linux-mbone@linuxtv.org>,
+        <linuxmine@gmail.com>, <linux-newbie@vger.kernel.org>
+Subject: =?utf-8?B?6L2F6bSi6aqM6JqZ?=
+Date: Tue, 10 Apr 2012 06:43:58 +0800
 MIME-Version: 1.0
-In-Reply-To: <20120409222120.GA14149@kroah.com>
-References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
-	<20120408195044.13ea6c8e.akpm@linux-foundation.org>
-	<CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
-	<alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
-	<CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
-	<alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com>
-	<CAMbhsRRUNVn9_eL_obZxcZv7LqDW_8SeRApdKzDePbaW_Y4uvg@mail.gmail.com>
-	<20120409222120.GA14149@kroah.com>
-Date: Mon, 9 Apr 2012 15:44:28 -0700
-X-Google-Sender-Auth: USoPO_02QPqgrfixSFGyEerEswY
-Message-ID: <CANcMJZCAzixEDWpCDJyqqzSKjNka-JU1yu7ky+sgfQHBT+vkKA@mail.gmail.com>
-Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
-From: john stultz <johnstul@us.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@google.com>, David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Christian Bejram <christian.bejram@stericsson.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="utf-8"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q39Mj0cr021112
 
-On Mon, Apr 9, 2012 at 3:21 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Apr 09, 2012 at 03:13:00PM -0700, Colin Cross wrote:
->> sched: Add a generic notifier when a task struct is about to be freed
->> https://www.codeaurora.org/gitweb/quic/la/?p=kernel/common.git;a=commitdiff;h=667dffa787a87ef4ea43cc65957ce96077fdcd0a
->
-> Yes, I can't add a patch like that for this driver, that is why I
-> thought everyone was getting together to "properly" determine how to
-> solve this oom notifier problem.  Has that work stalled somwhere?
+920519
 
-Anton Vorontsov  has been working on this (and just sent out some
-related vmevent patches today). His hope is to use the vmevent  or mem
-cgroup interface to notify a userland killer to get the same or
-improved behavior as the in-kernel lowmemory killer.
+     dygg æˆ‘å…¬å¸å¯ä»¥åŠç†<å…¨-å›½-å„-åœ°>ä¸€èˆ¬{ç¨#å˜Œ}...
 
-thanks
--john
+    æ”¶è´¹åº•,  å¦‚æœ‰éœ€è¦è¯·è”ç³».
+
+  
+    å¼ R- â‘ â‘¢â‘§â’‰â’‹â’Šâ’â’ˆâ’Šâ’‹â’      QQ:â’â’â’Šâ’Šâ’â’Œ.0.â’Œâ’
+  
+
+                               Â· æ¸©å®¶å®ä¸åœŸè€³å…¶æ€»ç†åŸƒå°”å¤šå®‰ä¸¾è¡Œä¼šè°ˆ
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
