@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2DIGCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 02:02:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45927 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab2DIGCy convert rfc822-to-8bit (ORCPT
+	id S1752497Ab2DIGEa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 02:04:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33966 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab2DIGE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 02:02:54 -0400
+	Mon, 9 Apr 2012 02:04:29 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <tglx@linutronix.de>
+CC: <suresh.b.siddha@intel.com>, <linux-kernel@vger.kernel.org>,
+        <johnstul@us.ibm.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH] clockevents: Leave broadcast device shtudown only if the current device is always running.
+Date: Mon, 9 Apr 2012 11:33:43 +0530
+Message-ID: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-In-Reply-To: <20120208164736.GA31066@redhat.com>
-References: <20120208160405.GA1587@gmail.com>
-	<20120208164736.GA31066@redhat.com>
-Date: Mon, 9 Apr 2012 14:02:53 +0800
-Message-ID: <CAEH94Lgha0Ug2Tk9-22=B58tb9xWG5knAfB04aVbW63F5Xi6TA@mail.gmail.com>
-Subject: Re: tools/virtio: Compile errors
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Dongsu Park <advance38@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 12:47 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Wed, Feb 08, 2012 at 05:04:05PM +0100, Dongsu Park wrote:
->> Hi,
->>
->> there are compile problems under tools/virtio.
->> If I simply run make,
->>
->> ~/linuxsrc/linux-3.2/tools/virtio $ make
->> gcc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
->> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
->> ../../drivers/virtio/virtio_ring.c
->> ../../drivers/virtio/virtio_ring.c:24:26: fatal error: linux/module.h:
->> No such file or directory
->> compilation terminated.
->> make: *** [virtio_ring.o] Error 1
->
->
->> By the way, my system is Ubuntu 11.10 with Kernel 3.2.
->>
->> Cheers,
->> Dongsu
->
-> This patch is missing - I'll put it upstream.
->
-> --->
->
-> tools/virtio: add module.h stub
->
-> make it build with linux 3.2
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->
-> diff --git a/tools/virtio/linux/module.h b/tools/virtio/linux/module.h
-> new file mode 100644
-> index 0000000..96868eb
-> --- /dev/null
-> +++ b/tools/virtio/linux/module.h
-> @@ -0,0 +1,3 @@
-> +#ifndef LINUX_MODULE_H
-> +#define LINUX_MODULE_H
-> +#endif
-After the patch was applied in my env, i met another issue.
-[root@f15 virtio]# make test
-cc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
--fno-strict-overflow  -MMD   -c -o virtio_ring.o
-../../drivers/virtio/virtio_ring.c
-../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_add_buf\u2019:
-../../drivers/virtio/virtio_ring.c:277:2: warning: implicit
-declaration of function \u2018wmb\u2019
-[-Wimplicit-function-declaration]
-../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_get_buf\u2019:
-../../drivers/virtio/virtio_ring.c:437:2: warning: implicit
-declaration of function \u2018rmb\u2019
-[-Wimplicit-function-declaration]
-cc   virtio_test.o virtio_ring.o   -o virtio_test
-virtio_ring.o: In function `virtqueue_add_buf':
-/home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:277:
-undefined reference to `wmb'
-virtio_ring.o: In function `virtqueue_get_buf':
-/home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:437:
-undefined reference to `rmb'
-collect2: ld returned 1 exit status
-make: *** [virtio_test] Error 1
+Commit 77b0d60{clockevents: Leave the broadcast device in shutdown mode
+when not needed} was intended to leave the broadcast device in shutdown mode
+when the per-cpu clockevent devices are always running.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This breaks the systems where per cpu clock events stop in low power states.
 
+Hence revert 77b0d60 and implement the same requirement with use
+of C3STOP feature flag.
 
+Not-yet-signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>
+---
+The 3.4-rc1 kernel introduced a regression with cpuidle and after debugging it
+arrowed down the issue to commit 77b0d60 {clockevents: Leave the broadcast
+device in shutdown mode when not needed}.
 
+On OMAP, the percpu clock-events die in the low power states and
+hence the broadcast clock-event needs to be active. With 77b0d60 
+patch I was seeing that broadcast device was not getting programmed
+while entering in low power states and hence system locks up.
+
+I am not completely sure about this fix and the patch is RFC.
+
+ kernel/time/tick-broadcast.c |    4 ----
+ kernel/time/tick-oneshot.c   |    3 ++-
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index e883f57..fd4a7b1 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -575,15 +575,11 @@ void ntick_broadcast_switch_to_oneshot(void)
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+-	if (cpumask_empty(tick_get_broadcast_mask()))
+-		goto end;
+ 
+ 	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+ 	bc = tick_broadcast_device.evtdev;
+ 	if (bc)
+ 		tick_broadcast_setup_oneshot(bc);
+-
+-end:
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
+ 
+diff --git a/kernel/time/tick-oneshot.c b/kernel/time/tick-oneshot.c
+index 8241090..318ec0c 100644
+--- a/kernel/time/tick-oneshot.c
++++ b/kernel/time/tick-oneshot.c
+@@ -82,7 +82,8 @@ int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *))
+ 	td->mode = TICKDEV_MODE_ONESHOT;
+ 	dev->event_handler = handler;
+ 	clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
+-	tick_broadcast_switch_to_oneshot();
++	if (dev->features & CLOCK_EVT_FEAT_C3STOP)
++		tick_broadcast_switch_to_oneshot();
+ 	return 0;
+ }
+ 
 -- 
-Regards,
+1.7.5.4
 
-Zhi Yong Wu
