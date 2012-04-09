@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021Ab2DIEQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 00:16:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51752 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab2DIEQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 00:16:36 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] video: exynos: fix build warning and bad pointer deref in dp driver
-Date: Sun,  8 Apr 2012 21:16:22 -0700
-Message-Id: <1333944982-15859-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.9.2.359.gebfc2
+	id S1751150Ab2DIFCd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 01:02:33 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:56049 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750886Ab2DIFCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 01:02:32 -0400
+Message-ID: <1333947749.4172.4.camel@joe2Laptop>
+Subject: Re: [PATCH] dma: pl330: fix a couple of compilation warnings
+From: Joe Perches <joe@perches.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org, Boojin Kim <boojin.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Date: Sun, 08 Apr 2012 22:02:29 -0700
+In-Reply-To: <CAOesGMgav3iqqNBtc1DccKKvRSpnNnDaCZmKBsdHj4feq-ns_A@mail.gmail.com>
+References: <1333919920-25481-1-git-send-email-olof@lixom.net>
+	 <1333921246.2508.8.camel@joe2Laptop>
+	 <CAOesGMgav3iqqNBtc1DccKKvRSpnNnDaCZmKBsdHj4feq-ns_A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not 100% sure if the fix for 'adjust_request' is correct, since
-it's uncertain what the original intent was. But it's so clearly an
-uninitialized pointer dereference that my resolution seems to make sense.
+On Sun, 2012-04-08 at 16:24 -0700, Olof Johansson wrote:
+> On Sun, Apr 8, 2012 at 2:40 PM, Joe Perches <joe@perches.com> wrote:
+> > On Sun, 2012-04-08 at 14:18 -0700, Olof Johansson wrote:
+> >> Move a couple of tests and do a minor refactor to avoid:
+> > []
+> >> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> > []
+> >> @@ -2926,8 +2928,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+> >>       INIT_LIST_HEAD(&pd->channels);
+> >>
+> >>       /* Initialize channel parameters */
+> >> -     num_chan = max(pdat ? pdat->nr_valid_peri : (u8)pi->pcfg.num_peri,
+> >> -                     (u8)pi->pcfg.num_chan);
+> >> +     num_chan = max_t(int, pdat ? pdat->nr_valid_peri :
+> >> +                                  pi->pcfg.num_peri,
+> >> +                           pi->pcfg.num_chan);
+> >>       pdmac->peripherals = kzalloc(num_chan * sizeof(*pch), GFP_KERNEL);
+> >
+> > Few trivial things:
+> >
+> > There's no error checking for a malloc failure
+> > This should probably be kcalloc
+> 
+> Yes, this driver could do with further cleanups, congratulations on
+> your observations.
+> 
+> All of that is completely unrelated to this patch. Feel free to submit
+> your own changes to clean up the driver further.
 
-drivers/video/exynos/exynos_dp_core.c: In function 'exynos_dp_set_link_train':
-drivers/video/exynos/exynos_dp_core.c:521:21: warning: 'adjust_request' may be used uninitialized in this function [-Wuninitialized]
-drivers/video/exynos/exynos_dp_core.c:481:6: note: 'adjust_request' was declared here
-drivers/video/exynos/exynos_dp_core.c:529:18: warning: 'reg' may be used uninitialized in this function [-Wuninitialized]
-drivers/video/exynos/exynos_dp_core.c:395:6: note: 'reg' was declared here
+No thanks.  It's adjacent to the lines you modify
+which is the only reason I noticed.  You might
+also notice any patch I submit against the current
+tree would conflict with your changes.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/video/exynos/exynos_dp_core.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+It'd be better if you actually fix problems with
+the code and not simply make compiler warnings be
+silenced when the problem is fundamentally that
+the compiler is needs improvements.
 
-diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-index 2a4481c..8973e18 100644
---- a/drivers/video/exynos/exynos_dp_core.c
-+++ b/drivers/video/exynos/exynos_dp_core.c
-@@ -392,24 +392,19 @@ static unsigned int exynos_dp_get_lane_link_training(
- 				struct exynos_dp_device *dp,
- 				int lane)
- {
--	u32 reg;
--
- 	switch (lane) {
- 	case 0:
--		reg = exynos_dp_get_lane0_link_training(dp);
--		break;
-+		return exynos_dp_get_lane0_link_training(dp);
- 	case 1:
--		reg = exynos_dp_get_lane1_link_training(dp);
--		break;
-+		return exynos_dp_get_lane1_link_training(dp);
- 	case 2:
--		reg = exynos_dp_get_lane2_link_training(dp);
--		break;
-+		return exynos_dp_get_lane2_link_training(dp);
- 	case 3:
--		reg = exynos_dp_get_lane3_link_training(dp);
--		break;
-+		return exynos_dp_get_lane3_link_training(dp);
- 	}
- 
--	return reg;
-+	WARN_ON(1);
-+	return 0;
- }
- 
- static void exynos_dp_reduce_link_rate(struct exynos_dp_device *dp)
-@@ -489,13 +484,13 @@ static int exynos_dp_process_clock_recovery(struct exynos_dp_device *dp)
- 				6, link_status);
- 	lane_count = dp->link_train.lane_count;
- 
-+	adjust_request = link_status + (DPCD_ADDR_ADJUST_REQUEST_LANE0_1
-+					- DPCD_ADDR_LANE0_1_STATUS);
-+
- 	if (exynos_dp_clock_recovery_ok(link_status, lane_count) == 0) {
- 		/* set training pattern 2 for EQ */
- 		exynos_dp_set_training_pattern(dp, TRAINING_PTN2);
- 
--		adjust_request = link_status + (DPCD_ADDR_ADJUST_REQUEST_LANE0_1
--						- DPCD_ADDR_LANE0_1_STATUS);
--
- 		exynos_dp_get_adjust_train(dp, adjust_request);
- 
- 		buf[0] = DPCD_SCRAMBLING_DISABLED |
--- 
-1.7.9.2.359.gebfc2
 
