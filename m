@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084Ab2DIHWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 03:22:25 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:44200 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754573Ab2DIHWW (ORCPT
+	id S1754127Ab2DIHVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 03:21:31 -0400
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:44013 "EHLO
+	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753835Ab2DIHV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 03:22:22 -0400
-Date: Mon, 9 Apr 2012 15:21:59 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Borislav Petkov <bp@amd64.org>
-Cc: linux-crypto@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH] crypto, xor: Sanitize checksumming function selection
-	output
-Message-ID: <20120409072158.GB30875@gondor.apana.org.au>
-References: <1333544770-21303-1-git-send-email-bp@amd64.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333544770-21303-1-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 9 Apr 2012 03:21:29 -0400
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: benh@kernel.crashing.org, jwboyer@gmail.com, grant.likely@secretlab.ca,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: Tanmay Inamdar <tinamdar@apm.com>
+Subject: [V2 2/5] powerpc: 40x: Add AHB, APB of_device_ids
+Date: Mon,  9 Apr 2012 12:50:49 +0530
+Message-Id: <1333956052-25319-2-git-send-email-tinamdar@apm.com>
+X-Mailer: git-send-email 1.6.1.rc3
+In-Reply-To: <1333956052-25319-1-git-send-email-tinamdar@apm.com>
+References: <1333956052-25319-1-git-send-email-tinamdar@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 04, 2012 at 03:06:10PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Currently, it says
-> 
-> [    1.015541] xor: automatically using best checksumming function: generic_sse
-> [    1.040769]    generic_sse:  6679.000 MB/sec
-> [    1.045377] xor: using function: generic_sse (6679.000 MB/sec)
-> 
-> and repeats the function name three times unnecessarily. Change it into
-> 
-> [    1.015115] xor: automatically using best checksumming function:
-> [    1.040794]    generic_sse:  6680.000 MB/sec
-> 
-> and save us a line in dmesg.
-> 
-> No functional change.
-> 
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Adding of_device_id's for AHB and APB buses used in klondike (APM8018X) in
+platforms/40x/ppc40x_simple.c file
 
-Patch applied.  Thanks!
+Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+---
+:100644 100644 9761206... 7b518ed... M	arch/powerpc/platforms/40x/ppc40x_simple.c
+ arch/powerpc/platforms/40x/ppc40x_simple.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/powerpc/platforms/40x/ppc40x_simple.c b/arch/powerpc/platforms/40x/ppc40x_simple.c
+index 9761206..7b518ed 100644
+--- a/arch/powerpc/platforms/40x/ppc40x_simple.c
++++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
+@@ -29,6 +29,8 @@ static __initdata struct of_device_id ppc40x_of_bus[] = {
+ 	{ .compatible = "ibm,plb4", },
+ 	{ .compatible = "ibm,opb", },
+ 	{ .compatible = "ibm,ebc", },
++	{ .compatible = "apm,ahb", },
++	{ .compatible = "apm,apb", },
+ 	{ .compatible = "simple-bus", },
+ 	{},
+ };
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.6.1.rc3
+
