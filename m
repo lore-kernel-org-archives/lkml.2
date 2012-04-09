@@ -1,75 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab2DIXDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 19:03:24 -0400
-Received: from static.10.106.40.188.clients.your-server.de ([188.40.106.10]:59708
-	"EHLO server.techwebex.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044Ab2DIXDX (ORCPT
+	id S1758052Ab2DIXEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 19:04:41 -0400
+Received: from na3sys009aob129.obsmtp.com ([74.125.149.136]:48814 "EHLO
+	na3sys009amx259.postini.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752044Ab2DIXEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 19:03:23 -0400
-X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Apr 2012 19:03:23 EDT
-To: linux-kernel@vger.kernel.org
-Subject: tesla
-Date: Tue, 10 Apr 2012 08:53:48 +1000
-From: admin <administrator@testphplist.com>
-Message-ID: <c47c7bb984433410fbbb60ef7116d01e@www.health-essential-oils.net>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.17
-X-MessageID: 92
-X-ListMember: linux-kernel@vger.kernel.org
+	Mon, 9 Apr 2012 19:04:40 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+In-Reply-To: <20120409222903.GA31622@lunn.ch>
+References: <20120409222903.GA31622@lunn.ch>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 9 Apr 2012 16:04:16 -0700
+Message-ID: <CAJOA=zP8XFTN1mcAyUky3ovrx4Dg1zb9zaB5r8zUYE46Ec-tMQ@mail.gmail.com>
+Subject: Re: COMMON_CLK_DISABLE_UNUSED
+To: mturquette@linaro.org, arnd.bergmann@linaro.org, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 9, 2012 at 3:29 PM, Andrew Lunn <andrew@lunn.ch> wrote:
+> I think it would be good to consider deleting this config option and
+> just have the code always enabled.
 
-Hi Fellow Seekers,
+I agree.  We already support the CLK_IGNORE_UNUSED flag, so any
+platforms that don't want this functionality wholesale can set that
+bit for every clock.
 
-Did you know Marconi used 16 of Tesla’s patents for Radio?
+I'll pull out that option.
 
-If you like Tesla information have a look at this. 
-
-http://payspree.com/6038/magnapulse
-
-Ian 
-
-Ps
-
-I just “rediscovered” a great little business. Available as a
-franchise in all area of Australia.
-
-No experience necessary. Full training given. Full or part vendor
-finance available. Easily earn more than$35 per hour. 
-
-Also independant agents required.
-
-If you or a friend needs to earn money this is a great little
-opportunity.
-
-Have a look at www.thetoenailpeople.com.au
-<http://www.thetoenailpeople.com.au/>
-
-Take a look or send the link to a friend, this will work in small
-towns and in the mines. I encourage you to take a look. Then give
-Aaron a ring. What have you or your out of work friend have to lose??
-
-Take care
-
-Ian
-
-
-
---
-If you do not want to receive any more info follow the link to unsubscribe,
- http://www.health-essential-oils.net/lists/?p=unsubscribe&uid=7b0adce759d7557f06f64d49878bb830
-
-
-
-
---
-powered by phpList, www.phplist.com --
-
-
+Regards,
+Mike
