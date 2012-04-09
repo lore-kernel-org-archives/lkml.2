@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab2DIKQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 06:16:28 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756121Ab2DIKQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 06:16:27 -0400
-Message-ID: <4F82B6ED.2010500@nod.at>
-Date: Mon, 09 Apr 2012 12:16:13 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1753047Ab2DIKT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 06:19:26 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:25282
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752201Ab2DIKTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 06:19:25 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839hd24h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <swarren@wwwdotorg.org>
+Subject: [PATCH 1/1] pinctrl: add some error checking for user interfaces
+Date: Mon, 9 Apr 2012 18:30:09 +0800
+Message-ID: <1333967409-8168-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: swapoff() runs forever
-References: <4F81F564.3020904@nod.at> <4F82752A.6020206@openvz.org>
-In-Reply-To: <4F82752A.6020206@openvz.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigBD799693CD890BDBE013638D"
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigBD799693CD890BDBE013638D
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Am 09.04.2012 07:35, schrieb Konstantin Khlebnikov:
-> Richard Weinberger wrote:
->> Hi!
->>
->> I'm observing a strange issue (at least on UML) on recent Linux kernel=
-s.
->> If swap is being used the swapoff() system call never terminates.
->> To be precise "while ((i =3D find_next_to_unuse(si, i)) !=3D 0)" in tr=
-y_to_unuse()
->> never terminates.
->>
->> The affected machine has 256MiB ram and 256MiB swap.
->> If an application uses more than 256MiB memory swap is being used.
->> But after the application terminates the free command still reports th=
-at a few
->> MiB are on my swap device and swappoff never terminates.
->=20
-> After last tmpfs changes swapoff can take minutes.
-> Or this time it really never terminates?
+This patch can avoid kernel oops in case the mux or config
+function is not supported by driver.
 
-I've never waited forever. ;-)
-Once I've waited for >30 minutes.
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ drivers/pinctrl/pinconf.c |    4 ++++
+ drivers/pinctrl/pinmux.c  |   15 +++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
-I don't think that it's related to tmpfs because it happens
-also while shutting down the system after all filesystems have been unmou=
-nted.
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index eb3a14f..384dcc1 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -448,8 +448,12 @@ static void pinconf_dump_pin(struct pinctrl_dev *pctldev,
+ static int pinconf_pins_show(struct seq_file *s, void *what)
+ {
+ 	struct pinctrl_dev *pctldev = s->private;
++	const struct pinconf_ops *ops = pctldev->desc->confops;
+ 	unsigned i, pin;
+ 
++	if (!ops || !ops->pin_config_get)
++		return 0;
++
+ 	seq_puts(s, "Pin config settings per pin\n");
+ 	seq_puts(s, "Format: pin (name): pinmux setting array\n");
+ 
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 8849830..ade661d 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -323,6 +323,11 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ 	const unsigned *pins;
+ 	unsigned num_pins;
+ 
++	if (!pmxops) {
++		dev_err(pctldev->dev, "dose not support mux functron\n");
++		return -EINVAL;
++	}
++
+ 	setting->data.mux.func =
+ 		pinmux_func_name_to_selector(pctldev, map->data.mux.function);
+ 	if (setting->data.mux.func < 0)
+@@ -481,11 +486,14 @@ static int pinmux_functions_show(struct seq_file *s, void *what)
+ {
+ 	struct pinctrl_dev *pctldev = s->private;
+ 	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
+-	unsigned nfuncs = pmxops->get_functions_count(pctldev);
++	unsigned nfuncs;
+ 	unsigned func_selector = 0;
+ 
+-	mutex_lock(&pinctrl_mutex);
++	if (!pmxops)
++		return 0;
+ 
++	mutex_lock(&pinctrl_mutex);
++	nfuncs = pmxops->get_functions_count(pctldev);
+ 	while (func_selector < nfuncs) {
+ 		const char *func = pmxops->get_function_name(pctldev,
+ 							  func_selector);
+@@ -520,6 +528,9 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
+ 	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
+ 	unsigned i, pin;
+ 
++	if (!pmxops)
++		return 0;
++
+ 	seq_puts(s, "Pinmux settings per pin\n");
+ 	seq_puts(s, "Format: pin (name): mux_owner gpio_owner hog?\n");
+ 
+-- 
+1.7.0.4
 
-Thanks,
-//richard
 
-
-
-
---------------enigBD799693CD890BDBE013638D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPgrbyAAoJEN9758yqZn9eyBMIALDoheg9bfPAurW+ARIpQMtf
-Q72AuH3im8tSn265fHkMGbU+PCgENM0dshhwiVjuORHYNitS/jJbUarlXBvmaT1p
-bnWAjP+NGaziIpXB/eNFv8o7EAzJZ70c0uSuHyKK1pAxCl/ULaa1DjwghlW2sQub
-RRebyrT2LDTG+DlncPgbEkUppjz6A22KAMPjHftRGaLhHT40AAls/zdhHav1bzRe
-Ho65Q0H/Q40Kvop25NcuDZyX4LeybAFdGSV/HfJYWVuUOSW2MB1AzkxLW8M9Amt4
-/L4Prwk4PVIZNcjtkU2IT294dOS0CZ6JsJioMMxQxByqhCkJVz8sV+OcnKBw+kc=
-=3lPR
------END PGP SIGNATURE-----
-
---------------enigBD799693CD890BDBE013638D--
