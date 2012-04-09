@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab2DIN7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 09:59:34 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45344 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755570Ab2DIN7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 09:59:32 -0400
-Message-ID: <4F82EB3B.8000204@linux.vnet.ibm.com>
-Date: Mon, 09 Apr 2012 21:59:23 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+	id S1755808Ab2DIOBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 10:01:32 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40016 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753487Ab2DIOBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 10:01:31 -0400
+Message-ID: <4F82EB5C.7090003@parallels.com>
+Date: Mon, 9 Apr 2012 10:59:56 -0300
+From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F7436FB.9000004@redhat.com> <4F744A43.4060600@linux.vnet.ibm.com> <4F745C4F.4060404@redhat.com> <4F757A7C.6020109@linux.vnet.ibm.com> <4F7850EA.3080203@redhat.com> <4F7E1531.5020307@gmail.com> <4F7E7E1A.3000807@linux.vnet.ibm.com> <4F82E228.7050602@redhat.com>
-In-Reply-To: <4F82E228.7050602@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Paul Turner <pjt@google.com>, <cgroups@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: bind() call in cgroup's css structure
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12040913-8256-0000-0000-000001F03587
+X-Originating-IP: [201.82.19.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2012 09:20 PM, Avi Kivity wrote:
+Hello Tejun,
 
-> On 04/06/2012 08:24 AM, Xiao Guangrong wrote:
->>
->> Foolish me, i should be crazy. Sorry for my mistake. :(
->>
->> Unfortunately, it can not work, we can not get a stable gfn from gpte or
->> sp->gfns[]. For example:
->>
->> beginning:
->> Gpte = Gfn1
->> gfn_to_pfn(Gfn1) = Pfn
->> Spte = Pfn
->> Gfn1 is write-free
->> Gfn2 is write-protected
->>
->>
->> VCPU 0                              VCPU 1                     VCPU 2
->>
->> fault on gpte
->> fast page fault path:
->>   set Spte.fast_pf
->>   get Gfn1 from Gpte/sp->gfns[]
->>   if (Gfn1 is writable)
->>                                 Pfn is swapped out:
->> 					Spte = 0
->> 				Gpte is modified to Gfn2,
->>                                 and Pfn is realloced and remapped
->>                                 to Gfn2, so:
->>                                         Spte = Pfn
->>
->>                                                           fast page fault path:
->>                                                              set Spte.fast_pf
->>
->>          cmpxchg  Spte+w
->>             OOPS!!!
->>   <we see Spte is not changed and
->>    happily make it writable, so gfn2 can be writable>
->>
->> It seems only a unique identification can prevent this. :(
->>
-> 
-> Ouch.
-> 
-> What about restricting this to role.direct=1?  Then gfn is stable?
-> 
+During your cgroup refactor, I was wondering if you have any plans to 
+get rid of the bind() callback that is called when hierarchies are moved?
 
+At least in tree, there seems to be no users for that.
+I actually planned to use it myself, to start or remove a jump label
+when cpuacct and cpu cgroups were comounted.
 
-Yes.
+Problem is, because we have some calls in the cpuset cgroup from inside 
+the cpu hotplug handler, we end up taking the almighty cgroup_mutex from 
+inside the cpu_hotplug.lock.
 
-The gfn of direct sp is stable since it is calculated by sp->gfn which is
-independent with gpte.
+jump labels take it in most arches through the get_online_cpus() 
+function call. This means we effectively can't apply jump labels with 
+the cgroup_mutex held, which is the case throughout the whole bind() call.
 
+All that explained, I figured I might as well ask before I attempted a 
+solution to that myself: as much as populate(), bind seems to be one of 
+the overly complicated callbacks, designed for a scenario in which 
+everything can come and go at will, which is something we're trying to fix.
+
+thanks in advance for your answer!
