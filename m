@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab2DIPGl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 11:06:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54735 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab2DIPGk (ORCPT
+	id S1757328Ab2DIPLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 11:11:08 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:53415 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab2DIPLG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 11:06:40 -0400
-Subject: Re: [PATCH] sil3531: has no PM capability, remove support.
-From: philby john <pjohn@mvista.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, htejun@gmail.com
-In-Reply-To: <4F82F765.4010705@pobox.com>
-References: <1333980849.11209.5.camel@localhost.localdomain>
-	 <4F82F765.4010705@pobox.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Apr 2012 20:37:30 +0530
-Message-ID: <1333984050.12301.1.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Apr 2012 11:11:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F82F42C.5040301@gmail.com>
+References: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com>
+	<1333905129-8776-1-git-send-email-jiang.liu@huawei.com>
+	<1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
+	<CAE9FiQXNOJA4oCDw-CF32UjaA=6tri73nXP3u6+hMEjpugjF9w@mail.gmail.com>
+	<4F82F42C.5040301@gmail.com>
+Date: Mon, 9 Apr 2012 08:11:05 -0700
+X-Google-Sender-Auth: jUqBL7YRHKf8djtsOfMyIhQbIkU
+Message-ID: <CAE9FiQXsbSikFYuTECH7QbHLxFOA1uZ-=oC_v6-7fzdC4V0PSA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI, ACPI, x86: update MMCFG information when
+ hot-plugging PCI host bridges
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mo, 2012-04-09 at 10:51 -0400, Jeff Garzik wrote:
-> On 04/09/2012 10:14 AM, philby john wrote:
-> > From: Philby John<pjohn@mvista.com>
-> > Date: Mon, 9 Apr 2012 19:09:51 +0530
-> > Subject: [PATCH] sil3531: has no PM capability, remove support.
-> >
-> > SATA sil3531 does not support Power Management Capability and
-> > as per the manual Bit [31:27] is hardwired to 00h.
-> > Otherwise, when the device goes into suspend/resume the Power
-> > Management Control + Status registers are accessed and the
-> > arch specific readl()/__raw_readl() calls block indefinitely.
-> >
-> > This patch sets the PCI_DEV_FLAGS_NO_D3 flag by which the if
-> > condition in pci_set_power_state() evaluates to true and
-> > pci_raw_set_power_state() functions are not executed.
-> >
-> > Signed-off-by: Philby John<pjohn@mvista.com>
-> > Signed-off-by: Johnny Chiang<Johnny.Chiang@caviumnetworks.com>
-> > ---
-> >   drivers/pci/pci.c |    1 +
-> >   1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> > index 8156744..129120d 100644
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -1863,6 +1863,7 @@ void pci_pm_init(struct pci_dev *dev)
-> >   		pci_pme_active(dev, false);
-> >   	} else {
-> >   		dev->pme_support = 0;
-> > +		dev->dev_flags |= PCI_DEV_FLAGS_NO_D3;
-> 
-> This patch applies to -every- piece of PCI hardware out there, not just 
-> the sil3531...
-> 
+On Mon, Apr 9, 2012 at 7:37 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> Hi Yinghai,
+>
+>>> +int arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+>>> +{
+>>> +       acpi_status status;
+>>> +       unsigned long long base_addr;
+>>> +
+>>> +       /* Remove MMCFG information for host bridges with _CBA method */
+>>> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+>>> +                                      NULL, &base_addr);
+>>
+>> add one flag in acpi_pci_root about we added mmconf for it before?
+>> like mmconf_added?
+>>
+>
+> I feel adding a flag here doesn't help here. For any hot-pluggable PCI host bridge
+> with _CBA method available, arch_acpi_pci_root_remove() should delete the MMCFG
+> information, no matter it's added by __pci_mmcfg_init() or arch_acpi_pci_root_add().
+> So check existence of _CBA seems simpler here.
 
-But if pme_support is zero, isn't it ok to set dev_flags to
-PCI_DEV_FLAGS_NO_D3 ?
+_remove should not care about _CBA, it should only care about if it
+gets added on _add path.
 
-Regards,
-Philby
+Also like Kenji said, We should let it go through even no MMCONF is
+added at that time.
+like somehow _CBA does not exis for some root bus or evaluating failing etc.
 
-
+Yinghai
