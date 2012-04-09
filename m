@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2DIToI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:44:08 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab2DIToG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:44:06 -0400
-Message-ID: <4F833BF5.4040001@nod.at>
-Date: Mon, 09 Apr 2012 21:43:49 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1754151Ab2DITql (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:46:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37882 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab2DITqj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 15:46:39 -0400
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: swapoff() runs forever
-References: <4F81F564.3020904@nod.at> <4F82752A.6020206@openvz.org> <4F82B6ED.2010500@nod.at> <alpine.LSU.2.00.1204091123380.1430@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1204091123380.1430@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120406142644.223ffff0.akpm@linux-foundation.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-16-git-send-email-wad@chromium.org>
+	<20120406142644.223ffff0.akpm@linux-foundation.org>
+Date: Mon, 9 Apr 2012 14:46:34 -0500
+Message-ID: <CABqD9haT5h-7LMkbGSaQbnk8SJj9L21GT61UZCMVWLJCTw9OBg@mail.gmail.com>
+Subject: Re: [PATCH v17 15/15] Documentation: prctl/seccomp_filter
+From: Will Drewry <wad@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        jmorris@namei.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.04.2012 20:40, schrieb Hugh Dickins:
-> On Mon, 9 Apr 2012, Richard Weinberger wrote:
->> Am 09.04.2012 07:35, schrieb Konstantin Khlebnikov:
->>> Richard Weinberger wrote:
->>>> Hi!
->>>>
->>>> I'm observing a strange issue (at least on UML) on recent Linux kernels.
->>>> If swap is being used the swapoff() system call never terminates.
->>>> To be precise "while ((i = find_next_to_unuse(si, i)) != 0)" in try_to_unuse()
->>>> never terminates.
->>>>
->>>> The affected machine has 256MiB ram and 256MiB swap.
->>>> If an application uses more than 256MiB memory swap is being used.
->>>> But after the application terminates the free command still reports that a few
->>>> MiB are on my swap device and swappoff never terminates.
->>>
->>> After last tmpfs changes swapoff can take minutes.
->>> Or this time it really never terminates?
+On Fri, Apr 6, 2012 at 4:26 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 29 Mar 2012 15:02:00 -0500
+> Will Drewry <wad@chromium.org> wrote:
+>
+>> Documents how system call filtering using Berkeley Packet
+>> Filter programs works and how it may be used.
+>> Includes an example for x86 and a semi-generic
+>> example using a macro-based code generator.
 >>
->> I've never waited forever. ;-)
->
-> Your lack of dedication is disappointing.
->
->> Once I've waited for>30 minutes.
 >>
->> I don't think that it's related to tmpfs because it happens
->> also while shutting down the system after all filesystems have been unmounted.
+>> ...
+>>
+>> +Adding architecture support
+>> +-----------------------
+>> +
+>> +See arch/Kconfig for the authoritative requirements.  In general, if an
+>> +architecture supports both ptrace_event and seccomp, it will be able to
+>> +support seccomp filter with minor fixup: SIGSYS support and seccomp return
+>> +value checking.  Then it must just add CONFIG_HAVE_ARCH_SECCOMP_FILTER
+>> +to its arch-specific Kconfig.
+>> diff --git a/samples/Makefile b/samples/Makefile
+>> index 2f75851..5ef08bb 100644
+>> --- a/samples/Makefile
+>> +++ b/samples/Makefile
 >
-> Like you I'd assume that it is really was going to be forever,
-> rather than swapoff just being characteristically slow:
-> a few MiB left on swap shouldn't take long to get off.
+> Oh good, I was going to ask about that.
 >
-> I've not seen any such issue in recent months (or years), but
-> I've not been using UML either.  The most likely cause that springs
-> to mind would be corruption of the vmalloc'ed swap map: that would
-> be very likely to cause such a hang.
+> Can we get this code into tools/testing/selftests?  That way people
+> will run it more often and it's more likely to be maintained as the
+> code evolves.
 
-Okay, I'll dig into this.
+I'm currently using a lightweight testsuite in addition to the
+samples.  It's a little more oriented at pass/fail behavior.  Would it
+be more appropriate to post those in addition to, or instead of,
+samples?
 
-> You say "recent Linux kernels": I wonder what "recent" means.
-> Is this something you can reproduce quickly and reliably enough
-> to do a bisection upon?
->
-
-It happens quite reliably on 3.2 and 3.3.
-On 3.1 and 3.0 sometimes.
-I've already wasted half a day with bisecting it.
-
-Thanks,
-//richard
+thanks!
