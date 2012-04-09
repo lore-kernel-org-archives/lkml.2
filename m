@@ -1,59 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab2DITsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:48:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47288 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab2DITsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:48:16 -0400
-Message-ID: <4F833CFC.9020809@wwwdotorg.org>
-Date: Mon, 09 Apr 2012 13:48:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1754982Ab2DITt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:49:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54669 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752676Ab2DITt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 15:49:57 -0400
+Date: Mon, 9 Apr 2012 16:31:44 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+Message-ID: <20120409193144.GA23053@amt.cnet>
+References: <4F742951.7080003@linux.vnet.ibm.com>
+ <4F82E04E.6000900@redhat.com>
+ <20120409175829.GB21894@amt.cnet>
+ <4F8326D5.7060004@gmail.com>
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>
-CC: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
-        linux-kernel@vger.kernel.org, ArndBergmannarnd@arndb.de,
-        Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH v3 1/3] tegra, serial8250: add ->handle_break() uart_port
- op
-References: <20120409194514.8004.53204.stgit@dwillia2-linux.jf.intel.com> <20120409194857.8004.86352.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120409194857.8004.86352.stgit@dwillia2-linux.jf.intel.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F8326D5.7060004@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2012 01:48 PM, Dan Williams wrote:
-> The "KT" serial port has another use case for a "received break" quirk,
-> so before adding another special case to the 8250 core take this
-> opportunity to push such quirks out of the core and into a uart_port op.
+On Tue, Apr 10, 2012 at 02:13:41AM +0800, Xiao Guangrong wrote:
+> On 04/10/2012 01:58 AM, Marcelo Tosatti wrote:
 > 
-> Stephen says:
-> "If the callback function is to no longer live in 8250.c itself,
->  arch/arm/mach-tegra/devices.c isn't logically a good place to put it,
->  and that file will be going away once we get rid of all the board files
->  and move solely to device tree."
+> > On Mon, Apr 09, 2012 at 04:12:46PM +0300, Avi Kivity wrote:
+> >> On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
+> >>> * Idea
+> >>> The present bit of page fault error code (EFEC.P) indicates whether the
+> >>> page table is populated on all levels, if this bit is set, we can know
+> >>> the page fault is caused by the page-protection bits (e.g. W/R bit) or
+> >>> the reserved bits.
+> >>>
+> >>> In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
+> >>> simply fixed: the page fault caused by reserved bit
+> >>> (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
+> >>> path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
+> >>> is just increasing the corresponding access on the spte.
+> >>>
+> >>> This pachset introduces a fast path to fix this kind of page fault: it
+> >>> is out of mmu-lock and need not walk host page table to get the mapping
+> >>> from gfn to pfn.
+> >>>
+> >>>
+> >>
+> >> This patchset is really worrying to me.
+> >>
+> >> It introduces a lot of concurrency into data structures that were not
+> >> designed for it.  Even if it is correct, it will be very hard to
+> >> convince ourselves that it is correct, and if it isn't, to debug those
+> >> subtle bugs.  It will also be much harder to maintain the mmu code than
+> >> it is now.
+> >>
+> >> There are a lot of things to check.  Just as an example, we need to be
+> >> sure that if we use rcu_dereference() twice in the same code path, that
+> >> any inconsistencies due to a write in between are benign.  Doing that is
+> >> a huge task.
+> >>
+> >> But I appreciate the performance improvement and would like to see a
+> >> simpler version make it in.  This needs to reduce the amount of data
+> >> touched in the fast path so it is easier to validate, and perhaps reduce
+> >> the number of cases that the fast path works on.
+> >>
+> >> I would like to see the fast path as simple as
+> >>
+> >>   rcu_read_lock();
+> >>
+> >>   (lockless shadow walk)
+> >>   spte = ACCESS_ONCE(*sptep);
+> >>
+> >>   if (!(spte & PT_MAY_ALLOW_WRITES))
+> >>         goto slow;
+> >>
+> >>   gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
+> >>   mark_page_dirty(kvm, gfn);
+> >>
+> >>   new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
+> >>   if (cmpxchg(sptep, spte, new_spte) != spte)
+> >>        goto slow;
+> >>
+> >>   rcu_read_unlock();
+> >>   return;
+> >>
+> >> slow:
+> >>   rcu_read_unlock();
+> >>   slow_path();
+> >>
+> >> It now becomes the responsibility of the slow path to maintain *sptep &
+> >> PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
+> >> can be as simple as a clear_bit() before we update sp->gfns[] or if we
+> >> add host write protection.
+> >>
+> >> Sorry, it's too complicated for me.  Marcelo, what's your take?
+> > 
+> > The improvement is small and limited to special cases (migration should
+> > be rare and framebuffer memory accounts for a small percentage of total
+> > memory).
+> > 
+> > For one, how can this be safe against mmu notifier methods?
+> > 
+> > KSM			      |VCPU0		| VCPU1
+> > 		 	      | fault		| fault
+> > 			      | cow-page	|
+> > 			      |	set spte RW	|
+> > 			      |			|
+> > write protect host pte	      |			|
+> > grab mmu_lock		      |			|
+> > remove writeable bit in spte  |			|
+> > increase mmu_notifier_seq     |			|  spte = read-only spte
+> > release mmu_lock	      |			|  cmpxchg succeeds, RO->RW!
+> > 
+> > MMU notifiers rely on the fault path sequence being
+> > 
+> > read host pte
+> > read mmu_notifier_seq
+> > spin_lock(mmu_lock)
+> > if (mmu_notifier_seq changed)
+> > 	goodbye, host pte value is stale
+> > spin_unlock(mmu_lock)
+> > 
+> > By the example above, you cannot rely on the spte value alone,
+> > mmu_notifier_seq must be taken into account.
 > 
-> ...so since 8250_pci.c houses all the quirks for pci serial devices this
-> quirk is similarly housed in of_serial.c.  Once the open firmware
-> conversion completes the infrastructure details (CONFIG_TEGRA_SERIAL,
-> include/linux/of_serial.h, and the export) can all be removed to make
-> this self contained to of_serial.c.
+> 
+> No.
+> 
+> When KSM change the host page to read-only, the HOST_WRITABLE bit
+> of spte should be removed, that means, the spte should be changed
+> that can be watched by cmpxchg.
+> 
+> Note: we mark spte to be writeable only if spte.HOST_WRITABLE is
+> set.
 
-This still seems much to invasive.
-
-Again, what's wrong with simply keeping the quirk implementation where
-it is, and driving everything off the already-extant
-plat_serial8250_port.type == PORT_TEGRA flag?
-
-I believe all that's required here is to enhance struct struct
-serial8250_config (and hence 8250.c's uart_config[] quirk table) to be
-able to set the quirk function pointers as well as all the other exiting
-quirked variables.
+Right. 
