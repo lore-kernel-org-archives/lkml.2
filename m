@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab2DIHzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 03:55:14 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41502 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab2DIHzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 03:55:12 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F829575.4020704@jp.fujitsu.com>
-Date: Mon, 09 Apr 2012 16:53:25 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1755684Ab2DIHzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 03:55:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754609Ab2DIHzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 03:55:35 -0400
+Date: Mon, 9 Apr 2012 10:55:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: Dongsu Park <advance38@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: tools/virtio: Compile errors
+Message-ID: <20120409075548.GC27771@redhat.com>
+References: <20120208160405.GA1587@gmail.com>
+ <20120208164736.GA31066@redhat.com>
+ <CAEH94Lgha0Ug2Tk9-22=B58tb9xWG5knAfB04aVbW63F5Xi6TA@mail.gmail.com>
+ <20120409073258.GB12014@redhat.com>
+ <CAEH94LjQxT5AkZjskdMMkryvcw3Q3fyVp1RGmKsFtaHda2V=TA@mail.gmail.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        aarcange@redhat.com
-Subject: Re: [PATCH 2/2] huge-memory: Use fast mm counters for transparent
- huge pages
-References: <1333202997-19550-1-git-send-email-andi@firstfloor.org> <1333202997-19550-3-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1333202997-19550-3-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEH94LjQxT5AkZjskdMMkryvcw3Q3fyVp1RGmKsFtaHda2V=TA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/31 23:09), Andi Kleen wrote:
+On Mon, Apr 09, 2012 at 03:41:36PM +0800, Zhi Yong Wu wrote:
+> On Mon, Apr 9, 2012 at 3:33 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > On Mon, Apr 09, 2012 at 02:02:53PM +0800, Zhi Yong Wu wrote:
+> >> On Thu, Feb 9, 2012 at 12:47 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> >> > On Wed, Feb 08, 2012 at 05:04:05PM +0100, Dongsu Park wrote:
+> >> >> Hi,
+> >> >>
+> >> >> there are compile problems under tools/virtio.
+> >> >> If I simply run make,
+> >> >>
+> >> >> ~/linuxsrc/linux-3.2/tools/virtio $ make
+> >> >> gcc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+> >> >> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+> >> >> ../../drivers/virtio/virtio_ring.c
+> >> >> ../../drivers/virtio/virtio_ring.c:24:26: fatal error: linux/module.h:
+> >> >> No such file or directory
+> >> >> compilation terminated.
+> >> >> make: *** [virtio_ring.o] Error 1
+> >> >
+> >> >
+> >> >> By the way, my system is Ubuntu 11.10 with Kernel 3.2.
+> >> >>
+> >> >> Cheers,
+> >> >> Dongsu
+> >> >
+> >> > This patch is missing - I'll put it upstream.
+> >> >
+> >> > --->
+> >> >
+> >> > tools/virtio: add module.h stub
+> >> >
+> >> > make it build with linux 3.2
+> >> >
+> >> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >> >
+> >> > diff --git a/tools/virtio/linux/module.h b/tools/virtio/linux/module.h
+> >> > new file mode 100644
+> >> > index 0000000..96868eb
+> >> > --- /dev/null
+> >> > +++ b/tools/virtio/linux/module.h
+> >> > @@ -0,0 +1,3 @@
+> >> > +#ifndef LINUX_MODULE_H
+> >> > +#define LINUX_MODULE_H
+> >> > +#endif
+> >> After the patch was applied in my env, i met another issue.
+> >> [root@f15 virtio]# make test
+> >> cc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+> >> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+> >> ../../drivers/virtio/virtio_ring.c
+> >> ../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_add_buf\u2019:
+> >> ../../drivers/virtio/virtio_ring.c:277:2: warning: implicit
+> >> declaration of function \u2018wmb\u2019
+> >> [-Wimplicit-function-declaration]
+> >> ../../drivers/virtio/virtio_ring.c: In function \u2018virtqueue_get_buf\u2019:
+> >> ../../drivers/virtio/virtio_ring.c:437:2: warning: implicit
+> >> declaration of function \u2018rmb\u2019
+> >> [-Wimplicit-function-declaration]
+> >> cc   virtio_test.o virtio_ring.o   -o virtio_test
+> >> virtio_ring.o: In function `virtqueue_add_buf':
+> >> /home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:277:
+> >> undefined reference to `wmb'
+> >> virtio_ring.o: In function `virtqueue_get_buf':
+> >> /home/zwu/work/kernel/vhost-scsi/tools/virtio/../../drivers/virtio/virtio_ring.c:437:
+> >> undefined reference to `rmb'
+> >> collect2: ld returned 1 exit status
+> >> make: *** [virtio_test] Error 1
+> >
+> > On which kernel version does this trigger?
+> [root@f15 linux-2.6]# git log
+> commit e22057c8599373e5caef0bc42bdb95d2a361ab0d
+> Merge: 496b919 df7a3ee
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Sat Mar 24 12:20:25 2012 -0700
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> We found that the mm struct anon page counter cache line is much hotter
-> with transparent huge pages compared to small pages.
-> 
-> Small pages use a special fast counter mechanism in task_struct, but huge pages
-> didn't.  The huge pages are larger than the normal 64 entry threshold for the
-> fast counter, so it cannot be directly used. Use a new special counter for huge
-> pages to handle them efficiently.
-> 
-> Any users just calculate the correct total.
-> 
-> The only special case is transferring the large page count to small pages
-> when splitting. I put it somewhat arbitarily into the tricky split
-> sequence. Some review on this part is appreciated.
-> 
-> [An alternative would be to not do that, but that could lead to
-> negative counters. These should still give the correct result]
-> 
-> Contains a fix for a problem found by Andrea in review.
-> 
-> Cc: aarcange@redhat.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
+Update to 3.4-rc2 and most of the issues go away
+(there's still a build breakage with a missing
+flag to dev_cleanup, I'm fixing this up for now
+you can just pass false).
 
