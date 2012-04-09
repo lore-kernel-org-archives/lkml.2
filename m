@@ -1,220 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab2DIGSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 02:18:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40918 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab2DIGSH (ORCPT
+	id S1752837Ab2DIG2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 02:28:09 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54371 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab2DIG2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 02:18:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F827EAD.9080300@jp.fujitsu.com>
-Date: Mon, 09 Apr 2012 15:16:13 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Mon, 9 Apr 2012 02:28:07 -0400
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V5 12/14] memcg: move HugeTLB resource count to parent
- cgroup on memcg removal
-References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1333738260-1329-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1333738260-1329-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120409010816.36244f17@xenia.leun.net>
+References: <4F7A8EB7.4060200@silka.with-linux.com>
+	<4F7A923D.5000002@candelatech.com>
+	<CAD2nsn0vKPEOFp08WGYAGh0vEHPbShP4yMo5HzEGc8SrTmTZmQ@mail.gmail.com>
+	<4F7A9D5C.8040402@silka.with-linux.com>
+	<CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com>
+	<4F7AAAD9.2040307@silka.with-linux.com>
+	<CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com>
+	<CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
+	<4F7AB6FE.3080009@silka.with-linux.com>
+	<20120403200306.0afbb48b@xenia.leun.net>
+	<CAD2nsn2k3mKMm3gK=fXqDYcOeKBwkyqGz9RWz1KOe=6=CDyhHA@mail.gmail.com>
+	<CAD2nsn1AshPTYd-FcydV-5HpiXPb0FfqLQPTqFYyw3kJX+fXEA@mail.gmail.com>
+	<20120404235104.682cfad3@xenia.leun.net>
+	<4F7DE3A4.1040705@candelatech.com>
+	<CAD2nsn16AozFF2QhiY063-48bKiXdyQLmSqJLLHPpsZ3H3JtHQ@mail.gmail.com>
+	<4F7F52BD.7060906@candelatech.com>
+	<20120409010816.36244f17@xenia.leun.net>
+Date: Mon, 9 Apr 2012 11:58:06 +0530
+Message-ID: <CAD2nsn3-C8ZLmUpTDeA6HuPr-+=V5KkPJb6h5e7ZJsGi4v9p0g@mail.gmail.com>
+Subject: Re: 3.4-rc ath9k regression (Re: [ath9k-devel] 3.3.1 ath9k regression)
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: Michael Leun <lkml20120218@newton.leun.net>
+Cc: Ben Greear <greearb@candelatech.com>, casteyde.christian@free.fr,
+        Kelly Anderson <kelly@silka.with-linux.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=bcaec51a8e52f7fc7a04bd391b25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/07 3:50), Aneesh Kumar K.V wrote:
+--bcaec51a8e52f7fc7a04bd391b25
+Content-Type: text/plain; charset=ISO-8859-1
 
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> This add support for memcg removal with HugeTLB resource usage.
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+On Mon, Apr 9, 2012 at 4:38 AM, Michael Leun
+<lkml20120218@newton.leun.net> wrote:
+> After an suspend to disk / resume cycle (in kernel suspend to disk,
+> openSuSE) with 3.4-rc2 my ath9k wireless does not ping
+> anymore.
+>
+> Output of iwconfig wlan0 looks just as usual (associated to AP).
+>
+> iwconfig wlan0 essid <myssid> fixes this (causes an
+> deauthenticate/authenticate with AP) - then connectivity is there again.
+>
+> Guess what: "Of course" does not happen when reverting
+> c1afdaff90538ef085b756454f12b29575411214 ath9k: fix going to full-sleep
+> on PS idle.
+>
+> So, in my opinion it should be seriously considered to revert that patch
+> until it is fully understood what is going on and why.
 
+please try with the attached patch to see if it helps.
 
-Hmm 
-
-
-> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> +/*
-> + * Force the memcg to empty the hugetlb resources by moving them to
-> + * the parent cgroup. We can fail if the parent cgroup's limit prevented
-> + * the charging. This should only happen if use_hierarchy is not set.
-> + */
-> +int hugetlb_force_memcg_empty(struct cgroup *cgroup)
-> +{
-> +	struct hstate *h;
-> +	struct page *page;
-> +	int ret = 0, idx = 0;
-> +
-> +	do {
-> +		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
-> +			goto out;
-> +		/*
-> +		 * If the task doing the cgroup_rmdir got a signal
-> +		 * we don't really need to loop till the hugetlb resource
-> +		 * usage become zero.
-> +		 */
-> +		if (signal_pending(current)) {
-> +			ret = -EINTR;
-> +			goto out;
-> +		}
-> +		for_each_hstate(h) {
-> +			spin_lock(&hugetlb_lock);
-> +			list_for_each_entry(page, &h->hugepage_activelist, lru) {
-> +				ret = mem_cgroup_move_hugetlb_parent(idx, cgroup, page);
-> +				if (ret) {
-> +					spin_unlock(&hugetlb_lock);
-> +					goto out;
-> +				}
-> +			}
-> +			spin_unlock(&hugetlb_lock);
-> +			idx++;
-> +		}
-> +		cond_resched();
-> +	} while (mem_cgroup_have_hugetlb_usage(cgroup));
-> +out:
-> +	return ret;
-> +}
-> +#endif
-> +
->  /* Should be called on processing a hugepagesz=... option */
->  void __init hugetlb_add_hstate(unsigned order)
->  {
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7d3330e..7b6e79a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3228,9 +3228,11 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
->  #endif
->  
->  #ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> -static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
-> +bool mem_cgroup_have_hugetlb_usage(struct cgroup *cgroup)
->  {
->  	int idx;
-> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
-> +
->  	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
->  		if ((res_counter_read_u64(&memcg->hugepage[idx], RES_USAGE)) > 0)
->  			return 1;
-> @@ -3328,10 +3330,57 @@ void mem_cgroup_hugetlb_uncharge_memcg(int idx, unsigned long nr_pages,
->  	res_counter_uncharge(&memcg->hugepage[idx], csize);
->  	return;
->  }
-> -#else
-> -static bool mem_cgroup_have_hugetlb_usage(struct mem_cgroup *memcg)
-> +
-> +int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
-> +				   struct page *page)
->  {
-> -	return 0;
-> +	struct page_cgroup *pc;
-> +	int csize,  ret = 0;
-> +	struct res_counter *fail_res;
-> +	struct cgroup *pcgrp = cgroup->parent;
-> +	struct mem_cgroup *parent = mem_cgroup_from_cont(pcgrp);
-> +	struct mem_cgroup *memcg  = mem_cgroup_from_cont(cgroup);
-> +
-> +	if (!get_page_unless_zero(page))
-> +		goto out;
-> +
-> +	pc = lookup_page_cgroup(page);
-> +	lock_page_cgroup(pc);
-> +	if (!PageCgroupUsed(pc) || pc->mem_cgroup != memcg)
-> +		goto err_out;
-> +
-> +	csize = PAGE_SIZE << compound_order(page);
-> +	/*
-> +	 * uncharge from child and charge the parent. If we have
-> +	 * use_hierarchy set, we can never fail here. In-order to make
-> +	 * sure we don't get -ENOMEM on parent charge, we first uncharge
-> +	 * the child and then charge the parent.
-> +	 */
-> +	if (parent->use_hierarchy) {
-
-
-> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
-> +		if (!mem_cgroup_is_root(parent))
-> +			ret = res_counter_charge(&parent->hugepage[idx],
-> +						 csize, &fail_res);
-
-
-Ah, why is !mem_cgroup_is_root() checked ? no res_counter update for
-root cgroup ?
-
-I think it's better to have res_counter_move_parent()...to do ops in atomic.
-(I'll post a patch for that for my purpose). OR, just ignore res->usage if
-parent->use_hierarchy == 1.
-
-uncharge->charge will have a race.
-
-> +	} else {
-> +		if (!mem_cgroup_is_root(parent)) {
-> +			ret = res_counter_charge(&parent->hugepage[idx],
-> +						 csize, &fail_res);
-> +			if (ret) {
-> +				ret = -EBUSY;
-> +				goto err_out;
-> +			}
-> +		}
-> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
-> +	}
-
-
-Just a notice. Recently, Tejun changed failure of pre_destory() to show WARNING.
-Then, I'd like to move the usage to the root cgroup if use_hierarchy=0.
-Will it work for you ?
-
-> +	/*
-> +	 * caller should have done css_get
-> +	 */
-
-
-Could you explain meaning of this comment ?
-
-
-Thanks,
--Kame
-
-> +	pc->mem_cgroup = parent;
-> +err_out:
-> +	unlock_page_cgroup(pc);
-> +	put_page(page);
-> +out:
-> +	return ret;
->  }
->  #endif /* CONFIG_MEM_RES_CTLR_HUGETLB */
->  
-> @@ -3852,6 +3901,11 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg, bool free_all)
->  	/* should free all ? */
->  	if (free_all)
->  		goto try_to_free;
-> +
-> +	/* move the hugetlb charges */
-> +	ret = hugetlb_force_memcg_empty(cgrp);
-> +	if (ret)
-> +		goto out;
->  move_account:
->  	do {
->  		ret = -EBUSY;
-> @@ -5172,12 +5226,6 @@ free_out:
->  static int mem_cgroup_pre_destroy(struct cgroup *cont)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> -	/*
-> -	 * Don't allow memcg removal if we have HugeTLB resource
-> -	 * usage.
-> -	 */
-> -	if (mem_cgroup_have_hugetlb_usage(memcg))
-> -		return -EBUSY;
->  
->  	return mem_cgroup_force_empty(memcg, false);
->  }
+>
+> It may look theoretically correct (I've no knowledge that would enable
+> me assess that), but it seems to have caused 3 more or less different
+> problems to various people.
+>
+> --
+> MfG,
+>
+> Michael Leun
+>
 
 
 
+-- 
+thanks,
+shafi
+
+--bcaec51a8e52f7fc7a04bd391b25
+Content-Type: text/x-diff; charset=US-ASCII; name="test.patch"
+Content-Disposition: attachment; filename="test.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h0t52e2i0
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay9tYWluLmMgYi9kcml2
+ZXJzL25ldC93aXJlbGVzcy9hdGgvYXRoOWsvbWFpbi5jCmluZGV4IDIxNWViMjUuLjkyZGEyMGEg
+MTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2F0aC9hdGg5ay9tYWluLmMKKysrIGIv
+ZHJpdmVycy9uZXQvd2lyZWxlc3MvYXRoL2F0aDlrL21haW4uYwpAQCAtMTE4LDE0ICsxMTgsMTIg
+QEAgdm9pZCBhdGg5a19wc19yZXN0b3JlKHN0cnVjdCBhdGhfc29mdGMgKnNjKQogCWlmICgtLXNj
+LT5wc191c2Vjb3VudCAhPSAwKQogCQlnb3RvIHVubG9jazsKIAotCWlmIChzYy0+cHNfZmxhZ3Mg
+JiBQU19XQUlUX0ZPUl9UWF9BQ0spCi0JCWdvdG8gdW5sb2NrOwotCiAJaWYgKHNjLT5wc19pZGxl
+KQogCQltb2RlID0gQVRIOUtfUE1fRlVMTF9TTEVFUDsKIAllbHNlIGlmIChzYy0+cHNfZW5hYmxl
+ZCAmJgogCQkgIShzYy0+cHNfZmxhZ3MgJiAoUFNfV0FJVF9GT1JfQkVBQ09OIHwKIAkJCSAgICAg
+IFBTX1dBSVRfRk9SX0NBQiB8CisJCQkgICAgICBQU19XQUlUX0ZPUl9UWF9BQ0sgfAogCQkJICAg
+ICAgUFNfV0FJVF9GT1JfUFNQT0xMX0RBVEEpKSkKIAkJbW9kZSA9IEFUSDlLX1BNX05FVFdPUktf
+U0xFRVA7CiAJZWxzZQo=
+--bcaec51a8e52f7fc7a04bd391b25--
