@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2DIRAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 13:00:31 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:59343 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754810Ab2DIRAa (ORCPT
+	id S1754391Ab2DIRKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 13:10:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56572 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab2DIRKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 13:00:30 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX18kUTUZ8hokNcq8STNo5UXz678rBiUNGitdYfL8m0
-	bSRdQ38SEIoFzz
-From: Sven Joachim <svenjoac@gmx.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
-References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
-	<20120408195044.13ea6c8e.akpm@linux-foundation.org>
-	<CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
-	<8762d9v10x.fsf@turtle.gmx.de> <4F8306ED.7080405@redhat.com>
-	<87398cev3j.fsf@turtle.gmx.de> <4F830F64.8000703@redhat.com>
-Date: Mon, 09 Apr 2012 19:00:25 +0200
-In-Reply-To: <4F830F64.8000703@redhat.com> (Rik van Riel's message of "Mon, 09
-	Apr 2012 12:33:40 -0400")
-Message-ID: <87ty0sdemu.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Mon, 9 Apr 2012 13:10:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20120406155109.GA2693@x1.osrc.amd.com>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+	<1333666086-6517-4-git-send-email-fweisbec@gmail.com>
+	<20120406114502.GD30425@liondog.tnic>
+	<CAFTL4hzvy1wgm8e7_h2S6Fa_A+QybUsssetLaWyUu3tB5a2m1w@mail.gmail.com>
+	<20120406155109.GA2693@x1.osrc.amd.com>
+Date: Mon, 9 Apr 2012 19:10:47 +0200
+Message-ID: <CAFTL4hxo3aQT32RZT64wjARYiGLTkvAvKUuoQZw81mTDXdS8nA@mail.gmail.com>
+Subject: Re: [PATCH 03/15] perf: Build libtraceevent.a
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-09 18:33 +0200, Rik van Riel wrote:
-
-> On 04/09/2012 12:19 PM, Sven Joachim wrote:
->> On 2012-04-09 17:57 +0200, Rik van Riel wrote:
->>
->>> On 04/09/2012 03:04 AM, Sven Joachim wrote:
->>>
->>>> While I did not experience any crashes or instabilities (yet?), I'm also
->>>> seeing memory leaks.  On a system started this morning, with hardly
->>>> anything running:
->>>
->>>> where I would expect no more than 50 MB used, 400 MB are actually in use:
->>>>
->>>> ,----
->>>> | $ free
->>>> |              total       used       free     shared    buffers     cached
->>>> | Mem:       3348400    1849712    1498688          0     328960    1119180
->>>> | -/+ buffers/cache:     401572    2946828
->>>> | Swap:      3719040          0    3719040
->>>> `----
->>>
->>> Do you see any big memory users in /proc/meminfo or in
->>> /proc/slabinfo?
->>
->> Attaching these files, since I can't really make anything out of the
->> latter.  Note that I started a few memory hogs (X, Firefox, Emacs with
->> Gnus), so overall memory footprint has grown to 768 MB.
+2012/4/6 Borislav Petkov <bp@alien8.de>:
+> Right, what I meant was to add the $(LIBTRACEEVENT): target above to the
+> toplevel Makefile so that when you're in the kernel source tree, you do
 >
-> Looks like the "missing" 400MB is all in filesystem caches,
-> specifically the dentry cache, the ext4 inode cache and
-> buffer heads.
+> $ make tools/perf
+>
+> it has a target $(LIBTRACEEVENT) dependent on it in the toplevel
+> Makefile instead of perf's Makefile to avoid duplication. Then, when
+> perf is rebuilt, it simply links with this lib. IOW, not have the "make
+> -C" call in perf's Makefile but in the toplevel Makefile because other
+> tools will want to use libtraceevent.a too and link against it.
+>
+> Oh well, the toplevel Makefile patches aren't upstream either so we're
+> wasting cycles here, I'll fix that up when the times comes.
 
-Then why does free(1) report those in the "-/+ buffers/cache:" line?  It
-did not do this with earlier kernels, AFAIK.
-
-Cheers,
-       Sven
+Yeah let's sort those details out once we have that library merged ;)
