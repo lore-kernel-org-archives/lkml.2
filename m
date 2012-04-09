@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab2DIUvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 16:51:23 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21076 "EHLO
+	id S1758108Ab2DIUvf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 16:51:35 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:21116 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756930Ab2DIUvU (ORCPT
+	with ESMTP id S1756930Ab2DIUvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 16:51:20 -0400
-Date: Mon, 9 Apr 2012 22:51:19 +0200 (CEST)
+	Mon, 9 Apr 2012 16:51:31 -0400
+Date: Mon, 9 Apr 2012 22:51:30 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Pavel Roskin <proski@gnu.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 15/26] wireless, orinoco: release_firmware() tests for NULL,
- remove explicit tests before calls
+cc: trivial@kernel.org, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH 17/26] [SCSI] aic94xx: Get rid of redundant NULL check before
+ release_firmware() call
 In-Reply-To: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1204092225140.13925@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1204092227391.13925@swampdragon.chaosbits.net>
 References: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
@@ -26,32 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is redundant to test for NULL pointers before calling
-release_firmware() since the function does its own NULL test.
+release_firmware() checks for NULL pointers internally, so checking
+before calling the function is redundant.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/net/wireless/orinoco/fw.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/scsi/aic94xx/aic94xx_seq.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/orinoco/fw.c b/drivers/net/wireless/orinoco/fw.c
-index 4df8cf6..400a352 100644
---- a/drivers/net/wireless/orinoco/fw.c
-+++ b/drivers/net/wireless/orinoco/fw.c
-@@ -379,11 +379,8 @@ void orinoco_cache_fw(struct orinoco_private *priv, int ap)
+diff --git a/drivers/scsi/aic94xx/aic94xx_seq.c b/drivers/scsi/aic94xx/aic94xx_seq.c
+index 390168f..5fdca93 100644
+--- a/drivers/scsi/aic94xx/aic94xx_seq.c
++++ b/drivers/scsi/aic94xx/aic94xx_seq.c
+@@ -1228,8 +1228,7 @@ static int asd_seq_start_lseq(struct asd_ha_struct *asd_ha, int lseq)
  
- void orinoco_uncache_fw(struct orinoco_private *priv)
+ int asd_release_firmware(void)
  {
--	if (priv->cached_pri_fw)
--		release_firmware(priv->cached_pri_fw);
--	if (priv->cached_fw)
--		release_firmware(priv->cached_fw);
--
-+	release_firmware(priv->cached_pri_fw);
-+	release_firmware(priv->cached_fw);
- 	priv->cached_pri_fw = NULL;
- 	priv->cached_fw = NULL;
+-	if (sequencer_fw)
+-		release_firmware(sequencer_fw);
++	release_firmware(sequencer_fw);
+ 	return 0;
  }
+ 
 -- 
 1.7.10
 
