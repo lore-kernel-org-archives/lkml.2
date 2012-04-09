@@ -1,300 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab2DIQcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 12:32:24 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53507 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2DIQcX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 12:32:23 -0400
+	id S1751996Ab2DIQdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 12:33:40 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:56213 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab2DIQdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 12:33:38 -0400
+X-IronPort-AV: E=Sophos;i="4.75,393,1330934400"; 
+   d="scan'208";a="639515794"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "bfields@fieldses.org" <bfields@fieldses.org>
+CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Grace period
+Thread-Topic: Grace period
+Thread-Index: AQHNFkNePLtNdDcBi0a9POplR1wLJZaS936AgAAKpACAABFIgIAAC4qAgAAAowCAAAGkAIAAAR+AgAADfQA=
+Date: Mon, 9 Apr 2012 16:33:36 +0000
+Message-ID: <1333989216.2688.87.camel@lade.trondhjem.org>
+References: <4F7F230A.6080506@parallels.com>
+	 <20120406234039.GA20940@fieldses.org> <4F82C6E3.3030009@parallels.com>
+	 <20120409094743.56932677@tlielax.poochiereds.net>
+	 <4F82F16C.7030303@parallels.com>
+	 <20120409112739.6a823d6f@corrin.poochiereds.net>
+	 <4F830999.5000504@parallels.com> <20120409161114.GB6482@fieldses.org>
+	 <1333988226.2688.76.camel@lade.trondhjem.org>
+	 <20120409162107.GC6482@fieldses.org>
+In-Reply-To: <20120409162107.GC6482@fieldses.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <77D99C4AA007294CA03689CE0CA8C670@tahoe.netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <1323712627-17353-2-git-send-email-pawel.moll@arm.com>
-References: <1323712401.2391.93.camel@hornet.cambridge.arm.com>
- <1323712627-17353-1-git-send-email-pawel.moll@arm.com> <1323712627-17353-2-git-send-email-pawel.moll@arm.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Mon, 9 Apr 2012 18:32:01 +0200
-Message-ID: <CA+1xoqfov64Wz9e_G8ZTcXnAatw_VqYxecU5FX3Zrmw_XTL-Cw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] virtio-mmio: Devices parameter parsing
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q39GXop2018670
 
-Ping? Was this patch forgotten?
+On Mon, 2012-04-09 at 12:21 -0400, bfields@fieldses.org wrote:
+> On Mon, Apr 09, 2012 at 04:17:06PM +0000, Myklebust, Trond wrote:
+> > On Mon, 2012-04-09 at 12:11 -0400, bfields@fieldses.org wrote:
+> > > On Mon, Apr 09, 2012 at 08:08:57PM +0400, Stanislav Kinsbursky wrote:
+> > > > 09.04.2012 19:27, Jeff Layton Ğ¿Ğ¸ÑˆĞµÑ‚:
+> > > > >
+> > > > >If you allow one container to hand out conflicting locks while another
+> > > > >container is allowing reclaims, then you can end up with some very
+> > > > >difficult to debug silent data corruption. That's the worst possible
+> > > > >outcome, IMO. We really need to actively keep people from shooting
+> > > > >themselves in the foot here.
+> > > > >
+> > > > >One possibility might be to only allow filesystems to be exported from
+> > > > >a single container at a time (and allow that to be overridable somehow
+> > > > >once we have a working active/active serving solution). With that, you
+> > > > >may be able limp along with a per-container grace period handling
+> > > > >scheme like you're proposing.
+> > > > >
+> > > > 
+> > > > Ok then. Keeping people from shooting themselves here sounds reasonable.
+> > > > And I like the idea of exporting a filesystem only from once per
+> > > > network namespace.
+> > > 
+> > > Unfortunately that's not going to get us very far, especially not in the
+> > > v4 case where we've got the common read-only pseudoroot that everyone
+> > > has to share.
+> > 
+> > I don't see how that can work in cases where each container has its own
+> > private mount namespace. You're going to have to tie that pseudoroot to
+> > the mount namespace somehow.
+> 
+> Sure, but in typical cases it'll still be shared; requiring that they
+> not be sounds like a severe limitation.
 
-On Mon, Dec 12, 2011 at 6:57 PM, Pawel Moll <pawel.moll@arm.com> wrote:
-> This patch adds an option to instantiate guest virtio-mmio devices
-> basing on a kernel command line (or module) parameter, for example:
->
->        virtio_mmio.devices=0x100@0x100b0000:48
->
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> ---
->  Documentation/kernel-parameters.txt |   17 ++++
->  drivers/virtio/Kconfig              |   11 +++
->  drivers/virtio/virtio_mmio.c        |  163 +++++++++++++++++++++++++++++++++++
->  3 files changed, 191 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index a0c5c5f..c155d13 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -110,6 +110,7 @@ parameter is applicable:
->        USB     USB support is enabled.
->        USBHID  USB Human Interface Device support is enabled.
->        V4L     Video For Linux support is enabled.
-> +       VMMIO   Driver for memory mapped virtio devices is enabled.
->        VGA     The VGA console has been enabled.
->        VT      Virtual terminal support is enabled.
->        WDT     Watchdog support is enabled.
-> @@ -2720,6 +2721,22 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->        video=          [FB] Frame buffer configuration
->                        See Documentation/fb/modedb.txt.
->
-> +       virtio_mmio.device=
-> +                       [VMMIO] Memory mapped virtio (platform) device.
-> +
-> +                               <size>@<baseaddr>:<irq>[:<id>]
-> +                       where:
-> +                               <size>     := size (can use standard suffixes
-> +                                               like K, M and G)
-> +                               <baseaddr> := physical base address
-> +                               <irq>      := interrupt number (as passed to
-> +                                               request_irq())
-> +                               <id>       := (optional) platform device id
-> +                       example:
-> +                               virtio_mmio.device=1K@0x100b0000:48:7
-> +
-> +                       Can be used multiple times for multiple devices.
-> +
->        vga=            [BOOT,X86-32] Select a particular video mode
->                        See Documentation/x86/boot.txt and
->                        Documentation/svga.txt.
-> diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
-> index 1a61939..f38b17a 100644
-> --- a/drivers/virtio/Kconfig
-> +++ b/drivers/virtio/Kconfig
-> @@ -46,4 +46,15 @@ config VIRTIO_BALLOON
->
->         If unsure, say N.
->
-> +config VIRTIO_MMIO_CMDLINE_DEVICES
-> +       bool "Memory mapped virtio devices parameter parsing"
-> +       depends on VIRTIO_MMIO
-> +       ---help---
-> +        Allow virtio-mmio devices instantiation via the kernel command line
-> +        or module parameters. Be aware that using incorrect parameters (base
-> +        address in particular) can crash your system - you have been warned.
-> +        See Documentation/kernel-parameters.txt for details.
-> +
-> +        If unsure, say 'N'.
-> +
->  endmenu
-> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-> index 7317dc2..eab0007 100644
-> --- a/drivers/virtio/virtio_mmio.c
-> +++ b/drivers/virtio/virtio_mmio.c
-> @@ -6,6 +6,50 @@
->  * This module allows virtio devices to be used over a virtual, memory mapped
->  * platform device.
->  *
-> + * The guest device(s) may be instantiated in one of three equivalent ways:
-> + *
-> + * 1. Static platform device in board's code, eg.:
-> + *
-> + *     static struct platform_device v2m_virtio_device = {
-> + *             .name = "virtio-mmio",
-> + *             .id = -1,
-> + *             .num_resources = 2,
-> + *             .resource = (struct resource []) {
-> + *                     {
-> + *                             .start = 0x1001e000,
-> + *                             .end = 0x1001e0ff,
-> + *                             .flags = IORESOURCE_MEM,
-> + *                     }, {
-> + *                             .start = 42 + 32,
-> + *                             .end = 42 + 32,
-> + *                             .flags = IORESOURCE_IRQ,
-> + *                     },
-> + *             }
-> + *     };
-> + *
-> + * 2. Device Tree node, eg.:
-> + *
-> + *             virtio_block@1e000 {
-> + *                     compatible = "virtio,mmio";
-> + *                     reg = <0x1e000 0x100>;
-> + *                     interrupts = <42>;
-> + *             }
-> + *
-> + * 3. Kernel module (or command line) parameter. Can be used more than once -
-> + *    one device will be created for each one. Syntax:
-> + *
-> + *             [virtio_mmio.]device=<size>@<baseaddr>:<irq>[:<id>]
-> + *    where:
-> + *             <size>     := size (can use standard suffixes like K, M or G)
-> + *             <baseaddr> := physical base address
-> + *             <irq>      := interrupt number (as passed to request_irq())
-> + *             <id>       := (optional) platform device id
-> + *    eg.:
-> + *             virtio_mmio.device=0x100@0x100b0000:48 \
-> + *                             virtio_mmio.device=1K@0x1001e000:74
-> + *
-> + *
-> + *
->  * Registers layout (all 32-bit wide):
->  *
->  * offset d. name             description
-> @@ -42,6 +86,8 @@
->  * See the COPYING file in the top-level directory.
->  */
->
-> +#define pr_fmt(fmt) "virtio-mmio: " fmt
-> +
->  #include <linux/highmem.h>
->  #include <linux/interrupt.h>
->  #include <linux/io.h>
-> @@ -443,6 +489,122 @@ static int __devexit virtio_mmio_remove(struct platform_device *pdev)
->
->
->
-> +/* Devices list parameter */
-> +
-> +#if defined(CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES)
-> +
-> +static struct device vm_cmdline_parent = {
-> +       .init_name = "virtio-mmio-cmdline",
-> +};
-> +
-> +static int vm_cmdline_parent_registered;
-> +static int vm_cmdline_id;
-> +
-> +static int vm_cmdline_set(const char *device,
-> +               const struct kernel_param *kp)
-> +{
-> +       int err;
-> +       struct resource resources[2] = {};
-> +       char *str;
-> +       long long int base;
-> +       int processed, consumed = 0;
-> +       struct platform_device *pdev;
-> +
-> +       resources[0].flags = IORESOURCE_MEM;
-> +       resources[1].flags = IORESOURCE_IRQ;
-> +
-> +       resources[0].end = memparse(device, &str) - 1;
-> +
-> +       processed = sscanf(str, "@%lli:%u%n:%d%n",
-> +                       &base, &resources[1].start, &consumed,
-> +                       &vm_cmdline_id, &consumed);
-> +
-> +       if (processed < 2 || processed > 3 || str[consumed])
-> +               return -EINVAL;
-> +
-> +       resources[0].start = base;
-> +       resources[0].end += base;
-> +       resources[1].end = resources[1].start;
-> +
-> +       if (!vm_cmdline_parent_registered) {
-> +               err = device_register(&vm_cmdline_parent);
-> +               if (err) {
-> +                       pr_err("Failed to register parent device!\n");
-> +                       return err;
-> +               }
-> +               vm_cmdline_parent_registered = 1;
-> +       }
-> +
-> +       pr_info("Registering device virtio-mmio.%d at 0x%llx-0x%llx, IRQ %d.\n",
-> +                      vm_cmdline_id++,
-> +                      (unsigned long long)resources[0].start,
-> +                      (unsigned long long)resources[0].end,
-> +                      (int)resources[1].start);
-> +
-> +       pdev = platform_device_register_resndata(&vm_cmdline_parent,
-> +                       "virtio-mmio", vm_cmdline_id++,
-> +                       resources, ARRAY_SIZE(resources), NULL, 0);
-> +       if (IS_ERR(pdev))
-> +               return PTR_ERR(pdev);
-> +
-> +       return 0;
-> +}
-> +
-> +static int vm_cmdline_get_device(struct device *dev, void *data)
-> +{
-> +       char *buffer = data;
-> +       unsigned int len = strlen(buffer);
-> +       struct platform_device *pdev = to_platform_device(dev);
-> +
-> +       snprintf(buffer + len, PAGE_SIZE - len, "0x%llx@0x%llx:%llu:%d\n",
-> +                       pdev->resource[0].end - pdev->resource[0].start + 1ULL,
-> +                       (unsigned long long)pdev->resource[0].start,
-> +                       (unsigned long long)pdev->resource[1].start,
-> +                       pdev->id);
-> +       return 0;
-> +}
-> +
-> +static int vm_cmdline_get(char *buffer, const struct kernel_param *kp)
-> +{
-> +       buffer[0] = '\0';
-> +       device_for_each_child(&vm_cmdline_parent, buffer,
-> +                       vm_cmdline_get_device);
-> +       return strlen(buffer) + 1;
-> +}
-> +
-> +static struct kernel_param_ops vm_cmdline_param_ops = {
-> +       .set = vm_cmdline_set,
-> +       .get = vm_cmdline_get,
-> +};
-> +
-> +device_param_cb(device, &vm_cmdline_param_ops, NULL, S_IRUSR);
-> +
-> +static int vm_unregister_cmdline_device(struct device *dev,
-> +               void *data)
-> +{
-> +       platform_device_unregister(to_platform_device(dev));
-> +
-> +       return 0;
-> +}
-> +
-> +static void vm_unregister_cmdline_devices(void)
-> +{
-> +       if (vm_cmdline_parent_registered) {
-> +               device_for_each_child(&vm_cmdline_parent, NULL,
-> +                               vm_unregister_cmdline_device);
-> +               device_unregister(&vm_cmdline_parent);
-> +               vm_cmdline_parent_registered = 0;
-> +       }
-> +}
-> +
-> +#else
-> +
-> +static void vm_unregister_cmdline_devices(void)
-> +{
-> +}
-> +
-> +#endif
-> +
->  /* Platform driver */
->
->  static struct of_device_id virtio_mmio_match[] = {
-> @@ -469,6 +631,7 @@ static int __init virtio_mmio_init(void)
->  static void __exit virtio_mmio_exit(void)
->  {
->        platform_driver_unregister(&virtio_mmio_driver);
-> +       vm_unregister_cmdline_devices();
->  }
->
->  module_init(virtio_mmio_init);
-> --
-> 1.7.5.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I'd expect the typical case to be the non-shared namespace: the whole
+point of containers is to provide for complete isolation of processes.
+Usually that implies that you don't want them to be able to communicate
+via a shared filesystem.
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
