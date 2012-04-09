@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab2DIH4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 03:56:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34111 "EHLO mx1.redhat.com"
+	id S1755556Ab2DIIE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:04:59 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2964 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754080Ab2DIH4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 03:56:12 -0400
-Date: Mon, 9 Apr 2012 10:53:18 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ren Mingxin <renmx@cn.fujitsu.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kay Sievers <kay.sievers@vrfy.org>,
-        Tokunaga Kei <tokunaga.keiich@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        UDEV <linux-hotplug@vger.kernel.org>
-Subject: Re: [RFC PATCH] virtio_blk: Checking "private_data"  to avoid kernel
- panic when hotplugging
-Message-ID: <20120409075318.GB27771@redhat.com>
-References: <4F728831.2090406@cn.fujitsu.com>
+	id S1754977Ab2DIIE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 04:04:58 -0400
+X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
+Message-ID: <4F829818.6040600@broadcom.com>
+Date: Mon, 9 Apr 2012 10:04:40 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F728831.2090406@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Tso Ted" <tytso@mit.edu>, "Keith Packard" <keithp@keithp.com>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "Stephen Hemminger" <shemminger@vyatta.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] module: Clarify usage of MODULE_LICENSE()
+References: <1333903588-32608-1-git-send-email-mcgrof@frijolero.org>
+In-Reply-To: <1333903588-32608-1-git-send-email-mcgrof@frijolero.org>
+X-WSS-ID: 639C45E93E015379165-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 11:40:33AM +0800, Ren Mingxin wrote:
->  Hi,
-> 
-> On guest with upstream's kernel(3.3.0-rc7), I
-> mounted virtblk as:
->   a) # mkfs /dev/vda
->   b) # mount /dev/vda /mnt
->   c) # cd /mnt
-> 
-> Then I did hotplug for virtblk via virsh on host as:
->   a) # sudo virsh detach-disk guest vda
->   b) # sudo virsh attach-disk guest /media/data/test.img vda
-> 
-> I encountered guest's kernel panic (*probability *
-> *event*)whose backtrace liked this:
+On 04/08/2012 06:46 PM, Luis R. Rodriguez wrote:
+>   include/linux/module.h |   17 +++++++++++++----
+>   1 file changed, 13 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index fbcafe2..8d36d86 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> - * This exists for several reasons
+> + * The MODULE_LICENSE() exists for several reasons:
+> + * 0.   So EXPORT_SYMBOL_GPL() allows the module to use its symbols
 
-Any news here? Managed to trace?
-Does this still happen with 3.4-rc2?
-There's a chance you are hitting a race fixed by
-4678d6f970c2f7c0cbfefc0cc666432d153b321b.
+It seems there is some tab/space mixup here. Also not sure if the above 
+statement is clear or correct. Correct me if I am wrong, but I thought 
+it put a requirement on other modules to be able to use its symbols.
 
-If it's still not fixed it might make sense to enable slab debugging -
-we might have a use after free here.
+>    * 1.	So modinfo can show license info for users wanting to vet their setup
+>    *	is free
+>    * 2.	So the community can ignore bug reports including proprietary modules
 
--- 
-MST
+Gr. AvS
+
