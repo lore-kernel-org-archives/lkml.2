@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab2DIMjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 08:39:11 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43933 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab2DIMjJ (ORCPT
+	id S1756264Ab2DIMkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 08:40:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50633 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754324Ab2DIMkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 08:39:09 -0400
+	Mon, 9 Apr 2012 08:40:19 -0400
+Date: Mon, 9 Apr 2012 13:40:16 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: [GIT PULL] regulator fix for 3.4
+Message-ID: <20120409124015.GD3182@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Date: Mon, 9 Apr 2012 20:39:08 +0800
-Message-ID: <CAJd=RBAL4ODagH3oEwQMFqRX=1tXy9nQkA1U_ij6Rw7BCEOQHw@mail.gmail.com>
-Subject: [PATCH] DLS: fix select_task_rq_dl
-From: Hillf Danton <dhillf@gmail.com>
-To: Dario Faggioli <raistlin@linux.it>, Juri Lelli <juri.lelli@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZJcv+A0YCCLh2VIg"
+Content-Disposition: inline
+X-Cookie: You will have long and healthy life.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check for CPU online is added for correct reference of rq->curr, and for the
-chance to find another runqueue for given task.
 
-We never find other runqueue if the current task could be peempted, no matter
-its migratary or not. IOW, preempt check should never be bypassed.
+--ZJcv+A0YCCLh2VIg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-BTW, SD_BALANCE_XXX matches DLS?
+The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
 
---- a/kernel/sched_dl.c	Mon Apr  9 19:39:56 2012
-+++ b/kernel/sched_dl.c	Mon Apr  9 19:57:12 2012
-@@ -806,8 +806,7 @@ static void yield_task_dl(struct rq *rq)
+are available in the git repository at:
 
- static int find_later_rq(struct task_struct *task);
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-3.4
 
--static int
--select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
-+static int select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
- {
- 	struct task_struct *curr;
- 	struct rq *rq;
-@@ -815,36 +814,40 @@ select_task_rq_dl(struct task_struct *p,
+for you to fetch changes up to c0d78c23423ee6ec774ac53f129e61839dde1908:
 
- 	cpu = task_cpu(p);
+  regulator: anatop: fix 'anatop_regulator' name collision (2012-04-02 23:28:58 +0100)
 
-+	if (!cpu_online(cpu))
-+		goto find;
-+	if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
-+		goto find;
-+
- 	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
- 		goto out;
+----------------------------------------------------------------
+regulator: Fix a build warning in the anatop driver for 3.4
 
- 	rq = cpu_rq(cpu);
+This is a trivial rename to stop the build system complaining that we're
+referencing things we shouldn't be.
 
- 	rcu_read_lock();
--	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
+----------------------------------------------------------------
+Shawn Guo (1):
+      regulator: anatop: fix 'anatop_regulator' name collision
 
--	/*
--	 * If we are dealing with a -deadline task, we must
--	 * decide where to wake it up.
--	 * If it has a later deadline and the current task
--	 * on this rq can't move (provided the waking task
--	 * can!) we prefer to send it somewhere else. On the
--	 * other hand, if it has a shorter deadline, we
--	 * try to make it stay here, it might be important.
--	 */
--	if (unlikely(dl_task(curr)) &&
--	    (curr->dl.nr_cpus_allowed < 2 ||
--	     !dl_entity_preempt(&p->dl, &curr->dl)) &&
--	    (p->dl.nr_cpus_allowed > 1)) {
-+	curr = ACCESS_ONCE(rq->curr);
-+
-+	if (!dl_task(curr))
-+		goto unlock;
-+
-+	if (dl_entity_preempt(&p->dl, &curr->dl))
-+		goto unlock;
-+
-+	rcu_read_unlock();
-+find:
-+	if (p->dl.nr_cpus_allowed > 1) {
- 		int target = find_later_rq(p);
+ drivers/regulator/anatop-regulator.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
- 		if (target != -1)
- 			cpu = target;
- 	}
--	rcu_read_unlock();
+--ZJcv+A0YCCLh2VIg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- out:
- 	return cpu;
-+unlock:
-+	rcu_read_unlock();
-+	goto out;
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
- static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
---
+iQIcBAEBAgAGBQJPgtJfAAoJEBus8iNuMP3dy/YP/iIY+tTbFF9tSdlJff9vJVqT
+t5KXob0czYvIIbnOyd0ERlhw8Hb2idPTH2FGk9VOO93Ac/HvIGyiK+uMjPFoL5zO
+i6fF1HpVrNHYhtkXcNAnda+VRZxUbWTq7p6nvKmvbjXl8Wf+OpJ6bHj0v5a8In5s
+i8vC9CHttdQLLu/rWiRZpajgfZE0Vi8xUD4aMAxpTtufGsVia7UO6/31Bf/YXwhw
+MwvjTEKIjkbwlcOWZp3pKJIJMow40cGUoYpuZnse82aaPrL7J+ckuNTaJzOdNw9A
+kxZEIA1XMeiq055uMHIeK5dr8UUNmnHvDNdR3AqhASoS5Amva7A68LdL44mUU1mC
+lUXvljXOjd6IhNgNBX3GOu+hviDn143YTZvVKSHCV7vxMj/0UFkUWUMf+TX5Gsdn
+xCnadDEr/t9Hnd8Kvi5/118KKQjlhzMDQB4OW12XF05FVyRFolSdIba0O3QVupIg
+/bGlYdIMjUKQfqJ5aF3cwpvg4T2FTvOKWPEHissIIfTtTxKj6MUxPZqAukk9puOH
+l5zqguUNOwmzQ3AQ2mTjAeXvgq807P8/KsVKJvYjkT8wx+kQdokkZyQU78xX3r+e
+93A9l44HLkbgrTYcMegb6jsdLEHuE2xpPc9RBfrNqH+SNwxMybkGJ0r5v4ubdfsd
+mm5U2lfYi4ifxZpFVkOp
+=adak
+-----END PGP SIGNATURE-----
+
+--ZJcv+A0YCCLh2VIg--
