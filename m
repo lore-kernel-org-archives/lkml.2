@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab2DIM0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 08:26:49 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53626 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470Ab2DIM0s (ORCPT
+	id S1753125Ab2DIM2W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 08:28:22 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53318 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab2DIM2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 08:26:48 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 9 Apr 2012 14:26:33 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kristian Hoegsberg <krh@bitplanet.net>,
-        linux1394-devel@lists.sourceforge.net
-Subject: Re: [PATCH] firewire: use module_pci_driver
-Message-ID: <20120409142633.718209a8@stein>
-In-Reply-To: <1333418821.18133.8.camel@phoenix>
-References: <1333418821.18133.8.camel@phoenix>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Apr 2012 08:28:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F81F2F1.8010105@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	<1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
+	<CAJd=RBBm8yDBrZFj48tP_5WsG=z0Rsv_=j=kArV1Mj6yJvQjVA@mail.gmail.com>
+	<4F7F285A.1010703@gmail.com>
+	<CAJd=RBC13JUuX0gtQidpNc=T+pnPgtKVQwRsP-mPQeiyfd9fPA@mail.gmail.com>
+	<4F81F2F1.8010105@gmail.com>
+Date: Mon, 9 Apr 2012 20:28:16 +0800
+Message-ID: <CAJd=RBBDbqD5UwDwBsu9zMA2P4V2-m+v4QTN0An7KCSZZ=z+-A@mail.gmail.com>
+Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
+From: Hillf Danton <dhillf@gmail.com>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, Fabio Checconi <fchecconi@gmail.com>,
+        Tommaso Cucinotta <tommaso.cucinotta@sssup.it>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>,
+        Dhaval Giani <dhaval.giani@gmail.com>, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, Dario Faggioli <raistlin@linux.it>,
+        Insop Song <insop.song@ericsson.com>, liming.wang@windriver.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 03 Axel Lin wrote:
-> This patch converts the drivers in drivers/firewire/* to use module_pci_driver()
-> macro which makes the code smaller and a bit simpler.
+On Mon, Apr 9, 2012 at 4:20 AM, Juri Lelli <juri.lelli@gmail.com> wrote:
+>
+> Do you mean at kernel_init time?
+> Could you be more precise about the problem Steven encountered?
+>
+After change from kernel/sched_rt.c to kernel/sched/rt.c, I could not
+find the git history of that fix, related to RCU IIRC, by Steven in mainline.
+Steven, please give a link.
 
-Committed to linux1394.git.  Thanks,
--- 
-Stefan Richter
--=====-===-- -=-- -=--=
-http://arcgraph.de/sr/
+>
+> Here we go:
+> https://github.com/downloads/jlelli/sched-deadline/sched-dl-V4.patch
+>
+Thanks:)
+
+> I noticed that the Cc list is changed... something went wrong?
+>
+I forget what was changed, simply because the mail agent beeps that
+one mail address is not reachable.
+
+-hd
