@@ -1,132 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab2DILb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 07:31:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42086 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab2DILb0 (ORCPT
+	id S1756877Ab2DILoB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 07:44:01 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58887 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab2DILn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 07:31:26 -0400
-Message-ID: <4F82C830.1020100@mvista.com>
-Date: Mon, 09 Apr 2012 15:29:52 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
+	Mon, 9 Apr 2012 07:43:59 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4F82CB64.8030808@jp.fujitsu.com>
+Date: Mon, 09 Apr 2012 20:43:32 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-CC: netdev@vger.kernel.org, davinci-linux-open-source@linux.davincidsp.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] davinci_emac: Add cpu_freq support
-References: <1333968549-3282-1-git-send-email-prakash.pm@ti.com>
-In-Reply-To: <1333968549-3282-1-git-send-email-prakash.pm@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jiang Liu <liuj97@gmail.com>
+CC: Taku Izumi <izumi.taku@jp.fujitsu.com>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/2] PCI, ACPI, x86: update MMCFG information when hot-plugging
+ PCI host bridges
+References: <1333905129-8776-1-git-send-email-jiang.liu@huawei.com> <1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Your patch looks good to me.
 
-On 09-04-2012 14:49, Manjunathappa, Prakash wrote:
+I have some comments.
 
-> Reconfigure interrupt coalesce parameter for changed emac bus_freq
-> due to DVFS.
-
-> Signed-off-by: Manjunathappa, Prakash<prakash.pm@ti.com>
-> ---
->   drivers/net/ethernet/ti/davinci_emac.c |   60 ++++++++++++++++++++++++++++++++
->   1 files changed, 60 insertions(+), 0 deletions(-)
-
-> diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
-> index 174a334..11d3bd7 100644
-> --- a/drivers/net/ethernet/ti/davinci_emac.c
-> +++ b/drivers/net/ethernet/ti/davinci_emac.c
-[...]
-> @@ -1761,6 +1765,46 @@ static const struct net_device_ops emac_netdev_ops = {
->   #endif
->   };
+(2012/04/09 2:12), Jiang Liu wrote:
+> This patch enhances pci_root driver to update MMCFG information when
+> hot-plugging PCI root bridges on x86 platforms.
 >
-> +#ifdef CONFIG_CPU_FREQ
-> +static int davinci_emac_cpufreq_transition(struct notifier_block *nb,
-> +				     unsigned long val, void *data)
+
+Do you have the patch that can be applied to Bjorn's pci tree?
+
+<snip.>
+
+> +int arch_acpi_pci_root_add(struct acpi_pci_root *root)
 > +{
-> +	int ret = 0;
-> +	struct emac_priv *priv;
+> +	int result = 0;
+> +	acpi_status status;
+> +	unsigned long long base_addr;
+> +	struct pci_mmcfg_region *cfg;
 > +
-> +	priv = container_of(nb, struct emac_priv, freq_transition);
-> +	if (priv->coal_intvl != 0) {
-> +		if (val == CPUFREQ_POSTCHANGE) {
-> +			if (emac_bus_frequency != clk_get_rate(emac_clk)) {
+> +	/*
+> +	 * Try to insert MMCFG information for host bridges with _CBA method
+> +	 */
+> +	status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+> +				       NULL,&base_addr);
+> +	if (ACPI_SUCCESS(status)) {
+> +		result = pci_mmconfig_insert(root->segment,
+> +					     root->secondary.start,
+> +					     root->secondary.end,
+> +					     base_addr);
+> +		/*
+> +		 * MMCFG information for hot-pluggable host bridges may have
+> +		 * already been added by __pci_mmcfg_init();
+> +		 */
+> +		if (result == -EEXIST)
+> +			result = 0;
 
-    These 3 *if*s could be collapsed into one, and so indentation level 
-lowered significantly.
+Just for confirmation.
+>From my interpretation of PCI firmware spec, MCFG doesn't have any entry
+for hot-pluggable hostbridge. So I assume this is for the machine that
+is not compliant to the spec. Is my understanding same as yours?
 
-> +				struct ethtool_coalesce coal;
-> +
-> +				emac_bus_frequency = clk_get_rate(emac_clk);
-> +
-> +				priv->bus_freq_mhz = (u32)(emac_bus_frequency /
-> +						1000000);
-> +				coal.rx_coalesce_usecs = (priv->coal_intvl
-> +						<<  4);
-> +				ret = emac_set_coalesce(priv->ndev,&coal);
-> +			}
-> +		}
+<snip.>
+
+>   static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>   {
+>   	unsigned long long segment, bus;
+> @@ -504,6 +514,14 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>   	strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
+>   	device->driver_data = root;
+> 
+> +	if (arch_acpi_pci_root_add(root)) {
+> +		printk(KERN_ERR PREFIX
+> +			"can't add MMCFG information for Bus %04x:%02x\n",
+> +			root->segment, (unsigned int)root->secondary.start);
+> +		result = -ENODEV;
+> +		goto out_free;
 > +	}
-> +	return ret;
-> +}
-> +
-> +static inline int davinci_emac_cpufreq_register(struct emac_priv *priv)
-> +{
-> +	priv->freq_transition.notifier_call = davinci_emac_cpufreq_transition;
-> +	return cpufreq_register_notifier(&priv->freq_transition,
-> +					 CPUFREQ_TRANSITION_NOTIFIER);
-> +}
-> +
-> +static inline void davinci_emac_cpufreq_deregister(struct emac_priv *priv)
-> +{
-> +	cpufreq_unregister_notifier(&priv->freq_transition,
-> +				    CPUFREQ_TRANSITION_NOTIFIER);
-> +}
-> +#endif
-> +
->   /**
->    * davinci_emac_probe: EMAC device probe
->    * @pdev: The DaVinci EMAC device that we are removing
-> @@ -1925,8 +1969,21 @@ static int __devinit davinci_emac_probe(struct platform_device *pdev)
->   			   "(regs: %p, irq: %d)\n",
->   			   (void *)priv->emac_base_phys, ndev->irq);
->   	}
-> +
-> +#ifdef CONFIG_CPU_FREQ
-> +	rc = davinci_emac_cpufreq_register(priv);
-> +	if (rc) {
-> +		dev_err(&pdev->dev, "error in register_netdev\n");
 
-    Really?
+Desn't this break the system that doesn't support MMCONFIG?
 
-> +		rc = -ENODEV;
-> +		goto cpufreq_reg_err;
-> +	}
-> +#endif
->   	return 0;
->
-> +#ifdef CONFIG_CPU_FREQ
-> +cpufreq_reg_err:
-> +	unregister_netdev(ndev);
-> +#endif
->   netdev_reg_err:
->   	clk_disable(emac_clk);
->   no_irq_res:
-> @@ -1973,6 +2030,9 @@ static int __devexit davinci_emac_remove(struct platform_device *pdev)
->
->   	release_mem_region(res->start, resource_size(res));
->
-> +#ifdef CONFIG_CPU_FREQ
-> +	davinci_emac_cpufreq_deregister(priv);
-> +#endif
+In my understanding, arch_acpi_pci_root_add() returns -ENODEV if
+mmconfig information is found neither in MCFG table nor _CBA. And
+pci root bridge initialization seems to fail arch_acpi_pci_root_add()
+returns non-zero value.
 
-    This is considered a bad practice to use #ifdef in the body of function.
-Define the faunction you call here as empty inline in case CONFIG_CPU_FREQ is 
-not defined instead. The same about davinci_emac_cpufreq_register().
-
-WBR, Sergei
+Regards,
+Kenji Kaneshige
