@@ -1,196 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab2DIVbC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:31:02 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:25614 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab2DIVbA (ORCPT
+	id S1756998Ab2DIVdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:33:03 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:40617 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab2DIVdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:31:00 -0400
-Message-ID: <4F835510.4060100@tilera.com>
-Date: Mon, 9 Apr 2012 17:30:56 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Mon, 9 Apr 2012 17:33:00 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
+Subject: Re: ANN: libseccomp
+Date: Mon, 09 Apr 2012 17:32:57 -0400
+Message-ID: <1580647.pAHyaBF6MS@sifl>
+User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
+In-Reply-To: <CAGXu5jL5nAY4=5OKhA6VPdrzkUjVuBTcLQuMxUSEv_=N=ohbzQ@mail.gmail.com>
+References: <1540670.AFBi1SpGoi@sifl> <CAGXu5jL5nAY4=5OKhA6VPdrzkUjVuBTcLQuMxUSEv_=N=ohbzQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH 6/6] tilegx network driver: initial support
-References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204062101.q36L1uCi011406@farm-0027.internal.tilera.com> <201204091349.54484.arnd@arndb.de>
-In-Reply-To: <201204091349.54484.arnd@arndb.de>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/9/2012 9:49 AM, Arnd Bergmann wrote:
-> On Friday 06 April 2012, Chris Metcalf wrote:
->> This change adds support for the tilegx network driver based on the
->> GXIO IORPC support in the tilegx software stack, using the on-chip
->> mPIPE packet processing engine.
->>
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
->> ---
->>  drivers/net/ethernet/tile/Kconfig  |    1 +
->>  drivers/net/ethernet/tile/Makefile |    4 +-
->>  drivers/net/ethernet/tile/tilegx.c | 2045 ++++++++++++++++++++++++++++++++++++
->>  3 files changed, 2048 insertions(+), 2 deletions(-)
->>  create mode 100644 drivers/net/ethernet/tile/tilegx.c
-> I think the directory name should be the company, not the architecture here, so make
-> it drivers/net/ethernet/tilera/tilegx.c instead.
+On Monday, April 09, 2012 12:16:30 PM Kees Cook wrote:
+> On Mon, Apr 9, 2012 at 11:58 AM, Paul Moore <paul@paul-moore.com> wrote:
+> > With the seccomp patches finally stabilizing a bit, it seems like now is a
+> > good time to announce libseccomp: a library designed to make it easier to
+> > create complex, architecture independent seccomp filters.
+> > 
+> >  * http://sourceforge.net/projects/libseccomp/
+> >  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
+> 
+> This looks really great; nice work!
 
-This path was picked back when Jeff Kirsher did the initial move into
-drivers/net/ethernet/ for the tilepro driver.  I don't have too strong an
-opinion on this; at this point I'm mostly just concerned that it seems like
-potentially not worth the churn to move the files for 3.2, then again for
-3.5.  But if folks agree we should do it, it's fine with me.
+Thanks.
 
-We can put that in a separate change so it sweeps up the tilepro ethernet
-support as well, which is otherwise not involved in this change series.
+> I see that the arch check happens during _gen_bpf_build_bpf(), which
+> is excellent. Do you have any thoughts about including a call to
+> prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) by default as well?
 
->> +MODULE_AUTHOR("Tilera");
->> +MODULE_LICENSE("GPL");
->> +
-> MODULE_AUTHOR is normally a real person with an email address.
+That is a good question, and I guess it comes down to another question of if 
+anyone would want to use seccomp without NO_NEW_PRIVS.  If the answer is no 
+then I'm comfortable adding it into the seccomp_load() function; however, if 
+the answer is yes we might want to do something different.
 
-The actual author would rather not publish his name (I just double-checked
-with him).  I didn't write this module, so it doesn't seem right to use my
-name.  I did change it to "Tilera Corporation" just because that seems a
-bit better.  I did a sweep and turned up a fair number of other similar
-uses in our internal code and for now made them all "Tilera Corporation",
-but I've encouraged our OS developers to consider using their names on
-driver code they are writing, so some drivers coming from Tilera may carry
-full names in the future.
-
->> +/* Statistics counters for a specific cpu and device. */
->> +struct tile_net_stats_t {
->> +	u32 rx_packets;
->> +	u32 rx_bytes;
->> +	u32 tx_packets;
->> +	u32 tx_bytes;
->> +};
-> I think you need to drop the _t postfix here, which presumably comes
-> from converting it from a typedef.
-
-Fixed.
-
->> +/* The actual devices. */
->> +static struct net_device *tile_net_devs[TILE_NET_DEVS];
->> +
->> +/* The device for a given channel.  HACK: We use "32", not
->> + * TILE_NET_CHANNELS, because it is fairly subtle that the 5 bit
->> + * "idesc.channel" field never exceeds TILE_NET_CHANNELS.
->> + */
->> +static struct net_device *tile_net_devs_for_channel[32];
-> When you need to keep a list or array of device structures in a driver, you're
-> usually doing something very wrong. The convention is to just pass the pointer
-> around to where you need it.
-
-We need "tile_net_devs_for_channel" because we share a single hardware
-queue for all devices, and each packet's metadata contains a "channel"
-value which indicates the device.
-
->> +
->> +/* Convert a "buffer ptr" into a "buffer cpa". */
->> +static inline void *buf_to_cpa(void *buf)
->> +{
->> +	return (void *)__pa(buf);
->> +}
->> +
->> +
->> +/* Convert a "buffer cpa" into a "buffer ptr". */
->> +static inline void *cpa_to_buf(void *cpa)
->> +{
->> +	return (void *)__va(cpa);
->> +}
-> This is almost certainly wrong: The type returned by __pa is a phys_addr_t,
-> which cannot be dereferenced like a pointer. On normal drivers, you would
-> use dma_map_single()/dma_unmap_single() to get a token that can get
-> passed into a dma engine. From what I can tell, this device is directly mapped,
-> while your PCI uses an IOMMU, so that would require two different
-> implementations of dma mapping operations.
-
-Well, it's right, but ridiculously confusing.  What I've done today is
-eliminate these two functions, and add the following code in <asm/io.h>:
-
-/*
- * The on-chip I/O hardware on tilegx is configured with VA=PA for the
- * kernel's PA range.  The low-level APIs and field names use "va" and
- * "void *" nomenclature, to be consistent with the general notion
- * that the addresses in question are virtualizable, but in the kernel
- * context we are actually manipulating PA values.  To allow readers
- * of the code to understand what's happening, we direct their
- * attention to this comment by using the following two no-op functions.
- */
-static inline unsigned long pa_to_tile_io_addr(phys_addr_t pa)
-{
-        BUILD_BUG_ON(sizeof(phys_addr_t) != sizeof(unsigned long));
-        return pa;
-}
-static inline phys_addr_t tile_io_addr_to_pa(unsigned long tile_io_addr)
-{
-        return tile_io_addr;
-}
-
-Then the individual uses in the network driver are just things like
-"edesc_head.va = pa_to_tile_io_addr(__pa(va))" or "va =
-__va(tile_io_addr_to_pa((unsigned long)gxio_mpipe_idesc_get_va(idesc)))"
-which I think is a little clearer.
-
->> +/* Allocate and push a buffer. */
->> +static bool tile_net_provide_buffer(bool small)
->> +{
->> [...]
->> +
->> +	/* Save a back-pointer to 'skb'. */
->> +	*(struct sk_buff **)(skb->data - sizeof(struct sk_buff **)) = skb;
-> This looks very wrong: why would you put the pointer to the skb into the
-> skb itself?
-
-Because we create skbuffs, and then feed the raw underlying buffer storage
-to our hardware, and later, we get back this raw pointer from hardware,
-from which we need to be able to extract the actual skbuff.
-
->> +	/* Make sure "skb" and the back-pointer have been flushed. */
->> +	__insn_mf();
-> Try to use archicture independent names for flush operations like this
-> to make it more readable. I assume this should be smp_wmb()?
-
-Done, though it's just wmb() here, since we're fencing against the I/O
-hardware, not against other cores.
-
->> +
->> +		/* Compute the "ip checksum". */
->> +		jsum = isum_hack + htons(s_len - eh_len) + htons(id);
->> +		jsum = __insn_v2sadu(jsum, 0);
->> +		jsum = __insn_v2sadu(jsum, 0);
->> +		jsum = (0xFFFF ^ jsum);
->> +		jh->check = jsum;
->> +
->> +		/* Update the tcp "seq". */
->> +		uh->seq = htonl(seq);
->> +
->> +		/* Update some flags. */
->> +		if (!final)
->> +			uh->fin = uh->psh = 0;
->> +
->> +		/* Compute the tcp pseudo-header checksum. */
->> +		usum = tsum_hack + htons(s_len);
->> +		usum = __insn_v2sadu(usum, 0);
->> +		usum = __insn_v2sadu(usum, 0);
->> +		uh->check = usum;
-> Why to you open-code the ip checksum functions here? Normally the stack takes
-> care of this by calling the functions you already provide in
-> arch/tile/lib/checksum.c
-
-If there is a way to do TSO without this, we'd be happy to hear it, but
-it's not clear how it would be possible.  We are only computing a PARTIAL
-checksum here, and letting the hardware compute the "full" checksum.
-
-Thanks!
+I haven't given much thought to this yet, so if you or anyone else feels 
+strongly about the issue - either pro or con - I'd appreciate hearing the 
+argument.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+paul moore
+www.paul-moore.com
 
