@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab2DIVvf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:51:35 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38960 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab2DIVvb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:51:31 -0400
+	id S1757912Ab2DIVwp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:52:45 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:34970 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757481Ab2DIVwo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 17:52:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <1580647.pAHyaBF6MS@sifl>
-References: <1540670.AFBi1SpGoi@sifl>
-	<CAGXu5jL5nAY4=5OKhA6VPdrzkUjVuBTcLQuMxUSEv_=N=ohbzQ@mail.gmail.com>
-	<1580647.pAHyaBF6MS@sifl>
-Date: Mon, 9 Apr 2012 16:51:30 -0500
-Message-ID: <CABqD9haXLBDxEkC3+3AN4d4PDVYE-JrqH4P6iTJ95mqYxoR=yA@mail.gmail.com>
-Subject: Re: ANN: libseccomp
-From: Will Drewry <wad@chromium.org>
-To: Paul Moore <paul@paul-moore.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
+In-Reply-To: <20120405084808.GA21060@glitch>
+References: <20120405084808.GA21060@glitch>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 9 Apr 2012 14:52:15 -0700
+Message-ID: <CAJOA=zNt7V_LNLAyXxJU2oS3vTEhvZ1JUWAx+hqQM1t=Whjr6w@mail.gmail.com>
+Subject: Re: common clk: fix clk_register_fixed_rate() under memory pressure
+To: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 4:32 PM, Paul Moore <paul@paul-moore.com> wrote:
-> On Monday, April 09, 2012 12:16:30 PM Kees Cook wrote:
->> On Mon, Apr 9, 2012 at 11:58 AM, Paul Moore <paul@paul-moore.com> wrote:
->> > With the seccomp patches finally stabilizing a bit, it seems like now is a
->> > good time to announce libseccomp: a library designed to make it easier to
->> > create complex, architecture independent seccomp filters.
->> >
->> >  * http://sourceforge.net/projects/libseccomp/
->> >  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
->>
->> This looks really great; nice work!
-
-Agreed -- this is great to see!
-
->> I see that the arch check happens during _gen_bpf_build_bpf(), which
->> is excellent. Do you have any thoughts about including a call to
->> prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) by default as well?
+On Thu, Apr 5, 2012 at 1:48 AM, Domenico Andreoli <cavokz@gmail.com> wrote:
+> From: Domenico Andreoli <cavokz@gmail.com>
 >
-> That is a good question, and I guess it comes down to another question of if
-> anyone would want to use seccomp without NO_NEW_PRIVS.  If the answer is no
-> then I'm comfortable adding it into the seccomp_load() function; however, if
-> the answer is yes we might want to do something different.
+> Under memory pressure clk_register_fixed_rate() fails to manage
+> allocation errors and prepares land for a later WARN_ON at best.
 >
-> I haven't given much thought to this yet, so if you or anyone else feels
-> strongly about the issue - either pro or con - I'd appreciate hearing the
-> argument.
+> This fix leaves parent_names correctly initialized or NULL, intermediate
+> half initialized states are cleaned up and not propagated to the clock
+> framework.
+>
+> Signed-off-by: Domenico Andreoli <cavokz@gmail.com>
 
-I guess the question is if there is an expectation that this library
-be used with something like lxc, where a whole, functional system with
-suid/fcaps binaries is contained.  In that world, it may not be
-desirable to set the nnp bit.   The same is true if, for some reason,
-the init task was to set a system-wide filter.
+Thanks for the patch Domenico.  I did a big cleanup of the
+registration code for all of the basic clock types and a fix for this
+has already been rolled in to that branch, so I won't be taking this
+patch.  I'll Cc you on the fixes when I send them to the list
+(probably tomorrow).
 
-Most likely, default use of nnp is probably "the right thing", but
-it'd be nice to be able to annotate when you really want to allow
-privileged contexts to set filters without nnp.
+Regards,
+Mike
 
-thanks!
-will
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+>
+> ---
+>  drivers/clk/clk-fixed-rate.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+>
+> Index: b/drivers/clk/clk-fixed-rate.c
+> ===================================================================
+> --- a/drivers/clk/clk-fixed-rate.c
+> +++ b/drivers/clk/clk-fixed-rate.c
+> @@ -67,8 +67,11 @@ struct clk *clk_register_fixed_rate(stru
+>
+>                parent_names[0] = kmalloc(len, GFP_KERNEL);
+>
+> -               if (!parent_names[0])
+> +               if (!parent_names[0]) {
+> +                       kfree(parent_names);
+> +                       parent_names = NULL;
+>                        goto out;
+> +               }
+>
+>                strncpy(parent_names[0], parent_name, len);
+>        }
+> @@ -77,6 +80,6 @@ out:
+>        return clk_register(dev, name,
+>                        &clk_fixed_rate_ops, &fixed->hw,
+>                        parent_names,
+> -                       (parent_name ? 1 : 0),
+> +                       (parent_names ? 1 : 0),
+>                        flags);
+>  }
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
