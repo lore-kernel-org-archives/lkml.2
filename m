@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818Ab2DITGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:06:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37420 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755633Ab2DITGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:06:08 -0400
-Message-ID: <4F833315.1050109@ti.com>
-Date: Tue, 10 Apr 2012 00:35:57 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1757853Ab2DITHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:07:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52343 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757702Ab2DITHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 15:07:14 -0400
+Date: Mon, 9 Apr 2012 12:07:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH 25/69] TTY: con3215, remove tasklet for tty_wakeup
+Message-ID: <20120409190710.GA14176@kroah.com>
+References: <1333367693-3244-1-git-send-email-jslaby@suse.cz>
+ <1333367693-3244-26-git-send-email-jslaby@suse.cz>
+ <20120403054241.GA2700@osiris.boeblingen.de.ibm.com>
+ <4F7AADD7.5070802@suse.cz>
+ <20120409182720.GA12044@kroah.com>
+ <4F832ABF.4060509@suse.cz>
 MIME-Version: 1.0
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-CC: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm: da850: change ASYNC/PLL0_SYSCLK3 clock rate with
- DVFS
-References: <1333617232-27967-1-git-send-email-prakash.pm@ti.com>
-In-Reply-To: <1333617232-27967-1-git-send-email-prakash.pm@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F832ABF.4060509@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prakash,
-
-On 4/5/2012 2:43 PM, Manjunathappa, Prakash wrote:
-> Clock for EMIF is derived from ASYNC clock domain(PLL0_SYSCLK3) and was
-> configured with fixed divider as there was no significant performance
-> degradation with existing NAND/NOR EMIF devices if it is not
-> reconfigured accordingly at different OPPs.
-
-This is not correct AFAICT. The divider is not fixed in current code.
-There is an attempt to adjust the async1 (PLL0 SYSCLK3 rate) and keep it
-constant at 100MHz by adjusting the divider at each OPP transition (see
-the call to clock_set_rate() on async clock in cpufreq.c). This was
-based on an earlier understanding that PLL0_SYSCLK3 can support 100MHz
-at all OPPs and all AEMIF modes. Looking at the datasheet now, it is
-clear that that assumption is not true.
-
+On Mon, Apr 09, 2012 at 08:30:23PM +0200, Jiri Slaby wrote:
+> On 04/09/2012 08:27 PM, Greg KH wrote:
+> > On Tue, Apr 03, 2012 at 09:59:19AM +0200, Jiri Slaby wrote:
+> >> On 04/03/2012 07:42 AM, Heiko Carstens wrote:
+> >>> On Mon, Apr 02, 2012 at 01:54:09PM +0200, Jiri Slaby wrote:
+> >>>> tty_wakeup is safe to be called from all contexts. No need to schedule
+> >>>> a tasklet for that. Let us call it directly like in other drivers.
+> >>>>
+> >>>> And delete the tasklet completely.
+> >>>
+> >>> Your patch actually reverts Martin's recent commit 656d912537
+> >>> "[S390] 3215 deadlock with tty_wakeup".
+> >>> I'm quite sure the reason for the deadlock still exists.
+> >>> Unfortunately the commit doesn't contain the call chain that
+> >>> led to fix.
+> >>
+> >> Ok, I would really appreciate the trace.
+> >>
+> >> If this is really an issue, we should provide a helper in the TTY layer
+> >> like tty_schedule_wakeup.
+> > 
+> > Jiri, should I not apply this patch?
 > 
-> On systems where devices other than NAND/NOR are interfaced through
-> EMIF, such performance degradation may not be desirable. So change the
-> PLL0_SYSCLK3 output frequency for different OPPs by re-configuring
-> the divider value.
+> Yes, please skip it until this is sorted out. And also the other con3215
+> patches if they don't apply cleanly now.
 
-This again is not the point. The issue is that depending on what mode
-you have AEMIF running in *and* depending on what OPP you are at, a
-particular value of ASYNC1 clock is required to get maximum performance
-out of AEMIF.
+Ok, I've not applied patches 25, 26, and 27 in this series, but have
+applied all others, thanks.
 
-> 
-> Also add Kconfig option to support platforms requiring fixed EMIF clock
-> rate.
-
-This breaks single image support for all DA850 boards. Kconfig in this
-case is not an option.
-
-Why not make the OPP table board specific while maintain a sane (and
-safe) default in SoC file so there is something to fall back upon in
-case a board does not need to define its own? This should also address
-Christian's concern in the other e-mail thread about board specific OPP
-values being hardcoded in SoC file with no way to override them.
-
-Thanks,
-Sekhar
+greg k-h
