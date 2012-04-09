@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2DIIVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 04:21:08 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58041 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754870Ab2DIIVG (ORCPT
+	id S1756024Ab2DIIWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 04:22:48 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39392 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab2DIIWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 04:21:06 -0400
-Date: Mon, 9 Apr 2012 11:20:57 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 2/3] vmevent-test: No need for SDL library
-In-Reply-To: <20120408233820.GB4839@panacea>
-Message-ID: <alpine.LFD.2.02.1204091120490.6479@tux.localdomain>
-References: <20120408233550.GA3791@panacea> <20120408233820.GB4839@panacea>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 9 Apr 2012 04:22:47 -0400
+From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Subject: [BUG PATCH] perf: kvm - finding struct machine fails for
+ PERF_RECORD_MMAP
+To: mingo@redhat.com, acme@ghostprotocols.net, dsahern@gmail.com
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, fweisbec@gmail.com,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        nikunj@linux.vnet.ibm.com
+Date: Mon, 09 Apr 2012 13:52:23 +0530
+Message-ID: <20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12040908-5564-0000-0000-0000022166FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Apr 2012, Anton Vorontsov wrote:
-> panacea:~/src/linux/linux-vmevent/tools/testing/vmevent$ make
-> cc -O3 -g -std=gnu99 -Wcast-align -Wformat -Wformat-security
-> -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls
-> -Wstrict-aliasing=3 -Wswitch-default -Wno-system-headers -Wundef
-> -Wwrite-strings -Wbad-function-cast -Wmissing-declarations
-> -Wmissing-prototypes -Wnested-externs -Wold-style-definition
-> -Wstrict-prototypes -Wdeclaration-after-statement  -lSDL  vmevent-test.c
-> -o vmevent-test
-> /usr/bin/ld: cannot find -lSDL
-> collect2: ld returned 1 exit status
-> make: *** [vmevent-test] Error 1
-> 
-> This patch fixes the issue.
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 
-Applied, thanks!
+Running 'perf kvm --host --guest --guestmount /tmp/guestmount record -a -g -- sleep 2'
+
+Was resulting in a segfault. For event type PERF_RECORD_MMAP,
+event->ip.pid is being used in perf_session__find_machine_for_cpumode,
+which is not correct.
+
+event->ip.pid happens to be 0 in this case and results in returning a
+NULL machine object. Finally, access to self->pid in
+machine__mmap_name, results in a segfault later.
+
+For PERF_RECORD_MMAP type, pass event->mmap.pid.
+
+Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+---
+
+ tools/perf/util/session.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 9412e3b..00923cd 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -826,8 +826,16 @@ static struct machine *
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+-	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest)
+-		return perf_session__find_machine(session, event->ip.pid);
++	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
++		u32 pid;
++
++		if (event->header.type == PERF_RECORD_MMAP)
++			pid = event->mmap.pid;
++		else
++			pid = event->ip.pid;
++
++		return perf_session__find_machine(session, pid);
++	}
+ 
+ 	return perf_session__find_host_machine(session);
+ }
+
