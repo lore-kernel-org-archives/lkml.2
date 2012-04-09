@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab2DIC2k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Apr 2012 22:28:40 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:13256 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab2DIC2j (ORCPT
+	id S1756266Ab2DIC2q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Apr 2012 22:28:46 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50432 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab2DIC2n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Apr 2012 22:28:39 -0400
-Message-ID: <4F824952.4000500@micron.com>
-Date: Sun, 8 Apr 2012 19:28:34 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Sun, 8 Apr 2012 22:28:43 -0400
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Sam Bradshaw <sbradshaw@micron.com>
-Subject: [PATCH v2 2/7] mtip32xx: make setting comp_time as common
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.000.1038-18810.005
-X-TM-AS-Result: No--5.083300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+In-Reply-To: <CAOesGMiPZ0so-ZN0HCHHhw16oPWWgfVD5t--wKSvEUtzQx94CA@mail.gmail.com>
+References: <1333777207-4151-1-git-send-email-olof@lixom.net>
+	<20120407070206.GA17623@core.coreip.homeip.net>
+	<4F8089A9.6080704@raumfeld.com>
+	<CAOesGMiPZ0so-ZN0HCHHhw16oPWWgfVD5t--wKSvEUtzQx94CA@mail.gmail.com>
+Date: Mon, 9 Apr 2012 10:28:42 +0800
+Message-ID: <CAN1soZzxQAykNaptaptCcQ22smT-U0tmATFBde5ohkzq7xYA4g@mail.gmail.com>
+Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Sven Neumann <s.neumann@raumfeld.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Mack <daniel@caiaq.de>, Daniel Mack <zonque@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved setting completion time into mtip_issue_ncq_command()
+On Sun, Apr 8, 2012 at 4:32 AM, Olof Johansson <olof@lixom.net> wrote:
+> On Sat, Apr 7, 2012 at 11:38 AM, Sven Neumann <s.neumann@raumfeld.com> wrote:
+>> Hi,
+>>
+>>
+>> On 07.04.12 09:02, Dmitry Torokhov wrote:
+>>>
+>>> On Fri, Apr 06, 2012 at 10:40:07PM -0700, Olof Johansson wrote:
+>>>>
+>>>> This seems to have been broken since 2010, so obviously noone actually
+>>>> cares about the driver:
+>>>>
+>>>> make[4]: *** [drivers/input/touchscreen/eeti_ts.o] Error 1
+>>>> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
+>>>> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of
+>>>> function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+>>>>
+>>>> irq_to_gpio isn't available on most platforms today, so the driver
+>>>> will need some rework by someone who has hardware access and can test
+>>>> (to make sure that, for example, switching to level interrupts and just
+>>>> keep taking them while there's more to process works).
+>>>>
+>>>> I guess it could just be scheduled for removal, but let's start with
+>>>> marking it CONFIG_BROKEN.
+>>>
+>>>
+>>> Well, it probably works quite well on arches that do have irq_to_gpio(),
+>>> let's ask Daniel and Sven if they still have this hardware and if they
+>>> can try the patch below that implements what you suggested.
+>>
+>>
+>> This hardware is still in use and we also still follow kernel development
+>> and try to update our customer devices to recent kernel versions regularly.
+>> Currently we are at 3.1.10 and the touchscreen works well with that. I'll
+>> try to update to a more recent kernel next week and will try your patch.
+>
+> Ah, you're right, and this was my bad. Looks like this change was
+> introduced in 3.2 and broke this and one more driver (ezx-pcap):
+>
+> Author:     Haojian Zhuang <haojian.zhuang@marvell.com>
+> AuthorDate: Mon Oct 10 16:03:51 2011 +0800
+> Commit:     Haojian Zhuang <haojian.zhuang@marvell.com>
+> CommitDate: Mon Nov 14 21:07:59 2011 +0800
+>
+>    ARM: pxa: rename gpio_to_irq and irq_to_gpio
+>
+>    Avoid to define gpio_to_irq() and irq_to_gpio() for potential name
+>    confliction since multiple architecture will be built together.
+>
+>    Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+>
+>
+> Haojian, I think it was probably premature to do the multiplatform
+> change like that, since it means that a PXA-only kernel has no mapping
+> from irq_to_gpio to pxa_irq_to_gpio. Can you please address this as a
+> fix for 3.4?
+>
+>
+I tried to fix ezx-pcap before. Since there's some codebase confliction, the
+patch wasn't merged. I'll format patch again. And I'll try to fix other patches
+that are covered in arch-pxa if they exist.
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
----
- drivers/block/mtip32xx/mtip32xx.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 34b395d..aaa8245 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -306,6 +306,10 @@ static inline void mtip_issue_ncq_command(struct mtip_port *port, int tag)
- 			port->cmd_issue[MTIP_TAG_INDEX(tag)]);
- 
- 	spin_unlock_irqrestore(&port->cmd_issue_lock, flags);
-+
-+	/* Set the command's timeout value.*/
-+	port->commands[tag].comp_time = jiffies + msecs_to_jiffies(
-+					MTIP_NCQ_COMMAND_TIMEOUT_MS);
- }
- 
- /*
-@@ -824,10 +828,6 @@ static void mtip_handle_tfe(struct driver_data *dd)
- 
- 				set_bit(tag, tagaccum);
- 
--				/* Update the timeout value. */
--				port->commands[tag].comp_time =
--					jiffies + msecs_to_jiffies(
--					MTIP_NCQ_COMMAND_TIMEOUT_MS);
- 				/* Re-issue the command. */
- 				mtip_issue_ncq_command(port, tag);
- 
-@@ -2204,9 +2204,7 @@ static void mtip_hw_submit_io(struct driver_data *dd, sector_t start,
- 	/* Issue the command to the hardware */
- 	mtip_issue_ncq_command(port, tag);
- 
--	/* Set the command's timeout value.*/
--	port->commands[tag].comp_time = jiffies + msecs_to_jiffies(
--					MTIP_NCQ_COMMAND_TIMEOUT_MS);
-+	return;
- }
- 
- /*
-@@ -2538,10 +2536,6 @@ static int mtip_service_thread(void *data)
- 				/* Issue the command to the hardware */
- 				mtip_issue_ncq_command(port, slot);
- 
--				/* Set the command's timeout value.*/
--				port->commands[slot].comp_time = jiffies +
--				msecs_to_jiffies(MTIP_NCQ_COMMAND_TIMEOUT_MS);
--
- 				clear_bit(slot, port->cmds_to_issue);
- 			}
- 
--- 
-1.7.1
-
+Best Regards
+Haojian
