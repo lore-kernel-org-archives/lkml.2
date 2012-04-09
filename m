@@ -1,89 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757654Ab2DISYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 14:24:00 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59486 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab2DISX7 convert rfc822-to-8bit (ORCPT
+	id S1757663Ab2DIS0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 14:26:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56049 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757367Ab2DIS0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 14:23:59 -0400
+	Mon, 9 Apr 2012 14:26:33 -0400
+Message-ID: <4F8329D3.7000605@gmail.com>
+Date: Tue, 10 Apr 2012 02:26:27 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <12701333991475@webcorp7.yandex-team.ru>
-References: <37371333672160@webcorp7.yandex-team.ru>
-	<4F7E9854.1020904@gmail.com>
-	<12701333991475@webcorp7.yandex-team.ru>
-Date: Mon, 9 Apr 2012 11:17:35 -0700
-Message-ID: <CALWz4ixcXXPU_=vqcsH1uLkG8jsL+4yP0oLhhHvnNdMa6pzZQw@mail.gmail.com>
-Subject: Re: mapped pagecache pages vs unmapped pages
-From: Ying Han <yinghan@google.com>
-To: Alexey Ivanov <rbtz@yandex-team.ru>
-Cc: "gnehzuil.lzheng@gmail.com" <gnehzuil.lzheng@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com> <20120409175829.GB21894@amt.cnet>
+In-Reply-To: <20120409175829.GB21894@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 10:11 AM, Alexey Ivanov <rbtz@yandex-team.ru> wrote:
-> Thanks for the hint!
->
-> Can anyone clarify the reason of not using zone->inactive_ratio in inactive_file_is_low_global()?
+On 04/10/2012 01:58 AM, Marcelo Tosatti wrote:
 
-anonymous pages starts out referenced in active list, and scanning the
-whole active list will only rotate those pages. So we would like to
-limit the size of inactive anon to save scanning.
-
---Ying
-
-
->
-> 06.04.2012, 11:16, "gnehzuil.lzheng@gmail.com" <gnehzuil.lzheng@gmail.com>:
->> On 04/06/2012 08:29 AM, Alexey Ivanov wrote:
->>
->>>  In progress of migration from FreeBSD to Linux and we found some strange behavior: periodically running tasks (like rsync/p2p deployment) evict mapped pages from memory.
+> On Mon, Apr 09, 2012 at 04:12:46PM +0300, Avi Kivity wrote:
+>> On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
+>>> * Idea
+>>> The present bit of page fault error code (EFEC.P) indicates whether the
+>>> page table is populated on all levels, if this bit is set, we can know
+>>> the page fault is caused by the page-protection bits (e.g. W/R bit) or
+>>> the reserved bits.
 >>>
->>>  From my little research I've found following lkml thread:
->>>  https://lkml.org/lkml/2008/6/11/278
->>>  And more precisely this commit: https://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4f98a2fee8acdb4ac84545df98cccecfd130f8db
->>>  which along with splitting LRU into "anon" and "file" removed support of reclaim_mapped.
+>>> In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
+>>> simply fixed: the page fault caused by reserved bit
+>>> (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
+>>> path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
+>>> is just increasing the corresponding access on the spte.
 >>>
->>>  Is there a knob to prioritize mapped memory over unmapped (without modifying all apps to use O_DIRECT/fadvise/madvise or mlocking our data in memory) or at least some way to change proportion of Active(file)/Inactive(file)?
+>>> This pachset introduces a fast path to fix this kind of page fault: it
+>>> is out of mmu-lock and need not walk host page table to get the mapping
+>>> from gfn to pfn.
+>>>
+>>>
 >>
->> Hi Alexey,
+>> This patchset is really worrying to me.
 >>
->> Cc to linux-mm mailing list.
+>> It introduces a lot of concurrency into data structures that were not
+>> designed for it.  Even if it is correct, it will be very hard to
+>> convince ourselves that it is correct, and if it isn't, to debug those
+>> subtle bugs.  It will also be much harder to maintain the mmu code than
+>> it is now.
 >>
->> I have met the similar problem and I have sent a mail to discuss it.
->> Maybe it can help you
->> (http://marc.info/?l=linux-mm&m=132947026019538&w=2).
+>> There are a lot of things to check.  Just as an example, we need to be
+>> sure that if we use rcu_dereference() twice in the same code path, that
+>> any inconsistencies due to a write in between are benign.  Doing that is
+>> a huge task.
 >>
->> Now Konstantin has sent a patch set to try to expand vm_flags from 32
->> bit to 64 bit.  Then we can add the new flag into vm_flags and
->> prioritize mmaped pages in madvise(2).
+>> But I appreciate the performance improvement and would like to see a
+>> simpler version make it in.  This needs to reduce the amount of data
+>> touched in the fast path so it is easier to validate, and perhaps reduce
+>> the number of cases that the fast path works on.
 >>
->> Regards,
->> Zheng
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> Alexey Ivanov
-> Yandex Search Admin Team
-> *************
-> tel.: +7 (985) 120-35-83 (int. 7176)
-> http://staff.yandex-team.ru/rbtz
-> *************
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>> I would like to see the fast path as simple as
+>>
+>>   rcu_read_lock();
+>>
+>>   (lockless shadow walk)
+>>   spte = ACCESS_ONCE(*sptep);
+>>
+>>   if (!(spte & PT_MAY_ALLOW_WRITES))
+>>         goto slow;
+>>
+>>   gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
+>>   mark_page_dirty(kvm, gfn);
+>>
+>>   new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
+>>   if (cmpxchg(sptep, spte, new_spte) != spte)
+>>        goto slow;
+>>
+>>   rcu_read_unlock();
+>>   return;
+>>
+>> slow:
+>>   rcu_read_unlock();
+>>   slow_path();
+>>
+>> It now becomes the responsibility of the slow path to maintain *sptep &
+>> PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
+>> can be as simple as a clear_bit() before we update sp->gfns[] or if we
+>> add host write protection.
+>>
+>> Sorry, it's too complicated for me.  Marcelo, what's your take?
+> 
+> The improvement is small and limited to special cases (migration should
+> be rare and framebuffer memory accounts for a small percentage of total
+> memory).
+
+
+Actually, although the framebuffer is small but it is modified really
+frequently, and another unlucky things is that dirty-log is also
+very frequently and need hold mmu-lock to do write-protect.
+
+Yes, if Xwindow is not enabled, the benefit is limited. :)
