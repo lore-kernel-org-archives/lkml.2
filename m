@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab2DIOW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 10:22:59 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1757082Ab2DIOZY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 10:25:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59245 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757218Ab2DIOW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 10:22:57 -0400
-From: Richard Weinberger <richard@nod.at>
-To: user-mode-linux-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] um: Fix spin_lock usage in uml_net_interrupt()
-Date: Mon,  9 Apr 2012 16:22:46 +0200
-Message-Id: <1333981366-27145-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7.3
+	id S1752544Ab2DIOZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 10:25:23 -0400
+Message-ID: <4F82F14F.9040009@redhat.com>
+Date: Mon, 09 Apr 2012 17:25:19 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com> <4F82EA4C.1020507@linux.vnet.ibm.com>
+In-Reply-To: <4F82EA4C.1020507@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use spin_lock_save/restore() in uml_net_interrupt() to
-avoid recursive locking.
+On 04/09/2012 04:55 PM, Xiao Guangrong wrote:
+>
+> Okay, let's simplify it as possible:
+>
+> - let it only fix the page fault with PFEC.P == 1 && PFEC.W = 0, that means
+>   unlock set_spte path can be dropped
+>
+> - let it just fixes the page fault caused by dirty-log that means we always
+>   skip the spte which write-protected by shadow page protection.
+>
+> Then, things should be fair simper:
+>
+> In set_spte path, if the spte can be writable, we set ALLOW_WRITE bit
+> In rmap_write_protect:
+>   if (spte.PT_WRITABLE_MASK) {
+> 	WARN_ON(!(spte & ALLOW_WRITE));
+> 	spte &= ~PT_WRITABLE_MASK;
+> 	spte |= WRITE_PROTECT;
+>   }
+>
+> in fast page fault:
+>
+> if (spte & PT_WRITABLE_MASK)
+> 	return_go_guest;
+>
+> if ((spte & ALLOW_WRITE) && !(spte & WRITE_PROTECT))
+> 	cmpxchg spte + PT_WRITABLE_MASK
+>
+> The information all we needed comes from spte it is independence from other path,
+> and no barriers.
+>
+>
+> Hmm, how about this one?
+>
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/drivers/net_kern.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+I like it. WRITE_PROTECT is better than my ALLOW_WRITES, the meaning is
+clearer.
 
-diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
-index 95f4416..5e7cf82 100644
---- a/arch/um/drivers/net_kern.c
-+++ b/arch/um/drivers/net_kern.c
-@@ -116,12 +116,13 @@ static irqreturn_t uml_net_interrupt(int irq, void *dev_id)
- {
- 	struct net_device *dev = dev_id;
- 	struct uml_net_private *lp = netdev_priv(dev);
-+	unsigned long flags;
- 	int err;
- 
- 	if (!netif_running(dev))
- 		return IRQ_NONE;
- 
--	spin_lock(&lp->lock);
-+	spin_lock_irqsave(&lp->lock, flags);
- 	while ((err = uml_net_rx(dev)) > 0) ;
- 	if (err < 0) {
- 		printk(KERN_ERR
-@@ -140,7 +141,7 @@ static irqreturn_t uml_net_interrupt(int irq, void *dev_id)
- 	reactivate_fd(lp->fd, UM_ETH_IRQ);
- 
- out:
--	spin_unlock(&lp->lock);
-+	spin_unlock_irqrestore(&lp->lock, flags);
- 	return IRQ_HANDLED;
- }
- 
 -- 
-1.7.7.3
+error compiling committee.c: too many arguments to function
 
