@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab2DIVdD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:33:03 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:40617 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab2DIVdA (ORCPT
+	id S1757401Ab2DIVdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:33:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33630 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab2DIVdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:33:00 -0400
-From: Paul Moore <paul@paul-moore.com>
+	Mon, 9 Apr 2012 17:33:47 -0400
+Date: Mon, 9 Apr 2012 14:33:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
 To: Kees Cook <keescook@chromium.org>
-Cc: libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
-Subject: Re: ANN: libseccomp
-Date: Mon, 09 Apr 2012 17:32:57 -0400
-Message-ID: <1580647.pAHyaBF6MS@sifl>
-User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
-In-Reply-To: <CAGXu5jL5nAY4=5OKhA6VPdrzkUjVuBTcLQuMxUSEv_=N=ohbzQ@mail.gmail.com>
-References: <1540670.AFBi1SpGoi@sifl> <CAGXu5jL5nAY4=5OKhA6VPdrzkUjVuBTcLQuMxUSEv_=N=ohbzQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Cc: shuahkhan@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>
+Subject: Re: [PATCH v5] ramoops: use pstore interface
+Message-Id: <20120409143345.a7a8c257.akpm@linux-foundation.org>
+In-Reply-To: <CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
+References: <20120117235852.GA4877@www.outflux.net>
+	<20120118140603.0fc22302.akpm@linux-foundation.org>
+	<CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
+	<5C4C569E8A4B9B42A84A977CF070A35B2DA7A7F226@USINDEVS01.corp.hds.com>
+	<4F1A7854.7010808@gmail.com>
+	<1333399194.6431.3.camel@lorien2>
+	<CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 09, 2012 12:16:30 PM Kees Cook wrote:
-> On Mon, Apr 9, 2012 at 11:58 AM, Paul Moore <paul@paul-moore.com> wrote:
-> > With the seccomp patches finally stabilizing a bit, it seems like now is a
-> > good time to announce libseccomp: a library designed to make it easier to
-> > create complex, architecture independent seccomp filters.
-> > 
-> >  * http://sourceforge.net/projects/libseccomp/
-> >  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
+On Mon, 2 Apr 2012 13:51:29 -0700
+Kees Cook <keescook@chromium.org> wrote:
+
+> On Mon, Apr 2, 2012 at 1:39 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> >> First of all ramoops was born mainly for debug purpose and to help the
+> >> maintainability of a product. I used it in systems where the uptime (so
+> >> no reboot) was important. So it can be very useful for me load the
+> >> module, gather logs and unload it for example. A kernel panic is not
+> >> recoverable so the reboot is needed but it's not always true for a
+> >> kernel oops.
+> >>
+> >> Marco
+> >
+> > What is the status of this patch? Don't see it in 3.3 and haven't
+> > checked 3.4-rc1 yet.
 > 
-> This looks really great; nice work!
+> Hi,
+> 
+> I've been hoping it would get into 3.4. It's in the -mm tree, and has
+> been living in linux-next for a while. I'm not sure why it hasn't been
+> merged into Linus's tree yet. Andrew, is there a reason it hasn't been
+> merged?
 
-Thanks.
-
-> I see that the arch check happens during _gen_bpf_build_bpf(), which
-> is excellent. Do you have any thoughts about including a call to
-> prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) by default as well?
-
-That is a good question, and I guess it comes down to another question of if 
-anyone would want to use seccomp without NO_NEW_PRIVS.  If the answer is no 
-then I'm comfortable adding it into the seccomp_load() function; however, if 
-the answer is yes we might want to do something different.
-
-I haven't given much thought to this yet, so if you or anyone else feels 
-strongly about the issue - either pro or con - I'd appreciate hearing the 
-argument.
-
--- 
-paul moore
-www.paul-moore.com
+The patch breaks ramoops module unloading.  Tony says there's "no
+credible end-user case" for this and Marco promptly provided one,
+which was ignored.
 
