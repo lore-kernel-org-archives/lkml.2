@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab2DIRUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 13:20:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844Ab2DIRUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 13:20:41 -0400
-Message-ID: <4F831A5E.3040907@redhat.com>
-Date: Mon, 09 Apr 2012 13:20:30 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756017Ab2DIRWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 13:22:48 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:54016 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab2DIRWr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 13:22:47 -0400
 MIME-Version: 1.0
-To: Sven Joachim <svenjoac@gmx.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
-References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com> <20120408195044.13ea6c8e.akpm@linux-foundation.org> <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com> <8762d9v10x.fsf@turtle.gmx.de> <4F8306ED.7080405@redhat.com> <87398cev3j.fsf@turtle.gmx.de> <4F830F64.8000703@redhat.com> <87ty0sdemu.fsf@turtle.gmx.de>
-In-Reply-To: <87ty0sdemu.fsf@turtle.gmx.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1333940074-19052-1-git-send-email-namhyung.kim@lge.com>
+References: <1333940074-19052-1-git-send-email-namhyung.kim@lge.com>
+Date: Mon, 9 Apr 2012 19:22:46 +0200
+Message-ID: <CAFTL4hz19R9heUjEBZMhweTHRuPzr-qf0hN=FLB9eRd-R9cPgg@mail.gmail.com>
+Subject: Re: [PATCH 0/7] trace-cmd: Small fixes and cleanups on libparsevent
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2012 01:00 PM, Sven Joachim wrote:
-> On 2012-04-09 18:33 +0200, Rik van Riel wrote:
+2012/4/9 Namhyung Kim <namhyung.kim@lge.com>:
+> Hi, all
 >
->> On 04/09/2012 12:19 PM, Sven Joachim wrote:
->>> On 2012-04-09 17:57 +0200, Rik van Riel wrote:
->>>
->>>> On 04/09/2012 03:04 AM, Sven Joachim wrote:
->>>>
->>>>> While I did not experience any crashes or instabilities (yet?), I'm also
->>>>> seeing memory leaks.  On a system started this morning, with hardly
->>>>> anything running:
->>>>
->>>>> where I would expect no more than 50 MB used, 400 MB are actually in use:
->>>>>
->>>>> ,----
->>>>> | $ free
->>>>> |              total       used       free     shared    buffers     cached
->>>>> | Mem:       3348400    1849712    1498688          0     328960    1119180
->>>>> | -/+ buffers/cache:     401572    2946828
->>>>> | Swap:      3719040          0    3719040
->>>>> `----
->>>>
->>>> Do you see any big memory users in /proc/meminfo or in
->>>> /proc/slabinfo?
->>>
->>> Attaching these files, since I can't really make anything out of the
->>> latter.  Note that I started a few memory hogs (X, Firefox, Emacs with
->>> Gnus), so overall memory footprint has grown to 768 MB.
->>
->> Looks like the "missing" 400MB is all in filesystem caches,
->> specifically the dentry cache, the ext4 inode cache and
->> buffer heads.
+> This is a couple of small changes that I found during the flight back to
+> Korea :). While I'm not finished with reading the whole code, I send what
+> I have now in the hope that it'd help Frederic's unification work somewhat.
+> More might come later as I read the remaining parts.
 >
-> Then why does free(1) report those in the "-/+ buffers/cache:" line?  It
-> did not do this with earlier kernels, AFAIK.
+> The patch 01 is a workaround to build trace-cmd without installing swig
+> since I don't have an internet access at that time, so it's independent
+> to others and can go separately.
+>
+> Thanks.
+>
+>
+> Namhyung Kim (7):
+>  trace-cmd: Add NO_PYTHON option for Makefile
+>  parse-events: Fix printk_cmp()
+>  parse-events: Introduce extend_token()
+>  parse-events: Handle strdup failure cases
+>  parse-events: Fix a possible memory leak
+>  parse-events: Handle realloc() failure path
+>  parse-events: Fix a possibly wrong memory dereference
+>
+>  Makefile       |    2 +
+>  parse-events.c |  168 +++++++++++++++++++++++++++++++++++++++----------------
+>  2 files changed, 121 insertions(+), 49 deletions(-)
 
-It has done so for over a decade. Reclaimable slab has never been
-subtracted from "used" by the free utility.
+Nice! I guess this should probably go into trace-cmd tree and then we
+backport later to the lib?
+Or I can carry them myself in the lib.
 
--- 
-All rights reversed
+> --
+> 1.7.7.6
+>
