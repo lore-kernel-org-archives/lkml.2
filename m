@@ -1,40 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab2DIPYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 11:24:37 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35010 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757256Ab2DIPYg convert rfc822-to-8bit (ORCPT
+	id S1757385Ab2DIPZQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 11:25:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57030 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757256Ab2DIPZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 11:24:36 -0400
+	Mon, 9 Apr 2012 11:25:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <8762d9v10x.fsf@turtle.gmx.de>
-References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
- <20120408195044.13ea6c8e.akpm@linux-foundation.org> <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
- <8762d9v10x.fsf@turtle.gmx.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 Apr 2012 08:24:15 -0700
-X-Google-Sender-Auth: d-7X5hdZbe9jQlzPVWZVETK0Rpw
-Message-ID: <CA+55aFy9TKbVEOsBCWUf4u3o5qojvLLj6bEV-fNqdK3_1ysp1w@mail.gmail.com>
-Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1333983696.3519.0@oscar>
+References: <1333972735-12670-1-git-send-email-standby24x7@gmail.com>
+	<1333983696.3519.0@oscar>
+Date: Tue, 10 Apr 2012 00:25:14 +0900
+Message-ID: <CALLJCT23UiSAJNhp4kcNb+354GFoR0vbHvHWoG5SG0TtKOJ6Ww@mail.gmail.com>
+Subject: Re: [PATCH/V3] [trivial] Documentation: Fix multiple typo in Documentation
+From: Masanari Iida <standby24x7@gmail.com>
+To: Anders Larsen <al@alarsen.net>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 12:04 AM, Sven Joachim <svenjoac@gmx.de> wrote:
->
-> While I did not experience any crashes or instabilities (yet?), I'm also
-> seeing memory leaks.  On a system started this morning, with hardly
-> anything running:
+Anders,
 
-Do you also have ANDROID support compiled in?  And
-ANDROID_LOW_MEMORY_KILLER in particular?
+Thanks for reviewing the patch.  I have fixed them and sent version 4
+of the patch.
 
-                  Linus
+Masanari
