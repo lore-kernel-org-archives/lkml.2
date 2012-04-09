@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab2DIVi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 17:38:26 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:48962 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab2DIViY (ORCPT
+	id S1757611Ab2DIVmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 17:42:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:8324 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750771Ab2DIVmM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 17:38:24 -0400
-Date: Mon, 9 Apr 2012 17:33:29 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <jbeulich@suse.com>
-Cc: xen-devel@lists.xensource.com, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH 6/7] xen/setup: Make dom0_mem=XGB behavior be
- similar to classic Xen kernels.
-Message-ID: <20120409213329.GC12783@phenom.dumpdata.com>
-References: <1333139850-28456-1-git-send-email-konrad.wilk@oracle.com>
- <1333139850-28456-7-git-send-email-konrad.wilk@oracle.com>
- <4F7ABBC4.4050106@citrix.com>
- <4F7AE321020000780007C456@nat28.tlf.novell.com>
- <20120406210117.GB26309@phenom.dumpdata.com>
- <4F831ED7020000780008228C@nat28.tlf.novell.com>
+	Mon, 9 Apr 2012 17:42:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128876556"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>
+CC: "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>
+Subject: RE: [PATCH v5] ramoops: use pstore interface
+Thread-Topic: [PATCH v5] ramoops: use pstore interface
+Thread-Index: AQHNFpiE3OC67ZGsd0qw903LblBzkJaTBRsg
+Date: Mon, 9 Apr 2012 21:42:09 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F170D020E@ORSMSX104.amr.corp.intel.com>
+References: <20120117235852.GA4877@www.outflux.net>
+	<20120118140603.0fc22302.akpm@linux-foundation.org>
+	<CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
+	<5C4C569E8A4B9B42A84A977CF070A35B2DA7A7F226@USINDEVS01.corp.hds.com>
+	<4F1A7854.7010808@gmail.com>	<1333399194.6431.3.camel@lorien2>
+	<CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
+ <20120409143345.a7a8c257.akpm@linux-foundation.org>
+In-Reply-To: <20120409143345.a7a8c257.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F831ED7020000780008228C@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4F8356C9.003B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 05:39:35PM +0100, Jan Beulich wrote:
-> >>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> 04/06/12 11:06 PM >>>
-> >On Tue, Apr 03, 2012 at 10:46:41AM +0100, Jan Beulich wrote:
-> >> >>> On 03.04.12 at 10:58, David Vrabel <david.vrabel@citrix.com> wrote:
-> >> > With your new behaviour it will no longer possible to specify an
-> >> > unlimited balloon but a limited number of initial pages.  This is
-> >> > behaviour that Jan said he used.
-> >> 
-> >> An unlimited balloon was never possible afaict (as that would have
-> >> implied setting up an "infinite" number of struct page instances at
-> >> boot time.
-> >> 
-> >> What I'm using is "dom0_mem=-<num>M" together with the kernel
-> >> option "mem=<num>G", such that max-balloon > initial alloc (usually
-> >> I set max-balloon to approximately the amount of memory in the
-> >> system, so the upper limit is "infinite" in the sense that I can't go
-> >> higher anyway, but it's not truly infinity).
-> >
-> >Couldn't you do the same thing with 'dom0_mem=X,max:Y'
-> 
-> That would be possible (albeit not exactly identical in behavior). But my
-> main point in the discussion was to not modify existing behavior without
-> actual need to (including the desire to not have to modify dozens of
-> command lines).
+> The patch breaks ramoops module unloading.  Tony says there's "no
+> credible end-user case" for this and Marco promptly provided one,
+> which was ignored.
 
-Right. I don't want to modify the hypervisor - my goal is to bring the pvops
-kernel in line with how XenOLinux does it.
+I'm not sure that I understood Marco's use case. He said:
+
+> First of all ramoops was born mainly for debug purpose and
+> to help the maintainability of a product. I used it in systems
+> where the uptime (so no reboot) was important. So it can be
+> very useful for me load the module, gather logs and unload it
+> for example. A kernel panic is not recoverable so the reboot
+> is needed but it's not always true for a kernel oops.
+
+In the non-crashed oops case ... aren't all the logs you need
+in /var/log/messages?
+
+-Tony
 
