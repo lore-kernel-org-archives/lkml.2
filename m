@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab2DIMgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 08:36:53 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8437 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab2DIMgv (ORCPT
+	id S1756248Ab2DIMhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 08:37:13 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:34819 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab2DIMhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 08:36:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 09 Apr 2012 05:36:51 -0700
-From: Preetham Chandru <pchandru@nvidia.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Andrew Chew <achew@nvidia.com>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Preetham Chandru <pchandru@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] staging: iio: ak8975: Remove i2c client data corruption
-Date: Mon,  9 Apr 2012 18:05:01 +0530
-Message-Id: <1333974901-24282-1-git-send-email-pchandru@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 9 Apr 2012 08:37:09 -0400
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+To: rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@frijolero.org>,
+        Tso Ted <tytso@mit.edu>, Keith Packard <keithp@keithp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arend Van Spriel <arend@broadcom.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v3] module: Clarify usage of MODULE_LICENSE()
+Date: Mon,  9 Apr 2012 05:37:04 -0700
+Message-Id: <1333975024-9491-1-git-send-email-mcgrof@frijolero.org>
+X-Mailer: git-send-email 1.7.10.rc1.22.gf5241
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2c client data set is of type struct indio_dev pointer and hence the
-pointer returned from i2c_get_clientdata() should be assigned to
-an object of type struct indio_dev and not to an object of type
-struct ak8975_data.
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
 
-Also in ak8975_probe() client data should be set first
-before calling ak8975_setup() as it references the client data.
+While the kernel is GPLv2 individual the MODULE_LICENSE() has allowed for
+these tag to be used:
 
-Signed-off-by: Preetham Chandru R <pchandru@nvidia.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>
+  * Dual BSD/GPL
+  * Dual MIT/GPL
+  * Dual MPL/GPL
+
+This is done for historical reasons, namely questioning the compatibilty
+between the GPL and some old BSD licenses. Some developers and maintainers
+tend to use assume the macro is also used to help clarify if the module
+source code could be shared with the BSD family, but that is not the case.
+The MODULE_LICENSE() declares the module's license at run time and even for
+the dual tags the run time license that applies is the GPL.
+
+If sharing share between Linux and permissive licensed Operating Systems such
+as the BSDs is desired developers should review the license on the top of
+each file being considered to be shared.
+
+Cc: Tso Ted <tytso@mit.edu>
+Cc: Keith Packard <keithp@keithp.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arend Van Spriel <arend@broadcom.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
 ---
- drivers/staging/iio/magnetometer/ak8975.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
-index d5ddac3..ebc2d08 100644
---- a/drivers/staging/iio/magnetometer/ak8975.c
-+++ b/drivers/staging/iio/magnetometer/ak8975.c
-@@ -108,7 +108,8 @@ static const int ak8975_index_to_reg[] = {
- static int ak8975_write_data(struct i2c_client *client,
- 			     u8 reg, u8 val, u8 mask, u8 shift)
- {
--	struct ak8975_data *data = i2c_get_clientdata(client);
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct ak8975_data *data = iio_priv(indio_dev);
- 	u8 regval;
- 	int ret;
- 
-@@ -159,7 +160,8 @@ static int ak8975_read_data(struct i2c_client *client,
-  */
- static int ak8975_setup(struct i2c_client *client)
- {
--	struct ak8975_data *data = i2c_get_clientdata(client);
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct ak8975_data *data = iio_priv(indio_dev);
- 	u8 device_id;
- 	int ret;
- 
-@@ -509,6 +511,7 @@ static int ak8975_probe(struct i2c_client *client,
- 		goto exit_gpio;
- 	}
- 	data = iio_priv(indio_dev);
-+	i2c_set_clientdata(client, indio_dev);
- 	/* Perform some basic start-of-day setup of the device. */
- 	err = ak8975_setup(client);
- 	if (err < 0) {
-@@ -516,7 +519,6 @@ static int ak8975_probe(struct i2c_client *client,
- 		goto exit_free_iio;
- 	}
- 
--	i2c_set_clientdata(client, indio_dev);
- 	data->client = client;
- 	mutex_init(&data->lock);
- 	data->eoc_irq = client->irq;
+Space / tab fixup.
+
+ include/linux/module.h |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/module.h b/include/linux/module.h
+index fbcafe2..dc7e284 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -112,11 +112,20 @@ extern const struct gtype##_id __mod_##gtype##_table		\
+  *
+  *	"Proprietary"			[Non free products]
+  *
+- * There are dual licensed components, but when running with Linux it is the
+- * GPL that is relevant so this is a non issue. Similarly LGPL linked with GPL
+- * is a GPL combined work.
++ * The idea of dual licensing with what today are considered valid
++ * GPL-Comatible licenses is due to historical questions on GPL-Compatibility
++ * betwen the GPL and some BSD licenses. The purpose of MODULE_LICENSE() is
++ * to clarify the license of the module at run time. Despite the few
++ * GPL-Compatible dual licensed tags, when running with Linux the GPL
++ * license is the one that holds. Even if a module has all of its files
++ * under a BSD license, the MODULE_LICENSE("GPL v2") can still reasonably be
++ * used, and all files of that module could be shared with the BSD family. If
++ * the goal is to share files with the BSDs the top level license header should
++ * be read for each file that is to be shared. Each file's own license is
++ * maintaned through the usage of the Signed-of-by tag.
+  *
+- * This exists for several reasons
++ * The MODULE_LICENSE() exists for several reasons:
++ * 0.	So EXPORT_SYMBOL_GPL() allows the module to use its symbols
+  * 1.	So modinfo can show license info for users wanting to vet their setup 
+  *	is free
+  * 2.	So the community can ignore bug reports including proprietary modules
 -- 
-1.7.0.4
+1.7.10.rc1.22.gf5241
 
