@@ -1,395 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab2DIXvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 19:51:43 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:54314 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2DIXvm (ORCPT
+	id S1757076Ab2DIXzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 19:55:46 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63914 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2DIXzp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 19:51:42 -0400
-From: subodh.nijsure@gmail.com
-To: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        casey@scahufler-ca.com
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Subodh Nijsure <snijsure@grid-net.com>
-Subject: [PATCH v2] Add security.* XATTR support for the UBIFS
-Date: Mon,  9 Apr 2012 16:51:26 -0700
-Message-Id: <1334015486-20616-1-git-send-email-snijsure@grid-net.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 9 Apr 2012 19:55:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1204091603430.21813@chino.kir.corp.google.com>
+References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
+ <20120408195044.13ea6c8e.akpm@linux-foundation.org> <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
+ <alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
+ <CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
+ <alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com>
+ <CA+55aFztPW2x1grh2Z7RTOxKZ29_Ha6-kDkJXgdghFHQ61EZOQ@mail.gmail.com> <alpine.DEB.2.00.1204091603430.21813@chino.kir.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Apr 2012 16:55:23 -0700
+X-Google-Sender-Auth: aCdZfMHQ2TLX8eXngAECOm66P2U
+Message-ID: <CA+55aFwa40cv_TYdU3dKHPPJQo2omLpi8y6k6KBhJ5uP12f29A@mail.gmail.com>
+Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Christian Bejram <christian.bejram@stericsson.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Subodh Nijsure <snijsure@grid-net.com>
+On Mon, Apr 9, 2012 at 4:25 PM, David Rientjes <rientjes@google.com> wrote:
+>
+> You could that if you also turned the check for "ret == NOTIFY_OK" in
+> profile_handoff_task() into "ret & NOTIFY_OK" in your patch, otherwise you
+> get a double free from __put_task_struct() and oprofile.
 
-Also fix couple of bugs in UBIFS extended attribute length calculation.
+Why? NOTIFY_DONE is zero.
 
-Changes Since V1:
-         Instead of just handling security.selinux extended attribute handle
-         all security.* attributes.
+I do agree that we *also* could do the "& NOTIFY_OK" and make it
+clearer that we're oring bits together. And we could document the
+stupid notifier interfaces to do this all, and just make the rules be
+*sane* when you have multiple notifiers.
 
-TESTING: Tested on  MX28 based platforms using Micron MT29F2G08ABAEAH4 NAND
-         With these change we are able to label UBIFS filesystem with
-         security.selinux and run system with selinux enabled.
-         This change also allows one to set other security.* extended
-         attributesr, such as security.smack security.evm, security.ima
-         Ran integck test on UBI filesystem.
+And sane rules would be either:
 
-Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
----
- fs/ubifs/dir.c     |    4 ++
- fs/ubifs/file.c    |    6 ++
- fs/ubifs/journal.c |   12 +++-
- fs/ubifs/super.c   |    3 +
- fs/ubifs/ubifs.h   |    9 +++
- fs/ubifs/xattr.c   |  147 ++++++++++++++++++++++++++++++++++++++++++++++++----
- 6 files changed, 167 insertions(+), 14 deletions(-)
+ - you always return an error return, and notifiers all return either
+0 or a negative error number, and we stop on the first error and
+return that.
 
-diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index ec9f187..f4e06c4 100644
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -293,6 +293,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 	ubifs_release_budget(c, &req);
- 	insert_inode_hash(inode);
- 	d_instantiate(dentry, inode);
-+	ubifs_init_security(dir, inode, &dentry->d_name);
- 	return 0;
- 
- out_cancel:
-@@ -754,6 +755,7 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- 
- 	ubifs_release_budget(c, &req);
- 	d_instantiate(dentry, inode);
-+	ubifs_init_security(dir, inode, &dentry->d_name);
- 	return 0;
- 
- out_cancel:
-@@ -831,6 +833,7 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
- 	ubifs_release_budget(c, &req);
- 	insert_inode_hash(inode);
- 	d_instantiate(dentry, inode);
-+	ubifs_init_security(dir, inode, &dentry->d_name);
- 	return 0;
- 
- out_cancel:
-@@ -907,6 +910,7 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
- 	ubifs_release_budget(c, &req);
- 	insert_inode_hash(inode);
- 	d_instantiate(dentry, inode);
-+	ubifs_init_security(dir, inode, &dentry->d_name);
- 	return 0;
- 
- out_cancel:
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index 5c8f6dc..b8e9d66 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1575,6 +1575,12 @@ const struct inode_operations ubifs_symlink_inode_operations = {
- 	.follow_link = ubifs_follow_link,
- 	.setattr     = ubifs_setattr,
- 	.getattr     = ubifs_getattr,
-+#ifdef CONFIG_UBIFS_FS_XATTR
-+	.setxattr    = ubifs_symlink_setxattr,
-+	.getxattr    = ubifs_symlink_getxattr,
-+	.listxattr   = ubifs_listxattr,
-+	.removexattr = ubifs_removexattr,
-+#endif
- };
- 
- const struct file_operations ubifs_file_operations = {
-diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
-index 2f438ab..725dc17 100644
---- a/fs/ubifs/journal.c
-+++ b/fs/ubifs/journal.c
-@@ -553,7 +553,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
- 
- 	dbg_jnl("ino %lu, dent '%.*s', data len %d in dir ino %lu",
- 		inode->i_ino, nm->len, nm->name, ui->data_len, dir->i_ino);
--	ubifs_assert(dir_ui->data_len == 0);
-+	if (!xent)
-+		ubifs_assert(dir_ui->data_len == 0);
- 	ubifs_assert(mutex_is_locked(&dir_ui->ui_mutex));
- 
- 	dlen = UBIFS_DENT_NODE_SZ + nm->len + 1;
-@@ -572,7 +573,11 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
- 
- 	aligned_dlen = ALIGN(dlen, 8);
- 	aligned_ilen = ALIGN(ilen, 8);
--	len = aligned_dlen + aligned_ilen + UBIFS_INO_NODE_SZ;
-+	/* Make sure to account for dir_ui+data_len in length calculation
-+	 * in case there is extended attribute.
-+	 */
-+	len = aligned_dlen + aligned_ilen +
-+	      UBIFS_INO_NODE_SZ + dir_ui->data_len;
- 	dent = kmalloc(len, GFP_NOFS);
- 	if (!dent)
- 		return -ENOMEM;
-@@ -649,7 +654,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
- 
- 	ino_key_init(c, &ino_key, dir->i_ino);
- 	ino_offs += aligned_ilen;
--	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs, UBIFS_INO_NODE_SZ);
-+	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs,
-+			    UBIFS_INO_NODE_SZ + dir_ui->data_len);
- 	if (err)
- 		goto out_ro;
- 
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 76e4e05..c28ac04 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -2061,6 +2061,9 @@ static int ubifs_fill_super(struct super_block *sb, void *data, int silent)
- 	if (c->max_inode_sz > MAX_LFS_FILESIZE)
- 		sb->s_maxbytes = c->max_inode_sz = MAX_LFS_FILESIZE;
- 	sb->s_op = &ubifs_super_operations;
-+#ifdef CONFIG_UBIFS_FS_XATTR
-+	sb->s_xattr = ubifs_xattr_handlers;
-+#endif
- 
- 	mutex_lock(&c->umount_mutex);
- 	err = mount_ubifs(c);
-diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
-index 93d59ac..60b57f7 100644
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -36,6 +36,7 @@
- #include <linux/mtd/ubi.h>
- #include <linux/pagemap.h>
- #include <linux/backing-dev.h>
-+#include <linux/security.h>
- #include "ubifs-media.h"
- 
- /* Version of this UBIFS implementation */
-@@ -1454,6 +1455,7 @@ extern spinlock_t ubifs_infos_lock;
- extern atomic_long_t ubifs_clean_zn_cnt;
- extern struct kmem_cache *ubifs_inode_slab;
- extern const struct super_operations ubifs_super_operations;
-+extern const struct xattr_handler *ubifs_xattr_handlers[];
- extern const struct address_space_operations ubifs_file_address_operations;
- extern const struct file_operations ubifs_file_operations;
- extern const struct inode_operations ubifs_file_inode_operations;
-@@ -1736,10 +1738,17 @@ int ubifs_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 		  struct kstat *stat);
- 
- /* xattr.c */
-+
- int ubifs_setxattr(struct dentry *dentry, const char *name,
- 		   const void *value, size_t size, int flags);
-+int ubifs_init_security(struct inode *dentry, struct inode *inode,
-+			const struct qstr *qstr);
-+int ubifs_symlink_setxattr(struct dentry *dentry, const char *name,
-+			   const void *value, size_t size, int flags);
- ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
- 		       size_t size);
-+ssize_t ubifs_symlink_getxattr(struct dentry *dentry, const char *name,
-+			       void *buf, size_t size);
- ssize_t ubifs_listxattr(struct dentry *dentry, char *buffer, size_t size);
- int ubifs_removexattr(struct dentry *dentry, const char *name);
- 
-diff --git a/fs/ubifs/xattr.c b/fs/ubifs/xattr.c
-index 85b2722..c8be7cd 100644
---- a/fs/ubifs/xattr.c
-+++ b/fs/ubifs/xattr.c
-@@ -209,11 +209,11 @@ static int change_xattr(struct ubifs_info *c, struct inode *host,
- 		goto out_free;
- 	}
- 	inode->i_size = ui->ui_size = size;
--	ui->data_len = size;
- 
- 	mutex_lock(&host_ui->ui_mutex);
- 	host->i_ctime = ubifs_current_time(host);
- 	host_ui->xattr_size -= CALC_XATTR_BYTES(ui->data_len);
-+	ui->data_len = size;
- 	host_ui->xattr_size += CALC_XATTR_BYTES(size);
- 
- 	/*
-@@ -293,18 +293,16 @@ static struct inode *iget_xattr(struct ubifs_info *c, ino_t inum)
- 	return ERR_PTR(-EINVAL);
- }
- 
--int ubifs_setxattr(struct dentry *dentry, const char *name,
--		   const void *value, size_t size, int flags)
-+static int __ubifs_setxattr(struct inode *host, const char *name,
-+			    const void *value, size_t size, int flags)
- {
--	struct inode *inode, *host = dentry->d_inode;
-+	struct inode *inode;
- 	struct ubifs_info *c = host->i_sb->s_fs_info;
- 	struct qstr nm = { .name = name, .len = strlen(name) };
- 	struct ubifs_dent_node *xent;
- 	union ubifs_key key;
- 	int err, type;
- 
--	dbg_gen("xattr '%s', host ino %lu ('%.*s'), size %zd", name,
--		host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
- 	ubifs_assert(mutex_is_locked(&host->i_mutex));
- 
- 	if (size > UBIFS_MAX_INO_DATA)
-@@ -356,10 +354,29 @@ out_free:
- 	return err;
- }
- 
--ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
--		       size_t size)
-+int ubifs_symlink_setxattr(struct dentry *dentry, const char *name,
-+			   const void *value, size_t size, int flags)
- {
--	struct inode *inode, *host = dentry->d_inode;
-+	struct inode *host = dentry->d_inode;
-+	dbg_gen("xattr '%s', host ino %lu ('%.*s'), size %zd", name,
-+		host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
-+	return __ubifs_setxattr(host, name, value, size, flags);
-+}
-+
-+int ubifs_setxattr(struct dentry *dentry, const char *name,
-+		   const void *value, size_t size, int flags)
-+{
-+	struct inode *host = dentry->d_inode;
-+	dbg_gen("xattr '%s', host ino %lu ('%.*s'), size %zd", name,
-+		host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
-+	return __ubifs_setxattr(host, name, value, size, flags);
-+}
-+
-+static
-+ssize_t __ubifs_getxattr(struct inode *host, const char *name, void *buf,
-+			 size_t size)
-+{
-+	struct inode *inode;
- 	struct ubifs_info *c = host->i_sb->s_fs_info;
- 	struct qstr nm = { .name = name, .len = strlen(name) };
- 	struct ubifs_inode *ui;
-@@ -367,8 +384,8 @@ ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
- 	union ubifs_key key;
- 	int err;
- 
--	dbg_gen("xattr '%s', ino %lu ('%.*s'), buf size %zd", name,
--		host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
-+	dbg_gen("xattr '%s', ino %lu  buf size %zd", name,
-+		host->i_ino, size);
- 
- 	err = check_namespace(&nm);
- 	if (err < 0)
-@@ -416,6 +433,25 @@ out_unlock:
- 	return err;
- }
- 
-+ssize_t ubifs_symlink_getxattr(struct dentry *dentry, const char *name,
-+			       void *buf, size_t size)
-+{
-+	struct inode *host = dentry->d_inode;
-+	dbg_gen("xattr '%s', ino %lu ('%.*s'), buf size %zd", name,
-+		host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
-+	return __ubifs_getxattr(host, name, buf, size);
-+}
-+
-+ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
-+		       size_t size)
-+{
-+	struct inode *host = dentry->d_inode;
-+	dbg_gen("xattr '%s', ino %lu ('%.*s'), buf size %zd", name,
-+		host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
-+	return __ubifs_getxattr(host, name, buf, size);
-+}
-+
-+
- ssize_t ubifs_listxattr(struct dentry *dentry, char *buffer, size_t size)
- {
- 	union ubifs_key key;
-@@ -568,3 +604,92 @@ out_free:
- 	kfree(xent);
- 	return err;
- }
-+
-+size_t
-+ubifs_security_listxattr(struct dentry *d, char *list, size_t list_size,
-+			 const char *name, size_t name_len, int flags)
-+{
-+	const int prefix_len = XATTR_SECURITY_PREFIX_LEN;
-+	const size_t total_len = prefix_len + name_len + 1;
-+	if (list && total_len <= list_size) {
-+		memcpy(list, XATTR_SECURITY_PREFIX, prefix_len);
-+		memcpy(list+prefix_len, name, name_len);
-+		list[prefix_len + name_len] = '\0';
-+	}
-+	return total_len;
-+}
-+
-+
-+int ubifs_security_getxattr(struct dentry *d, const char *name,
-+			    void *buffer, size_t size, int flags)
-+{
-+	if (strcmp(name, "") == 0)
-+		return -EINVAL;
-+	return __ubifs_getxattr(d->d_inode, name, buffer, size);
-+}
-+
-+
-+int ubifs_security_setxattr(struct dentry *d, const char *name,
-+			    const void *value, size_t size,
-+			    int flags, int handler_flags)
-+{
-+	if (strcmp(name, "") == 0)
-+		return -EINVAL;
-+	return __ubifs_setxattr(d->d_inode, name, value,
-+				size, flags);
-+}
-+
-+struct xattr_handler ubifs_xattr_security_handler = {
-+	.prefix = XATTR_SECURITY_PREFIX,
-+	.list   = ubifs_security_listxattr,
-+	.get    = ubifs_security_getxattr,
-+	.set    = ubifs_security_setxattr,
-+};
-+
-+const struct xattr_handler *ubifs_xattr_handlers[] = {
-+	&ubifs_xattr_security_handler,
-+	NULL
-+};
-+
-+static int ubifs_initxattrs(struct inode *inode,
-+			    const struct xattr *xattr_array, void *fs_info)
-+{
-+	const struct xattr *xattr;
-+	char *name;
-+	int err = 0;
-+
-+	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
-+		name = kmalloc(XATTR_SECURITY_PREFIX_LEN +
-+			       strlen(xattr->name) + 1, GFP_NOFS);
-+		if (!name) {
-+			err = -ENOMEM;
-+			break;
-+		}
-+		strcpy(name, XATTR_SECURITY_PREFIX);
-+		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
-+
-+		err = __ubifs_setxattr(inode, xattr->name, xattr->value,
-+			       xattr->value_len, 0);
-+		kfree(name);
-+		if (err < 0)
-+			break;
-+	}
-+	return err;
-+}
-+
-+int
-+ubifs_init_security(struct inode *dentry, struct inode *inode,
-+		   const struct qstr *qstr)
-+{
-+	struct ubifs_inode *dir_ui = ubifs_inode(inode);
-+	int err = 0;
-+
-+	mutex_lock(&dir_ui->ui_mutex);
-+	mutex_lock(&inode->i_mutex);
-+
-+	err = security_inode_init_security(inode, dentry, qstr,
-+					   &ubifs_initxattrs, 0);
-+	mutex_unlock(&inode->i_mutex);
-+	mutex_unlock(&dir_ui->ui_mutex);
-+	return err;
-+}
--- 
-1.7.5.4
+ - you return a bitmask, and we or all bits together (and we can
+certainly continue to have a "stop here" bit)
 
+But the current notifier semantics are just insane. The whole "we
+return the last return value" is crazy. It's by definition a random
+number, since the whole point of notifiers is that there can be
+multiple, and they aren't "ordered". So the whole "last return value"
+is something I just look at and say: "Whoever designed that is a
+f*cking moron".
+
+(And if that happens to be some younger version of me, I am happy that
+I got over it. But I'm pretty sure I have never touched that broken
+notifier code in my life)
+
+> It works fine if the callbacks are correctly implemented, it's just that
+> the task handoff in kernel/profile.c is broken because it assumes only one
+> callback will return NOTIFY_OK, meaning it will eventually free, and its
+> only checking the return value of the last notifier called to see if
+> __put_task_struct() should immediately free.
+
+We can easily document it as "only oprofile is allowed to return
+NOTIFY_OK, this notifier is a big mess, don't even *think* about
+returning anything but NOTIFY_DONE".
+
+>  (1)  fix the lowmemorykiller so it doesn't need to use these notifiers at
+>      all, which isn't difficult, for 3.4, then
+
+I do think that that makes sense. Fixing people to not use notifiers
+is always a good idea. Why would anybody sane even care about the
+process going away anyway? If some lowmemorykiller decides to kill off
+a process that no longer exists, kill() should happily return ENOSRCH,
+and we're all good
+
+So it could just use a "pid", and test for existence with send_sig()
+or lookup_pid() or something.
+
+>  (2a) change the task handoff to a refcount on task->usage after the final
+>      put_task_struct() using the notifier and then allow it to be freed
+>      after everybody does a put_handoff_task_struct() for 3.5
+
+The task handoff code runs too late right now. I guess we could easily
+move it up, though.
+
+At the same time, the *only* user of that stupid handoff thing is
+oprofile, afaik, and if we use a refcount, why the hell doesn't
+oprofile just use a refcount to begin with, instead of using that
+notifier?: IOW, *both* users of the notifier seem to be just retarded.
+
+So I'd rather just kill the stupid notifier entirely. In the meantime,
+making lowmemorykiller just return zero instead just "fixes" it
+(assuming we make the notifier semantics for multiple return codes
+sane, which they clearly aren't).
+
+Again, almost every notifier user has always been total crap. It's
+just a stupid abstraction. "Something happened". "Oh, ok".
+
+                    Linus
