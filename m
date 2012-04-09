@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833Ab2DITEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 15:04:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	id S1757818Ab2DITGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 15:06:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37420 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757765Ab2DITEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 15:04:12 -0400
-Date: Mon, 9 Apr 2012 21:03:50 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH 1/1] cred: copy_process() should clear
-	child->replacement_session_keyring
-Message-ID: <20120409190350.GA14716@redhat.com>
-References: <20120409190323.GA14712@redhat.com>
+	id S1755633Ab2DITGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 15:06:08 -0400
+Message-ID: <4F833315.1050109@ti.com>
+Date: Tue, 10 Apr 2012 00:35:57 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120409190323.GA14712@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] arm: da850: change ASYNC/PLL0_SYSCLK3 clock rate with
+ DVFS
+References: <1333617232-27967-1-git-send-email-prakash.pm@ti.com>
+In-Reply-To: <1333617232-27967-1-git-send-email-prakash.pm@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-keyctl_session_to_parent(task) sets ->replacement_session_keyring,
-it should be processed and cleared by key_replace_session_keyring().
+Hi Prakash,
 
-However, this task can fork before it notices TIF_NOTIFY_RESUME and
-the new child gets the bogus ->replacement_session_keyring copied by
-dup_task_struct(). This is obviously wrong and, if nothing else, this
-leads to put_cred(already_freed_cred).
+On 4/5/2012 2:43 PM, Manjunathappa, Prakash wrote:
+> Clock for EMIF is derived from ASYNC clock domain(PLL0_SYSCLK3) and was
+> configured with fixed divider as there was no significant performance
+> degradation with existing NAND/NOR EMIF devices if it is not
+> reconfigured accordingly at different OPPs.
 
-change copy_creds() to clear this member. If copy_process() fails
-before this point the wrong ->replacement_session_keyring doesn't
-matter, exit_creds() won't be called.
+This is not correct AFAICT. The divider is not fixed in current code.
+There is an attempt to adjust the async1 (PLL0 SYSCLK3 rate) and keep it
+constant at 100MHz by adjusting the divider at each OPP transition (see
+the call to clock_set_rate() on async clock in cpufreq.c). This was
+based on an earlier understanding that PLL0_SYSCLK3 can support 100MHz
+at all OPPs and all AEMIF modes. Looking at the datasheet now, it is
+clear that that assumption is not true.
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/cred.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> On systems where devices other than NAND/NOR are interfaced through
+> EMIF, such performance degradation may not be desirable. So change the
+> PLL0_SYSCLK3 output frequency for different OPPs by re-configuring
+> the divider value.
 
-diff --git a/kernel/cred.c b/kernel/cred.c
-index 97b36ee..e70683d 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -386,6 +386,8 @@ int copy_creds(struct task_struct *p, unsigned long clone_flags)
- 	struct cred *new;
- 	int ret;
- 
-+	p->replacement_session_keyring = NULL;
-+
- 	if (
- #ifdef CONFIG_KEYS
- 		!p->cred->thread_keyring &&
--- 
-1.5.5.1
+This again is not the point. The issue is that depending on what mode
+you have AEMIF running in *and* depending on what OPP you are at, a
+particular value of ASYNC1 clock is required to get maximum performance
+out of AEMIF.
 
+> 
+> Also add Kconfig option to support platforms requiring fixed EMIF clock
+> rate.
 
+This breaks single image support for all DA850 boards. Kconfig in this
+case is not an option.
+
+Why not make the OPP table board specific while maintain a sane (and
+safe) default in SoC file so there is something to fall back upon in
+case a board does not need to define its own? This should also address
+Christian's concern in the other e-mail thread about board specific OPP
+values being hardcoded in SoC file with no way to override them.
+
+Thanks,
+Sekhar
