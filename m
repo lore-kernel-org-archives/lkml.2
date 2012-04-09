@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab2DISa3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 14:30:29 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45581 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757647Ab2DISa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 14:30:28 -0400
-Message-ID: <4F832ABF.4060509@suse.cz>
-Date: Mon, 09 Apr 2012 20:30:23 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
+	id S1757710Ab2DISeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 14:34:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50299 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757646Ab2DISet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 14:34:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="130387938"
+Message-ID: <4F832BC8.4090907@linux.intel.com>
+Date: Mon, 09 Apr 2012 11:34:48 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH 25/69] TTY: con3215, remove tasklet for tty_wakeup
-References: <1333367693-3244-1-git-send-email-jslaby@suse.cz> <1333367693-3244-26-git-send-email-jslaby@suse.cz> <20120403054241.GA2700@osiris.boeblingen.de.ibm.com> <4F7AADD7.5070802@suse.cz> <20120409182720.GA12044@kroah.com>
-In-Reply-To: <20120409182720.GA12044@kroah.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jason Wessel <jason.wessel@windriver.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][REGRESSION] panic: fix stack dump print on direct call
+ to panic()
+References: <1333992030-21181-1-git-send-email-jason.wessel@windriver.com>
+In-Reply-To: <1333992030-21181-1-git-send-email-jason.wessel@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2012 08:27 PM, Greg KH wrote:
-> On Tue, Apr 03, 2012 at 09:59:19AM +0200, Jiri Slaby wrote:
->> On 04/03/2012 07:42 AM, Heiko Carstens wrote:
->>> On Mon, Apr 02, 2012 at 01:54:09PM +0200, Jiri Slaby wrote:
->>>> tty_wakeup is safe to be called from all contexts. No need to schedule
->>>> a tasklet for that. Let us call it directly like in other drivers.
->>>>
->>>> And delete the tasklet completely.
->>>
->>> Your patch actually reverts Martin's recent commit 656d912537
->>> "[S390] 3215 deadlock with tty_wakeup".
->>> I'm quite sure the reason for the deadlock still exists.
->>> Unfortunately the commit doesn't contain the call chain that
->>> led to fix.
->>
->> Ok, I would really appreciate the trace.
->>
->> If this is really an issue, we should provide a helper in the TTY layer
->> like tty_schedule_wakeup.
-> 
-> Jiri, should I not apply this patch?
 
-Yes, please skip it until this is sorted out. And also the other con3215
-patches if they don't apply cleanly now.
+> The proper way to resolve the problem that original commit tried to
+> solve is to avoid printing a stack dump from panic() when the either
+> of the following conditions is true:
+>
+>    1) TAINT_DIE has been set (this is done by oops_end())
+>       This indicates and oops has already been printed.
+>    2) oops_in_progress>  1
+>       This guards against the rare case where panic() is invoked
+>       a second time, or in between oops_begin() and oops_end()
 
-thanks,
--- 
-js
-suse labs
+Oops. I guess can just revert it for now. Thanks for catching, Jason.
+
+The proper solution is probably some variant of
+http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/xpanic
+
+Let the caller pass in the proper action instead of all these hacks.
+
+-Andi
 
 
