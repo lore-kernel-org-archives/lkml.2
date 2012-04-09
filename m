@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2DIQxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 12:53:52 -0400
-Received: from mga07.intel.com ([143.182.124.22]:47882 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753226Ab2DIQxv convert rfc822-to-8bit (ORCPT
+	id S1754247Ab2DIQzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 12:55:52 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:26953 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab2DIQzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 12:53:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120409164759.GA8800@kroah.com>
-References: <4F7B52D8.101@fb.com>
-	<20120403215832.0520f93d@pyramind.ukuu.org.uk>
-	<20120409164759.GA8800@kroah.com>
-Date: Mon, 9 Apr 2012 09:53:47 -0700
-Message-ID: <CABE8wwsHZLiihEReRQwkk+SufkmBw2W4n-WibQgS-rEOnKNGMA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] 8250_pci: Replace commits 448ac154 and e86ff4a
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, sudhakar <sudhakar@fb.com>,
-        linux-serial@vger.kernel.org, alan@linux.intel.com,
-        nhan.h.mai@intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Apr 2012 12:55:51 -0400
+Message-ID: <1333990549.2871.10.camel@lorien2>
+Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: shuahkhan@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        neilb@suse.de, rpurdie@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 09 Apr 2012 10:55:49 -0600
+In-Reply-To: <20120407215641.GA4539@core.coreip.homeip.net>
+References: <1333310039.2879.4.camel@lorien2>
+	 <20120406165353.ab667eb0.akpm@linux-foundation.org>
+	 <1333808024.2728.39.camel@lorien2>
+	 <20120407215641.GA4539@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 9:47 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Apr 03, 2012 at 09:58:32PM +0100, Alan Cox wrote:
->> On Tue, 3 Apr 2012 12:43:20 -0700
->> sudhakar <sudhakar@fb.com> wrote:
->>
->> >
->> > From: Sudhakar Mamillapalli <sudhakar@fb.com>
->> >
->> >
->> > The following commits don't completely fix the KT serial missing
->> > interrupt problems.  So they have been replaced instead by
->> > enabling serial backup timer.  The iir-once + msi tried approach tried
->> > to enforce one read of the iir per THRE event, but its defeated by any
->> > other event occurring at the wrong time, particularly MSR events.
->> >
->> > 448ac15 serial/8250_pci: setup-quirk workaround for the kt serial controller
->> > e86ff4a serial/8250_pci: init-quirk msi support for kt serial controller
->>
->> These are already in tree. If you are reversing them and adding a
->> different fix then please post the series as
->>
->> - two revert patches exactly reverting the two commits
->> - a follow on patch or two adding the replacement
->>
->> That makes it much easier to review and much more obvious. It also helps
->> make testing simpler.
->
-> I agree, Sudhakar, can you please redo these 2 patches?
->
+On Sat, 2012-04-07 at 14:56 -0700, Dmitry Torokhov wrote:
+> Hi Shuah,
+> 
+> On Sat, Apr 07, 2012 at 08:13:44AM -0600, Shuah Khan wrote:
+> > 
+> > > > +This feature will help implement vibrate functionality which requires one
+> > > > +time activation of vibrate mode without a continuous vibrate on/off cycles.
+> > > 
+> > > They make vibrating LED? ;)
+> > > 
+> > > What's going on here?  You're proposing to repurpose the LEDs code to
+> > > drive vibration devices?  Or some devices couple a LED with a vibration
+> > > device?
+> > 
+> > I owe you filling in the blanks type explanation. Let me describe the
+> > use-case I am trying to address first. Vibrater function on phones is
+> > implemented using PWM pins on SoC or PMIC. When there is no such
+> > hardware present, a software solution is needed. Currently two drivers
+> > timed-gpio and timed-output (under staging/android in Linux 3.3)
+> > together implement the software vibrate feature. The main functionality
+> > it implements is the one time enables of timer to prevent user space
+> > crashes leaving the phone in vibrate mode causing the battery to drain.
+> > leds as it is implemented currently, is not suitable to address this
+> > use-case as it doesn't support one time enables.
+> 
+> So why do not you use memoryless force feedback framework that other
+> devices use (see drivers/input/misc/*vibra.c drivers).
+> 
 
-Hi Greg,
+Dimitry,
 
-This was in the series:
+I took a look at these vibra* drivers. The three vibrate drivers are
+chip-set specific. The use-case I have is a non-chip set approach to
+address the use-case when vibrate hardware is not present. Are you
+envisioning a generic approach using ff-memoryless infrastructure?
 
-[PATCH 0/6] rework quirks for the "kt" serial port [1]
+-- Shuah
 
-...but I have just noticed it collides with current git, and I also
-need to address Stephen's comments for Tegra.  Expect a v2 shortly.
-
---
-Dan
-
-
-[1]: http://marc.info/?l=linux-serial&m=133373702606784&w=2
