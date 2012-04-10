@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab2DJSHf (ORCPT <rfc822;w@1wt.eu>);
+	id S1757754Ab2DJSHi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:07:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755149Ab2DJSHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Apr 2012 14:07:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44741 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab2DJSHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:07:33 -0400
-Date: Tue, 10 Apr 2012 21:12:10 +0300
-From: Sergei Trofimovich <slyich@gmail.com>
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: arm: CONFIG_ARM_PATCH_PHYS_VIRT=y is broken on kirkwood
-Message-ID: <20120410211210.310b65ea@sf.home>
-In-Reply-To: <1334006908.12209.150.camel@dagon.hellion.org.uk>
-References: <20120408115920.4d7d2197@sf.home>
-	<1334006908.12209.150.camel@dagon.hellion.org.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/=0p1r+=DpTzTOvjd_EFh9+9"; protocol="application/pgp-signature"
+Date: Tue, 10 Apr 2012 14:06:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120410180653.GJ21801@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <20120407080027.GA2584@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120407080027.GA2584@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=0p1r+=DpTzTOvjd_EFh9+9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sat, Apr 07, 2012 at 10:00:27AM +0200, Jan Kara wrote:
+Hi Jan,
 
-On Mon, 09 Apr 2012 22:28:28 +0100
-Ian Campbell <ijc@hellion.org.uk> wrote:
+[..]
+> > In general, the core of the issue is that filesystems are not cgroup aware
+> > and if you do throttling below filesystems, then invariably one or other
+> > serialization issue will come up and I am concerned that we will be constantly
+> > fixing those serialization issues. Or the desgin point could be so central
+> > to filesystem design that it can't be changed.
+>   We talked about this at LSF and Dave Chinner had the idea that we could
+> make processes wait at the time when a transaction is started. At that time
+> we don't hold any global locks so process can be throttled without
+> serializing other processes. This effectively builds some cgroup awareness
+> into filesystems but pretty simple one so it should be doable.
 
-> On Sun, 2012-04-08 at 11:59 +0300, Sergei Trofimovich wrote:
-> > In order to make the box boot I had to set:
-> >     CONFIG_EMBEDDED=3Dy
-> >     # CONFIG_ARM_PATCH_PHYS_VIRT is not set
-> >    CONFIG_PHYS_OFFSET=3D0x0
-> >=20
-> > Do you have an idea why it does not boot anymore by default?
->=20
-> There is a u-boot commit which fixes this issue:
->=20
-> commit 679530278d5a79d34e356ad2d452f4400953bfc2
-> Author: Michael Walle <[michael@walle.cc]>
-> Date:   Mon Feb 6 22:42:10 2012 +0530
->=20
->     arm, arm-kirkwood: disable l2c before linux boot
->    =20
->     The decompressor expects the L2 cache to be disabled. This fixes boot=
-ing
->     some kernels, which have CONFIG_ARM_PATCH_PHYS_VIRT enabled.
->    =20
->     Signed-off-by: Michael Walle <michael@walle.cc>
->     Acked-by: Prafulla Wadaskar <prafulla@marvell.com>
->     Cc: Albert ARIBAUD <albert.u.boot@aribaud.net>
->     Cc: Prafulla Wadaskar <prafulla@marvell.com>
->     Cc: Wolfgang Denk <wd@denx.de>
+Ok. So what is the meaning of "make process wait" here? What it will be
+dependent on? I am thinking of a case where a process has 100MB of dirty
+data, has 10MB/s write limit and it issues fsync. So before that process
+is able to open a transaction, one needs to wait atleast 10seconds
+(assuming other processes are not doing IO in same cgroup). 
 
-Thank you, Ian. Updating u-boot helped!
+If this wait is based on making sure all dirty data has been written back
+before opening transaction, then it will work without any interaction with
+block layer and sounds more feasible.
 
-Sorry for the noise.
+> 
+> > In general, if you do throttling deeper in the stakc and build back
+> > pressure, then all the layers sitting above should be cgroup aware
+> > to avoid problems. Two layers identified so far are writeback and
+> > filesystems. Is it really worth the complexity. How about doing 
+> > throttling in higher layers when IO is entering the kernel and
+> > keep proportional IO logic at the lowest level and current mechanism
+> > of building pressure continues to work?
+>   I would like to keep single throttling mechanism for different limitting
+> methods - i.e. handle proportional IO the same way as IO hard limits. So we
+> cannot really rely on the fact that throttling is work preserving.
+> 
+> The advantage of throttling at IO layer is that we can keep all the details
+> inside it and only export pretty minimal information (like is bdi congested
+> for given cgroup) to upper layers. If we wanted to do throttling at upper
+> layers (such as Fengguang's buffered write throttling), we need to export
+> the internal details to allow effective throttling...
 
---=20
+For absolute throttling we really don't have to expose any details. In
+fact in my implementation of throttling buffered writes, I just had exported
+a single function to be called in bdi dirty rate limit. The caller will
+simply sleep long enough depending on the size of IO it is doing and
+how many other processes are doing IO in same cgroup.
 
-  Sergei
+So implementation was still in block layer and only a single function
+was exposed to higher layers.
 
---Sig_/=0p1r+=DpTzTOvjd_EFh9+9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+One more factor makes absolute throttling interesting and that is global
+throttling and not per device throttling. For example in case of btrfs,
+there is no single stacked device on which to put total throttling
+limits.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+So if filesystems can handle serialization issue, then back pressure
+method looks more clean (thought complex).
 
-iEYEARECAAYFAk+EeAAACgkQcaHudmEf86qGNACghXyB6TuVjqFJpETqHdtH7mjB
-5kAAnR0DvSRcG+DtuXfohLAjZ995PWJA
-=eSlg
------END PGP SIGNATURE-----
-
---Sig_/=0p1r+=DpTzTOvjd_EFh9+9--
+Thanks
+Vivek
