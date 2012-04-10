@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758599Ab2DJKnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:43:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53448 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab2DJKnW (ORCPT
+	id S1758619Ab2DJKn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:43:28 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:34966 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757911Ab2DJKnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:43:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 3/3] arch/tile: tilegx PCI root complex support
-Date: Tue, 10 Apr 2012 09:15:49 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Myron Stowe <myron.stowe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Joe Perches <joe@perches.com>, David Howells <dhowells@redhat.com>
-References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com> <CAErSpo6_gV1XKJ1jsDSvHo+BEORL_5wLC2YRyVG+OjVNDYbHgw@mail.gmail.com>
-In-Reply-To: <CAErSpo6_gV1XKJ1jsDSvHo+BEORL_5wLC2YRyVG+OjVNDYbHgw@mail.gmail.com>
+	Tue, 10 Apr 2012 06:43:25 -0400
+Date: Tue, 10 Apr 2012 13:42:29 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, balbi@ti.com,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 09/13] usb: gadget: f_fs: Remove lock is held before
+ freeing checks
+Message-ID: <20120410104227.GK20616@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
+ <1332895637-32572-10-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204100915.49742.arnd@arndb.de>
-X-Provags-ID: V02:K0:m5nNqbUIc72yXUZF7750PNdjY5qVkixq8O9hKHTwxIa
- Ht4V+ZymYNzpvYMjSuYQVd9RefQnNUKVSSstrNdZVffN06AzR1
- f9+VPwr1BqduNGfIbQkofuoPdyZoXtDHUMG+Rh+uyCkGBglKBr
- L5S7NuqjM4mLJZXTJphgkrJ3is3Zww47mpihaypSoiDDy97Q01
- LfIxPu4PoramhJkYJOBJtrnt649Ft63ES/5oQFux052MWR9hf8
- oQvtv27VzCg/M0fGB3GBN53ARBw3E3mF5V63K6QlkGQUjSDXtb
- Bgsmo8UerAHuVdWYCho9jTHesAE2yE0yz4lGu1H+V1goo2MQb9
- lCPCdEC5q5y/drNQfh3g=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCF9ydJxlAJsfRTu"
+Content-Disposition: inline
+In-Reply-To: <1332895637-32572-10-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 April 2012, Bjorn Helgaas wrote:
-> > +       if ((header_type & 0x7F) == PCI_HEADER_TYPE_BRIDGE) {
-> > +               /*
-> > +                * For bridges, we enable both memory and I/O decoding
-> > +                * in call cases.
-> > +                */
-> > +               cmd |= PCI_COMMAND_IO;
-> > +               cmd |= PCI_COMMAND_MEMORY;
-> > +       } else {
-> > +               /*
-> > +                * For endpoints, we enable memory and/or I/O decoding
-> > +                * only if they have a memory resource of that type.
-> > +                */
-> > +               for (i = 0; i < 6; i++) {
-> > +                       r = &dev->resource[i];
-> > +                       if (r->flags & IORESOURCE_UNSET) {
-> > +                               pr_err("PCI: Device %s not available "
-> > +                                      "because of resource collisions\n",
-> > +                                      pci_name(dev));
-> > +                               return -EINVAL;
-> > +                       }
-> > +                       if (r->flags & IORESOURCE_IO)
-> > +                               cmd |= PCI_COMMAND_IO;
-> > +                       if (r->flags & IORESOURCE_MEM)
-> > +                               cmd |= PCI_COMMAND_MEMORY;
-> > +               }
-> 
-> It would be nice if you could use pci_enable_resources() here, though
-> you use IORESOURCE_UNSET here, while pci_enable_resources() does not.
-> But you could at least use PCI_NUM_RESOURCES and "mask."  There's
-> nothing fundamentally architecture-dependent here, so I'd like to move
-> toward a generic implementation.
 
-Note that if tile does not support I/O space as indicated, it should
-never enable PCI_COMMAND_IO.
+--FCF9ydJxlAJsfRTu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Arnd
+On Tue, Mar 27, 2012 at 05:47:13PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>=20
+> lock debugging already supports this, no need to do it explicitely.
+>=20
+> Cc: balbi@ti.com
+> Cc: gregkh@linuxfoundation.org
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
+since this is part of a separate series, I think it's better you carry
+this with the series:
+
+Acked-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--FCF9ydJxlAJsfRTu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPhA6TAAoJEIaOsuA1yqREVJQP/iY7u6gL+jfooipvczhahdoW
+MDdGxmZLG5J7ky8tU7ZSzOvLzoMFAMKgY6X0TZdrNayFW6llZFaiSSxikHQRRY7z
+uF5MqjTfVHs3el9ILWo5KaXFo9lmUYeY4v/tF8QEnkXwANBpW1vY5H6GDOwiZQJx
+8I8ibVv0L45VXtVxpdSER7lxDPiTO0tXc8oXrB9z13/DP933LmHMmmYS4dPZQPNj
+ws2aYZHpkybJsZJY9yE/e2ulcXctvqT0NL5L5J6BfExuYvXgy/oFWgpnX98pADH/
+Wmi8usF4HMOUOPvBa2RAWTdHGyglwFmFcdQjRct7OxF4DbIcPp8LusE05/Cl6Sde
+qsskftDwCmOh1GMPF7IUYQ3RkZnekwKTbEPbnSN/EQRV6XqGkOQHshGB9/XSVC3Y
+cgi7FxlUqh1qMpI/ZwuCD3XEKb5RwbltL1+OeBSWnTMOAvgKX+HQAe4dQvuUCia6
+oKReY1zCz0GCnI0vevAf2gTM4MOOD6XTAalm8xzwsFn2sl+5UFRfr1VZoioDMxxw
+fCpo7PUx7fImHA1XW1uk1xmGaerBGYBtiz+e6dgHCvJejplk6otY8sLN7Yaw5xAR
+MYyrDwCM2H45N1PCCCZ38FUSfPZuKJOt7VJ8HyxI9pd2b/8FfieXSbKJAme6J4AR
+jTLfG//fnHbocS1wCd7K
+=f3Oa
+-----END PGP SIGNATURE-----
+
+--FCF9ydJxlAJsfRTu--
