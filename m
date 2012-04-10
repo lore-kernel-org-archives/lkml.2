@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab2DJSHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:07:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755149Ab2DJSHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:07:35 -0400
-Date: Tue, 10 Apr 2012 14:06:53 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120410180653.GJ21801@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120407080027.GA2584@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758159Ab2DJSHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:07:48 -0400
+Received: from mta112.f1.k8.com.br ([187.73.32.184]:60797 "EHLO
+	mta112.f1.k8.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758011Ab2DJSHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 14:07:46 -0400
+Message-ID: <1334081260.2342.20.camel@Thor>
+Subject: [PATCH 1/1] rculist: Replaced list_first_entry_rcu() with
+ list_first_or_null_rcu()
+From: Michel Machado <michel@digirati.com.br>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Date: Tue, 10 Apr 2012 14:07:40 -0400
+Organization: Digirati Internet
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 07, 2012 at 10:00:27AM +0200, Jan Kara wrote:
-Hi Jan,
+Replaced list_first_entry_rcu() with list_first_or_null_rcu() because
+list_first_entry_rcu() is not safe as one can find in the comment that
+this patch also adds.
 
-[..]
-> > In general, the core of the issue is that filesystems are not cgroup aware
-> > and if you do throttling below filesystems, then invariably one or other
-> > serialization issue will come up and I am concerned that we will be constantly
-> > fixing those serialization issues. Or the desgin point could be so central
-> > to filesystem design that it can't be changed.
->   We talked about this at LSF and Dave Chinner had the idea that we could
-> make processes wait at the time when a transaction is started. At that time
-> we don't hold any global locks so process can be throttled without
-> serializing other processes. This effectively builds some cgroup awareness
-> into filesystems but pretty simple one so it should be doable.
+This patch incorporated Paul's suggestions to the previous version of
+this patch available here:
 
-Ok. So what is the meaning of "make process wait" here? What it will be
-dependent on? I am thinking of a case where a process has 100MB of dirty
-data, has 10MB/s write limit and it issues fsync. So before that process
-is able to open a transaction, one needs to wait atleast 10seconds
-(assuming other processes are not doing IO in same cgroup). 
+https://lkml.org/lkml/2012/4/2/536
 
-If this wait is based on making sure all dirty data has been written back
-before opening transaction, then it will work without any interaction with
-block layer and sounds more feasible.
+This patch cannot break any upstream code because list_first_entry_rcu
+is not being used anywhere in the kernel (tested with grep(1)), and
+external code that uses it is probably broken already.
 
-> 
-> > In general, if you do throttling deeper in the stakc and build back
-> > pressure, then all the layers sitting above should be cgroup aware
-> > to avoid problems. Two layers identified so far are writeback and
-> > filesystems. Is it really worth the complexity. How about doing 
-> > throttling in higher layers when IO is entering the kernel and
-> > keep proportional IO logic at the lowest level and current mechanism
-> > of building pressure continues to work?
->   I would like to keep single throttling mechanism for different limitting
-> methods - i.e. handle proportional IO the same way as IO hard limits. So we
-> cannot really rely on the fact that throttling is work preserving.
-> 
-> The advantage of throttling at IO layer is that we can keep all the details
-> inside it and only export pretty minimal information (like is bdi congested
-> for given cgroup) to upper layers. If we wanted to do throttling at upper
-> layers (such as Fengguang's buffered write throttling), we need to export
-> the internal details to allow effective throttling...
+Signed-off-by: Michel Machado <michel@digirati.com.br>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Dipankar Sarma <dipankar@in.ibm.com>
+---
 
-For absolute throttling we really don't have to expose any details. In
-fact in my implementation of throttling buffered writes, I just had exported
-a single function to be called in bdi dirty rate limit. The caller will
-simply sleep long enough depending on the size of IO it is doing and
-how many other processes are doing IO in same cgroup.
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index d079290..ef5da30 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -228,18 +228,43 @@ static inline void list_splice_init_rcu(struct
+list_head *list,
+ 	})
+ 
+ /**
+- * list_first_entry_rcu - get the first element from a list
++ * Where are list_empty_rcu() and list_first_entry_rcu()?
++ *
++ * Implementing those functions following their counterparts
+list_empty() and
++ * list_first_entry() is not advisable because they lead to subtle race
++ * conditions as the following snippet shows:
++ * 
++ * if (!list_empty_rcu(mylist)) {
++ * 	struct foo *bar = list_first_entry_rcu(mylist, struct foo,
+list_member);
++ * 	do_something(bar);
++ * }
++ *
++ * The list may not be empty when list_empty_rcu checks it, but it may
+be when
++ * list_first_entry_rcu rereads the ->next pointer.
++ *
++ * Rereading the ->next pointer is not a problem for list_empty() and
++ * list_first_entry() because they would be protected by a lock that
+blocks
++ * writers.
++ *
++ * See list_first_or_null_rcu for an alternative.
++ */
++
++/**
++ * list_first_or_null_rcu - get the first element from a list
+  * @ptr:        the list head to take the element from.
+  * @type:       the type of the struct this is embedded in.
+  * @member:     the name of the list_struct within the struct.
+  *
+- * Note, that list is expected to be not empty.
++ * Note that if the list is empty, it returns NULL.
+  *
+  * This primitive may safely run concurrently with the _rcu
+list-mutation
+  * primitives such as list_add_rcu() as long as it's guarded by
+rcu_read_lock().
+  */
+-#define list_first_entry_rcu(ptr, type, member) \
+-	list_entry_rcu((ptr)->next, type, member)
++#define list_first_or_null_rcu(ptr, type, member) \
++	({struct list_head *__ptr = (ptr); \
++	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
++	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL;
+\
++	})
+ 
+ /**
+  * list_for_each_entry_rcu	-	iterate over rcu list of given type
 
-So implementation was still in block layer and only a single function
-was exposed to higher layers.
-
-One more factor makes absolute throttling interesting and that is global
-throttling and not per device throttling. For example in case of btrfs,
-there is no single stacked device on which to put total throttling
-limits.
-
-So if filesystems can handle serialization issue, then back pressure
-method looks more clean (thought complex).
-
-Thanks
-Vivek
