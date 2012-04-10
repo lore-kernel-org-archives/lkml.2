@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab2DJA7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 20:59:50 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:19930
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932102Ab2DJA7q (ORCPT
+	id S932290Ab2DJBES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 21:04:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41269 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab2DJBER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 20:59:46 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI1432N98dK4015Izz1202hzz8275bh8275dhz2fh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F8385D7.3060701@am.sony.com>
-Date: Mon, 9 Apr 2012 17:59:03 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Mon, 9 Apr 2012 21:04:17 -0400
+Date: Mon, 9 Apr 2012 18:04:00 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Roland Dreier <roland@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH RFC] mm: account VMA before forced-COW via
+ /proc/pid/mem
+In-Reply-To: <20120407173318.GA5076@redhat.com>
+Message-ID: <alpine.LSU.2.00.1204091734530.2079@eggly.anvils>
+References: <20120402153631.5101.44091.stgit@zurg> <20120403143752.GA5150@redhat.com> <4F7C1B67.6030300@openvz.org> <20120404154148.GA7105@redhat.com> <4F7D5859.5050106@openvz.org> <alpine.LSU.2.00.1204062104090.4297@eggly.anvils>
+ <20120407173318.GA5076@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Jan Beulich <jbeulich@novell.com>,
-        Kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Bird, Tim" <Tim.Bird@am.sony.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, <sam@ravnborg.org>
-Subject: Re: [PATCH] modpost: Fix modpost's license checking V3
-References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com> <1310626276-4541-1-git-send-email-abogani@kernel.org> <4F6D2BC5.9070200@am.sony.com> <4F711EC0.3080708@am.sony.com> <87hax8yqcz.fsf@rustcorp.com.au>
-In-Reply-To: <87hax8yqcz.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/12 21:37, Rusty Russell wrote:
-> On Mon, 26 Mar 2012 18:58:24 -0700, Frank Rowand <frank.rowand@am.sony.com> wrote:
->> The attached patch modifies your patch to also use export_from_secname()
->> for vmlinux and vmlinux.o.
+On Sat, 7 Apr 2012, Oleg Nesterov wrote:
+> On 04/06, Hugh Dickins wrote:
+> >
+> > I've long detested that behaviour of GUP write,force, and my strong
+> > preference would be not to layer more strangeness upon strangeness,
+> > but limit the damage by making GUP write,force fail in that case,
+> > instead of inserting a PageAnon page into a VM_SHARED mapping.
+
+Let me reiterate here that I was off at a tangent in bringing this up,
+so sorry for any confusion I spread.
+
+> >
+> > I think it's unlikely that it will cause a regression in real life
+> > (it already fails if you did not open the mmap'ed file for writing),
 > 
-> OK, today is my last day online for six weeks, so Alessio, please come
-> up with a fix and push straight to Linus once consensus is reached.
+> Yes, and this is what looks confusing to me. Assuming I understand
+> you (and the code) correctly ;)
 > 
-> If that's impossible, I'll review when I get back.
+> If we have a (PROT_READ, MAP_SHARED) file mapping, then FOLL_FORCE
+> works depending on "file->f_mode & FMODE_WRITE".
 > 
-> Thanks,
-> Rusty.
+> Afaics, because do_mmap_pgoff(MAP_SHARED) clears VM_MAYWRITE if
+> !FMODE_WRITE, and gup(FORCE) checks "vma->vm_flags & VM_MAYWRITE"
+> before follow_page/etc.
+> 
+> OTOH, if the file was opened without FMODE_WRITE, then I do not
+> really understand how (PROT_READ, MAP_SHARED) differs from
+> (PROT_READ, MAP_PRIVATE).
 
-Linus,
+For normal msyscalls(), !FMODE_WRITE PROT_READ,MAP_SHARED and
+PROT_READ,MAP_PRIVATE behave much the same: the difference is that
+you can mprotect(PROT_WRITE) the MAP_PRIVATE one, but you cannot
+mprotect(PROT_WRITE) the MAP_SHARED - because writes to the latter
+would go to the file, and you don't have permission for that.
 
-Alessio asked me to send this directly to you.
+> However, in the latter case FOLL_FORCE
+> works, VM_MAYWRITE was not cleared.
 
--Frank
+When it comes to __get_user_pages(), FOLL_FORCE allows you to
+read from or write to an area to which you don't at present have
+read or write access, but could be mprotect()ed to give you that
+access (whereas !FOLL_FORCE respects the current mprotection).
 
+So FOLL_FORCE allows reading from any mapped area, even PROT_NONE;
+and FOLL_FORCE allows writing to any MAP_PRIVATE area, and writing
+to any MAP_SHARED area whose file had been opened with FMODE_WRITE.
 
-The commit f02e8a6 sorts symbols placing each of them in its own elf section.
-The sorting and merging into the canonical sections are done by the linker.
-Unfortunately modpost to generate Module.symvers file parses vmlinux.o (which
-is not linked yet) and all modules object files (which aren't linked yet).
-These aren't sanitized by the linker yet. That breaks modpost that can't
-detect license properly for modules.
+The strange weird confusing part is that having checked that you have
+permission to write to the file, it then avoids doing so (unless the
+area currently has PROT_WRITE): it COWs pages for you instead,
+leaving unexpected anon pages in the shared area.
 
-This patch makes modpost aware of the new exported symbols structure.
+This is believed to be a second line of defence when setting
+breakpoints, in case the executable file happened to  have been opened
+for writing, to prevent those breakpoints getting back into the file.
 
-The above is a slightly corrected version of the explanation of the problem,
-copied from commit 62a26356.  That commit fixed the problem for module object
-files, but not for vmlinux.o.  This patch fixes modpost for vmlinux.o.
+> 
+> Speaking of the difference above, I'd wish I could understand
+> what VM_MAYSHARE actually means except "MAP_SHARED was used".
 
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
----
- scripts/mod/modpost.c |    7 	5 +	2 -	0 !
- scripts/mod/modpost.h |    1 	1 +	0 -	0 !
- 2 files changed, 6 insertions(+), 2 deletions(-)
+That's precisely it: so it's very useful in /proc/pid/maps, for
+deciding whether to show an 's' or a 'p', but not so often when
+real decisions are made (where, as you've observed, private readonly
+and shared readonly are treated very similarly, without VM_SHARED).
 
-Index: b/scripts/mod/modpost.c
-===================================================================
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -132,8 +132,10 @@ static struct module *new_module(char *m
- 	/* strip trailing .o */
- 	s = strrchr(p, '.');
- 	if (s != NULL)
--		if (strcmp(s, ".o") == 0)
-+		if (strcmp(s, ".o") == 0) {
- 			*s = '\0';
-+			mod->is_dot_o = 1;
-+		}
- 
- 	/* add to list */
- 	mod->name = p;
-@@ -587,7 +589,8 @@ static void handle_modversions(struct mo
- 	unsigned int crc;
- 	enum export export;
- 
--	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
-+	if ((!is_vmlinux(mod->name) || mod->is_dot_o) &&
-+	    strncmp(symname, "__ksymtab", 9) == 0)
- 		export = export_from_secname(info, get_secindex(info, sym));
- 	else
- 		export = export_from_sec(info, get_secindex(info, sym));
-Index: b/scripts/mod/modpost.h
-===================================================================
---- a/scripts/mod/modpost.h
-+++ b/scripts/mod/modpost.h
-@@ -113,6 +113,7 @@ struct module {
- 	int has_cleanup;
- 	struct buffer dev_table_buf;
- 	char	     srcversion[25];
-+	int is_dot_o;
- };
- 
- struct elf_info {
-
+Hugh
