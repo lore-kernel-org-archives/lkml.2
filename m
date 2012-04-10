@@ -1,45 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540Ab2DJIcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:32:24 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60343 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757493Ab2DJIcI (ORCPT
+	id S1758533Ab2DJIdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:33:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55240 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab2DJIdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:32:08 -0400
-Date: Tue, 10 Apr 2012 09:31:30 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
-Message-ID: <20120410083130.GK24211@n2100.arm.linux.org.uk>
-References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20120406074942.GO7264@S2101-09.ap.freescale.net>
+	Tue, 10 Apr 2012 04:33:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Minchan Kim <minchan@kernel.org>
+Subject: Re: swap on eMMC and other flash
+Date: Tue, 10 Apr 2012 08:32:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linaro-kernel@lists.linaro.org, android-kernel@googlegroups.com,
+        linux-mm@kvack.org, "Luca Porzio (lporzio)" <lporzio@micron.com>,
+        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
+        Saugata Das <saugata.das@linaro.org>,
+        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
+        Hyojin Jeong <syr.jeong@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+References: <201203301744.16762.arnd@arndb.de> <201204091235.48750.arnd@arndb.de> <4F838584.1020002@kernel.org>
+In-Reply-To: <4F838584.1020002@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120406074942.GO7264@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201204100832.52093.arnd@arndb.de>
+X-Provags-ID: V02:K0:6uyg9ub9z7JWe+1g1rl5B6pEkz9M21R855gOXaYtbzK
+ F3AKvjWlsCjXREPVox8nW4W8SYZuZUUhUtpAp547VFUblqU3LT
+ 1sIKFIXvXBrC/dY/kB5jJ/dzLb12gChXYAdP2UevKfy3omiIXv
+ PduwQvuAbKKOE6jBhdxiMolNdlW/fZ9RLttY5rFFXzp46xRO3f
+ qntJZExGj3WZqmLCkMQzYQp3nNadOeE6lEZCnrh+OuO4jUlXjq
+ x2f0zHuHvwz7bCRMg2Ws+Zat6+ofFfIxPzd2/VKkktL+jmGkns
+ gzC9ahX576rTwIwcg5eXIJIoi3Y+Rq8T1zlKa8DLMg5U/Q/YK+
+ 7D0pIsYQlYH48Y2qK2RY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 06, 2012 at 03:49:45PM +0800, Shawn Guo wrote:
-> I believe this patch fixes the amba probe failure that impacts any
-> AMBA platform build with CONFIG_REGULATOR enabled.  Could you consider
-> to send the fix for -rc soon?
+On Tuesday 10 April 2012, Minchan Kim wrote:
+> 2012-04-09 오후 9:35, Arnd Bergmann 쓴 글:
 
-No idea.  I don't have Mark's patch in the patch system.
+> >>
+> >> I understand it's best for writing 64K in your statement.
+> >> What the 8K, 16K? Could you elaborate relation between 8K, 16K and 64K?
+> > 
+> > From my measurements, there are three sizes that are relevant here:
+> > 
+> > 1. The underlying page size of the flash: This used to be less than 4kb,
+> > which is fine when paging out 4kb mmu pages, as long as the partition is
+> > aligned. Today, most devices use 8kb pages and the number is increasing
+> > over time, meaning we will see more 16kb page devices in the future and
+> > presumably larger sizes after that. Writes that are not naturally aligned
+> > multiples of the page size tend to be a significant problem for the
+> > controller to deal with: in order to guarantee that a 4kb write makes it
+> > into permanent storage, the device has to write 8kb and the next 4kb
+> > write has to go into another 8kb page because each page can only be
+> > written once before the block is erased. At a later point, all the partial
+> > pages get rewritten into a new erase block, a process that can take
+> > hundreds of miliseconds and that we absolutely want to prevent from
+> > happening, as it can block all other I/O to the device. Writing all
+> > (flash) pages in an erase block sequentially usually avoids this, as
+> > long as you don't write to many different erase blocks at the same time.
+> > Note that the page size depends on how the controller combines different
+> > planes and channels.
+> > 
+> > 2. The super-page size of the flash: When you have multiple channels
+> > between the controller and the individual flash chips, you can write
+> > multiple pages simultaneously, which means that e.g. sending 32kb of
+> > data to the device takes roughly the same amount of time as writing a
+> > single 8kb page. Writing less than the super-page size when there is
+> > more data waiting to get written out is a waste of time, although the
+> > effects are much less drastic as writing data that is not aligned to
+> > pages because it does not require garbage collection.
+> > 
+> > 3. optimum write size: While writing larger amounts of data in a single
+> > request is usually faster than writing less, almost all devices
+> > I've seen have a sharp cut-off where increasing the size of the write
+> > does not actually help any more because of a bottleneck somewhere
+> > in the stack. Writing more than 64kb almost never improves performance
+> > and sometimes reduces performance.
+> 
+> 
+> For our understanding, you mean we have to do aligned-write as follows
+> if possible?
+> 
+> "Nand internal page size write(8K, 16K)" < "Super-page size write(32K)
+> which considers parallel working with number of channel and plane" <
+> some sequential big write (64K)
 
-> The patch "ARM: amba: adapt to regulator probe deferral change" from
-> me could be ignored now.
+In the definition I gave above, page size (8k, 16k) would be the only
+one that requires alignment. Writing 64k at an arbitrary 16k alignment
+should still give us the best performance in almost all cases and
+introduce no extra write amplification, while writing with less than
+page alignment causes significant write amplification and long latencies.
 
-But I do have yours in there.  And what do I do with your other patch
-in there touching this same area as well?
+> 
+> > 
+> > Note that eMMC-4.5 provides a high-priority interrupt mechamism that
+> > lets us interrupt the a write that has hit the garbage collection
+> > path, so we can send a more important read request to the device.
+> > This will not work on other devices though and the patches for this
+> > are still under discussion.
+> 
+> 
+> Nice feature but I think swap system doesn't need to consider such
+> feature. I should be handled by I/O subsystem like I/O scheduler.
 
-Please, sort it out between you and once the patch system is right, let
-me know.
+Right, this is completely independent of swap. The current implementation
+of the patch set favours only reads that are done for page-in operations
+by interrupting any long-running writes when a more important read comes
+in. IMHO we should do the same for any synchronous read, but that discussion
+is completely orthogonal to having the swap device on emmc.
+
+> >>>>> 2) Make variable sized swap clusters. Right now, the swap space is
+> >>>>> organized in clusters of 256 pages (1MB), which is less than the typical
+> >>>>> erase block size of 4 or 8 MB. We should try to make the swap cluster
+> >>>>> aligned to erase blocks and have the size match to avoid garbage collection
+> >>>>> in the drive. The cluster size would typically be set by mkswap as a new
+> >>>>> option and interpreted at swapon time.
+> >>>>>
+> >>>>
+> >>>> If we can find such big contiguous swap slots easily, it would be good.
+> >>>> But I am not sure how often we can get such big slots. And maybe we have to
+> >>>> improve search method for getting such big empty cluster.
+> >>>
+> >>> As long as there are clusters available, we should try to find them. When
+> >>> free space is too fragmented to find any unused cluster, we can pick one
+> >>> that has very little data in it, so that we reduce the time it takes to
+> >>> GC that erase block in the drive. While we could theoretically do active
+> >>> garbage collection of swap data in the kernel, it won't get more efficient
+> >>> than the GC inside of the drive. If we do this, it unfortunately means that
+> >>> we can't just send a discard for the entire erase block.
+> >>
+> >>
+> >> Might need some compaction during idle time but WAP concern raises again. :(
+> > 
+> > Sorry for my ignorance, but what does WAP stand for?
+> 
+> 
+> I should have written more general term. I means write amplication but
+> WAF(Write Amplication Factor) is more popular. :(
+
+D'oh. Thanks for the clarification. Note that the entire idea of increasing the
+swap cluster size to the erase block size is to *reduce* write amplification:
+
+If we pick arbitrary swap clusters that are part of an erase block (or worse,
+span two partial erase blocks), sending a discard for one cluster does not
+allow the device to actually discard an entire erase block. Consider the best
+possible scenario where we have a 1MB cluster and 2MB erase blocks, all
+naturally aligned. After we have written the entire swap device once, all
+blocks are marked as used in the device, but some are available for reuse
+in the kernel. The swap code picks a cluster that is currently unused and 
+sends a discard to the device, then fills the cluster with new pages.
+After that, we pick another swap cluster elsewhere. The erase block now
+contains 50% new and 50% old data and has to be garbage collected, so the
+device writes 2MB of data  to anther erase block. So, in order to write 1MB,
+the device has written 3MB and the write amplification factor is 3. Using
+8MB erase blocks, it would be 9.
+
+If we do the active compaction and increase the cluster size to the erase
+block size, there is no write amplification inside of the device (and no
+stalls from the garbage collection, which are the other concern), and
+we only need to write a few blocks again that are still valid in a cluster
+at the time we want to reuse it. On an ideal device, the write amplification
+for active compaction should be exactly the same as what we get when we
+write a cluster while some of the data in it is still valid and we skip
+those pages, while some devices might now like having to gc themselves.
+Doing the compaction in software means we have to spend CPU cycles on it,
+but we get to choose when it happens and don't have to block on the device
+during GC.
+
+	Arnd
