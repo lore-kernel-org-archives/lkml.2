@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab2DJJ1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:27:16 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:41329 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab2DJJ1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:27:15 -0400
-Message-ID: <1334050034.2178.5.camel@shrek.rexursive.com>
-Subject: Re: [PATCH v9]: Hibernation: fix the number of pages used for
- hibernate/thaw buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: Per Olofsson <pelle@debian.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Date: Tue, 10 Apr 2012 19:27:14 +1000
-In-Reply-To: <4F83FBD6.6030104@debian.org>
-References: <1334026047.2103.23.camel@shrek.rexursive.com>
-	  <4F83F202.2080600@debian.org>
-	 <1334049554.2178.1.camel@shrek.rexursive.com> <4F83FBD6.6030104@debian.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754671Ab2DJJ3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:29:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59179 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753538Ab2DJJ3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 05:29:49 -0400
+Date: Tue, 10 Apr 2012 10:29:44 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Ying Han <yinghan@google.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 1/2] mm: vmscan: Remove lumpy reclaim
+Message-ID: <20120410092944.GC3789@suse.de>
+References: <1332950783-31662-1-git-send-email-mgorman@suse.de>
+ <1332950783-31662-2-git-send-email-mgorman@suse.de>
+ <CALWz4iymXkJ-88u9Aegc2DjwO2vZp3xVuw_5qTRW2KgPP8ti=g@mail.gmail.com>
+ <20120410082454.GA3789@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120410082454.GA3789@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-10 at 11:22 +0200, Per Olofsson wrote:
-> If you don't have any high pages (e.g. x86_64), then
-> nr_free_highpages() is defined to be 0 and is optimized away
-> completely.
+On Tue, Apr 10, 2012 at 09:24:54AM +0100, Mel Gorman wrote:
+> On Fri, Apr 06, 2012 at 04:52:09PM -0700, Ying Han wrote:
+> > On Wed, Mar 28, 2012 at 9:06 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > > Lumpy reclaim had a purpose but in the mind of some, it was to kick
+> > > the system so hard it trashed. For others the purpose was to complicate
+> > > vmscan.c. Over time it was giving softer shoes and a nicer attitude but
+> > > memory compaction needs to step up and replace it so this patch sends
+> > > lumpy reclaim to the farm.
+> > >
+> > > Here are the important notes related to the patch.
+> > >
+> > > 1. The tracepoint format changes for isolating LRU pages.
+> > >
+> > > 2. This patch stops reclaim/compaction entering sync reclaim as this
+> > >   was only intended for lumpy reclaim and an oversight. Page migration
+> > >   has its own logic for stalling on writeback pages if necessary and
+> > >   memory compaction is already using it. This is a behaviour change.
+> > >
+> > > 3. RECLAIM_MODE_SYNC no longer exists. pageout() does not stall
+> > >   on PageWriteback with CONFIG_COMPACTION has been this way for a while.
+> > >   I am calling it out in case this is a surpise to people.
+> > 
+> > Mel,
+> > 
+> > Can you point me the commit making that change? I am looking at
+> > v3.4-rc1 where set_reclaim_mode() still set RECLAIM_MODE_SYNC for
+> > COMPACTION_BUILD.
+> > 
+> 
+> You're right.
+> 
+> There is only one call site that passes sync==true for set_reclaim_mode() in
+> vmscan.c and that is only if should_reclaim_stall() returns true. It had the
+> comment "Only stall on lumpy reclaim" but the comment is not accurate
+> and that mislead me.
+> 
+> Thanks, I'll revisit the patch.
+> 
 
-Yeah, we could do that in the patch too.
-
-> Still, it seems you are not calculating free pages that often anymore
-> so it should not matter much.
-
-True. We call this a couple of orders of magnitude less times, so it
-won't have noticeable affect on speed either way.
+Just to be clear, I think the patch is right in that stalling on page
+writeback was intended just for lumpy reclaim. I've split out the patch
+that stops reclaim/compaction entering sync reclaim but the end result
+of the series is the same. Unfortunately we do not have tracing to record
+how often reclaim waited on writeback during compaction so my historical
+data does not indicate how often it happened. However, it may partially
+explain occasionaly complaints about interactivity during heavy writeback
+when THP is enabled (the bulk of the stalls were due to something else but
+on rare occasions disabling THP was reported to make a small unquantifable
+difference). I'll enable ftrace to record how often mm_vmscan_writepage()
+used RECLAIM_MODE_SYNC during tests for this series and include that
+information in the changelog.
 
 -- 
-Bojan
-
+Mel Gorman
+SUSE Labs
