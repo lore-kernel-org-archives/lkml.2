@@ -1,53 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab2DJLky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 07:40:54 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62172 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2DJLkw convert rfc822-to-8bit (ORCPT
+	id S1757689Ab2DJLoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 07:44:17 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:40054 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2DJLoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 07:40:52 -0400
+	Tue, 10 Apr 2012 07:44:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
-Date: Tue, 10 Apr 2012 12:40:50 +0100
-Message-ID: <CAJSP0QWA1z6_YQe9hhpG7bCyZQarmU5NXbHsLGTL_zPTk3dOUA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] adding tracepoints to vhost
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com
+Reply-To: ayannahussein4love@gmx.com
+Date: Tue, 10 Apr 2012 11:44:05 +0000
+Message-ID: <CAG6B8WRcUwLeh7ROq5+6hd7DFXtDVmULwqLKmKmEG1Ox+Kx9mw@mail.gmail.com>
+Subject: From Ayanna
+From: Ayanna mohamed <adera.lsaaq85@gmail.com>
+To: undisclosed-recipients:;
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 3:58 AM, Jason Wang <jasowang@redhat.com> wrote:
-> To help in vhost analyzing, the following series adding basic tracepoints to
-> vhost. Operations of both virtqueues and vhost works were traced in current
-> implementation, net code were untouched. A top-like satistics displaying script
-> were introduced to help the troubleshooting.
->
-> TODO:
-> - net specific tracepoints?
->
-> ---
->
-> Jason Wang (2):
->      vhost: basic tracepoints
->      tools: virtio: add a top-like utility for displaying vhost satistics
->
->
->  drivers/vhost/trace.h   |  153 ++++++++++++++++++++
->  drivers/vhost/vhost.c   |   17 ++
->  tools/virtio/vhost_stat |  360 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 528 insertions(+), 2 deletions(-)
->  create mode 100644 drivers/vhost/trace.h
->  create mode 100755 tools/virtio/vhost_stat
-
-Perhaps this can replace the vhost log feature?  I'm not sure if
-tracepoints support the right data types but it seems like vhost
-debugging could be done using tracing with less code.
-
-Stefan
+My name is Ayanna, after reading your profile,i will like to have a
+relationship with you, can you write me at
+(ayannahussein4love@gmx.com)
+we can start from there, also i will send you my picture, i will be
+waiting because i have something very important to tell you which i
+may need your assistance please, take care and lots of
+love, God bless.
+(ayannahussein4love@gmx.com)
+Ayanna
