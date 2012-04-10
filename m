@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab2DJQ0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:26:14 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:37184 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409Ab2DJQZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 12:25:59 -0400
-X-IronPort-AV: E=Sophos;i="4.75,399,1330923600"; 
-   d="scan'208";a="24030726"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: konrad.wilk@oracle.com
-CC: Stefano.Stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 1/2] xen: enter/exit lazy_mmu_mode around m2p_override calls
-Date: Tue, 10 Apr 2012 17:29:34 +0100
-Message-ID: <1334075375-25442-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756256Ab2DJQ02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:26:28 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:55246 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754176Ab2DJQ0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 12:26:25 -0400
+Date: Tue, 10 Apr 2012 09:26:19 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Jiri Slaby <jirislaby@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
+Message-ID: <20120410092619.26a15165@jbarnes-desktop>
+In-Reply-To: <4F83F3B5.8080704@suse.cz>
+References: <4F717CE3.4040206@suse.cz>
+	<4F717D80.9040207@suse.cz>
+	<4F758400.3080907@suse.cz>
+	<1333104359_155028@CP5-2952>
+	<20120409101119.47e770b2@jbarnes-desktop>
+	<4F83F3B5.8080704@suse.cz>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/eT_Um6FH5Vz_02j1=HNNku9"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a significant performance improvement for the
-m2p_override: about 6% using the gntdev device.
+--Sig_/eT_Um6FH5Vz_02j1=HNNku9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Each m2p_add/remove_override call issues a MULTI_grant_table_op and a
-__flush_tlb_single if kmap_op != NULL.  Batching all the calls together
-is a great performance benefit because it means issuing one hypercall
-total rather than two hypercall per page.
-If paravirt_lazy_mode is set PARAVIRT_LAZY_MMU, all these calls are
-going to be batched together, otherwise they are issued one at a time.
+On Tue, 10 Apr 2012 10:47:49 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-Adding arch_enter_lazy_mmu_mode/arch_leave_lazy_mmu_mode around the
-m2p_add/remove_override calls forces paravirt_lazy_mode to
-PARAVIRT_LAZY_MMU, therefore makes sure that they are always batched.
+> On 04/09/2012 07:11 PM, Jesse Barnes wrote:
+> > On Fri, 30 Mar 2012 11:45:43 +0100 Chris Wilson
+> > <chris@chris-wilson.co.uk> wrote:
+> >=20
+> >> On Fri, 30 Mar 2012 11:59:28 +0200, Jiri Slaby <jslaby@suse.cz>
+> >> wrote:
+> >>> I don't know what to dump more, because iir is obviously zero
+> >>> too. What other sources of interrupts are on the (G33) chip?
+> >>=20
+> >> IIR is the master interrupt, with chained secondary interrupt
+> >> statuses. If IIR is 0, the interrupt wasn't raised by the GPU.
+> >=20
+> > I've actually seen cases where one of the PIPE*STAT regs is stuck,
+> > and even if IIR is 0 we still get interrupts... Jiri can you verify
+> > the PIPE*STAT regs have bits set, maybe one or more we don't check
+> > for?
+>=20
+> Note that I already attached their contents... This is what is in them
+> (pipes 0 and 1):
+> [ 3572.968581] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3572.977472] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3576.224839] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3576.243558] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3576.384912] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3576.403462] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3577.464100] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3577.477383] i915_driver_irq_handler: 0=3D00000000 1=3D00000000
+> [ 3577.829016] i915_driver_irq_handler: 0=3D00020000 1=3D00000000
+> [ 3577.830093] i915_driver_irq_handler: 0=3D00020000 1=3D00000000
+>=20
+> I.e. the handler is called when IIR=3D0 and both pipe stats are 0.
 
+Oh sorry missed the PIPE*STAT, I thought it was IMR or something, I
+should have read more closely.
 
-Changes in v3:
-- do not call arch_enter/leave_lazy_mmu_mode in xen_blkbk_unmap, that
-can be called in interrupt context.
+So port hotplug is always reporting that port C has a hotplug interrupt
+though...  If you write 0x3 back to it does the interrupt stop?
 
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/block/xen-blkback/blkback.c |    2 ++
- drivers/xen/grant-table.c           |    8 ++++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+--Sig_/eT_Um6FH5Vz_02j1=HNNku9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 0088bf6..0453695 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -386,6 +386,7 @@ static int xen_blkbk_map(struct blkif_request *req,
- 	 * so that when we access vaddr(pending_req,i) it has the contents of
- 	 * the page from the other domain.
- 	 */
-+	arch_enter_lazy_mmu_mode();
- 	for (i = 0; i < nseg; i++) {
- 		if (unlikely(map[i].status != 0)) {
- 			pr_debug(DRV_PFX "invalid buffer -- could not remap it\n");
-@@ -410,6 +411,7 @@ static int xen_blkbk_map(struct blkif_request *req,
- 		seg[i].buf  = map[i].dev_bus_addr |
- 			(req->u.rw.seg[i].first_sect << 9);
- 	}
-+	arch_leave_lazy_mmu_mode();
- 	return ret;
- }
- 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index b4d4eac..c7dc2d6 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -751,6 +751,8 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return ret;
- 
-+	arch_enter_lazy_mmu_mode();
-+
- 	for (i = 0; i < count; i++) {
- 		/* Do not add to override if the map failed. */
- 		if (map_ops[i].status)
-@@ -769,6 +771,8 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 			return ret;
- 	}
- 
-+	arch_leave_lazy_mmu_mode();
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(gnttab_map_refs);
-@@ -785,12 +789,16 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return ret;
- 
-+	arch_enter_lazy_mmu_mode();
-+
- 	for (i = 0; i < count; i++) {
- 		ret = m2p_remove_override(pages[i], clear_pte);
- 		if (ret)
- 			return ret;
- 	}
- 
-+	arch_leave_lazy_mmu_mode();
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
--- 
-1.7.2.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPhF8rAAoJEIEoDkX4Qk9hei0P/jmsu/9Bpp/dkJzargj1eL9y
+yrROsASphkjHK/1DvmFpZ9fupbf7Z+5+cxfB+bkPWBxld5nTkQVISTARHSfqsSWL
+w/OPwAb29RMAaljwPHtGd5HALCmRIYozLLX4RfQUBdCBXsZkzfmRNsXLb2J9y8QS
+F3Qcl1Xy2Xb/T1o5Fe2Pi6myk9xiklAUqo78l2JqYLPTJDQnf5qMpyuCFOfvuDqd
+FDKPe2hW7y+UbviTgozlmJ6r18nWV2MYgYSJoEVUy12haH/s2wdGvXRuQbWPLGrU
+qCuDdi3K9bd8K3YnA2ShVFLuDKNxY7YCzUaKSGhYHwoSQuwSygk3DelcBiGFZp8X
+Ki4HGsketAwMvvxx+L30u5wPpS3c8Dzbs8BMM78nQ+6smK0+naXpSbC2u9UYsFxg
++Zlhp0BEaI4YMCcbtc3hZ8F/xtvi9fbhLcRbOapiLGLb5G5s3WUlX/q1lC2F3OOz
+oU2OImpa8SkTNRoFGJuOEzai1v7GRCu1vz5rimRr6Ve+WoDXlVnhkXxC5kAu6meL
+Vo9KcLvg9fwTVd9M4vzHaf6S3Tav2l4adBFYCWn7j9NWP3Ni68cDtvGCrdeLJdcw
+WrHo/mh/n2bXDk7MDd8x0PTdKYGV89Y6z89RnrQUVPdcDL+P5n0rIlfQFwDYrxLp
+vcMMkDSheaE3HWNOAbMQ
+=8zWT
+-----END PGP SIGNATURE-----
+
+--Sig_/eT_Um6FH5Vz_02j1=HNNku9--
