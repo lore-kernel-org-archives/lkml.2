@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab2DJKLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:11:06 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53975 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756115Ab2DJKLE (ORCPT
+	id S1756624Ab2DJKNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:13:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51652 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab2DJKNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:11:04 -0400
-Date: Tue, 10 Apr 2012 11:10:47 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Olof Johansson <olof@lixom.net>
-Cc: Sven Neumann <s.neumann@raumfeld.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-kernel@vger.kernel.org, Daniel Mack <daniel@caiaq.de>,
-        linux-input@vger.kernel.org, Daniel Mack <zonque@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
-Message-ID: <20120410101047.GQ24211@n2100.arm.linux.org.uk>
-References: <1333777207-4151-1-git-send-email-olof@lixom.net> <20120407070206.GA17623@core.coreip.homeip.net> <4F8089A9.6080704@raumfeld.com> <CAOesGMiPZ0so-ZN0HCHHhw16oPWWgfVD5t--wKSvEUtzQx94CA@mail.gmail.com>
+	Tue, 10 Apr 2012 06:13:31 -0400
+Date: Tue, 10 Apr 2012 12:13:28 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, mingo@elte.hu, peterz@infradead.org, dsahern@gmail.com,
+        namhyung.kim@lge.com
+Subject: [PATCH] perf report: fix error with -g in pipe mode
+Message-ID: <20120410101327.GA8104@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMiPZ0so-ZN0HCHHhw16oPWWgfVD5t--wKSvEUtzQx94CA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 07, 2012 at 01:32:31PM -0700, Olof Johansson wrote:
-> Haojian, I think it was probably premature to do the multiplatform
-> change like that, since it means that a PXA-only kernel has no mapping
-> from irq_to_gpio to pxa_irq_to_gpio. Can you please address this as a
-> fix for 3.4?
+In pipe mode, we cannot check the validity of sample_type
+or the branch view mode until we start processing the events.
+There is no meta-data information at the beginning of the pipe
+mode stream. Instead, all the meta data is pushed via pseudo
+records and those get processed by process_sample_events().
 
-Please fix ezx-pcap instead - it's broken as it currently stands by using
-irq_to_gpio(), and it's one reason why my randconfig builds on OMAP fail.
+Without this patch:
+  $ perf record -g -o - foo | perf inject -b | perf report -g -i -
+  Selected -g but no callchain data. Did you call 'perf record' without -g?
 
-The big problem is - what does this do:
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-        do {
-...
-        } while (gpio_get_value(irq_to_gpio(pcap->spi->irq)));
-
-if pcap->spi->irq has no GPIO associated with the interrupt?  irq_to_gpio()
-probably returns some random number which might be some other GPIO in the
-system, and gpio_get_value() could oops if irq_to_gpio returns a negative
-or large positive number.  To put it another way, according to the above
-code, irq_to_gpio() must always return a valid gpio for the IRQ even if
-the IRQ doesn't have a GPIO associated with it.
-
-This is a fine illustration of why irq_to_gpio() is just plain broken in
-its design.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2e31743..c338b97 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -249,6 +249,13 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
+ {
+ 	struct perf_session *self = rep->session;
+ 
++	/*
++	 * cannot determine sample type, branch mode until we have
++	 * processed the meta-data pseudo records via process_sample_events()
++	 */
++	if (self->fd_pipe)
++		return 0;
++
+ 	if (!(self->sample_type & PERF_SAMPLE_CALLCHAIN)) {
+ 		if (sort__has_parent) {
+ 			ui__warning("Selected --sort parent, but no "
