@@ -1,121 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab2DJObF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 10:31:05 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51778 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab2DJObD (ORCPT
+	id S1758879Ab2DJOep (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 10:34:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51691 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754471Ab2DJOeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 10:31:03 -0400
+	Tue, 10 Apr 2012 10:34:44 -0400
+X-Sasl-enc: 9tcWKGIBU32iEAifjdizN7n0w8LYhb9ykUQVZbodh9Pk 1334068483
+Date: Tue, 10 Apr 2012 07:34:42 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] sep: Fix sign of error return
+Message-ID: <20120410143442.GA14703@kroah.com>
+References: <20120410132054.28262.82704.stgit@bob.linux.org.uk>
 MIME-Version: 1.0
-Date: Tue, 10 Apr 2012 22:31:02 +0800
-Message-ID: <CAJd=RBB1Mah5Yueqh+tGK--0wF0HWJ2UC0UOeGnnknjreYV4LQ@mail.gmail.com>
-Subject: [patch] DLS: refactor switched_to_dl
-From: Hillf Danton <dhillf@gmail.com>
-To: Dario Faggioli <raistlin@linux.it>, Juri Lelli <juri.lelli@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410132054.28262.82704.stgit@bob.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Though should be splitted, the changes in switched_to_dl and prio_changed_dl
-are interleaved, and they are combined just for easing review.
+On Tue, Apr 10, 2012 at 02:21:24PM +0100, Alan Cox wrote:
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> One of our errors wasn't negative as intended. Fix this.
+> (Found by Hillf Danton)
+> 
+> While we are at it turn user causable messages down to dev_dbg level in the
+> ioctl paths.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Cc: stable@kernel.org
+> ---
+> 
+>  drivers/staging/sep/sep_main.c |    6 +++---
 
-When the priority of task is changed, if it is not the current task, it is
-handled by switched_to_dl. Otherwise if prio goes lower, it is rescheduled.
+Sorry for the delay, it's in my "to-apply" queue which I should get to
+by the end of today, been digging out from the accumulated patch backlog
+all yesterday and today.
 
-In switched_to_dl, if the given task is either a sleeper or the current task,
-we do nothing. And if fail to preempt, we try to push it away.
-
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
-
---- a/kernel/sched_dl.c	Mon Apr  9 19:39:56 2012
-+++ b/kernel/sched_dl.c	Tue Apr 10 21:49:50 2012
-@@ -1482,7 +1482,8 @@ static void switched_from_dl(struct rq *
-  */
- static void switched_to_dl(struct rq *rq, struct task_struct *p)
- {
--	int check_resched = 1;
-+	if (!p->on_rq)
-+		return;
-
- 	/*
- 	 * If p is throttled, don't consider the possibility
-@@ -1492,53 +1493,32 @@ static void switched_to_dl(struct rq *rq
- 	if (unlikely(p->dl.dl_throttled))
- 		return;
-
--	if (!p->on_rq || rq->curr != p) {
--#ifdef CONFIG_SMP
--		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
--			/* Only reschedule if pushing failed */
--			check_resched = 0;
--#endif /* CONFIG_SMP */
--		if (check_resched && task_has_dl_policy(rq->curr))
--			check_preempt_curr_dl(rq, p, 0);
-+	if (p == rq->curr)
-+		return;
-+
-+	if (!dl_task(rq->curr)) {
-+		check_preempt_curr(rq, p, 0);
-+		return;
- 	}
-+
-+	if (dl_entity_preempt(&p->dl, &rq->curr->dl)) {
-+		check_preempt_curr_dl(rq, p, 0);
-+		return;
-+	}
-+
-+#ifdef CONFIG_SMP
-+	if (p->dl.nr_cpus_allowed > 1)
-+		if (p == pick_next_pushable_dl_task(rq))
-+			push_dl_tasks(rq);
-+#endif
- }
-
--/*
-- * If the scheduling parameters of a -deadline task changed,
-- * a push or pull operation might be needed.
-- */
--static void prio_changed_dl(struct rq *rq, struct task_struct *p,
--			    int oldprio)
-+static void prio_changed_dl(struct rq *rq, struct task_struct *p, int oldprio)
- {
--	if (p->on_rq || rq->curr == p) {
--#ifdef CONFIG_SMP
--		/*
--		 * This might be too much, but unfortunately
--		 * we don't have the old deadline value, and
--		 * we can't argue if the task is increasing
--		 * or lowering its prio, so...
--		 */
--		if (!rq->dl.overloaded)
--			pull_dl_task(rq);
--
--		/*
--		 * If we now have a earlier deadline task than p,
--		 * then reschedule, provided p is still on this
--		 * runqueue.
--		 */
--		if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
--		    rq->curr == p)
--			resched_task(p);
--#else
--		/*
--		 * Again, we don't know if p has a earlier
--		 * or later deadline, so let's blindly set a
--		 * (maybe not needed) rescheduling point.
--		 */
--		resched_task(p);
--#endif /* CONFIG_SMP */
--	} else
-+	if (p != rq->curr)
- 		switched_to_dl(rq, p);
-+	else if (oldprio < p->prio)		
-+		resched_task(p);
- }
-
- static const struct sched_class dl_sched_class = {
---
+greg k-h
