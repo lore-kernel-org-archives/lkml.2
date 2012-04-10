@@ -1,67 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab2DJK4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:56:37 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36075 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab2DJK4g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:56:36 -0400
+	id S1755620Ab2DJK4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:56:47 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:47519 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754322Ab2DJK4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 06:56:44 -0400
+Message-ID: <4F8411CC.2070105@parallels.com>
+Date: Tue, 10 Apr 2012 14:56:12 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <20120410104147.GI4115@phenom.ffwll.local>
-References: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
- <1333108003-6341-5-git-send-email-djkurtz@chromium.org> <20120410103746.GH4115@phenom.ffwll.local>
- <20120410104147.GI4115@phenom.ffwll.local>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Tue, 10 Apr 2012 18:56:15 +0800
-X-Google-Sender-Auth: rzquaCtOOWkbgP1nPLVDA-twwtI
-Message-ID: <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com>
-Subject: Re: [PATCH 4/8 v7] drm/i915/intel_i2c: use WAIT cycle, not STOP
-To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: "bfields@fieldses.org" <bfields@fieldses.org>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Grace period
+References: <4F82C6E3.3030009@parallels.com> <20120409094743.56932677@tlielax.poochiereds.net> <4F82F16C.7030303@parallels.com> <20120409112739.6a823d6f@corrin.poochiereds.net> <4F830999.5000504@parallels.com> <20120409161114.GB6482@fieldses.org> <1333988226.2688.76.camel@lade.trondhjem.org> <20120409162107.GC6482@fieldses.org> <1333989216.2688.87.camel@lade.trondhjem.org> <4F8314CF.70302@parallels.com> <20120409181138.GA9581@fieldses.org>
+In-Reply-To: <20120409181138.GA9581@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 6:41 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Tue, Apr 10, 2012 at 12:37:46PM +0200, Daniel Vetter wrote:
->> On Fri, Mar 30, 2012 at 07:46:39PM +0800, Daniel Kurtz wrote:
->> > The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
->> > transaction) during a DATA or WAIT phase. �In other words, the
->> > controller rejects a STOP requested as part of the first transaction in a
->> > sequence.
->> >
->> > Thus, for the first transaction we must always use a WAIT cycle, detect
->> > when the device has finished (and is in a WAIT phase), and then either
->> > start the next transaction, or, if there are no more transactions,
->> > generate a STOP cycle.
->> >
->> > Note: Theoretically, the last transaction of a multi-transaction sequence
->> > could initiate a STOP cycle. �However, this slight optimization is left
->> > for another patch. �We return -ETIMEDOUT if the hardware doesn't
->> > deactivate after the STOP cycle.
->> >
->> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+09.04.2012 22:11, bfields@fieldses.org пишет:
+> On Mon, Apr 09, 2012 at 08:56:47PM +0400, Stanislav Kinsbursky wrote:
+>> 09.04.2012 20:33, Myklebust, Trond пишет:
+>>> On Mon, 2012-04-09 at 12:21 -0400, bfields@fieldses.org wrote:
+>>>> On Mon, Apr 09, 2012 at 04:17:06PM +0000, Myklebust, Trond wrote:
+>>>>> On Mon, 2012-04-09 at 12:11 -0400, bfields@fieldses.org wrote:
+>>>>>> On Mon, Apr 09, 2012 at 08:08:57PM +0400, Stanislav Kinsbursky wrote:
+>>>>>>> 09.04.2012 19:27, Jeff Layton пишет:
+>>>>>>>>
+>>>>>>>> If you allow one container to hand out conflicting locks while another
+>>>>>>>> container is allowing reclaims, then you can end up with some very
+>>>>>>>> difficult to debug silent data corruption. That's the worst possible
+>>>>>>>> outcome, IMO. We really need to actively keep people from shooting
+>>>>>>>> themselves in the foot here.
+>>>>>>>>
+>>>>>>>> One possibility might be to only allow filesystems to be exported from
+>>>>>>>> a single container at a time (and allow that to be overridable somehow
+>>>>>>>> once we have a working active/active serving solution). With that, you
+>>>>>>>> may be able limp along with a per-container grace period handling
+>>>>>>>> scheme like you're proposing.
+>>>>>>>>
+>>>>>>>
+>>>>>>> Ok then. Keeping people from shooting themselves here sounds reasonable.
+>>>>>>> And I like the idea of exporting a filesystem only from once per
+>>>>>>> network namespace.
+>>>>>>
+>>>>>> Unfortunately that's not going to get us very far, especially not in the
+>>>>>> v4 case where we've got the common read-only pseudoroot that everyone
+>>>>>> has to share.
+>>>>>
+>>>>> I don't see how that can work in cases where each container has its own
+>>>>> private mount namespace. You're going to have to tie that pseudoroot to
+>>>>> the mount namespace somehow.
+>>>>
+>>>> Sure, but in typical cases it'll still be shared; requiring that they
+>>>> not be sounds like a severe limitation.
+>>>
+>>> I'd expect the typical case to be the non-shared namespace: the whole
+>>> point of containers is to provide for complete isolation of processes.
+>>> Usually that implies that you don't want them to be able to communicate
+>>> via a shared filesystem.
+>>>
 >>
->> I've re-read gmbus register spec and STOP seems to be allowed even in the
->> first cycle. Does this patch solve an issue for you? If not, I prefer we
->> just drop it.
-
-STOP does not work in the first cycle, hence the patch.
-
--Daniel
-
+>> BTW, we DO use one mount namespace for all containers and host in
+>> OpenVZ. This allows us to have an access to containers mount points
+>> from initial environment. Isolation between containers is done via
+>> chroot and some simple tricks on /proc/mounts read operation.
+>> Moreover, with one mount namespace, we currently support
+>> bind-mounting on NFS from one container into another...
+>>
+>> Anyway, I'm sorry, but I'm not familiar with this pseudoroot idea.
 >
-> Actually I'd like to keep the -ETIMEDOUT return value, so maybe we should
-> keeep that hunk. I've picked up the previous 3 patches of this series, the
-> once after this one here conflict (without this patch here).
-> -Daniel
-> --
-> Daniel Vetter
-> Mail: daniel@ffwll.ch
-> Mobile: +41 (0)79 365 57 48
+> Since NFSv4 doesn't have a separate MOUNT protocol, clients need to be
+> able to do readdir's and lookups to get to exported filesystems.  We
+> support this in the Linux server by exporting all the filesystems from
+> "/" on down that must be traversed to reach a given filesystem.  These
+> exports are very restricted (e.g. only parents of exports are visible).
+>
+
+Ok, thanks for explanation.
+So, this pseudoroot looks like a part of NFS server internal implementation, but 
+not a part of a standard. That's good.
+
+>> Why does it prevents implementing of check for "superblock-network
+>> namespace" pair on NFS server start and forbid (?) it in case of
+>> this pair is shared already in other namespace? I.e. maybe this
+>> pseudoroot can be an exclusion from this rule?
+>
+> That might work.  It's read-only and consists only of directories, so
+> the grace period doesn't affect it.
+>
+
+I've just realized, that this per-sb grace period won't work.
+I.e., it's a valid situation, when two or more containers located on the same 
+filesystem, but shares different parts of it. And there is not conflict here at all.
+I don't see any clear and simple way how to handle such races, because otherwise 
+we have to tie network namespace and filesystem namespace.
+I.e. there will be required some way to define, was passed export directory 
+shared already somewhere else or not.
+
+Realistic solution - since export check should be done in initial file system 
+environment (most probably container will have it's own root), then we to pass 
+this data to some kernel thread/userspace daemon in initial file system 
+environment somehow (sockets doesn't suits here... Shared memory?).
+
+Improbable solution - patching VFS layer...
+
+-- 
+Best regards,
+Stanislav Kinsbursky
