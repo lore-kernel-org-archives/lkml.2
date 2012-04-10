@@ -1,102 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab2DJLZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 07:25:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750773Ab2DJLZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 07:25:10 -0400
-Date: Tue, 10 Apr 2012 14:25:00 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120410112459.GA28825@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
- <1334044558.3126.5.camel@edumazet-glaptop>
- <20120410084151.GA27193@redhat.com>
- <1334048100.3126.21.camel@edumazet-glaptop>
- <20120410093140.GA27651@redhat.com>
- <1334052259.3126.68.camel@edumazet-glaptop>
+	id S1754485Ab2DJL1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 07:27:05 -0400
+Received: from a.60.2d.static.xlhost.com ([173.45.96.10]:43910 "EHLO
+	atra1.parsanetwork.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab2DJL1B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 07:27:01 -0400
+To: linux-kernel@vger.kernel.org
+Subject: New Order
+X-PHP-Script: atracell.com/guiness/fa//wp-includes/Text/Diff/Renderer/zbbss.php for 216.86.149.180
+From: Shirley Combden <s19600803@hotmail.com>
+Reply-To: shirley.j9718@att.net
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334052259.3126.68.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <E1SHZEu-0004u6-42@atra1.parsanetwork.com>
+Date: Tue, 10 Apr 2012 07:28:00 -0400
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 12:04:19PM +0200, Eric Dumazet wrote:
-> On Tue, 2012-04-10 at 12:31 +0300, Michael S. Tsirkin wrote:
-> 
-> > True. Still this is the only interface we have for controlling
-> > the internal queue length so it seems safe to assume someone
-> > is using it for this purpose.
-> > 
-> 
-> So to workaround a problem in tun, you want to hack net/core/dev.c :(
+Hello,
 
-Sorry about being unclear, I'm just saying that your patch assumes
-tx_queue_len == 0 since you set it that way at device init but we can't
-rely on this as existing users might have changed that value.
-One way to fix would be a patch at the bottom: then we
-can leave tun to treat tx_queue_len like it always did.
+We are very interested in your products, We want to know more details.Please send to me quotation for the best price and specification. Also the details send to our partner companies which in inquiry list in our website, If your 
+products price and specifications agreeable for our customers then we will contact with you for cooperation. please do get back to us through our private e-mail address: shirley.j9718@att.net 
 
-> Packets in qdisc should not be orphaned.
->
-> If you think about it, why do we attach skb to socket in the first
-> place ?
+Have a nice day.
 
-Good point. The answer is to avoid skb drops for local sockets by
-stopping them, right?
-
-> If its not needed for tun, why should it be needed for other devices ?
-
-Maybe needed but it's already broken for tun since the skbs in the
-private queue are orphaned by skb_orphan_try?
-
-> If TUN has a problem being stopped forever, maybe it should take
-> appropriate action to flush all packets in qdisc queue after a while, as
-> this makes no sense to delay packets forever.
-> 
-
-Well arbitrary timers aren't a solid protection, right?
-We get out of stalling transmitters forever but a bad VM can still
-degrade performance significantly for others...
+Best Regards,
+Shirley Combden
 
 
-----
-
-We don't want a queue for tun since it can stall forever, but userspace
-might tweak it's tx_queue_len as a way to control RX queue depth,
-and we don't want to break userspace. Use a private flag to disable queue.
-
-Warning: untested.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-index 27883d1..644ca53 100644
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -695,7 +692,7 @@ static void attach_one_default_qdisc(struct net_device *dev,
- {
- 	struct Qdisc *qdisc = &noqueue_qdisc;
- 
--	if (dev->tx_queue_len) {
-+	if (dev->tx_queue_len && !(dev->priv_flags & IFF_TX_CAN_STALL)) {
- 		qdisc = qdisc_create_dflt(dev_queue,
- 					  &pfifo_fast_ops, TC_H_ROOT);
- 		if (!qdisc) {
--- 
-MST
