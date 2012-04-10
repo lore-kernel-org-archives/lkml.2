@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab2DJQma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:42:30 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56910 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752861Ab2DJQm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 12:42:29 -0400
-Message-ID: <4F8462DE.4030004@ti.com>
-Date: Tue, 10 Apr 2012 22:12:06 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1752922Ab2DJQnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:43:22 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:37226 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab2DJQnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 12:43:20 -0400
+Date: Tue, 10 Apr 2012 09:43:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH 4/5] staging: octeon_ethernet: Convert to use device tree.
+Message-ID: <20120410164316.GA15131@kroah.com>
+References: <1332808075-8333-1-git-send-email-ddaney.cavm@gmail.com>
+ <1332808075-8333-5-git-send-email-ddaney.cavm@gmail.com>
 MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/4] arm: davinci: use for_each_set_bit_from
-References: <1333442836-9947-1-git-send-email-akinobu.mita@gmail.com> <1333442836-9947-3-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1333442836-9947-3-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1332808075-8333-5-git-send-email-ddaney.cavm@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Akinobu,
-
-On 4/3/2012 2:17 PM, Akinobu Mita wrote:
-> Use for_each_set_bit_from to iterate over all the set bit in a memory
-> region.
+On Mon, Mar 26, 2012 at 05:27:54PM -0700, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: davinci-linux-open-source@linux.davincidsp.com
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
+> Get MAC address and PHY connection from the device tree.  The driver
+> is converted to a platform driver.
+> 
+> Cc: netdev@vger.kernel.org
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> ---
+> 
+> Should probably go via Ralf's linux-mips.org tree.
 
-Looks good to me. If you are planning to send this upstream outside of
-davinci tree, please add my:
+That's fine with me:
+	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
-
-Else, let me know and I will be happy to queue it.
-
-Thanks,
-Sekhar
