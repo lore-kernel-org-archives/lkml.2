@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab2DJIDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:03:23 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:52522 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab2DJIDP (ORCPT
+	id S1756150Ab2DJIEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:04:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38432 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab2DJIER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:03:15 -0400
-Date: Tue, 10 Apr 2012 01:03:12 -0700
+	Tue, 10 Apr 2012 04:04:17 -0400
+Date: Tue, 10 Apr 2012 01:04:14 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Eric Miao <eric.y.miao@gmail.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: matrix-keypad - fix 'duplicate const' sparse warning
-Message-ID: <20120410080311.GA19164@core.coreip.homeip.net>
+Subject: [PATCH] Input: matrix-keypad - allocate keycodes with keypad
+Message-ID: <20120410080413.GA19191@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,54 +21,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SIMPLE_DEV_PM_OPS already defines constant dev_pm_ops.
-
-Also guard PM methods with CONFIG_PM_SLEEP and get rid of some
-unneeded #ifdefs.
+Instead of allocating and managing keymap separately from the keypad
+structure stick it at the end as a variable-length array.
 
 Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 ---
- drivers/input/keyboard/matrix_keypad.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/input/keyboard/matrix_keypad.c |   23 ++++++++++-------------
+ 1 files changed, 10 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c
-index 9b223d7..8714d68 100644
+index 8714d68..a4ff08c 100644
 --- a/drivers/input/keyboard/matrix_keypad.c
 +++ b/drivers/input/keyboard/matrix_keypad.c
-@@ -224,7 +224,7 @@ static void matrix_keypad_stop(struct input_dev *dev)
- 	disable_row_irqs(keypad);
- }
+@@ -27,7 +27,6 @@
+ struct matrix_keypad {
+ 	const struct matrix_keypad_platform_data *pdata;
+ 	struct input_dev *input_dev;
+-	unsigned short *keycodes;
+ 	unsigned int row_shift;
  
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static void matrix_keypad_enable_wakeup(struct matrix_keypad *keypad)
- {
- 	const struct matrix_keypad_platform_data *pdata = keypad->pdata;
-@@ -293,11 +293,11 @@ static int matrix_keypad_resume(struct device *dev)
+ 	DECLARE_BITMAP(disabled_gpios, MATRIX_MAX_ROWS);
+@@ -38,6 +37,8 @@ struct matrix_keypad {
+ 	bool scan_pending;
+ 	bool stopped;
+ 	bool gpio_all_disabled;
++
++	unsigned short keycodes[];
+ };
+ 
+ /*
+@@ -381,8 +382,8 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
+ 	const struct matrix_keymap_data *keymap_data;
+ 	struct matrix_keypad *keypad;
+ 	struct input_dev *input_dev;
+-	unsigned short *keycodes;
+ 	unsigned int row_shift;
++	size_t keymap_size;
+ 	int err;
+ 
+ 	pdata = pdev->dev.platform_data;
+@@ -398,20 +399,18 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	row_shift = get_count_order(pdata->num_col_gpios);
+-
+-	keypad = kzalloc(sizeof(struct matrix_keypad), GFP_KERNEL);
+-	keycodes = kzalloc((pdata->num_row_gpios << row_shift) *
+-				sizeof(*keycodes),
+-			   GFP_KERNEL);
++	keymap_size = (pdata->num_row_gpios << row_shift) *
++			sizeof(keypad->keycodes[0]);
++	keypad = kzalloc(sizeof(struct matrix_keypad) + keymap_size,
++			 GFP_KERNEL);
+ 	input_dev = input_allocate_device();
+-	if (!keypad || !keycodes || !input_dev) {
++	if (!keypad || !input_dev) {
+ 		err = -ENOMEM;
+ 		goto err_free_mem;
+ 	}
+ 
+ 	keypad->input_dev = input_dev;
+ 	keypad->pdata = pdata;
+-	keypad->keycodes = keycodes;
+ 	keypad->row_shift = row_shift;
+ 	keypad->stopped = true;
+ 	INIT_DELAYED_WORK(&keypad->work, matrix_keypad_scan);
+@@ -426,8 +425,8 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
+ 	input_dev->open		= matrix_keypad_start;
+ 	input_dev->close	= matrix_keypad_stop;
+ 
+-	input_dev->keycode	= keycodes;
+-	input_dev->keycodesize	= sizeof(*keycodes);
++	input_dev->keycode	= keypad->keycodes;
++	input_dev->keycodesize	= sizeof(keypad->keycodes[0]);
+ 	input_dev->keycodemax	= pdata->num_row_gpios << row_shift;
+ 
+ 	matrix_keypad_build_keymap(keymap_data, row_shift,
+@@ -451,7 +450,6 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
+ 
+ err_free_mem:
+ 	input_free_device(input_dev);
+-	kfree(keycodes);
+ 	kfree(keypad);
+ 	return err;
+ }
+@@ -479,7 +477,6 @@ static int __devexit matrix_keypad_remove(struct platform_device *pdev)
+ 
+ 	input_unregister_device(keypad->input_dev);
+ 	platform_set_drvdata(pdev, NULL);
+-	kfree(keypad->keycodes);
+ 	kfree(keypad);
  
  	return 0;
- }
--
--static const SIMPLE_DEV_PM_OPS(matrix_keypad_pm_ops,
--				matrix_keypad_suspend, matrix_keypad_resume);
- #endif
- 
-+static SIMPLE_DEV_PM_OPS(matrix_keypad_pm_ops,
-+			 matrix_keypad_suspend, matrix_keypad_resume);
-+
- static int __devinit init_matrix_gpio(struct platform_device *pdev,
- 					struct matrix_keypad *keypad)
- {
-@@ -491,9 +491,7 @@ static struct platform_driver matrix_keypad_driver = {
- 	.driver		= {
- 		.name	= "matrix-keypad",
- 		.owner	= THIS_MODULE,
--#ifdef CONFIG_PM
- 		.pm	= &matrix_keypad_pm_ops,
--#endif
- 	},
- };
- module_platform_driver(matrix_keypad_driver);
 -- 
 1.7.7.6
 
