@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab2DJGyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 02:54:51 -0400
-Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:50770 "EHLO
-	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab2DJGyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 02:54:50 -0400
-X-Greylist: delayed 3556 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Apr 2012 02:54:49 EDT
-Message-ID: <20120410075532.16392krd825c0ris@mail.tu-chemnitz.de>
-Date: Tue, 10 Apr 2012 07:55:32 +0200
-From: Markus Franke <markus.franke@informatik.tu-chemnitz.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>
-Subject: Re: [PATCH 1/2] w1: Add 1-wire slave device driver for DS28E04-100
-References: <4F63AF9E.2090000@hrz.tu-chemnitz.de>
- <20120409220847.GA13124@kroah.com>
-In-Reply-To: <20120409220847.GA13124@kroah.com>
+	id S1755173Ab2DJG5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 02:57:08 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:34454 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753713Ab2DJG5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 02:57:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
-X-Originating-IP: 217.7.19.178
-X-Scan-AV: mailbox.hrz.tu-chemnitz.de;2012-04-10 07:55:32;bca90d146c4d8f6be3a0ea50e0eb07dd
-X-Scan-SA: cora.hrz.tu-chemnitz.de;2012-04-10 07:55:32;442aa8451c8072219a5ed1182d54884f
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- * -0.0 T_RP_MATCHES_RCVD Envelope sender domain matches handover relay
- *      domain
- --- Ende Textanalyse
+In-Reply-To: <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
+References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com> <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 10 Apr 2012 12:26:43 +0530
+Message-ID: <CAMQu2gwkGjWgLN3FVkzqeYCA+N-+==HPnjmH68AKgBsYrKtXaw@mail.gmail.com>
+Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if the
+ current device is always running.
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, johnstul@us.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg,
-
-Zitat von Greg KH <gregkh@linuxfoundation.org>:
-
-> On Fri, Mar 16, 2012 at 10:24:46PM +0100, Markus Franke wrote:
->> This patch adds a 1-wire slave device driver for the DS28E04-100.
+On Tue, Apr 10, 2012 at 4:11 AM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> On Mon, 2012-04-09 at 11:33 +0530, Santosh Shilimkar wrote:
+>> Commit 77b0d60{clockevents: Leave the broadcast device in shutdown mode
+>> when not needed} was intended to leave the broadcast device in shutdown mode
+>> when the per-cpu clockevent devices are always running.
 >>
->> It applies to the current linux kernel git tree.
+>> This breaks the systems where per cpu clock events stop in low power states.
+>>
+>> Hence revert 77b0d60 and implement the same requirement with use
+>> of C3STOP feature flag.
 >
-> It's corrupted somehow and doesn't apply at all :(
+> Problem you encountered is not related to leaving the broadcast device
+> in shutdown mode. Problem is that we didn't track the mode change to
+> oneshot and later during idle entry/exit, when we request the broadcast
+> device services using CLOCK_EVT_NOTIFY_BROADCAST_ENTER etc,
+> tick_broadcast_oneshot_control() returns with out doing much as it
+> thinks broadcast device is in periodic mode.
 >
-> Care to redo this one, and your 2/2 patch, against the 3.4-rc2 release
-> and resend it, with Evgeniy's acks, so that I can apply it?  Please
-> ensure that your email client doesn't mess it up again (hint, it is
-> adding spaces at the front of the line of some parts of the diff.)
+You are right. In my last traces I didn't track the broadcast device state
+fully. Did some more tracing and indeed the issue was the broadcast
+device mode.
 
-I don't have a clue what might go wrong within my email client. Would  
-sending it as an attachement be an option? If not I might have to  
-switch to another client.
+> Can you please check if the appended patch fixes the issue? I could
+> reproduce the issue on my NHM platform which doesn't have always running
+> apic timer and with the appended fix, all is well with cpu's going into
+> tickless idle etc. Thanks.
+> ---
+>
+Yes it does work on OMAP too.
 
-Best regards,
-Markus Franke
+> From: Suresh Siddha <suresh.b.siddha@intel.com>
+> Subject: clockevents: track broadcast device mode change in tick_broadcast_switch_to_oneshot()
+>
+> In the commit 77b0d60c5adf39c74039e2142a1d3cd1e4d53799,
+> "clockevents: Leave the broadcast device in shutdown mode when not needed",
+> we were bailing out too quickly in tick_broadcast_switch_to_oneshot(),
+> with out tracking the broadcast device mode change to 'TICKDEV_MODE_ONESHOT'.
+>
+> This breaks the platforms which need broadcast device oneshot services during
+> deep idle states. tick_broadcast_oneshot_control() thinks that it is
+> in periodic mode and fails to take proper decisions based on the
+> CLOCK_EVT_NOTIFY_BROADCAST_[ENTER, EXIT] notifications during deep
+> idle entry/exit.
+>
+> Fix this by tracking the broadcast device mode as 'TICKDEV_MODE_ONESHOT',
+> before leaving the broadcast HW device in shutdown mode if there are no active
+> requests for the moment.
+>
+> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> ---
+Thanks for the patch. Feel free to add,
+Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>	
 
-
+Regards
+Santosh
