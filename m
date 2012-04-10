@@ -1,118 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800Ab2DJNhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 09:37:42 -0400
-Received: from fieldses.org ([174.143.236.118]:39015 "EHLO fieldses.org"
+	id S1758817Ab2DJNjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 09:39:17 -0400
+Received: from fieldses.org ([174.143.236.118]:39019 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab2DJNhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 09:37:38 -0400
-Date: Tue, 10 Apr 2012 09:37:35 -0400
+	id S1758788Ab2DJNjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 09:39:16 -0400
+Date: Tue, 10 Apr 2012 09:39:13 -0400
 From: "bfields@fieldses.org" <bfields@fieldses.org>
 To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Jeff Layton <jlayton@redhat.com>,
         "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: Grace period
-Message-ID: <20120410133735.GE18465@fieldses.org>
-References: <4F7F230A.6080506@parallels.com>
- <20120406234039.GA20940@fieldses.org>
- <4F82C6E3.3030009@parallels.com>
- <20120409232618.GI10508@fieldses.org>
- <4F841987.6090909@parallels.com>
+Message-ID: <20120410133913.GF18465@fieldses.org>
+References: <4F82F16C.7030303@parallels.com>
+ <20120409112739.6a823d6f@corrin.poochiereds.net>
+ <4F830999.5000504@parallels.com>
+ <20120409161114.GB6482@fieldses.org>
+ <1333988226.2688.76.camel@lade.trondhjem.org>
+ <20120409162107.GC6482@fieldses.org>
+ <1333989216.2688.87.camel@lade.trondhjem.org>
+ <4F8314CF.70302@parallels.com>
+ <20120409181138.GA9581@fieldses.org>
+ <4F8411CC.2070105@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F841987.6090909@parallels.com>
+In-Reply-To: <4F8411CC.2070105@parallels.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 03:29:11PM +0400, Stanislav Kinsbursky wrote:
-> 10.04.2012 03:26, bfields@fieldses.org пишет:
-> >On Mon, Apr 09, 2012 at 03:24:19PM +0400, Stanislav Kinsbursky wrote:
-> >>07.04.2012 03:40, bfields@fieldses.org пишет:
-> >>>On Fri, Apr 06, 2012 at 09:08:26PM +0400, Stanislav Kinsbursky wrote:
-> >>>>Hello, Bruce.
-> >>>>Could you, please, clarify this reason why grace list is used?
-> >>>>I.e. why list is used instead of some atomic variable, for example?
-> >>>
-> >>>Like just a reference count?  Yeah, that would be OK.
-> >>>
-> >>>In theory it could provide some sort of debugging help.  (E.g. we could
-> >>>print out the list of "lock managers" currently keeping us in grace.)  I
-> >>>had some idea we'd make those lock manager objects more complicated, and
-> >>>might have more for individual containerized services.
-> >>
-> >>Could you share this idea, please?
-> >>
-> >>Anyway, I have nothing against lists. Just was curious, why it was used.
-> >>I added Trond and lists to this reply.
-> >>
-> >>Let me explain, what is the problem with grace period I'm facing
-> >>right know, and what I'm thinking about it.
-> >>So, one of the things to be containerized during "NFSd per net ns"
-> >>work is the grace period, and these are the basic components of it:
-> >>1) Grace period start.
-> >>2) Grace period end.
-> >>3) Grace period check.
-> >>3) Grace period restart.
-> >
-> >For restart, you're thinking of the fs/lockd/svc.c:restart_grace()
-> >that's called on aisngal in lockd()?
-> >
-> >I wonder if there's any way to figure out if that's actually used by
-> >anyone?  (E.g. by any distro init scripts).  It strikes me as possibly
-> >impossible to use correctly.  Perhaps we could deprecate it....
+On Tue, Apr 10, 2012 at 02:56:12PM +0400, Stanislav Kinsbursky wrote:
+> 09.04.2012 22:11, bfields@fieldses.org пишет:
+> >Since NFSv4 doesn't have a separate MOUNT protocol, clients need to be
+> >able to do readdir's and lookups to get to exported filesystems.  We
+> >support this in the Linux server by exporting all the filesystems from
+> >"/" on down that must be traversed to reach a given filesystem.  These
+> >exports are very restricted (e.g. only parents of exports are visible).
 > >
 > 
-> Or (since lockd kthread is visible only from initial pid namespace)
-> we can just hardcode "init_net" in this case. But it means, that
-> this "kill" logic will be broken if two containers shares one pid
-> namespace, but have separated networks namespaces.
-> Anyway, both (this one or Bruce's) solutions suits me.
+> Ok, thanks for explanation.
+> So, this pseudoroot looks like a part of NFS server internal
+> implementation, but not a part of a standard. That's good.
 > 
-> >>So, the simplest straight-forward way is to make all internal stuff:
-> >>"grace_list", "grace_lock", "grace_period_end" work and both
-> >>"lockd_manager" and "nfsd4_manager" - per network namespace. Also,
-> >>"laundromat_work" have to be per-net as well.
-> >>In this case:
-> >>1) Start - grace period can be started per net ns in
-> >>"lockd_up_net()" (thus has to be moves there from "lockd()") and
-> >>"nfs4_state_start()".
-> >>2) End - grace period can be ended per net ns in "lockd_down_net()"
-> >>(thus has to be moved there from "lockd()"), "nfsd4_end_grace()" and
-> >>"fs4_state_shutdown()".
-> >>3) Check - looks easy. There is either svc_rqst or net context can
-> >>be passed to function.
-> >>4) Restart - this is a tricky place. It would be great to restart
-> >>grace period only for the networks namespace of the sender of the
-> >>kill signal. So, the idea is to check siginfo_t for the pid of
-> >>sender, then try to locate the task, and if found, then get sender's
-> >>networks namespace, and restart grace period only for this namespace
-> >>(of course, if lockd was started for this namespace - see below).
+> >>Why does it prevents implementing of check for "superblock-network
+> >>namespace" pair on NFS server start and forbid (?) it in case of
+> >>this pair is shared already in other namespace? I.e. maybe this
+> >>pseudoroot can be an exclusion from this rule?
 > >
-> >If it's really the signalling that's the problem--perhaps we can get
-> >away from the signal-based interface.
-> >
-> >At least in the case of lockd I suspect we could.
+> >That might work.  It's read-only and consists only of directories, so
+> >the grace period doesn't affect it.
 > >
 > 
-> I'm ok with that. So, if no objections will follow, I'll drop it and
-> send the patch. Or you want to do it?
+> I've just realized, that this per-sb grace period won't work.
+> I.e., it's a valid situation, when two or more containers located on
+> the same filesystem, but shares different parts of it. And there is
+> not conflict here at all.
 
-Please do go ahead.
-
-The safest approach might be:
-	- leave lockd's signal handling there (just accept that it may
-	  behave incorrectly in container case), assuming that's safe.
-	- add a printk ("signalling lockd to restart is deprecated",
-	  or something) if it's used.
-
-Then eventually we'll remove it entirely.
-
-(But if that doesn't work, it'd likely also be OK just to remove it
-completely now.)
+Well, there may be some conflict in that a file could be hardlinked into
+both subtrees, and that file could be locked from users of either
+export.
 
 --b.
+
+> I don't see any clear and simple way how to handle such races,
+> because otherwise we have to tie network namespace and filesystem
+> namespace.
+> I.e. there will be required some way to define, was passed export
+> directory shared already somewhere else or not.
+> 
+> Realistic solution - since export check should be done in initial
+> file system environment (most probably container will have it's own
+> root), then we to pass this data to some kernel thread/userspace
+> daemon in initial file system environment somehow (sockets doesn't
+> suits here... Shared memory?).
+> 
+> Improbable solution - patching VFS layer...
+> 
+> -- 
+> Best regards,
+> Stanislav Kinsbursky
