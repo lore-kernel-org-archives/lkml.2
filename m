@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab2DJKvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:51:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51302 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2DJKvq (ORCPT
+	id S1754174Ab2DJK4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:56:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36075 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab2DJK4g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:51:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v3 1/3] tegra, serial8250: add ->handle_break() uart_port op
-Date: Tue, 10 Apr 2012 10:51:36 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
-        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
-        ArndBergmannarnd@arndb.de, Grant Likely <grant.likely@secretlab.ca>,
-        linux-serial@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Nhan H Mai <nhan.h.mai@intel.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>
-References: <20120409194514.8004.53204.stgit@dwillia2-linux.jf.intel.com> <20120409194857.8004.86352.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120409194857.8004.86352.stgit@dwillia2-linux.jf.intel.com>
+	Tue, 10 Apr 2012 06:56:36 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204101051.36541.arnd@arndb.de>
-X-Provags-ID: V02:K0:OVrdQbF6hg0lxUrhzCEmDZn32FDuX4dK4ROWYVLgzaD
- SRgHpvk3O4JQ8gT3Pwxr04X8Q44mcTtlTKrjvc9EAoZLj0TIlM
- V71a/QjUFqFGlGTzvXV//XD1Ryr9QSPB7zCskZIzBucsIWXU20
- QQ152jYzFyGWy6UdhTfGGVBjUNPUnZEYW2qhgSuG2SpKMThgc0
- cu/Pn04BQY+t4xRVi9qmM86xQbF5g3zyY99wEZMrdYsEvuGCO/
- aSlbX0gkhpyeUJS4QlSvsRyT9QsNgqLZW7GBrMwEqJzLmE6bla
- D8yFpYmhRKAxJGq+yfiDdEbBbpp+piHqgSpDC7s6jh/QeJbcJH
- p6orxhXRHVIzPQAwEwhs=
+In-Reply-To: <20120410104147.GI4115@phenom.ffwll.local>
+References: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
+ <1333108003-6341-5-git-send-email-djkurtz@chromium.org> <20120410103746.GH4115@phenom.ffwll.local>
+ <20120410104147.GI4115@phenom.ffwll.local>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Tue, 10 Apr 2012 18:56:15 +0800
+X-Google-Sender-Auth: rzquaCtOOWkbgP1nPLVDA-twwtI
+Message-ID: <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com>
+Subject: Re: [PATCH 4/8 v7] drm/i915/intel_i2c: use WAIT cycle, not STOP
+To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 April 2012, Dan Williams wrote:
-> The "KT" serial port has another use case for a "received break" quirk,
-> so before adding another special case to the 8250 core take this
-> opportunity to push such quirks out of the core and into a uart_port op.
-> 
-> Stephen says:
-> "If the callback function is to no longer live in 8250.c itself,
->  arch/arm/mach-tegra/devices.c isn't logically a good place to put it,
->  and that file will be going away once we get rid of all the board files
->  and move solely to device tree."
-> 
-> ...so since 8250_pci.c houses all the quirks for pci serial devices this
-> quirk is similarly housed in of_serial.c.  Once the open firmware
-> conversion completes the infrastructure details (CONFIG_TEGRA_SERIAL,
-> include/linux/of_serial.h, and the export) can all be removed to make
-> this self contained to of_serial.c.
+On Tue, Apr 10, 2012 at 6:41 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Tue, Apr 10, 2012 at 12:37:46PM +0200, Daniel Vetter wrote:
+>> On Fri, Mar 30, 2012 at 07:46:39PM +0800, Daniel Kurtz wrote:
+>> > The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
+>> > transaction) during a DATA or WAIT phase.  In other words, the
+>> > controller rejects a STOP requested as part of the first transaction in a
+>> > sequence.
+>> >
+>> > Thus, for the first transaction we must always use a WAIT cycle, detect
+>> > when the device has finished (and is in a WAIT phase), and then either
+>> > start the next transaction, or, if there are no more transactions,
+>> > generate a STOP cycle.
+>> >
+>> > Note: Theoretically, the last transaction of a multi-transaction sequence
+>> > could initiate a STOP cycle.  However, this slight optimization is left
+>> > for another patch.  We return -ETIMEDOUT if the hardware doesn't
+>> > deactivate after the STOP cycle.
+>> >
+>> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>>
+>> I've re-read gmbus register spec and STOP seems to be allowed even in the
+>> first cycle. Does this patch solve an issue for you? If not, I prefer we
+>> just drop it.
 
-Looks much better to me, thanks!
+STOP does not work in the first cycle, hence the patch.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+-Daniel
 
-> @@ -81,7 +83,9 @@ static struct platform_device trimslice_audio_device = {
->  };
->  
->  static struct platform_device *trimslice_devices[] __initdata = {
-> +#if IS_ENABLED(CONFIG_SERIAL_TEGRA)
->  	&debug_uart,
-> +#endif
->  	&tegra_sdhci_device1,
->  	&tegra_sdhci_device4,
->  	&tegra_i2s_device1,
-
-FWIW, I'd prefer to see this without the #if, I generally think the devices
-that are present should not depend on the drivers that are built into the
-kernel. However, since this code is going away soon, I don't care all that
-much about it.
-
-	Arnd
+>
+> Actually I'd like to keep the -ETIMEDOUT return value, so maybe we should
+> keeep that hunk. I've picked up the previous 3 patches of this series, the
+> once after this one here conflict (without this patch here).
+> -Daniel
+> --
+> Daniel Vetter
+> Mail: daniel@ffwll.ch
+> Mobile: +41 (0)79 365 57 48
