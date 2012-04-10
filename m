@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2DJSJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:09:53 -0400
-Received: from server1.neighborhoods.net ([207.154.13.48]:45316 "EHLO
-	server1.neighborhoods.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab2DJSJw (ORCPT
+	id S1757701Ab2DJSLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:11:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55848 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab2DJSLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:09:52 -0400
-Message-ID: <4F84776D.9070608@meetinghouse.net>
-Date: Tue, 10 Apr 2012 14:09:49 -0400
-From: Miles Fidelman <mfidelman@meetinghouse.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	Tue, 10 Apr 2012 14:11:33 -0400
+Message-ID: <4F8477D1.4080102@suse.cz>
+Date: Tue, 10 Apr 2012 20:11:29 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
 MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, peter.chubb@nicta.com.au,
-        michael.d.labriola@gmail.com
-Subject: Re: reboot via bios on X86_64?
-References: <4F8302B4.8040901@meetinghouse.net> <20120409155155.GA22974@srcf.ucam.org> <4F831BD0.3010707@meetinghouse.net> <20120409173223.GA25717@srcf.ucam.org> <4F83231A.8040005@meetinghouse.net> <20120409180711.GA26277@srcf.ucam.org> <4F843D9B.3010601@meetinghouse.net> <20120410142213.GA13294@srcf.ucam.org> <4F846D53.10409@meetinghouse.net> <20120410174423.GA19583@srcf.ucam.org>
-In-Reply-To: <20120410174423.GA19583@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Chris Wilson <chris@chris-wilson.co.uk>, Jiri Slaby <jirislaby@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        daniel@ffwll.ch
+Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
+References: <4F717CE3.4040206@suse.cz> <4F717D80.9040207@suse.cz> <4F758400.3080907@suse.cz> <1333104359_155028@CP5-2952> <20120409101119.47e770b2@jbarnes-desktop> <4F83F3B5.8080704@suse.cz> <20120410092619.26a15165@jbarnes-desktop>
+In-Reply-To: <20120410092619.26a15165@jbarnes-desktop>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett wrote:
-> On Tue, Apr 10, 2012 at 01:26:43PM -0400, Miles Fidelman wrote:
->> For what it's worth, creating a path for X86_64 mode to reboot
->> through the bios seems like
->> a good thing to put on the wish list.
-> Not really - it's far more attractive to figure out how our behaviour is
-> differing from Windows and change it to match. I'll see what I can find
-> out about this machine.
+On 04/10/2012 06:26 PM, Jesse Barnes wrote:
+> So port hotplug is always reporting that port C has a hotplug
+> interrupt though...  If you write 0x3 back to it does the interrupt
+> stop?
 
-Well.. keep in mind that that this particular machine has never run 
-windows,
-so I don't know if windows can reboot it either.
+I'm not sure I got it right. This doesn't help:
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1416,6 +1416,17 @@ static irqreturn_t
+i915_driver_irq_handler(DRM_IRQ_ARGS)
+                iir = new_iir;
+        }
 
-I expect it's like that long
-laundry list of Dell servers that are in the quirks code - they all seem to
-reboot via the bios when running in 32-bit mode.  I wonder what they
-do when running in 64-bit mode (at least some of them are amd64 compatible).
++       if (ret == IRQ_NONE) {
++               u32 hp = I915_READ(PORT_HOTPLUG_STAT);
++               if (hp) {
++                       I915_WRITE(PORT_HOTPLUG_STAT, hp);
++                       I915_READ(PORT_HOTPLUG_STAT);
++               }
++
++               if (printk_ratelimit())
++                       printk(KERN_DEBUG "%s: %.8x\n", __func__, hp);
++
++       }
 
-Miles
+        return ret;
+ }
 
-
+thanks,
 -- 
-In theory, there is no difference between theory and practice.
-In practice, there is.   .... Yogi Berra
+js
+suse labs
 
 
