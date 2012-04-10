@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab2DJJIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:08:51 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:46348 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751150Ab2DJJIu (ORCPT
+	id S1753614Ab2DJJOV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:14:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54146 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751284Ab2DJJOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:08:50 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18INBdL/3AIMHq1/fViYRbUItO+luMXMeL7wjbDiV
-	I/2twYN8utvQdi
-Message-ID: <1334048925.7524.21.camel@marge.simpson.net>
-Subject: Re: RFC [patch] sched,cgroup_sched: convince RT_GROUP_SCHED
- throttle to work
-From: Mike Galbraith <efault@gmx.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>
-Date: Tue, 10 Apr 2012 11:08:45 +0200
-In-Reply-To: <1333792489.12677.58.camel@marge.simpson.net>
-References: <1333444106.9072.4.camel@marge.simpson.net>
-	 <1333444788.9072.9.camel@marge.simpson.net>
-	 <1333789124.12677.15.camel@marge.simpson.net>
-	 <1333792489.12677.58.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Tue, 10 Apr 2012 05:14:20 -0400
+Date: Tue, 10 Apr 2012 10:14:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RESEND 1/3] regulator: max8997: Use simple equation to
+ get selector
+Message-ID: <20120410091417.GB7499@opensource.wolfsonmicro.com>
+References: <1334038803.15859.14.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
+Content-Disposition: inline
+In-Reply-To: <1334038803.15859.14.camel@phoenix>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-07 at 11:54 +0200, Mike Galbraith wrote:
 
-> With this patch, the thing appears to work perfectly, but it doesn't
-> look correct, since I'm futzing with ->rt_time where I should not.
+--WYTEVAkct0FjGQmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-s/doesn't look/definitely isn't.  This failed the "definitely works so
-may live on despite horrific appearance" test anyway, so how about just
-stop pretending root isn't global instead?
+On Tue, Apr 10, 2012 at 02:20:03PM +0800, Axel Lin wrote:
+> It's more efficient to get the best selector by simple equation.
 
-sched,rt: fix isolated CPUs leaving root_task_group indefinitely throttled
+Applied all, thanks.
 
-Root task group bandwidth replenishment must service all CPUs regardless of
-where it was last started.
+--WYTEVAkct0FjGQmd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
----
- kernel/sched/rt.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -782,6 +782,19 @@ static int do_sched_rt_period_timer(stru
- 	const struct cpumask *span;
- 
- 	span = sched_rt_period_mask();
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * FIXME: isolated CPUs should really leave the root task group,
-+	 * whether they are isolcpus or were isolated via cpusets, lest
-+	 * the timer run on a CPU which does not service all runqueues,
-+	 * potentially leaving other CPUs indefinitely throttled.  If
-+	 * isolation is really required, the user will turn the throttle
-+	 * off to kill the perturbations it causes anyway.  Meanwhile,
-+	 * this maintains functionality for boot and/or troubleshooting.
-+	 */
-+	if (rt_b == &root_task_group.rt_bandwidth)
-+		span = cpu_online_mask;
-+#endif
- 	for_each_cpu(i, span) {
- 		int enqueue = 0;
- 		struct rt_rq *rt_rq = sched_rt_period_rt_rq(rt_b, i);
+iQIcBAEBAgAGBQJPg/niAAoJEBus8iNuMP3dUxMQAJyBZ3zTHGCh3u7BPasB01L7
+5RDXmwFVMqSdJplW1yEw8iskSm1RIJdsDxfF944l/rzHUPJLYwLyLb3JMaPlenEH
+OSF8WbEG6GPExfXWbuf+J0NuqFQp3mPadZ5jtTJ6ZVjbdMu/W/rhtxHb+pgeeig4
+ZNmw6MZTqwovXSUhYZW1PKkn0CFe5BuU0mtS/5e98n9+O+JgdKGdP5bkg0YCC58X
+zfWrbvgse3NVzDMUHhwJRv5WsjLuOiYy0RJCCMJI57Dv66Q9n8hzODaSrBuDrZB2
+xNI08kiH+70DwVHLw+Mv270qu/lV27ZduDGiBxN6gSUBWzqUKDMzsUsmG/PW7SSG
+CDdFVI7WNqWezKMXFtzpU37Bj5z92J0gFTUPsxVOkCjMmQTiBqsq03J+UPm3fpcL
+el0KRPNk9r0UpjTGCVXU9oqPeoyGtCYoDpfKhv9nYqyPqZrG3PHwN08x8WD9B4Ub
+EteJ1tVjhxW6X6/2TxWlN+tnz0ItYrEG98Xj+y4NBmvmznRuJyroGYTJTNDh6lNd
+pFtZNLdrcfRSvAnxYNKyk2dz8X6MUE1Gy2nzigOy2M0RK/DSoyEEioCJo+8/GDps
+6vdcMBe0I+VrRr4KFA9EoZIGJe7ynJ/8esEg9NqfqjWmULR+oK4H057KgXm/GoFv
+6H4J2kHcW1M2ZAXl0WmZ
+=DSjr
+-----END PGP SIGNATURE-----
 
-
+--WYTEVAkct0FjGQmd--
