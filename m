@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab2DJI5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:57:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59248 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab2DJI5x (ORCPT
+	id S1752018Ab2DJJAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:00:04 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57744 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab2DJJAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:57:53 -0400
-Date: Tue, 10 Apr 2012 16:58:42 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
-Message-ID: <20120410085839.GI18692@S2101-09.ap.freescale.net>
-References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20120406074942.GO7264@S2101-09.ap.freescale.net>
- <20120410083130.GK24211@n2100.arm.linux.org.uk>
- <20120410083543.GC3149@opensource.wolfsonmicro.com>
- <20120410084702.GM24211@n2100.arm.linux.org.uk>
+	Tue, 10 Apr 2012 05:00:02 -0400
+Date: Tue, 10 Apr 2012 09:59:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: common clk: fix clk_register_fixed_rate() under memory pressure
+Message-ID: <20120410085956.GA24465@sirena.org.uk>
+References: <20120405084808.GA21060@glitch>
+ <CAJOA=zNt7V_LNLAyXxJU2oS3vTEhvZ1JUWAx+hqQM1t=Whjr6w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120410084702.GM24211@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJOA=zNt7V_LNLAyXxJU2oS3vTEhvZ1JUWAx+hqQM1t=Whjr6w@mail.gmail.com>
+X-Cookie: Power is poison.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 09:47:02AM +0100, Russell King - ARM Linux wrote:
-... 
-> In any case, what would really help is if people would discard patches
-> they no longer want applying.
+On Mon, Apr 09, 2012 at 02:52:15PM -0700, Turquette, Mike wrote:
 
-Ok, I did not know it before.  Just marked my patch "discarded".
+> Thanks for the patch Domenico.  I did a big cleanup of the
+> registration code for all of the basic clock types and a fix for this
+> has already been rolled in to that branch, so I won't be taking this
+> patch.  I'll Cc you on the fixes when I send them to the list
+> (probably tomorrow).
 
--- 
-Regards,
-Shawn
+Would it be possible for you to keep a tree in -next?  There's been
+several people sending patches like this which have been superceeded by
+your work and this might help avoid such duplicated work.
