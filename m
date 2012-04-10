@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab2DJUeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:34:16 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:54444 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757221Ab2DJUeP (ORCPT
+	id S932334Ab2DJUes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:34:48 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:41093 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab2DJUeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:34:15 -0400
-Date: Tue, 10 Apr 2012 13:34:11 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Jiri Slaby <jslaby@suse.cz>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
-Message-ID: <20120410133411.52dc52ed@jbarnes-desktop>
-In-Reply-To: <20120410203212.GN4115@phenom.ffwll.local>
-References: <4F717CE3.4040206@suse.cz>
-	<4F717D80.9040207@suse.cz>
-	<4F758400.3080907@suse.cz>
-	<1333104359_155028@CP5-2952>
-	<20120409101119.47e770b2@jbarnes-desktop>
-	<4F83F3B5.8080704@suse.cz>
-	<20120410092619.26a15165@jbarnes-desktop>
-	<4F8477D1.4080102@suse.cz>
-	<20120410113448.540e4c1d@jbarnes-desktop>
-	<4F848F88.7060009@suse.cz>
-	<20120410203212.GN4115@phenom.ffwll.local>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/9WyWI2/e0i29p3xOeXAafgF"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Tue, 10 Apr 2012 16:34:46 -0400
+Date: Tue, 10 Apr 2012 22:34:44 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v4 3/4] tools: Add a help target
+Message-ID: <20120410203444.GC28293@merkur.ravnborg.org>
+References: <1334071240-28692-1-git-send-email-bp@amd64.org> <1334071240-28692-4-git-send-email-bp@amd64.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334071240-28692-4-git-send-email-bp@amd64.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/9WyWI2/e0i29p3xOeXAafgF
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 10, 2012 at 05:20:39PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> ... and make it the default one so that calling 'make' without arguments
+> in the tools/ directory gives you the possible targets to build along
+> with a short description of what they are.
+> 
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  tools/Makefile |   26 +++++++++++++++++++++++---
+>  1 file changed, 23 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/Makefile b/tools/Makefile
+> index e93b8ec3d250..c7ed814e12cf 100644
+> --- a/tools/Makefile
+> +++ b/tools/Makefile
+> @@ -1,5 +1,25 @@
+>  include scripts/Makefile.include
+>  
+> +help:
+> +	@echo 'Possible targets:'
+> +	@echo ''
+> +	@echo '  cpupower   - a tool for all things x86 CPU power'
+> +	@echo '  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer'
+> +	@echo '  lguest     - a minimal 32-bit x86 hypervisor'
+> +	@echo '  perf       - Linux performance measurement and analysis tool'
+> +	@echo '  selftests  - various kernel selftests'
+> +	@echo '  turbostat  - Intel CPU idle stats and freq reporting tool'
+> +	@echo '  usb        - USB testing tools'
+> +	@echo '  virtio     - vhost test module'
+> +	@echo '  vm         - misc vm tools'
+> +	@echo '  x86_energy_perf_policy - Intel energy policy tool'
+> +	@echo ''
+> +	@echo 'Cleaning targets:'
+> +	@echo ''
+> +	@echo '  all of the above with the "_clean" string appended cleans'
+> +	@echo '    the respective build directory.'
+> +	@echo '  clean: a summary clean target to clean _all_ folders'
+> +
+>  perf firewire lguest usb virtio vm: FORCE
+>  	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
+>  
+> @@ -15,7 +35,7 @@ selftests: FORCE
+>  firewire_clean lguest_clean perf_clean vm_clean usb_clean virtio_clean:
+>  	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
+>  
+> -cp_clean:
+> +cpupower_clean:
+>  	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
 
-On Tue, 10 Apr 2012 22:32:12 +0200
-Daniel Vetter <daniel@ffwll.ch> wrote:
+Fold this into 2/4
 
-> On Tue, Apr 10, 2012 at 09:52:40PM +0200, Jiri Slaby wrote:
-> > Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=3Dfast >TAbort-
-> > <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >=20
-> > I tried 3.2 and 3.3. Although the spurious interrupts were always
-> > there, they occurred with frequency lower by a magnitude (15 vs. 300
-> > after X starts). So I bisected that and it lead to a commit which
-> > fixes bad tiling for me:
-> > http://cgit.freedesktop.org/~ickle/linux-2.6/commit/?h=3Dfor-jiri&id=3D=
-79710e6ccabdac80c65cd13b944695ecc3e42a9d
->=20
-> Pipelined fencing is pretty much just broken and we'll completely rip it
-> out in 3.5. Does this also happen with 3.4-rc2?
+>  
+>  turbostat_clean x86_energy_perf_policy_clean:
+> @@ -24,8 +44,8 @@ turbostat_clean x86_energy_perf_policy_clean:
+>  selftests_clean:
+>  	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
+>  
+> -clean: cp_clean firewire_clean lguest_clean perf_clean selftests_clean \
+> -		turbostat_clean usb_clean virtio_clean \
+> +clean: cpupower_clean firewire_clean lguest_clean perf_clean \
+> +		selftests_clean turbostat_clean usb_clean virtio_clean \
+>  		x86_energy_perf_policy_clean
+Fold this into 2/4
 
-Does INTx- stay that way?  Or does it frequently read INTx+ if you
-sample it a lot?  If it stays as INTx-, then something other than the
-GPU is getting stuck (though it's possible this could be related to
-pipelined fencing, if the fences are programmed to point at some funky
-memory space).
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/9WyWI2/e0i29p3xOeXAafgF
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPhJlEAAoJEIEoDkX4Qk9hdIkP+wSN1KZ3zYNAo3bcFzhiVn5U
-5WhZaT+I0JLjq3Oyis43gPbcqthopZtOwZ8SzwHQlbiqJOMDplkbfAo85JdoN+GB
-jdqWOGuGOCgEgQNikt/OntuQJAvSt41OvaAepIieL8B6iZ+mDCm0Zpj+eQR8dpBw
-2r5OBWYv7ReQmZNmoX74+d46AsOfO2CwhmujzT5CHTYfj+DTYBINs1c8JSkV+Mnc
-DoGZ9jWgx23YN8wkGPrK6z2udhBlrIeqk29V11nlon25kWFJlETAnt1lHa0QSg9S
-8qoSOxc8BrM0yR9QSZJrTEg0MhuX66ruCeuTP3RwjNzw7vyemRrSiCYOBKdonKJm
-ms9ThPjlvaunCt88iDR/f5v3mkVUV3coBw9i7L+wXgUVZ5Qio2FO5kxDcEUVZxYc
-LFqB4eqBgfJmZ6yY3rVLE6p0SFoLldoIy2tmabKX9QH6fID1F/aKgDTU6nvsRYZs
-IwxSabTLJqpXoH7CsVi4a5tXmeMMojUq8esBLVzuj1aiGj/MRlXBDE375IXPve4O
-rKdSeZ3LDY3DgkQJCKVMDB2OVzEjwYCiAm65pfIkL6TKOjy6zQHF206yg9wXSFlK
-dPpL20v5pI17zTvNNGRsNgurNC0yGEE6xiczadNx05g2uJ37ZIVtJxEicY3WQR2g
-ph8OH1QyTO+2VITcueB+
-=9EkS
------END PGP SIGNATURE-----
-
---Sig_/9WyWI2/e0i29p3xOeXAafgF--
+	Sam
