@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758317Ab2DJAwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 20:52:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57275 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130Ab2DJAwx (ORCPT
+	id S1758300Ab2DJAyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 20:54:04 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59598 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab2DJAyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 20:52:53 -0400
-Date: Mon, 9 Apr 2012 17:52:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
-In-Reply-To: <CABEgKgopoHYiisCQnqeFc4qT-Y4Md1b6enTcZdomoKn0vGv_RQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1204091747470.4449@chino.kir.corp.google.com>
-References: <20120405160829.GA12854@google.com> <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com> <20120405213704.GA29517@google.com> <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com> <20120405222400.GC29517@google.com>
- <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com> <20120405225854.GE29517@google.com> <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com> <20120405231306.GF29517@google.com> <alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
- <20120406155203.GA4798@dhcp-172-17-108-109.mtv.corp.google.com> <1333736770.2960.114.camel@laptop> <alpine.DEB.2.00.1204061347180.23328@chino.kir.corp.google.com> <CABEgKgopoHYiisCQnqeFc4qT-Y4Md1b6enTcZdomoKn0vGv_RQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 9 Apr 2012 20:54:03 -0400
+X-AuditID: 9c93016f-b7b13ae000002492-ff-4f8384a07db1
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] trace-cmd: Small fixes and cleanups on libparsevent
+References: <1333940074-19052-1-git-send-email-namhyung.kim@lge.com>
+	<CAFTL4hz19R9heUjEBZMhweTHRuPzr-qf0hN=FLB9eRd-R9cPgg@mail.gmail.com>
+Date: Tue, 10 Apr 2012 09:53:48 +0900
+In-Reply-To: <CAFTL4hz19R9heUjEBZMhweTHRuPzr-qf0hN=FLB9eRd-R9cPgg@mail.gmail.com>
+	(Frederic Weisbecker's message of "Mon, 9 Apr 2012 19:22:46 +0200")
+Message-ID: <87sjgcbe5f.fsf@youngshil.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 Apr 2012, Hiroyuki Kamezawa wrote:
+Hi, Frederic
 
-> I'm sorry if I didn't read e-mails while a trip....let me understand...
-> 
->  - Tejun at el, tries to disallow to move kthreadd into cgroups other than root.
->  - You wants to account kthreadd's activity under memg at el.
-> 
+On Mon, 9 Apr 2012 19:22:46 +0200, Frederic Weisbecker wrote:
+> 2012/4/9 Namhyung Kim <namhyung.kim@lge.com>:
+>> Hi, all
+>>
+>> This is a couple of small changes that I found during the flight back to
+>> Korea :). While I'm not finished with reading the whole code, I send what
+>> I have now in the hope that it'd help Frederic's unification work somewhat.
+>> More might come later as I read the remaining parts.
+>>
+>> The patch 01 is a workaround to build trace-cmd without installing swig
+>> since I don't have an internet access at that time, so it's independent
+>> to others and can go separately.
+>>
+> Nice! I guess this should probably go into trace-cmd tree and then we
+> backport later to the lib?
+> Or I can carry them myself in the lib.
+>
 
-memcg isn't the only use case, you can also use it for cpuacct and any 
-other future cgroup that wants to do so.
+Either way is fine to me.
 
-> Then, 2 question from me is....
-> 1. If this patch only affects kthreadd, you can move other
->     kthread. Is this correct ?
-> 
-
-Yes, but not those that are forked by kthreadd at runtime without some 
-delay between the fork and attaching it to a different cgroup.  With memcg 
-slab accounting, for example, allocating the task_struct for the kthread 
-should appropriately be accounted for in a non-root memcg.
-
-Keep in mind that this isn't only limited to memcg, I've just used it to 
-illustrate how account for slab is useful.  I don't know everybody's use 
-cases where they may want to do the same thing so I've been arguing 
-against unnecessarily restricting it from all cgroups other than those 
-that require it (cpuset and cpu).
-
-Using cpusets as an example, we can even completely remove the restriction 
-on attaching all PF_THREAD_BOUND threads by not allowing them only if the 
-destination cpuset has mems that are disjoint from the bound cpu and 
-disallow changing the mems to be disjoint from a member's bound cpu.
-
-So then we won't even need the restriction for some PF_THREAD_BOUND 
-threads for cpusets.  It's not even a rare restriction: users can easily 
-use sched_setaffinity() to restrict their scheduling to a subset of their 
-set of allowed mems.
-
-I haven't looked at the changes needed for the cpu cgroup, but I'm 
-assuming it will be even easier: disallow attaching kthreadd without rt 
-allocation.
+Thanks,
+Namhyung
