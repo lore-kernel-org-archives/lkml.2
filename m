@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759043Ab2DJPDm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:03:42 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:34570 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759014Ab2DJPDj (ORCPT
+	id S1758969Ab2DJPGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:06:07 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:30803 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755391Ab2DJPGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:03:39 -0400
-Message-ID: <1334070249.16827.1.camel@key-ThinkPad-W510>
-Subject: [PATCH v2 00/17] Platform Facilities Option and crypto accelerators
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Tue, 10 Apr 2012 10:04:09 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041015-2398-0000-0000-000005B5B2EE
+	Tue, 10 Apr 2012 11:06:05 -0400
+X-SpamScore: -26
+X-BigFish: VPS-26(zz1432N1a09J98dK148cMzz1202hzz15d4Rz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M29R9T-02-539-02
+X-M-MSG: 
+Date: Tue, 10 Apr 2012 17:05:50 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        <linux-kernel@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 00/10] vt-d irq_remap_ops patchset
+Message-ID: <20120410150550.GB2428@amd.com>
+References: <1333133228-3134-1-git-send-email-suresh.b.siddha@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1333133228-3134-1-git-send-email-suresh.b.siddha@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ChangeLog for v2:
-- move crypto driver sysfs stuff to debugfs (Greg K-H)
-- Remove CONFIG_ dependencies for the CMO bits (Anton Blanchard)
-- move nx driver code to drivers/crypto (Kumar Gala)
-- Add inline comment for nx_build_sg_list (Rob Jennings)
-- make sure kmalloc'd pointers are aligned (Rob Jennings)
-- get rid of bitfields in nx_csbcpb.h (Rob Jennings)
-- Compile against Ben Herrenschmidt's ppc device naming patch
-- Rebase against latest upstream
+Hi,
 
-Kent Yoder (12):
-  powerpc: crypto: AES-CBC mode routines for nx encryption
-  powerpc: crypto: AES-CCM mode routines for nx encryption
-  powerpc: crypto: AES-CTR mode routines for nx encryption
-  powerpc: crypto: AES-ECB mode routines for nx encryption
-  powerpc: crypto: AES-GCM mode routines for nx encryption
-  powerpc: crypto: AES-XCBC mode routines for nx encryption
-  powerpc: crypto: SHA256 hash routines for nx encryption
-  powerpc: crypto: SHA512 hash routines for nx encryption
-  powerpc: crypto: nx driver code supporting nx encryption
-  powerpc: crypto: debugfs routines and docs for the nx device driver
-  powerpc: crypto: Build files for the nx device driver
-  powerpc: crypto: enable the PFO-based encryption device
+On Fri, Mar 30, 2012 at 11:46:58AM -0700, Suresh Siddha wrote:
+> Ingo,
+> 
+> Here is the Joerg's irq_remap_ops patchset updated for the latest -tip.
+> Simplified some of the naming conventions to follow the irq_remapping
+> terminology. There are still some "if (irq_remapping_enabled)" checks in
+> io_apic.c that I would like to roll into the new io_apic_ops. I will
+> look into that shortly.
+> 
+> Joerg Roedel (8):
+>   iommu: Rename intr_remapping files to intel_intr_remapping
+>   iommu/vt-d: Make intr-remapping initialization generic
+>   iommu/vt-d: Convert missing apic.c intr-remapping call to remap_ops
+>   iommu/vt-d: Convert IR ioapic-setup to use remap_ops
+>   iommu/vt-d: Convert IR set_affinity function to remap_ops
+>   iommu/vt-d: Convert free_irte into a remap_ops callback
+>   iommu/vt-d: Convert MSI remapping setup to remap_ops
+>   x86, iommu/vt-d: Clean up interfaces for interrupt remapping
+> 
+> Suresh Siddha (2):
+>   iommu: rename intr_remapping references to irq_remapping
+>   iommu: rename intr_remapping.[ch] to irq_remapping.[ch]
 
-Michael Neuling (1):
-  hwrng: pseries - PFO-based hwrng driver
+Suresh, Yinghai, many thanks for testing this and pushing it forward. I
+really appreciate it.
 
-Robert Jennings (4):
-  powerpc: Add new hvcall constants to support PFO
-  powerpc: Add pseries update notifier for OFDT prop changes
-  powerpc: Add PFO support to the VIO bus
-  pseries: Enabled the PFO-based RNG accelerator
+Ingo, Have these patches been applied to -tip or are there further
+problems to be solved?
 
- Documentation/ABI/testing/debugfs-pfo-nx-crypto |   45 ++
- arch/powerpc/Makefile                           |    1 +
- arch/powerpc/include/asm/hvcall.h               |   25 +-
- arch/powerpc/include/asm/pSeries_reconfig.h     |   12 +
- arch/powerpc/include/asm/vio.h                  |   46 ++
- arch/powerpc/kernel/prom_init.c                 |    9 +-
- arch/powerpc/kernel/vio.c                       |  273 ++++++++--
- arch/powerpc/platforms/pseries/reconfig.c       |    7 +
- drivers/char/hw_random/Kconfig                  |   13 +
- drivers/char/hw_random/Makefile                 |    1 +
- drivers/char/hw_random/pseries-rng.c            |   96 +++
- drivers/crypto/Kconfig                          |   17 +
- drivers/crypto/nx/Makefile                      |   11 +
- drivers/crypto/nx/nx-aes-cbc.c                  |  140 +++++
- drivers/crypto/nx/nx-aes-ccm.c                  |  465 +++++++++++++++
- drivers/crypto/nx/nx-aes-ctr.c                  |  177 ++++++
- drivers/crypto/nx/nx-aes-ecb.c                  |  138 +++++
- drivers/crypto/nx/nx-aes-gcm.c                  |  353 +++++++++++
- drivers/crypto/nx/nx-aes-xcbc.c                 |  234 ++++++++
- drivers/crypto/nx/nx-sha256.c                   |  244 ++++++++
- drivers/crypto/nx/nx-sha512.c                   |  263 +++++++++
- drivers/crypto/nx/nx.c                          |  711 +++++++++++++++++++++++
- drivers/crypto/nx/nx.h                          |  192 ++++++
- drivers/crypto/nx/nx_csbcpb.h                   |  205 +++++++
- drivers/crypto/nx/nx_debugfs.c                  |  103 ++++
- 25 files changed, 3739 insertions(+), 42 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-pfo-nx-crypto
- create mode 100644 drivers/char/hw_random/pseries-rng.c
- create mode 100644 drivers/crypto/nx/Makefile
- create mode 100644 drivers/crypto/nx/nx-aes-cbc.c
- create mode 100644 drivers/crypto/nx/nx-aes-ccm.c
- create mode 100644 drivers/crypto/nx/nx-aes-ctr.c
- create mode 100644 drivers/crypto/nx/nx-aes-ecb.c
- create mode 100644 drivers/crypto/nx/nx-aes-gcm.c
- create mode 100644 drivers/crypto/nx/nx-aes-xcbc.c
- create mode 100644 drivers/crypto/nx/nx-sha256.c
- create mode 100644 drivers/crypto/nx/nx-sha512.c
- create mode 100644 drivers/crypto/nx/nx.c
- create mode 100644 drivers/crypto/nx/nx.h
- create mode 100644 drivers/crypto/nx/nx_csbcpb.h
- create mode 100644 drivers/crypto/nx/nx_debugfs.c
 
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
