@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab2DJKes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:34:48 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52083 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab2DJKep (ORCPT
+	id S1757411Ab2DJKfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:35:19 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:39382 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab2DJKfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:34:45 -0400
-Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        corbet@lwn.net, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org
-In-Reply-To: <67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	 <1333051320-30872-9-git-send-email-wad@chromium.org>
-	 <20120406132330.457a05cf.akpm@linux-foundation.org>
-	 <67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Apr 2012 12:34:34 +0200
-Message-ID: <1334054074.3126.75.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Apr 2012 06:35:17 -0400
+Date: Tue, 10 Apr 2012 12:35:13 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com,
+        penberg@kernel.org
+Subject: [PATCH] perf tools: fix NO_GTK2 Makefile config error
+Message-ID: <20120410103513.GA9229@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-09 at 04:22 +1000, Indan Zupancic wrote:
-> On Sat, April 7, 2012 06:23, Andrew Morton wrote:
-> >
-> > I think this gives userspace an easy way of causing page allocation
-> > failure warnings, by permitting large kmalloc() attempts.  Add
-> > __GFP_NOWARN?
-> 
-> Max is 32kb. sk_attach_filter() in net/core/filter.c is worse,
-> it allocates up to 512kb before even checking the length.
-> 
+In case the user specified NO_GTK2 on the make cmdline,
+compilation would fail with undefined symbol because the
+Makefile would not set the correct cpp variable:
+NO_GTK2 vs. NO_GTK2_SUPPORT.
 
-I dont think so.
+This patch renames the variable to the correct name.
+    
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-sk_attach_filter() uses sk_malloc() and it does a check.
-
-# cat /proc/sys/net/core/optmem_max 
-20480
-
-Of course you can change the limit on your machine.
-
-
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 820371f..a20d0c5 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -527,7 +527,7 @@ else
+ endif
+ 
+ ifdef NO_GTK2
+-	BASIC_CFLAGS += -DNO_GTK2
++	BASIC_CFLAGS += -DNO_GTK2_SUPPORT
+ else
+ 	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0)
+ 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
