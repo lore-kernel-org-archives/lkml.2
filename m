@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab2DJNKu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 09:10:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62255 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752835Ab2DJNKt convert rfc822-to-8bit (ORCPT
+	id S1758754Ab2DJNLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 09:11:05 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49778 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758738Ab2DJNK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 09:10:49 -0400
+	Tue, 10 Apr 2012 09:10:58 -0400
+Date: Tue, 10 Apr 2012 14:10:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] gpio: add MSIC gpio driver
+Message-ID: <20120410131056.GA31551@sirena.org.uk>
+References: <20120410131734.28046.25265.stgit@bob.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120410124250.GB29808@redhat.com>
-References: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	<CAJSP0QWA1z6_YQe9hhpG7bCyZQarmU5NXbHsLGTL_zPTk3dOUA@mail.gmail.com>
-	<20120410124250.GB29808@redhat.com>
-Date: Tue, 10 Apr 2012 21:10:48 +0800
-Message-ID: <CAEH94Li0==w=AUKd5WCPMcqxLh=+N6bKttOwrE8y-xuOyPt_QA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] adding tracepoints to vhost
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410131734.28046.25265.stgit@bob.linux.org.uk>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 8:42 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Tue, Apr 10, 2012 at 12:40:50PM +0100, Stefan Hajnoczi wrote:
->> On Tue, Apr 10, 2012 at 3:58 AM, Jason Wang <jasowang@redhat.com> wrote:
->> > To help in vhost analyzing, the following series adding basic tracepoints to
->> > vhost. Operations of both virtqueues and vhost works were traced in current
->> > implementation, net code were untouched. A top-like satistics displaying script
->> > were introduced to help the troubleshooting.
->> >
->> > TODO:
->> > - net specific tracepoints?
->> >
->> > ---
->> >
->> > Jason Wang (2):
->> >      vhost: basic tracepoints
->> >      tools: virtio: add a top-like utility for displaying vhost satistics
->> >
->> >
->> >  drivers/vhost/trace.h   |  153 ++++++++++++++++++++
->> >  drivers/vhost/vhost.c   |   17 ++
->> >  tools/virtio/vhost_stat |  360 +++++++++++++++++++++++++++++++++++++++++++++++
->> >  3 files changed, 528 insertions(+), 2 deletions(-)
->> >  create mode 100644 drivers/vhost/trace.h
->> >  create mode 100755 tools/virtio/vhost_stat
->>
->> Perhaps this can replace the vhost log feature?  I'm not sure if
->> tracepoints support the right data types but it seems like vhost
->> debugging could be done using tracing with less code.
->>
->> Stefan
->
-> vhost log is not a debugging tool, it logs memory accesses for
-> migration.
-Great, it is very appreciated if there's some docs about this
+On Tue, Apr 10, 2012 at 02:18:04PM +0100, Alan Cox wrote:
 
-> _______________________________________________
-> Virtualization mailing list
-> Virtualization@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
+> +	if (mg->trig_change_mask) {
+> +		offset = __ffs(mg->trig_change_mask);
+> +
+> +		reg = msic_gpio_to_ireg(offset);
+> +		if (reg < 0)
+> +			goto out;
+> +
+> +		if (mg->trig_type & IRQ_TYPE_EDGE_RISING)
+> +			trig |= MSIC_GPIO_TRIG_RISE;
+> +		if (mg->trig_type & IRQ_TYPE_EDGE_FALLING)
+> +			trig |= MSIC_GPIO_TRIG_FALL;
+> +
+> +		intel_msic_reg_update(reg, trig, MSIC_GPIO_INTCNT_MASK);
+> +		mg->trig_change_mask = 0;
+> +	}
 
+What happens if we manage to get more than one change flagged while the
+lock is held?
 
+> +/* Firmware does all the masking and unmasking for us, no masking here. */
+> +static void msic_irq_unmask(struct irq_data *data) { }
 
--- 
-Regards,
+> +static void msic_irq_mask(struct irq_data *data) { }
 
-Zhi Yong Wu
+Shouldn't these just be omitted if they don't do anything (or
+alternatively, how does the firmware figure out that it needs to do the
+masking and unmasking)?
+
+> +	mg = kzalloc(sizeof(*mg), GFP_KERNEL);
+> +	if (!mg)
+> +		return -ENOMEM;
+
+devm_kzalloc()
