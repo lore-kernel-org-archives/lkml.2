@@ -1,94 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab2DJQFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:05:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44487 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab2DJQFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 12:05:48 -0400
-Date: Tue, 10 Apr 2012 11:05:34 -0500
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Li Wang <liwang@nudt.edu.cn>
-Cc: dustin.kirkland@gazzang.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ecryptfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC] eCryptfs file system with HMAC verification
-Message-ID: <20120410160534.GA3891@boyd>
-References: <000a01cd171d$9e6c23b0$db446b10$@edu.cn>
+	id S1753255Ab2DJQJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:09:20 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:19056
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751246Ab2DJQJR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 12:09:17 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zz9371I542Mdf9M1432N853kzz1202hzz8275ch8275bh8275dhz2fh2a8h683h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: Andy Whitcroft <apw@canonical.com>, Jeff Garzik <jgarzik@pobox.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Sterling <mike.sterling@microsoft.com>
+Subject: RE: [PATCH 1/1] ata_piix: defer disks to the Hyper-V
+ paravirtualised drivers by default
+Thread-Topic: [PATCH 1/1] ata_piix: defer disks to the Hyper-V
+ paravirtualised drivers by default
+Thread-Index: AQHNDdFzYR9JvE8AkUO427bJTZY/UJaUSvag
+Date: Tue, 10 Apr 2012 16:08:22 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF902511F@BY2PRD0310MB378.namprd03.prod.outlook.com>
+References: <1333042130-9634-1-git-send-email-apw@canonical.com>
+In-Reply-To: <1333042130-9634-1-git-send-email-apw@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.53.133]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
-Content-Disposition: inline
-In-Reply-To: <000a01cd171d$9e6c23b0$db446b10$@edu.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OrganizationHeadersPreserved: BY2PRD0310HT002.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%POBOX.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On 2012-04-10 21:26:58, Li Wang wrote:
-> Hi,
->   we have implemented a prototype, which equips eCryptfs with HMAC verifi=
-cation,
-> based on the kernel crypto API. This enables eCryptfs to detect unauthori=
-zed (cipher)=20
-> data modification and unexpected data corruption. And the preliminary exp=
-eriments=20
-> demonstrate the decrease in throughput is modest. As a file system highli=
-ghting security,
-> we think it should be useful.
->   Any comments/suggestions are welcome.
+> -----Original Message-----
+> From: Andy Whitcroft [mailto:apw@canonical.com]
+> Sent: Thursday, March 29, 2012 1:29 PM
+> To: Jeff Garzik; linux-ide@vger.kernel.org
+> Cc: Andy Whitcroft; linux-kernel@vger.kernel.org; KY Srinivasan; Mike Sterling
+> Subject: [PATCH 1/1] ata_piix: defer disks to the Hyper-V paravirtualised drivers
+> by default
+> 
+> When we are hosted on a Hyper-V hypervisor the guest disks are exposed
+> both via the Hyper-V paravirtualised drivers and via an emulated SATA disk
+> controller.  We want to use the paravirtualised drivers where possible as
+> they are much more performant.  The Hyper-V paravirtualised drivers only
+> expose the virtual hard disk devices, the CDROM/DVD devices must still
+> be enumerated on the virtualised SATA controller.  As we have no control
+> over kernel probe order for these two drivers especially when one driver
+> is builtin to the kernel and the other a module, we need to prevent the
+> ata_piix driver from claiming the disks devices by default when running
+> on a Hyper-V hypervisor.
+> 
+> When enumerating the drives look at the aquired device ID and if it
+> appears to be a disk device then report it as disconnected.  Limit this
+> behaviour to when we have detected a Hyper-V hypervisor.  Finally allow
+> this behaviour to be overriden via a new module parameter.
 
-Hi Li - the paragraph above does not give me much to comment on but what
-I can say is that an HMAC patch for eCryptfs was written years ago.
-Unfortunately, it seems to have been lost. I don't think that the patch
-was ever sent to a list but it lived in the project's old sourceforge
-site for a long time.
+Jeff,
 
-The maintainer of eCryptfs at that time was also the original author of
-eCryptfs, Mike Halcrow, and he opted to not merge the HMAC patch in
-favor of using GCM for integrity protection. The HMAC patch was at least
-his own design and maybe his own code (I can't quite remember), so he
-wasn't negatively biased when deciding that GCM would be a better fit.
-Here's a reference, although it isn't the actual patch review:
+Your feedback here would be greatly appreciated. If there are issues with this
+please, do let us know.
 
-http://www.mail-archive.com/ecryptfs-users@lists.sourceforge.net/msg00271.h=
-tml
+Regards,
 
-You can find more about Mike's HMAC design in the design doc located the
-ecryptfs-utils source tree.
+K. Y 
+> 
+> BugLink: http://bugs.launchpad.net/bugs/929545
+> BugLink: http://bugs.launchpad.net/bugs/942316
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> ---
+>  drivers/ata/ata_piix.c |   29 +++++++++++++++++++++++++++++
+>  1 files changed, 29 insertions(+), 0 deletions(-)
+> 
+>     This was discovered when doing some boot testing on a Hyper-V
+>     host.  Performance was found to be bad as out builtin ata_piix
+>     driver was grabbing the disks.  I am Cc:ing a couple of the
+>     Microsoft people who worked on the HV driver set as well.
+> 
+>     Note that the device id data is converted from device to host
+>     order in the caller which makes examining the data problematic.
+>     As this code only make sense on X86 and we know we are in
+>     matching order we can access the data without first fixing it.
+>     Alternativly we could add a new callback from the ata core
+>     after the code has been fixed for validation.
+> 
+>     Comments?
+> 
+>     -apw
+> 
+> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+> index 68013f9..64895f8 100644
+> --- a/drivers/ata/ata_piix.c
+> +++ b/drivers/ata/ata_piix.c
+> @@ -94,6 +94,9 @@
+>  #include <scsi/scsi_host.h>
+>  #include <linux/libata.h>
+>  #include <linux/dmi.h>
+> +#ifdef CONFIG_X86
+> +#include <asm/hypervisor.h>
+> +#endif
+> 
+>  #define DRV_NAME	"ata_piix"
+>  #define DRV_VERSION	"2.13"
+> @@ -188,6 +191,29 @@ static int piix_pci_device_resume(struct pci_dev *pdev);
+> 
+>  static unsigned int in_module_init = 1;
+> 
+> +static int prefer_ms_hyperv = 1;
+> +
+> +unsigned int ata_piix_read_id(struct ata_device *dev,
+> +					struct ata_taskfile *tf, u16 *id)
+> +{
+> +	int ret = ata_do_dev_read_id(dev, tf, id);
+> +
+> +#ifdef CONFIG_X86
+> +	/* XXX: note that the device id is in little-endian order, the caller
+> +	 * will shift it to host order, but we are working with little-endian.
+> +	 * As this is _only_ used on x86 we can actually directly access it
+> +	 * as host is also little-endian.
+> +	 */
+> +	if (!ret && prefer_ms_hyperv && x86_hyper == &x86_hyper_ms_hyperv
+> &&
+> +							ata_id_is_ata(id)) {
+> +		ata_dev_printk(dev, KERN_WARNING, "ATA disk ignored
+> deferring to Hyper-V paravirt driver\n");
+> +
+> +		return AC_ERR_DEV|AC_ERR_NODEV_HINT;
+> +	}
+> +#endif
+> +	return ret;
+> +}
+> +
+>  static const struct pci_device_id piix_pci_tbl[] = {
+>  	/* Intel PIIX3 for the 430HX etc */
+>  	{ 0x8086, 0x7010, PCI_ANY_ID, PCI_ANY_ID, 0, 0, piix_pata_mwdma },
+> @@ -359,6 +385,7 @@ static struct ata_port_operations piix_pata_ops = {
+>  	.set_piomode		= piix_set_piomode,
+>  	.set_dmamode		= piix_set_dmamode,
+>  	.prereset		= piix_pata_prereset,
+> +	.read_id		= ata_piix_read_id,
+>  };
+> 
+>  static struct ata_port_operations piix_vmw_ops = {
+> @@ -1703,3 +1730,5 @@ static void __exit piix_exit(void)
+> 
+>  module_init(piix_init);
+>  module_exit(piix_exit);
+> +
+> +module_param(prefer_ms_hyperv, int, 0);
+> --
+> 1.7.9.1
+> 
+> 
+> 
 
-So, the best way to proceed is probably to ask if you've given GCM any
-consideration?
 
-Tyler
 
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCgAGBQJPhFpOAAoJENaSAD2qAscKdjgQAMB7oHrihZl0B/uUGNR8ua48
-FyAlkl68XYpW+FBzeu/sKrwJOWFBxJ+M8A4jvtBfpXC2CLx3nk8XMazAmViV6BO/
-l1fAX6gDn+cdE63ypBNr2rQI0lDTb0N8U/nc7Dveem6qJ7aGGqy66dl0al/avskK
-lpKkSXCdz5c9AFMi1A4eEMnDaCRfr+g1PDoPh2SekSfX2b0TQK7OEEccEgQn2AEc
-hS1rsvis7+I89wxrB5C8LzOSGXdPnq2iBVhpM53BbaqGVs/zTNlTI5JcHMzm0Ut1
-xbwIyHQzYemnT5po86xcncR1xzjs/J8nnoWUV2TCpBa/oENuFbpHe92XCAopztri
-eR0Ui3FiaFgtaJvMZCVrAkQmwn+Sqnb0xlMCTpdlOB0sx6PLj6TqVzTWVysybLwn
-L3DwKTnqJnB7rRsWLVzs5abrHIc2FW9umIv58HzjDE5P+RSJb+WZmRVD4oHY5weI
-f0C0vWsdJjGRJ8QR/xqXs2gmKR6Xlgudn61B7D2PJwd/WjgpSaWLF3FHxPKiuFTB
-lintu0Y6bAeE9bro6Job8DOcDHlSimy/7TG+3wkN+9Ah9dAgRGFUfAA6X5M38jfi
-IiB9De1ut/Buq5t/Lo3/eckA1HXF6AVHTE7gmbwnux3QlxCkihl1QG55OvYuMYAI
-xOLlzixFFL9QePd7TZIn
-=uFx3
------END PGP SIGNATURE-----
-
---k1lZvvs/B4yU6o8G--
