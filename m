@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab2DJJIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:08:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42243 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753399Ab2DJJIL (ORCPT
+	id S1753446Ab2DJJIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:08:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:46348 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751150Ab2DJJIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:08:11 -0400
-Date: Tue, 10 Apr 2012 10:08:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RESEND 1/3] regulator: Rework s5m8767_set_voltage to
- support both LDOs and BUCKs
-Message-ID: <20120410090807.GA7499@opensource.wolfsonmicro.com>
-References: <1334037944.15859.8.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
-Content-Disposition: inline
-In-Reply-To: <1334037944.15859.8.camel@phoenix>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Apr 2012 05:08:50 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18INBdL/3AIMHq1/fViYRbUItO+luMXMeL7wjbDiV
+	I/2twYN8utvQdi
+Message-ID: <1334048925.7524.21.camel@marge.simpson.net>
+Subject: Re: RFC [patch] sched,cgroup_sched: convince RT_GROUP_SCHED
+ throttle to work
+From: Mike Galbraith <efault@gmx.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>
+Date: Tue, 10 Apr 2012 11:08:45 +0200
+In-Reply-To: <1333792489.12677.58.camel@marge.simpson.net>
+References: <1333444106.9072.4.camel@marge.simpson.net>
+	 <1333444788.9072.9.camel@marge.simpson.net>
+	 <1333789124.12677.15.camel@marge.simpson.net>
+	 <1333792489.12677.58.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2012-04-07 at 11:54 +0200, Mike Galbraith wrote:
 
---BXVAT5kNtrzKuDFl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> With this patch, the thing appears to work perfectly, but it doesn't
+> look correct, since I'm futzing with ->rt_time where I should not.
 
-On Tue, Apr 10, 2012 at 02:05:44PM +0800, Axel Lin wrote:
-> s5m8767_set_voltage not only implement set_voltage callbacks for LDOs,
-> but also for BUCKs when s5m8767->buck_gpioindex is not set.
-> s5m8767_set_voltage_buck actually only for buck[2|3|4] when
-> s5m8767->buck_gpioindex is set.
+s/doesn't look/definitely isn't.  This failed the "definitely works so
+may live on despite horrific appearance" test anyway, so how about just
+stop pretending root isn't global instead?
 
-Applied all, but please don't resend things like this where I've said
-I'm waiting for something to happen - I'll have the patches queued up
-waiting for whatever the event is.
+sched,rt: fix isolated CPUs leaving root_task_group indefinitely throttled
 
---BXVAT5kNtrzKuDFl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Root task group bandwidth replenishment must service all CPUs regardless of
+where it was last started.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+---
+ kernel/sched/rt.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-iQIcBAEBAgAGBQJPg/huAAoJEBus8iNuMP3df4UP+wVq41QE7joNI3esYFpuVUg9
-9hlg8jaKEHaWE80bgexte5ID4YlIKXVy48bYpUnUXabIdnEFl+1kd2tTSNrQPgtG
-qu/82V5eg9ZtUBje25EcsIjqOE/ZLg2H67Ok5ai1u+x/tJofNcT51nV8ZB31yrTF
-bcdqFK9GGZ9uXc7LUsLKf/M9anTbXNxxI4tYo90GMbqvhSQOjbZnxWubRFUsltTZ
-p+mX4IehKtcmPMOKZZI/9Zs/nrrxjV2SpbVKOvXVbBqVo5gLllIEwxEET3k+IdMT
-LE/XPChJ6bKm87eJrMpS/GLS2M4K7vKc5plKL7AtwqgnoJw4QdqOoaHAGeHjy7lD
-7BFaBcXBOeexO571bIRRBWEL/FZJPlhrvQNTSVv5g3c+K/9m4vbgFqv0WO6RRKrN
-KY2R3Q8V1fkpk119FBY36CnO3iU96GzJwv1os1w2kQxoP1eR8GYfCLOLD3f/U8PR
-e9qw0tbz6V5cRf9JrFx64lm+c8TZjlCjCNkdVuR4uX4i+pPXZxQC50rb17s5VyQi
-2OPigURPmSoapdmW9fvdtTCawuKeXr+ZRPesVAW8pNuQNRaFZ0IYb9vXCK8V+8m9
-3SLrYghYgH3VJZQdrc099Tny2N2Zohp7y7WBWqjhqoVCb5vD4gs+yk878qOfZjyP
-EkG58Me3E6Zhg5ys7eKd
-=ktYZ
------END PGP SIGNATURE-----
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -782,6 +782,19 @@ static int do_sched_rt_period_timer(stru
+ 	const struct cpumask *span;
+ 
+ 	span = sched_rt_period_mask();
++#ifdef CONFIG_RT_GROUP_SCHED
++	/*
++	 * FIXME: isolated CPUs should really leave the root task group,
++	 * whether they are isolcpus or were isolated via cpusets, lest
++	 * the timer run on a CPU which does not service all runqueues,
++	 * potentially leaving other CPUs indefinitely throttled.  If
++	 * isolation is really required, the user will turn the throttle
++	 * off to kill the perturbations it causes anyway.  Meanwhile,
++	 * this maintains functionality for boot and/or troubleshooting.
++	 */
++	if (rt_b == &root_task_group.rt_bandwidth)
++		span = cpu_online_mask;
++#endif
+ 	for_each_cpu(i, span) {
+ 		int enqueue = 0;
+ 		struct rt_rq *rt_rq = sched_rt_period_rt_rq(rt_b, i);
 
---BXVAT5kNtrzKuDFl--
+
