@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759652Ab2DJXAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 19:00:05 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48429 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759488Ab2DJXAC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 19:00:02 -0400
-Date: Wed, 11 Apr 2012 02:59:57 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Matt Helsley <matthltc@us.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH mm RESEND] c/r: prctl: update prctl_set_mm_exe_file()
- after mm->num_exe_file_vmas removal
-Message-ID: <20120410225957.GP24857@moon>
-References: <20120407190801.10294.76053.stgit@zurg>
+	id S932391Ab2DJXKI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 19:10:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755472Ab2DJXKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 19:10:07 -0400
+Date: Wed, 11 Apr 2012 01:08:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
+        Michal Marek <mmarek@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
+Message-ID: <20120410230833.GA17620@redhat.com>
+References: <20120215143606.GA14037@redhat.com> <20120215160652.GA17680@redhat.com> <20120215162752.GF4533@moon> <20120409151027.7f3e0fa5.akpm@linux-foundation.org> <20120409222443.GW1625@moon> <4F836F3E.9090207@zytor.com> <20120410223758.GL24857@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120407190801.10294.76053.stgit@zurg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120410223758.GL24857@moon>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 07, 2012 at 11:08:02PM +0400, Konstantin Khlebnikov wrote:
-> [ fix for "c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-v2" from mm tree ]
-> 
-> After removing mm->num_exe_file_vmas kernel keeps mm->exe_file until final mmput(),
-> it never becomes NULL while task is alive.
-> 
-> We can check for other mapped files in mm instead of checking mm->num_exe_file_vmas,
-> and mark mm with flag MMF_EXE_FILE_CHANGED in order to forbid second changing of mm->exe_file.
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+On 04/11, Cyrill Gorcunov wrote:
+>
+> --- linux-2.6.git.orig/kernel/kcmp.c
+> +++ linux-2.6.git/kernel/kcmp.c
+> @@ -17,6 +17,17 @@
+>   * reasons, still the comparison results should be suitable for
+>   * sorting. Thus, we obfuscate kernel pointers values and compare
+>   * the production instead.
+> + *
+> + * The obfuscation is done in two steps. First -- we use xor on
+> + * kernel pointer with random value, which puts pointer into
+> + * a new position in reordered space. Second -- we multiply
+> + * the xor production with big odd random number to permute
+> + * bits even more (the oddity is important here, it allow
+> + * us to have meaningful production even if multiplicants
+> + * are big numbers).
+> + *
+> + * Note also the obfuscation itself is invisible to user-space
+> + * and if needed it can be changed to any suitable scheme.
+>   */
+>  static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
 
-Hi Konstantin, really sorry for delay. This should do trick for us.
+OK, since this is discussed again...
 
-Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Can this comment can also explain why do we obfuscate the pointers
+by type? I mean, I don't really understand why the one-dimensional
+cookies[2] is "not enough" from security pov.
+
+Oleg.
+
