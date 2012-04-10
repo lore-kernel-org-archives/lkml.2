@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2DJPID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:08:03 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49860 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758937Ab2DJPIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:08:01 -0400
-Message-ID: <1334070472.18312.4.camel@phoenix>
-Subject: [PATCH] regulator: twl-regulator: Fix off-by-one vsel setting in
- twl6030smps_set_voltage
-From: Axel Lin <axel.lin@gmail.com>
+	id S1759074Ab2DJPIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:08:19 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38378 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759057Ab2DJPIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:08:16 -0400
+Message-ID: <1334070539.16827.11.camel@key-ThinkPad-W510>
+Subject: [PATCH v2 05/17] pseries: Enabled the PFO-based RNG accelerator
+From: Kent Yoder <key@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 10 Apr 2012 23:07:52 +0800
+Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Tue, 10 Apr 2012 10:08:59 -0500
+In-Reply-To: <1334070249.16827.1.camel@key-ThinkPad-W510>
+References: <1334070249.16827.1.camel@key-ThinkPad-W510>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041015-7182-0000-0000-000001385FE6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 268a1 "regulator: twl-regulator: Use DIV_ROUND_UP at appropriate places"
-introduced an off-by-one bug for setting vsel.
+This patch adds the cas bits to advertise support for the Platform
+Facilities Option (PFO) based random number generator accerator.
+The pseries-rng driver provides support for this hardware feature.
 
-The linear calculation code in twl6030smps_list_voltage() does subtract index
-by 1 so we need the vsel++ after DIV_ROUND_UP.
-
-The original code use this trick to differentiate if we are going to set the
-voltage to 0 or the voltage falls within the linear calculation range.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- drivers/regulator/twl-regulator.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/prom_init.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 7384d27..68d9a7b 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -788,6 +788,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 		else if ((min_uV >= 600000) && (min_uV <= 1300000)) {
- 			int calc_uV;
- 			vsel = DIV_ROUND_UP(min_uV - 600000, 12500);
-+			vsel++;
- 			calc_uV = twl6030smps_list_voltage(rdev, vsel);
- 			if (calc_uV > max_uV)
- 				return -EINVAL;
-@@ -814,6 +815,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 		else if ((min_uV >= 700000) && (min_uV <= 1420000)) {
- 			int calc_uV;
- 			vsel = DIV_ROUND_UP(min_uV - 700000, 12500);
-+			vsel++;
- 			calc_uV = twl6030smps_list_voltage(rdev, vsel);
- 			if (calc_uV > max_uV)
- 				return -EINVAL;
-@@ -835,16 +837,20 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 			return -EINVAL;
- 		break;
- 	case SMPS_EXTENDED_EN:
--		if (min_uV == 0)
-+		if (min_uV == 0) {
- 			vsel = 0;
--		else if ((min_uV >= 1852000) && (max_uV <= 4013600))
-+		} else if ((min_uV >= 1852000) && (max_uV <= 4013600)) {
- 			vsel = DIV_ROUND_UP(min_uV - 1852000, 38600);
-+			vsel++;
-+		}
- 		break;
- 	case SMPS_OFFSET_EN|SMPS_EXTENDED_EN:
--		if (min_uV == 0)
-+		if (min_uV == 0) {
- 			vsel = 0;
--		else if ((min_uV >= 2161000) && (max_uV <= 4321000))
-+		} else if ((min_uV >= 2161000) && (max_uV <= 4321000)) {
- 			vsel = DIV_ROUND_UP(min_uV - 2161000, 38600);
-+			vsel++;
-+		}
- 		break;
- 	}
+diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
+index 9986027..26f6317 100644
+--- a/arch/powerpc/kernel/prom_init.c
++++ b/arch/powerpc/kernel/prom_init.c
+@@ -701,6 +701,7 @@ static void __init early_cmdline_parse(void)
+ #define OV5_XCMO			0x00
+ #endif
+ #define OV5_TYPE1_AFFINITY	0x80	/* Type 1 NUMA affinity */
++#define OV5_PFO_HW_RNG		0x80	/* PFO Random Number Generator */
  
+ /* Option Vector 6: IBM PAPR hints */
+ #define OV6_LINUX		0x02	/* Linux is our OS */
+@@ -748,7 +749,7 @@ static unsigned char ibm_architecture_vec[] = {
+ 	0,				/* don't halt */
+ 
+ 	/* option vector 5: PAPR/OF options */
+-	13 - 2,				/* length */
++	18 - 2,				/* length */
+ 	0,				/* don't ignore, don't halt */
+ 	OV5_LPAR | OV5_SPLPAR | OV5_LARGE_PAGES | OV5_DRCONF_MEMORY |
+ 	OV5_DONATE_DEDICATE_CPU | OV5_MSI,
+@@ -764,6 +765,11 @@ static unsigned char ibm_architecture_vec[] = {
+ 	 */
+ #define IBM_ARCH_VEC_NRCORES_OFFSET	100
+ 	W(NR_CPUS),			/* number of cores supported */
++	0,
++	0,
++	0,
++	0,
++	OV5_PFO_HW_RNG,
+ 
+ 	/* option vector 6: IBM PAPR hints */
+ 	4 - 2,				/* length */
 -- 
-1.7.5.4
-
+1.7.1
 
 
