@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759423Ab2DJUqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:46:12 -0400
-Received: from fieldses.org ([174.143.236.118]:35457 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753595Ab2DJUqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:46:11 -0400
-Date: Tue, 10 Apr 2012 16:46:08 -0400
-From: "bfields@fieldses.org" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-Message-ID: <20120410204608.GI18465@fieldses.org>
-References: <20120409161114.GB6482@fieldses.org>
- <1333988226.2688.76.camel@lade.trondhjem.org>
- <20120409162107.GC6482@fieldses.org>
- <1333989216.2688.87.camel@lade.trondhjem.org>
- <4F8314CF.70302@parallels.com>
- <20120409181138.GA9581@fieldses.org>
- <4F8411CC.2070105@parallels.com>
- <20120410133913.GF18465@fieldses.org>
- <4F84537A.40100@parallels.com>
- <20120410142853.7e749ba2@corrin.poochiereds.net>
-MIME-Version: 1.0
+	id S932359Ab2DJUqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:46:45 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:50985 "EHLO violet"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755324Ab2DJUqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:46:43 -0400
+Date: Tue, 10 Apr 2012 22:42:49 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: via-rhine: Problem with lost link after a while
+Message-ID: <20120410204249.GA26627@electric-eye.fr.zoreil.com>
+References: <CACPM=kWa=UWuCMaYAtVMGJ7pzCy-PfyNRWBSuJnTZGtssU0W6g@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120410142853.7e749ba2@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACPM=kWa=UWuCMaYAtVMGJ7pzCy-PfyNRWBSuJnTZGtssU0W6g@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 02:28:53PM -0400, Jeff Layton wrote:
-> This sort of thing is one of the reasons I've been saying that the
-> grace period is really a property of the underlying filesystem and not
-> of nfsd itself. Of course, we do have to come up with a way to handle
-> the grace period that doesn't involve altering every exportable fs.
+Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+[...]
+> Got any ideas?
 
-By the way, the case of multiple containers exporting a single
-filesystem does look a lot like an active/active cluster filesystem
-export.  It might be an opportunity to prototype the interfaces for
-handling that case without having to deal with modifying the DLM.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;h=3f8c91a7398b9266fbe7abcbe4bd5dffef907643
 
---b.
+Courtesy of Andreas Mohr.
+
+-- 
+Ueimor
