@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758262Ab2DJA2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 20:28:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55302 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab2DJA2v (ORCPT
+	id S1758284Ab2DJA3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 20:29:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62249 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab2DJA33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 20:28:51 -0400
-Message-ID: <1334017721.2862.1.camel@phoenix>
-Subject: [PATCH v3] regulator: twl-regulator: Use DIV_ROUND_UP at
- appropriate places
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 10 Apr 2012 08:28:41 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 9 Apr 2012 20:29:29 -0400
+X-AuditID: 9c930197-b7b09ae000000a5d-86-4f837ee6fbbd
+Message-ID: <4F837F6E.3010508@kernel.org>
+Date: Tue, 10 Apr 2012 09:31:42 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Alexey Ivanov <rbtz@yandex-team.ru>
+CC: Rik van Riel <riel@redhat.com>,
+        "gnehzuil.lzheng@gmail.com" <gnehzuil.lzheng@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, yinghan@google.com
+Subject: Re: mapped pagecache pages vs unmapped pages
+References: <37371333672160@webcorp7.yandex-team.ru> <4F7E9854.1020904@gmail.com> <12701333991475@webcorp7.yandex-team.ru> <4F8326FD.8020507@redhat.com> <8041334015453@webcorp4.yandex-team.ru>
+In-Reply-To: <8041334015453@webcorp4.yandex-team.ru>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use DIV_ROUND_UP ensures we set the voltage falls within the specified range.
-Current code may set the voltage lower than the specified range.
+2012-04-10 오전 8:50, Alexey Ivanov 쓴 글:
 
-For example:
+> Did you consider making this ratio tunable, at least manually(i.e. via sysctl)?
+> I suppose we are not the only ones with almost-whole-ram-mmaped workload.
 
-vsel = (min_uV - 600000) / 125;
-if (vsel % 100)
-        vsel += 100;
-vsel /= 100;
-vsel++
 
-In the case min_uV is 712599 uV, the vsel will be 10.  Then current code set
-the voltage to 712500 uV which is lower than the specified range.
+Personally, I think it's not good approach.
+It depends on kernel's internal implemenatation which would be changed
+in future as we chagend it at 2.6.28.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-v3: Fix off-by-one for vsel, the vsel++ after DIV_ROUND_UP is required because
-    current code does subtract index by 1 in the list_voltage callback.
-v2: Remove braces {} for single statement blocks
+In my opinion, kernel just should do best effort to keep active working
+set except some critical pages which are code pages. If it's not active
+working set but user want to keep them, we have to add new feature like
+fadvise/madvise(WORKING_SET) to give the hint to kenrel. Although it
+causes changing legacy programs, it doesn't copuled kernel's reclaim
+algorithm and it's way to go, I think.
 
- drivers/regulator/twl-regulator.c |   20 ++++----------------
- 1 files changed, 4 insertions(+), 16 deletions(-)
+> 
+> 09.04.2012, 22:56, "Rik van Riel" <riel@redhat.com>:
+>> On 04/09/2012 01:11 PM, Alexey Ivanov wrote:
+>>
+>>>  Thanks for the hint!
+>>>
+>>>  Can anyone clarify the reason of not using zone->inactive_ratio in inactive_file_is_low_global()?
+>>
+>> New anonymous pages start out on the active anon list, and
+>> are always referenced.  If memory fills up, they may end
+>> up getting moved to the inactive anon list; being referenced
+>> while on the inactive anon list is enough to get them promoted
+>> back to the active list.
+>>
+>> New file pages start out on the INACTIVE file list, and
+>> start their lives not referenced at all. Due to readahead
+>> extra reads, many file pages may never be referenced.
+>>
+>> Only file pages that are referenced twice make it onto
+>> the active list.
+>>
+>> This means the inactive file list has to be large enough
+>> for all the readahead buffers, and give pages enough time
+>> on the list that frequently accessed ones can get accessed
+>> twice and promoted.
+>>
+>> http://linux-mm.org/PageReplacementDesign
+>>
+>> --
+>> All rights reversed
+> 
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 964946f..5d19b42 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -806,10 +806,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 			vsel = 0;
- 		else if ((min_uV >= 600000) && (min_uV <= 1300000)) {
- 			int calc_uV;
--			vsel = (min_uV - 600000) / 125;
--			if (vsel % 100)
--				vsel += 100;
--			vsel /= 100;
-+			vsel = DIV_ROUND_UP(min_uV - 600000, 12500);
- 			vsel++;
- 			calc_uV = twl6030smps_list_voltage(rdev, vsel);
- 			if (calc_uV > max_uV)
-@@ -836,10 +833,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 			vsel = 0;
- 		else if ((min_uV >= 700000) && (min_uV <= 1420000)) {
- 			int calc_uV;
--			vsel = (min_uV - 700000) / 125;
--			if (vsel % 100)
--				vsel += 100;
--			vsel /= 100;
-+			vsel = DIV_ROUND_UP(min_uV - 700000, 12500);
- 			vsel++;
- 			calc_uV = twl6030smps_list_voltage(rdev, vsel);
- 			if (calc_uV > max_uV)
-@@ -865,10 +859,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 		if (min_uV == 0)
- 			vsel = 0;
- 		else if ((min_uV >= 1852000) && (max_uV <= 4013600)) {
--			vsel = (min_uV - 1852000) / 386;
--			if (vsel % 100)
--				vsel += 100;
--			vsel /= 100;
-+			vsel = DIV_ROUND_UP(min_uV - 1852000, 38600);
- 			vsel++;
- 		}
- 		break;
-@@ -876,10 +867,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
- 		if (min_uV == 0)
- 			vsel = 0;
- 		else if ((min_uV >= 2161000) && (max_uV <= 4321000)) {
--			vsel = (min_uV - 2161000) / 386;
--			if (vsel % 100)
--				vsel += 100;
--			vsel /= 100;
-+			vsel = DIV_ROUND_UP(min_uV - 2161000, 38600);
- 			vsel++;
- 		}
- 		break;
+
+
 -- 
-1.7.5.4
-
-
-
+Kind regards,
+Minchan Kim
