@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab2DJHFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 03:05:52 -0400
-Received: from zfrontend1.aha.ru ([195.2.83.147]:52618 "EHLO aha.ru"
+	id S1755500Ab2DJHGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 03:06:37 -0400
+Received: from zfrontend1.aha.ru ([195.2.83.147]:53166 "EHLO aha.ru"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752498Ab2DJHFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 03:05:50 -0400
+	id S1755303Ab2DJHGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 03:06:21 -0400
 From: "werner" <w.landgraf@ru.ru>
 Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1
  sticks-and-crashs)
@@ -21,8 +21,8 @@ To: David Rientjes <rientjes@google.com>, Colin Cross <ccross@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         stable@vger.kernel.org
 X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Tue, 10 Apr 2012 03:09:45 -0400
-Message-ID: <web-723290478@zbackend1.aha.ru>
+Date: Tue, 10 Apr 2012 03:10:16 -0400
+Message-ID: <web-723290813@zbackend1.aha.ru>
 In-Reply-To: <alpine.DEB.2.00.1204091707580.21813@chino.kir.corp.google.com>
 References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
  <20120408195044.13ea6c8e.akpm@linux-foundation.org>
