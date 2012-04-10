@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab2DJJsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:48:11 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54635 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2DJJsK (ORCPT
+	id S1754515Ab2DJJtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:49:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45204 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab2DJJts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:48:10 -0400
-Message-ID: <4F8401D6.4030404@suse.cz>
-Date: Tue, 10 Apr 2012 11:48:06 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
+	Tue, 10 Apr 2012 05:49:48 -0400
+Date: Tue, 10 Apr 2012 02:49:36 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-fa4da365bc7772c2cd6d5405bdf151612455f957@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        santosh.shilimkar@ti.com, suresh.b.siddha@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, santosh.shilimkar@ti.com,
+        tglx@linutronix.de
+In-Reply-To: <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
+References: <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] clockevents:
+  tTack broadcast device mode change in tick_broadcast_switch_to_oneshot()
+Git-Commit-ID: fa4da365bc7772c2cd6d5405bdf151612455f957
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: daniel@ffwll.ch, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
-References: <4F717CE3.4040206@suse.cz> <4F717D80.9040207@suse.cz> <4F758400.3080907@suse.cz> <1333104359_155028@CP5-2952> <20120409101119.47e770b2@jbarnes-desktop> <4F83F3B5.8080704@suse.cz> <20120410085820.GC4115@phenom.ffwll.local>
-In-Reply-To: <20120410085820.GC4115@phenom.ffwll.local>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 10 Apr 2012 02:49:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 10:58 AM, Daniel Vetter wrote:
-> On Tue, Apr 10, 2012 at 10:47:49AM +0200, Jiri Slaby wrote:
->> On 04/09/2012 07:11 PM, Jesse Barnes wrote:
->>> On Fri, 30 Mar 2012 11:45:43 +0100 Chris Wilson
->>> <chris@chris-wilson.co.uk> wrote:
->>>
->>>> On Fri, 30 Mar 2012 11:59:28 +0200, Jiri Slaby <jslaby@suse.cz>
->>>> wrote:
->>>>> I don't know what to dump more, because iir is obviously zero
->>>>> too. What other sources of interrupts are on the (G33) chip?
->>>>
->>>> IIR is the master interrupt, with chained secondary interrupt
->>>> statuses. If IIR is 0, the interrupt wasn't raised by the GPU.
->>>
->>> I've actually seen cases where one of the PIPE*STAT regs is stuck,
->>> and even if IIR is 0 we still get interrupts... Jiri can you verify
->>> the PIPE*STAT regs have bits set, maybe one or more we don't check
->>> for?
->>
->> Note that I already attached their contents... This is what is in them
->> (pipes 0 and 1):
->> [ 3572.968581] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3572.977472] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3576.224839] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3576.243558] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3576.384912] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3576.403462] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3577.464100] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3577.477383] i915_driver_irq_handler: 0=00000000 1=00000000
->> [ 3577.829016] i915_driver_irq_handler: 0=00020000 1=00000000
->> [ 3577.830093] i915_driver_irq_handler: 0=00020000 1=00000000
->>
->> I.e. the handler is called when IIR=0 and both pipe stats are 0.
-> 
-> Hm, can you also dump the PORT_HOTPLUG_STAT register? That's the only
-> other subordinate interrupt source left.
+Commit-ID:  fa4da365bc7772c2cd6d5405bdf151612455f957
+Gitweb:     http://git.kernel.org/tip/fa4da365bc7772c2cd6d5405bdf151612455f957
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Mon, 9 Apr 2012 15:41:44 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 10 Apr 2012 11:42:07 +0200
 
-It's always 0x300:
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
-i915_driver_irq_handler: HP=00000300 0=00000000 1=00000000
+clockevents: tTack broadcast device mode change in tick_broadcast_switch_to_oneshot()
 
-thanks,
--- 
-js
-suse labs
+In the commit 77b0d60c5adf39c74039e2142a1d3cd1e4d53799,
+"clockevents: Leave the broadcast device in shutdown mode when not needed",
+we were bailing out too quickly in tick_broadcast_switch_to_oneshot(),
+with out tracking the broadcast device mode change to 'TICKDEV_MODE_ONESHOT'.
 
+This breaks the platforms which need broadcast device oneshot services during
+deep idle states. tick_broadcast_oneshot_control() thinks that it is
+in periodic mode and fails to take proper decisions based on the
+CLOCK_EVT_NOTIFY_BROADCAST_[ENTER, EXIT] notifications during deep
+idle entry/exit.
+
+Fix this by tracking the broadcast device mode as 'TICKDEV_MODE_ONESHOT',
+before leaving the broadcast HW device in shutdown mode if there are no active
+requests for the moment.
+
+Reported-and-tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: johnstul@us.ibm.com
+Link: http://lkml.kernel.org/r/1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-broadcast.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index e883f57..bf57abd 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -575,10 +575,12 @@ void tick_broadcast_switch_to_oneshot(void)
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
++
++	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
++
+ 	if (cpumask_empty(tick_get_broadcast_mask()))
+ 		goto end;
+ 
+-	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+ 	bc = tick_broadcast_device.evtdev;
+ 	if (bc)
+ 		tick_broadcast_setup_oneshot(bc);
