@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758500Ab2DJDpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 23:45:52 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:53430 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753391Ab2DJDpu (ORCPT
+	id S1751127Ab2DJEID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 00:08:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40791 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab2DJEIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 23:45:50 -0400
-Message-ID: <4F83AC80.1070204@st.com>
-Date: Tue, 10 Apr 2012 09:14:00 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Anton Vorontsov <cbouatmailru@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] mmc: pxamci: Use DIV_ROUND_UP at appropriate places
-References: <1334023210.16328.3.camel@phoenix>
-In-Reply-To: <1334023210.16328.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Apr 2012 00:08:01 -0400
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH 1/2] usb/ehci-hub: Add workaround for EG20T/ML7213/ML7223/ML7831
+Date: Tue, 10 Apr 2012 13:07:14 +0900
+Message-Id: <1334030835-4681-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/10/2012 7:30 AM, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mmc/host/pxamci.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
-> index cb2dc0e..4b89e73 100644
-> --- a/drivers/mmc/host/pxamci.c
-> +++ b/drivers/mmc/host/pxamci.c
-> @@ -190,7 +190,7 @@ static void pxamci_setup_data(struct pxamci_host *host, struct mmc_data *data)
->  	clks = (unsigned long long)data->timeout_ns * host->clkrate;
->  	do_div(clks, 1000000000UL);
->  	timeout = (unsigned int)clks + (data->timeout_clks << host->clkrt);
-> -	writel((timeout + 255) / 256, host->base + MMC_RDTO);
-> +	writel(DIV_ROUND_UP(timeout, 256), host->base + MMC_RDTO);
->  
->  	if (data->flags & MMC_DATA_READ) {
->  		host->dma_dir = DMA_FROM_DEVICE;
-> @@ -636,7 +636,7 @@ static int pxamci_probe(struct platform_device *pdev)
->  	/*
->  	 * Calculate minimum clock rate, rounding up.
->  	 */
-> -	mmc->f_min = (host->clkrate + 63) / 64;
-> +	mmc->f_min = DIV_ROUND_UP(host->clkrate, 64);
->  	mmc->f_max = (mmc_has_26MHz()) ? 26000000 : host->clkrate;
->  
->  	pxamci_init_ocr(host);
+ISSUE: When a bit of EHCI status register (USBSTS) is set
+as 1, if the corresponded bit of EHCI interrupt enable
+register(USBINTR) is set as 1, an interrupt occurs.
+After that, even if the bit of USBINTR is set as 0, the
+interrupt continues occurring.
+Workaround: Clear the bit 3 of USBSTS before enabling the
+interrupt, at resume process.
 
-Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
+This patch is for
+Intel EG20T PCH
+LAPIS Semiconductor ML7213 IOH
+LAPIS Semiconductor ML7223 IOH
+LAPIS Semiconductor ML7831 IOH
 
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/usb/host/ehci-hub.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 256fbd4..7ddb62e 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -342,6 +342,7 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 	u32			power_okay;
+ 	int			i;
+ 	unsigned long		resume_needed = 0;
++	struct pci_dev		*pdev = to_pci_dev(hcd->self.controller);
+ 
+ 	if (time_before (jiffies, ehci->next_statechange))
+ 		msleep(5);
+@@ -451,6 +452,23 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 
+ 	ehci->next_statechange = jiffies + msecs_to_jiffies(5);
+ 
++	if ((pdev->vendor == PCI_VENDOR_ID_INTEL && pdev->device == 0x8807) ||
++	   (pdev->vendor == PCI_VENDOR_ID_INTEL && pdev->device == 0x880F) ||
++	   (pdev->vendor == 0x10DB && pdev->device == 0x801C) || /* ML7213 */
++	   (pdev->vendor == 0x10DB && pdev->device == 0x8007) || /* ML7223 */
++	   (pdev->vendor == 0x10DB && pdev->device == 0x8807)) { /* ML7831 */
++		/* ISSUE: When a bit of EHCI status register (USBSTS) is set
++		 * as 1, if the corresponded bit of EHCI interrupt enable
++		 * register(USBINTR) is set as 1, an interrupt occurs.
++		 * After that, even if the bit of USBINTR is set as 0, the
++		 * interrupt continues occurring.
++		 * Workaround: Clear the bit 3 of USBSTS before enabling the
++		 * interrupt, at resume process.
++		 */
++		ehci_writel(ehci, STS_FLR, &ehci->regs->status);
++		ehci_dbg(ehci, "Workaround: %s: Clear STS_FLR\n", __func__);
++	}
++
+ 	/* Now we can safely re-enable irqs */
+ 	ehci_writel(ehci, INTR_MASK, &ehci->regs->intr_enable);
+ 
 -- 
-viresh
+1.7.7.6
+
