@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab2DJJOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:14:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54146 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751284Ab2DJJOU (ORCPT
+	id S1753475Ab2DJJTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:19:17 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:47099 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2DJJTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:14:20 -0400
-Date: Tue, 10 Apr 2012 10:14:17 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RESEND 1/3] regulator: max8997: Use simple equation to
- get selector
-Message-ID: <20120410091417.GB7499@opensource.wolfsonmicro.com>
-References: <1334038803.15859.14.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
-Content-Disposition: inline
-In-Reply-To: <1334038803.15859.14.camel@phoenix>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Apr 2012 05:19:16 -0400
+Message-ID: <1334049554.2178.1.camel@shrek.rexursive.com>
+Subject: Re: [PATCH v9]: Hibernation: fix the number of pages used for
+ hibernate/thaw buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: Per Olofsson <pelle@debian.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Date: Tue, 10 Apr 2012 19:19:14 +1000
+In-Reply-To: <4F83F202.2080600@debian.org>
+References: <1334026047.2103.23.camel@shrek.rexursive.com>
+	 <4F83F202.2080600@debian.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-04-10 at 10:40 +0200, Per Olofsson wrote:
+> Nitpick: it should be faster to calculate "nr_free_pages() -
+> nr_free_highpages()", at least on systems without high pages. But
+> perhaps it does not matter. 
 
---WYTEVAkct0FjGQmd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Actually, nr_free_highpages() does a loop very similar to the one in the
+patch. So, you would then have that and nr_free_pages() invocation.
+That's why I went with just the loop.
 
-On Tue, Apr 10, 2012 at 02:20:03PM +0800, Axel Lin wrote:
-> It's more efficient to get the best selector by simple equation.
+Make sense?
 
-Applied all, thanks.
+-- 
+Bojan
 
---WYTEVAkct0FjGQmd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPg/niAAoJEBus8iNuMP3dUxMQAJyBZ3zTHGCh3u7BPasB01L7
-5RDXmwFVMqSdJplW1yEw8iskSm1RIJdsDxfF944l/rzHUPJLYwLyLb3JMaPlenEH
-OSF8WbEG6GPExfXWbuf+J0NuqFQp3mPadZ5jtTJ6ZVjbdMu/W/rhtxHb+pgeeig4
-ZNmw6MZTqwovXSUhYZW1PKkn0CFe5BuU0mtS/5e98n9+O+JgdKGdP5bkg0YCC58X
-zfWrbvgse3NVzDMUHhwJRv5WsjLuOiYy0RJCCMJI57Dv66Q9n8hzODaSrBuDrZB2
-xNI08kiH+70DwVHLw+Mv270qu/lV27ZduDGiBxN6gSUBWzqUKDMzsUsmG/PW7SSG
-CDdFVI7WNqWezKMXFtzpU37Bj5z92J0gFTUPsxVOkCjMmQTiBqsq03J+UPm3fpcL
-el0KRPNk9r0UpjTGCVXU9oqPeoyGtCYoDpfKhv9nYqyPqZrG3PHwN08x8WD9B4Ub
-EteJ1tVjhxW6X6/2TxWlN+tnz0ItYrEG98Xj+y4NBmvmznRuJyroGYTJTNDh6lNd
-pFtZNLdrcfRSvAnxYNKyk2dz8X6MUE1Gy2nzigOy2M0RK/DSoyEEioCJo+8/GDps
-6vdcMBe0I+VrRr4KFA9EoZIGJe7ynJ/8esEg9NqfqjWmULR+oK4H057KgXm/GoFv
-6H4J2kHcW1M2ZAXl0WmZ
-=DSjr
------END PGP SIGNATURE-----
-
---WYTEVAkct0FjGQmd--
