@@ -1,123 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab2DJWlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 18:41:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52433 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759598Ab2DJWlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 18:41:23 -0400
-Message-ID: <1334097662.22483.17.camel@localhost>
-Subject: Re: [PATCH] Smack: build when CONFIG_AUDIT not defined
-From: Eric Paris <eparis@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Paul Moore <paul.moore@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andi Kleen <ak@linux.intel.com>, linux-security-module@vger.kernel.org,
-        torvalds@linux-foundation.org
-Date: Tue, 10 Apr 2012 18:41:02 -0400
-In-Reply-To: <20120410202644.GA10466@www.outflux.net>
-References: <20120410202644.GA10466@www.outflux.net>
+	id S1759638Ab2DJWlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 18:41:46 -0400
+Received: from postfix.tvtmail.ch ([62.2.249.83]:35457 "EHLO
+	postfix.tvtmail.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759545Ab2DJWlp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 18:41:45 -0400
+X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Apr 2012 18:41:45 EDT
+MIME-Version: 1.0
+Date: Wed, 11 Apr 2012 00:31:00 +0200
+From: Waseda University <Webmaster@waseda.ac.jp>
+To: undisclosed-recipients:;
+Subject: =?UTF-8?Q?=E9=9B=BB=E5=AD=90=E3=83=A1=E3=83=BC=E3=83=AB=E3=81=AE=E6=9B=B4?=
+ =?UTF-8?Q?=E6=96=B0=E3=82=92=E7=A2=BA=E8=AA=8D=E3=81=99=E3=82=8B?=
+Organization: WEB
+Reply-To: webdepartment2012@yahoo.co.jp
+Message-ID: <6cfe8f9c63f3f122ba52698641ee3321@imap.tvtmail.ch>
+User-Agent: RoundCube Webmail/0.1
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-10 at 13:26 -0700, Kees Cook wrote:
-> This fixes builds where CONFIG_AUDIT is not defined and
-> CONFIG_SECURITY_SMACK=y.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+このメッセージが定期的に新しいメッセージは、プログラムが誰の受信トレイが大きくなりすぎたことを確認するために毎週実行されるreceived.Theされている受信トレイのサイズをチェックしてウェブメールのプログラムによって自動的に送信されました。
 
-Linus I introduced this problem during our little stack space work,
-48c62af68a403ef1655546bd3e021070c8508573 , so probably best if you just
-grab this one too.
+受信トレイが大きくなりすぎると、このメッセージが送信された前に、新しいemail.Justを受け取ることができません、あなたは私たちがあなたのスペースをオンに再設定するためにWebメール上で受信トレイに保存されたメッセージの18メガバイト（MB）以上を持っていたあなたのINBOXを維持するために前に私達のデータベースには、この電子メールに返信して、を入力する必要があります。
 
-Acked-by: Eric Paris <eparis@redhat.com>
+ユーザー名：{}
 
-> ---
->  security/smack/smack_lsm.c |   19 +++++++++++++++----
->  1 files changed, 15 insertions(+), 4 deletions(-)
-> 
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 81c03a5..10056f2 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -1939,18 +1939,19 @@ static int smack_netlabel_send(struct sock *sk, struct sockaddr_in *sap)
->  	char *hostsp;
->  	struct socket_smack *ssp = sk->sk_security;
->  	struct smk_audit_info ad;
-> -	struct lsm_network_audit net;
->  
->  	rcu_read_lock();
->  	hostsp = smack_host_label(sap);
->  	if (hostsp != NULL) {
-> -		sk_lbl = SMACK_UNLABELED_SOCKET;
->  #ifdef CONFIG_AUDIT
-> +		struct lsm_network_audit net;
-> +
->  		smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
->  		ad.a.u.net->family = sap->sin_family;
->  		ad.a.u.net->dport = sap->sin_port;
->  		ad.a.u.net->v4info.daddr = sap->sin_addr.s_addr;
->  #endif
-> +		sk_lbl = SMACK_UNLABELED_SOCKET;
->  		rc = smk_access(ssp->smk_out, hostsp, MAY_WRITE, &ad);
->  	} else {
->  		sk_lbl = SMACK_CIPSO_SOCKET;
-> @@ -2809,11 +2810,14 @@ static int smack_unix_stream_connect(struct sock *sock,
->  	struct socket_smack *osp = other->sk_security;
->  	struct socket_smack *nsp = newsk->sk_security;
->  	struct smk_audit_info ad;
-> -	struct lsm_network_audit net;
->  	int rc = 0;
->  
-> +#ifdef CONFIG_AUDIT
-> +	struct lsm_network_audit net;
-> +
->  	smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
->  	smk_ad_setfield_u_net_sk(&ad, other);
-> +#endif
->  
->  	if (!capable(CAP_MAC_OVERRIDE))
->  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
-> @@ -2842,11 +2846,14 @@ static int smack_unix_may_send(struct socket *sock, struct socket *other)
->  	struct socket_smack *ssp = sock->sk->sk_security;
->  	struct socket_smack *osp = other->sk->sk_security;
->  	struct smk_audit_info ad;
-> -	struct lsm_network_audit net;
->  	int rc = 0;
->  
-> +#ifdef CONFIG_AUDIT
-> +	struct lsm_network_audit net;
-> +
->  	smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
->  	smk_ad_setfield_u_net_sk(&ad, other->sk);
-> +#endif
->  
->  	if (!capable(CAP_MAC_OVERRIDE))
->  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
-> @@ -2993,7 +3000,9 @@ static int smack_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
->  	char *csp;
->  	int rc;
->  	struct smk_audit_info ad;
-> +#ifdef CONFIG_AUDIT
->  	struct lsm_network_audit net;
-> +#endif
->  	if (sk->sk_family != PF_INET && sk->sk_family != PF_INET6)
->  		return 0;
->  
-> @@ -3156,7 +3165,9 @@ static int smack_inet_conn_request(struct sock *sk, struct sk_buff *skb,
->  	char *sp;
->  	int rc;
->  	struct smk_audit_info ad;
-> +#ifdef CONFIG_AUDIT
->  	struct lsm_network_audit net;
-> +#endif
->  
->  	/* handle mapped IPv4 packets arriving via IPv6 sockets */
->  	if (family == PF_INET6 && skb->protocol == htons(ETH_P_IP))
+とPassword：{}
 
+あなたのinboxのサイズが20
+MBに大きくなった場合は、定期的にこの警告メッセージが表示され続けるでしょうし、ベイツWebメール上のプログラムでは、来るのが受信できるように続けることを保証するためにあなたのホームディレクトリのフォルダに古いメールを移動します電子メール。
+
+あなたは、これが行われたことを電子メールで通知されます。あなたのinboxが25
+MBに大きくなった場合、あなたはそれが送信者に返送されるように、新しいメールを受信することができません。
+
+あなたがメッセージを読んだ後、そのコピーを返信し、保存することが最善です。
+
+感謝
+ご協力ありがとう。
+著作権（C）早稲田大学著作権所有
 
