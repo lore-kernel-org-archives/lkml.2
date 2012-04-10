@@ -1,117 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab2DJUhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:37:37 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:20883 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759399Ab2DJUhf (ORCPT
+	id S1759368Ab2DJUl5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:41:57 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:44528 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755324Ab2DJUl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:37:35 -0400
-Date: Tue, 10 Apr 2012 22:37:33 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v4 4/4] tools: Connect to the kernel build system
-Message-ID: <20120410203733.GD28293@merkur.ravnborg.org>
-References: <1334071240-28692-1-git-send-email-bp@amd64.org> <1334071240-28692-5-git-send-email-bp@amd64.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334071240-28692-5-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 10 Apr 2012 16:41:56 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4F8314BE.9090708@gmail.com>
+References: <1333669933-25267-1-git-send-email-ddaney.cavm@gmail.com> <20120407012616.62D133E17B2@localhost> <4F8314BE.9090708@gmail.com>
+Date: Tue, 10 Apr 2012 14:41:53 -0600
+Message-Id: <20120410204153.4B1CC3E0D65@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 05:20:40PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Mon, 09 Apr 2012 09:56:30 -0700, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 04/06/2012 06:26 PM, Grant Likely wrote:
+> > On Thu,  5 Apr 2012 16:52:13 -0700, David Daney<ddaney.cavm@gmail.com>  wrote:
+> >> From: David Daney<david.daney@cavium.com>
+> >>
+> >> In commit 4bbdd45a (irq_domain/powerpc: eliminate irq_map; use
+> >> irq_alloc_desc() instead) code was added that ignores error returns
+> >> from irq_alloc_desc_from() by (silently) casting the return value to
+> >> unsigned.  The negitive value error return now suddenly looks like a
+> >> valid irq number.
+> >>
+> >> Commits cc79ca69 (irq_domain: Move irq_domain code from powerpc to
+> >> kernel/irq) and 1bc04f2c (irq_domain: Add support for base irq and
+> >> hwirq in legacy mappings) move this code to its current location in
+> >> irqdomain.c
+> >>
+> >> The result of all of this is a null pointer dereference OOPS if one of
+> >> the error cases is hit.
+> >>
+> >> The fix: Don't cast away the negativeness of the return value and then
+> >> check for errors.
+> >>
+> >> Signed-off-by: David Daney<david.daney@cavium.com>
+> >> ---
+> >>   kernel/irq/irqdomain.c |   11 ++++++-----
+> >>   1 files changed, 6 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> >> index af48e59..9d3e3ae 100644
+> >> --- a/kernel/irq/irqdomain.c
+> >> +++ b/kernel/irq/irqdomain.c
+> >> @@ -351,6 +351,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+> >>   				irq_hw_number_t hwirq)
+> >>   {
+> >>   	unsigned int virq, hint;
+> >> +	int irq;
+> >
+> > Merged, but I've dropped the new variable in favour of making virq an
+> > int.  Makes for a smaller diffstat.
+> >
 > 
-> Now you can do
+> Thanks Grant,
 > 
-> $ make tools/<toolname>
+> I had thought about that too, but since virq throughout all the rest of 
+> the code is unsigned, I didn't want to introduce an inconsistency.
 > 
-> from the toplevel kernel directory and have the respective tool built.
-> 
-> If you want to build and install it, do
-> 
-> $ make tools/<toolname>_install
-> 
-> $ make tools/<toolname>_clean
-> 
-> should clean the respective tool directories.
-> 
-> If you want to clean all in tools, simply do
-> 
-> $ make tools/clean
-> 
-> Also, if you want to get what the possible targets are, simply calling
-> 
-> $ make tools/
-> 
-> should give you the short help.
-> 
-> $ make tools/install
-> 
-> installs all tools, of course. Doh.
-> 
-> Cc: Sam Ravnborg <sam@ravnborg.org>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  Makefile       |    7 +++++++
->  tools/Makefile |   25 ++++++++++++++++++++++++-
->  2 files changed, 31 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index 0df3d003a079..e24ce7104f63 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -1468,6 +1468,13 @@ kernelrelease:
->  kernelversion:
->  	@echo $(KERNELVERSION)
->  
-> +# Clear a bunch of variables before executing the submake
-> +tools/: FORCE
-> +	$(Q)$(MAKE) LDFLAGS= -C $(src)/tools/
-I think you need to clear MAKEFLAGS here too?
+> After a little more thought, I think that the domain of virq and the irq 
+> used by the rest of the kernel are the same, so it might make sense to 
+> change virq to be int universally, and use the kernel convention that 
+> negative numbers indicate error conditions.  But that would be a much 
+> larger patch.
 
-> +
-> +tools/%: FORCE
-> +	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
-> +
+... touching pretty much *every* driver in the kernel!  Blech!
 
->  
-> -perf firewire lguest usb virtio vm: FORCE
-> +firewire lguest perf usb virtio vm: FORCE
->  	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
+Yeah, that's not going to happen.  As a rule, irq numbers are always
+unsigned, but there are a few apis that can return either '0' meaning
+no irq, or a negative value indicating an error.  The irq_alloc_desc
+apis unfortunately are one such case.
 
-Fold this into 2/4
+g.
 
->  
->  cpupower: FORCE
-> @@ -32,6 +42,19 @@ turbostat x86_energy_perf_policy: FORCE
->  selftests: FORCE
->  	$(QUIET_SUBDIR0)testing/$@/ $(QUIET_SUBDIR1)
->  
-> +firewire_install lguest_install perf_install usb_install virtio_install vm_install:
-> +	$(QUIET_SUBDIR0)$(@:_install=)/ $(QUIET_SUBDIR1) install
-> +
-> +cpupower_install:
-> +	$(QUIET_SUBDIR0)power/$(@:_install=)/ $(QUIET_SUBDIR1) install
-> +
-> +turbostat_install x86_energy_perf_policy_install:
-> +	$(QUIET_SUBDIR0)power/x86/$(@:_install=)/ $(QUIET_SUBDIR1) install
-> +
-> +install: firewire_install lguest_install perf_install usb_install \
-> +		virtio_install vm_install cpupower_install turbostat_install \
-> +		x86_energy_perf_policy_install
-> +
-
-This really belongs in 2/4 or a separate patch.
-
-Sorry for bing picky about these details - but they destroy
-an otherwise fine patch-set.
-
-	Sam
