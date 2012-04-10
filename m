@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978Ab2DJO6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 10:58:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56436 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758956Ab2DJO6a (ORCPT
+	id S1758975Ab2DJPCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:02:16 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47654 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755391Ab2DJPCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 10:58:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.4-rc2-rt1
-Date: Tue, 10 Apr 2012 14:58:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-rt-users" <linux-rt-users@vger.kernel.org>
-References: <alpine.LFD.2.02.1204101642050.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1204101642050.2542@ionos>
+	Tue, 10 Apr 2012 11:02:13 -0400
+Date: Tue, 10 Apr 2012 17:03:04 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 4/8 v7] drm/i915/intel_i2c: use WAIT cycle, not STOP
+Message-ID: <20120410150304.GJ4115@phenom.ffwll.local>
+Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
+	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Benson Leung <bleung@chromium.org>,
+	Yufeng Shen <miletus@chromium.org>
+References: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
+ <1333108003-6341-5-git-send-email-djkurtz@chromium.org>
+ <20120410103746.GH4115@phenom.ffwll.local>
+ <20120410104147.GI4115@phenom.ffwll.local>
+ <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204101458.20026.arnd@arndb.de>
-X-Provags-ID: V02:K0:YbXE1fl9idx61fJ/AXN95J5IO3kfbABSfDd6wPs8Knc
- jCvlrTC8rOaLqH2xREQCPXjfGeyUcvIemBExqDNtssl/dRIgy6
- qcXdU1i/d/ww+n4Bbs7U6q70oNBdKfl5ofq+OWa1COwO3yT4E4
- kJIJKLxNoPhRm6phif6yGSP8DH2zvCpyODzvKdqfB0zoIPYflM
- HZ70RPzmM5v/pT7NJNFX08tGxBS73xoGI2z77zQvtUOquFtsPe
- CkbnriqyrEArnKw9Tm3+OueRyb8WjQnrmNposSdy2mTXKs5Bgy
- XUFU6O521MfrlO7apRvAqn6JvrAIzTCiia2oqpY1tNH/Wt33Na
- BhlT/UfOdMNCMl4NS5CM=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 April 2012, Thomas Gleixner wrote:
-> Dear RT Folks,
+On Tue, Apr 10, 2012 at 06:56:15PM +0800, Daniel Kurtz wrote:
+> On Tue, Apr 10, 2012 at 6:41 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Tue, Apr 10, 2012 at 12:37:46PM +0200, Daniel Vetter wrote:
+> >> On Fri, Mar 30, 2012 at 07:46:39PM +0800, Daniel Kurtz wrote:
+> >> > The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
+> >> > transaction) during a DATA or WAIT phase.  In other words, the
+> >> > controller rejects a STOP requested as part of the first transaction in a
+> >> > sequence.
+> >> >
+> >> > Thus, for the first transaction we must always use a WAIT cycle, detect
+> >> > when the device has finished (and is in a WAIT phase), and then either
+> >> > start the next transaction, or, if there are no more transactions,
+> >> > generate a STOP cycle.
+> >> >
+> >> > Note: Theoretically, the last transaction of a multi-transaction sequence
+> >> > could initiate a STOP cycle.  However, this slight optimization is left
+> >> > for another patch.  We return -ETIMEDOUT if the hardware doesn't
+> >> > deactivate after the STOP cycle.
+> >> >
+> >> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> >>
+> >> I've re-read gmbus register spec and STOP seems to be allowed even in the
+> >> first cycle. Does this patch solve an issue for you? If not, I prefer we
+> >> just drop it.
 > 
-> I'm pleased to announce the 3.4-rc2-rt1 release.
-> 
-> This is a straight forward update of the 3.2 series to 3.4-rc2. It's
-> slightly smaller than the 3.2 series. I hope to stabilize it fast so I
-> can concentrate on shuffling more parts of RT into 3.5.
-> 
-> The RT patch against 3.4-rc2-rt1 can be found here:
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4-rc2-rt1.patch.xz
-> 
-> 
-> The split quilt queue is available at:
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patches-3.4-rc2-rt1.tar.xz
-> 
-> Enjoy,
-> 
-> 	tglx
-> ---
-> Index: linux-3.2/fs/autofs4/autofs_i.h
-> ===================================================================
-> --- linux-3.2.orig/fs/autofs4/autofs_i.h
-> +++ linux-3.2/fs/autofs4/autofs_i.h
+> STOP does not work in the first cycle, hence the patch.
 
-I guess the patch you attached here with this diffstat
+Ok, I've picked this patch up and extended the comment a bit to that
+effect. Just to avoid anyone else trying to 'fix' things because bspec
+sounds like it should work.
 
- block/blk-iopoll.c      |    3 +++
- block/blk-softirq.c     |    3 +++
- fs/autofs4/autofs_i.h   |    1 +
- fs/autofs4/expire.c     |    2 +-
- fs/dcache.c             |    7 ++++---
- fs/namespace.c          |    3 ++-
- include/linux/delay.h   |    6 ++++++
- include/linux/preempt.h |    2 ++
- kernel/irq/manage.c     |   44 ++++++++++++++++++++++++++++++++++++++------
- localversion-rt         |    2 +-
- net/core/dev.c          |    6 ++++++
- net/packet/af_packet.c  |    5 +++--
- net/rds/ib_rdma.c       |    3 ++-
- 13 files changed, 72 insertions(+), 15 deletions(-)
+I've also picked up the other patches safe for the last one, thanks a lot
+for digging through the gmbus code and fixing it all up.
 
-is not the one you describe above but the one for the 3.2.14-rt24 release,
-right? Otherwise it would be considerably smaller compared to 3.2-rt, not
-just a bit ;-)
+Now can I volunteer you for a (hopefully) last set of gmbus patches?
+Afaics there are a few small things left to fix:
+- zero-length reads can blow up the kernel, like zero-length writes could.
+  See: https://bugs.freedesktop.org/show_bug.cgi?id=48269
+- Chris Wilson suggested on irc that we should wait for HW_READY even for
+  zero-length writes (and also reads), currently we don't.
+- atm the debug output is too noisy. I think we can leave the fallback to
+  gpio bitbanging at info (or maybe error) level, but all the other
+  messages should be tuned down to DRM_DEBUG_KMS - these can easily be hit
+  when userspace tries to probe the i2c with nothing connected or if the
+  driver code tries to do the same. See:
+  https://bugs.freedesktop.org/show_bug.cgi?id=48248
 
-	Arnd
+Chris, anything you want to add to the wishlist?
+
+Thanks, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
