@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759447Ab2DJVCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 17:02:43 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37985 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504Ab2DJVCm convert rfc822-to-8bit (ORCPT
+	id S932309Ab2DJVD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:03:27 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40641 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755504Ab2DJVD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 17:02:42 -0400
+	Tue, 10 Apr 2012 17:03:26 -0400
+Date: Tue, 10 Apr 2012 23:03:14 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v4 2/4] tools: Add a toplevel Makefile
+Message-ID: <20120410210314.GC30366@aftab>
+References: <1334071240-28692-1-git-send-email-bp@amd64.org>
+ <1334071240-28692-3-git-send-email-bp@amd64.org>
+ <20120410203348.GB28293@merkur.ravnborg.org>
 MIME-Version: 1.0
-In-Reply-To: <CABkLObr4Vyp9FwxfOquFjqnh1rEaLXNAzBV4SV-PO=UA4EC2vA@mail.gmail.com>
-References: <1333442836-9947-1-git-send-email-akinobu.mita@gmail.com>
-	<1333442836-9947-3-git-send-email-akinobu.mita@gmail.com>
-	<CABkLObr4Vyp9FwxfOquFjqnh1rEaLXNAzBV4SV-PO=UA4EC2vA@mail.gmail.com>
-Date: Wed, 11 Apr 2012 06:02:41 +0900
-Message-ID: <CAC5umyhu0TRgLhv+bbqRbcfx-hK5pacFt0bYOmzX4gODHt4B-A@mail.gmail.com>
-Subject: Re: [PATCH 3/4] arm: davinci: use for_each_set_bit_from
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Christian Riesch <christian.riesch@omicron.at>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410203348.GB28293@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/11 Christian Riesch <christian.riesch@omicron.at>:
+On Tue, Apr 10, 2012 at 10:33:48PM +0200, Sam Ravnborg wrote:
+> Things would be much simpler is all tools were adjusted to:
+> a) the subdir they live in is the make target name
+> b) each tool has three mandatory targets:
+>  1) default target => build the tool
+>  2) clean
+>  3) install
+> 
+> I can see that with the layout today you cannot
+> distingush between the various targets below power.
+> But the current solutions is not scaleable nor maintainable.
+> 
+> Even if you cannot fix power/* then testing looks easy.
+> 
+> But all that can always to improved and consolidated later.
 
->> --- a/arch/arm/mach-davinci/dma.c
->> +++ b/arch/arm/mach-davinci/dma.c
->> @@ -557,9 +557,9 @@ static int reserve_contiguous_slots(int ctlr, unsigned
->> int id,
->>        if (i == edma_cc[ctlr]->num_slots)
->>                stop_slot = i;
->>
->> -       for (j = start_slot; j < stop_slot; j++)
->> -               if (test_bit(j, tmp_inuse))
->> -                       clear_bit(j, edma_cc[ctlr]->edma_inuse);
->> +       j = start_slot;
->> +       for_each_set_bit_from(j, tmp_inuse, stop_slot);
->
-> Is the semicolon at the end of the line correct?
+Right, I was deliberating on whether to unify the dir layout so that it
+fits with the Makefile targets nicely but decided to leave it out for
+later. IOW, do the "one thing at a time" deal. Besides, some tools don't
+have that clearly defined targets and selftests, for example, doesn't
+need to be installed but simply run in a loop.
 
-It's clearly a bug that I was going to introduce.  I'll fix and
-resend it.
+So definitely agreed, the tools/ dir could use a bunch of cultivating in
+later cycles.
 
-Thanks a lot.
+Thanks.
 
->> +               clear_bit(j, edma_cc[ctlr]->edma_inuse);
->>
->>        if (count)
->>                return -EBUSY;
->> --
->> 1.7.4.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
