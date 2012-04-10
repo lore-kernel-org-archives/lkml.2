@@ -1,81 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab2DJGtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 02:49:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36840 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab2DJGtQ (ORCPT
+	id S1754545Ab2DJGyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 02:54:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41858 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab2DJGy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 02:49:16 -0400
-Date: Tue, 10 Apr 2012 14:49:18 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, FlorianSchandinat@gmx.de,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spock@gentoo.org
-Subject: Re: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute
- NX-protected page
-Message-ID: <20120410064918.GA7611@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, FlorianSchandinat@gmx.de,
-	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	spock@gentoo.org
-References: <20120327100136.GA3829@udknight>
- <20120327143243.015ecff6@pyramind.ukuu.org.uk>
- <20120328005238.GA3844@udknight>
- <20120401010530.GA4431@udknight>
+	Tue, 10 Apr 2012 02:54:29 -0400
+Message-ID: <4F83D91B.8030501@canonical.com>
+Date: Tue, 10 Apr 2012 08:54:19 +0200
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120401010530.GA4431@udknight>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+CC: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] ALSA: hda - clean up CX20549 test mixer setup
+References: <s5hk41ufe2j.wl%tiwai@suse.de> <1333719260-14504-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de> <1333719260-14504-7-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+In-Reply-To: <1333719260-14504-7-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 01, 2012 at 09:05:30AM +0800, Wang YanQing wrote:
-> On Wed, Mar 28, 2012 at 08:52:38AM +0800, Wang YanQing wrote:
-> > On Tue, Mar 27, 2012 at 02:32:43PM +0100, Alan Cox wrote:
-> > > On Tue, 27 Mar 2012 18:01:36 +0800
-> > > Wang YanQing <udknight@gmail.com> wrote:
-> > > 
-> > > > 
-> > > > Ok! I try to check pcibios_enabled first, but get some opposition by Alan Cox,
-> > > > but I want to make thing work and fix the oops, so I choice the simple way to
-> > > > check the (__supported_pte_mask & _PAGE_NX) instead of to check this variable plus
-> > > > pci kernel boot parameter, pci mmconfig works or not, and more, and more. It is not
-> > > > the best method, but it works and maybe all will feel happy.
-> > > 
-> > > Okay let me ask the obvious question - why is it not the best method ?
-> > > 
-> > > Apart from adding a helper in the includes for the arch code of
-> > > 
-> > > 	static inline is_nx_enabled(void)
-> > > 	{
-> > > 		return !!(__supported_pte_mask & _PAGE_NX);
-> > > 	}
-> > > 
-> > > is there anything else it lacks ?
-> > > 
-> > > Yes ideally we'd set the relevant ROM areas executable, but for a simple
-> > > fix is there anything else that's a problem with it ?
-> > Ok! Maybe you had missed my previous reply
-> > http://permalink.gmane.org/gmane.linux.kernel/1272433
-> > It is not the best method, because the check is not enough.
-> > I means when NX is actively, the pci bios is NX or not also depend on
-> > the code path in pci_arch_init which will be influenced by the acpi on or off, pci kernel boot
-> > parameter, even kernel config like pci access method PCI_GOANY, PCI_GOMMCONFIG, or PCI_GODIRECT,
-> > but if I check the pcibios_enabled, all the above can be ignored.
-> > 
-> > if uvesafb use the PMI when PCI BIOS is X, it can get the better work efficience then use the redraw 
-> > method as a fallback when do the panning.
-> Alan
-> 
-> I am just curious, I want to know what I describe above is right a little,
-> or wrong about all the aspect.
-> thanks.
-> 
-Hi Alan, are you decided to not reply this any? 
-But maybe we are still here to wait for your proposal to 
-decide the final proper solution to fix the bug in kernel.
+On 04/06/2012 03:34 PM, Michael Karcher wrote:
+> name pins consistently (MIC1/LINE1/HP-OUT/CD) on all controls
+> affecting those pins.
 
-Thanks
+If this is a test mixer only, so maybe it does not matter that much, but 
+anyway:
+
+Loopback controls are usually labeled
+
+"Line Playback Volume"
+"Mic Playback Volume"
+
+And outputs:
+
+"Headphone Playback Volume"
+
+For line outputs, I'm not sure if the right thing is
+
+"Front Playback Volume",
+"Line-Out Playback Volume", or
+"Line Out Playback Volume"
+
+
+> remove duplicate SET_AMP_GAIN_MUTE to 0x17/index 0 and 0x17/index 1
+>
+> really select MIC1, not Mixer out for recording
+>
+> "Mixer out" for recording is not a "pin", adjust comment
+>
+> Signed-off-by: Michael Karcher<kernel@mkarcher.dialup.fu-berlin.de>
+> ---
+>   sound/pci/hda/patch_conexant.c |   38 +++++++++++++++++---------------------
+>   1 files changed, 17 insertions(+), 21 deletions(-)
+>
+> diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+> index 8fe9f9d..a36488d 100644
+> --- a/sound/pci/hda/patch_conexant.c
+> +++ b/sound/pci/hda/patch_conexant.c
+> @@ -930,10 +930,10 @@ static const struct snd_kcontrol_new cxt5045_test_mixer[] = {
+>   	/* Output controls */
+>   	HDA_CODEC_VOLUME("Speaker Playback Volume", 0x10, 0x0, HDA_OUTPUT),
+>   	HDA_CODEC_MUTE("Speaker Playback Switch", 0x10, 0x0, HDA_OUTPUT),
+> -	HDA_CODEC_VOLUME("Node 11 Playback Volume", 0x11, 0x0, HDA_OUTPUT),
+> -	HDA_CODEC_MUTE("Node 11 Playback Switch", 0x11, 0x0, HDA_OUTPUT),
+> -	HDA_CODEC_VOLUME("Node 12 Playback Volume", 0x12, 0x0, HDA_OUTPUT),
+> -	HDA_CODEC_MUTE("Node 12 Playback Switch", 0x12, 0x0, HDA_OUTPUT),
+> +	HDA_CODEC_VOLUME("HP-OUT Playback Volume", 0x11, 0x0, HDA_OUTPUT),
+> +	HDA_CODEC_MUTE("HP-OUT Playback Switch", 0x11, 0x0, HDA_OUTPUT),
+> +	HDA_CODEC_VOLUME("LINE1 Playback Volume", 0x12, 0x0, HDA_OUTPUT),
+> +	HDA_CODEC_MUTE("LINE1 Playback Switch", 0x12, 0x0, HDA_OUTPUT),
+>   	
+>   	/* Modes for retasking pin widgets */
+>   	CXT_PIN_MODE("HP-OUT pin mode", 0x11, CXT_PIN_DIR_INOUT),
+> @@ -944,16 +944,16 @@ static const struct snd_kcontrol_new cxt5045_test_mixer[] = {
+>
+>   	/* Loopback mixer controls */
+>
+> -	HDA_CODEC_VOLUME("Mixer-1 Volume", 0x17, 0x0, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mixer-1 Switch", 0x17, 0x0, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Mixer-2 Volume", 0x17, 0x1, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mixer-2 Switch", 0x17, 0x1, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Mixer-3 Volume", 0x17, 0x2, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mixer-3 Switch", 0x17, 0x2, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Mixer-4 Volume", 0x17, 0x3, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mixer-4 Switch", 0x17, 0x3, HDA_INPUT),
+> -	HDA_CODEC_VOLUME("Mixer-5 Volume", 0x17, 0x4, HDA_INPUT),
+> -	HDA_CODEC_MUTE("Mixer-5 Switch", 0x17, 0x4, HDA_INPUT),
+> +	HDA_CODEC_VOLUME("PCM Volume", 0x17, 0x0, HDA_INPUT),
+> +	HDA_CODEC_MUTE("PCM Switch", 0x17, 0x0, HDA_INPUT),
+> +	HDA_CODEC_VOLUME("MIC1 pin Volume", 0x17, 0x1, HDA_INPUT),
+> +	HDA_CODEC_MUTE("MIC1 pin Switch", 0x17, 0x1, HDA_INPUT),
+> +	HDA_CODEC_VOLUME("LINE1 pin Volume", 0x17, 0x2, HDA_INPUT),
+> +	HDA_CODEC_MUTE("LINE1 pin Switch", 0x17, 0x2, HDA_INPUT),
+> +	HDA_CODEC_VOLUME("HP-OUT pin Volume", 0x17, 0x3, HDA_INPUT),
+> +	HDA_CODEC_MUTE("HP-OUT pin Switch", 0x17, 0x3, HDA_INPUT),
+
+Eh, is there a loopback control from the headphone?
+
+> +	HDA_CODEC_VOLUME("CD pin Volume", 0x17, 0x4, HDA_INPUT),
+> +	HDA_CODEC_MUTE("CD pin Switch", 0x17, 0x4, HDA_INPUT),
+>   	{
+>   		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+>   		.name = "Input Source",
+> @@ -985,10 +985,6 @@ static const struct hda_verb cxt5045_test_init_verbs[] = {
+>   	{0x13, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
+>   	{0x18, AC_VERB_SET_DIGI_CONVERT_1, 0},
+>
+> -	/* Start with output sum widgets muted and their output gains at min */
+> -	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(0)},
+> -	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)},
+> -
+>   	/* Unmute retasking pin widget output buffers since the default
+>   	 * state appears to be output.  As the pin mode is changed by the
+>   	 * user the pin mode control will take care of enabling the pin's
+> @@ -1003,11 +999,11 @@ static const struct hda_verb cxt5045_test_init_verbs[] = {
+>   	/* Set ADC connection select to match default mixer setting (mic1
+>   	 * pin)
+>   	 */
+> -	{0x1a, AC_VERB_SET_CONNECT_SEL, 0x00},
+> -	{0x17, AC_VERB_SET_CONNECT_SEL, 0x00},
+> +	{0x1a, AC_VERB_SET_CONNECT_SEL, 0x01},
+> +	{0x17, AC_VERB_SET_CONNECT_SEL, 0x01},
+>
+>   	/* Mute all inputs to mixer widget (even unconnected ones) */
+> -	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(0)}, /* Mixer pin */
+> +	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(0)}, /* Mixer */
+>   	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)}, /* Mic1 pin */
+>   	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(2)}, /* Line pin */
+>   	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(3)}, /* HP pin */
+
+
+
+-- 
+David Henningsson, Canonical Ltd.
+http://launchpad.net/~diwic
