@@ -1,94 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758975Ab2DJPCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:02:16 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47654 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab2DJPCN (ORCPT
+	id S1759022Ab2DJPCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:02:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53372 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759000Ab2DJPCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:02:13 -0400
-Date: Tue, 10 Apr 2012 17:03:04 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 4/8 v7] drm/i915/intel_i2c: use WAIT cycle, not STOP
-Message-ID: <20120410150304.GJ4115@phenom.ffwll.local>
-Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
-	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Benson Leung <bleung@chromium.org>,
-	Yufeng Shen <miletus@chromium.org>
-References: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
- <1333108003-6341-5-git-send-email-djkurtz@chromium.org>
- <20120410103746.GH4115@phenom.ffwll.local>
- <20120410104147.GI4115@phenom.ffwll.local>
- <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com>
+	Tue, 10 Apr 2012 11:02:30 -0400
+Date: Tue, 10 Apr 2012 17:02:28 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.4-rc2-rt1
+In-Reply-To: <201204101458.20026.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.02.1204101701450.2542@ionos>
+References: <alpine.LFD.2.02.1204101642050.2542@ionos> <201204101458.20026.arnd@arndb.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 06:56:15PM +0800, Daniel Kurtz wrote:
-> On Tue, Apr 10, 2012 at 6:41 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> > On Tue, Apr 10, 2012 at 12:37:46PM +0200, Daniel Vetter wrote:
-> >> On Fri, Mar 30, 2012 at 07:46:39PM +0800, Daniel Kurtz wrote:
-> >> > The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
-> >> > transaction) during a DATA or WAIT phase.  In other words, the
-> >> > controller rejects a STOP requested as part of the first transaction in a
-> >> > sequence.
-> >> >
-> >> > Thus, for the first transaction we must always use a WAIT cycle, detect
-> >> > when the device has finished (and is in a WAIT phase), and then either
-> >> > start the next transaction, or, if there are no more transactions,
-> >> > generate a STOP cycle.
-> >> >
-> >> > Note: Theoretically, the last transaction of a multi-transaction sequence
-> >> > could initiate a STOP cycle.  However, this slight optimization is left
-> >> > for another patch.  We return -ETIMEDOUT if the hardware doesn't
-> >> > deactivate after the STOP cycle.
-> >> >
-> >> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> >>
-> >> I've re-read gmbus register spec and STOP seems to be allowed even in the
-> >> first cycle. Does this patch solve an issue for you? If not, I prefer we
-> >> just drop it.
+On Tue, 10 Apr 2012, Arnd Bergmann wrote:
+> On Tuesday 10 April 2012, Thomas Gleixner wrote:
+>  net/rds/ib_rdma.c       |    3 ++-
+>  13 files changed, 72 insertions(+), 15 deletions(-)
 > 
-> STOP does not work in the first cycle, hence the patch.
+> is not the one you describe above but the one for the 3.2.14-rt24 release,
+> right? Otherwise it would be considerably smaller compared to 3.2-rt, not
+> just a bit ;-)
 
-Ok, I've picked this patch up and extended the comment a bit to that
-effect. Just to avoid anyone else trying to 'fix' things because bspec
-sounds like it should work.
+Someone should forbit copy and paste, really. :)
 
-I've also picked up the other patches safe for the last one, thanks a lot
-for digging through the gmbus code and fixing it all up.
-
-Now can I volunteer you for a (hopefully) last set of gmbus patches?
-Afaics there are a few small things left to fix:
-- zero-length reads can blow up the kernel, like zero-length writes could.
-  See: https://bugs.freedesktop.org/show_bug.cgi?id=48269
-- Chris Wilson suggested on irc that we should wait for HW_READY even for
-  zero-length writes (and also reads), currently we don't.
-- atm the debug output is too noisy. I think we can leave the fallback to
-  gpio bitbanging at info (or maybe error) level, but all the other
-  messages should be tuned down to DRM_DEBUG_KMS - these can easily be hit
-  when userspace tries to probe the i2c with nothing connected or if the
-  driver code tries to do the same. See:
-  https://bugs.freedesktop.org/show_bug.cgi?id=48248
-
-Chris, anything you want to add to the wishlist?
-
-Thanks, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
