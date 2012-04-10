@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2DJTvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 15:51:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40858 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398Ab2DJTvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 15:51:50 -0400
-Date: Tue, 10 Apr 2012 21:51:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Suresh Jayaraman <sjayaraman@suse.com>
-Cc: Jan Kara <jack@suse.cz>, Michael Tokarev <mjt@tls.msk.ru>,
-        Dave Chinner <david@fromorbit.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
-Message-ID: <20120410195146.GD4936@quack.suse.cz>
-References: <4F75E46E.2000503@msgid.tls.msk.ru>
- <20120405232913.GA6640@quack.suse.cz>
- <4F7E74F4.90604@msgid.tls.msk.ru>
- <20120410022628.GN18323@dastard>
- <4F83CC86.2010805@msgid.tls.msk.ru>
- <20120410151326.GA4936@quack.suse.cz>
- <4F848938.1040202@suse.com>
+	id S1759305Ab2DJTwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 15:52:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36765 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759281Ab2DJTwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 15:52:10 -0400
+Message-ID: <4F848F65.7000402@openvz.org>
+Date: Tue, 10 Apr 2012 23:52:05 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F848938.1040202@suse.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v2] mm: correctly synchronize rss-counters at exit/exec
+References: <20120409200336.8368.63793.stgit@zurg> <20120410170732.18750.64274.stgit@zurg> <20120410114329.138fe242.akpm@linux-foundation.org>
+In-Reply-To: <20120410114329.138fe242.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-04-12 00:55:44, Suresh Jayaraman wrote:
-> On 04/10/2012 08:43 PM, Jan Kara wrote:
-> > On Tue 10-04-12 10:00:38, Michael Tokarev wrote:
-> >> On 10.04.2012 06:26, Dave Chinner wrote:
-> >>
-> >>> Barriers. Turn them off, and see if that fixes your problem.
-> >>
-> >> Thank you Dave for a hint.  And nope, that's not it, not at all... ;)
-> >> While turning off barriers helps a tiny bit, to gain a few %% from
-> >> the huge slowdown, it does not cure the issue.
-> >>
-> >> Meanwhile, I observed the following:
-> >>
-> >> 1) the issue persists on more recent kernels too, I tried 3.3
-> >>    and it is also as slow as 3.0.
-> >>
-> >> 2) at least 2.6.38 kernel works fine, as fast as 2.6.32, I'll
-> >>    try 2.6.39 next.
-> >>
-> >>    I updated $subject accordingly.
-> >>
-> >> 3) the most important thing I think: this is general I/O speed
-> >>    issue.  Here's why:
-> >>
-> >>   2.6.38:
-> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
-> >>   100+0 records in
-> >>   100+0 records out
-> >>   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
-> >>
-> >>   3.0:
-> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
-> >>   100+0 records in
-> >>   100+0 records out
-> >>   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
-> >>
-> >> That's about 20 times difference on direct read from the
-> >> same - idle - device!!
-> >   Huh, that's a huge difference for such a trivial load. So we can rule out
-> > filesystems, writeback, mm. I also wouldn't think it's IO scheduler but
-> > you can always check by comparing dd numbers after
-> >   echo none >/sys/block/sdb/queue/scheduler
-> 
-> s/none/noop
-> you meant noop, of course?
-  Yeah. Thanks for correction!
+Andrew Morton wrote:
+> On Tue, 10 Apr 2012 21:07:32 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> mm->rss_stat counters have per-task delta: task->rss_stat, before changing
+>> task->mm pointer kernel must flush this delta with help of sync_mm_rss().
+>>
+>> do_exit() already calls sync_mm_rss() to flush rss-counters before commiting
+>> rss-statistics into task->signal->maxrss, taskstats, audit and other stuff.
+>> Unfortunately kernel do this before calling mm_relese(), which can call put_user()
+>> for processing task->clear_child_tid. So at this point we can trigger page-faults
+>> and task->rss_stat becomes non-zero again, as result mm->rss_stat becomes
+>> inconsistent and check_mm() will print something like this:
+>>
+>> | BUG: Bad rss-counter state mm:ffff88020813c380 idx:1 val:-1
+>> | BUG: Bad rss-counter state mm:ffff88020813c380 idx:2 val:1
+>>
+>> This patch moves sync_mm_rss() into mm_release(), and moves mm_release() out of
+>> do_exit() and calls it earlier. After mm_release() there should be no page-faults.
+>>
+>> ...
+>>
+>> --- a/kernel/fork.c
+>> +++ b/kernel/fork.c
+>> @@ -751,6 +751,14 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>>   		}
+>>   		tsk->clear_child_tid = NULL;
+>>   	}
+>> +
+>> +	/*
+>> +	 * Final rss-counter synchronization. After this point must be
+>> +	 * no page-faults into this mm from current context, otherwise
+>> +	 * mm->rss_stat will be inconsistent.
+>> +	 */
+>> +	if (mm)
+>> +		sync_mm_rss(mm);
+>>   }
+>>
+>
+> Well that's scary.  AFACIT `mm' can indeed be NULL here, when a kernel
+> thread calls do_exit().  No implementation of deactivate_mm() actually
+> uses its `mm' arg and I guess that kernel threads never set
+> tsk->clear_child_tid.  Whee.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+But it works as designed =)
+
+>
+>
+> Do we think we should backport this into -stable kernels?  How hard is
+> it to make that warning come out?
+>
+
+Warning was introduced in v3.3-3720-gc3f0327, so no releases with them.
+And I think older kernels can live fine with slightly racy rss counters.
