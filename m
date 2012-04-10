@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758409Ab2DJCSj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 22:18:39 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49216 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab2DJCSi (ORCPT
+	id S1758355Ab2DJCZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 22:25:58 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:48325 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2DJCZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 22:18:38 -0400
-Date: Tue, 10 Apr 2012 10:19:24 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [PATCH 3/4] clk: add DT clock binding support
-Message-ID: <20120410021922.GH18692@S2101-09.ap.freescale.net>
-References: <1334003101-17274-1-git-send-email-robherring2@gmail.com>
- <1334003101-17274-4-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334003101-17274-4-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Apr 2012 22:25:57 -0400
+Message-ID: <1334024754.2103.9.camel@shrek.rexursive.com>
+Subject: Re: [PATCH v8]: Hibernation: lower/better control the amount of
+ pages used for buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
+        Per Olofsson <pelle@debian.org>
+Date: Tue, 10 Apr 2012 12:25:54 +1000
+In-Reply-To: <2cbc3801-3ab0-4ef6-84cd-d69a23ff4dcc@email.android.com>
+References: <1333418527.2035.11.camel@shrek.rexursive.com>
+	 <201204030631.24974.rjw@sisk.pl>
+	 <1333432393.2035.13.camel@shrek.rexursive.com>
+	 <1333620908.8191.1.camel@shrek.rexursive.com>
+	 <2cbc3801-3ab0-4ef6-84cd-d69a23ff4dcc@email.android.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 03:25:00PM -0500, Rob Herring wrote:
-...
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-> @@ -0,0 +1,22 @@
-> +Binding for simple fixed-rate clock sources.
-> +
-> +This binding uses the common clock binding[1].
-> +
-> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +
-> +Required properties:
-> +- compatible : shall be "fixed-clock".
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clock-frequency : frequency of clock in Hz. Should be a single cell.
-						 ^^^^^^^^^^^^^^^^^^^^^^^
-> +
-> +Optional properties:
-> +- gpios : From common gpio binding; gpio connection to clock enable pin.
+On Sun, 2012-04-08 at 10:14 +1000, Bojan Smojver wrote:
+> Please ignore this request. As it turns out, the hangs are still
+> there, it just takes a bit longer to trigger.
 
-I haven't seen this support in the code yet.
+Thanks to Per Olofsson, who actually determined what was going on, we
+now know what the problem is.
 
-> +- clock-output-names : From common clock binding. Required for nodes with
-> +  multiple outputs.
+My "free pages" maths used nr_free_pages() macro, which deals with all
+free pages. However, we only allocate buffers from non-high zones. So,
+on systems where there is a significant number of high pages free, we
+get a very large number (even if only a quarter is used), which then
+gets the kernel into a bind and eventually hangs it on page allocation.
 
-This seems inconsistent with above "Should be a single cell."
+Will send a patch shortly, which will also have some other fixes.
 
-Regards,
-Shawn
+-- 
+Bojan
 
-> +
-> +Example:
-> +	clock {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <1000000000>;
-> +	};
