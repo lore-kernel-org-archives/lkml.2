@@ -1,234 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab2DJImL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:42:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41048 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753713Ab2DJImI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:42:08 -0400
-Date: Tue, 10 Apr 2012 11:41:51 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120410084151.GA27193@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
- <1334044558.3126.5.camel@edumazet-glaptop>
+	id S1758495Ab2DJInu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:43:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48815 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752222Ab2DJInt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 04:43:49 -0400
+Date: Tue, 10 Apr 2012 09:43:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [linux-next][PATCH] regmap: fix build error if !CONFIG_DEBUG_FS
+Message-ID: <20120410084346.GF3149@opensource.wolfsonmicro.com>
+References: <1334038367.15859.12.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NQTVMVnDVuULnIzU"
 Content-Disposition: inline
-In-Reply-To: <1334044558.3126.5.camel@edumazet-glaptop>
+In-Reply-To: <1334038367.15859.12.camel@phoenix>
+X-Cookie: You enjoy the company of other people.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 09:55:58AM +0200, Eric Dumazet wrote:
-> On Sun, 2012-04-08 at 20:13 +0300, Michael S. Tsirkin wrote:
-> > commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5
-> > tun: orphan an skb on tx
-> > Fixed a configuration where skbs get queued
-> > at the tun device forever, blocking senders.
-> > 
-> > However this fix isn't waterproof:
-> > userspace can control whether the interface
-> > is stopped, and if it is, packets
-> > get queued in the qdisc, again potentially forever.
-> > 
-> > Complete the fix by setting a private flag and orphaning
-> > at the qdisc level.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  drivers/net/tun.c       |    3 +++
-> >  include/linux/if.h      |    1 +
-> >  net/core/dev.c          |    5 +++++
-> >  net/sched/sch_generic.c |    5 +++++
-> >  4 files changed, 14 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > index bb8c72c..15c5bb8 100644
-> > --- a/drivers/net/tun.c
-> > +++ b/drivers/net/tun.c
-> > @@ -535,6 +535,9 @@ static void tun_net_init(struct net_device *dev)
-> >  		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
-> >  		break;
-> >  	}
-> > +	/* Once queue becomes full, we stop tx until userspace
-> > +	 * dequeues some packets, that is potentially forever. */
-> > +	dev->priv_flags |= IFF_TX_CAN_STALL;
-> >  }
-> >  
-> >  /* Character device part */
-> > diff --git a/include/linux/if.h b/include/linux/if.h
-> > index f995c66..dd2c7f7 100644
-> > --- a/include/linux/if.h
-> > +++ b/include/linux/if.h
-> > @@ -81,6 +81,7 @@
-> >  #define IFF_UNICAST_FLT	0x20000		/* Supports unicast filtering	*/
-> >  #define IFF_TEAM_PORT	0x40000		/* device used as team port */
-> >  #define IFF_SUPP_NOFCS	0x80000		/* device supports sending custom FCS */
-> > +#define IFF_TX_CAN_STALL 0x100000	/* Device can stop tx forever */
-> >  
-> > 
-> >  #define IF_GET_IFACE	0x0001		/* for querying only */
-> > diff --git a/net/core/dev.c b/net/core/dev.c
-> > index 5d59155..e812706 100644
-> > --- a/net/core/dev.c
-> > +++ b/net/core/dev.c
-> > @@ -2516,6 +2516,11 @@ int dev_queue_xmit(struct sk_buff *skb)
-> >  	struct Qdisc *q;
-> >  	int rc = -ENOMEM;
-> >  
-> > +	/* Orphan the skb - required if we might hang on to it
-> > +	 * for indefinite time. */
-> > +	if (dev->priv_flags & IFF_TX_CAN_STALL)
-> > +		skb_orphan(skb);
-> > +
-> >  	/* Disable soft irqs for various locks below. Also
-> >  	 * stops preemption for RCU.
-> >  	 */
-> > diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-> > index 67fc573..27883d1 100644
-> > --- a/net/sched/sch_generic.c
-> > +++ b/net/sched/sch_generic.c
-> > @@ -120,6 +120,11 @@ int sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
-> >  	/* And release qdisc */
-> >  	spin_unlock(root_lock);
-> >  
-> > +	/* Orphan the skb - required if we might hang on to it
-> > +	 * for indefinite time. */
-> > +	if (dev->priv_flags & IFF_TX_CAN_STALL)
-> > +		skb_orphan(skb);
-> > +
-> >  	HARD_TX_LOCK(dev, txq, smp_processor_id());
-> >  	if (!netif_xmit_frozen_or_stopped(txq))
-> >  		ret = dev_hard_start_xmit(skb, dev, txq);
-> 
-> This slows down the core fastpath for a very specific use.
 
-You are right.
-I presume the fastpath is when the device is *not* stalled,
-correct? So maybe it's ok to add this logic on slow path
-where the queue is stopped and we queue the packet?
-When the queue is running tun can orphan the skb itself.
+--NQTVMVnDVuULnIzU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This is what the change at the bottom of this mail on top of my
-patch does - untested yet and naturally needs to be combined
-and resubmitted properly, assuming it makes sense.
+On Tue, Apr 10, 2012 at 02:12:47PM +0800, Axel Lin wrote:
+> Fix build error introduced by commit 9eba4d
+> "regmap: fix compilation when !CONFIG_DEBUG_FS".
 
-Would this, in your opinion, address this concern adequately?
-Thanks!
+I've no idea what tree you're testing against but Stephen's fix is
+needed for -next.
 
-> In your case I would just not use qdisc at all, like other virtual
-> devices.
+--NQTVMVnDVuULnIzU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I think that if we do this, this also disables gso
-for the device, doesn't it?
-If true that would be a problem as this would
-hurt performance of virtualized setups a lot.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index bb8c72c..fd8c7f0 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -396,7 +396,7 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->  	    sk_filter(tun->socket.sk, skb))
->  		goto drop;
->  
-> -	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
-> +	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= TUN_READQ_SIZE) {
->  		if (!(tun->flags & TUN_ONE_QUEUE)) {
->  			/* Normal queueing mode. */
->  			/* Packet scheduler handles dropping of further packets. */
+iQIcBAEBAgAGBQJPg/KRAAoJEBus8iNuMP3dX48QAJVVtzOoidvGTZUghL75dSTk
+Kacg3PNTOgFWHgzGHPkiTaHiG2QmeDIUnqAB7VgPzns6cLANnEkx7Z2jMlthmW3u
+xX1WAjnv7v1g+8D2+v6wwcamMQmPamnZepT8FbMqfzKI1fDvFwcHxoPnYWQQAf3a
+IzCFygJOkcWukcQyPHPx1UcBaPCH++RqOvqtKzvia/JuiJRyvtphUpDOePiDMJ+Z
+eiJGzBRV08aJFJGO2SDIc4D0N2T1DRMTS7DRZQfKn1xO+bPYT0k8ORL/wNztZ7S3
+AUOaoJzSd04Ev2ppmHVrxur3m2R8h90wV9Uz3mwyWk0E+uSyp96klL3m4w419p7d
+z7UlmV7qnYUOLbBIRxZnJTv3HOjIzjK1CtIt2jqIt8hnJ/MqrfZdC+fuGgJATGc0
+gOfg77Bs2gbZJSRkqHqfsJa13eCbmUtPB7/mrATu8eigb/7TwwSG3qOdc16n/CUR
+pTj/IfNwmy2BpxKyXxG152qBZrIiuohG6v+L9BievMsb838t+inRyErEHH3yx3m/
+zkCHwEvjsMcjW0BfZRLvr1FOgV0Bfd3chHIA0rEGPW6kyh6urFiPgbYzi9VtDC3E
+oyRNpmepmMsu1OQtobDhUB5uc28xbIM4C9apQslQbVVAljwwtMzIwFzLjeyZxRXa
+Wbuk7Q/tI/mpzmrKSI8y
+=l9Vv
+-----END PGP SIGNATURE-----
 
-tx_queue_len is controllable by SIOCSIFTXQLEN
-so we'll need to override SIOCSIFTXQLEN somehow
-to avoid breaking userspace that actually uses SIOCSIFTXQLEN, right?
-
-> @@ -521,7 +521,7 @@ static void tun_net_init(struct net_device *dev)
->  		/* Zero header length */
->  		dev->type = ARPHRD_NONE;
->  		dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-> -		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
-> +		dev->tx_queue_len = 0;
->  		break;
->  
->  	case TUN_TAP_DEV:
-> @@ -532,7 +532,7 @@ static void tun_net_init(struct net_device *dev)
->  
->  		eth_hw_addr_random(dev);
->  
-> -		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
-> +		dev->tx_queue_len = 0;
->  		break;
->  	}
->  }
-> 
-
-I presume the fastpath is when the device is *not* stalled,
-correct? So maybe the following on top of my patch - untested
-and naturally would need to be combined and resubmitted properly -
-would address the concern?
-Thanks for the review!
-
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 9d713b8..e42529b 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2455,6 +2455,11 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
- 		rc = NET_XMIT_SUCCESS;
- 	} else {
- 		skb_dst_force(skb);
-+		/* Orphan the skb - required if we might hang on to it
-+		 * for indefinite time. */
-+		if (unlikely(dev->priv_flags & IFF_TX_CAN_STALL))
-+			skb_orphan(skb);
-+
- 		rc = q->enqueue(skb, q) & NET_XMIT_MASK;
- 		if (qdisc_run_begin(q)) {
- 			if (unlikely(contended)) {
-@@ -2517,11 +2522,6 @@ int dev_queue_xmit(struct sk_buff *skb)
- 	struct Qdisc *q;
- 	int rc = -ENOMEM;
- 
--	/* Orphan the skb - required if we might hang on to it
--	 * for indefinite time. */
--	if (dev->priv_flags & IFF_TX_CAN_STALL)
--		skb_orphan(skb);
--
- 	/* Disable soft irqs for various locks below. Also
- 	 * stops preemption for RCU.
- 	 */
-diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-index 27883d1..ccc6137 100644
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -120,14 +120,11 @@ int sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
- 	/* And release qdisc */
- 	spin_unlock(root_lock);
- 
--	/* Orphan the skb - required if we might hang on to it
--	 * for indefinite time. */
--	if (dev->priv_flags & IFF_TX_CAN_STALL)
--		skb_orphan(skb);
--
- 	HARD_TX_LOCK(dev, txq, smp_processor_id());
--	if (!netif_xmit_frozen_or_stopped(txq))
-+	if (likely(!netif_xmit_frozen_or_stopped(txq)))
- 		ret = dev_hard_start_xmit(skb, dev, txq);
-+	else if (dev->priv_flags & IFF_TX_CAN_STALL)
-+		skb_orphan(skb);
- 
- 	HARD_TX_UNLOCK(dev, txq);
- 
+--NQTVMVnDVuULnIzU--
