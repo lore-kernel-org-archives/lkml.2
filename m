@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab2DJT0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 15:26:07 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:54630 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab2DJT0F (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 10 Apr 2012 15:26:05 -0400
-Message-ID: <4F848938.1040202@suse.com>
-Date: Wed, 11 Apr 2012 00:55:44 +0530
-From: Suresh Jayaraman <sjayaraman@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	id S932066Ab2DJTel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 15:34:41 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:56888 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab2DJTej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 15:34:39 -0400
+Message-ID: <4F848B4B.5000308@samsung.com>
+Date: Tue, 10 Apr 2012 12:34:35 -0700
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Michael Tokarev <mjt@tls.msk.ru>, Dave Chinner <david@fromorbit.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
-References: <4F75E46E.2000503@msgid.tls.msk.ru> <20120405232913.GA6640@quack.suse.cz> <4F7E74F4.90604@msgid.tls.msk.ru> <20120410022628.GN18323@dastard> <4F83CC86.2010805@msgid.tls.msk.ru> <20120410151326.GA4936@quack.suse.cz>
-In-Reply-To: <20120410151326.GA4936@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joro@8bytes.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        iommu@lists.linux-foundation.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v12 2/3] ARM: EXYNOS: Change System MMU platform device
+ definitions
+References: <000201cd0286$2e6fbb40$8b4f31c0$%cho@samsung.com> <20120315111227.GA2384@amd.com> <4F61FF1D.5000502@samsung.com> <4F630841.2070307@linaro.org> <4F63A6F6.9050506@samsung.com> <20120318132746.GL26973@8bytes.org>
+In-Reply-To: <20120318132746.GL26973@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 08:43 PM, Jan Kara wrote:
-> On Tue 10-04-12 10:00:38, Michael Tokarev wrote:
->> On 10.04.2012 06:26, Dave Chinner wrote:
->>
->>> Barriers. Turn them off, and see if that fixes your problem.
->>
->> Thank you Dave for a hint.  And nope, that's not it, not at all... ;)
->> While turning off barriers helps a tiny bit, to gain a few %% from
->> the huge slowdown, it does not cure the issue.
->>
->> Meanwhile, I observed the following:
->>
->> 1) the issue persists on more recent kernels too, I tried 3.3
->>    and it is also as slow as 3.0.
->>
->> 2) at least 2.6.38 kernel works fine, as fast as 2.6.32, I'll
->>    try 2.6.39 next.
->>
->>    I updated $subject accordingly.
->>
->> 3) the most important thing I think: this is general I/O speed
->>    issue.  Here's why:
->>
->>   2.6.38:
->>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
->>   100+0 records in
->>   100+0 records out
->>   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
->>
->>   3.0:
->>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
->>   100+0 records in
->>   100+0 records out
->>   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
->>
->> That's about 20 times difference on direct read from the
->> same - idle - device!!
->   Huh, that's a huge difference for such a trivial load. So we can rule out
-> filesystems, writeback, mm. I also wouldn't think it's IO scheduler but
-> you can always check by comparing dd numbers after
->   echo none >/sys/block/sdb/queue/scheduler
+Joerg Roedel wrote:
+> On Fri, Mar 16, 2012 at 01:47:50PM -0700, Kukjin Kim wrote:
+>> Anyway Joerg, how do you want to handle this? Do you want to pick up
+>> 1/2/3 all of them in your tree? If so, 2nd patch should be on top of
+>> some samsung topic stuff.
+>
+> Since patch 2 only applies to the Samsung tree, it is best to carry
+> this in your tree for merging. Feel free to add my Acked-by to patch 3.
+> But any further patches for the Exynos IOMMU drivers should go through
+> my tree after it is merged.
+>
+Hi Joerg,
 
-s/none/noop
-you meant noop, of course?
+I applied 1st and 2nd patches in my tree.
 
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git 
+next/cleanup-samsung-iommu
 
-Suresh
+and my -next.
+
+So please go ahead for 3rd patch in your tree. Note that if you need 1st 
+and 2nd patches for your tree, please merge the 
+'next/cleanup-samsung-iommu' branch in my tree. If not, will happen 
+useless conflicts.
+
+If any problems, please let me know.
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
