@@ -1,76 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759524Ab2DJVVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 17:21:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754664Ab2DJVVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 17:21:40 -0400
-Date: Tue, 10 Apr 2012 17:20:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120410212041.GP21801@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
+	id S1759528Ab2DJVam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:30:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50812 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759354Ab2DJVal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 17:30:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410210505.GE4936@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 10 Apr 2012 23:30:40 +0200
+Message-ID: <CACPM=kXvq9eJj19MMW-G3hu4Qro_Z53YKWhxN24YqGFX6706kQ@mail.gmail.com>
+Subject: p54: Weird error in log
+From: Bjarke Istrup Pedersen <gurligebis@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 11:05:05PM +0200, Jan Kara wrote:
+Hey,
 
-[..]
-> > Ok. So what is the meaning of "make process wait" here? What it will be
-> > dependent on? I am thinking of a case where a process has 100MB of dirty
-> > data, has 10MB/s write limit and it issues fsync. So before that process
-> > is able to open a transaction, one needs to wait atleast 10seconds
-> > (assuming other processes are not doing IO in same cgroup). 
->   The original idea was that we'd have "bdi-congested-for-cgroup" flag
-> and the process starting a transaction will wait for this flag to get
-> cleared before starting a new transaction. This will be easy to implement
-> in filesystems and won't have serialization issues. But my knowledge of
-> blk-throttle is lacking so there might be some problems with this approach.
+I keep getting this error in my dmesg log:
 
-I have implemented and posted patches for per bdi per cgroup congestion
-flag. The only problem I see with that is that a group might be congested
-for a long time because of lots of other IO happening (say direct IO) and
-if you keep on backing off and never submit the metadata IO (transaction),
-you get starved. And if you go ahead and submit IO in a congested group,
-we are back to serialization issue.
+p54pci 0000:00:0e.0: rx'd frame size exceeds length threshold
 
-[..]
-> > One more factor makes absolute throttling interesting and that is global
-> > throttling and not per device throttling. For example in case of btrfs,
-> > there is no single stacked device on which to put total throttling
-> > limits.
->   Yes. My intended interface for the throttling is bdi. But you are right
-> it does not exactly match the fact that the throttling happens per device
-> so it might get tricky. Which brings up a question - shouldn't the
-> throttling blk-throttle does rather happen at bdi layer? Because the
-> uses of the functionality I have in mind would match that better.
+The p54 card is bridged together with two via-rhine network cards, to
+create an access point.
 
-I guess throttling at bdi layer will take care of network filesystem
-case too?  But isn't the notion of "bdi" internal to kernel and user does
-not really program thing in terms of bdi.
+The card seems to work fine - it is just that this message floods the
+logs - I could comment it out in the driver, but it would make more
+sense to figure out if it is a bug that causes it to get hit, or a
+configuration issue.
 
-Also per bdi limit mechanism will not solve the issue of global throttling
-where in case of btrfs an IO might go to multiple bdi's. So throttling limits
-are not total but per bdi.
+Any ideas?
 
-Thanks
-Vivek
+/Bjarke
