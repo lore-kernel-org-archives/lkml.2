@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758469Ab2DJDlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 23:41:00 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51792 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab2DJDk7 (ORCPT
+	id S1758530Ab2DJDoy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 23:44:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40599 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754350Ab2DJDox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 23:40:59 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        paulus@samba.org, fweisbec@gmail.com, eranian@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG PATCH] perf: kvm - finding struct machine fails for PERF_RECORD_MMAP
-In-Reply-To: <4F8369E6.5090608@gmail.com>
-References: <20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com> <4F8369E6.5090608@gmail.com>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Tue, 10 Apr 2012 09:10:33 +0530
-Message-ID: <87iph8xnim.fsf@abhimanyu.in.ibm.com>
+	Mon, 9 Apr 2012 23:44:53 -0400
+Message-ID: <4F83ACB3.6010300@wwwdotorg.org>
+Date: Mon, 09 Apr 2012 21:44:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12041003-2000-0000-0000-000007100314
+To: Dong Aisheng <aisheng.dong@freescale.com>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 1/1] pinctrl: add some error checking for user interfaces
+References: <1333967409-8168-1-git-send-email-b29396@freescale.com> <4F82FA2A.3090604@wwwdotorg.org> <20120410034927.GA674@shlinux2.ap.freescale.net>
+In-Reply-To: <20120410034927.GA674@shlinux2.ap.freescale.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Apr 2012 16:59:50 -0600, David Ahern <dsahern@gmail.com> wrote:
-> On 4/9/12 2:22 AM, Nikunj A. Dadhania wrote:
-> > From: Nikunj A. Dadhania<nikunj@linux.vnet.ibm.com>
-> >
-> > Running 'perf kvm --host --guest --guestmount /tmp/guestmount record -a -g -- sleep 2'
-> >
-> > Was resulting in a segfault. For event type PERF_RECORD_MMAP,
-> > event->ip.pid is being used in perf_session__find_machine_for_cpumode,
-> > which is not correct.
-> >
-> > event->ip.pid happens to be 0 in this case and results in returning a
-> > NULL machine object. Finally, access to self->pid in
-> > machine__mmap_name, results in a segfault later.
+On 04/09/2012 09:49 PM, Dong Aisheng wrote:
+> On Mon, Apr 09, 2012 at 11:03:06PM +0800, Stephen Warren wrote:
+>> On 04/09/2012 04:30 AM, Dong Aisheng wrote:
+>>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>>
+>>> This patch can avoid kernel oops in case the mux or config
+>>> function is not supported by driver.
+...
+>>>  static int pinconf_pins_show(struct seq_file *s, void *what)
+>>>  {
+>>>  	struct pinctrl_dev *pctldev = s->private;
+>>> +	const struct pinconf_ops *ops = pctldev->desc->confops;
+>>>  	unsigned i, pin;
+>>>  
+>>> +	if (!ops || !ops->pin_config_get)
+>>> +		return 0;
+>>
+>> I don't think this is necessary; it looks like this function (and those
+>> it calls) always checks ops where they're used.
+>
+> Yes, it's true.
+> But it will still dump all pins configs although there's no config value
+> which is almost the same as another debug entry 'pins'.
+> It looks it does not make too much sense to dump this info if no config support.
+> The existing pinconf_group_show did like this way(no output).
+> So i changed pinconf_pins_show in the same behavior as pinconf_group_show.
 > 
-> I have tried unsuccessfully to recreate the segfault. All of the samples 
-> I get are of type PERF_RECORD_SAMPLE. I do not see how an MMAP event can 
-> be generated in a guest context.
-> 
-I can think of two places where it can happen:
+> Do you think it's reasonable?
 
-1) perf_event__synthesize_kernel_mmap
+OK, I guess so.
 
-        [...]
- 	mmap_name = machine__mmap_name(machine, name_buff, sizeof(name_buff));
-	if (machine__is_host(machine)) {
-           ...
-	} else {
-		event->header.misc = PERF_RECORD_MISC_GUEST_KERNEL;
-		if (machine__is_default_guest(machine))
-			filename = (char *) symbol_conf.default_guest_kallsyms;
-		else {
-			sprintf(path, "%s/proc/kallsyms", machine->root_dir);
-			filename = path;
-		}
-	}
-        [...]
-	event->mmap.header.type = PERF_RECORD_MMAP;
-        [...]
-        event->mmap.pid   = machine->pid;        
-
-2) perf_event__synthesize_modules
-
-        [...]
-	if (machine__is_host(machine))
-		event->header.misc = PERF_RECORD_MISC_KERNEL;
-	else
-		event->header.misc = PERF_RECORD_MISC_GUEST_KERNEL;
-        [...]             
-	event->mmap.header.type = PERF_RECORD_MMAP;
-        [...]
-        event->mmap.pid   = machine->pid;
-
-BTW, i am testing this on latest -tip(498c911).
-
-In my case, I am able to recreate this everytime. And have verified that
-the event->header.type that I hit here is of type PERF_RECORD_MMAP.
-
-Let me know if you want me to test out some debug patches.
-
-Regards,
-Nikunj
-
+I was thinking the file wouldn't be compiled without pin config support,
+but that's only the core support and doesn't necessarily imply the
+individual driver has support.
