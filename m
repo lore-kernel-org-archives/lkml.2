@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab2DJJtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:49:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45204 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab2DJJts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:49:48 -0400
-Date: Tue, 10 Apr 2012 02:49:36 -0700
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-fa4da365bc7772c2cd6d5405bdf151612455f957@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        santosh.shilimkar@ti.com, suresh.b.siddha@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, santosh.shilimkar@ti.com,
-        tglx@linutronix.de
-In-Reply-To: <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
-References: <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] clockevents:
-  tTack broadcast device mode change in tick_broadcast_switch_to_oneshot()
-Git-Commit-ID: fa4da365bc7772c2cd6d5405bdf151612455f957
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755556Ab2DJJt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:49:58 -0400
+Received: from tundra.namei.org ([65.99.196.166]:51179 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754899Ab2DJJtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 05:49:55 -0400
+Date: Tue, 10 Apr 2012 19:48:56 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Will Drewry <wad@chromium.org>
+cc: Indan Zupancic <indan@nul.nu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
+In-Reply-To: <CABqD9hYE0S4EL6yH-57SfNs+D8GFKJgWVN21VzXpQmRuh2ow=w@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1204101948330.28663@tundra.namei.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org> <1333051320-30872-9-git-send-email-wad@chromium.org> <20120406132330.457a05cf.akpm@linux-foundation.org> <67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
+ <CABqD9hYE0S4EL6yH-57SfNs+D8GFKJgWVN21VzXpQmRuh2ow=w@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 10 Apr 2012 02:49:41 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fa4da365bc7772c2cd6d5405bdf151612455f957
-Gitweb:     http://git.kernel.org/tip/fa4da365bc7772c2cd6d5405bdf151612455f957
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Mon, 9 Apr 2012 15:41:44 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 10 Apr 2012 11:42:07 +0200
+On Mon, 9 Apr 2012, Will Drewry wrote:
 
-clockevents: tTack broadcast device mode change in tick_broadcast_switch_to_oneshot()
+> > seccomp_chk_filter() mirrors sk_chk_filter(). So it refers to
+> > "chk", not "check".
+> 
+> I can change it to be written out or leave it matching the networking
+> code.  Any preferences?
 
-In the commit 77b0d60c5adf39c74039e2142a1d3cd1e4d53799,
-"clockevents: Leave the broadcast device in shutdown mode when not needed",
-we were bailing out too quickly in tick_broadcast_switch_to_oneshot(),
-with out tracking the broadcast device mode change to 'TICKDEV_MODE_ONESHOT'.
+check :-)
 
-This breaks the platforms which need broadcast device oneshot services during
-deep idle states. tick_broadcast_oneshot_control() thinks that it is
-in periodic mode and fails to take proper decisions based on the
-CLOCK_EVT_NOTIFY_BROADCAST_[ENTER, EXIT] notifications during deep
-idle entry/exit.
 
-Fix this by tracking the broadcast device mode as 'TICKDEV_MODE_ONESHOT',
-before leaving the broadcast HW device in shutdown mode if there are no active
-requests for the moment.
-
-Reported-and-tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: johnstul@us.ibm.com
-Link: http://lkml.kernel.org/r/1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-broadcast.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index e883f57..bf57abd 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -575,10 +575,12 @@ void tick_broadcast_switch_to_oneshot(void)
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
-+
-+	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
-+
- 	if (cpumask_empty(tick_get_broadcast_mask()))
- 		goto end;
- 
--	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
- 	bc = tick_broadcast_device.evtdev;
- 	if (bc)
- 		tick_broadcast_setup_oneshot(bc);
+-- 
+James Morris
+<jmorris@namei.org>
