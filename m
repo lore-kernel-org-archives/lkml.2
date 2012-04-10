@@ -1,121 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2DJIEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:04:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38432 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab2DJIER (ORCPT
+	id S1756472Ab2DJIEn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:04:43 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:49446 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756240Ab2DJIEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:04:17 -0400
-Date: Tue, 10 Apr 2012 01:04:14 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: matrix-keypad - allocate keycodes with keypad
-Message-ID: <20120410080413.GA19191@core.coreip.homeip.net>
+	Tue, 10 Apr 2012 04:04:40 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] pinctrl: implement pinctrl deferred probing
+Date: Tue, 10 Apr 2012 10:04:08 +0200
+Message-ID: <1334045048-15566-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of allocating and managing keymap separately from the keypad
-structure stick it at the end as a variable-length array.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+If drivers try to obtain pinctrl handles for a pin controller that
+has not yet registered to the subsystem, we need to be able to
+back out and retry with deferred probing. So let's return
+-EPROBE_DEFER whenever this location fails.
+
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/input/keyboard/matrix_keypad.c |   23 ++++++++++-------------
- 1 files changed, 10 insertions(+), 13 deletions(-)
+ Documentation/pinctrl.txt    |    5 +++++
+ drivers/pinctrl/core.c       |    7 +++++--
+ drivers/pinctrl/devicetree.c |    4 ++--
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c
-index 8714d68..a4ff08c 100644
---- a/drivers/input/keyboard/matrix_keypad.c
-+++ b/drivers/input/keyboard/matrix_keypad.c
-@@ -27,7 +27,6 @@
- struct matrix_keypad {
- 	const struct matrix_keypad_platform_data *pdata;
- 	struct input_dev *input_dev;
--	unsigned short *keycodes;
- 	unsigned int row_shift;
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index eb46b1c..4431c3e7 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -1043,6 +1043,11 @@ quickly poking some registers.
+ The pins are allocated for your device when you issue the pinctrl_get() call,
+ after this you should be able to see this in the debugfs listing of all pins.
  
- 	DECLARE_BITMAP(disabled_gpios, MATRIX_MAX_ROWS);
-@@ -38,6 +37,8 @@ struct matrix_keypad {
- 	bool scan_pending;
- 	bool stopped;
- 	bool gpio_all_disabled;
++NOTE: the pinctrl system will return -EPROBE_DEFER if it cannot find the
++requested pinctrl handles, for example if the pinctrl driver has not yet
++registered. Thus make sure that the error path in your driver gracefully
++cleans up and is ready to retry the probing later in the startup process.
 +
-+	unsigned short keycodes[];
- };
  
- /*
-@@ -381,8 +382,8 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
- 	const struct matrix_keymap_data *keymap_data;
- 	struct matrix_keypad *keypad;
- 	struct input_dev *input_dev;
--	unsigned short *keycodes;
- 	unsigned int row_shift;
-+	size_t keymap_size;
- 	int err;
- 
- 	pdata = pdev->dev.platform_data;
-@@ -398,20 +399,18 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
+ System pin control hogging
+ ==========================
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 7ff8690..3ae00ab 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -521,8 +521,11 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
+ 		dev_err(p->dev, "unknown pinctrl device %s in map entry",
+ 			map->ctrl_dev_name);
+ 		kfree(setting);
+-		/* Eventually, this should trigger deferred probe */
+-		return -ENODEV;
++		/*
++		 * OK let us guess that the driver is not there yet, and
++		 * let's defer obtaining this pinctrl handle to later...
++		 */
++		return -EPROBE_DEFER;
  	}
  
- 	row_shift = get_count_order(pdata->num_col_gpios);
--
--	keypad = kzalloc(sizeof(struct matrix_keypad), GFP_KERNEL);
--	keycodes = kzalloc((pdata->num_row_gpios << row_shift) *
--				sizeof(*keycodes),
--			   GFP_KERNEL);
-+	keymap_size = (pdata->num_row_gpios << row_shift) *
-+			sizeof(keypad->keycodes[0]);
-+	keypad = kzalloc(sizeof(struct matrix_keypad) + keymap_size,
-+			 GFP_KERNEL);
- 	input_dev = input_allocate_device();
--	if (!keypad || !keycodes || !input_dev) {
-+	if (!keypad || !input_dev) {
- 		err = -ENOMEM;
- 		goto err_free_mem;
- 	}
- 
- 	keypad->input_dev = input_dev;
- 	keypad->pdata = pdata;
--	keypad->keycodes = keycodes;
- 	keypad->row_shift = row_shift;
- 	keypad->stopped = true;
- 	INIT_DELAYED_WORK(&keypad->work, matrix_keypad_scan);
-@@ -426,8 +425,8 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
- 	input_dev->open		= matrix_keypad_start;
- 	input_dev->close	= matrix_keypad_stop;
- 
--	input_dev->keycode	= keycodes;
--	input_dev->keycodesize	= sizeof(*keycodes);
-+	input_dev->keycode	= keypad->keycodes;
-+	input_dev->keycodesize	= sizeof(keypad->keycodes[0]);
- 	input_dev->keycodemax	= pdata->num_row_gpios << row_shift;
- 
- 	matrix_keypad_build_keymap(keymap_data, row_shift,
-@@ -451,7 +450,6 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
- 
- err_free_mem:
- 	input_free_device(input_dev);
--	kfree(keycodes);
- 	kfree(keypad);
- 	return err;
- }
-@@ -479,7 +477,6 @@ static int __devexit matrix_keypad_remove(struct platform_device *pdev)
- 
- 	input_unregister_device(keypad->input_dev);
- 	platform_set_drvdata(pdev, NULL);
--	kfree(keypad->keycodes);
- 	kfree(keypad);
- 
- 	return 0;
+ 	switch (map->type) {
+diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
+index 5ef2feb..8833538 100644
+--- a/drivers/pinctrl/devicetree.c
++++ b/drivers/pinctrl/devicetree.c
+@@ -124,8 +124,8 @@ static int dt_to_map_one_config(struct pinctrl *p, const char *statename,
+ 			dev_err(p->dev, "could not find pctldev for node %s\n",
+ 				np_config->full_name);
+ 			of_node_put(np_pctldev);
+-			/* FIXME: This should trigger deferrered probe */
+-			return -ENODEV;
++			/* OK let's just assume this will appear later then */
++			return -EPROBE_DEFER;
+ 		}
+ 		pctldev = find_pinctrl_by_of_node(np_pctldev);
+ 		if (pctldev)
 -- 
-1.7.7.6
+1.7.9.2
 
-
--- 
-Dmitry
