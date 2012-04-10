@@ -1,608 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124Ab2DJDVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 23:21:47 -0400
-Received: from out07.mta.xmission.com ([166.70.13.237]:33064 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751642Ab2DJDVp (ORCPT
+	id S1758440Ab2DJDX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 23:23:58 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16569 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab2DJDX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 23:21:45 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-References: <20120215143606.GA14037@redhat.com>
-	<20120215160652.GA17680@redhat.com> <20120215162752.GF4533@moon>
-	<20120409151027.7f3e0fa5.akpm@linux-foundation.org>
-Date: Mon, 09 Apr 2012 20:25:22 -0700
-In-Reply-To: <20120409151027.7f3e0fa5.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Mon, 9 Apr 2012 15:10:27 -0700")
-Message-ID: <m1ehrwb74t.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 9 Apr 2012 23:23:56 -0400
+Date: Mon, 9 Apr 2012 23:19:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, konrad.r.wilk@gmail.com
+Subject: Re: [PATCH 1/2] ACPI: Convert wake_sleep_flags to a value instead of
+ function (v2)
+Message-ID: <20120410031904.GA17300@phenom.dumpdata.com>
+References: <1334025246-8811-1-git-send-email-konrad.wilk@oracle.com>
+ <1334025246-8811-2-git-send-email-konrad.wilk@oracle.com>
+ <1334026226.3044.4.camel@minggr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX189913kleY7a7uCIuTFvF4HVB7kpszokL4=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: **
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <1334026226.3044.4.camel@minggr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4F83A7C8.0063,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Tue, Apr 10, 2012 at 10:50:26AM +0800, Lin Ming wrote:
+> On Mon, 2012-04-09 at 22:34 -0400, Konrad Rzeszutek Wilk wrote:
+> > With commit a2ef5c4fd44ce3922435139393b89f2cce47f576
+> > "ACPI: Move module parameter gts and bfs to sleep.c" the wake_sleep_flags
+> > is required when calling acpi_enter_sleep_state, which means
+> > that if there are functions outside the sleep.c code they
+> > can't get get the wake_sleep_flags values.
+> > 
+> > This converts the function in to a exported value and converts
+> > the module config operands to a function.
+> > 
+> > [v2: Parameters can be turned on/off dynamically]
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/kernel/acpi/sleep.h |    2 +
+> >  drivers/acpi/sleep.c         |   52 ++++++++++++++++++++++-------------------
+> >  2 files changed, 30 insertions(+), 24 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
+> > index 4d3feb5..7bab5fb 100644
+> > --- a/arch/x86/kernel/acpi/sleep.h
+> > +++ b/arch/x86/kernel/acpi/sleep.h
+> > @@ -9,6 +9,8 @@ extern long saved_magic;
+> >  
+> >  extern int wakeup_pmode_return;
+> >  
+> > +extern unsigned char wake_sleep_flags;
+> > +
+> 
+> Could you use "u8" same as the definition below?
 
-> Back on to kcmp.
->
-> On Wed, 15 Feb 2012 20:27:52 +0400
-> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
->
->> On Wed, Feb 15, 2012 at 05:06:52PM +0100, Oleg Nesterov wrote:
->> > Not a comment, but the question. I am just curious...
->> > 
->> > > +/*
->> > > + * We don't expose real in-memory order of objects for security
->> > > + * reasons, still the comparison results should be suitable for
->> > > + * sorting. Thus, we obfuscate kernel pointers values and compare
->> > > + * the production instead.
->> > > + */
->> > > +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
->> > > +
->> > > +static long kptr_obfuscate(long v, int type)
->> > > +{
->> > > +       return (v ^ cookies[type][0]) * cookies[type][1];
->> > > +}
->> > 
->> > OK, but why do we need this per type? Just to add more obfuscation
->> > or there is another reason?
->> 
->> Just to add more obfuscation.
->
-> Having re-read most of the (enormous) email discussion on the kcmp()
-> syscall patch, I'm thinking:
->
-> - Nobody seems to understand the obfuscation logic.  Jon sounded
->   confused, Oleg sounds confused and it's rather unclear what it does,
->   how it does it and why it does it.
+Yes. Thx for spotting that.
 
-Peter explained it fairly well earlier.  The xor trivially makes sense
-to me.  I don't recall what the multiplication does.
+> 
+> Others look good to me.
+> 
+> Acked-by: Lin Ming <ming.m.lin@intel.com>
 
-It would be nice if someone would get Peter's comment on why the
-multiply into a comment.  But obscuring things makes sense.
+Great! Thanks.
 
-> - Lots of people have looked at the code and made comments and there
->   have been lots of changes.  But we presently have zero Acked-by's and
->   Reviewed-by's.
->
-> I guess this means that at present nobody is aware of any issues with
-> the proposal, btu nobody is terribly excisted about it either?
-
-Having just read through it again the only possible issue I can see is
-that we compare file descriptors after dropping all of the locks.
-
-Since rcu_read_lock doesn't participate in ABBA deadlocks. My gut feel
-is that we should hold rcu_read_lock across the hole file pointer
-comparison to remove the possibility of races as file descriptor
-pointers go away.
-
-Still in practice I don't think it matters.  At worst there is the
-slightest possibility of returning a value instead of -EBADF.  The
-expectation is for all of the tasks we are operating on to be frozen,
-and even if the tasks are not frozen it is a very tiny window for a race
-to be in.
-
-> So what do people think?  Any issues?  Any nacks?  Should I sneak it
-> into Linus this week or do we need to go another round with it all?
-
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
-> I'd like to at least have a fighting chance of understnading what's
-> going on with that obfuscation code.
-
-My gut feel is that this code is good enough.  Any and all security
-issues have been addressed.  Having the system call would seem
-to add momentum to the people working on checkpoint/restart.
-So I don't see why this patch should not go forward, unless someone
-can point out an outright bug.
-
-Eric
-
-> From: Cyrill Gorcunov <gorcunov@openvz.org>
-> Subject: syscalls, x86: add __NR_kcmp syscall
->
-> While doing the checkpoint-restore in the user space one need to determine
-> whether various kernel objects (like mm_struct-s of file_struct-s) are
-> shared between tasks and restore this state.
->
-> The 2nd step can be solved by using appropriate CLONE_ flags and the
-> unshare syscall, while there's currently no ways for solving the 1st one.
->
-> One of the ways for checking whether two tasks share e.g.  mm_struct is to
-> provide some mm_struct ID of a task to its proc file, but showing such
-> info considered to be not that good for security reasons.
->
-> Thus after some debates we end up in conclusion that using that named
-> 'comparison' syscall might be the best candidate.  So here is it --
-> __NR_kcmp.
->
-> It takes up to 5 arguments - the pids of the two tasks (which
-> characteristics should be compared), the comparison type and (in case of
-> comparison of files) two file descriptors.
->
-> Lookups for pids are done in the caller's PID namespace only.
->
-> At moment only x86 is supported and tested.
->
-> [akpm@linux-foundation.org: fix up selftests, warnings]
-> [akpm@linux-foundation.org: include errno.h]
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Andrey Vagin <avagin@openvz.org>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Glauber Costa <glommer@parallels.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Matt Helsley <matthltc@us.ibm.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: Alexey Dobriyan <adobriyan@gmail.com>
-> Cc: Valdis.Kletnieks@vt.edu
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
->  arch/x86/syscalls/syscall_32.tbl         |    1 
->  arch/x86/syscalls/syscall_64.tbl         |    1 
->  include/linux/kcmp.h                     |   17 +
->  include/linux/syscalls.h                 |    2 
->  kernel/Makefile                          |    3 
->  kernel/kcmp.c                            |  187 +++++++++++++++++++++
->  kernel/sys_ni.c                          |    3 
->  tools/testing/selftests/Makefile         |    2 
->  tools/testing/selftests/kcmp/Makefile    |   29 +++
->  tools/testing/selftests/kcmp/kcmp_test.c |   94 ++++++++++
->  10 files changed, 338 insertions(+), 1 deletion(-)
->
-> diff -puN arch/x86/syscalls/syscall_32.tbl~syscalls-x86-add-__nr_kcmp-syscall-v8 arch/x86/syscalls/syscall_32.tbl
-> --- a/arch/x86/syscalls/syscall_32.tbl~syscalls-x86-add-__nr_kcmp-syscall-v8
-> +++ a/arch/x86/syscalls/syscall_32.tbl
-> @@ -355,3 +355,4 @@
->  346	i386	setns			sys_setns
->  347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
->  348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
-> +349	i386	kcmp			sys_kcmp
-> diff -puN arch/x86/syscalls/syscall_64.tbl~syscalls-x86-add-__nr_kcmp-syscall-v8 arch/x86/syscalls/syscall_64.tbl
-> --- a/arch/x86/syscalls/syscall_64.tbl~syscalls-x86-add-__nr_kcmp-syscall-v8
-> +++ a/arch/x86/syscalls/syscall_64.tbl
-> @@ -318,6 +318,7 @@
->  309	common	getcpu			sys_getcpu
->  310	64	process_vm_readv	sys_process_vm_readv
->  311	64	process_vm_writev	sys_process_vm_writev
-> +312	64	kcmp			sys_kcmp
->  #
->  # x32-specific system call numbers start at 512 to avoid cache impact
->  # for native 64-bit operation.
-> diff -puN /dev/null include/linux/kcmp.h
-> --- /dev/null
-> +++ a/include/linux/kcmp.h
-> @@ -0,0 +1,17 @@
-> +#ifndef _LINUX_KCMP_H
-> +#define _LINUX_KCMP_H
-> +
-> +/* Comparison type */
-> +enum kcmp_type {
-> +	KCMP_FILE,
-> +	KCMP_VM,
-> +	KCMP_FILES,
-> +	KCMP_FS,
-> +	KCMP_SIGHAND,
-> +	KCMP_IO,
-> +	KCMP_SYSVSEM,
-> +
-> +	KCMP_TYPES,
-> +};
-> +
-> +#endif /* _LINUX_KCMP_H */
-> diff -puN include/linux/syscalls.h~syscalls-x86-add-__nr_kcmp-syscall-v8 include/linux/syscalls.h
-> --- a/include/linux/syscalls.h~syscalls-x86-add-__nr_kcmp-syscall-v8
-> +++ a/include/linux/syscalls.h
-> @@ -858,4 +858,6 @@ asmlinkage long sys_process_vm_writev(pi
->  				      unsigned long riovcnt,
->  				      unsigned long flags);
->  
-> +asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
-> +			 unsigned long idx1, unsigned long idx2);
->  #endif
-> diff -puN kernel/Makefile~syscalls-x86-add-__nr_kcmp-syscall-v8 kernel/Makefile
-> --- a/kernel/Makefile~syscalls-x86-add-__nr_kcmp-syscall-v8
-> +++ a/kernel/Makefile
-> @@ -25,6 +25,9 @@ endif
->  obj-y += sched/
->  obj-y += power/
->  
-> +ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
-> +obj-$(CONFIG_X86) += kcmp.o
-> +endif
->  obj-$(CONFIG_FREEZER) += freezer.o
->  obj-$(CONFIG_PROFILING) += profile.o
->  obj-$(CONFIG_STACKTRACE) += stacktrace.o
-> diff -puN /dev/null kernel/kcmp.c
-> --- /dev/null
-> +++ a/kernel/kcmp.c
-> @@ -0,0 +1,187 @@
-> +#include <linux/kernel.h>
-> +#include <linux/syscalls.h>
-> +#include <linux/fdtable.h>
-> +#include <linux/string.h>
-> +#include <linux/random.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/errno.h>
-> +#include <linux/cache.h>
-> +#include <linux/bug.h>
-> +#include <linux/err.h>
-> +#include <linux/kcmp.h>
-> +
-> +#include <asm/unistd.h>
-> +
-> +/*
-> + * We don't expose real in-memory order of objects for security
-> + * reasons, still the comparison results should be suitable for
-> + * sorting. Thus, we obfuscate kernel pointers values and compare
-> + * the production instead.
-> + */
-> +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
-> +
-> +static long kptr_obfuscate(long v, int type)
-> +{
-> +	return (v ^ cookies[type][0]) * cookies[type][1];
-> +}
-> +
-> +/*
-> + * 0 - equal, i.e. v1 = v2
-> + * 1 - less than, i.e. v1 < v2
-> + * 2 - greater than, i.e. v1 > v2
-> + * 3 - not equal but ordering unavailable (reserved for future)
-> + */
-> +static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
-> +{
-> +	long ret;
-> +
-> +	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
-> +
-> +	return (ret < 0) | ((ret > 0) << 1);
-> +}
-> +
-> +/* The caller must have pinned the task */
-> +static struct file *
-> +get_file_raw_ptr(struct task_struct *task, unsigned int idx)
-> +{
-> +	struct file *file = NULL;
-> +
-> +	task_lock(task);
-> +	rcu_read_lock();
-> +
-> +	if (task->files)
-> +		file = fcheck_files(task->files, idx);
-> +
-> +	rcu_read_unlock();
-> +	task_unlock(task);
-> +
-> +	return file;
-> +}
-> +
-> +static void kcmp_unlock(struct mutex *m1, struct mutex *m2)
-> +{
-> +	if (likely(m2 != m1))
-> +		mutex_unlock(m2);
-> +	mutex_unlock(m1);
-> +}
-> +
-> +static int kcmp_lock(struct mutex *m1, struct mutex *m2)
-> +{
-> +	int err;
-> +
-> +	if (m2 > m1)
-> +		swap(m1, m2);
-> +
-> +	err = mutex_lock_killable(m1);
-> +	if (!err && likely(m1 != m2)) {
-> +		err = mutex_lock_killable_nested(m2, SINGLE_DEPTH_NESTING);
-> +		if (err)
-> +			mutex_unlock(m1);
-> +	}
-> +
-> +	return err;
-> +}
-> +
-> +SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
-> +		unsigned long, idx1, unsigned long, idx2)
-> +{
-> +	struct task_struct *task1, *task2;
-> +	int ret;
-> +
-> +	rcu_read_lock();
-> +
-> +	/*
-> +	 * Tasks are looked up in caller's PID namespace only.
-> +	 */
-> +	task1 = find_task_by_vpid(pid1);
-> +	task2 = find_task_by_vpid(pid2);
-> +	if (!task1 || !task2)
-> +		goto err_no_task;
-> +
-> +	get_task_struct(task1);
-> +	get_task_struct(task2);
-> +
-> +	rcu_read_unlock();
-> +
-> +	/*
-> +	 * One should have enough rights to inspect task details.
-> +	 */
-> +	ret = kcmp_lock(&task1->signal->cred_guard_mutex,
-> +			&task2->signal->cred_guard_mutex);
-> +	if (ret)
-> +		goto err;
-> +	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
-> +	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
-> +		ret = -EPERM;
-> +		goto err_unlock;
-> +	}
-> +
-> +	switch (type) {
-> +	case KCMP_FILE: {
-> +		struct file *filp1, *filp2;
-> +
-> +		filp1 = get_file_raw_ptr(task1, idx1);
-> +		filp2 = get_file_raw_ptr(task2, idx2);
-> +
-> +		if (filp1 && filp2)
-> +			ret = kcmp_ptr(filp1, filp2, KCMP_FILE);
-> +		else
-> +			ret = -EBADF;
-> +		break;
-> +	}
-> +	case KCMP_VM:
-> +		ret = kcmp_ptr(task1->mm, task2->mm, KCMP_VM);
-> +		break;
-> +	case KCMP_FILES:
-> +		ret = kcmp_ptr(task1->files, task2->files, KCMP_FILES);
-> +		break;
-> +	case KCMP_FS:
-> +		ret = kcmp_ptr(task1->fs, task2->fs, KCMP_FS);
-> +		break;
-> +	case KCMP_SIGHAND:
-> +		ret = kcmp_ptr(task1->sighand, task2->sighand, KCMP_SIGHAND);
-> +		break;
-> +	case KCMP_IO:
-> +		ret = kcmp_ptr(task1->io_context, task2->io_context, KCMP_IO);
-> +		break;
-> +	case KCMP_SYSVSEM:
-> +#ifdef CONFIG_SYSVIPC
-> +		ret = kcmp_ptr(task1->sysvsem.undo_list,
-> +			       task2->sysvsem.undo_list,
-> +			       KCMP_SYSVSEM);
-> +#else
-> +		ret = -EOPNOTSUPP;
-> +#endif
-> +		break;
-> +	default:
-> +		ret = -EINVAL;
-> +		break;
-> +	}
-> +
-> +err_unlock:
-> +	kcmp_unlock(&task1->signal->cred_guard_mutex,
-> +		    &task2->signal->cred_guard_mutex);
-> +err:
-> +	put_task_struct(task1);
-> +	put_task_struct(task2);
-> +
-> +	return ret;
-> +
-> +err_no_task:
-> +	rcu_read_unlock();
-> +	return -ESRCH;
-> +}
-> +
-> +static __init int kcmp_cookies_init(void)
-> +{
-> +	int i;
-> +
-> +	get_random_bytes(cookies, sizeof(cookies));
-> +
-> +	for (i = 0; i < KCMP_TYPES; i++)
-> +		cookies[i][1] |= (~(~0UL >>  1) | 1);
-> +
-> +	return 0;
-> +}
-> +arch_initcall(kcmp_cookies_init);
-> diff -puN kernel/sys_ni.c~syscalls-x86-add-__nr_kcmp-syscall-v8 kernel/sys_ni.c
-> --- a/kernel/sys_ni.c~syscalls-x86-add-__nr_kcmp-syscall-v8
-> +++ a/kernel/sys_ni.c
-> @@ -203,3 +203,6 @@ cond_syscall(sys_fanotify_mark);
->  cond_syscall(sys_name_to_handle_at);
->  cond_syscall(sys_open_by_handle_at);
->  cond_syscall(compat_sys_open_by_handle_at);
-> +
-> +/* compare kernel pointers */
-> +cond_syscall(sys_kcmp);
-> diff -puN tools/testing/selftests/Makefile~syscalls-x86-add-__nr_kcmp-syscall-v8 tools/testing/selftests/Makefile
-> --- a/tools/testing/selftests/Makefile~syscalls-x86-add-__nr_kcmp-syscall-v8
-> +++ a/tools/testing/selftests/Makefile
-> @@ -1,4 +1,4 @@
-> -TARGETS = breakpoints vm
-> +TARGETS = breakpoints vm kcmp
->  
->  all:
->  	for TARGET in $(TARGETS); do \
-> diff -puN /dev/null tools/testing/selftests/kcmp/Makefile
-> --- /dev/null
-> +++ a/tools/testing/selftests/kcmp/Makefile
-> @@ -0,0 +1,29 @@
-> +uname_M := $(shell uname -m 2>/dev/null || echo not)
-> +ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
-> +ifeq ($(ARCH),i386)
-> +        ARCH := X86
-> +	CFLAGS := -DCONFIG_X86_32 -D__i386__
-> +endif
-> +ifeq ($(ARCH),x86_64)
-> +	ARCH := X86
-> +	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
-> +endif
-> +
-> +CFLAGS += -I../../../../arch/x86/include/generated/
-> +CFLAGS += -I../../../../include/
-> +CFLAGS += -I../../../../usr/include/
-> +CFLAGS += -I../../../../arch/x86/include/
-> +
-> +all:
-> +ifeq ($(ARCH),X86)
-> +	gcc $(CFLAGS) kcmp_test.c -o run_test
-> +else
-> +	echo "Not an x86 target, can't build kcmp selftest"
-> +endif
-> +
-> +run-tests: all
-> +	./kcmp_test
-> +
-> +clean:
-> +	rm -fr ./run_test
-> +	rm -fr ./test-file
-> diff -puN /dev/null tools/testing/selftests/kcmp/kcmp_test.c
-> --- /dev/null
-> +++ a/tools/testing/selftests/kcmp/kcmp_test.c
-> @@ -0,0 +1,94 @@
-> +#define _GNU_SOURCE
-> +
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <signal.h>
-> +#include <limits.h>
-> +#include <unistd.h>
-> +#include <errno.h>
-> +#include <string.h>
-> +#include <fcntl.h>
-> +
-> +#include <linux/unistd.h>
-> +#include <linux/kcmp.h>
-> +
-> +#include <sys/syscall.h>
-> +#include <sys/types.h>
-> +#include <sys/stat.h>
-> +#include <sys/wait.h>
-> +
-> +static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
-> +{
-> +	return syscall(__NR_kcmp, pid1, pid2, type, fd1, fd2);
-> +}
-> +
-> +int main(int argc, char **argv)
-> +{
-> +	const char kpath[] = "kcmp-test-file";
-> +	int pid1, pid2;
-> +	int fd1, fd2;
-> +	int status;
-> +
-> +	fd1 = open(kpath, O_RDWR | O_CREAT | O_TRUNC, 0644);
-> +	pid1 = getpid();
-> +
-> +	if (fd1 < 0) {
-> +		perror("Can't create file");
-> +		exit(1);
-> +	}
-> +
-> +	pid2 = fork();
-> +	if (pid2 < 0) {
-> +		perror("fork failed");
-> +		exit(1);
-> +	}
-> +
-> +	if (!pid2) {
-> +		int pid2 = getpid();
-> +		int ret;
-> +
-> +		fd2 = open(kpath, O_RDWR, 0644);
-> +		if (fd2 < 0) {
-> +			perror("Can't open file");
-> +			exit(1);
-> +		}
-> +
-> +		/* An example of output and arguments */
-> +		printf("pid1: %6d pid2: %6d FD: %2ld FILES: %2ld VM: %2ld "
-> +		       "FS: %2ld SIGHAND: %2ld IO: %2ld SYSVSEM: %2ld "
-> +		       "INV: %2ld\n",
-> +		       pid1, pid2,
-> +		       sys_kcmp(pid1, pid2, KCMP_FILE,		fd1, fd2),
-> +		       sys_kcmp(pid1, pid2, KCMP_FILES,		0, 0),
-> +		       sys_kcmp(pid1, pid2, KCMP_VM,		0, 0),
-> +		       sys_kcmp(pid1, pid2, KCMP_FS,		0, 0),
-> +		       sys_kcmp(pid1, pid2, KCMP_SIGHAND,	0, 0),
-> +		       sys_kcmp(pid1, pid2, KCMP_IO,		0, 0),
-> +		       sys_kcmp(pid1, pid2, KCMP_SYSVSEM,	0, 0),
-> +
-> +			/* This one should fail */
-> +		       sys_kcmp(pid1, pid2, KCMP_TYPES + 1,	0, 0));
-> +
-> +		/* This one should return same fd */
-> +		ret = sys_kcmp(pid1, pid2, KCMP_FILE, fd1, fd1);
-> +		if (ret) {
-> +			printf("FAIL: 0 expected but %d returned\n", ret);
-> +			ret = -1;
-> +		} else
-> +			printf("PASS: 0 returned as expected\n");
-> +
-> +		/* Compare with self */
-> +		ret = sys_kcmp(pid1, pid1, KCMP_VM, 0, 0);
-> +		if (ret) {
-> +			printf("FAIL: 0 expected but %li returned\n", ret);
-> +			ret = -1;
-> +		} else
-> +			printf("PASS: 0 returned as expected\n");
-> +
-> +		exit(ret);
-> +	}
-> +
-> +	waitpid(pid2, &status, P_ALL);
-> +
-> +	return 0;
-> +}
-> _
+> 
+> Thanks,
+> Lin Ming
+> 
+> >  extern unsigned long acpi_copy_wakeup_routine(unsigned long);
+> >  extern void wakeup_long64(void);
+> >  
+> > diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> > index 6a8d4d3..86bf909 100644
+> > --- a/drivers/acpi/sleep.c
+> > +++ b/drivers/acpi/sleep.c
+> > @@ -28,23 +28,33 @@
+> >  #include "internal.h"
+> >  #include "sleep.h"
+> >  
+> > +u8 wake_sleep_flags = ACPI_NO_OPTIONAL_METHODS;
+> >  static unsigned int gts, bfs;
+> > -module_param(gts, uint, 0644);
+> > -module_param(bfs, uint, 0644);
+> > -MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
+> > -MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+> > -
+> > -static u8 wake_sleep_flags(void)
+> > +static int set_param_wake_flag(const char *val, struct kernel_param *kp)
+> >  {
+> > -	u8 flags = ACPI_NO_OPTIONAL_METHODS;
+> > +	int ret = param_set_int(val, kp);
+> >  
+> > -	if (gts)
+> > -		flags |= ACPI_EXECUTE_GTS;
+> > -	if (bfs)
+> > -		flags |= ACPI_EXECUTE_BFS;
+> > +	if (ret)
+> > +		return ret;
+> >  
+> > -	return flags;
+> > +	if (val == (const char *)&gts) {
+> > +		if (gts)
+> > +			wake_sleep_flags |= ACPI_EXECUTE_GTS;
+> > +		else
+> > +			wake_sleep_flags &= ~ACPI_EXECUTE_GTS;
+> > +	}
+> > +	if (val == (const char *)&bfs) {
+> > +		if (bfs)
+> > +			wake_sleep_flags |= ACPI_EXECUTE_BFS;
+> > +		else
+> > +			wake_sleep_flags &= ~ACPI_EXECUTE_BFS;
+> > +	}
+> > +	return ret;
+> >  }
+> > +module_param_call(gts, set_param_wake_flag, param_get_int, &gts, 0644);
+> > +module_param_call(bfs, set_param_wake_flag, param_get_int, &bfs, 0644);
+> > +MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
+> > +MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+> >  
+> >  static u8 sleep_states[ACPI_S_STATE_COUNT];
+> >  
+> > @@ -263,7 +273,6 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+> >  {
+> >  	acpi_status status = AE_OK;
+> >  	u32 acpi_state = acpi_target_sleep_state;
+> > -	u8 flags = wake_sleep_flags();
+> >  	int error;
+> >  
+> >  	ACPI_FLUSH_CPU_CACHE();
+> > @@ -271,7 +280,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+> >  	switch (acpi_state) {
+> >  	case ACPI_STATE_S1:
+> >  		barrier();
+> > -		status = acpi_enter_sleep_state(acpi_state, flags);
+> > +		status = acpi_enter_sleep_state(acpi_state, wake_sleep_flags);
+> >  		break;
+> >  
+> >  	case ACPI_STATE_S3:
+> > @@ -288,7 +297,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+> >  	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+> >  
+> >  	/* Reprogram control registers and execute _BFS */
+> > -	acpi_leave_sleep_state_prep(acpi_state, flags);
+> > +	acpi_leave_sleep_state_prep(acpi_state, wake_sleep_flags);
+> >  
+> >  	/* ACPI 3.0 specs (P62) says that it's the responsibility
+> >  	 * of the OSPM to clear the status bit [ implying that the
+> > @@ -552,30 +561,27 @@ static int acpi_hibernation_begin(void)
+> >  
+> >  static int acpi_hibernation_enter(void)
+> >  {
+> > -	u8 flags = wake_sleep_flags();
+> >  	acpi_status status = AE_OK;
+> >  
+> >  	ACPI_FLUSH_CPU_CACHE();
+> >  
+> >  	/* This shouldn't return.  If it returns, we have a problem */
+> > -	status = acpi_enter_sleep_state(ACPI_STATE_S4, flags);
+> > +	status = acpi_enter_sleep_state(ACPI_STATE_S4, wake_sleep_flags);
+> >  	/* Reprogram control registers and execute _BFS */
+> > -	acpi_leave_sleep_state_prep(ACPI_STATE_S4, flags);
+> > +	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
+> >  
+> >  	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
+> >  }
+> >  
+> >  static void acpi_hibernation_leave(void)
+> >  {
+> > -	u8 flags = wake_sleep_flags();
+> > -
+> >  	/*
+> >  	 * If ACPI is not enabled by the BIOS and the boot kernel, we need to
+> >  	 * enable it here.
+> >  	 */
+> >  	acpi_enable();
+> >  	/* Reprogram control registers and execute _BFS */
+> > -	acpi_leave_sleep_state_prep(ACPI_STATE_S4, flags);
+> > +	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
+> >  	/* Check the hardware signature */
+> >  	if (facs && s4_hardware_signature != facs->hardware_signature) {
+> >  		printk(KERN_EMERG "ACPI: Hardware changed while hibernated, "
+> > @@ -830,12 +836,10 @@ static void acpi_power_off_prepare(void)
+> >  
+> >  static void acpi_power_off(void)
+> >  {
+> > -	u8 flags = wake_sleep_flags();
+> > -
+> >  	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
+> >  	printk(KERN_DEBUG "%s called\n", __func__);
+> >  	local_irq_disable();
+> > -	acpi_enter_sleep_state(ACPI_STATE_S5, flags);
+> > +	acpi_enter_sleep_state(ACPI_STATE_S5, wake_sleep_flags);
+> >  }
+> >  
+> >  /*
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
