@@ -1,120 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab2DJKIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:08:02 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41035 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab2DJKIA convert rfc822-to-8bit (ORCPT
+	id S1756394Ab2DJKIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:08:15 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:38378 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901Ab2DJKIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:08:00 -0400
-MIME-Version: 1.0
-X-Originating-IP: [87.66.117.88]
-In-Reply-To: <20120407031306.B24D03E1F86@localhost>
-References: <CAORVsuWw1rwcsMUrSqZJCeSY_vjJDwakF27kfb6=utN8nBqvag@mail.gmail.com>
-	<CAORVsuUQbtC=SF9RP2g04mN-ksE8BU40ACfZvoyGUju=LRbwqg@mail.gmail.com>
-	<20120407031306.B24D03E1F86@localhost>
-Date: Tue, 10 Apr 2012 12:07:59 +0200
-Message-ID: <CAORVsuWVZMFpjtvNFxKWtCp4Jn2mAQiVRmWGiyqGdJCGxo4QPQ@mail.gmail.com>
-Subject: Re: gpiolib: per-gpio edges count
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Apr 2012 06:08:11 -0400
+Message-ID: <1334052489.2178.9.camel@shrek.rexursive.com>
+Subject: [PATCH v10]: Hibernation: fix the number of pages used for
+ hibernate/thaw buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Per Olofsson <pelle@debian.org>
+Date: Tue, 10 Apr 2012 20:08:09 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Hi Rafael,
 
-On Sat, Apr 7, 2012 at 5:13 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, 4 Apr 2012 16:49:03 +0200, Jean Pihet <jean.pihet@newoldbits.com> wrote:
->> Hi,
->>
->> On Wed, Apr 4, 2012 at 10:53 AM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
->> > Hi Grant, Linus,
->> >
->> > I would like to know if it is possible to get the edges count on a GPIO pin.
->> > I was hoping to get it by configuring the pin as input with an edge
->> > trigger but on OMAP there is only one irq line per controller (which
->> > controls 32 pins).
->> > Btw I am using a Beaglebone with OMAP AM3358.
->>
->> I figured it out, with the help from Kevin on IRC (thx!).
->>
->> Indeed there is a per-pin IRQ count available in /proc/interrupts.
->> Sorry for the unconvenience.
->>
->> Thanks & regards,
->> Jean
->
-> Great, I'm glad you got it sorted out.  For the benefit of anyone
-> coming across this thread, would you mind replying with a summary of
-> how you solved the problem?
+One more version. Heeding Per's suggestion to optimise when
+CONFIG_HIGHMEM is not configured.
 
-Yes sure!
+---------------------------------------
+Hibernation/thaw fixes/improvements:
 
-This summary is from the experiments on the Beaglebone board but is
-applicable to all platforms due to the generic nature of the GPIO
-framework ;p
+1. Calculate the number of required free pages based on non-high memory
+pages only, because that is where the buffers will come from.
 
-The pin in use is gpio1_6, which is also known as gpmc_ad6.
+2. Do not allocate memory for buffers from emergency pools, unless
+absolutely required. Do not warn about and do not retry non-essential
+failed allocations.
 
-First the mux must be set correctly by writing '7' to
-/sys/kernel/debug/omap_mux/gpmc_ad6':
+3. Do not check the amount of free pages left on every single page
+write, but wait until one map is completely populated and then check.
 
-  root@beaglebone:/sys/class/gpio# cat /sys/kernel/debug/omap_mux/gpmc_ad6
-  name: gpmc_ad6.gpio1_6 (0x44e10818/0x818 = 0x0037), b NA, t NA
-  mode: OMAP_PIN_OUTPUT | OMAP_MUX_MODE7
-  signals: gpmc_ad6 | mmc1_dat6 | NA | NA | NA | NA | NA | gpio1_6
+4. Set maximum number of pages for read buffering consistently, instead
+of inadvertently depending on the size of the sector type.
 
-Then the GPIO pin is exported to userspace:
+5. Fix copyright line, which I missed when I submitted the hibernation
+threading patch.
 
-  root@beaglebone:/sys/class/gpio# echo 38 > export
-  root@beaglebone:/sys/class/gpio# cd gpio38
-  root@beaglebone:/sys/class/gpio/gpio38# ls
-  active_low  direction  edge  power  subsystem  uevent  value
+6. Dispense with bit shifting arithmetic to improve readability.
 
-The pin is then setup as a input and to generate an IRQ on the falling edge:
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+Signed-off-by: Per Olofsson <pelle@debian.org>
+---
+ kernel/power/swap.c |   76 +++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 58 insertions(+), 18 deletions(-)
 
-  root@beaglebone:/sys/class/gpio/gpio38# echo in > direction
-  root@beaglebone:/sys/class/gpio/gpio38# echo falling > edge
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 8742fd0..8a1c293 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -6,7 +6,7 @@
+  *
+  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
++ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  *
+@@ -51,6 +51,36 @@
+ 
+ #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
+ 
++/*
++ * Number of free pages that are not high.
++ */
++#ifdef CONFIG_HIGHMEM
++static unsigned long low_free_pages(void)
++{
++	struct zone *zone;
++	unsigned long free = 0;
++
++	for_each_populated_zone(zone)
++		if (!is_highmem(zone))
++			free += zone_page_state(zone, NR_FREE_PAGES);
++	return free;
++}
++#else
++static inline unsigned long low_free_pages(void)
++{
++	return nr_free_pages();
++}
++#endif
++
++/*
++ * Number of pages required to be kept free while writing the image. Always
++ * half of all available low pages before the writing starts.
++ */
++static inline unsigned long reqd_free_pages(void)
++{
++	return low_free_pages() / 2;
++}
++
+ struct swap_map_page {
+ 	sector_t entries[MAP_PAGE_ENTRIES];
+ 	sector_t next_swap;
+@@ -72,7 +102,7 @@ struct swap_map_handle {
+ 	sector_t cur_swap;
+ 	sector_t first_sector;
+ 	unsigned int k;
+-	unsigned long nr_free_pages, written;
++	unsigned long reqd_free_pages;
+ 	u32 crc32;
+ };
+ 
+@@ -265,14 +295,17 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ 		return -ENOSPC;
+ 
+ 	if (bio_chain) {
+-		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++		src = (void *)__get_free_page(__GFP_WAIT | __GFP_NOWARN |
++		                              __GFP_NORETRY);
+ 		if (src) {
+ 			copy_page(src, buf);
+ 		} else {
+ 			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
+ 			if (ret)
+ 				return ret;
+-			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++			src = (void *)__get_free_page(__GFP_WAIT |
++			                              __GFP_NOWARN |
++			                              __GFP_NORETRY);
+ 			if (src) {
+ 				copy_page(src, buf);
+ 			} else {
+@@ -316,8 +349,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
+ 		goto err_rel;
+ 	}
+ 	handle->k = 0;
+-	handle->nr_free_pages = nr_free_pages() >> 1;
+-	handle->written = 0;
++	handle->reqd_free_pages = reqd_free_pages();
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
+ err_rel:
+@@ -351,12 +383,17 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		clear_page(handle->cur);
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+-	}
+-	if (bio_chain && ++handle->written > handle->nr_free_pages) {
+-		error = hib_wait_on_bio_chain(bio_chain);
+-		if (error)
+-			goto out;
+-		handle->written = 0;
++
++		if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
++			error = hib_wait_on_bio_chain(bio_chain);
++			if (error)
++				goto out;
++			/*
++			 * Recalculate the number of required free pages, to
++			 * make sure we never take more than half.
++			 */
++			handle->reqd_free_pages = reqd_free_pages();
++		}
+ 	}
+  out:
+ 	return error;
+@@ -404,7 +441,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ #define LZO_THREADS	3
+ 
+ /* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++#define LZO_READ_PAGES	8192
+ 
+ 
+ /**
+@@ -615,10 +652,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	}
+ 
+ 	/*
+-	 * Adjust number of free pages after all allocations have been done.
+-	 * We don't want to run out of pages when writing.
++	 * Adjust the number of required free pages after all allocations have
++	 * been done. We don't want to run out of pages when writing.
+ 	 */
+-	handle->nr_free_pages = nr_free_pages() >> 1;
++	handle->reqd_free_pages = reqd_free_pages();
+ 
+ 	/*
+ 	 * Start the CRC32 thread.
+@@ -1129,14 +1166,17 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 
+ 	/*
+ 	 * Adjust number of pages for read buffering, in case we are short.
++	 * Never take more than half of all available low pages.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
++	read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
+ 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+ 		page[i] = (void *)__get_free_page(i < LZO_CMP_PAGES ?
+ 		                                  __GFP_WAIT | __GFP_HIGH :
+-		                                  __GFP_WAIT);
++		                                  __GFP_WAIT | __GFP_NOWARN |
++		                                  __GFP_NORETRY);
++
+ 		if (!page[i]) {
+ 			if (i < LZO_CMP_PAGES) {
+ 				ring_size = i;
+---------------------------------------
 
-A new entry has appeared in /proc/interrupts for the pin. The name is 'gpiolib'.
-Check that everything is OK from the GPIO point of view:
-  root@beaglebone:/sys/class/gpio/gpio38# cat /sys/kernel/debug/gpio
-  ...
-  GPIOs 32-63, gpio:
-   gpio-34  (sysfs               ) in  lo
-   gpio-35  (w1                  ) in  hi
-   gpio-38  (sysfs               ) in  hi
-   gpio-53  (beaglebone::usr0    ) out lo
-  ...
+-- 
+Bojan
 
-After playing with the HW (connect the pin to GND a few times or
-through a sensor) the IRQ count is displayed for the pin:
-
-  root@beaglebone:/sys/class/gpio/gpio38# cat /proc/interrupts
-           CPU0
-  ...
-  194:          0      GPIO  gpiolib
-  198:         19      GPIO  gpiolib
-  Err:          0
-
-The procedure is pretty simple actually.
-The only catch is to figure out the mapping between the pin in the
-mux, the gpio and the IRQ subsystems. For this particular setup the HW
-pin GPIO1_6 is known as gpmc_ad6 in the mux, also known as gpio38 in
-GPIO and has IRQ 198 assigned.
-
-Thanks & regards,
-Jean
-
->
-> Thanks,
-> g.
->
-> --
-> Grant Likely, B.Sc, P.Eng.
-> Secret Lab Technologies,Ltd.
