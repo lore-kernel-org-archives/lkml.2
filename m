@@ -1,87 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758817Ab2DJNjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 09:39:17 -0400
-Received: from fieldses.org ([174.143.236.118]:39019 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758788Ab2DJNjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 09:39:16 -0400
-Date: Tue, 10 Apr 2012 09:39:13 -0400
-From: "bfields@fieldses.org" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-Message-ID: <20120410133913.GF18465@fieldses.org>
-References: <4F82F16C.7030303@parallels.com>
- <20120409112739.6a823d6f@corrin.poochiereds.net>
- <4F830999.5000504@parallels.com>
- <20120409161114.GB6482@fieldses.org>
- <1333988226.2688.76.camel@lade.trondhjem.org>
- <20120409162107.GC6482@fieldses.org>
- <1333989216.2688.87.camel@lade.trondhjem.org>
- <4F8314CF.70302@parallels.com>
- <20120409181138.GA9581@fieldses.org>
- <4F8411CC.2070105@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F8411CC.2070105@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758671Ab2DJNkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 09:40:09 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41750 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab2DJNkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 09:40:08 -0400
+Date: Tue, 10 Apr 2012 14:42:35 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
+Message-ID: <20120410144235.1e05efd4@pyramind.ukuu.org.uk>
+In-Reply-To: <20120410133339.GK7499@opensource.wolfsonmicro.com>
+References: <20120410131930.28186.85370.stgit@bob.linux.org.uk>
+	<20120410131206.GB31551@sirena.org.uk>
+	<20120410142501.6045c6c0@pyramind.ukuu.org.uk>
+	<20120410133339.GK7499@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 02:56:12PM +0400, Stanislav Kinsbursky wrote:
-> 09.04.2012 22:11, bfields@fieldses.org пишет:
-> >Since NFSv4 doesn't have a separate MOUNT protocol, clients need to be
-> >able to do readdir's and lookups to get to exported filesystems.  We
-> >support this in the Linux server by exporting all the filesystems from
-> >"/" on down that must be traversed to reach a given filesystem.  These
-> >exports are very restricted (e.g. only parents of exports are visible).
-> >
-> 
-> Ok, thanks for explanation.
-> So, this pseudoroot looks like a part of NFS server internal
-> implementation, but not a part of a standard. That's good.
-> 
-> >>Why does it prevents implementing of check for "superblock-network
-> >>namespace" pair on NFS server start and forbid (?) it in case of
-> >>this pair is shared already in other namespace? I.e. maybe this
-> >>pseudoroot can be an exclusion from this rule?
-> >
-> >That might work.  It's read-only and consists only of directories, so
-> >the grace period doesn't affect it.
-> >
-> 
-> I've just realized, that this per-sb grace period won't work.
-> I.e., it's a valid situation, when two or more containers located on
-> the same filesystem, but shares different parts of it. And there is
-> not conflict here at all.
+> Right, but fundamentally it's just a general purpose ADC which looks
+> just the same as all the other SoC/PMIC ADCs.  Like I say the decision
+> for that hardware was to push it in via IIO. 
 
-Well, there may be some conflict in that a file could be hardlinked into
-both subtrees, and that file could be locked from users of either
-export.
+Your decision maybe. And it's one that makes no sense.
 
---b.
+As I said this is a low level interface for driver enabling including
+early boot time stuff, and its on a platform that's unlikely to want or
+ever use and suck in the big blob of IIO code.
 
-> I don't see any clear and simple way how to handle such races,
-> because otherwise we have to tie network namespace and filesystem
-> namespace.
-> I.e. there will be required some way to define, was passed export
-> directory shared already somewhere else or not.
-> 
-> Realistic solution - since export check should be done in initial
-> file system environment (most probably container will have it's own
-> root), then we to pass this data to some kernel thread/userspace
-> daemon in initial file system environment somehow (sockets doesn't
-> suits here... Shared memory?).
-> 
-> Improbable solution - patching VFS layer...
-> 
-> -- 
-> Best regards,
-> Stanislav Kinsbursky
+If you want an IIO interface to it you can write one, it's just a low
+level resource manager.
+
+Alan
