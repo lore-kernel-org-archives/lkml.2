@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759468Ab2DJU7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:59:03 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40617 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759385Ab2DJU7B (ORCPT
+	id S1759447Ab2DJVCn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:02:43 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37985 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755504Ab2DJVCm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:59:01 -0400
-Date: Tue, 10 Apr 2012 22:58:49 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v4 1/4] tools: Add Makefile.include
-Message-ID: <20120410205849.GB30366@aftab>
-References: <1334071240-28692-1-git-send-email-bp@amd64.org>
- <1334071240-28692-2-git-send-email-bp@amd64.org>
- <20120410202721.GA28293@merkur.ravnborg.org>
+	Tue, 10 Apr 2012 17:02:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410202721.GA28293@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABkLObr4Vyp9FwxfOquFjqnh1rEaLXNAzBV4SV-PO=UA4EC2vA@mail.gmail.com>
+References: <1333442836-9947-1-git-send-email-akinobu.mita@gmail.com>
+	<1333442836-9947-3-git-send-email-akinobu.mita@gmail.com>
+	<CABkLObr4Vyp9FwxfOquFjqnh1rEaLXNAzBV4SV-PO=UA4EC2vA@mail.gmail.com>
+Date: Wed, 11 Apr 2012 06:02:41 +0900
+Message-ID: <CAC5umyhu0TRgLhv+bbqRbcfx-hK5pacFt0bYOmzX4gODHt4B-A@mail.gmail.com>
+Subject: Re: [PATCH 3/4] arm: davinci: use for_each_set_bit_from
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Christian Riesch <christian.riesch@omicron.at>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 10:27:21PM +0200, Sam Ravnborg wrote:
-> Hi Borislav.
-> 
-> Some random comments as I really did not look at this
-> part of the patch-set before.
+2012/4/11 Christian Riesch <christian.riesch@omicron.at>:
 
-.. and I appreciate those, thanks.
+>> --- a/arch/arm/mach-davinci/dma.c
+>> +++ b/arch/arm/mach-davinci/dma.c
+>> @@ -557,9 +557,9 @@ static int reserve_contiguous_slots(int ctlr, unsigned
+>> int id,
+>>        if (i == edma_cc[ctlr]->num_slots)
+>>                stop_slot = i;
+>>
+>> -       for (j = start_slot; j < stop_slot; j++)
+>> -               if (test_bit(j, tmp_inuse))
+>> -                       clear_bit(j, edma_cc[ctlr]->edma_inuse);
+>> +       j = start_slot;
+>> +       for_each_set_bit_from(j, tmp_inuse, stop_slot);
+>
+> Is the semicolon at the end of the line correct?
 
-> > +#
-> > +# Include saner warnings here, which can catch bugs:
-> > +#
-> > +EXTRA_WARNINGS := -Wformat
-> > +EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
-> 
-> Two general comments - and I know this is just something you copied...
+It's clearly a bug that I was going to introduce.  I'll fix and
+resend it.
 
-Yep, I did from perf's Makefile.
+Thanks a lot.
 
-> Why not use the += operator. The below looks like shell script syntax.
-> And we use the += operator in other places - at least in the kernel stuff.
-
-Yep, this makes this assignment monster a bit more readable, sure.
-
-> AND WHY ALL THESE SCREAMING CAPITAL LETTERS?
-> I know Makefiles and scripts are full of them - but that does not help
-> the readability.
-> 
-> For kbuild I generally shifted to use:
-> - lower-case names for local stuff
-> - Upper case letters for global stuff - properly prefixed to avoid collisions
-> EXTRA_WARNINGS likely fall into the category global-stuff,
-> but then a local variable could still be usefull.
-
-Well, my intention was to have EXTRA_WARNINGS be a global variable which
-all tools under tools/ could start using so that we can benefit from the
-compiler doing some more extensive checking. Thus all caps, no?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+>> +               clear_bit(j, edma_cc[ctlr]->edma_inuse);
+>>
+>>        if (count)
+>>                return -EBUSY;
+>> --
+>> 1.7.4.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
