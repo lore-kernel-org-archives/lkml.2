@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab2DJPM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:12:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33376 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759089Ab2DJPM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:12:57 -0400
-Message-ID: <4F844DF6.9010809@wwwdotorg.org>
-Date: Tue, 10 Apr 2012 09:12:54 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1759200Ab2DJPNa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:13:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54233 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751507Ab2DJPN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:13:29 -0400
+Date: Tue, 10 Apr 2012 17:13:26 +0200
+From: Jan Kara <jack@suse.cz>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
+Message-ID: <20120410151326.GA4936@quack.suse.cz>
+References: <4F75E46E.2000503@msgid.tls.msk.ru>
+ <20120405232913.GA6640@quack.suse.cz>
+ <4F7E74F4.90604@msgid.tls.msk.ru>
+ <20120410022628.GN18323@dastard>
+ <4F83CC86.2010805@msgid.tls.msk.ru>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the pinctrl tree
-References: <20120404124437.ff05ebcc4db98109d5fcee22@canb.auug.org.au>	<4F7BC36E.4070000@wwwdotorg.org> <CACRpkdY57hQOvpqxaaYyJoH0ewfOAj9RqzWtC=aOWQyNMoG6fg@mail.gmail.com>
-In-Reply-To: <CACRpkdY57hQOvpqxaaYyJoH0ewfOAj9RqzWtC=aOWQyNMoG6fg@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F83CC86.2010805@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 01:42 AM, Linus Walleij wrote:
-> On Wed, Apr 4, 2012 at 5:43 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 04/03/2012 08:44 PM, Stephen Rothwell wrote:
->>> Hi Linus,
->>>
->>> After merging the pinctrl tree, today's linux-next build (powerpc
->>> ppc64_defconfig) failed like this:
->>>
->>> drivers/pinctrl/devicetree.c: In function 'dt_free_map':
->>> drivers/pinctrl/devicetree.c:44:42: error: dereferencing pointer to
->>> incomplete type drivers/pinctrl/devicetree.c:45:6: error:
->>> dereferencing pointer to incomplete type
->>> drivers/pinctrl/devicetree.c: In function 'dt_to_map_one_config':
->>> drivers/pinctrl/devicetree.c:140:21: error: dereferencing pointer
->>> to incomplete type drivers/pinctrl/devicetree.c:141:10: error:
->>> dereferencing pointer to incomplete type
->>> drivers/pinctrl/devicetree.c:146:11: error: dereferencing pointer
->>> to incomplete type
->>
->> This doesn't repro for me with tegra_defconfig, which has both
->> CONFIG_PINCTRL and CONFIG_OF enabled.
->>
->> I believe this happens because of the following in
->> drivers/pinctrl/Makefile:
->>
->> obj-$(CONFIG_OF)                += devicetree.o
->>
->> On ppc64, CONFIG_OF is probably true, yet the rest of PINCTRL isn't
->> enabled, hence the headers that are included probably don't declare
->> all the types needed to compile that file.
->>
->> In fact, the file shouldn't be compiled, since it's not needed if
->> !CONFIG_PINCTRL. So perhaps the Makefile should be more like:
->>
->> ifeq ($(CONFIG_OF),y)
->> obj-$(CONFIG_PINCTRL)           += devicetree.o
->> endif
+On Tue 10-04-12 10:00:38, Michael Tokarev wrote:
+> On 10.04.2012 06:26, Dave Chinner wrote:
 > 
-> Easiest fixed with a new Kconfig like CONFIG_PINCTRL_OF that
-> depend on both right?
+> > Barriers. Turn them off, and see if that fixes your problem.
 > 
-> I'll cook a patch.
+> Thank you Dave for a hint.  And nope, that's not it, not at all... ;)
+> While turning off barriers helps a tiny bit, to gain a few %% from
+> the huge slowdown, it does not cure the issue.
+> 
+> Meanwhile, I observed the following:
+> 
+> 1) the issue persists on more recent kernels too, I tried 3.3
+>    and it is also as slow as 3.0.
+> 
+> 2) at least 2.6.38 kernel works fine, as fast as 2.6.32, I'll
+>    try 2.6.39 next.
+> 
+>    I updated $subject accordingly.
+> 
+> 3) the most important thing I think: this is general I/O speed
+>    issue.  Here's why:
+> 
+>   2.6.38:
+>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+>   100+0 records in
+>   100+0 records out
+>   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
+> 
+>   3.0:
+>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+>   100+0 records in
+>   100+0 records out
+>   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
+> 
+> That's about 20 times difference on direct read from the
+> same - idle - device!!
+  Huh, that's a huge difference for such a trivial load. So we can rule out
+filesystems, writeback, mm. I also wouldn't think it's IO scheduler but
+you can always check by comparing dd numbers after
+  echo none >/sys/block/sdb/queue/scheduler
+Anyway, the most likely cause seems to be some driver issue (which would
+also explain why you can see it only on one machine). I'd also compare very
+closely config files of the two kernels if there isn't some unexpected
+difference...
 
-I don't think so; why wouldn't pinctrl automatically have DT support
-when both pinctrl and OF are enabled. BTW, I already posted a patch to
-fix this last week.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
