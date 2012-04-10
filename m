@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab2DJRUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 13:20:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54471 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab2DJRUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 13:20:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1204101528390.9354@kernel.research.nokia.com>
-References: <1333462221-3987-1-git-send-email-m.szyprowski@samsung.com> <alpine.DEB.2.00.1204101528390.9354@kernel.research.nokia.com>
-From: Sandeep Patil <psandeep.s@gmail.com>
-Date: Tue, 10 Apr 2012 10:19:56 -0700
-Message-ID: <CA+K6fF5TbhYX_XYXL33h5s8cnSogSna4Cq2-vM4MfX4igSyozg@mail.gmail.com>
-Subject: Re: [PATCHv24 00/16] Contiguous Memory Allocator
-To: Aaro Koskinen <aaro.koskinen@nokia.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755112Ab2DJRV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 13:21:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39552 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751305Ab2DJRV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 13:21:56 -0400
+Message-ID: <1334078512.12041.14.camel@joe2Laptop>
+Subject: Re: [PATCH] printk: support structured and multi-facility log
+ messages
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 10 Apr 2012 10:21:52 -0700
+In-Reply-To: <1333846964.1834.33.camel@joe2Laptop>
+References: <1333569554.864.3.camel@mop>
+	 <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
+	 <1333655231.725.27.camel@mop> <1333674768.23520.123.camel@joe2Laptop>
+	 <CA+55aFyE41U9OPr7mrAA2ZJKuQ2jvH-KmusUNyfYbH8tOm6yiQ@mail.gmail.com>
+	 <1333737301.29217.11.camel@mop> <1333846964.1834.33.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> This is (yet another) update of CMA patches.
->
->
-> How well CMA is supposed to work if you have mlocked processes? I've
-> been testing these patches, and noticed that by creating a small mlocked
-> process you start to get plenty of test_pages_isolated() failure warnings,
-> and bigger allocations will always fail.
+On Sat, 2012-04-07 at 18:02 -0700, Joe Perches wrote:
+> I'll spend some time on breaking up Kay's
+> patch in the next couple of weeks.
+> 
+> I'll try to get my printk restructuring patch
+> out by Monday.
 
-CMIIW, I think mlocked pages are never migrated. The reason is because
-__isolate_lru_pages() does not isolate Unevictable pages right now.
+I didn't get it done, and I won't even try to
+look at lkml again for a couple of weeks.
 
-Minchan added support to allow this but the patch was dropped.
+If anyone else does, great, otherwise I should
+have what I think is an acceptable patch set
+shortly after that.
 
-See the discussion at : https://lkml.org/lkml/2011/8/29/295
 
-Sandeep
