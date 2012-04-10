@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab2DJUbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:31:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61789 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759396Ab2DJUbU (ORCPT
+	id S1759420Ab2DJUdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:33:51 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:52952 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757221Ab2DJUdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:31:20 -0400
-Date: Tue, 10 Apr 2012 22:32:12 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, daniel@ffwll.ch
-Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
-Message-ID: <20120410203212.GN4115@phenom.ffwll.local>
-Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Jiri Slaby <jirislaby@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <4F717CE3.4040206@suse.cz>
- <4F717D80.9040207@suse.cz>
- <4F758400.3080907@suse.cz>
- <1333104359_155028@CP5-2952>
- <20120409101119.47e770b2@jbarnes-desktop>
- <4F83F3B5.8080704@suse.cz>
- <20120410092619.26a15165@jbarnes-desktop>
- <4F8477D1.4080102@suse.cz>
- <20120410113448.540e4c1d@jbarnes-desktop>
- <4F848F88.7060009@suse.cz>
+	Tue, 10 Apr 2012 16:33:50 -0400
+Date: Tue, 10 Apr 2012 22:33:48 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v4 2/4] tools: Add a toplevel Makefile
+Message-ID: <20120410203348.GB28293@merkur.ravnborg.org>
+References: <1334071240-28692-1-git-send-email-bp@amd64.org> <1334071240-28692-3-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F848F88.7060009@suse.cz>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334071240-28692-3-git-send-email-bp@amd64.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 09:52:40PM +0200, Jiri Slaby wrote:
-> On 04/10/2012 08:34 PM, Jesse Barnes wrote:
-> > On Tue, 10 Apr 2012 20:11:29 +0200 Jiri Slaby <jslaby@suse.cz>
-> > wrote:
-> > 
-> >> On 04/10/2012 06:26 PM, Jesse Barnes wrote:
-> >>> So port hotplug is always reporting that port C has a hotplug 
-> >>> interrupt though...  If you write 0x3 back to it does the
-> >>> interrupt stop?
-> >> 
-> >> I'm not sure I got it right. This doesn't help: ---
-> >> a/drivers/gpu/drm/i915/i915_irq.c +++
-> >> b/drivers/gpu/drm/i915/i915_irq.c @@ -1416,6 +1416,17 @@ static
-> >> irqreturn_t i915_driver_irq_handler(DRM_IRQ_ARGS) iir = new_iir; 
-> >> }
-> >> 
-> >> +       if (ret == IRQ_NONE) { +               u32 hp =
-> >> I915_READ(PORT_HOTPLUG_STAT); +               if (hp) { +
-> >> I915_WRITE(PORT_HOTPLUG_STAT, hp); +
-> >> I915_READ(PORT_HOTPLUG_STAT); +               } + +
-> >> if (printk_ratelimit()) +                       printk(KERN_DEBUG
-> >> "%s: %.8x\n", __func__, hp); + +       }
-> >> 
-> >> return ret; }
-> > 
-> > Yeah that looks right, you still get 0x300?
+On Tue, Apr 10, 2012 at 05:20:38PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> Yes.
+> Add a Makefile with all the targets under tools/.
 > 
-> > You could try masking hotplug interrupts altogether.
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  tools/Makefile |   31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+>  create mode 100644 tools/Makefile
 > 
-> This doesn't help:
-> --- a/drivers/gpu/drm/i915/i915_irq.c
-> +++ b/drivers/gpu/drm/i915/i915_irq.c
-> @@ -2049,7 +2051,7 @@ static int i915_driver_irq_postinstall(struct
-> drm_device *dev)
->         I915_WRITE(IER, enable_mask);
->         POSTING_READ(IER);
-> 
-> -       if (I915_HAS_HOTPLUG(dev)) {
-> +       if (0 && I915_HAS_HOTPLUG(dev)) {
->                 u32 hotplug_en = I915_READ(PORT_HOTPLUG_EN);
-> 
->                 /* Note HDMI and DP share bits */
-> 
-> 
-> > Also, just to sanity check things, can you look at the output of
-> > "lspci -s 02.0 -vvv -xxx" and see if the "INTx" field is + or -?
-> > If it's +, then the interrupt is definitely coming from an un-acked
-> > IRQ source on the gfx device.  If it's INTx-, it means something in
-> > one of the upper MSI layers isn't getting handled right.
-> 
-> Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
-> 
-> I tried 3.2 and 3.3. Although the spurious interrupts were always
-> there, they occurred with frequency lower by a magnitude (15 vs. 300
-> after X starts). So I bisected that and it lead to a commit which
-> fixes bad tiling for me:
-> http://cgit.freedesktop.org/~ickle/linux-2.6/commit/?h=for-jiri&id=79710e6ccabdac80c65cd13b944695ecc3e42a9d
+> diff --git a/tools/Makefile b/tools/Makefile
+> new file mode 100644
+> index 000000000000..e93b8ec3d250
+> --- /dev/null
+> +++ b/tools/Makefile
+> @@ -0,0 +1,31 @@
+> +include scripts/Makefile.include
+> +
+> +perf firewire lguest usb virtio vm: FORCE
+> +	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
+> +
+> +cpupower: FORCE
+> +	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
+> +
+> +turbostat x86_energy_perf_policy: FORCE
+> +	$(QUIET_SUBDIR0)power/x86/$@/ $(QUIET_SUBDIR1)
+> +
+> +selftests: FORCE
+> +	$(QUIET_SUBDIR0)testing/$@/ $(QUIET_SUBDIR1)
+> +
+> +firewire_clean lguest_clean perf_clean vm_clean usb_clean virtio_clean:
+> +	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
+> +
+> +cp_clean:
+> +	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
+> +
+> +turbostat_clean x86_energy_perf_policy_clean:
+> +	$(QUIET_SUBDIR0)power/x86/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
+> +
+> +selftests_clean:
+> +	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
+> +
+> +clean: cp_clean firewire_clean lguest_clean perf_clean selftests_clean \
+> +		turbostat_clean usb_clean virtio_clean \
+> +		x86_energy_perf_policy_clean
+> +
+> +.PHONY: FORCE
 
-Pipelined fencing is pretty much just broken and we'll completely rip it
-out in 3.5. Does this also happen with 3.4-rc2?
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Things would be much simpler is all tools were adjusted to:
+a) the subdir they live in is the make target name
+b) each tool has three mandatory targets:
+ 1) default target => build the tool
+ 2) clean
+ 3) install
+
+I can see that with the layout today you cannot
+distingush between the various targets below power.
+But the current solutions is not scaleable nor maintainable.
+
+Even if you cannot fix power/* then testing looks easy.
+
+But all that can always to improved and consolidated later.
+
+	Sam
