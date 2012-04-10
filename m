@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab2DJN6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 09:58:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32610 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab2DJN6q (ORCPT
+	id S1758797Ab2DJODL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 10:03:11 -0400
+Received: from server1.neighborhoods.net ([207.154.13.48]:60620 "EHLO
+	server1.neighborhoods.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201Ab2DJODK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 09:58:46 -0400
-X-Authority-Analysis: v=2.0 cv=T5EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=hzoqAax4KOoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M29pHIjLk_o7-QnifkkA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334066322.23924.204.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH]sched_rt.c: Avoid unnecessary dequeue and enqueue of
- pushable tasks in set_cpus_allowed_rt()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Date: Tue, 10 Apr 2012 09:58:42 -0400
-In-Reply-To: <654301331942324@web109.yandex.ru>
-References: <1322774765.8386.2.camel@hp>
-	 <20120213172316.GA24145@home.goodmis.org> <944171329661049@web81.yandex.ru>
-	 <654301331942324@web109.yandex.ru>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Tue, 10 Apr 2012 10:03:10 -0400
+Message-ID: <4F843D9B.3010601@meetinghouse.net>
+Date: Tue, 10 Apr 2012 10:03:07 -0400
+From: Miles Fidelman <mfidelman@meetinghouse.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+MIME-Version: 1.0
+To: Matthew Garrett <mjg@redhat.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, peter.chubb@nicta.com.au,
+        michael.d.labriola@gmail.com
+Subject: Re: reboot via bios on X86_64?
+References: <4F8302B4.8040901@meetinghouse.net> <20120409155155.GA22974@srcf.ucam.org> <4F831BD0.3010707@meetinghouse.net> <20120409173223.GA25717@srcf.ucam.org> <4F83231A.8040005@meetinghouse.net> <20120409180711.GA26277@srcf.ucam.org>
+In-Reply-To: <20120409180711.GA26277@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-17 at 03:58 +0400, Kirill Tkhai wrote:
-> Steven, what is about the patch from my previous message? Is everything ok?
+Matthew Garrett wrote:
+> On Mon, Apr 09, 2012 at 01:57:46PM -0400, Miles Fidelman wrote:
+>> Matthew Garrett wrote:
+>>> On Mon, Apr 09, 2012 at 01:26:40PM -0400, Miles Fidelman wrote:
+>>>
+>>>> No.  Tried all the combinations - w/ and w/o hypervisor, all the
+>>>> available kernel options.  Seems
+>>>> like the only thing that will reboot this particular hardware/bios
+>>>> combo is via the bios.
+>>> And this is with 3.3? Interesting. What's the exact behaviour you see,
+>>> and what motherboard is this?
+>>>
+>> No.  2.6.32.5  (the one that currently ships with Debian stable).
+> Ok. The reboot code has been reworked since then. It'd be good to try it
+> with a new kernel.
+>
+I just went through the reboot.c code, line-by-line, comparing what I'm 
+running (2.6.32.41) with the 3.3 code, and
+what I'm seeing is:
 
-You're timing is impeccable. I was in Chemnitz, Germany when you sent
-this, and it too was lost in the noise ;-)
+- the same huge amount of code excluded by #ifdef CONFIG_X86_32 blocks 
+(i.e., still no path to reboot through the bios)
 
-I'll take a look at it today.
+- no new methods for executing a reboot - choices for X86_64 remain 
+[warm|cold|triple|kbd|acpi|efi,|pci|force]
 
-Thanks!
+- no changes to the actual code that invokes any of those reboot methods
 
--- Steve
+All that seems to have changed is:
 
- 
-> 
-> Regards,
-> Kirill
-> 
-> 19.02.2012, 18:17, "Kirill Tkhai" <tkhai@yandex.ru>:
-> > 13.02.2012, 21:23, "Steven Rostedt" <rostedt@goodmis.org>:
-> >
-> >>  I wasn't on the Cc of the original message, but it was bounced to me
-> >>  awhile ago. I'm cleaning out my email and came across it.
-> >>
-> >>  Can you send me the latest version of this patch, either against latest
-> >>  Linus, or against tip/master.
-> >>
-> >>  Thanks,
-> >>
-> >>  -- Steve
-> >>
-> >>  P.S. I'll be at ELC this week so it may not get processed right away.
-> >
-> > Migration status depends on a difference of weight from 0 and 1.
-> > If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
-> > pushable (or not pushable). We are not insterested in its exact
-> > values, is it 3 or 4, for example.
-> >
-> > Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
-> > task will be dequeued and enqueued sequentially without important
-> > difference in comparison with initial state. The only difference is in
-> > internal representation of plist queue of pushable tasks and the fact
-> > that the task may won't be the first in a sequence of the same priority
-> > tasks. But it seems to me it gives nothing.
-> >
-> > Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
+- there are some additional quirks handled, but they all translate to 
+invoking one of [warm|cold|triple|kbd|acpi|efi,|pci|force]
+
+- if one is trying to do a shutdown (which already works for me), there 
+is one section of code that actually changes, specifically:
+inside a #ifdef CONFIG_X86_64
+    pci_iommu_shutdown();    changes to   x86_platform.iommu_shutdown();
+
+----
+So... I don't see that trying a newer kernel is going to have any effect 
+vis-a-vis rebooting my particularly piece of hardware under a 64-bit 
+kernel - and what with the close coupling of xen versions w/ kernel 
+versions, seems like a lot of potential pain points just to test this.  
+Sigh...
+
+Miles
+
+
+-- 
+In theory, there is no difference between theory and practice.
+In practice, there is.   .... Yogi Berra
 
 
