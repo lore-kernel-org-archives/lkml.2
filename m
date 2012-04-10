@@ -1,113 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab2DJGec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 02:34:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39717 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab2DJGeb (ORCPT
+	id S1753627Ab2DJGj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 02:39:56 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:33696 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753138Ab2DJGjz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 02:34:31 -0400
-Message-ID: <4F83D470.6010207@openvz.org>
-Date: Tue, 10 Apr 2012 10:34:24 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Tue, 10 Apr 2012 02:39:55 -0400
+From: =?ISO-8859-1?Q?R=E9mi?= Denis-Courmont 
+	<remi.denis-courmont@nokia.com>
+To: "ext Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>, Dave Jones <davej@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH 2/2] phonet: Sort out initiailziation and cleanup code.
+Date: Tue, 10 Apr 2012 09:39:36 +0300
+Message-ID: <222341971.SxRPJOQSbv@hector>
+Organization: Nokia Mobile Phones
+User-Agent: KMail/4.7.3 (Linux/3.0.0-17-generic; KDE/4.7.4; x86_64; ; )
+In-Reply-To: <m162dctjbo.fsf_-_@fess.ebiederm.org>
+References: <1333664446.3538.12.camel@lappy> <m1aa2otjf4.fsf_-_@fess.ebiederm.org> <m162dctjbo.fsf_-_@fess.ebiederm.org>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: Re: [PATCH] mm: sync rss-counters at the end of exit_mm()
-References: <20120409200336.8368.63793.stgit@zurg> <CAHGf_=oWj-hz-E5ht8-hUbQKdsZ1bzP80n987kGYnFm8BpXBVQ@mail.gmail.com> <alpine.LSU.2.00.1204091433380.1859@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1204091433380.1859@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Mon, 9 Apr 2012, KOSAKI Motohiro wrote:
->> On Mon, Apr 9, 2012 at 4:03 PM, Konstantin Khlebnikov
->> <khlebnikov@openvz.org>  wrote:
->>> On task's exit do_exit() calls sync_mm_rss() but this is not enough,
->>> there can be page-faults after this point, for example exit_mm() ->
->>> mm_release() ->  put_user() (for processing tsk->clear_child_tid).
->>> Thus there may be some rss-counters delta in current->rss_stat.
->>
->> Seems reasonable.
->
-> Yes, I think Konstantin has probably caught it;
-> but I'd like to hear confirmation from Markus.
+Le vendredi 6 avril 2012 18:35:39 ext Eric W. Biederman a écrit :
+> Recently an oops was reported in phonet if there was a failure during
+> network namespace creation.
+> 
+> [  163.733755] ------------[ cut here ]------------
+> [  163.734501] kernel BUG at include/net/netns/generic.h:45!
+> [  163.734501] invalid opcode: 0000 [#1] PREEMPT SMP
+> [  163.734501] CPU 2
+> [  163.734501] Pid: 19145, comm: trinity Tainted: G        W
+> 3.4.0-rc1-next-20120405-sasha-dirty #57 [  163.734501] RIP:
+> 0010:[<ffffffff824d6062>]  [<ffffffff824d6062>] phonet_pernet+0x182/0x1a0 [
+>  163.734501] RSP: 0018:ffff8800674d5ca8  EFLAGS: 00010246
+> [  163.734501] RAX: 000000003fffffff RBX: 0000000000000000 RCX:
+> ffff8800678c88d8 [  163.734501] RDX: 00000000003f4000 RSI: ffff8800678c8910
+> RDI: 0000000000000282 [  163.734501] RBP: ffff8800674d5cc8 R08:
+> 0000000000000000 R09: 0000000000000000 [  163.734501] R10: 0000000000000000
+> R11: 0000000000000000 R12: ffff880068bec920 [  163.734501] R13:
+> ffffffff836b90c0 R14: 0000000000000000 R15: 0000000000000000 [  163.734501]
+> FS:  00007f055e8de700(0000) GS:ffff88007d000000(0000)
+> knlGS:0000000000000000 [  163.734501] CS:  0010 DS: 0000 ES: 0000 CR0:
+> 000000008005003b
+> [  163.734501] CR2: 00007f055e6bb518 CR3: 0000000070c16000 CR4:
+> 00000000000406e0 [  163.734501] DR0: 0000000000000000 DR1: 0000000000000000
+> DR2: 0000000000000000 [  163.734501] DR3: 0000000000000000 DR6:
+> 00000000ffff0ff0 DR7: 0000000000000400 [  163.734501] Process trinity (pid:
+> 19145, threadinfo ffff8800674d4000, task ffff8800678c8000) [  163.734501]
+> Stack:
+> [  163.734501]  ffffffff824d5f00 ffffffff810e2ec1 ffff880067ae0000
+> 00000000ffffffd4 [  163.734501]  ffff8800674d5cf8 ffffffff824d667a
+> ffff880067ae0000 00000000ffffffd4 [  163.734501]  ffffffff836b90c0
+> 0000000000000000 ffff8800674d5d18 ffffffff824d707d [  163.734501] Call
+> Trace:
+> [  163.734501]  [<ffffffff824d5f00>] ? phonet_pernet+0x20/0x1a0
+> [  163.734501]  [<ffffffff810e2ec1>] ? get_parent_ip+0x11/0x50
+> [  163.734501]  [<ffffffff824d667a>] phonet_device_destroy+0x1a/0x100
+> [  163.734501]  [<ffffffff824d707d>] phonet_device_notify+0x3d/0x50
+> [  163.734501]  [<ffffffff810dd96e>] notifier_call_chain+0xee/0x130
+> [  163.734501]  [<ffffffff810dd9d1>] raw_notifier_call_chain+0x11/0x20
+> [  163.734501]  [<ffffffff821cce12>] call_netdevice_notifiers+0x52/0x60
+> [  163.734501]  [<ffffffff821cd235>] rollback_registered_many+0x185/0x270
+> [  163.734501]  [<ffffffff821cd334>] unregister_netdevice_many+0x14/0x60
+> [  163.734501]  [<ffffffff823123e3>] ipip_exit_net+0x1b3/0x1d0
+> [  163.734501]  [<ffffffff82312230>] ? ipip_rcv+0x420/0x420
+> [  163.734501]  [<ffffffff821c8515>] ops_exit_list+0x35/0x70
+> [  163.734501]  [<ffffffff821c911b>] setup_net+0xab/0xe0
+> [  163.734501]  [<ffffffff821c9416>] copy_net_ns+0x76/0x100
+> [  163.734501]  [<ffffffff810dc92b>] create_new_namespaces+0xfb/0x190
+> [  163.734501]  [<ffffffff810dca21>] unshare_nsproxy_namespaces+0x61/0x80
+> [  163.734501]  [<ffffffff810afd1f>] sys_unshare+0xff/0x290
+> [  163.734501]  [<ffffffff8187622e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [  163.734501]  [<ffffffff82665539>] system_call_fastpath+0x16/0x1b
+> [  163.734501] Code: e0 c3 fe 66 0f 1f 44 00 00 48 c7 c2 40 60 4d 82 be 01
+> 00 00 00 48 c7 c7 80 d1 23 83 e8 48 2a c4 fe e8 73 06 c8 fe 48 85 db 75 0e
+> <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 83 c4 10 48 89 d8 [ 
+> 163.734501] RIP  [<ffffffff824d6062>] phonet_pernet+0x182/0x1a0 [ 
+> 163.734501]  RSP <ffff8800674d5ca8>
+> [  163.861289] ---[ end trace fb5615826c548066 ]---
+> 
+> After investigation it turns out there were two issues.
+> 1) Phonet was not implementing network devices but was using
+> register_pernet_device instead of register_pernet_subsys.
+> 
+>    This was allowing there to be cases when phonenet was not initialized and
+> the phonet net_generic was not set for a network namespace when network
+> device events were being reported on the netdevice_notifier for a network
+> namespace leading to the oops above.
+> 
+> 2) phonet_exit_net was implementing a confusing and special case of handling
+> all network devices from going away that it was hard to see was correct,
+> and would only occur when the phonet module was removed.
+> 
+>    Now that unregister_netdevice_notifier has been modified to synthesize
+> unregistration events for the network devices that are extant when called
+> this confusing special case in phonet_exit_net is no longer needed.
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 
-There is another bug in exec_mmap()
+Acked-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -823,8 +823,8 @@ static int exec_mmap(struct mm_struct *mm)
-         /* Notify parent that we're no longer interested in the old VM */
-         tsk = current;
-         old_mm = current->mm;
--       sync_mm_rss(old_mm);
-         mm_release(tsk, old_mm);
-+       sync_mm_rss(old_mm);
-
-         if (old_mm) {
-                 /*
-
->
->> but I have another question. Do we have any reason to
->> keep sync_mm_rss() in do_exit()? I havn't seen any reason that thread exiting
->> makes rss consistency.
->
-> IIRC it's all about the hiwater_rss/maxrss stuff: we want to sync the
-> maximum rss into mm->hiwater_rss before it's transferred to signal->maxrss,
-> and later made visible to the user though getrusage(RUSAGE_CHILDREN,) -
-> does your reading confirm that?
->
-> Konstantin now finds the child_tid and futex stuff can trigger faults
-> raising rss beyond that point, but usually it won't go higher than when
-> it was captured for maxrss there.
->
-> The sync_mm_rss() added by this patch (after "tsk->mm = NULL" so
-> *_mm_counter_fast() cannot store any more into the tsk even if there
-> were more faults) is solely to satisfy Konstantin's check_mm(), and
-> it is irritating to have that duplicated on the exit path.
-
-It was quick fix after the midnight. =) Now I think we can move mm_release()
-from exit_mm() to do_exit(), and place it before sync_mm_rss(). Other stuff
-there shouldn't trigger page-faults. Thus here will be only one sync_mm_rss():
-at the end of mm_release()
-
->
-> I'd be happy to see the new one put under CONFIG_DEBUG_VM along with
-> check_mm(), once it's had a few -rcs of exposure without.
->
-> Hugh
->
->>
->>
->>>
->>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->>> Reported-by: Markus Trippelsdorf<markus@trippelsdorf.de>
->>> Cc: Hugh Dickins<hughd@google.com>
->>> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->>> ---
->>>   kernel/exit.c |    1 +
->>>   1 file changed, 1 insertion(+)
->>>
->>> diff --git a/kernel/exit.c b/kernel/exit.c
->>> index d8bd3b42..8e09dbe 100644
->>> --- a/kernel/exit.c
->>> +++ b/kernel/exit.c
->>> @@ -683,6 +683,7 @@ static void exit_mm(struct task_struct * tsk)
->>>         enter_lazy_tlb(mm, current);
->>>         task_unlock(tsk);
->>>         mm_update_next_owner(mm);
->>> +       sync_mm_rss(mm);
->>>         mmput(mm);
->>>   }
->> >
+> ---
+>  net/phonet/pn_dev.c |   21 ++-------------------
+>  1 files changed, 2 insertions(+), 19 deletions(-)
+> 
+> diff --git a/net/phonet/pn_dev.c b/net/phonet/pn_dev.c
+> index 9b9a85e..bf5cf69 100644
+> --- a/net/phonet/pn_dev.c
+> +++ b/net/phonet/pn_dev.c
+> @@ -331,23 +331,6 @@ static int __net_init phonet_init_net(struct net *net)
+> 
+>  static void __net_exit phonet_exit_net(struct net *net)
+>  {
+> -	struct phonet_net *pnn = phonet_pernet(net);
+> -	struct net_device *dev;
+> -	unsigned i;
+> -
+> -	rtnl_lock();
+> -	for_each_netdev(net, dev)
+> -		phonet_device_destroy(dev);
+> -
+> -	for (i = 0; i < 64; i++) {
+> -		dev = pnn->routes.table[i];
+> -		if (dev) {
+> -			rtm_phonet_notify(RTM_DELROUTE, dev, i);
+> -			dev_put(dev);
+> -		}
+> -	}
+> -	rtnl_unlock();
+> -
+>  	proc_net_remove(net, "phonet");
+>  }
+> 
+> @@ -361,7 +344,7 @@ static struct pernet_operations phonet_net_ops = {
+>  /* Initialize Phonet devices list */
+>  int __init phonet_device_init(void)
+>  {
+> -	int err = register_pernet_device(&phonet_net_ops);
+> +	int err = register_pernet_subsys(&phonet_net_ops);
+>  	if (err)
+>  		return err;
+> 
+> @@ -377,7 +360,7 @@ void phonet_device_exit(void)
+>  {
+>  	rtnl_unregister_all(PF_PHONET);
+>  	unregister_netdevice_notifier(&phonet_device_notifier);
+> -	unregister_pernet_device(&phonet_net_ops);
+> +	unregister_pernet_subsys(&phonet_net_ops);
+>  	proc_net_remove(&init_net, "pnresource");
+>  }
+-- 
+Rémi Denis-Courmont
+http://www.remlab.net/
 
