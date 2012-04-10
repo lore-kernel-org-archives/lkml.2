@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab2DJSHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:07:48 -0400
-Received: from mta112.f1.k8.com.br ([187.73.32.184]:60797 "EHLO
-	mta112.f1.k8.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758011Ab2DJSHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:07:46 -0400
-Message-ID: <1334081260.2342.20.camel@Thor>
-Subject: [PATCH 1/1] rculist: Replaced list_first_entry_rcu() with
- list_first_or_null_rcu()
-From: Michel Machado <michel@digirati.com.br>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Date: Tue, 10 Apr 2012 14:07:40 -0400
-Organization: Digirati Internet
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758244Ab2DJSIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:08:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757653Ab2DJSID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 14:08:03 -0400
+Date: Tue, 10 Apr 2012 13:40:36 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        martin.petersen@oracle.com
+Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline
+ except SATA
+Message-ID: <20120410174036.GA4178@redhat.com>
+References: <20120410133708.GE21801@redhat.com>
+ <4F843C17.5050004@kernel.dk>
+ <20120410142148.GG21801@redhat.com>
+ <20120410151042.GH21801@redhat.com>
+ <CAMM=eLf5qi_PL8vFh_b5V_nq_mxg0CN0asE8E9XYJn48J4mdPA@mail.gmail.com>
+ <20120410172828.GI21801@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410172828.GI21801@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced list_first_entry_rcu() with list_first_or_null_rcu() because
-list_first_entry_rcu() is not safe as one can find in the comment that
-this patch also adds.
+On Tue, Apr 10 2012 at  1:28pm -0400,
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-This patch incorporated Paul's suggestions to the previous version of
-this patch available here:
+> On Tue, Apr 10, 2012 at 12:13:07PM -0400, Mike Snitzer wrote:
+> 
+> [..]
+> > > So we are back to the question of can scsi devices find out if a Lun
+> > > is backed by single disk or multiple disks.
+> > 
+> > I'm not aware of any discrete attribute (comparable to 'rotational'
+> > flag) that SCSI devices will advertise that indicates "I'm a raid
+> > array".
+> > 
+> > That said, we can have a _very_ good hint that a SCSI device is a raid array if:
+> > 
+> > 1) optimal_io_size is not zero, minimum_io_size is not equal to
+> > optimal_io_size, and optimal_io_size is a multiple of minimum_io_size
+> > 
+> > 2) WCE=0 (higher-end arrays with a writeback cache)
+> > 
+> > Determining 1 could be enough, we should probably ignore 2 as it isn't
+> > an absolute indication that a device is composed of multiple devices
+> > (especially not if considered independently of 1).
+> 
+> Umm..., somehow relying on optimal_io_size != minimum_io_size sounds odd
+> to me (assuming it works).
+> 
+> I checked bunch of Luns exported to me and all of them have
+> optimal_io_size=0.
 
-https://lkml.org/lkml/2012/4/2/536
+As I said above, this would only apply if "optimal_io_size is not zero, ..."
 
-This patch cannot break any upstream code because list_first_entry_rcu
-is not being used anywhere in the kernel (tested with grep(1)), and
-external code that uses it is probably broken already.
+> I have few FC Luns exported from two array vendors. I have few iscsi Luns
+> exported from two separate vendors and all these luns have
+> optimal_io_size=0.
 
-Signed-off-by: Michel Machado <michel@digirati.com.br>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Dipankar Sarma <dipankar@in.ibm.com>
----
+Seems all those LUNs haven't exported their limits via BLOCK LIMITS VPD.
+But more recent firmware could rectify that.
 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index d079290..ef5da30 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -228,18 +228,43 @@ static inline void list_splice_init_rcu(struct
-list_head *list,
- 	})
- 
- /**
-- * list_first_entry_rcu - get the first element from a list
-+ * Where are list_empty_rcu() and list_first_entry_rcu()?
-+ *
-+ * Implementing those functions following their counterparts
-list_empty() and
-+ * list_first_entry() is not advisable because they lead to subtle race
-+ * conditions as the following snippet shows:
-+ * 
-+ * if (!list_empty_rcu(mylist)) {
-+ * 	struct foo *bar = list_first_entry_rcu(mylist, struct foo,
-list_member);
-+ * 	do_something(bar);
-+ * }
-+ *
-+ * The list may not be empty when list_empty_rcu checks it, but it may
-be when
-+ * list_first_entry_rcu rereads the ->next pointer.
-+ *
-+ * Rereading the ->next pointer is not a problem for list_empty() and
-+ * list_first_entry() because they would be protected by a lock that
-blocks
-+ * writers.
-+ *
-+ * See list_first_or_null_rcu for an alternative.
-+ */
-+
-+/**
-+ * list_first_or_null_rcu - get the first element from a list
-  * @ptr:        the list head to take the element from.
-  * @type:       the type of the struct this is embedded in.
-  * @member:     the name of the list_struct within the struct.
-  *
-- * Note, that list is expected to be not empty.
-+ * Note that if the list is empty, it returns NULL.
-  *
-  * This primitive may safely run concurrently with the _rcu
-list-mutation
-  * primitives such as list_add_rcu() as long as it's guarded by
-rcu_read_lock().
-  */
--#define list_first_entry_rcu(ptr, type, member) \
--	list_entry_rcu((ptr)->next, type, member)
-+#define list_first_or_null_rcu(ptr, type, member) \
-+	({struct list_head *__ptr = (ptr); \
-+	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
-+	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL;
-\
-+	})
- 
- /**
-  * list_for_each_entry_rcu	-	iterate over rcu list of given type
-
+Anyway, there is no one size fits all here, sorry to disappoint you!
