@@ -1,115 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832Ab2DJOK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 10:10:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44842 "EHLO mx1.redhat.com"
+	id S1758848Ab2DJOLY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 10:11:24 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:34871 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338Ab2DJOK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 10:10:58 -0400
-Date: Tue, 10 Apr 2012 17:10:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120410141041.GA19556@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
- <1334044558.3126.5.camel@edumazet-glaptop>
- <20120410084151.GA27193@redhat.com>
- <1334048100.3126.21.camel@edumazet-glaptop>
- <20120410093140.GA27651@redhat.com>
- <1334052259.3126.68.camel@edumazet-glaptop>
- <20120410112459.GA28825@redhat.com>
- <1334058300.3126.99.camel@edumazet-glaptop>
- <20120410124151.GA29808@redhat.com>
- <1334065929.5300.40.camel@edumazet-glaptop>
+	id S1754338Ab2DJOLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 10:11:23 -0400
+Message-ID: <4F843F53.9050301@parallels.com>
+Date: Tue, 10 Apr 2012 18:10:27 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334065929.5300.40.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "bfields@fieldses.org" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Grace period
+References: <4F7F230A.6080506@parallels.com> <20120406234039.GA20940@fieldses.org> <4F82C6E3.3030009@parallels.com> <20120409232618.GI10508@fieldses.org> <4F841987.6090909@parallels.com> <20120410133735.GE18465@fieldses.org>
+In-Reply-To: <20120410133735.GE18465@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 03:52:09PM +0200, Eric Dumazet wrote:
-> On Tue, 2012-04-10 at 15:41 +0300, Michael S. Tsirkin wrote:
-> 
-> > I think it's a bad interface too but it's in a userspace ABI
-> > now so I suspect we are stuck with it for now. We can try deprecating
-> > but we can't just drop it.
-> > 
-> 
-> By the way, skb orphaning should already be done in skb_orphan_try(),
-> not sure why its done again in tun_net_xmit().
-
-I think it's for when some tx flags are set.
-
-> Note we perform orphaning right before giving skb to device on premise
-> it'll be sent (and freed) in a reasonable amount of time.
-
-Right. No way to ensure this with tun :(
-
-> With following patch, no more qdisc on top of tun device,
-
-I'll test this, thanks.
-
-> yet user can
-> change the limit
-
-Question: if tun is moved between namespaces after tx queue len
-is changed, will it get a queueing qdisc then?
-If yes we need some other hack to address that ...
-
-> (I would be curious to know if anybody changes tun
-> txqueuelen and why)
+10.04.2012 17:37, bfields@fieldses.org пишет:
+> On Tue, Apr 10, 2012 at 03:29:11PM +0400, Stanislav Kinsbursky wrote:
+>> 10.04.2012 03:26, bfields@fieldses.org пишет:
+>>> On Mon, Apr 09, 2012 at 03:24:19PM +0400, Stanislav Kinsbursky wrote:
+>>>> 07.04.2012 03:40, bfields@fieldses.org пишет:
+>>>>> On Fri, Apr 06, 2012 at 09:08:26PM +0400, Stanislav Kinsbursky wrote:
+>>>>>> Hello, Bruce.
+>>>>>> Could you, please, clarify this reason why grace list is used?
+>>>>>> I.e. why list is used instead of some atomic variable, for example?
+>>>>>
+>>>>> Like just a reference count?  Yeah, that would be OK.
+>>>>>
+>>>>> In theory it could provide some sort of debugging help.  (E.g. we could
+>>>>> print out the list of "lock managers" currently keeping us in grace.)  I
+>>>>> had some idea we'd make those lock manager objects more complicated, and
+>>>>> might have more for individual containerized services.
+>>>>
+>>>> Could you share this idea, please?
+>>>>
+>>>> Anyway, I have nothing against lists. Just was curious, why it was used.
+>>>> I added Trond and lists to this reply.
+>>>>
+>>>> Let me explain, what is the problem with grace period I'm facing
+>>>> right know, and what I'm thinking about it.
+>>>> So, one of the things to be containerized during "NFSd per net ns"
+>>>> work is the grace period, and these are the basic components of it:
+>>>> 1) Grace period start.
+>>>> 2) Grace period end.
+>>>> 3) Grace period check.
+>>>> 3) Grace period restart.
+>>>
+>>> For restart, you're thinking of the fs/lockd/svc.c:restart_grace()
+>>> that's called on aisngal in lockd()?
+>>>
+>>> I wonder if there's any way to figure out if that's actually used by
+>>> anyone?  (E.g. by any distro init scripts).  It strikes me as possibly
+>>> impossible to use correctly.  Perhaps we could deprecate it....
+>>>
+>>
+>> Or (since lockd kthread is visible only from initial pid namespace)
+>> we can just hardcode "init_net" in this case. But it means, that
+>> this "kill" logic will be broken if two containers shares one pid
+>> namespace, but have separated networks namespaces.
+>> Anyway, both (this one or Bruce's) solutions suits me.
+>>
+>>>> So, the simplest straight-forward way is to make all internal stuff:
+>>>> "grace_list", "grace_lock", "grace_period_end" work and both
+>>>> "lockd_manager" and "nfsd4_manager" - per network namespace. Also,
+>>>> "laundromat_work" have to be per-net as well.
+>>>> In this case:
+>>>> 1) Start - grace period can be started per net ns in
+>>>> "lockd_up_net()" (thus has to be moves there from "lockd()") and
+>>>> "nfs4_state_start()".
+>>>> 2) End - grace period can be ended per net ns in "lockd_down_net()"
+>>>> (thus has to be moved there from "lockd()"), "nfsd4_end_grace()" and
+>>>> "fs4_state_shutdown()".
+>>>> 3) Check - looks easy. There is either svc_rqst or net context can
+>>>> be passed to function.
+>>>> 4) Restart - this is a tricky place. It would be great to restart
+>>>> grace period only for the networks namespace of the sender of the
+>>>> kill signal. So, the idea is to check siginfo_t for the pid of
+>>>> sender, then try to locate the task, and if found, then get sender's
+>>>> networks namespace, and restart grace period only for this namespace
+>>>> (of course, if lockd was started for this namespace - see below).
+>>>
+>>> If it's really the signalling that's the problem--perhaps we can get
+>>> away from the signal-based interface.
+>>>
+>>> At least in the case of lockd I suspect we could.
+>>>
+>>
+>> I'm ok with that. So, if no objections will follow, I'll drop it and
+>> send the patch. Or you want to do it?
 >
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index bb8c72c..c4a00cf 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -379,6 +379,7 @@ static int tun_net_close(struct net_device *dev)
->  static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->  {
->  	struct tun_struct *tun = netdev_priv(dev);
-> +	int limit;
->  
->  	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
->  
-> @@ -396,7 +397,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->  	    sk_filter(tun->socket.sk, skb))
->  		goto drop;
->  
-> -	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
-> +	limit = dev->tx_queue_len ? : TUN_READQ_SIZE;
-> +	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= limit) {
->  		if (!(tun->flags & TUN_ONE_QUEUE)) {
->  			/* Normal queueing mode. */
->  			/* Packet scheduler handles dropping of further packets. */
-> @@ -521,7 +523,7 @@ static void tun_net_init(struct net_device *dev)
->  		/* Zero header length */
->  		dev->type = ARPHRD_NONE;
->  		dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-> -		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
-> +		dev->tx_queue_len = 0;
->  		break;
->  
->  	case TUN_TAP_DEV:
-> @@ -532,7 +534,7 @@ static void tun_net_init(struct net_device *dev)
->  
->  		eth_hw_addr_random(dev);
->  
-> -		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
-> +		dev->tx_queue_len = 0;
->  		break;
->  	}
->  }
-> 
+> Please do go ahead.
+>
+> The safest approach might be:
+> 	- leave lockd's signal handling there (just accept that it may
+> 	  behave incorrectly in container case), assuming that's safe.
+> 	- add a printk ("signalling lockd to restart is deprecated",
+> 	  or something) if it's used.
+>
+> Then eventually we'll remove it entirely.
+>
+> (But if that doesn't work, it'd likely also be OK just to remove it
+> completely now.)
+>
+
+Well, I can do this to restart grace only for "init_net" and a printk with your 
+message and information, that it affect only init_net.
+Looks good to you?
+
+-- 
+Best regards,
+Stanislav Kinsbursky
