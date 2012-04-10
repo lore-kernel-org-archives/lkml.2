@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab2DJBVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 21:21:52 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53902 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2DJBVv convert rfc822-to-8bit (ORCPT
+	id S932362Ab2DJBWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 21:22:49 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60315 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab2DJBWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 21:21:51 -0400
+	Mon, 9 Apr 2012 21:22:48 -0400
+X-AuditID: 9c930179-b7b2cae000000ca1-02-4f838b65329d
+Message-ID: <4F838BF4.7020104@kernel.org>
+Date: Tue, 10 Apr 2012 10:25:08 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1204091724590.21813@chino.kir.corp.google.com>
-References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
-	<20120408195044.13ea6c8e.akpm@linux-foundation.org>
-	<CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
-	<alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
-	<CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
-	<alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com>
-	<CAMbhsRRUNVn9_eL_obZxcZv7LqDW_8SeRApdKzDePbaW_Y4uvg@mail.gmail.com>
-	<alpine.DEB.2.00.1204091636160.21813@chino.kir.corp.google.com>
-	<CAMbhsRSV9Oy5n-GBjyhCtfCd=3_S9iif+qzEk0Oyy0EBC9AF6w@mail.gmail.com>
-	<alpine.DEB.2.00.1204091724590.21813@chino.kir.corp.google.com>
-Date: Mon, 9 Apr 2012 18:21:50 -0700
-Message-ID: <CAMbhsRSch1gJLRzPo1p8pCySsB9AJ01wUeVYKXf+zw31pnxumw@mail.gmail.com>
-Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
-From: Colin Cross <ccross@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Christian Bejram <christian.bejram@stericsson.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Rik van Riel <riel@redhat.com>, hannes@cmpxchg.org
+CC: Alexey Ivanov <rbtz@yandex-team.ru>,
+        "gnehzuil.lzheng@gmail.com" <gnehzuil.lzheng@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, yinghan@google.com
+Subject: Re: mapped pagecache pages vs unmapped pages
+References: <37371333672160@webcorp7.yandex-team.ru> <4F7E9854.1020904@gmail.com> <12701333991475@webcorp7.yandex-team.ru> <4F8326FD.8020507@redhat.com> <8041334015453@webcorp4.yandex-team.ru> <4F837F6E.3010508@kernel.org> <4F838390.1080909@redhat.com>
+In-Reply-To: <4F838390.1080909@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 5:32 PM, David Rientjes <rientjes@google.com> wrote:
-> On Mon, 9 Apr 2012, Colin Cross wrote:
->
->> The point of the lowmem_deathpending patch was to avoid a stutter
->> where the cpu would spend its time looping through the tasks due to
->> repeated calls to lowmem_shrink instead of processing the kill signal
->> to the selected thread.
->
-> What did you do to avoid this without CONFIG_PROFILING?
->
->> With this patch, it will still loop through
->> tasks until it finds the one that was previously killed and then
->> abort. �It's possible that the improvements Anton made to the task
->> loop reduce the performance impact enough that this whole mess could
->> just be dropped (by reverting 1eda516, e5d7965, and 4755b72).
+2012-04-10 오전 9:49, Rik van Riel 쓴 글:
+
+> On 04/09/2012 08:31 PM, Minchan Kim wrote:
+>> 2012-04-10 오전 8:50, Alexey Ivanov 쓴 글:
 >>
->
-> I don't understand how calling shrink_slab() from direct reclaim or using
-> drop_caches manually taking slightly longer because it has to iterate the
-> tasklist to the point of the killed thread will significantly stall the
-> thread from exiting.
+>>> Did you consider making this ratio tunable, at least manually(i.e.
+>>> via sysctl)?
+>>> I suppose we are not the only ones with almost-whole-ram-mmaped
+>>> workload.
+>>
+>> Personally, I think it's not good approach.
+>> It depends on kernel's internal implemenatation which would be changed
+>> in future as we chagend it at 2.6.28.
+> 
+> I also believe that a tunable for this is not going to be
+> a very workable approach, for the simple reason that changing
+> the value does not make a predictable change in the effectiveness
+> of working set detection or protection.
+> 
+>> In my opinion, kernel just should do best effort to keep active working
+>> set except some critical pages which are code pages.
+> 
+> Johannes has some experimental code to measure refaults, and
+> calculate their distance in a multi-zone, multi-cgroup environment.
+> 
+> That would allow us to predictably place things in the working set
+> as required.
+> 
 
-Before Anton's fix, iterating the tasklist involved taking every task
-lock, which probably made it very expensive.  I tried a quick test
-where I deliberately limited memory to the point that it was
-triggering lowmemorykiller during boot, and it triggered about 5000
-times taking on the order of 50ms total for all 5000 calls.  It was
-about the same with your patch applied.
 
-> Much more likely is the killed thread cannot exit because you've killed it
-> in a lowmem situation without giving it access to memory reserves so that
-> it may exit quickly as my patch does. �That has a higher liklihood of
-> stalling the exit than doing for_each_process().
+Hannes, it can help many people if you post your code. ;)
+
+
+-- 
+Kind regards,
+Minchan Kim
