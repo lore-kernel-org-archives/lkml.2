@@ -1,173 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab2DJKms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:42:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52159 "EHLO
+	id S1758568Ab2DJKmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:42:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51377 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab2DJKmq (ORCPT
+	with ESMTP id S1754675Ab2DJKmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:42:46 -0400
+	Tue, 10 Apr 2012 06:42:49 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 6/6] tilegx network driver: initial support
-Date: Tue, 10 Apr 2012 10:42:39 +0000
+Subject: Re: [PATCH 3/3] arch/tile: tilegx PCI root complex support
+Date: Tue, 10 Apr 2012 09:14:05 +0000
 User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204091349.54484.arnd@arndb.de> <4F835510.4060100@tilera.com>
-In-Reply-To: <4F835510.4060100@tilera.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Joe Perches <joe@perches.com>, David Howells <dhowells@redhat.com>
+References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204091359.13059.arnd@arndb.de> <4F8356C7.60706@tilera.com>
+In-Reply-To: <4F8356C7.60706@tilera.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204101042.39877.arnd@arndb.de>
-X-Provags-ID: V02:K0:3CtuZWywiQLM+v82g9HEdlQj7po9/OBI4/LEinR0qiK
- 8HvG4NX07khW0zXrk9pCx84SSgCWNLSJrVz5Hbe6dsErdZvbkY
- CfwT2a2yzJaa6QiWpb3U9tiWbjZcjBzBzBvF1dr2na5y9Eyzh/
- 3MwvYaPH3oEhVQH/usSXMPpURxznzNsSr7xvaNynQskwHH8TXK
- 3W0wmgVd222msTrESrgZCbuDLgUUBiwGyOPazYWUgikVgy7W9P
- 4HrvD13OFilMwaaq3VdyFiBI5gtoi44xEq8W4Sp8wr7p3ZWC2x
- 8DYUQ4ovYZ37lOe7r1+DyrbvUUWJrkmS1hOe9iTl6QP2eU13U9
- I1hA+LIOtxui+Vh8jc8E=
+Message-Id: <201204100914.06168.arnd@arndb.de>
+X-Provags-ID: V02:K0:R3A0t/9nt5NZqAlG2KHOuGDrUDFfyrA1ksJ1FXOpZCj
+ rqkhp3D0DbewYQB9LmgaFmA9scniAxX4IUZq6LyenXI/gAyxYt
+ fVKlx1iKp9YztkXU0ega2pkahvYrJjmzvwA/TUH70rqddHuchw
+ TA0tplI1rYCWBWdZYiPPUHfDQRBZz70GMYATWE/xjYPEsH4gPr
+ sf6FHmbpp7t0ma5IeKETHwJXJ9a4W0WaihcLNbmRbU6MhGGSA8
+ 7LY3VWazkvw29YROx6EpT3vfDhvK6NjhOO+GTGwjYowWolrt/i
+ b7dEfzYybNmCnmDYRIK7zlPg3IBOZoiK9/VKyxQm2q47/MAA6H
+ Az47yVG5FSTPoiW0MhN0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Monday 09 April 2012, Chris Metcalf wrote:
-> On 4/9/2012 9:49 AM, Arnd Bergmann wrote:
-> > On Friday 06 April 2012, Chris Metcalf wrote:
-> >> This change adds support for the tilegx network driver based on the
-> >> GXIO IORPC support in the tilegx software stack, using the on-chip
-> >> mPIPE packet processing engine.
+> 
+> On 4/9/2012 9:59 AM, Arnd Bergmann wrote:
+> > On Saturday 07 April 2012, Chris Metcalf wrote:
+> >> This change implements PCIe root complex support for tilegx using
+> >> the kernel support layer for accessing the TRIO hardware shim.
 > >>
 > >> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> >> ---
-> >>  drivers/net/ethernet/tile/Kconfig  |    1 +
-> >>  drivers/net/ethernet/tile/Makefile |    4 +-
-> >>  drivers/net/ethernet/tile/tilegx.c | 2045 ++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 2048 insertions(+), 2 deletions(-)
-> >>  create mode 100644 drivers/net/ethernet/tile/tilegx.c
-> > I think the directory name should be the company, not the architecture here, so make
-> > it drivers/net/ethernet/tilera/tilegx.c instead.
+> > Hi Chris,
+> >
+> > I don't know if we discussed it during the initial merge, but I notice that the PIO
+> > accessors (inb/outb and friends) are still not implemented in this patch. Normally
+> > PIO can just be mapped into the MMIO address space, so that inb() becomes
+> > a call to readb() with an offset on the address.
 > 
-> This path was picked back when Jeff Kirsher did the initial move into
-> drivers/net/ethernet/ for the tilepro driver.  I don't have too strong an
-> opinion on this; at this point I'm mostly just concerned that it seems like
-> potentially not worth the churn to move the files for 3.2, then again for
-> 3.5.  But if folks agree we should do it, it's fine with me.
+> I asked our PCI expert here, who said, "My understanding is that if someone
+> wants to use inb/outb to access MMIO space, he'll get the MMIO, as opposed
+> to methods implemented with I/O instructions which are not supported by
+> TILE.  If the driver is dependent on the I/O instructions, it won't work on
+> TILE. These drivers are legacy PC drivers, e.g. ATA devices, which are not
+> supported by TILE."
 
-Ah, I didn't realize that the directory already exists. It's probably better
-not to move it then.
+I'm not sure what that means. The inb/outb instructions cannot be used to access
+MMIO, they are only for PIO. They should instead be written to do whatever the
+architecture requires for accessing PIO space. While PIO is indeed meant
+for legacy x86 accesses and discouraged in new devices, any valid PCI
+implementation still needs to support them.
 
-> The actual author would rather not publish his name (I just double-checked
-> with him). 
+> Should we just arrange to #include <asm-generic/io.h> to pick up inb/outb
+> et al?  Any reason to think a non-zero offset should be part of the
+> solution?  (I don't really understand how inb/outb are used by modern drivers.)
 
-Hmm, it doesn't look all that bad actually, the comments I had are just for
-small details.
+A zero offset is almost always a bug, it would mean that you have ioremapped the
+PIO space into the NULL pointer of your virtual address space, which would be 
+an extremely silly thing to do.
 
-> >> +/* The actual devices. */
-> >> +static struct net_device *tile_net_devs[TILE_NET_DEVS];
-> >> +
-> >> +/* The device for a given channel.  HACK: We use "32", not
-> >> + * TILE_NET_CHANNELS, because it is fairly subtle that the 5 bit
-> >> + * "idesc.channel" field never exceeds TILE_NET_CHANNELS.
-> >> + */
-> >> +static struct net_device *tile_net_devs_for_channel[32];
-> > When you need to keep a list or array of device structures in a driver, you're
-> > usually doing something very wrong. The convention is to just pass the pointer
-> > around to where you need it.
-> 
-> We need "tile_net_devs_for_channel" because we share a single hardware
-> queue for all devices, and each packet's metadata contains a "channel"
-> value which indicates the device.
- 
-Ok, but please remove tile_net_devs then.
-
-I think a better abstraction for tile_net_devs_for_channel would be
-some interface that lets you add private data to a channel so when
-you get data from a channel, you can extract that pointer from the driver
-using the channel.
-
-Don't you already have a per-channel data structure?
-
-> 
-> /*
->  * The on-chip I/O hardware on tilegx is configured with VA=PA for the
->  * kernel's PA range.  The low-level APIs and field names use "va" and
->  * "void *" nomenclature, to be consistent with the general notion
->  * that the addresses in question are virtualizable, but in the kernel
->  * context we are actually manipulating PA values.  To allow readers
->  * of the code to understand what's happening, we direct their
->  * attention to this comment by using the following two no-op functions.
->  */
-> static inline unsigned long pa_to_tile_io_addr(phys_addr_t pa)
-> {
->         BUILD_BUG_ON(sizeof(phys_addr_t) != sizeof(unsigned long));
->         return pa;
-> }
-> static inline phys_addr_t tile_io_addr_to_pa(unsigned long tile_io_addr)
-> {
->         return tile_io_addr;
-> }
-> 
-> Then the individual uses in the network driver are just things like
-> "edesc_head.va = pa_to_tile_io_addr(__pa(va))" or "va =
-> __va(tile_io_addr_to_pa((unsigned long)gxio_mpipe_idesc_get_va(idesc)))"
-> which I think is a little clearer.
-
-Yes, although I would probably add a typedef for tile_io_addr and pass
-the virtual address in and out these helper functions.
-
-For added clarity, you could make the interface look like dma_map_single(),
-which requires adding an empty unmap() function as well -- that would
-make it obvious where that data is actually used. Why do you require
-the reverse map anyway? Normally you only need to pass a bus address to
-the device but don't need to translate that back into a virtual address
-because you already had that in the beginning.
-
-> >> +/* Allocate and push a buffer. */
-> >> +static bool tile_net_provide_buffer(bool small)
-> >> +{
-> >> [...]
-> >> +
-> >> +	/* Save a back-pointer to 'skb'. */
-> >> +	*(struct sk_buff **)(skb->data - sizeof(struct sk_buff **)) = skb;
-> > This looks very wrong: why would you put the pointer to the skb into the
-> > skb itself?
-> 
-> Because we create skbuffs, and then feed the raw underlying buffer storage
-> to our hardware, and later, we get back this raw pointer from hardware,
-> from which we need to be able to extract the actual skbuff.
-
-Hmm, this sounds very unusual, but I don't really have a better suggestion
-here.
-
-> >> +		/* Compute the "ip checksum". */
-> >> +		jsum = isum_hack + htons(s_len - eh_len) + htons(id);
-> >> +		jsum = __insn_v2sadu(jsum, 0);
-> >> +		jsum = __insn_v2sadu(jsum, 0);
-> >> +		jsum = (0xFFFF ^ jsum);
-> >> +		jh->check = jsum;
-> >> +
-> >> +		/* Update the tcp "seq". */
-> >> +		uh->seq = htonl(seq);
-> >> +
-> >> +		/* Update some flags. */
-> >> +		if (!final)
-> >> +			uh->fin = uh->psh = 0;
-> >> +
-> >> +		/* Compute the tcp pseudo-header checksum. */
-> >> +		usum = tsum_hack + htons(s_len);
-> >> +		usum = __insn_v2sadu(usum, 0);
-> >> +		usum = __insn_v2sadu(usum, 0);
-> >> +		uh->check = usum;
-> > Why to you open-code the ip checksum functions here? Normally the stack takes
-> > care of this by calling the functions you already provide in
-> > arch/tile/lib/checksum.c
-> 
-> If there is a way to do TSO without this, we'd be happy to hear it, but
-> it's not clear how it would be possible.  We are only computing a PARTIAL
-> checksum here, and letting the hardware compute the "full" checksum.
-
-Sounds like you're looking for csum_partial() ;-)
+Some background: Each PCI domain comes with three address spaces: memory, config
+and I/O. The memory space is usually identity mapped with your physical addresses
+and you use ioremap to create page table entries for that so you can dereference
+pointers to do an I/O. Your iorpc_ioremap() function suggests that this is not
+the case for Tile, which is fine: you use __gxio_mmio_read32() and friends to
+access the __iomem cookie, which is an arbitrary offsettable value returned from
+iorpc_ioremap().
+The configuration space is often memory mapped and ioremapped into the virtual
+address space at boot time. Other implementations use two registers: one to set
+the address and the other to access the data, or use an mmconfig hypercall.
+Again, tile seems to be doing something completely different here and uses its
+own __gxio_mmio_read32() function.
+The i/o space is normally 64KB per domain that either have special instructions
+(x86) or are accessed like the configuration space, typically memory mapped
+(everyone else). In Linux, we access the I/O space using inb/outb that get the
+16 bit register number as an argument, and in memory mapped implementations,
+this gets added to the virtual address into which the I/O space was mapped at
+boot time.
 
 	Arnd
+
