@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758495Ab2DJInu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:43:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48815 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752222Ab2DJInt (ORCPT
+	id S1758557Ab2DJIo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:44:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37876 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab2DJIoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:43:49 -0400
-Date: Tue, 10 Apr 2012 09:43:46 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [linux-next][PATCH] regmap: fix build error if !CONFIG_DEBUG_FS
-Message-ID: <20120410084346.GF3149@opensource.wolfsonmicro.com>
-References: <1334038367.15859.12.camel@phoenix>
+	Tue, 10 Apr 2012 04:44:25 -0400
+Message-ID: <4F83F2E3.6010703@suse.cz>
+Date: Tue, 10 Apr 2012 10:44:19 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NQTVMVnDVuULnIzU"
-Content-Disposition: inline
-In-Reply-To: <1334038367.15859.12.camel@phoenix>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Chris Wilson <chris@chris-wilson.co.uk>, Jiri Slaby <jirislaby@gmail.com>,
+        Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, daniel@ffwll.ch
+Subject: Re: i915_driver_irq_handler: irq 42: nobody cared [generic IRQ handling
+ broken?]
+References: <4F717CE3.4040206@suse.cz> <4F717D80.9040207@suse.cz> <4F758400.3080907@suse.cz> <1333104359_155028@CP5-2952> <4F75A303.3030409@suse.cz> <1333110296_156038@CP5-2952> <4F7F60BF.9070500@suse.cz> <alpine.LFD.2.02.1204062343050.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1204062343050.2542@ionos>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/07/2012 12:40 AM, Thomas Gleixner wrote:
+> On Fri, 6 Apr 2012, Jiri Slaby wrote:
+>> It very looks like the generic IRQ handling code is broken. Like it
+>> frees/corrupts irq_desc and ...
+> 
+> OMG, your problem analyzing skills are amazing.
 
---NQTVMVnDVuULnIzU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hehe, no I did *no* analysis. I stand here as a bug reporter.
 
-On Tue, Apr 10, 2012 at 02:12:47PM +0800, Axel Lin wrote:
-> Fix build error introduced by commit 9eba4d
-> "regmap: fix compilation when !CONFIG_DEBUG_FS".
+> What the heck makes you assume that the irq core code is broken?  Core
+> code, which works on a gazillion of machines and different device
+> drivers and does not corrupt anything except that i915 thingy?
 
-I've no idea what tree you're testing against but Stephen's fix is
-needed for -next.
+Note that this is a -next regression. And i915 graphics used. This
+definitely doesn't run on a gazillion of machines.
 
---NQTVMVnDVuULnIzU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> If you're still convinced that the irq core is messing with your
+> device string,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Nope, thanks for the input.
 
-iQIcBAEBAgAGBQJPg/KRAAoJEBus8iNuMP3dX48QAJVVtzOoidvGTZUghL75dSTk
-Kacg3PNTOgFWHgzGHPkiTaHiG2QmeDIUnqAB7VgPzns6cLANnEkx7Z2jMlthmW3u
-xX1WAjnv7v1g+8D2+v6wwcamMQmPamnZepT8FbMqfzKI1fDvFwcHxoPnYWQQAf3a
-IzCFygJOkcWukcQyPHPx1UcBaPCH++RqOvqtKzvia/JuiJRyvtphUpDOePiDMJ+Z
-eiJGzBRV08aJFJGO2SDIc4D0N2T1DRMTS7DRZQfKn1xO+bPYT0k8ORL/wNztZ7S3
-AUOaoJzSd04Ev2ppmHVrxur3m2R8h90wV9Uz3mwyWk0E+uSyp96klL3m4w419p7d
-z7UlmV7qnYUOLbBIRxZnJTv3HOjIzjK1CtIt2jqIt8hnJ/MqrfZdC+fuGgJATGc0
-gOfg77Bs2gbZJSRkqHqfsJa13eCbmUtPB7/mrATu8eigb/7TwwSG3qOdc16n/CUR
-pTj/IfNwmy2BpxKyXxG152qBZrIiuohG6v+L9BievMsb838t+inRyErEHH3yx3m/
-zkCHwEvjsMcjW0BfZRLvr1FOgV0Bfd3chHIA0rEGPW6kyh6urFiPgbYzi9VtDC3E
-oyRNpmepmMsu1OQtobDhUB5uc28xbIM4C9apQslQbVVAljwwtMzIwFzLjeyZxRXa
-Wbuk7Q/tI/mpzmrKSI8y
-=l9Vv
------END PGP SIGNATURE-----
+-- 
+js
+suse labs
 
---NQTVMVnDVuULnIzU--
+
