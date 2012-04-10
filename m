@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab2DJVO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 17:14:58 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34011 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab2DJVO4 (ORCPT
+	id S1759508Ab2DJVPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:15:21 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65109 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271Ab2DJVPT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 17:14:56 -0400
-Message-ID: <4F84A2CB.8040301@wwwdotorg.org>
-Date: Tue, 10 Apr 2012 15:14:51 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Tue, 10 Apr 2012 17:15:19 -0400
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>
-CC: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH v4 1/3] tegra, serial8250: add ->handle_break() uart_port
- op
-References: <20120410210438.13805.40525.stgit@dwillia2-linux.jf.intel.com> <20120410211053.13805.18954.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120410211053.13805.18954.stgit@dwillia2-linux.jf.intel.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120410204249.GA26627@electric-eye.fr.zoreil.com>
+References: <CACPM=kWa=UWuCMaYAtVMGJ7pzCy-PfyNRWBSuJnTZGtssU0W6g@mail.gmail.com>
+	<20120410204249.GA26627@electric-eye.fr.zoreil.com>
+Date: Tue, 10 Apr 2012 23:15:18 +0200
+X-Google-Sender-Auth: UAgqm0D4w-pBtiL1qhAvep7s8P8
+Message-ID: <CACPM=kWsU8QZOHqwEThTQCuSSvaTDoxO1d17EyoW=+kx8QG3vw@mail.gmail.com>
+Subject: Re: via-rhine: Problem with lost link after a while
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 03:10 PM, Dan Williams wrote:
-> The "KT" serial port has another use case for a "received break" quirk,
-> so before adding another special case to the 8250 core take this
-> opportunity to push such quirks out of the core and into a uart_port op.
-> 
-> Stephen says:
-> "If the callback function is to no longer live in 8250.c itself,
->  arch/arm/mach-tegra/devices.c isn't logically a good place to put it,
->  and that file will be going away once we get rid of all the board files
->  and move solely to device tree."
-> 
-> ...so since 8250_pci.c houses all the quirks for pci serial devices this
-> quirk is similarly housed in of_serial.c.  Once the open firmware
-> conversion completes the infrastructure details
-> (include/linux/of_serial.h, and the export) can all be removed to make
-> this self contained to of_serial.c.
+10. apr. 2012 22.42 skrev Francois Romieu <romieu@fr.zoreil.com>:
+> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+> [...]
+>> Got any ideas?
+>
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;h=3f8c91a7398b9266fbe7abcbe4bd5dffef907643
+>
+> Courtesy of Andreas Mohr.
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-Tested-by: Stephen Warren <swarren@wwwdotorg.org>
+Great, I'll try a 3.4-rc2 kernel, and see how it runs.
+
+The thread I was talking about earlier is here:
+http://lists.soekris.com/pipermail/soekris-tech/2012-April/018318.html
+Is there any of the changes he has there, that makes sense in the new
+driver you wrote?
+
+Thanks :)
+
+/Bjarke
+
+> --
+> Ueimor
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
