@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757827Ab2DJQCV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:02:21 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:33498 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab2DJQCU convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Tue, 10 Apr 2012 12:02:20 -0400
-Message-Id: <4F8475A7020000780007D139@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 10 Apr 2012 17:02:15 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>
-Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, "Jens Axboe" <axboe@kernel.dk>,
-        "xen-devel" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+	id S1753134Ab2DJQFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:05:06 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:34727 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab2DJQFB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 12:05:01 -0400
+Date: Tue, 10 Apr 2012 18:04:57 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen-blkfront: properly name all devices
-References: <4F7DD852020000780007CC2A@nat28.tlf.novell.com>
- <alpine.DEB.2.00.1204101645000.15151@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1204101645000.15151@kaball-desktop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] mm: sync rss-counters at the end of exit_mm()
+Message-ID: <20120410160457.GA346@x4>
+References: <20120409200336.8368.63793.stgit@zurg>
+ <CAHGf_=oWj-hz-E5ht8-hUbQKdsZ1bzP80n987kGYnFm8BpXBVQ@mail.gmail.com>
+ <alpine.LSU.2.00.1204091433380.1859@eggly.anvils>
+ <4F83D470.6010207@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4F83D470.6010207@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10.04.12 at 17:50, Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Would you be up for writing a couple of lines under Documentation to
-> clearly state what device names are going to be given by blkfront in
-> correspondence to vdev numbers?
+On 2012.04.10 at 10:34 +0400, Konstantin Khlebnikov wrote:
+> Hugh Dickins wrote:
+> > On Mon, 9 Apr 2012, KOSAKI Motohiro wrote:
+> >> On Mon, Apr 9, 2012 at 4:03 PM, Konstantin Khlebnikov
+> >> <khlebnikov@openvz.org>  wrote:
+> >>> On task's exit do_exit() calls sync_mm_rss() but this is not enough,
+> >>> there can be page-faults after this point, for example exit_mm() ->
+> >>> mm_release() ->  put_user() (for processing tsk->clear_child_tid).
+> >>> Thus there may be some rss-counters delta in current->rss_stat.
+> >>
+> >> Seems reasonable.
+> >
+> > Yes, I think Konstantin has probably caught it;
+> > but I'd like to hear confirmation from Markus.
+> 
+> There is another bug in exec_mmap()
+> 
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -823,8 +823,8 @@ static int exec_mmap(struct mm_struct *mm)
+>          /* Notify parent that we're no longer interested in the old VM */
+>          tsk = current;
+>          old_mm = current->mm;
+> -       sync_mm_rss(old_mm);
+>          mm_release(tsk, old_mm);
+> +       sync_mm_rss(old_mm);
+> 
+>          if (old_mm) {
+>                  /*
 
-I'm not really eager to, and in order to be useful, this should imo include
-the compat mapping, and specifically for this I'd prefer someone (you?)
-who was involved in putting this together to do eventual write-ups for it.
+FWIW with both patches applied I cannot reproduce the issue anymore.
 
-Jan
+Thanks.
 
+-- 
+Markus
