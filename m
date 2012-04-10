@@ -1,117 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab2DJK4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:56:47 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:47519 "EHLO relay.sw.ru"
+	id S1754819Ab2DJLA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 07:00:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49668 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754322Ab2DJK4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:56:44 -0400
-Message-ID: <4F8411CC.2070105@parallels.com>
-Date: Tue, 10 Apr 2012 14:56:12 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	id S1751078Ab2DJLA5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 07:00:57 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Hunter, Jon" <jon-hunter@ti.com>
+CC: "tony@atomide.com" <tony@atomide.com>, "Hilman, Kevin" <khilman@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grinberg@compulab.co.il" <grinberg@compulab.co.il>,
+        "mike@compulab.co.il" <mike@compulab.co.il>,
+        "Menon, Nishanth" <nm@ti.com>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "vimal.newwork@gmail.com" <vimal.newwork@gmail.com>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Subject: RE: [PATCH v3 1/9] ARM: OMAP2+: gpmc: driver conversion
+Thread-Topic: [PATCH v3 1/9] ARM: OMAP2+: gpmc: driver conversion
+Thread-Index: AQHNE0Riyrz6RKL5ZUqDEt7OC2PTPZaMUK+AgAEDtGCABTzygIABT3Kw
+Date: Tue, 10 Apr 2012 11:00:33 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A9317C693C@DBDE01.ent.ti.com>
+References: <cover.1333640054.git.afzal@ti.com>
+ <cefbe934da40f0a169b1e3a75c46451e5546a8bd.1333640054.git.afzal@ti.com>
+ <4F7DFED5.4030000@ti.com>
+ <C8443D0743D26F4388EA172BF4E2A7A9317C5E58@DBDE01.ent.ti.com>
+ <4F833D8D.8000802@ti.com>
+In-Reply-To: <4F833D8D.8000802@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "bfields@fieldses.org" <bfields@fieldses.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-References: <4F82C6E3.3030009@parallels.com> <20120409094743.56932677@tlielax.poochiereds.net> <4F82F16C.7030303@parallels.com> <20120409112739.6a823d6f@corrin.poochiereds.net> <4F830999.5000504@parallels.com> <20120409161114.GB6482@fieldses.org> <1333988226.2688.76.camel@lade.trondhjem.org> <20120409162107.GC6482@fieldses.org> <1333989216.2688.87.camel@lade.trondhjem.org> <4F8314CF.70302@parallels.com> <20120409181138.GA9581@fieldses.org>
-In-Reply-To: <20120409181138.GA9581@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09.04.2012 22:11, bfields@fieldses.org пишет:
-> On Mon, Apr 09, 2012 at 08:56:47PM +0400, Stanislav Kinsbursky wrote:
->> 09.04.2012 20:33, Myklebust, Trond пишет:
->>> On Mon, 2012-04-09 at 12:21 -0400, bfields@fieldses.org wrote:
->>>> On Mon, Apr 09, 2012 at 04:17:06PM +0000, Myklebust, Trond wrote:
->>>>> On Mon, 2012-04-09 at 12:11 -0400, bfields@fieldses.org wrote:
->>>>>> On Mon, Apr 09, 2012 at 08:08:57PM +0400, Stanislav Kinsbursky wrote:
->>>>>>> 09.04.2012 19:27, Jeff Layton пишет:
->>>>>>>>
->>>>>>>> If you allow one container to hand out conflicting locks while another
->>>>>>>> container is allowing reclaims, then you can end up with some very
->>>>>>>> difficult to debug silent data corruption. That's the worst possible
->>>>>>>> outcome, IMO. We really need to actively keep people from shooting
->>>>>>>> themselves in the foot here.
->>>>>>>>
->>>>>>>> One possibility might be to only allow filesystems to be exported from
->>>>>>>> a single container at a time (and allow that to be overridable somehow
->>>>>>>> once we have a working active/active serving solution). With that, you
->>>>>>>> may be able limp along with a per-container grace period handling
->>>>>>>> scheme like you're proposing.
->>>>>>>>
->>>>>>>
->>>>>>> Ok then. Keeping people from shooting themselves here sounds reasonable.
->>>>>>> And I like the idea of exporting a filesystem only from once per
->>>>>>> network namespace.
->>>>>>
->>>>>> Unfortunately that's not going to get us very far, especially not in the
->>>>>> v4 case where we've got the common read-only pseudoroot that everyone
->>>>>> has to share.
->>>>>
->>>>> I don't see how that can work in cases where each container has its own
->>>>> private mount namespace. You're going to have to tie that pseudoroot to
->>>>> the mount namespace somehow.
->>>>
->>>> Sure, but in typical cases it'll still be shared; requiring that they
->>>> not be sounds like a severe limitation.
->>>
->>> I'd expect the typical case to be the non-shared namespace: the whole
->>> point of containers is to provide for complete isolation of processes.
->>> Usually that implies that you don't want them to be able to communicate
->>> via a shared filesystem.
->>>
->>
->> BTW, we DO use one mount namespace for all containers and host in
->> OpenVZ. This allows us to have an access to containers mount points
->> from initial environment. Isolation between containers is done via
->> chroot and some simple tricks on /proc/mounts read operation.
->> Moreover, with one mount namespace, we currently support
->> bind-mounting on NFS from one container into another...
->>
->> Anyway, I'm sorry, but I'm not familiar with this pseudoroot idea.
->
-> Since NFSv4 doesn't have a separate MOUNT protocol, clients need to be
-> able to do readdir's and lookups to get to exported filesystems.  We
-> support this in the Linux server by exporting all the filesystems from
-> "/" on down that must be traversed to reach a given filesystem.  These
-> exports are very restricted (e.g. only parents of exports are visible).
->
+Hi Jon,
 
-Ok, thanks for explanation.
-So, this pseudoroot looks like a part of NFS server internal implementation, but 
-not a part of a standard. That's good.
+On Tue, Apr 10, 2012 at 01:20:37, Hunter, Jon wrote:
+> > Because num_irq (or available irqs for fictitious irq chip) is platform specific.
+> 
+> Ok, so OMAP_GPMC_NR_IRQS is defined and will not vary from device to 
+> device, so why pass this? Why not use it directly?
 
->> Why does it prevents implementing of check for "superblock-network
->> namespace" pair on NFS server start and forbid (?) it in case of
->> this pair is shared already in other namespace? I.e. maybe this
->> pseudoroot can be an exclusion from this rule?
->
-> That might work.  It's read-only and consists only of directories, so
-> the grace period doesn't affect it.
->
+Because OMAP_GPMC_NR_IRQS is platform specific, final intention is to
+not have any platform specific header files in GPMC driver, not sure
+as of now whether it would be possible. So keeping platform specific
+things away from the driver as much as possible.
 
-I've just realized, that this per-sb grace period won't work.
-I.e., it's a valid situation, when two or more containers located on the same 
-filesystem, but shares different parts of it. And there is not conflict here at all.
-I don't see any clear and simple way how to handle such races, because otherwise 
-we have to tie network namespace and filesystem namespace.
-I.e. there will be required some way to define, was passed export directory 
-shared already somewhere else or not.
+And consider scenario where GPMC IP is used in other than OMAP family,
+even though this a theoretical case, wanted to stress the point that
+intention is to keep driver platform independent.
 
-Realistic solution - since export check should be done in initial file system 
-environment (most probably container will have it's own root), then we to pass 
-this data to some kernel thread/userspace daemon in initial file system 
-environment somehow (sockets doesn't suits here... Shared memory?).
+Or else dynamic allocation of irqs may have to be used.
 
-Improbable solution - patching VFS layer...
+> 
+> Furthermore, GPMC_NR_IRQ is defined as 6 which is correct for OMAP2/3 
+> but not for OMAP4/5, it is 5. Therefore, we need to detect whether we 
+> are using an OMAP2/3 or OMAP4+ and set num_irqs based upon this. This 
+> could be done in the probe and we can avoid passing this.
+ 
+Is it dependent on OMAPX or GPMC IP version? if it is IP version, then driver
+can be enhanced to handle it, if not, platform has to pass this information.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+> >>> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> >>> +	if (res == NULL)
+> >>> +		dev_warn(gpmc->dev, "Failed to get resource: irq\n");
+> >>> +	else
+> >>> +		gpmc->master_irq = res->start;
+> >>
+> >> Why not return an error if the IRQ is not found? We don't know if anyone
+> >> will be trying to use them.
+> >
+> > Why do you want to do that ?
+> 
+> Because this indicates a BUG :-)
+
+I disagree, this need not be considered a bug always,
+for eg. If gpmc irq is not connected to intc
+
+> 
+> > If someone (say NAND) wants to work with irq, and if interrupt is not
+> > available, NAND driver can fail, and suppose smsc911x ethernet is present
+> > and he is not using gpmc irq, if we fail here, smsc911x also would
+> > not work, which would have worked otherwise.
+> >
+> > It is a different matter that even NAND setup will happen properly,
+> > even if interrupt is not available, it is only when NAND is told to
+> > work with IRQ, it fails, please see nand patches.
+> >
+> > And as of now in mainline (with the code as is), there is not a single
+> > board that will need gpmc irq for gpmc peripherals to work.
+> >
+> > I feel we should try to get more devices working rather than preventing
+> > more devices from working, when it could have.
+> 
+> I understand your point, but then you are hiding a BUG. If someone 
+> introduces a BUG that causes this to fail, then it is easier to detect, 
+> find and fix.
+> 
+>  From my perspective get the resources should never fail and if it does 
+> and break the driver for all devices, then so be it, because a BUG has 
+> been introduced. Ok, this may not be critical at this point but still is 
+> should not fail.
+
+Agree for resources which are a must for device to work, not for resources
+that can enhance its capability.
+
+> 
+> >>> +	for (gdq = gp->device_pdata, gd = gpmc->device; *gdq; gdq++, i++) {
+> >>> +		ret = gpmc_setup_device(*gdq, gd, gpmc);
+> >>> +		if (IS_ERR_VALUE(ret))
+> >>> +			dev_err(gpmc->dev, "gpmc setup on %s failed\n",
+> >>> +								(*gdq)->name);
+> >>> +		else
+> >>> +			gd++;
+> >>> +	}
+> >>
+> >> Would a while loop be simpler?
+> >
+> > My preference is to go with "for"
+> 
+> Ok, just wondering if this could be cleaned up a little.
+
+For travelling through array of pointers, for looks natural to me, if you
+have a better way, please send it, it can be folded in next version.
+
+Regards
+Afzal
