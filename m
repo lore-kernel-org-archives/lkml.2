@@ -1,60 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab2DJS4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:56:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38621 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758541Ab2DJS4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:56:23 -0400
-Message-ID: <4F848253.6060303@kernel.dk>
-Date: Tue, 10 Apr 2012 20:56:19 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Moyer Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline except
- SATA
-References: <20120410133708.GE21801@redhat.com> <4F843C17.5050004@kernel.dk> <20120410142148.GG21801@redhat.com> <20120410151042.GH21801@redhat.com> <4F847EC4.7040604@kernel.dk> <20120410185318.GL21801@redhat.com>
-In-Reply-To: <20120410185318.GL21801@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758737Ab2DJS5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:57:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24289 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753678Ab2DJS5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 14:57:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="127429646"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] power_supply: Add voltage_ocv property and use it for max17042 driver
+Date: Tue, 10 Apr 2012 16:21:20 +0530
+Message-Id: <1334055080-19521-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-10 20:53, Vivek Goyal wrote:
-> On Tue, Apr 10, 2012 at 08:41:08PM +0200, Jens Axboe wrote:
-> 
-> [..]
->>> So we are back to the question of can scsi devices find out if a Lun
->>> is backed by single disk or multiple disks.
->>
->> The cleanest would be to have the driver signal these attributes at
->> probe time. You could even adjust CFQ properties based on this, driving
->> the queue depth harder etc. Realistically, going forward, most fast
->> flash devices will be driven by a noop-like scheduler on multiqueue. So
->> CPU cost of the IO scheduler can mostly be ignored, since CFQ cost on
->> even big RAIDs isn't an issue due to the low IOPS rates.
-> 
-> Agreed that on RAID CPU cost is not a problem. Just that idling and low
-> queue depth kills the performance.
+This adds a new sysfs file called 'voltage_ocv' which gives the
+Open Circuit Voltage of the battery.
 
-Exactly, and both of these are trivially adjustable as long as we know
-when to do it.
+This property can be used for platform shutdown policies and
+can be useful for initial capacity estimations.
 
-> So apart from "rotational" if driver can give some hints about underlying
-> devices being RAID (or multi device), it will help. Just that it looks
-> like scsi does not have a way to determine that.
+Note: This patch is generated against linux-next branch.
 
-This sort of thing should be done with a udev rule. It should not be too
-hard to match for the most popular arrays, catching the majority of the
-setups by default. Or you could ask the SCSI folks for some heuristics,
-it's not unlikely that a few different attributes could make that bullet
-proof, pretty much.
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ Documentation/power/power_supply_class.txt |    2 ++
+ drivers/power/max17042_battery.c           |    8 ++++++++
+ drivers/power/power_supply_sysfs.c         |    1 +
+ include/linux/power_supply.h               |    2 ++
+ 4 files changed, 13 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
+index 9f16c51..211831d 100644
+--- a/Documentation/power/power_supply_class.txt
++++ b/Documentation/power/power_supply_class.txt
+@@ -84,6 +84,8 @@ are already charged or discharging, 'n/a' can be displayed (or
+ HEALTH - represents health of the battery, values corresponds to
+ POWER_SUPPLY_HEALTH_*, defined in battery.h.
+ 
++VOLTAGE_OCV - open circuit voltage of the battery.
++
+ VOLTAGE_MAX_DESIGN, VOLTAGE_MIN_DESIGN - design values for maximal and
+ minimal power supply voltages. Maximal/minimal means values of voltages
+ when battery considered "full"/"empty" at normal conditions. Yes, there is
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index 04620c2..915767d 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -105,6 +105,7 @@ static enum power_supply_property max17042_battery_props[] = {
+ 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+ 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+ 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
++	POWER_SUPPLY_PROP_VOLTAGE_OCV,
+ 	POWER_SUPPLY_PROP_CAPACITY,
+ 	POWER_SUPPLY_PROP_CHARGE_FULL,
+ 	POWER_SUPPLY_PROP_TEMP,
+@@ -171,6 +172,13 @@ static int max17042_get_property(struct power_supply *psy,
+ 
+ 		val->intval = ret * 625 / 8;
+ 		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
++		ret = max17042_read_reg(chip->client, MAX17042_OCVInternal);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret * 625 / 8;
++		break;
+ 	case POWER_SUPPLY_PROP_CAPACITY:
+ 		ret = max17042_read_reg(chip->client, MAX17042_RepSOC);
+ 		if (ret < 0)
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 4368e7d..4150747 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -146,6 +146,7 @@ static struct device_attribute power_supply_attrs[] = {
+ 	POWER_SUPPLY_ATTR(voltage_min_design),
+ 	POWER_SUPPLY_ATTR(voltage_now),
+ 	POWER_SUPPLY_ATTR(voltage_avg),
++	POWER_SUPPLY_ATTR(voltage_ocv),
+ 	POWER_SUPPLY_ATTR(current_max),
+ 	POWER_SUPPLY_ATTR(current_now),
+ 	POWER_SUPPLY_ATTR(current_avg),
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index c38c13d..fd17ae0 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -96,6 +96,7 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+ 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+ 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
++	POWER_SUPPLY_PROP_VOLTAGE_OCV,
+ 	POWER_SUPPLY_PROP_CURRENT_MAX,
+ 	POWER_SUPPLY_PROP_CURRENT_NOW,
+ 	POWER_SUPPLY_PROP_CURRENT_AVG,
+@@ -261,6 +262,7 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
+ 	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+ 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
++	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
+ 	case POWER_SUPPLY_PROP_POWER_NOW:
+ 		return 1;
+ 	default:
 -- 
-Jens Axboe
+1.7.0.4
 
