@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab2DJT5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 15:57:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24545 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758890Ab2DJT5F (ORCPT
+	id S1759322Ab2DJUAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:00:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab2DJUAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 15:57:05 -0400
-X-Authority-Analysis: v=2.0 cv=T5EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=09QRHktL8YSMekdywXYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334087822.23924.228.camel@gandalf.stny.rr.com>
-Subject: Re: [ANNOUNCE] 3.2.14-rt24
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Tue, 10 Apr 2012 15:57:02 -0400
-In-Reply-To: <alpine.LFD.2.02.1204101638180.2542@ionos>
-References: <alpine.LFD.2.02.1204101638180.2542@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Apr 2012 16:00:20 -0400
+Date: Tue, 10 Apr 2012 13:00:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Drewry <wad@chromium.org>
+Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        jmorris@namei.org
+Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
+Message-Id: <20120410130017.0d20e1b2.akpm@linux-foundation.org>
+In-Reply-To: <CABqD9hYE0S4EL6yH-57SfNs+D8GFKJgWVN21VzXpQmRuh2ow=w@mail.gmail.com>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-9-git-send-email-wad@chromium.org>
+	<20120406132330.457a05cf.akpm@linux-foundation.org>
+	<67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
+	<CABqD9hYE0S4EL6yH-57SfNs+D8GFKJgWVN21VzXpQmRuh2ow=w@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-10 at 16:42 +0200, Thomas Gleixner wrote:
+On Mon, 9 Apr 2012 14:59:00 -0500
+Will Drewry <wad@chromium.org> wrote:
 
-> This is my last release based on 3.2. I'm handing the 3.2-rt series
-> over to Steven and move on to 3.4.
+> >> I think this gives userspace an easy way of causing page allocation
+> >> failure warnings, by permitting large kmalloc() attempts. __Add
+> >> __GFP_NOWARN?
+> >
+> > Max is 32kb. sk_attach_filter() in net/core/filter.c is worse,
+> > it allocates up to 512kb before even checking the length.
+> >
+> > What about using GFP_USER (and adding __GFP_NOWARN to GFP_USER) instead?
+> 
+> It looks like GFP_USER|__GFP_NOWARN would make sense here.  I'll change it.
 
-The branch v3.2-rt has been created in:
+I'm not really sure why GFP_USER exists.  It's very rarely used, and
+most usages are probably inappropriate.  To me it means "same as
+GFP_HIGHUSER, only don't use highmem".  That's relevant to blockdev
+pagecache and nothing else as far as I can tell.  And good luck working
+out what the __GFP_HARDWALL does ;)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+This is a regular old allocation of kernel memory - the thing to use
+here is GFP_KERNEL|__GFP_NOWARN.
 
-It starts with v3.2.14-rt24 with the patches broken out on top of
-v3.2.14.
-
-New releases for v3.2-rt will now be kept in this branch and patch files
-will be produced similar to the way the v3.0-rt tree is maintained.
-
-This branch will never rebase, and new mainline stable releases will be
-merged into this branch. Fixes will be applied on top of the branch. I
-will also create a v3.2-rt-rebase branch (and tags) that will allow you
-to make broken out patches (like v3.0-rt-rebase) as long as time permits
-me to do so.
-
--- Steve
-
+(I'm surprised that we didn't remove __GFP_NOWARN ages ago - warning by
+default is pretty obnoxious.  But the warning continues to be
+occasionally useful and false positives are rare).
 
