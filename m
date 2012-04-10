@@ -1,283 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758493Ab2DJDED (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 23:04:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758449Ab2DJDDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 23:03:14 -0400
-Subject: [PATCH 1/2] vhost: basic tracepoints
-To: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com
-From: Jason Wang <jasowang@redhat.com>
-Date: Tue, 10 Apr 2012 10:58:19 +0800
-Message-ID: <20120410025819.49693.32870.stgit@amd-6168-8-1.englab.nay.redhat.com>
-In-Reply-To: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1758466Ab2DJDGX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 23:06:23 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46232 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab2DJDGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 23:06:22 -0400
+Message-ID: <4F83A3A6.4070705@linux.vnet.ibm.com>
+Date: Tue, 10 Apr 2012 11:06:14 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong.eric@gmail.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com> <20120409175829.GB21894@amt.cnet> <4F8329D3.7000605@gmail.com> <20120409194614.GB23053@amt.cnet>
+In-Reply-To: <20120409194614.GB23053@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12041003-8256-0000-0000-000001F14A30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help for the performance optimizations and debugging, this patch tracepoints
-for vhost. Pay attention that the tracepoints are only for vhost, net code are
-not touched.
+On 04/10/2012 03:46 AM, Marcelo Tosatti wrote:
 
-Two kinds of activities were traced: virtio and vhost work.
+> On Tue, Apr 10, 2012 at 02:26:27AM +0800, Xiao Guangrong wrote:
+>> On 04/10/2012 01:58 AM, Marcelo Tosatti wrote:
+>>
+>>> On Mon, Apr 09, 2012 at 04:12:46PM +0300, Avi Kivity wrote:
+>>>> On 03/29/2012 11:20 AM, Xiao Guangrong wrote:
+>>>>> * Idea
+>>>>> The present bit of page fault error code (EFEC.P) indicates whether the
+>>>>> page table is populated on all levels, if this bit is set, we can know
+>>>>> the page fault is caused by the page-protection bits (e.g. W/R bit) or
+>>>>> the reserved bits.
+>>>>>
+>>>>> In KVM, in most cases, all this kind of page fault (EFEC.P = 1) can be
+>>>>> simply fixed: the page fault caused by reserved bit
+>>>>> (EFFC.P = 1 && EFEC.RSV = 1) has already been filtered out in fast mmio
+>>>>> path. What we need do to fix the rest page fault (EFEC.P = 1 && RSV != 1)
+>>>>> is just increasing the corresponding access on the spte.
+>>>>>
+>>>>> This pachset introduces a fast path to fix this kind of page fault: it
+>>>>> is out of mmu-lock and need not walk host page table to get the mapping
+>>>>> from gfn to pfn.
+>>>>>
+>>>>>
+>>>>
+>>>> This patchset is really worrying to me.
+>>>>
+>>>> It introduces a lot of concurrency into data structures that were not
+>>>> designed for it.  Even if it is correct, it will be very hard to
+>>>> convince ourselves that it is correct, and if it isn't, to debug those
+>>>> subtle bugs.  It will also be much harder to maintain the mmu code than
+>>>> it is now.
+>>>>
+>>>> There are a lot of things to check.  Just as an example, we need to be
+>>>> sure that if we use rcu_dereference() twice in the same code path, that
+>>>> any inconsistencies due to a write in between are benign.  Doing that is
+>>>> a huge task.
+>>>>
+>>>> But I appreciate the performance improvement and would like to see a
+>>>> simpler version make it in.  This needs to reduce the amount of data
+>>>> touched in the fast path so it is easier to validate, and perhaps reduce
+>>>> the number of cases that the fast path works on.
+>>>>
+>>>> I would like to see the fast path as simple as
+>>>>
+>>>>   rcu_read_lock();
+>>>>
+>>>>   (lockless shadow walk)
+>>>>   spte = ACCESS_ONCE(*sptep);
+>>>>
+>>>>   if (!(spte & PT_MAY_ALLOW_WRITES))
+>>>>         goto slow;
+>>>>
+>>>>   gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->sptes)
+>>>>   mark_page_dirty(kvm, gfn);
+>>>>
+>>>>   new_spte = spte & ~(PT64_MAY_ALLOW_WRITES | PT_WRITABLE_MASK);
+>>>>   if (cmpxchg(sptep, spte, new_spte) != spte)
+>>>>        goto slow;
+>>>>
+>>>>   rcu_read_unlock();
+>>>>   return;
+>>>>
+>>>> slow:
+>>>>   rcu_read_unlock();
+>>>>   slow_path();
+>>>>
+>>>> It now becomes the responsibility of the slow path to maintain *sptep &
+>>>> PT_MAY_ALLOW_WRITES, but that path has a simpler concurrency model.  It
+>>>> can be as simple as a clear_bit() before we update sp->gfns[] or if we
+>>>> add host write protection.
+>>>>
+>>>> Sorry, it's too complicated for me.  Marcelo, what's your take?
+>>>
+>>> The improvement is small and limited to special cases (migration should
+>>> be rare and framebuffer memory accounts for a small percentage of total
+>>> memory).
+>>
+>>
+>> Actually, although the framebuffer is small but it is modified really
+>> frequently, and another unlucky things is that dirty-log is also
+>> very frequently and need hold mmu-lock to do write-protect.
+>>
+>> Yes, if Xwindow is not enabled, the benefit is limited. :)
+> 
+> Ignoring that fact, the safety of lockless set_spte and friends is not
+> clear.
+> 
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/trace.h |  153 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/vhost/vhost.c |   17 +++++
- 2 files changed, 168 insertions(+), 2 deletions(-)
- create mode 100644 drivers/vhost/trace.h
 
-diff --git a/drivers/vhost/trace.h b/drivers/vhost/trace.h
-new file mode 100644
-index 0000000..0423899
---- /dev/null
-+++ b/drivers/vhost/trace.h
-@@ -0,0 +1,153 @@
-+#if !defined(_TRACE_VHOST_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_VHOST_H
-+
-+#include <linux/tracepoint.h>
-+#include "vhost.h"
-+
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM vhost
-+
-+/*
-+ * Tracepoint for updating used flag.
-+ */
-+TRACE_EVENT(vhost_virtio_update_used_flags,
-+	TP_PROTO(struct vhost_virtqueue *vq),
-+	TP_ARGS(vq),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+		__field(u16, used_flags)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+		__entry->used_flags = vq->used_flags;
-+	),
-+
-+	TP_printk("vhost update used flag %x to vq %p notify %s",
-+		__entry->used_flags, __entry->vq,
-+		(__entry->used_flags & VRING_USED_F_NO_NOTIFY) ?
-+		"disabled" : "enabled")
-+);
-+
-+/*
-+ * Tracepoint for updating avail event.
-+ */
-+TRACE_EVENT(vhost_virtio_update_avail_event,
-+	TP_PROTO(struct vhost_virtqueue *vq),
-+	TP_ARGS(vq),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+		__field(u16, avail_idx)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+		__entry->avail_idx = vq->avail_idx;
-+	),
-+
-+	TP_printk("vhost update avail idx %u(%u) for vq %p",
-+		  __entry->avail_idx, __entry->avail_idx %
-+		  __entry->vq->num, __entry->vq)
-+);
-+
-+/*
-+ * Tracepoint for processing descriptor.
-+ */
-+TRACE_EVENT(vhost_virtio_get_vq_desc,
-+	TP_PROTO(struct vhost_virtqueue *vq, unsigned int index,
-+		 unsigned out, unsigned int in),
-+	TP_ARGS(vq, index, out, in),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+		__field(unsigned int, head)
-+		__field(unsigned int, out)
-+		__field(unsigned int, in)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+		__entry->head = index;
-+		__entry->out = out;
-+		__entry->in = in;
-+	),
-+
-+	TP_printk("vhost get vq %p head %u out %u in %u",
-+		  __entry->vq, __entry->head, __entry->out, __entry->in)
-+
-+);
-+
-+/*
-+ * Tracepoint for signal guest.
-+ */
-+TRACE_EVENT(vhost_virtio_signal,
-+	TP_PROTO(struct vhost_virtqueue *vq),
-+	TP_ARGS(vq),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+	),
-+
-+	TP_printk("vhost signal vq %p",	__entry->vq)
-+);
-+
-+DECLARE_EVENT_CLASS(vhost_work_template,
-+	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
-+	TP_ARGS(dev, work),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_dev *, dev)
-+		__field(struct vhost_work *, work)
-+		__field(void *, function)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev = dev;
-+		__entry->work = work;
-+		__entry->function = work->fn;
-+	),
-+
-+	TP_printk("%pf for work %p dev %p",
-+		__entry->function, __entry->work, __entry->dev)
-+);
-+
-+DEFINE_EVENT(vhost_work_template, vhost_work_queue_wakeup,
-+	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
-+	TP_ARGS(dev, work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_work_queue_coalesce,
-+	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
-+	TP_ARGS(dev, work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_poll_start,
-+	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
-+	TP_ARGS(dev, work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_poll_stop,
-+	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
-+	TP_ARGS(dev, work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_work_execute_start,
-+	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
-+	TP_ARGS(dev, work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_work_execute_end,
-+	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
-+	TP_ARGS(dev, work));
-+
-+#endif /* _TRACE_VHOST_H */
-+
-+#undef TRACE_INCLUDE_PATH
-+#define TRACE_INCLUDE_PATH ../../drivers/vhost
-+#undef TRACE_INCLUDE_FILE
-+#define TRACE_INCLUDE_FILE trace
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-+
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index c14c42b..23f8d85 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -31,6 +31,8 @@
- #include <linux/if_arp.h>
- 
- #include "vhost.h"
-+#define CREATE_TRACE_POINTS
-+#include "trace.h"
- 
- enum {
- 	VHOST_MEMORY_MAX_NREGIONS = 64,
-@@ -50,6 +52,7 @@ static void vhost_poll_func(struct file *file, wait_queue_head_t *wqh,
- 	poll = container_of(pt, struct vhost_poll, table);
- 	poll->wqh = wqh;
- 	add_wait_queue(wqh, &poll->wait);
-+	trace_vhost_poll_start(NULL, &poll->work);
- }
- 
- static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
-@@ -101,6 +104,7 @@ void vhost_poll_start(struct vhost_poll *poll, struct file *file)
- void vhost_poll_stop(struct vhost_poll *poll)
- {
- 	remove_wait_queue(poll->wqh, &poll->wait);
-+	trace_vhost_poll_stop(NULL, &poll->work);
- }
- 
- static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
-@@ -147,7 +151,9 @@ static inline void vhost_work_queue(struct vhost_dev *dev,
- 		list_add_tail(&work->node, &dev->work_list);
- 		work->queue_seq++;
- 		wake_up_process(dev->worker);
--	}
-+		trace_vhost_work_queue_wakeup(dev, work);
-+	} else
-+		trace_vhost_work_queue_coalesce(dev, work);
- 	spin_unlock_irqrestore(&dev->work_lock, flags);
- }
- 
-@@ -221,7 +227,9 @@ static int vhost_worker(void *data)
- 
- 		if (work) {
- 			__set_current_state(TASK_RUNNING);
-+			trace_vhost_work_execute_start(dev, work);
- 			work->fn(work);
-+			trace_vhost_work_execute_end(dev, work);
- 		} else
- 			schedule();
- 
-@@ -1011,6 +1019,7 @@ static int vhost_update_used_flags(struct vhost_virtqueue *vq)
- 		if (vq->log_ctx)
- 			eventfd_signal(vq->log_ctx, 1);
- 	}
-+	trace_vhost_virtio_update_used_flags(vq);
- 	return 0;
- }
- 
-@@ -1030,6 +1039,7 @@ static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
- 		if (vq->log_ctx)
- 			eventfd_signal(vq->log_ctx, 1);
- 	}
-+	trace_vhost_virtio_update_avail_event(vq);
- 	return 0;
- }
- 
-@@ -1319,6 +1329,7 @@ int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 	/* Assume notifications from guest are disabled at this point,
- 	 * if they aren't we would need to update avail_event index. */
- 	BUG_ON(!(vq->used_flags & VRING_USED_F_NO_NOTIFY));
-+	trace_vhost_virtio_get_vq_desc(vq, head, *out_num, *in_num);
- 	return head;
- }
- 
-@@ -1485,8 +1496,10 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- {
- 	/* Signal the Guest tell them we used something up. */
--	if (vq->call_ctx && vhost_notify(dev, vq))
-+	if (vq->call_ctx && vhost_notify(dev, vq)) {
- 		eventfd_signal(vq->call_ctx, 1);
-+		trace_vhost_virtio_signal(vq);
-+	}
- }
- 
- /* And here's the combo meal deal.  Supersize me! */
+That is why AVI suggested me to simplify the whole things. :)
+
+
+> Perhaps the mmu_lock hold times by get_dirty are a large component here?
+> If that can be alleviated, not only RO->RW faults benefit.
+> 
+
+Yes.
 
