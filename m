@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab2DJIrc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:47:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51062 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757459Ab2DJIrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:47:31 -0400
-Date: Tue, 10 Apr 2012 09:47:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
-Message-ID: <20120410084702.GM24211@n2100.arm.linux.org.uk>
-References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20120406074942.GO7264@S2101-09.ap.freescale.net> <20120410083130.GK24211@n2100.arm.linux.org.uk> <20120410083543.GC3149@opensource.wolfsonmicro.com>
+	id S1758588Ab2DJIrr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:47:47 -0400
+Received: from smtp3.su.se ([130.237.164.77]:44112 "EHLO smtp.su.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753478Ab2DJIrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 04:47:45 -0400
+X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Apr 2012 04:47:45 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -4
+Message-ID: <4F83F202.2080600@debian.org>
+Date: Tue, 10 Apr 2012 10:40:34 +0200
+From: Per Olofsson <pelle@debian.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410083543.GC3149@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Bojan Smojver <bojan@rexursive.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9]: Hibernation: fix the number of pages used for hibernate/thaw
+ buffering
+References: <1334026047.2103.23.camel@shrek.rexursive.com>
+In-Reply-To: <1334026047.2103.23.camel@shrek.rexursive.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 09:35:43AM +0100, Mark Brown wrote:
-> On Tue, Apr 10, 2012 at 09:31:30AM +0100, Russell King - ARM Linux wrote:
-> > On Fri, Apr 06, 2012 at 03:49:45PM +0800, Shawn Guo wrote:
-> > > I believe this patch fixes the amba probe failure that impacts any
-> > > AMBA platform build with CONFIG_REGULATOR enabled.  Could you consider
-> > > to send the fix for -rc soon?
-> 
-> > No idea.  I don't have Mark's patch in the patch system.
-> 
-> It's there as far as I can tell - it's 7366/1, which is visible in the
-> web interface at:
-> 
-> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7366/1
-> 
-> Is there something else I need to do?
+On 2012-04-10 04:47, Bojan Smojver wrote:
+> +/*
+> + * Number of free pages that are not high.
+> + */
+> +static unsigned long low_free_pages(void)
+> +{
+> +	struct zone *zone;
+> +	unsigned long free = 0;
+> +
+> +	for_each_populated_zone(zone)
+> +		if (!is_highmem(zone))
+> +			free += zone_page_state(zone, NR_FREE_PAGES);
+> +	return free;
+> +}
 
-Ok, I thought 7366/1 and 7367/1 were part of the same looking at just the
-index.
+Nitpick: it should be faster to calculate "nr_free_pages() -
+nr_free_highpages()", at least on systems without high pages. But
+perhaps it does not matter.
 
-In any case, what would really help is if people would discard patches
-they no longer want applying.
+-- 
+Pelle
