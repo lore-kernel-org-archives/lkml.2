@@ -1,134 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759374Ab2DJUP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:15:58 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43190 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759173Ab2DJUP4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:15:56 -0400
+	id S1759391Ab2DJUQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:16:22 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:37494 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758962Ab2DJUQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:16:20 -0400
+Date: Tue, 10 Apr 2012 13:15:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Lai Jiangshan <eag0628@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [RFC PATCH 5/5 single-thread-version] implement per-domain
+ single-thread state machine call_srcu()
+Message-ID: <20120410201512.GI2428@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
+ <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
+ <1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com>
+ <4F56DBDA.1020608@cn.fujitsu.com>
+ <20120308203533.GN2348@linux.vnet.ibm.com>
+ <CACvQF534RJcu8-yKcByqthifUHCLsggGXuRPAKqf7mZMXT3taA@mail.gmail.com>
+ <20120312180321.GG2471@linux.vnet.ibm.com>
+ <4F604CFA.9010302@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20120410125443.3ab1a277.akpm@linux-foundation.org>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
-	<1333051320-30872-9-git-send-email-wad@chromium.org>
-	<20120406132330.457a05cf.akpm@linux-foundation.org>
-	<67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
-	<20120410125443.3ab1a277.akpm@linux-foundation.org>
-Date: Tue, 10 Apr 2012 15:15:50 -0500
-Message-ID: <CABqD9ha5bEEAQKw9w6EwPfmEYPQJ9khtqon8pKu1VedDWyAsZg@mail.gmail.com>
-Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        jmorris@namei.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F604CFA.9010302@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041020-9360-0000-0000-0000054E24B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 2:54 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 9 Apr 2012 04:22:40 +1000
-> "Indan Zupancic" <indan@nul.nu> wrote:
->
->> On Sat, April 7, 2012 06:23, Andrew Morton wrote:
->> > hm, I'm surprised that we don't have a zero-returning implementation of
->> > is_compat_task() when CONFIG_COMPAT=n.  Seems silly.  Blames Arnd.
->>
->> It's sneakily hidden at the end of compat.h.
->>
->> >> +/**
->> >> + * get_u32 - returns a u32 offset into data
->> >> + * @data: a unsigned 64 bit value
->> >> + * @index: 0 or 1 to return the first or second 32-bits
->> >> + *
->> >> + * This inline exists to hide the length of unsigned long.
->> >> + * If a 32-bit unsigned long is passed in, it will be extended
->> >> + * and the top 32-bits will be 0. If it is a 64-bit unsigned
->> >> + * long, then whatever data is resident will be properly returned.
->> >> + */
->> >> +static inline u32 get_u32(u64 data, int index)
->> >> +{
->> >> +  return ((u32 *)&data)[index];
->> >> +}
->> >
->> > This seems utterly broken on big-endian machines.  If so: fix.  If not:
->> > add comment explaining why?
->>
->> It's not a bug, it's intentional.
->
-> Well it looks like a bug, which is why I suggest that it be clearly
-> commented.
+On Wed, Mar 14, 2012 at 03:47:06PM +0800, Lai Jiangshan wrote:
+> On 03/13/2012 02:03 AM, Paul E. McKenney wrote:
+> 
+> >>
+> >> In mb()-based srcu, synchronize_srcu() is very fast,
+> >> synchronize_srcu_expedited() makes less sense than before.
+> > 
+> > I am worried about expedited callbacks getting backed up behind
+> > non-expedited callbacks (especially given Peter's point about per-VMA
+> > SRCU callbacks) and behind other workqueue uses.
+> > 
+> >> But when wait_srcu_gp() is move back here, I will use
+> >> a bigger "trycount" for synchronize_srcu_expedited().
+> >>
+> >> And any problem for srcu_advance_batches()?
+> > 
+> > I prefer the use of "return" that you and Peter discussed later.
+> > 
+> > What sort of testing are you doing?
+> 
+> rcutorture in my box for several days on my daily used machine.
 
-I've added a comment indicating it is intentionally ugly.
+OK, good!
 
->> >
->> >> +  if (total_insns > MAX_INSNS_PER_PATH)
->> >> +          return -ENOMEM;
->> >> +
->> >> +  /*
->> >> +   * Installing a seccomp filter requires that the task have
->> >> +   * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
->> >> +   * This avoids scenarios where unprivileged tasks can affect the
->> >> +   * behavior of privileged children.
->> >> +   */
->> >> +  if (!current->no_new_privs &&
->> >> +      security_capable_noaudit(current_cred(), current_user_ns(),
->> >> +                               CAP_SYS_ADMIN) != 0)
->> >> +          return -EACCES;
->> >> +
->> >> +  /* Allocate a new seccomp_filter */
->> >> +  filter = kzalloc(sizeof(struct seccomp_filter) + fp_size, GFP_KERNEL);
->> >
->> > I think this gives userspace an easy way of causing page allocation
->> > failure warnings, by permitting large kmalloc() attempts.  Add
->> > __GFP_NOWARN?
->>
->> Max is 32kb. sk_attach_filter() in net/core/filter.c is worse,
->> it allocates up to 512kb before even checking the length.
->
-> An order-3 allocation attempt is pretty fragile.  This will sometimes
-> fail.
->
->> What about using GFP_USER (and adding __GFP_NOWARN to GFP_USER) instead?
->
-> Let's be conventional and use the open-coded __GFP_NOWARN.
-> __GFP_NOWARN says "this is a big allocation which will sometimes fail
-> and I have carefully reviewed the failure paths and runtime tested
-> them".
->
-> Please carefully review the failure paths and runtime test them ;)
+> What would you prefer for next round of patches, single-thread or per-cpu?
+> I will send them soon.
+> (per-cpu approach will be also "batches, in-sleepable, reuse rcu_head"....)
+> 
+> I prefer the single-thread approach until high-callback-rate-per-domain-era
+> comes, but I don't know how long when it comes. Peter?
 
-Thankfully the failure path is simple in this case.  Additional
-runtime testing in progress :)
+Well, the price for sticking with the single-thread approach is
+a commitment on your part to create a high-callback-rate-per-domain
+version at a moment's notice, should it be needed.
 
->> >> +  /* Check and rewrite the fprog via the skb checker */
->> >> +  ret = sk_chk_filter(filter->insns, filter->len);
->> >> +  if (ret)
->> >> +          goto fail;
->> >> +
->> >> +  /* Check and rewrite the fprog for seccomp use */
->> >> +  ret = seccomp_chk_filter(filter->insns, filter->len);
->> >
->> > "check" is spelled "check"!
->>
->> Yes, it is and he did spell "check" as "Check".
->>
->> seccomp_chk_filter() mirrors sk_chk_filter(). So it refers to
->> "chk", not "check".
->
-> bah.  Two poor identifiers isn't better than one.  Whatever.
+Can you commit to that?  If not, then the initial version needs to be
+able to handle a high callback rate.
 
-As per James's comment, reducing it to one poor identifier.
+							Thanx, Paul
 
-thanks!
