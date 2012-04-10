@@ -1,94 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab2DJUPE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:15:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41966 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756466Ab2DJUPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:15:01 -0400
-Date: Wed, 11 Apr 2012 06:14:42 +1000
-From: NeilBrown <neilb@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jim Kukunas <james.t.kukunas@linux.intel.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        linux-raid@vger.kernel.org
-Subject: Re: arch/86: AVX RAID5 xor checksumming
-Message-ID: <20120411061442.2f839c77@notabene.brown>
-In-Reply-To: <4F846FBC.9060503@zytor.com>
-References: <1334078551-6859-1-git-send-email-james.t.kukunas@linux.intel.com>
-	<4F846FBC.9060503@zytor.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/ezuCh74pRIGaxdDL5+mhvF/"; protocol="application/pgp-signature"
+	id S1759374Ab2DJUP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:15:58 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:43190 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759173Ab2DJUP4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:15:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120410125443.3ab1a277.akpm@linux-foundation.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-9-git-send-email-wad@chromium.org>
+	<20120406132330.457a05cf.akpm@linux-foundation.org>
+	<67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
+	<20120410125443.3ab1a277.akpm@linux-foundation.org>
+Date: Tue, 10 Apr 2012 15:15:50 -0500
+Message-ID: <CABqD9ha5bEEAQKw9w6EwPfmEYPQJ9khtqon8pKu1VedDWyAsZg@mail.gmail.com>
+Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        jmorris@namei.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ezuCh74pRIGaxdDL5+mhvF/
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 10, 2012 at 2:54 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 9 Apr 2012 04:22:40 +1000
+> "Indan Zupancic" <indan@nul.nu> wrote:
+>
+>> On Sat, April 7, 2012 06:23, Andrew Morton wrote:
+>> > hm, I'm surprised that we don't have a zero-returning implementation of
+>> > is_compat_task() when CONFIG_COMPAT=n.  Seems silly.  Blames Arnd.
+>>
+>> It's sneakily hidden at the end of compat.h.
+>>
+>> >> +/**
+>> >> + * get_u32 - returns a u32 offset into data
+>> >> + * @data: a unsigned 64 bit value
+>> >> + * @index: 0 or 1 to return the first or second 32-bits
+>> >> + *
+>> >> + * This inline exists to hide the length of unsigned long.
+>> >> + * If a 32-bit unsigned long is passed in, it will be extended
+>> >> + * and the top 32-bits will be 0. If it is a 64-bit unsigned
+>> >> + * long, then whatever data is resident will be properly returned.
+>> >> + */
+>> >> +static inline u32 get_u32(u64 data, int index)
+>> >> +{
+>> >> +  return ((u32 *)&data)[index];
+>> >> +}
+>> >
+>> > This seems utterly broken on big-endian machines.  If so: fix.  If not:
+>> > add comment explaining why?
+>>
+>> It's not a bug, it's intentional.
+>
+> Well it looks like a bug, which is why I suggest that it be clearly
+> commented.
 
-On Tue, 10 Apr 2012 10:37:00 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+I've added a comment indicating it is intentionally ugly.
 
-> On 04/10/2012 10:22 AM, Jim Kukunas wrote:
-> > Hi Folks,
-> >=20
-> > The following patch adds an AVX implementation of the RAID5 xor checksu=
-mming
-> > functions.
-> >=20
-> > Based on xor_speed, the AVX implementation appears to be ~32% faster th=
-an the
-> > SSE implementation on my i7 2600:
-> >=20
-> >         generic_sse: 15088.000 MB/sec
-> > 	avx: 19936.000 MB/sec
-> >=20
-> > Thanks.
-> >=20
->=20
-> I think this (and the SSSE3 patches for RAID-6) should go in via the
-> RAID tree.  Neil, do you agree?
+>> >
+>> >> +  if (total_insns > MAX_INSNS_PER_PATH)
+>> >> +          return -ENOMEM;
+>> >> +
+>> >> +  /*
+>> >> +   * Installing a seccomp filter requires that the task have
+>> >> +   * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
+>> >> +   * This avoids scenarios where unprivileged tasks can affect the
+>> >> +   * behavior of privileged children.
+>> >> +   */
+>> >> +  if (!current->no_new_privs &&
+>> >> +      security_capable_noaudit(current_cred(), current_user_ns(),
+>> >> +                               CAP_SYS_ADMIN) != 0)
+>> >> +          return -EACCES;
+>> >> +
+>> >> +  /* Allocate a new seccomp_filter */
+>> >> +  filter = kzalloc(sizeof(struct seccomp_filter) + fp_size, GFP_KERNEL);
+>> >
+>> > I think this gives userspace an easy way of causing page allocation
+>> > failure warnings, by permitting large kmalloc() attempts.  Add
+>> > __GFP_NOWARN?
+>>
+>> Max is 32kb. sk_attach_filter() in net/core/filter.c is worse,
+>> it allocates up to 512kb before even checking the length.
+>
+> An order-3 allocation attempt is pretty fragile.  This will sometimes
+> fail.
+>
+>> What about using GFP_USER (and adding __GFP_NOWARN to GFP_USER) instead?
+>
+> Let's be conventional and use the open-coded __GFP_NOWARN.
+> __GFP_NOWARN says "this is a big allocation which will sometimes fail
+> and I have carefully reviewed the failure paths and runtime tested
+> them".
+>
+> Please carefully review the failure paths and runtime test them ;)
 
-I'm happy to take the SSSE3 RAID-6 patches as they only affect lib/raid6, b=
-ut
-I felt that this one - being purely in arch/x86 - should probably go via the
-x86 tree.
-However I'm flexible and if you (collectively) are happy with these patches
-going in through my tree, I'll do that.
+Thankfully the failure path is simple in this case.  Additional
+runtime testing in progress :)
 
-Thanks,
-NeilBrown
+>> >> +  /* Check and rewrite the fprog via the skb checker */
+>> >> +  ret = sk_chk_filter(filter->insns, filter->len);
+>> >> +  if (ret)
+>> >> +          goto fail;
+>> >> +
+>> >> +  /* Check and rewrite the fprog for seccomp use */
+>> >> +  ret = seccomp_chk_filter(filter->insns, filter->len);
+>> >
+>> > "check" is spelled "check"!
+>>
+>> Yes, it is and he did spell "check" as "Check".
+>>
+>> seccomp_chk_filter() mirrors sk_chk_filter(). So it refers to
+>> "chk", not "check".
+>
+> bah.  Two poor identifiers isn't better than one.  Whatever.
 
->=20
-> However,
->=20
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
->=20
-> 	-hpa
+As per James's comment, reducing it to one poor identifier.
 
-
---Sig_/ezuCh74pRIGaxdDL5+mhvF/
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT4SUuDnsnt1WYoG5AQKcQg//WLW+nSBKgGQ2RiuNVOScaNX6xzotJ6Lt
-Ls9eE/X3ePBJrnmXv3N6O3qd6t42ppvHOzj+Tc2Dz+yxQ9vsfJ6cs+STq7+qx5wZ
-CHlTUKW8hhohdVqMq9QsMCMqeDDdWM3a01derNKD5BDpIDsvGYRB/yFuQT32mnxT
-ho2NgcRW7bBr7TkbQsZ1u+SaG6IdApaYmTbhEXnr6j+9ev1ckj3lVzYOkNp8zdws
-xC77zHQWhCEw6TZUETbgIARp4WVWPYYTAe1JGdopfrqDnh1eW6K7Gb85Nq0NfwFi
-2A/ZLJBzcAtWz8sWMXrKDGMlI5FHmRtSLAMbZPUzvOID1X7Be4Ov8LqNyPmz+Hq7
-i0Sc2VLA3IxoHJMteKFWDoQpfX5IQcRk54nQWLqc6ZOD113Kl/0Tn5NDhAQv0OX2
-NXwhyeN334ddSfpLTfvvbwI5NIsr6pLKVNo1K3Ws1cqXDG/vEOqa6odYq1r6J3Ft
-jXlxtXFt5wR4oqHheJ5t2NzSm2+pOGQF96nraBAMDxIEO+RYEZbFPXhJeUnsS/NW
-h4t0+yu3dMKXghyMVvLUXiMHA/zdBjaZaZh7XDWlsKvWW822gCFsv2QwkLAmq3Pi
-REtKpIpzRd8h0sZUOW5jB7zcI0Kf4EoQdyNF2O8gw7xoLS8TJFJo7UH4PuvT42OZ
-fttCUhu7occ=
-=D6zq
------END PGP SIGNATURE-----
-
---Sig_/ezuCh74pRIGaxdDL5+mhvF/--
+thanks!
