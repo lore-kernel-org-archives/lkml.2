@@ -1,186 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab2DJG50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 02:57:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53884 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755267Ab2DJG5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 02:57:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F83D965.4040506@jp.fujitsu.com>
-Date: Tue, 10 Apr 2012 15:55:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1755218Ab2DJHFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 03:05:52 -0400
+Received: from zfrontend1.aha.ru ([195.2.83.147]:52618 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752498Ab2DJHFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 03:05:50 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1
+ sticks-and-crashs)
+To: David Rientjes <rientjes@google.com>, Colin Cross <ccross@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Christian Bejram <christian.bejram@stericsson.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Tue, 10 Apr 2012 03:09:45 -0400
+Message-ID: <web-723290478@zbackend1.aha.ru>
+In-Reply-To: <alpine.DEB.2.00.1204091707580.21813@chino.kir.corp.google.com>
+References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
+ <20120408195044.13ea6c8e.akpm@linux-foundation.org>
+ <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
+ <alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
+ <CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
+ <alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com>
+ <CA+55aFztPW2x1grh2Z7RTOxKZ29_Ha6-kDkJXgdghFHQ61EZOQ@mail.gmail.com>
+ <alpine.DEB.2.00.1204091603430.21813@chino.kir.corp.google.com>
+ <web-723076709@zbackend1.aha.ru>
+ <alpine.DEB.2.00.1204091637280.21813@chino.kir.corp.google.com>
+ <web-723082731@zbackend1.aha.ru>
+ <alpine.DEB.2.00.1204091707580.21813@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V5 12/14] memcg: move HugeTLB resource count to parent
- cgroup on memcg removal
-References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1333738260-1329-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F827EAD.9080300@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87ty0tcjhx.fsf@skywalker.in.ibm.com>
-In-Reply-To: <87ty0tcjhx.fsf@skywalker.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/09 19:00), Aneesh Kumar K.V wrote:
+After first I tested some hours the 1st,one-line patch by 
+D.R., now is ready compiled and started to be tested his 
+2nd patch, below.   I see he has it already comitted; it 
+would have been better first wait to test it.
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> 
->> (2012/04/07 3:50), Aneesh Kumar K.V wrote:
->>
->>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->>>
->>> This add support for memcg removal with HugeTLB resource usage.
->>>
->>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->>
->>
->> Hmm 
->>
->>
-> 
-> ....
-> ...
-> 
->>> +	csize = PAGE_SIZE << compound_order(page);
->>> +	/*
->>> +	 * uncharge from child and charge the parent. If we have
->>> +	 * use_hierarchy set, we can never fail here. In-order to make
->>> +	 * sure we don't get -ENOMEM on parent charge, we first uncharge
->>> +	 * the child and then charge the parent.
->>> +	 */
->>> +	if (parent->use_hierarchy) {
->>
->>
->>> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
->>> +		if (!mem_cgroup_is_root(parent))
->>> +			ret = res_counter_charge(&parent->hugepage[idx],
->>> +						 csize, &fail_res);
->>
->>
->> Ah, why is !mem_cgroup_is_root() checked ? no res_counter update for
->> root cgroup ?
-> 
-> My mistake. Earlier version of the patch series didn't charge/uncharge the root
-> cgroup during different operations. Later as per your review I updated
-> the charge/uncharge path to charge root cgroup. I missed to update this code.
-> 
->>
->> I think it's better to have res_counter_move_parent()...to do ops in atomic.
->> (I'll post a patch for that for my purpose). OR, just ignore res->usage if
->> parent->use_hierarchy == 1.
->>
->> uncharge->charge will have a race.
-> 
-> 
-> 
-> How about the below
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7b6e79a..5b4bc98 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3351,24 +3351,24 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
->  
->  	csize = PAGE_SIZE << compound_order(page);
->  	/*
-> -	 * uncharge from child and charge the parent. If we have
-> -	 * use_hierarchy set, we can never fail here. In-order to make
-> -	 * sure we don't get -ENOMEM on parent charge, we first uncharge
-> -	 * the child and then charge the parent.
-> +	 * If we have use_hierarchy set we can never fail here. So instead of
-> +	 * using res_counter_uncharge use the open-coded variant which just
-> +	 * uncharge the child res_counter. The parent will retain the charge.
->  	 */
->  	if (parent->use_hierarchy) {
-> -		res_counter_uncharge(&memcg->hugepage[idx], csize);
-> -		if (!mem_cgroup_is_root(parent))
-> -			ret = res_counter_charge(&parent->hugepage[idx],
-> -						 csize, &fail_res);
-> +		unsigned long flags;
-> +		struct res_counter *counter;
-> +
-> +		counter = &memcg->hugepage[idx];
-> +		spin_lock_irqsave(&counter->lock, flags);
-> +		res_counter_uncharge_locked(counter, csize);
+The loop suggested below, with this 2nd patch, gives 1560 
+kB , compared with 1632 kb after the 1st patch, and 1432 
+kB with kernel 3.3  .    On the other hand, 3.3 has 
+clearly the same problem (even if not crashing, it's 
+becoming often very slow, and then  there's running 
+kmemleak, what I have to kill for return to the normal 
+speed), but according this 'test' it would be good, so 
+that it's questionable if this test is reliable.
+
+As already reported, the 1st patch cured the problem at 
+least subjectively.
+
+To see if this 2nd patch is good, I have to wait now some 
+hours and observe if the computer becomes slow or even 
+crashs
 
 
-Hm, uncharge_locked is not propagated to parent, I see.
-Ok, it seems to work...but please add enough comment here. Or define
-res_counter_move_parent().
+wl
 
-> +		spin_unlock_irqrestore(&counter->lock, flags);
->  	} else {
-> -		if (!mem_cgroup_is_root(parent)) {
-> -			ret = res_counter_charge(&parent->hugepage[idx],
-> -						 csize, &fail_res);
-> -			if (ret) {
-> -				ret = -EBUSY;
-> -				goto err_out;
-> -			}
-> +		ret = res_counter_charge(&parent->hugepage[idx],
-> +					 csize, &fail_res);
-> +		if (ret) {
-> +			ret = -EBUSY;
-> +			goto err_out;
->  		}
->  		res_counter_uncharge(&memcg->hugepage[idx], csize);
->  	}
+
+=================================================
+
+On Mon, 9 Apr 2012 17:11:45 -0700 (PDT)
+  David Rientjes <rientjes@google.com> wrote:
+> On Mon, 9 Apr 2012, werner wrote:
+> 
+>> I continue now testing your first patch a few hours, if 
+>>it's good or not.
+>> Then, I can make another patch.  So you have still time 
+>>to think and put all
+>> together
+>> what you want to be tested, and mail me that. Also 
+>>explain me, if you want
+>> other
+>> patchs ADDITIONALLY or INSTEAD your first patch -- the 
+>>best would be, to send
+>> me
+>> always accumulating patchs including everything together 
+>>to be applied over
+>> the
+>> 'virgin' 3.4-rcX kernel.
+>> For your information, I dont download the whole git, I 
+>>download all 3.X.Y-rcZ
+>> , and I
+>> recompile everything again (patched), instead of 
+>>compiling only the patched
+>> subroutines.
+>> 
+> 
+> Ok, when you want to test the latest patch, try this:
+> 
+> - revert back to the vanilla 3.4-rc2 kernel,
+> 
+> - boot and do this on the command line:
+> 
+> 	for i in $(seq 1 10000); do sleep 0 & done
+> 	grep KernelStack /proc/meminfo
+> 
+> - record that number,
+> 
+> - apply the patch at https://lkml.org/lkml/2012/4/9/428,
+> 
+> - boot and do the same two command lines,
+> 
+> - compare the number with the previous number from the 
+>first boot.
+> 
+> The number should be much lower after the patch is 
+>applied.
+> 
+> Thanks!
 > 
 > 
->>
->>> +	} else {
->>> +		if (!mem_cgroup_is_root(parent)) {
->>> +			ret = res_counter_charge(&parent->hugepage[idx],
->>> +						 csize, &fail_res);
->>> +			if (ret) {
->>> +				ret = -EBUSY;
->>> +				goto err_out;
->>> +			}
->>> +		}
->>> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
->>> +	}
->>
->>
->> Just a notice. Recently, Tejun changed failure of pre_destory() to show WARNING.
->> Then, I'd like to move the usage to the root cgroup if use_hierarchy=0.
->> Will it work for you ?
-> 
-> That should work.
-> 
 
-ok, I'll go ahead in that way.
-
-> 
->>
->>> +	/*
->>> +	 * caller should have done css_get
->>> +	 */
->>
->>
->> Could you explain meaning of this comment ?
->>
-> 
-> inherited from mem_cgroup_move_account. I guess it means css cannot go
-> away at this point. We have done a css_get on the child. For a generic
-> move_account function may be the comment is needed. I guess in our case
-> the comment is redundant ?
-> 
-
-
-Ah, IIUC, this code is hugetlb version of mem_cgroup_move_parent().
-At move_parent(), we don't need to take care of css counting because we're
-moving from an exisiting cgroup to an cgroup which cannot be destroyed.
-(move_account() is function to move account between arbitrary cgroup.)
-
-So, yes, please remove comment.
-
-Thanks,
--Kame
-
-
+"werner" <w.landgraf@ru.ru>
+---
+Professional hosting for everyone - http://www.host.ru
