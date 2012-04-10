@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309Ab2DJVD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 17:03:27 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40641 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504Ab2DJVD0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 17:03:26 -0400
-Date: Tue, 10 Apr 2012 23:03:14 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v4 2/4] tools: Add a toplevel Makefile
-Message-ID: <20120410210314.GC30366@aftab>
-References: <1334071240-28692-1-git-send-email-bp@amd64.org>
- <1334071240-28692-3-git-send-email-bp@amd64.org>
- <20120410203348.GB28293@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410203348.GB28293@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932416Ab2DJVDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:03:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932381Ab2DJVDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 17:03:43 -0400
+Message-ID: <1334091801.3799.387.camel@bling.home>
+Subject: Re: [RFC PATCH 0/3] IOMMU groups
+From: Alex Williamson <alex.williamson@redhat.com>
+To: david@gibson.dropbear.id.au, dwmw2@infradead.org
+Cc: iommu@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        joerg.roedel@amd.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 10 Apr 2012 15:03:21 -0600
+In-Reply-To: <20120402203721.28977.95285.stgit@bling.home>
+References: <20120402203721.28977.95285.stgit@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 10:33:48PM +0200, Sam Ravnborg wrote:
-> Things would be much simpler is all tools were adjusted to:
-> a) the subdir they live in is the make target name
-> b) each tool has three mandatory targets:
->  1) default target => build the tool
->  2) clean
->  3) install
+
+Ping.  Does this approach look like it could satisfy your desire for a
+more integrated group layer?  I'd really like to move VFIO forward,
+we've been stalled on this long enough.  David Woodhouse, I think this
+provides the quirking you're looking for for device like the Ricoh, do
+you have any other requirements for a group layer?  Thanks,
+
+Alex
+
+On Mon, 2012-04-02 at 15:14 -0600, Alex Williamson wrote:
+> This series attempts to make IOMMU device grouping a slightly more
+> integral part of the device model.  iommu_device_groups were originally
+> introduced to support the VFIO user space driver interface which needs
+> to understand the granularity of device isolation in order to ensure
+> security of devices when assigned for user access.  This information
+> was provided via a simple group identifier from the IOMMU driver allowing
+> VFIO to walk devices and assemble groups itself.
 > 
-> I can see that with the layout today you cannot
-> distingush between the various targets below power.
-> But the current solutions is not scaleable nor maintainable.
+> The feedback received from this was that groups should be the effective
+> unit of work for the IOMMU API.  The existing model of allowing domains
+> to be created and individual devices attached ignores many of the
+> restrictions of the IOMMU, whether by design, by topology or by defective
+> devices.  Additionally we should be able to use the grouping information
+> at the dma ops layer for managing domains and quirking devices.
 > 
-> Even if you cannot fix power/* then testing looks easy.
+> This series is a sketch at implementing only those aspects and leaving
+> everything else about the multifaceted hairball of Isolation groups for
+> another API.  Please comment and let me know if this seems like the
+> direction we should be headed.  Thanks,
 > 
-> But all that can always to improved and consolidated later.
+> Alex
+> 
+> 
+> ---
+> 
+> Alex Williamson (3):
+>       iommu: Create attach/detach group interface
+>       iommu: Create basic group infrastructure and update AMD-Vi & Intel VT-d
+>       iommu: Introduce iommu_group
+> 
+> 
+>  drivers/iommu/amd_iommu.c   |   50 ++++++----
+>  drivers/iommu/intel-iommu.c |   76 ++++++++--------
+>  drivers/iommu/iommu.c       |  210 ++++++++++++++++++++++++++++++++++++++-----
+>  include/linux/device.h      |    2 
+>  include/linux/iommu.h       |   43 +++++++++
+>  5 files changed, 301 insertions(+), 80 deletions(-)
 
-Right, I was deliberating on whether to unify the dir layout so that it
-fits with the Makefile targets nicely but decided to leave it out for
-later. IOW, do the "one thing at a time" deal. Besides, some tools don't
-have that clearly defined targets and selftests, for example, doesn't
-need to be installed but simply run in a loop.
 
-So definitely agreed, the tools/ dir could use a bunch of cultivating in
-later cycles.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
