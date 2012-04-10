@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047Ab2DJSPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:15:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47662 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab2DJSPV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:15:21 -0400
+	id S1758200Ab2DJSRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:17:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5010 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755991Ab2DJSRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 14:17:04 -0400
+Date: Tue, 10 Apr 2012 14:16:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Steve French <smfrench@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        cgroups@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+Message-ID: <20120410181631.GK21801@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <20120407080027.GA2584@quack.suse.cz>
+ <CAH2r5mvLVnM3Se5vBBsYzwaz5Ckp3i6SVnGp2T0XaGe9_u8YYA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1334081054.1431.23.camel@localhost.localdomain>
-References: <1334081054.1431.23.camel@localhost.localdomain>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Tue, 10 Apr 2012 18:14:50 +0000
-Message-ID: <CAMOZ1Bv49XM-f7DEan8fEbDAb3VJf28uOqdKWYJH4tdQ7CvH6g@mail.gmail.com>
-Subject: Re: How to skip the initramfs?
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH2r5mvLVnM3Se5vBBsYzwaz5Ckp3i6SVnGp2T0XaGe9_u8YYA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 18:04, Thomas Meyer <thomas@m3y3r.de> wrote:
-> How to skip the execution of the initramfs? option "noinitrd" doesn't
-> seem to work on 3.0 kernel.
->
-> Or is there an option to build an abootimg without initramfs? I didn't
-> find one.
->
-> with kind regards
-> thomas
+On Tue, Apr 10, 2012 at 11:23:16AM -0500, Steve French wrote:
 
-I have always built my kernel without support for initramfs/initrd
-by setting the build configuration variable `CONFIG_BLK_DEV_INITRD'
-to `n'; in a Kconfig set up UI, you can find this option under
-`General setup' as the item:
+[..]
+> In the case of block device throttling - other than the file system
+> internally using such APIs who would use block device specific
+> throttling - only the file system knows where it wants to put hot data,
+> and in the case of btrfs, doesn't the file system manage the
+> storage pool.   The block device should be transparent to the
+> user in the long run, and only the volume visible.
 
-  Initial RAM filesystem and RAM disk (initramfs/initrd) support
+This is a good point. I guess this goes back to Jan's question of what's
+the intended use case of absolute throttling. Having a dependency on 
+per device limits has the drawback of user knowing exactly the details
+of storage stack and it assumes that there is one single aggregation point
+of block devices. (Which is not true in case of btrfs).
 
-You should probably also tell your boot loader (such as `grub') not
-to bother loading an initial ram disk.
+If user is simply looking for something like that I don't want a backup
+process to be writing at more than 50MB/s (so that other processes doing
+IO to same filesystem are effected less), then it is a case of global
+throttling and per device throttling really does not gel well.
 
-However, I have the vague notion that there have been rumblings about
-requiring initramfs/initrd support in the future; does anybody know if
-this is true?
-
-Sincerely,
-Michael Witten
+Thanks
+Vivek
