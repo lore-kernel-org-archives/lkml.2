@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab2DJKn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:43:28 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:34966 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757911Ab2DJKnZ (ORCPT
+	id S1758205Ab2DJKoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:44:06 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35181 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab2DJKoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:43:25 -0400
-Date: Tue, 10 Apr 2012 13:42:29 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 09/13] usb: gadget: f_fs: Remove lock is held before
- freeing checks
-Message-ID: <20120410104227.GK20616@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
- <1332895637-32572-10-git-send-email-andi@firstfloor.org>
+	Tue, 10 Apr 2012 06:44:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4F840ED6.3050408@jp.fujitsu.com>
+Date: Tue, 10 Apr 2012 19:43:34 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCF9ydJxlAJsfRTu"
-Content-Disposition: inline
-In-Reply-To: <1332895637-32572-10-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiang Liu <liuj97@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, matsumoto.hiroo@jp.fujitsu.com,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] PCI: correctly flush workqueue when destroy pcie
+ hotplug controller
+References: <1333822735-10902-1-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1333822735-10902-1-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I think you're rignt.
 
---FCF9ydJxlAJsfRTu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
-On Tue, Mar 27, 2012 at 05:47:13PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->=20
-> lock debugging already supports this, no need to do it explicitely.
->=20
-> Cc: balbi@ti.com
-> Cc: gregkh@linuxfoundation.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+(2012/04/08 3:18), Jiang Liu wrote:
+> When destroying a PCIe hotplug controller, all work items associated with
+> that controller should be flushed.  Function pcie_cleanup_slot() calls
+> cancel_delayed_work() and flush_workqueue() to achieve that.
+> Function flush_workqueue() will flush all work items already submitted,
+> but new work items submitted by those already submitted work items may
+> still be in live state when returning from flush_workqueue().
+> 
+> For the extreme case, pciehp driver may expierence following calling path:
+> 1) pcie_isr() ->  pciehp_handle_xxx() ->  queue_interrupt_event()->queue_work()
+> 2) interrupt_event_handler() ->  handle_button_press_event() ->
+>     queue_delayed_work()
+> 3) pciehp_queue_pushbutton_work() ->  queue_work()
+> 
+> So enhance pcie_cleanup_slot() to correctly flush workqueue when destroying
+> PCIe hotplug controller.
+> 
+> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+> ---
+>   drivers/pci/hotplug/pciehp_hpc.c |   13 ++++++++++++-
+>   1 files changed, 12 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+> index d4fa705..9a48a51 100644
+> --- a/drivers/pci/hotplug/pciehp_hpc.c
+> +++ b/drivers/pci/hotplug/pciehp_hpc.c
+> @@ -890,8 +890,19 @@ static int pcie_init_slot(struct controller *ctrl)
+>   static void pcie_cleanup_slot(struct controller *ctrl)
+>   {
+>   	struct slot *slot = ctrl->slot;
+> -	cancel_delayed_work(&slot->work);
+> +
+> +	/*
+> +	 * Following workqueue flushing logic is to deal with the special call path:
+> +	 * 1) pcie_isr() ->  pciehp_handle_xxx() ->
+> +	 *    queue_interrupt_event(pciehp_wq_event)->queue_work(pciehp_wq)
+> +	 * 2) interrupt_event_handler() ->  handle_button_press_event() ->
+> +	 *    queue_delayed_work(pciehp_wq)
+> +	 * 3) pciehp_queue_pushbutton_work() ->  queue_work(pciehp_wq)
+> +	 */
+>   	flush_workqueue(pciehp_wq);
+> +	cancel_delayed_work_sync(&slot->work);
+> +	flush_workqueue(pciehp_wq);
+> +
+>   	kfree(slot);
+>   }
+> 
 
-since this is part of a separate series, I think it's better you carry
-this with the series:
-
-Acked-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---FCF9ydJxlAJsfRTu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPhA6TAAoJEIaOsuA1yqREVJQP/iY7u6gL+jfooipvczhahdoW
-MDdGxmZLG5J7ky8tU7ZSzOvLzoMFAMKgY6X0TZdrNayFW6llZFaiSSxikHQRRY7z
-uF5MqjTfVHs3el9ILWo5KaXFo9lmUYeY4v/tF8QEnkXwANBpW1vY5H6GDOwiZQJx
-8I8ibVv0L45VXtVxpdSER7lxDPiTO0tXc8oXrB9z13/DP933LmHMmmYS4dPZQPNj
-ws2aYZHpkybJsZJY9yE/e2ulcXctvqT0NL5L5J6BfExuYvXgy/oFWgpnX98pADH/
-Wmi8usF4HMOUOPvBa2RAWTdHGyglwFmFcdQjRct7OxF4DbIcPp8LusE05/Cl6Sde
-qsskftDwCmOh1GMPF7IUYQ3RkZnekwKTbEPbnSN/EQRV6XqGkOQHshGB9/XSVC3Y
-cgi7FxlUqh1qMpI/ZwuCD3XEKb5RwbltL1+OeBSWnTMOAvgKX+HQAe4dQvuUCia6
-oKReY1zCz0GCnI0vevAf2gTM4MOOD6XTAalm8xzwsFn2sl+5UFRfr1VZoioDMxxw
-fCpo7PUx7fImHA1XW1uk1xmGaerBGYBtiz+e6dgHCvJejplk6otY8sLN7Yaw5xAR
-MYyrDwCM2H45N1PCCCZ38FUSfPZuKJOt7VJ8HyxI9pd2b/8FfieXSbKJAme6J4AR
-jTLfG//fnHbocS1wCd7K
-=f3Oa
------END PGP SIGNATURE-----
-
---FCF9ydJxlAJsfRTu--
