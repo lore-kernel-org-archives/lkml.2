@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab2DJPLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:11:19 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48415 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759036Ab2DJPLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:11:12 -0400
-Message-ID: <1334070666.16827.31.camel@key-ThinkPad-W510>
-Subject: [PATCH v2 15/17] powerpc: crypto: debugfs routines and docs for the
- nx device driver
+	id S1759267Ab2DJPLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:11:32 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60725 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759069Ab2DJPL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:11:29 -0400
+Message-ID: <1334070681.16827.33.camel@key-ThinkPad-W510>
+Subject: [PATCH v2 16/17] powerpc: crypto: Build files for the nx device
+ driver
 From: Kent Yoder <key@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
         key@linux.vnet.ibm.com, benh@kernel.crashing.org,
         linuxppc-dev@lists.ozlabs.org
-Date: Tue, 10 Apr 2012 10:11:06 -0500
+Date: Tue, 10 Apr 2012 10:11:21 -0500
 In-Reply-To: <1334070249.16827.1.camel@key-ThinkPad-W510>
 References: <1334070249.16827.1.camel@key-ThinkPad-W510>
 Content-Type: text/plain; charset="UTF-8"
@@ -22,182 +23,76 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041015-5806-0000-0000-000014279B8F
+x-cbid: 12041015-5518-0000-0000-000003909BF1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add debugfs files supporting the Power7+ in-Nest encryption
-accelerator driver.
+These files support configuring and building the nx device driver.
 
 Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- Documentation/ABI/testing/debugfs-pfo-nx-crypto |   45 ++++++++++
- drivers/crypto/nx/nx_debugfs.c                  |  103 +++++++++++++++++++++++
- 2 files changed, 148 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-pfo-nx-crypto
- create mode 100644 drivers/crypto/nx/nx_debugfs.c
+ arch/powerpc/Makefile      |    1 +
+ drivers/crypto/Kconfig     |   17 +++++++++++++++++
+ drivers/crypto/nx/Makefile |   11 +++++++++++
+ 3 files changed, 29 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/crypto/nx/Makefile
 
-diff --git a/Documentation/ABI/testing/debugfs-pfo-nx-crypto b/Documentation/ABI/testing/debugfs-pfo-nx-crypto
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 6524c6e..16e1bd7 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -160,6 +160,7 @@ core-$(CONFIG_KVM) 		+= arch/powerpc/kvm/
+ core-$(CONFIG_PERF_EVENTS)	+= arch/powerpc/perf/
+ 
+ drivers-$(CONFIG_OPROFILE)	+= arch/powerpc/oprofile/
++drivers-$(CONFIG_CRYPTO_DEV_NX) += drivers/crypto/nx/
+ 
+ # Default to zImage, override when needed
+ all: zImage
+diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
+index ab9abb4..4319248 100644
+--- a/drivers/crypto/Kconfig
++++ b/drivers/crypto/Kconfig
+@@ -295,4 +295,21 @@ config CRYPTO_DEV_TEGRA_AES
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called tegra-aes.
+ 
++config CRYPTO_DEV_NX
++	tristate "Support for Power7+ in-Nest cryptographic accleration"
++	depends on PPC64 && IBMVIO
++	select CRYPTO_AES
++	select CRYPTO_CBC
++	select CRYPTO_ECB
++	select CRYPTO_CCM
++	select CRYPTO_GCM
++	select CRYPTO_AUTHENC
++	select CRYPTO_XCBC
++	select CRYPTO_SHA256
++	select CRYPTO_SHA512
++	help
++	  Support for Power7+ in-Nest cryptographic acceleration. This
++	  module supports acceleration for AES and SHA2 algorithms. If you
++	  choose 'M' here, this module will be called nx_crypto.
++
+ endif # CRYPTO_HW
+diff --git a/drivers/crypto/nx/Makefile b/drivers/crypto/nx/Makefile
 new file mode 100644
-index 0000000..685d5a4
+index 0000000..411ce59
 --- /dev/null
-+++ b/Documentation/ABI/testing/debugfs-pfo-nx-crypto
-@@ -0,0 +1,45 @@
-+What:		/sys/kernel/debug/nx-crypto/*
-+Date:		March 2012
-+KernelVersion:	3.4
-+Contact:	Kent Yoder <key@linux.vnet.ibm.com>
-+Description:
-+
-+  These debugfs interfaces are built by the nx-crypto driver, built in
-+arch/powerpc/crypto/nx.
-+
-+Error Detection
-+===============
-+
-+errors:
-+- A u32 providing a total count of errors since the driver was loaded. The
-+only errors counted here are those returned from the hcall, H_COP_OP.
-+
-+last_error:
-+- The most recent non-zero return code from the H_COP_OP hcall. -EBUSY is not
-+recorded here (the hcall will retry until -EBUSY goes away).
-+
-+last_error_pid:
-+- The process ID of the process who received the most recent error from the
-+hcall.
-+
-+Device Use
-+==========
-+
-+aes_bytes:
-+- The total number of bytes encrypted using AES in any of the driver's
-+supported modes.
-+
-+aes_ops:
-+- The total number of AES operations submitted to the hardware.
-+
-+sha256_bytes:
-+- The total number of bytes hashed by the hardware using SHA-256.
-+
-+sha256_ops:
-+- The total number of SHA-256 operations submitted to the hardware.
-+
-+sha512_bytes:
-+- The total number of bytes hashed by the hardware using SHA-512.
-+
-+sha512_ops:
-+- The total number of SHA-512 operations submitted to the hardware.
-diff --git a/drivers/crypto/nx/nx_debugfs.c b/drivers/crypto/nx/nx_debugfs.c
-new file mode 100644
-index 0000000..7ab2e8d
---- /dev/null
-+++ b/drivers/crypto/nx/nx_debugfs.c
-@@ -0,0 +1,103 @@
-+/**
-+ * debugfs routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/kobject.h>
-+#include <linux/string.h>
-+#include <linux/debugfs.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/crypto.h>
-+#include <crypto/hash.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+#ifdef CONFIG_DEBUG_FS
-+
-+/*
-+ * debugfs
-+ *
-+ * For documentation on these attributes, please see:
-+ *
-+ * Documentation/ABI/testing/debugfs-pfo-nx-crypto
-+ */
-+
-+int nx_debugfs_init(struct nx_crypto_driver *drv)
-+{
-+	struct nx_debugfs *dfs = &drv->dfs;
-+
-+	dfs->dfs_root = debugfs_create_dir(NX_NAME, NULL);
-+
-+	dfs->dfs_aes_ops =
-+		debugfs_create_u32("aes_ops",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root, (u32 *)&drv->stats.aes_ops);
-+	dfs->dfs_sha256_ops =
-+		debugfs_create_u32("sha256_ops",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root,
-+				   (u32 *)&drv->stats.sha256_ops);
-+	dfs->dfs_sha512_ops =
-+		debugfs_create_u32("sha512_ops",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root,
-+				   (u32 *)&drv->stats.sha512_ops);
-+	dfs->dfs_aes_bytes =
-+		debugfs_create_u64("aes_bytes",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root,
-+				   (u64 *)&drv->stats.aes_bytes);
-+	dfs->dfs_sha256_bytes =
-+		debugfs_create_u64("sha256_bytes",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root,
-+				   (u64 *)&drv->stats.sha256_bytes);
-+	dfs->dfs_sha512_bytes =
-+		debugfs_create_u64("sha512_bytes",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root,
-+				   (u64 *)&drv->stats.sha512_bytes);
-+	dfs->dfs_errors =
-+		debugfs_create_u32("errors",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root, (u32 *)&drv->stats.errors);
-+	dfs->dfs_last_error =
-+		debugfs_create_u32("last_error",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root,
-+				   (u32 *)&drv->stats.last_error);
-+	dfs->dfs_last_error_pid =
-+		debugfs_create_u32("last_error_pid",
-+				   S_IRUSR | S_IRGRP | S_IROTH,
-+				   dfs->dfs_root,
-+				   (u32 *)&drv->stats.last_error_pid);
-+	return 0;
-+}
-+
-+void
-+nx_debugfs_fini(struct nx_crypto_driver *drv)
-+{
-+	debugfs_remove_recursive(drv->dfs.dfs_root);
-+}
-+
-+#endif
++++ b/drivers/crypto/nx/Makefile
+@@ -0,0 +1,11 @@
++obj-$(CONFIG_CRYPTO_DEV_NX) += nx-crypto.o
++nx-crypto-objs := nx.o \
++		  nx_debugfs.o \
++		  nx-aes-cbc.o \
++		  nx-aes-ecb.o \
++		  nx-aes-gcm.o \
++		  nx-aes-ccm.o \
++		  nx-aes-ctr.o \
++		  nx-aes-xcbc.o \
++		  nx-sha256.o \
++		  nx-sha512.o
 -- 
 1.7.1
 
