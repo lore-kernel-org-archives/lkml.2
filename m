@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2DJAi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 20:38:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33128 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281Ab2DJAi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 20:38:57 -0400
-Date: Tue, 10 Apr 2012 10:38:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the tile tree with Linus' tree
-Message-Id: <20120410103850.db4e6c388d09253d914b442b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Apr_2012_10_38_50_+1000_VlN4GGOzURsVVjsl"
+	id S1757330Ab2DJAsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 20:48:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:34496 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854Ab2DJAsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 20:48:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="87141568"
+Message-ID: <4F838370.2080305@intel.com>
+Date: Tue, 10 Apr 2012 08:48:48 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@elte.hu, andi@firstfloor.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, ming.m.lin@intel.com
+Subject: Re: [PATCH 2/5] perf: generic intel uncore support
+References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>  <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>  <1333163902.2960.63.camel@laptop>  <4F77C75B.4060105@intel.com>  <1333404693.2960.82.camel@laptop>  <4F7AB4AC.1060108@intel.com> <1333463364.2960.100.camel@laptop>
+In-Reply-To: <1333463364.2960.100.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Apr_2012_10_38_50_+1000_VlN4GGOzURsVVjsl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/03/2012 10:29 PM, Peter Zijlstra wrote:
+> On Tue, 2012-04-03 at 16:28 +0800, Yan, Zheng wrote:
+>> On 04/03/2012 06:11 AM, Peter Zijlstra wrote:
+>>> On Sun, 2012-04-01 at 11:11 +0800, Yan, Zheng wrote:
+>>>>
+>>>> Because using per-cpu allocation is inconvenience for PCI uncore device.
+>>>
+>>> What are those, where does one read about them and why?
+>>>
+>> PCI uncore device support was added by patch 4. If using per-cpu pointer,
+>> we have to setup the per-cpu pointer after the PCI driver's probe function
+>> recognizes the uncore device. It means we have to first add the PCI uncore
+>> device to a list, then call a function on all cpus to scan the list, find
+>> the right uncore device and setup the per-cpu pointer.
+> 
+> Yeah, I saw that, but it was all completely lacking in where one can
+> find actual detail on that stuff. What parts of the SDM do I read? Is
+> there anything other than the SDM, etc..
+> 
+The uncore performance monitoring guide:
 
-Hi Chris,
+http://www.intel.com/content/dam/www/public/us/en/documents/design-guides/xeon-e5-2600-uncore-guide.pdf
 
-Today's linux-next merge of the tile tree got a conflict in
-arch/tile/kernel/stack.c between commit 5f639fdcd8c1 (arch/tile: various
-bugs in stack backtracer"") from Linus' tree and commit aa127c855d1e
-("arch/tile: Allow tilegx to build with either 16K or 64K page size")
-from the tile tree.
-
-The former removed the code modified by the latter, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__10_Apr_2012_10_38_50_+1000_VlN4GGOzURsVVjsl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPg4EaAAoJEECxmPOUX5FE+FcP/AliM3c9CREWfMxP5lPtFE/u
-HsfJSKYhMlUwa+TnYqKUfpmhnos5S+v8Ctq/5ARk0S3ozzbQClZ7AOvsenhZEAIR
-kll245u/dCTo1AN5xY8OpCKT6H1VAuv+aRH420LyXxHAAQXXwxH1wJxIaJTYKm0D
-f95FhaOBfwth82U3YXSNWJLHTXYFi8c54FOGaZ0DbCHBl7FzrXOxAVeWE/XX4Yny
-KpXk03So+It+M9rmlfLDn7Iail/pPBT41tIf5PWmIke2mKdGxS4sKLlPHWIbyRch
-9Wg2QP44oywT2+E9syxeslkLuQAvHgFV6Fvk76qbtjFkm3FtbXO9e8vuOdDPXp1d
-3fvNsr07GoNqdB6HSIlvuekqKhoSsBXSuNNoPU+ktfMiTtHh/v17bQd0IiV79RFs
-9g2jBTNTCImwWEr7u2cKKwvBF0MeJfnbvn7mGcA6VPXYPWaoVPT01FAKiHMCG4i8
-jATgq/Qvh3eo1utrsmL6KOGHn/j8muJnG/ZkRTENlhMEP0XzIRCxJkT6ZYP1MT2L
-moGE93+/qr6dM51K+/6oV/i2aAc5vMsZCTsC+9J4C0Y5k5SQP4Uf0ZJMT4gjtuYx
-WkwBOuizlVl0Tczxfaaeq3KVANVXsN4dkWX015pmeLIB/JwMTUJhSVZTBOxyw3u6
-est7C0V73FzEDPDXlocx
-=wxn6
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_Apr_2012_10_38_50_+1000_VlN4GGOzURsVVjsl--
+Regards
+Yan, Zheng
