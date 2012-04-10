@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759025Ab2DJUMk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:12:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40303 "EHLO mx1.redhat.com"
+	id S1759331Ab2DJUPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:15:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41966 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755426Ab2DJUMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:12:38 -0400
-Date: Tue, 10 Apr 2012 16:12:34 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Moyer Jeff Moyer <jmoyer@redhat.com>, linux-scsi@vger.kernel.org,
-        kay.sievers@vrfy.org
-Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline
- except SATA
-Message-ID: <20120410201234.GA8265@redhat.com>
-References: <4F843C17.5050004@kernel.dk>
- <20120410142148.GG21801@redhat.com>
- <20120410151042.GH21801@redhat.com>
- <4F847EC4.7040604@kernel.dk>
- <20120410185318.GL21801@redhat.com>
- <4F848253.6060303@kernel.dk>
- <20120410191121.GM21801@redhat.com>
- <4F8487D0.3010503@kernel.dk>
- <CAMM=eLeQzLM3MMHkKk=mVE4O8V+w8vvPbau8A1Z3mme-G4KiLA@mail.gmail.com>
- <4F849045.9070806@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F849045.9070806@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756466Ab2DJUPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:15:01 -0400
+Date: Wed, 11 Apr 2012 06:14:42 +1000
+From: NeilBrown <neilb@suse.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jim Kukunas <james.t.kukunas@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        linux-raid@vger.kernel.org
+Subject: Re: arch/86: AVX RAID5 xor checksumming
+Message-ID: <20120411061442.2f839c77@notabene.brown>
+In-Reply-To: <4F846FBC.9060503@zytor.com>
+References: <1334078551-6859-1-git-send-email-james.t.kukunas@linux.intel.com>
+	<4F846FBC.9060503@zytor.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/ezuCh74pRIGaxdDL5+mhvF/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10 2012 at  3:55pm -0400,
-Jens Axboe <axboe@kernel.dk> wrote:
+--Sig_/ezuCh74pRIGaxdDL5+mhvF/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On 2012-04-10 21:43, Mike Snitzer wrote:
-> > I'm still missing your position (other than you now wanting to make it
-> > a userspace concern).
-> > 
-> > Put differently: why should CFQ still be the default?
-> > 
-> > It is pretty widely held that deadline is the more sane default
-> > (multiple distros are now using it, deadline is default for guests,
-> > etc).  CFQ has become more niche.  The Linux default really should
-> > reflect this.
-> > 
-> > The only case where defaulting to CFQ seems to make sense is
-> > rotational SATA (and USB).
-> 
-> That's the precisely the reason it should still be the default. The
-> default settings should reflect a good user experience out of the box.
-> Most desktop machines are still using SATA drives. And even those that
-> made the leap to SSD, lots of those are still pretty sucky at high queue
-> depths or without read/write separation. So I'm quite sure the default
-> still makes a lot of sense.
+On Tue, 10 Apr 2012 10:37:00 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
 
-I agree that a default of CFQ still makes sense for SATA and USB.
+> On 04/10/2012 10:22 AM, Jim Kukunas wrote:
+> > Hi Folks,
+> >=20
+> > The following patch adds an AVX implementation of the RAID5 xor checksu=
+mming
+> > functions.
+> >=20
+> > Based on xor_speed, the AVX implementation appears to be ~32% faster th=
+an the
+> > SSE implementation on my i7 2600:
+> >=20
+> >         generic_sse: 15088.000 MB/sec
+> > 	avx: 19936.000 MB/sec
+> >=20
+> > Thanks.
+> >=20
+>=20
+> I think this (and the SSSE3 patches for RAID-6) should go in via the
+> RAID tree.  Neil, do you agree?
 
-But why can't there be multiple defaults?
+I'm happy to take the SSSE3 RAID-6 patches as they only affect lib/raid6, b=
+ut
+I felt that this one - being purely in arch/x86 - should probably go via the
+x86 tree.
+However I'm flexible and if you (collectively) are happy with these patches
+going in through my tree, I'll do that.
 
-default: deadline
-SATA and USB default: cfq
+Thanks,
+NeilBrown
 
-> Punt tuning to the server side. If you absolutely want the best
-> performance out of your _particular_ workload, you are expecting and
-> required to tune things anyway. Not just the IO scheduler, but in
-> general. You can't make the same requirements for the desktop.
+>=20
+> However,
+>=20
+> Acked-by: H. Peter Anvin <hpa@zytor.com>
+>=20
+> 	-hpa
 
-Just because server admins are more used to tuning doesn't mean all
-server admins do it -- especially not on first evaluation.
 
-> As to kernel vs user, I just see little reason for doing it in the
-> kernel if we can put that policy in user space.
+--Sig_/ezuCh74pRIGaxdDL5+mhvF/
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-There are distro packages that are shipped to control such knobs,
-e.g. tuned.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-They don't help _at all_ if the user doesn't know about them.  Knob
-tuning is tedious on multiple levels.  Much like this thread ;)
+iQIVAwUBT4SUuDnsnt1WYoG5AQKcQg//WLW+nSBKgGQ2RiuNVOScaNX6xzotJ6Lt
+Ls9eE/X3ePBJrnmXv3N6O3qd6t42ppvHOzj+Tc2Dz+yxQ9vsfJ6cs+STq7+qx5wZ
+CHlTUKW8hhohdVqMq9QsMCMqeDDdWM3a01derNKD5BDpIDsvGYRB/yFuQT32mnxT
+ho2NgcRW7bBr7TkbQsZ1u+SaG6IdApaYmTbhEXnr6j+9ev1ckj3lVzYOkNp8zdws
+xC77zHQWhCEw6TZUETbgIARp4WVWPYYTAe1JGdopfrqDnh1eW6K7Gb85Nq0NfwFi
+2A/ZLJBzcAtWz8sWMXrKDGMlI5FHmRtSLAMbZPUzvOID1X7Be4Ov8LqNyPmz+Hq7
+i0Sc2VLA3IxoHJMteKFWDoQpfX5IQcRk54nQWLqc6ZOD113Kl/0Tn5NDhAQv0OX2
+NXwhyeN334ddSfpLTfvvbwI5NIsr6pLKVNo1K3Ws1cqXDG/vEOqa6odYq1r6J3Ft
+jXlxtXFt5wR4oqHheJ5t2NzSm2+pOGQF96nraBAMDxIEO+RYEZbFPXhJeUnsS/NW
+h4t0+yu3dMKXghyMVvLUXiMHA/zdBjaZaZh7XDWlsKvWW822gCFsv2QwkLAmq3Pi
+REtKpIpzRd8h0sZUOW5jB7zcI0Kf4EoQdyNF2O8gw7xoLS8TJFJo7UH4PuvT42OZ
+fttCUhu7occ=
+=D6zq
+-----END PGP SIGNATURE-----
+
+--Sig_/ezuCh74pRIGaxdDL5+mhvF/--
