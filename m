@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759687Ab2DJX1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 19:27:13 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40051 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759676Ab2DJX1L (ORCPT
+	id S1759673Ab2DJX3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 19:29:22 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46491 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756662Ab2DJX3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 19:27:11 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] irq_domain: fix formatting of chip data pointer in virq_debug_show()
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, benh@kernel.crashing.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-In-Reply-To: <1334060743-7901-2-git-send-email-mika.westerberg@linux.intel.com>
-References: <1334060743-7901-1-git-send-email-mika.westerberg@linux.intel.com> <1334060743-7901-2-git-send-email-mika.westerberg@linux.intel.com>
-Date: Tue, 10 Apr 2012 17:27:08 -0600
-Message-Id: <20120410232708.CAC3D3E079B@localhost>
+	Tue, 10 Apr 2012 19:29:21 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] regmap: Fix build by removing extra parameter from regmap_debugfs_init()
+Date: Tue, 10 Apr 2012 20:29:06 -0300
+Message-Id: <1334100546-2534-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Apr 2012 15:25:43 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
-> On 32-bit machines reading the /sys/kernel/debug/irq_domain_mapping file
-> outputs following:
-> 
-> virq   hwirq    chip name        chip data           domain name
->     9  0x00000  IO-APIC          0x        c175a0f8  none
->    10  0x00000  IO-APIC          0x        c175a108  none
->    11  0x00000  IO-APIC          0x        c175a118  none
-> ...
-> 
-> which looks a bit funny. Fix that with filling the gap with zeroes instead
-> of spaces.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+commit b4eb511 (Merge branches 'regmap-mmio', 'regmap-naming' and 'regmap-linus' into regmap-next)
+added an extra paramter to the prototype of regmap_debugfs_init() in the case of !CONFIG_DEBUG_FS.
 
-Applied, thanks.
+Remove this extra parameter so that the driver can build again when !CONFIG_DEBUG_FS.
 
-g.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+This applies against linux-next
 
-> ---
->  kernel/irq/irqdomain.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index 3601f3f..d350c72 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -666,7 +666,7 @@ static int virq_debug_show(struct seq_file *m, void *private)
->  			seq_printf(m, "%-15s  ", p);
->  
->  			data = irq_desc_get_chip_data(desc);
-> -			seq_printf(m, "0x%16p  ", data);
-> +			seq_printf(m, "0x%016lx  ", (unsigned long)data);
->  
->  			if (desc->irq_data.domain && desc->irq_data.domain->of_node)
->  				p = desc->irq_data.domain->of_node->full_name;
-> -- 
-> 1.7.9.1
-> 
+ drivers/base/regmap/internal.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 32c2947..e46c279 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -112,7 +112,7 @@ extern void regmap_debugfs_init(struct regmap *map);
+ extern void regmap_debugfs_exit(struct regmap *map);
+ #else
+ static inline void regmap_debugfs_initcall(void) { }
+-static inline void regmap_debugfs_init(struct regmap *map, const char *name) { }
++static inline void regmap_debugfs_init(struct regmap *map) { }
+ static inline void regmap_debugfs_exit(struct regmap *map) { }
+ #endif
+ 
 -- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+1.7.1
+
